@@ -44,6 +44,34 @@ final class CloudSync {
 
     static let shared = CloudSync()
 
+    /// `--init-cloudkit-schema`: makes every record type and field in the container's Development
+    /// schema — a type only appears there once a record of it was sent — so the schema can be
+    /// deployed to Production whole. Works on an empty store of its own, never the owner's, and is
+    /// for a development-signed build: only that one reaches Development.
+    nonisolated static func initializeSchema(container id: String) throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("matterbee-schema-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        guard let model = NSManagedObjectModel.makeManagedObjectModel(for: MatterSchema.models) else {
+            throw CocoaError(.featureUnsupported, userInfo: [NSLocalizedDescriptionKey: "The models make no Core Data model."])
+        }
+        // Released before SwiftData opens anything, as Apple's own example does.
+        try autoreleasepool {
+            let description = NSPersistentStoreDescription(url: folder.appendingPathComponent("schema.store"))
+            description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: id)
+            description.shouldAddStoreAsynchronously = false
+            let container = NSPersistentCloudKitContainer(name: "Matterbee", managedObjectModel: model)
+            container.persistentStoreDescriptions = [description]
+            var failure: Error?
+            container.loadPersistentStores { _, error in failure = error }
+            if let failure { throw failure }
+            try container.initializeCloudKitSchema()
+            if let store = container.persistentStoreCoordinator.persistentStores.first {
+                try container.persistentStoreCoordinator.remove(store)
+            }
+        }
+    }
+
     /// What iCloud said last: sent, received, or why not.
     var lastExport: Date?
     var lastImport: Date?

@@ -14,6 +14,19 @@ struct MatterbeeApp: App {
     let opened: Result<ModelContainer, Error>
 
     init() {
+        // Once, before the schema goes to Production: every record type into Development, then quit.
+        if let flag = CommandLine.arguments.firstIndex(of: "--init-cloudkit-schema") {
+            let next = CommandLine.arguments.index(after: flag)
+            let id = next < CommandLine.arguments.endIndex ? CommandLine.arguments[next] : CloudSync.Mode.on.container!
+            do {
+                try CloudSync.initializeSchema(container: id)
+                print("✓ The CloudKit schema of \(id) is complete in Development.")
+                exit(0)
+            } catch {
+                print("✗ \(error)")
+                exit(1)
+            }
+        }
         Theme.registerFonts()
         // Started from the terminal with `swift run`, the process is not an app yet until it says so.
         NSApplication.shared.setActivationPolicy(.regular)
