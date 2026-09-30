@@ -87,13 +87,23 @@ extension Entry {
 }
 
 extension Source {
-    /// The image or document it came from, when that is a file on this Mac.
+    /// The image or document it came from, when that is a file on this device.
     public var fileURL: URL? {
         // A mail from the label is in the mailbox; a mail dropped in as `.eml` is a file.
         guard !pointer.hasPrefix("imap://") else { return nil }
-        let url = pointer.hasPrefix("file://") ? URL(string: pointer) : URL(fileURLWithPath: pointer)
-        return url.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
+        guard let url = pointer.hasPrefix("file://") ? URL(string: pointer) : URL(fileURLWithPath: pointer) else { return nil }
+        if FileManager.default.fileExists(atPath: url.path) { return url }
+        // Kept beside the store: the iPhone's app folder gets a new name with an update, the
+        // part inside it stays.
+        let path = url.path
+        guard let inside = path.range(of: "/Library/Application Support/") else { return nil }
+        let moved = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(String(path[inside.upperBound...]))
+        return FileManager.default.fileExists(atPath: moved.path) ? moved : nil
     }
+
+    /// Which device a file of the owner's was added on, told by its path: a Mac's are in /Users.
+    public var addedOn: String { pointer.hasPrefix("/Users/") || pointer.hasPrefix("file:///Users/") ? "your Mac" : "your iPhone" }
 
     /// `message://<Message-ID>`: Mail.app opens the original, if it has the account.
     public var mailURL: URL? {

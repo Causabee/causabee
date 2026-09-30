@@ -123,6 +123,11 @@ final class PhoneShots {
                 }
             }
             if let document = shot.document.flatMap({ context.model(for: $0) as? MatterCore.Document }) { document.readAt = Date() }
+            // A picture brought in here is a file of the matter now: named by what it is, read.
+            for document in taken?.documents ?? [] where document.messageID == judgement.emailID {
+                if document.title == nil, look.kind == .chat { document.title = look.heading }
+                document.readAt = document.readAt ?? Date()
+            }
             // Known on every device, so the Mac never sends it again.
             if !DemoData.isRequested { try? SortedMails.record([judgement], device: PhoneNames.device, in: context) }
             try context.save()
@@ -288,7 +293,11 @@ struct AttachButton: View {
             Task {
                 guard let data = try? await photo.loadTransferable(type: Data.self) else { return }
                 let type = photo.supportedContentTypes.first { ["png", "jpeg", "heic"].contains($0.preferredFilenameExtension ?? "") }
-                let name = "Screenshot-\(Date().formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false)).replacingOccurrences(of: ":", with: "")).\(type?.preferredFilenameExtension ?? "png")"
+                // As the iPhone names its own: "Screenshot 2026-09-30 at 23.37.01", in local time.
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+                let name = "Screenshot \(formatter.string(from: Date())).\(type?.preferredFilenameExtension ?? "png")"
                 if let file = PhoneShots.shared.keep(data, named: name) { bring(file) }
             }
         }

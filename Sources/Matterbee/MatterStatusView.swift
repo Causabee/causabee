@@ -573,7 +573,11 @@ struct MatterStatusView: View {
     private func fetch(_ document: MatterCore.Document, then use: @escaping @MainActor (URL) -> Void) {
         // A file the owner dropped in — a scanned letter — is the file itself, on this Mac.
         if document.isOwnFile {
-            if let file = document.source.fileURL { use(file) } else { fetching[document.persistentModelID] = "The file is not on this Mac: \(document.source.pointer)" }
+            if let file = document.source.fileURL { use(file) } else {
+                fetching[document.persistentModelID] = document.source.addedOn == "your Mac"
+                    ? "The file is not on this Mac: \(document.source.pointer)"
+                    : "Added on your iPhone: the file is only there. What it said is here."
+            }
             return
         }
         // From a mail dropped in as a file: straight out of that file, no mail server.

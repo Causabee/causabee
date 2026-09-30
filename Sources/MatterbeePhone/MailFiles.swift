@@ -17,7 +17,7 @@ enum MailFiles {
         var description: String {
             switch self {
             case .noAccount: "Add your mail account first, to open files from your mail."
-            case .notInMail: "This file was added on your Mac, not attached to a mail — it is only there."
+            case .notInMail: "This file was added on another device, not attached to a mail — it is only there."
             case .noPassword(let user): "No password saved for \(user) on this iPhone."
             }
         }
@@ -148,7 +148,8 @@ struct FilesSection: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(document.shownName).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(2)
                             // With a name of its own, the file's name is still there to see, small.
-                            Text(document.isOwnFile ? "added on your Mac · only there"
+                            Text(document.isOwnFile
+                                 ? (document.source.fileURL != nil ? "added on this iPhone" : "added on \(document.source.addedOn) · only there")
                                  : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
                                     ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
                                     .compactMap { $0 }.joined(separator: " · "))
@@ -159,7 +160,7 @@ struct FilesSection: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(document.isOwnFile)
+                .disabled(document.isOwnFile && document.source.fileURL == nil)
                 if state[id]?.hasPrefix("Getting") == true { ProgressView() }
                 if let read = document.readAt {
                     Label("read \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
@@ -196,7 +197,7 @@ struct FilesSection: View {
 
     @ViewBuilder
     private func items(_ document: MatterCore.Document) -> some View {
-        if !document.isOwnFile { Button("Open") { open(document) } }
+        if !document.isOwnFile || document.source.fileURL != nil { Button("Open") { open(document) } }
         if document.isReadable, !document.isOwnFile, document.readAt == nil { Button("Read") { read(document) } }
         Divider()
         Button("Rename …") { newName = document.shownName; renaming = document }
@@ -214,6 +215,8 @@ struct FilesSection: View {
     /// Takes the file out of its mail — read-only, only this one mail — and hands it on.
     private func fetch(_ document: MatterCore.Document, then use: @escaping (URL) -> Void) {
         let id = document.persistentModelID
+        // One added on this iPhone is the file itself, here.
+        if document.isOwnFile, let file = document.source.fileURL { use(file); return }
         if MailFiles.account(for: document) == nil, !document.isOwnFile { addsAccount = true; return }
         state[id] = "Getting the file from the mail …"
         Task {
