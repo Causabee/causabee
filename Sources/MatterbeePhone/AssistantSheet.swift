@@ -91,22 +91,26 @@ struct AssistantSheet: View {
     /// The field as the Mac has it: what is typed goes out pseudonymised, and only on send.
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
+            // As on the Mac: the send button sits in the pill's round end, as far from the right as
+            // from the top and bottom, and the corner's radius is that and half the button — 7 + 34 / 2.
+            HStack(alignment: .bottom, spacing: 10) {
                 TextField(matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
                     .submitLabel(.send)
                     .onSubmit(send)
+                    // One line sits in the middle of the send button; more lines grow upwards.
+                    .frame(minHeight: 34)
                 Button(action: send) {
                     // A black arrow on the bee's yellow, as every yellow thing has black on it.
-                    Image(systemName: "arrow.up.circle.fill").font(.title2)
+                    Image(systemName: "arrow.up.circle.fill").resizable().frame(width: 34, height: 34)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.black, Theme.bee)
                 }
-                .disabled(asking != nil || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .buttonStyle(.plain)
                 .accessibilityLabel("Send")
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
-            .background(Theme.box, in: Capsule())
+            .padding(.leading, 16).padding(.trailing, 7).padding(.vertical, 7)
+            .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))
             Text("Always pseudonymised: names are disguised on the iPhone, with your Mac's list, before anything is sent.")
                 .font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 8)
         }
