@@ -531,10 +531,30 @@ public final class NameList {
     }
 }
 
+/// One mail from the label that has been sorted — on whichever device — with what the answer
+/// found in it. The record of what the label has answered, shared, so the Mac and the iPhone never
+/// send the same mail twice. Without its disguised text and the names found in it: those stay in
+/// the device's own log. Compressed, and end-to-end encrypted in iCloud.
+@Model
+public final class SortedMail {
+    public var messageID: String = ""
+    public var date: Date?
+    public var sortedAt: Date = Date()
+    /// The device that sorted it, as `NameList.device`.
+    public var device: String = ""
+    @Attribute(.allowsCloudEncryption) public var data: Data = Data()
+
+    public init(messageID: String, device: String) {
+        self.messageID = messageID
+        self.device = device
+    }
+}
+
 public enum MatterSchema {
     public static let models: [any PersistentModel.Type] = [
         Matter.self, Entry.self, Todo.self, Appointment.self, Deadline.self, Party.self, Membership.self,
         Decision.self, Rule.self, Profile.self, Document.self, WebLink.self, ThreadTurn.self, NameList.self,
+        SortedMail.self,
     ]
 
     /// A store on disk, or in memory when `url` is nil.

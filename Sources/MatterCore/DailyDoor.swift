@@ -17,6 +17,9 @@ public struct DailyDoor: Sendable {
     public var model: Claude.Model
     /// Fewer, real to-dos: the rule a model that writes too many is given.
     public var strict = false
+    /// What the other devices sorted, from the store (`SortedMails`): known as if in the log, so
+    /// no mail is sent twice. The log's own answer wins where both have one.
+    public var earlier: [String: Judgement] = [:]
 
     public init(account: MailAccount, label: String = "Matterbee", log: URL, mapping: URL, cache: URL, model: Claude.Model = .opus) {
         self.account = account
@@ -66,7 +69,7 @@ public struct DailyDoor: Sendable {
     }
 
     public func look(password: String, progress: @Sendable (String) -> Void = { _ in }) async throws -> Look {
-        let answered = Self.readLog(log)
+        let answered = earlier.merging(Self.readLog(log)) { _, own in own }
         let settled = Self.done(in: answered)
 
         let client = try await IMAPClient.connect(to: account, password: password)

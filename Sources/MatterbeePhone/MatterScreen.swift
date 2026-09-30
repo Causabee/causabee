@@ -189,9 +189,10 @@ struct MatterScreen: View {
     /// The facts the step and the summary are asked from: this matter's, the last 40 mails.
     private var summaryFacts: Facts { FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40) }
 
-    /// The names the iPhone asks with: the Mac's list — or, in the demo, none: its people are made up.
+    /// The names the iPhone asks with: its own list, or a Mac's until it keeps one — or, in the
+    /// demo, none: its people are made up.
     private func names() throws -> (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry]) {
-        store.isDemo ? (Pseudonymizer.Mapping(), []) : try NameLists.current(in: context)
+        store.isDemo ? (Pseudonymizer.Mapping(), []) : try PhoneNames.current(in: context)
     }
 
     private func askStep() {

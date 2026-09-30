@@ -86,6 +86,11 @@ public struct Pseudonymizer: Sendable {
     /// Placeholder mode: each full name's tag, by first and last name, so `Albers, Sebastian`
     /// finds `Sebastian Albers`.
     private var fullNames: [String: String] = [:]
+    /// The tags `fullNames` hands out, and every tag in use, by what comes before its letters
+    /// (`[Person `): kept as entries come in, so a new tag is not counted out of all of them again —
+    /// taking over another device's list of thousands of names took minutes that way.
+    private var fullNameTags: Set<String> = []
+    private var usedTags: [String: Set<String>] = [:]
     /// Every original, and every word of one. A stand-in is never picked from here, or restoring
     /// would have two answers for the same word.
     private var forbidden: Set<String> = []
@@ -385,8 +390,9 @@ public struct Pseudonymizer: Sendable {
     mutating func recordSharedPart(_ part: String, _ tag: String, of original: String) {
         guard let at = index[Self.key(part)] else { return recordPart(.person, part, tag, of: original) }
         guard entries[at].kind == .person, let old = Self.personTag(entries[at].standIn), old != tag,
-              Set(fullNames.values).contains(old) else { return }
+              fullNameTags.contains(old) else { return }
         let own = placeholder(.person)
+        use(own)
         for i in entries.indices where entries[i].kind == .person && Self.personTag(entries[i].standIn) == old {
             let name = Self.nameParts(entries[i].original)
             let single = name.given == nil ? name.family : (name.family == nil ? name.given : nil)
@@ -683,9 +689,7 @@ public struct Pseudonymizer: Sendable {
         let prefix = "[\(label) "
         // Wherever a tag stands in a stand-in — `Frau [Person A]` holds one too. Counting only those
         // that begin with it handed `[Person A]` to Frau Kurz, Herr Li and Frau Post alike.
-        let used = Set(entries.flatMap { entry in
-            entry.standIn.matches(of: /\[[A-Za-z]+ [A-Z]+\]/).map { String($0.output) }.filter { $0.hasPrefix(prefix) }
-        })
+        let used = usedTags[prefix] ?? []
         var number = used.count
         while true {
             var letters = ""
@@ -704,16 +708,24 @@ public struct Pseudonymizer: Sendable {
         return standIn
     }
 
+    /// `[Person AB]` is taken.
+    private mutating func use(_ tag: String) {
+        guard let space = tag.firstIndex(of: " ") else { return }
+        usedTags[String(tag[...space]), default: []].insert(tag)
+    }
+
     private mutating func add(_ entry: Entry) {
         let key = Self.key(entry.original)
         guard index[key] == nil else { return }
         index[key] = entries.count
         entries.append(entry)
         forbidden.insert(key)
+        for match in entry.standIn.matches(of: /\[[A-Za-z]+ [A-Z]+\]/) { use(String(match.output)) }
         if mode == .placeholder, entry.kind == .person, entry.partOf == nil,
            case let name = Self.nameParts(entry.original), let given = name.given, let family = name.family,
            let tag = Self.personTag(entry.standIn) {
             fullNames[Self.personKey(given, family)] = fullNames[Self.personKey(given, family)] ?? tag
+            fullNameTags.insert(fullNames[Self.personKey(given, family)]!)
         }
     }
 

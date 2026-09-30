@@ -29,7 +29,7 @@ final class MailCheck {
         }
     }
 
-    func look(store: URL) {
+    func look(store: URL, context: ModelContext) {
         guard let account = Keychain.accounts().first else {
             state = .failed("No mail account yet. Choose Matterbee → Set Up Matterbee … to log in.")
             return
@@ -37,6 +37,9 @@ final class MailCheck {
         var door = DailyDoor(account: account, besides: store)
         door.model = ModelChoice.mail
         door.strict = ModelChoice.strict
+        // What the iPhone or the other Mac sorted is known here too, and their names disguised.
+        NameListPublisher.adopt()
+        door.earlier = SortedMails.answered(in: context)
         state = .reading("Reading “\(door.label)” at \(door.account.host) …")
         Task {
             do {
@@ -62,6 +65,9 @@ final class MailCheck {
             do {
                 let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context))
                 let imported = try MatterImport.apply(judgements, to: context, owner: owner)
+                // Into the record the other devices read, and the names it learned into the store.
+                try SortedMails.record(judgements, device: NameListPublisher.device, in: context)
+                NameListPublisher.publish()
                 taken?(judgements, door.model.label)
                 // Their attachments into the matters' folders, by themselves.
                 let withFiles = Set(judgements.filter { !$0.attachments.isEmpty }.compactMap(\.matter))
@@ -210,7 +216,7 @@ struct MailCheckView: View {
             }
             .help("Starts Matterbee again with your own matters. The demo stays apart, in its own store.")
         } else {
-            Button { check.look(store: navigation.store) } label: {
+            Button { check.look(store: navigation.store, context: context) } label: {
                 Label("Get new mail", systemImage: "arrow.down.circle")
             }
             .help("Reads only new mail with the label. Nothing is sent until you click “Sort in”.")

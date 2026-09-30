@@ -2,14 +2,16 @@ import MatterCore
 import SwiftData
 import SwiftUI
 
-/// The Mac's Settings (⌘,), as far as the iPhone does the same: which model answers, iCloud, the
-/// API keys — the same three, the same field — and what the iPhone needs of its own: the mail
-/// account the files come out of, and the list of names from a Mac. Calendar and Reminders and
-/// the matter folders are the Mac's alone for now.
+/// The Mac's Settings (⌘,), as far as the iPhone does the same: which model sorts the mail and
+/// which answers, iCloud, Calendar and Reminders, the API keys — the same three, the same field —
+/// and what the iPhone needs of its own: the mail account, and the lists of names. The matter
+/// folders are the Mac's alone.
 struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(PhoneStore.self) private var store
     @AppStorage(ModelChoice.assistantKey) private var assistant = Claude.Model.opus.id
+    @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
+    @AppStorage(ModelChoice.strictKey) private var strict = true
     @Query(sort: \NameList.updatedAt, order: .reverse) private var lists: [NameList]
     @State private var sync = PhoneCloudStatus.shared
     @State private var accounts = Keychain.accounts().filter { !$0.usesGoogle }
@@ -25,13 +27,23 @@ struct SettingsSheet: View {
                     ForEach(accounts, id: \.user) { account in LabeledContent(account.user, value: account.host) }
                     Button(accounts.isEmpty ? "Add mail account …" : "Change …") { addsAccount = true }
                 } header: { Text("Mail") } footer: {
-                    Text("To open a matter's files from your mail, and to put a scanned document into it. The password comes from your Mac through iCloud Keychain, or is typed here once.")
+                    Text("To get new mail, to open a matter's files from your mail, and to put a scanned document into it. The password comes from your Mac through iCloud Keychain, or is typed here once.")
                 }
 
                 Section {
-                    Text("Your Mac sorts new mail, screenshots and files into matters, with the model chosen there.")
+                    Picker("Sort mail", selection: $mail) {
+                        ForEach(Claude.Model.choices, id: \.id) { model in
+                            Text(model.label + (Claude.key(for: model) == nil ? " — no key" : "")).tag(model.id)
+                        }
+                    }
+                    .id(tick)
+                    if mail.hasPrefix("mistral") || mail.hasPrefix("gpt-") {
+                        Toggle("Fewer, real tasks", isOn: $strict)
+                    }
+                    Text(String(format: "About %.2f cents per mail. A mail is sorted only once — here or on your Mac: what a model sorted in stays that way. Screenshots and files are sorted in on the Mac.",
+                                (Claude.Model.choices.first { $0.id == mail } ?? .opus).perMail * 100))
                         .font(.footnote).foregroundStyle(.secondary)
-                } header: { Text("New mail, screenshots, files") }
+                } header: { Text("New mail") }
 
                 Section {
                     Picker("Assistant", selection: $assistant) {
@@ -58,7 +70,7 @@ struct SettingsSheet: View {
                         }
                     }
                 } header: { Text("iCloud") } footer: {
-                    Text("Only the store syncs: matters, tasks, dates, people, digests and the assistant's history. Full mail texts and files stay in your mail and on your Mac.")
+                    Text("Only the store syncs: matters, tasks, dates, people, digests, what each mail was sorted as, and the assistant's history. Full mail texts and files stay in your mail and on your devices.")
                 }
 
                 Section { CalendarSettings() } header: { Text("Calendar and Reminders") }
@@ -66,11 +78,11 @@ struct SettingsSheet: View {
                 Section {
                     if lists.isEmpty { Label("Not here yet", systemImage: "hourglass").foregroundStyle(Theme.warning) }
                     ForEach(lists) { list in
-                        LabeledContent(list.deviceName.isEmpty ? "A Mac" : list.deviceName,
+                        LabeledContent(list.device == PhoneNames.device ? "This iPhone" : list.deviceName.isEmpty ? "A Mac" : list.deviceName,
                                        value: list.updatedAt.formatted(date: .abbreviated, time: .shortened))
                     }
                 } header: { Text("List of names") } footer: {
-                    Text("Names are disguised with your Mac's list before anything is sent. Each Mac puts its list into iCloud when Matterbee starts there, and when you switch away from it. Without a list, the assistant sends nothing.")
+                    Text("Names are disguised before anything is sent. Each device keeps its own list — this iPhone once it gets new mail — and puts it into iCloud, end-to-end encrypted, when you switch away from Matterbee; a name one device learned, the others disguise too. Without any list, the assistant sends nothing.")
                 }
 
                 Section {

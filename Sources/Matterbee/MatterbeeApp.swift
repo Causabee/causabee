@@ -551,7 +551,7 @@ struct RootView: View {
             if SetupState.isFresh || (!setupLater && !DemoData.isRequested && SetupAssistant.isMissingSomething) { showsSetup = true }
         }) { IntroView() }
         .sheet(isPresented: $showsSetup) {
-            SetupAssistant { mailCheck.look(store: navigation.store) }
+            SetupAssistant { mailCheck.look(store: navigation.store, context: context) }
         }
         .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
             Button("Merge") {

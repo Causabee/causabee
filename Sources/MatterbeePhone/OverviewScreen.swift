@@ -7,6 +7,7 @@ struct RootView: View {
     @State private var navigation = Navigation()
     @Environment(\.modelContext) private var context
     @Query private var matters: [Matter]
+    @Environment(\.scenePhase) private var phase
 
     var body: some View {
         @Bindable var navigation = navigation
@@ -29,6 +30,8 @@ struct RootView: View {
         .modifier(MatterQuestions())
         // What is connected to Calendar and Reminders is kept in step both ways, as on the Mac.
         .onAppear { MirrorRunner.shared.start(context) }
+        // This iPhone's list of names into the store when it goes to the background, as the Mac's.
+        .onChange(of: phase) { _, now in if now == .background { PhoneNames.publish(in: context) } }
         .environment(navigation)
     }
 }
@@ -54,6 +57,8 @@ struct OverviewScreen: View {
                     Text("Overview").font(Theme.phoneTitleFont)
                     Text(summary).font(.body).fixedSize(horizontal: false, vertical: true)
                 }
+                // The demo's matters are made up: no real mail comes into them.
+                if !store.isDemo { PhoneMailCheckView() }
                 searchField
                 if matters.isEmpty {
                     empty
@@ -90,6 +95,8 @@ struct OverviewScreen: View {
             .containerRelativeFrame(.horizontal)
         }
         .scrollDismissesKeyboard(.immediately)
+        // Pulled down: new mail is read — free — and waits for "Sort in".
+        .refreshable { if !store.isDemo { PhoneMailCheck.shared.look(context: context) } }
         .background(Theme.canvas)
         // No assistant here, as on the Mac: it opens from a matter, about that matter.
         // The ⋯ in the bar, drawn by the system as in a matter: a glass of our own on it, and the

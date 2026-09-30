@@ -12,11 +12,12 @@ public enum Unplaced {
         }
     }
 
-    /// The last month's mail with no matter, not in the store, not set aside.
+    /// The last month's mail with no matter, not in the store, not set aside — sorted on this
+    /// device or on another.
     public static func find(log: URL, context: ModelContext, setAside: Set<String>, days: Int = 30) -> [Judgement] {
         let placed = Set(((try? context.fetch(FetchDescriptor<Entry>())) ?? []).map(\.messageID))
         let since = Date().addingTimeInterval(-Double(days) * 86_400)
-        return DailyDoor.readLog(log).values
+        return SortedMails.all(log: log, in: context).values
             .filter { !$0.isBulk && $0.matter == nil && Extractor.isSettled($0) && $0.extraction?.skipped == nil }
             .filter { !placed.contains($0.emailID) && !setAside.contains($0.emailID) && ($0.date ?? .distantPast) >= since }
             .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }

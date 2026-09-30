@@ -178,7 +178,7 @@ extension AssistantSheet {
         let names: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])
         // The demo's people are made up, and no Mac has a list of them: the rules alone disguise
         // what they find. With the owner's own matters, no list means nothing is sent.
-        if store.isDemo { names = (Pseudonymizer.Mapping(), []) } else { do { names = try NameLists.current(in: context) } catch {
+        if store.isDemo { names = (Pseudonymizer.Mapping(), []) } else { do { names = try PhoneNames.current(in: context) } catch {
             failure = error.localizedDescription
             return
         } }

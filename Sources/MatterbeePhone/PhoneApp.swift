@@ -4,8 +4,8 @@ import MatterCore
 import SwiftData
 import SwiftUI
 
-/// The iPhone app: the same matters as the Mac, through the owner's private iCloud. It reads and
-/// ticks; the mail itself stays on the Mac, which takes it in.
+/// The iPhone app: the same matters as the Mac, through the owner's private iCloud. It reads,
+/// ticks and asks, and gets new mail as the Mac does; the mail itself stays in the mailbox.
 ///
 /// `--demo` (or "Try the demo") opens the made-up matters in a store of their own, never synced.
 @main
