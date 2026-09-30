@@ -228,25 +228,8 @@ final class Navigation {
         var document: PersistentIdentifier? = nil
     }
 
-    /// What a ticked card changed, kept so it can be put back as it was.
-    enum Undo {
-        case reopen(PersistentIdentifier)
-        case remove(PersistentIdentifier)
-        case owner(PersistentIdentifier, Todo.Owner)
-        case name(PersistentIdentifier, String, rule: PersistentIdentifier)
-        case texts([(PersistentIdentifier, String)])
-        case roles(PersistentIdentifier, [String])
-        case note(PersistentIdentifier, String?)
-        case date(PersistentIdentifier, day: String?, time: String?)
-        case madeMatter(PersistentIdentifier)
-        /// A link a card kept, to take out again.
-        case removeLink(PersistentIdentifier)
-        /// What a to-do waited for before.
-        case waits(PersistentIdentifier, PersistentIdentifier?)
-        /// A merge folds one party into another and the first is gone; its rule can be switched
-        /// off, but the two are not split again here.
-        case merged(rule: PersistentIdentifier)
-    }
+    /// What a ticked card changed, kept so it can be put back as it was — the same on the iPhone.
+    typealias Undo = CardActions.Undo
 
     /// A to-do to scroll to and mark when a matter opens: the one "überfällig" pointed at.
     var showing: PersistentIdentifier?

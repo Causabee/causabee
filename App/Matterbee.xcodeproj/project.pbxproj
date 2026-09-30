@@ -21,6 +21,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				BeeLoader.swift,
+				CardActions.swift,
 				DemoData.swift,
 				ModelChoice.swift,
 				Theme.swift,

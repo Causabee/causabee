@@ -140,13 +140,15 @@ struct MatterScreen: View {
                 Text(step).font(.headline).fixedSize(horizontal: false, vertical: true)
                 if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
                 let todo = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
-                stepButtons(todo: todo, waiting: todo?.owner == .other, scroller)
+                stepButtons(text: step, todo: todo, waiting: todo?.owner == .other, scroller)
             } else if let rule {
                 BeeChip(text: rule.label.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(.headline).fixedSize(horizontal: false, vertical: true)
                 Text(rule.why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                let todo = rule.todo.flatMap { id in matter.openTodos.first { $0.persistentModelID == id } }
-                stepButtons(todo: todo, waiting: rule.kind == .followUp || rule.kind == .wait, scroller)
+                // As on the Mac: a step worked out on the device has buttons when it is a task.
+                if let todo = rule.todo.flatMap({ id in matter.openTodos.first { $0.persistentModelID == id } }) {
+                    stepButtons(text: todo.text, todo: todo, waiting: rule.kind == .followUp || rule.kind == .wait, scroller)
+                }
             } else {
                 Text("NEXT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Text("Nothing open.").foregroundStyle(.secondary)
@@ -155,15 +157,32 @@ struct MatterScreen: View {
         .phoneBox()
     }
 
+    /// What can be done with the step right here, as on the Mac: write the message it is, tick it
+    /// off, see it — or talk it over.
     @ViewBuilder
-    private func stepButtons(todo: Todo?, waiting: Bool, _ scroller: ScrollViewProxy) -> some View {
-        if let todo {
-            HStack(spacing: 8) {
-                if !waiting { Button("Done") { withAnimation { toggle(todo) } }.buttonStyle(.phoneFilled) }
-                Button("Show") { show(todo.persistentModelID, with: scroller) }.buttonStyle(.phone)
+    private func stepButtons(text: String, todo: Todo?, waiting: Bool, _ scroller: ScrollViewProxy) -> some View {
+        HStack(spacing: 8) {
+            if waiting {
+                Button("Write follow-up") {
+                    navigation.talk(todo?.text ?? text, kind: todo == nil ? "Step" : "Task", in: matter,
+                                    prefill: "Write a short, friendly follow-up about this.")
+                }
+                .buttonStyle(.phoneFilled)
+            } else if Todo.isMessage(text) || todo?.isMessage == true {
+                Button("Write message") {
+                    navigation.talk(todo?.text ?? text, kind: todo == nil ? "Step" : "Task", in: matter,
+                                    prefill: "Write a short message about this.")
+                }
+                .buttonStyle(.phoneFilled)
             }
-            .padding(.top, 2)
+            if let todo {
+                if !waiting { Button("Done") { withAnimation { toggle(todo) } }.buttonStyle(.phone) }
+                Button("Show") { show(todo.persistentModelID, with: scroller) }.buttonStyle(.phone)
+            } else if !waiting, !Todo.isMessage(text) {
+                Button("Talk it over") { navigation.talk(text, kind: "Step", in: matter) }.buttonStyle(.phone)
+            }
         }
+        .padding(.top, 2)
     }
 
     // MARK: Summary and notes
@@ -318,6 +337,12 @@ struct MatterScreen: View {
                     Spacer(minLength: 0)
                 }
                 .padding(14)
+                .contentShape(Rectangle())
+                .contextMenu {
+                    Button("Talk about it with the assistant") {
+                        navigation.talk(item.what, kind: item.isDeadline ? "Deadline" : "Appointment", in: matter)
+                    }
+                }
             }
             if items.isEmpty {
                 Text("Nothing coming.").foregroundStyle(.secondary).padding(14)
@@ -343,6 +368,12 @@ struct MatterScreen: View {
                         }
                         .padding(14)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .contextMenu {
+                            if let party = membership.party {
+                                Button("Talk about it with the assistant") { navigation.talk(party.name, kind: "Person", in: matter) }
+                            }
+                        }
                     }
                 }
                 .phoneCard()
@@ -372,6 +403,11 @@ struct MatterScreen: View {
                             }
                         }
                         .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .contextMenu {
+                            Button("Talk about it with the assistant") { navigation.talk(entry.title, kind: "Mail", in: matter) }
+                        }
                     }
                 }
                 .phoneCard()
@@ -392,6 +428,7 @@ struct PhoneTodoRow: View {
     var showsOwner = false
     let toggle: () -> Void
     @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
     @State private var editing = false
     @State private var deleting = false
 
@@ -461,6 +498,10 @@ struct PhoneTodoRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
+        if let matter = todo.matter {
+            Button("Talk about it with the assistant") { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
+            Divider()
+        }
         Button("Edit …") { editing = true }
         if !todo.isDone {
             Button("Not a task — move to Info") {

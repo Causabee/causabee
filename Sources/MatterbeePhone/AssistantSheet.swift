@@ -72,6 +72,11 @@ struct AssistantSheet: View {
             composer
         }
         .background(Theme.canvas)
+        .onAppear {
+            // What was in hand from another matter is put down; words to send go into the field.
+            if let pinned = navigation.pinned, pinned.matter != matter?.persistentModelID { navigation.pinned = nil }
+            if let prefill = navigation.prefill { draft = prefill; navigation.prefill = nil }
+        }
     }
 
     private var header: some View {
@@ -98,6 +103,22 @@ struct AssistantSheet: View {
     /// The field as the Mac has it: what is typed goes out pseudonymised, and only on send.
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
+            if let pinned = navigation.pinned {
+                // What is in hand, on the bee's yellow: black words in both modes — as on the Mac.
+                HStack(spacing: 8) {
+                    Image(systemName: "pin.fill").font(.caption).foregroundStyle(.black)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(pinned.kind.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(.black.opacity(0.5))
+                        Text(pinned.text).lineLimit(2).foregroundStyle(.black)
+                    }
+                    Spacer()
+                    Button { navigation.pinned = nil } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.black.opacity(0.5)) }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Put it down")
+                }
+                .padding(10)
+                .background(Theme.bee, in: RoundedRectangle(cornerRadius: 10))
+            }
             // As on the Mac: the send button sits in the pill's round end, as far from the right as
             // from the top and bottom, and the corner's radius is that and half the button — 7 + 34 / 2.
             HStack(alignment: .bottom, spacing: 10) {
@@ -140,7 +161,9 @@ extension AssistantSheet {
         let scope = matter.map { [$0] } ?? activeMatters(matters)
         let (question, readAs) = NameHints.correct(typed, knowing: scope.flatMap { $0.parties.map(\.name) })
         let today = MatterStatus.day(Date())
-        let facts = FactSheet.facts(for: scope, today: today)
+        let pinned = navigation.pinned
+        let facts = FactSheet.facts(for: scope, today: today, focus: pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text })
+        let inHand = pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : (kind: $0.kind, text: $0.text) }
         // Only this matter's talk: what was said about another matter would go out with it.
         let earlier: [(question: String, answer: String)] = shown.compactMap { item in
             guard let answer = item.turn.answer, item.turn.note == nil else { return nil }
@@ -168,11 +191,11 @@ extension AssistantSheet {
         let context = self.context
         Task {
             do {
-                let answer = try await AssistantAsk.ask(question: question, inHand: nil, earlier: earlier, facts: facts, owner: owner,
+                let answer = try await AssistantAsk.ask(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner,
                                                         today: today, mapping: names.mapping, others: names.others,
                                                         claude: claude, model: model)
                 var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
-                                           inHand: nil, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
+                                           inHand: pinned, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
                 turn.date = date
                 turn.readAs = readAs.map { "read “\($0.typed)” as “\($0.known)”" }
                 turn.state = .answered(answer)
@@ -294,6 +317,7 @@ struct SourcesLine: View {
     let cites: [String]
     let refs: [String: FactRef]
     let matter: Matter?
+    @Environment(\.modelContext) private var context
     @State private var open = false
 
     var body: some View {
@@ -315,9 +339,9 @@ struct SourcesLine: View {
     }
 
     private func label(_ cite: String) -> String {
-        if case .todo(let id) = refs[cite], let todo = (matter?.todos ?? []).first(where: { $0.persistentModelID == id }) {
-            return "Task: " + todo.text
-        }
+        // The Mac's chip words, when this store knows the fact; a thread asked on another device
+        // names that device's facts.
+        if let ref = refs[cite], CardActions.matter(of: ref, in: context) != nil { return CardActions.label(ref, in: context) }
         switch cite.first {
         case "T": return "a task of the matter"
         case "M": return "a mail of the matter"
@@ -328,8 +352,10 @@ struct SourcesLine: View {
     }
 }
 
-/// A card the assistant suggested. A new task and "done?" can be taken in on the iPhone; the
-/// others wait for the Mac, which knows how to undo them.
+/// A card the assistant suggested, as the Mac's ActionCard: what it is about, its words to change
+/// before taking it in, why, and its sources; Dismiss, and the one thing it does. What it does is
+/// CardActions' — the Mac's own code. A draft opens in Mail, or goes into Gmail's drafts; a card
+/// taken in here can be undone while the app is open.
 struct PhoneActionCard: View {
     let record: ThreadTurn
     let turn: Navigation.Turn
@@ -338,98 +364,246 @@ struct PhoneActionCard: View {
     let matter: Matter?
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
+    @Environment(\.openURL) private var openURL
     @State private var text = ""
+    @State private var subject = ""
+    /// A draft opened in Mail folds to a few lines; "Edit" unfolds it again.
+    @State private var editingDraft = false
+    @State private var drafting: String?
 
-    private var applied: Bool { turn.applied.contains(index) }
+    private var done: Bool { turn.applied.contains(index) }
     private var dismissed: Bool { turn.dismissedCards.contains(index) }
-    private var canTake: Bool { matter != nil && (card.kind == .newTodo || (card.kind == .markDone && target != nil)) }
+    private var drafted: String? { turn.drafted[index] }
+    private var undo: CardActions.Undo? { navigation.undos[turn.id]?[index] }
+    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink].contains(card.kind) }
+    private var recipient: (name: String, address: String?)? { CardActions.recipient(card.party, refs: turn.refs, in: context) }
 
     var body: some View {
-        if dismissed {
-            EmptyView()
-        } else {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(title).font(.footnote.weight(.semibold))
-                if card.kind == .newTodo && !applied {
-                    TextField("Task", text: $text, axis: .vertical)
-                        .padding(.horizontal, 10).padding(.vertical, 8)
-                        .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
-                } else {
-                    Text(card.kind == .markDone ? (target?.text ?? card.text) : card.text)
-                        .padding(.horizontal, 10).padding(.vertical, 8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
+        Group {
+            if card.kind == .draftMessage, done, !editingDraft {
+                sentDraft
+            } else if dismissed, !done {
+                HStack {
+                    Text("Suggestion dismissed: \(title.lowercased())").font(.caption).foregroundStyle(.secondary)
+                    Button("show again") { navigation.mark(record, card: index, dismissed: false, context: context) }
+                        .font(.caption).foregroundStyle(Theme.gold)
+                    Spacer()
                 }
-                Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                if !card.cites.isEmpty { SourcesLine(cites: card.cites, refs: turn.refs, matter: matter) }
-                if applied {
+            } else {
+                full
+            }
+        }
+        .onAppear { text = card.text; subject = card.subject ?? "" }
+    }
+
+    private var full: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(.footnote.weight(.semibold)).foregroundStyle(done ? Theme.done : .primary)
+            if let what { Text(what).fixedSize(horizontal: false, vertical: true) }
+            if card.kind == .draftMessage {
+                TextField("Subject", text: $subject)
+                    .padding(.horizontal, 10).padding(.vertical, 8)
+                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
+                TextEditor(text: $text)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 140, maxHeight: 320)
+                    .padding(6)
+                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
+            } else if editable {
+                TextField("", text: $text, axis: .vertical)
+                    .padding(.horizontal, 10).padding(.vertical, 8)
+                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
+                    .disabled(done)
+            }
+            Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if !card.cites.isEmpty { SourcesLine(cites: card.cites, refs: turn.refs, matter: matter) }
+            if card.kind == .sameParty, !done {
+                Text("Later you can only turn merging off for new mail; you cannot split it again.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            if card.kind == .draftMessage, let drafting { draftingLine(drafting) }
+            HStack(spacing: 8) {
+                if done, card.kind == .draftMessage {
+                    Button("Cancel") { withAnimation { editingDraft = false } }.buttonStyle(.phone)
+                    gmailButton
+                    Button("Open in Mail") { take(); withAnimation { editingDraft = false } }.buttonStyle(.phoneFilled)
+                } else if done {
                     Label("Taken in", systemImage: "checkmark").font(.footnote.weight(.medium)).foregroundStyle(Theme.done)
-                } else if canTake {
-                    HStack(spacing: 8) {
-                        Button("Dismiss") { navigation.mark(record, dismissed: index, context: context) }.buttonStyle(.phone(wide: true))
-                        Button(card.kind == .markDone ? "Mark done" : "Add") { take() }.buttonStyle(.phone(filled: true, wide: true))
-                    }
+                    Spacer()
+                    if undo != nil { Button("Undo", action: takeBack).buttonStyle(.phone) }
                 } else {
-                    HStack {
-                        Text("Take it in on the Mac.").font(.caption).foregroundStyle(.secondary)
-                        Spacer()
-                        Button("Dismiss") { navigation.mark(record, dismissed: index, context: context) }.buttonStyle(.phone)
-                    }
+                    Button("Dismiss") { withAnimation { navigation.mark(record, card: index, dismissed: true, context: context) } }
+                        .buttonStyle(.phone(wide: true))
+                    if card.kind == .draftMessage { gmailButton }
+                    Button(verb) { take() }.buttonStyle(.phone(filled: true, wide: true))
                 }
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
-            .onAppear { text = card.text }
+            .padding(.top, 4)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    /// What was opened in Mail, short and not to be typed in: who, what about, how it starts.
+    private var sentDraft: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(drafted.map { "Draft · in Gmail under “\($0)”" } ?? "Draft · opened in Mail").font(.footnote.weight(.semibold))
+            Text("To: \(recipient?.name ?? "—")" + (subject.isEmpty ? "" : " · \(subject)")).font(.subheadline).lineLimit(1)
+            Text(text).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+            if let drafting { draftingLine(drafting) }
+            HStack(spacing: 8) {
+                Button("Edit") { withAnimation { editingDraft = true } }.buttonStyle(.phone)
+                if drafted == nil { gmailButton }
+                Button("Open again") { take() }.buttonStyle(.phone)
+            }
+            .padding(.top, 6)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+    }
+
+    /// Into Gmail's Drafts, to send from anywhere. Put there again after a change, it is a second
+    /// draft beside the first.
+    private var gmailButton: some View {
+        Button(drafted == nil ? "Put into Gmail" : "Put into Gmail again", action: putDraft)
+            .buttonStyle(.phone(wide: true))
+            .disabled(drafting?.hasSuffix("…") == true)
+    }
+
+    private func draftingLine(_ line: String) -> some View {
+        HStack(spacing: 6) {
+            if line.hasSuffix("…") { BeeLoader(size: 14) }
+            Text(line).font(.caption).foregroundStyle(line.hasPrefix("Not saved") ? Theme.warning : .secondary)
         }
     }
 
-    private var whose: String { ["me": "Mine", "we": "Ours", "other": "Waiting for"][card.owner] ?? "Unclear whose" }
-
-    private var title: String {
-        switch card.kind {
-        case .markDone: "Done?"
-        case .newTodo: "New task? · " + whose + (card.due.map { " · by \(Dates.short($0))" } ?? "")
-        case .sameParty: "Same person?"
-        case .renameParty: "Change name?"
-        case .changeRole: "Change role?"
-        case .addNote: "Note for the task?"
-        case .draftMessage: "Draft"
-        case .changeDate: "Change date?"
-        case .newMatter: "New matter?"
-        case .waitsFor: "Waits for another task?"
-        case .addLink: "Save link?"
-        case .correctText: "Replace in the text?"
-        case .changeOwner: "Whose task? → " + whose
-        }
-    }
-
-    /// The task a "done?" card names: by the fact id it cites, when this store knows it.
-    private var target: Todo? {
-        guard let key = card.todo, case .todo(let id) = turn.refs[key] else { return nil }
-        return (matter?.todos ?? []).first { $0.persistentModelID == id && !$0.isDone }
+    /// The answer's matter: one a card beside this one made, the one it was asked in, or the one
+    /// its facts come from — as on the Mac.
+    private var scope: Matter? {
+        let made = navigation.madeMatter[turn.id].flatMap { CardActions.live($0, as: Matter.self, in: context) }
+        let cited = card.cites.compactMap { turn.refs[$0] }.compactMap { CardActions.matter(of: $0, in: context) }.first
+        return made ?? matter ?? cited
     }
 
     private func take() {
-        guard let matter else { return }
-        let source = Source(kind: .conversation, pointer: "assistant", date: Date(), quote: card.reason)
-        switch card.kind {
-        case .newTodo:
-            let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !words.isEmpty else { return }
-            // As the Mac takes it in: the same origin, so a second device does not add it twice.
-            let made = Todo(text: words, owner: Todo.Owner(rawValue: card.owner) ?? .me, due: card.due, source: source,
-                            origin: "assistant#" + words.lowercased())
-            context.insert(made)
-            made.matter = matter
-        case .markDone:
-            guard let todo = target else { return }
-            todo.isDone = true
-            todo.doneAt = Date()
-            todo.doneSource = source
-        default:
+        switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: turn.answer?.links, scope: scope, in: context) {
+        case .nothing:
+            return
+        case .openMail(let url):
+            openURL(url)
+            // The version opened is the one kept: the thread remembers what went to Mail.
+            navigation.mark(record, card: index, applied: true, text: text.trimmingCharacters(in: .whitespacesAndNewlines),
+                            subject: subject, context: context)
+        case .madeMatter(let made, let undo):
+            navigation.madeMatter[turn.id] = made.persistentModelID
+            navigation.undos[turn.id, default: [:]][index] = undo
+            navigation.mark(record, card: index, applied: true, context: context)
+            navigation.open(made)
+        case .taken(let undo):
+            navigation.undos[turn.id, default: [:]][index] = undo
+            navigation.mark(record, card: index, applied: true, context: context)
+        }
+    }
+
+    private func takeBack() {
+        guard let undo, CardActions.undo(undo, in: context) else { return }
+        if case .madeMatter = undo { navigation.madeMatter[turn.id] = nil }
+        navigation.undos[turn.id]?[index] = nil
+        navigation.mark(record, card: index, applied: false, context: context)
+    }
+
+    /// Into the mailbox's Drafts folder, on this tap only; answering a mail of the matter, into
+    /// that mail's conversation — as the Mac puts it there.
+    private func putDraft() {
+        guard let account = Keychain.accounts().first(where: { !$0.usesGoogle }) else {
+            drafting = "No mail account saved: add it in Settings (⋯ on the overview)."
             return
         }
-        navigation.mark(record, applied: index, context: context)
+        let to = recipient
+        let entries = (scope ?? matter)?.entries ?? []
+        let answering = to?.address.flatMap { address in
+            entries.filter { Email.address(in: $0.from).lowercased() == address.lowercased() && !$0.messageID.isEmpty }
+                .max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.messageID
+        }
+        let message = DraftMessage(from: account.user, to: to?.address.map { (name: to?.name, address: $0) }, subject: subject,
+                                   body: text, replyingTo: answering).data
+        // The version put into Gmail is the one kept.
+        navigation.mark(record, card: index, text: text, subject: subject, context: context)
+        drafting = "Putting the draft into Gmail …"
+        Task {
+            do {
+                guard let password = try Keychain.password(for: account.user) else { throw MailFetch.Failure.gone(account.user) }
+                let folder = try await DraftDoor.put(message, account: account, password: password)
+                navigation.mark(record, card: index, applied: true, drafted: folder, context: context)
+                drafting = nil
+                withAnimation { editingDraft = false }
+            } catch {
+                drafting = "Not saved: \(error)"
+            }
+        }
+    }
+
+    private func name(_ id: String?) -> String { id.flatMap { turn.refs[$0] }.map { CardActions.label($0, in: context) } ?? "?" }
+
+    private var whose: String { ["me": "Mine", "we": "Ours", "other": "Waiting for"][card.owner] ?? "Unclear whose" }
+
+    /// What the button does, in a word or two.
+    private var verb: String {
+        switch card.kind {
+        case .markDone: "Done"
+        case .newTodo: "Add"
+        case .sameParty: "Merge"
+        case .addNote: "Save note"
+        case .draftMessage: "Open in Mail"
+        case .changeDate: "Change date"
+        case .newMatter: "Create"
+        case .waitsFor: "Link"
+        case .addLink: "Save link"
+        case .renameParty, .changeRole, .correctText, .changeOwner: "Change"
+        }
+    }
+
+    private var title: String {
+        switch card.kind {
+        case .markDone: return "Done?"
+        case .newTodo: return "New task? · " + whose + (card.due.map { " · by \(Dates.short($0))" } ?? "")
+        case .sameParty: return "Same person?"
+        case .renameParty: return "Change name?"
+        case .changeRole: return "Change role?"
+        case .addNote: return "Note for the task?"
+        case .draftMessage: return "Draft"
+        case .changeDate: return "Change date?"
+        case .newMatter: return "New matter?"
+        case .waitsFor: return "Waits for another task?"
+        case .addLink: return "Save link? · Name:"
+        case .correctText: return "Replace in the text?"
+        case .changeOwner: return "Whose task? → " + whose
+        }
+    }
+
+    /// The line above the field: what the card is about.
+    private var what: String? {
+        switch card.kind {
+        case .markDone: return card.text
+        case .newTodo: return nil
+        case .sameParty: return "\(name(card.party))  →  \(name(card.into))"
+        case .renameParty: return "\(name(card.party))  is called:"
+        case .changeRole: return "\(name(card.party))  is here:"
+        case .addNote: return name(card.todo)
+        case .draftMessage:
+            guard let recipient else { return "To: (fill in in Mail)" }
+            return "To: \(recipient.name)" + (recipient.address.map { " <\($0)>" } ?? " — address not known, fill it in in Mail")
+        case .correctText: return "“\(card.from ?? "")”  becomes:"
+        case .newMatter: return nil
+        case .waitsFor: return "\(name(card.todo))  →  only after: \(name(card.into))"
+        case .addLink: return card.todo == nil ? "to the matter" : "to: \(name(card.todo))"
+        case .changeDate:
+            let when = (card.due.map(Dates.short) ?? "?") + (card.time.map { " at \($0)" } ?? "")
+            return "\(name(card.todo))  →  \(when)"
+        case .changeOwner: return name(card.todo)
+        }
     }
 }

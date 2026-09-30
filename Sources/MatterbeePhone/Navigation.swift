@@ -12,6 +12,18 @@ final class Navigation {
     var showsAssistant = false
     /// A task to scroll to when its matter opens: the one an overdue line pointed at.
     var showing: PersistentIdentifier?
+    /// The item "Talk about it" put into the assistant: shown above the field, taken off with ×.
+    var pinned: Pinned?
+    /// Words to put in the assistant's field, for the owner to send or change.
+    var prefill: String?
+
+    /// Puts an item in hand and opens the assistant over its matter, as the Mac's pin does.
+    func talk(_ text: String, kind: String, in matter: Matter, prefill: String? = nil) {
+        pinned = Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: kind, text: text)
+        self.prefill = prefill
+        showsAssistant = true
+    }
+
     /// Asked from a matter's menu, wherever it is: a new name, or merging one into another.
     var renaming: Matter?
     var merging: (from: Matter, into: Matter)?
@@ -31,6 +43,13 @@ final class Navigation {
         var text: String
 
         enum CodingKeys: String, CodingKey { case matter, matterName, kind, text }
+
+        init(matter: PersistentIdentifier?, matterName: String, kind: String, text: String) {
+            (self.matter, self.matterName, self.kind, self.text) = (matter, matterName, kind, text)
+        }
+
+        /// The whole matter in hand, not one thing in it. Old saved threads still say "Sache".
+        static func isMatter(_ kind: String) -> Bool { kind == "Matter" || kind == "Sache" }
 
         init(from decoder: any Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -68,6 +87,8 @@ final class Navigation {
         var state: State = .failed("")
         var applied: Set<Int> = []
         var dismissedCards: Set<Int> = []
+        /// Drafts put into the mailbox, by card: the folder they are in.
+        var drafted: [Int: String] = [:]
         /// A line Matterbee wrote itself — what came in with "Get new mail" — not a question.
         var note: String?
         var readAs: [String] = []
@@ -99,17 +120,39 @@ final class Navigation {
         return turn
     }
 
-    /// Ticks or dismisses a card: written into the turn's own record, keeping every key the Mac
-    /// put there, so the Mac shows the card as taken in too.
-    func mark(_ record: ThreadTurn, applied: Int? = nil, dismissed: Int? = nil, context: ModelContext) {
+    /// How to take back a card taken in here, as long as the app is open — as on the Mac.
+    @ObservationIgnored var undos: [UUID: [Int: CardActions.Undo]] = [:]
+    /// The matter a "new matter" card of a turn made: the cards beside it put their to-dos there.
+    @ObservationIgnored var madeMatter: [UUID: PersistentIdentifier] = [:]
+
+    /// A card's state, written into the turn's own record, keeping every key the Mac put there,
+    /// so the Mac shows it the same: taken in or not, dismissed or not, the draft as it was sent
+    /// on, and the folder a draft was put into.
+    func mark(_ record: ThreadTurn, card index: Int, applied: Bool? = nil, dismissed: Bool? = nil,
+              text: String? = nil, subject: String? = nil, drafted folder: String? = nil, context: ModelContext) {
         guard var json = (try? JSONSerialization.jsonObject(with: record.payload)) as? [String: Any] else { return }
-        if let applied {
-            let list = Set((json["applied"] as? [Int]) ?? []).union([applied])
-            json["applied"] = list.sorted()
+        func set(_ key: String, _ on: Bool?) {
+            guard let on else { return }
+            var list = Set((json[key] as? [Int]) ?? [])
+            if on { list.insert(index) } else { list.remove(index) }
+            json[key] = list.sorted()
         }
-        if let dismissed {
-            let list = Set((json["dismissedCards"] as? [Int]) ?? []).union([dismissed])
-            json["dismissedCards"] = list.sorted()
+        set("applied", applied)
+        set("dismissedCards", dismissed)
+        if text != nil || subject != nil, var answer = json["answer"] as? [String: Any], var reply = answer["reply"] as? [String: Any],
+           var cards = reply["cards"] as? [[String: Any]], cards.indices.contains(index) {
+            if let text { cards[index]["text"] = text }
+            if let subject { cards[index]["subject"] = subject }
+            reply["cards"] = cards
+            answer["reply"] = reply
+            json["answer"] = answer
+        }
+        if let folder {
+            // As Swift writes a dictionary with number keys: key, value, key, value.
+            var pairs = (json["drafted"] as? [Any]) ?? []
+            if let at = stride(from: 0, to: pairs.count - 1, by: 2).first(where: { (pairs[$0] as? Int) == index }) { pairs[at + 1] = folder }
+            else { pairs += [index, folder] }
+            json["drafted"] = pairs
         }
         guard let data = try? JSONSerialization.data(withJSONObject: json, options: [.sortedKeys]) else { return }
         record.payload = data
@@ -119,7 +162,7 @@ final class Navigation {
 
 extension Navigation.Turn: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, date, question, scope, inHand, seen, refs, matter, answer, failed, applied, readAs, dismissedCards, note, shotFile
+        case id, date, question, scope, inHand, seen, refs, matter, answer, failed, applied, readAs, dismissedCards, drafted, note, shotFile
     }
 
     init(from decoder: any Decoder) throws {
@@ -134,6 +177,7 @@ extension Navigation.Turn: Codable {
         applied = try c.decodeIfPresent(Set<Int>.self, forKey: .applied) ?? []
         readAs = try c.decodeIfPresent([String].self, forKey: .readAs) ?? []
         dismissedCards = try c.decodeIfPresent(Set<Int>.self, forKey: .dismissedCards) ?? []
+        drafted = (try? c.decodeIfPresent([Int: String].self, forKey: .drafted)) ?? [:]
         note = try c.decodeIfPresent(String.self, forKey: .note)
         hasShot = c.contains(.shotFile)
         if let answer = try? c.decodeIfPresent(AssistantAsk.Answer.self, forKey: .answer) {
@@ -153,6 +197,7 @@ extension Navigation.Turn: Codable {
         try c.encodeIfPresent(inHand, forKey: .inHand)
         try c.encode(seen, forKey: .seen)
         try c.encode(refs, forKey: .refs)
+        if !drafted.isEmpty { try c.encode(drafted, forKey: .drafted) }
         if !dismissedCards.isEmpty { try c.encode(dismissedCards, forKey: .dismissedCards) }
         try c.encodeIfPresent(note, forKey: .note)
         try c.encodeIfPresent(matter, forKey: .matter)

@@ -218,61 +218,18 @@ struct Conversation {
         if let matter = matter(of: ref) { navigation.open(matter) }
     }
 
-    /// A fact by its id, if it is still there. A party merged away or a to-do deleted is gone,
-    /// and `context.model(for:)` would hand back an object that crashes when read.
-    func live<T: PersistentModel>(_ id: PersistentIdentifier, as type: T.Type) -> T? {
-        var descriptor = FetchDescriptor<T>(predicate: #Predicate { $0.persistentModelID == id })
-        descriptor.fetchLimit = 1
-        return (try? context.fetch(descriptor))?.first
-    }
-
-    func live<T: PersistentModel>(_ ref: FactRef, as type: T.Type) -> T? {
-        switch ref {
-        case .matter(let id), .entry(let id), .todo(let id), .appointment(let id), .deadline(let id), .party(let id):
-            return live(id, as: type)
-        }
-    }
-
+    /// A fact by its id, if it is still there (CardActions, shared with the iPhone).
+    func live<T: PersistentModel>(_ id: PersistentIdentifier, as type: T.Type) -> T? { CardActions.live(id, as: type, in: context) }
+    func live<T: PersistentModel>(_ ref: FactRef, as type: T.Type) -> T? { CardActions.live(ref, as: type, in: context) }
     /// What a chip says: the kind and its day, or the name — never `T20`.
-    func label(_ ref: FactRef) -> String {
-        switch ref {
-        case .matter: return live(ref, as: Matter.self)?.name ?? "Matter (no longer there)"
-        case .entry: return "Mail " + (live(ref, as: Entry.self)?.date.map(Dates.short) ?? "")
-        case .todo:
-            guard let todo = live(ref, as: Todo.self) else { return "Task (no longer there)" }
-            let words = todo.text.split(separator: " ").prefix(4).joined(separator: " ")
-            return (todo.isDone ? "✓ " : "") + words + (todo.text.split(separator: " ").count > 4 ? " …" : "")
-        case .appointment: return "Appointment " + (live(ref, as: Appointment.self).map { Dates.short($0.day) } ?? "")
-        case .deadline: return "Deadline " + (live(ref, as: Deadline.self).map { Dates.short($0.day) } ?? "")
-        case .party: return live(ref, as: Party.self)?.name ?? "merged"
-        }
-    }
+    func label(_ ref: FactRef) -> String { CardActions.label(ref, in: context) }
+    func matter(of ref: FactRef) -> Matter? { CardActions.matter(of: ref, in: context) }
 
-    func matter(of ref: FactRef) -> Matter? {
-        switch ref {
-        case .matter: return live(ref, as: Matter.self)
-        case .entry: return live(ref, as: Entry.self)?.matter
-        case .todo: return live(ref, as: Todo.self)?.matter
-        case .appointment: return live(ref, as: Appointment.self)?.matter
-        case .deadline: return live(ref, as: Deadline.self)?.matter
-        case .party: return live(ref, as: Party.self)?.matters.first
-        }
-    }
+    /// A party's address, from the mail in the store: it only fills the "To" of a draft.
+    func address(of party: Party) -> String? { CardActions.address(of: party) }
 
-    /// A card the owner ticked, with its text as the owner left it. Only now does anything
-    /// change in the store.
-    /// A party's address, from the mail on this Mac: the sender line of a mail they wrote. It is
-    /// never sent anywhere; it only fills the "To" of a draft the owner opens.
-    func address(of party: Party) -> String? {
-        let keys = Set(([party.name] + party.spellings).map(PartyNames.key))
-        for matter in party.matters {
-            for entry in matter.entries ?? [] {
-                guard let name = Email.displayName(in: entry.from), keys.contains(PartyNames.key(name)) else { continue }
-                let address = Email.address(in: entry.from)
-                if address.contains("@") { return address }
-            }
-        }
-        return nil
+    func recipient(_ id: String?, in turn: Navigation.Turn) -> (name: String, address: String?)? {
+        CardActions.recipient(id, refs: turn.refs, in: context)
     }
 
     /// Puts the draft into the mailbox's Drafts folder — the one write Matterbee makes, on this
@@ -318,195 +275,47 @@ struct Conversation {
         }
     }
 
-    func recipient(_ id: String?, in turn: Navigation.Turn) -> (name: String, address: String?)? {
-        guard let id, let ref = turn.refs[id], let party = live(ref, as: Party.self) else { return nil }
-        return (party.name, address(of: party))
-    }
-
+    /// A card the owner ticked: what it does is CardActions' — the same on the iPhone; the turn
+    /// keeps that it was taken in, and how to take it back.
     func apply(_ index: Int, text: String, subject: String? = nil, in turn: Navigation.Turn) {
         guard case .answered(let answer) = turn.state, answer.reply.cards.indices.contains(index),
               let position = navigation.turns.firstIndex(where: { $0.id == turn.id }) else { return }
         let card = answer.reply.cards[index]
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let source = Source(kind: .conversation, pointer: "assistant", date: Date(), quote: card.reason)
-        func model<T: PersistentModel>(_ id: String?, as type: T.Type) -> T? {
-            guard let id, let ref = turn.refs[id] else { return nil }
-            return live(ref, as: type)
-        }
         let cited = card.cites.compactMap { turn.refs[$0] }.compactMap(matter(of:)).first
         // A matter made by a card in this same answer is where its to-dos go.
         let made = navigation.turns[position].madeMatter.flatMap { live($0, as: Matter.self) }
         let scope = made ?? turn.matter.flatMap { live($0, as: Matter.self) } ?? cited
-        let origin = "you, in the assistant\(scope.map { ", in \($0.name)" } ?? ""), \(Dates.short(Date()))"
-
-        let undo: Navigation.Undo
-        switch card.kind {
-        case .markDone:
-            guard let todo = model(card.todo, as: Todo.self), !todo.isDone else { return }
-            todo.isDone = true
-            todo.doneAt = Date()
-            todo.doneSource = source
-            undo = .reopen(todo.persistentModelID)
-        case .newTodo:
-            guard let matter = scope, !text.isEmpty else { return }
-            let todo = Todo(text: text, owner: Todo.Owner(rawValue: card.owner) ?? .me, due: card.due, source: source,
-                            origin: "assistant#" + text.lowercased())
-            context.insert(todo)
-            todo.matter = matter
-            try? context.save()
-            undo = .remove(todo.persistentModelID)
-        case .sameParty:
-            guard let party = model(card.party, as: Party.self), let into = model(card.into, as: Party.self), party !== into,
-                  let matter = scope ?? into.matters.first else { return }
-            PartyBook.confirmSame(party, as: into, in: matter, context: context, origin: origin)
-            try? context.save()
-            let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
-            guard let rule = rules.max(by: { $0.createdAt < $1.createdAt }) else { return }
-            undo = .merged(rule: rule.persistentModelID)
-        case .changeRole:
-            guard let party = model(card.party, as: Party.self), !text.isEmpty,
-                  let membership = (scope ?? party.matters.first)?.membership(of: party) else { return }
-            undo = .roles(membership.persistentModelID, membership.roles)
-            membership.setRole(text)
-            try? context.save()
-            navigation.turns[position].applied.insert(index)
-            navigation.turns[position].undos[index] = undo
+        switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: answer.links, scope: scope, in: context) {
+        case .nothing:
             return
-        case .renameParty:
-            guard let party = model(card.party, as: Party.self), !text.isEmpty, text != party.name else { return }
-            let old = party.name
-            party.rename(to: text)
-            let rule = Rule(.partyName, subject: old, object: text, matterKey: scope?.key, origin: origin)
-            context.insert(rule)
-            try? context.save()
-            undo = .name(party.persistentModelID, old, rule: rule.persistentModelID)
-        case .correctText:
-            guard let matter = scope, let from = card.from, !from.isEmpty, !text.isEmpty else { return }
-            var before: [(PersistentIdentifier, String)] = []
-            for todo in matter.todos ?? [] where todo.text.contains(from) {
-                before.append((todo.persistentModelID, todo.text))
-                todo.text = todo.text.replacingOccurrences(of: from, with: text)
-            }
-            for item in matter.appointments ?? [] where item.what.contains(from) {
-                before.append((item.persistentModelID, item.what))
-                item.what = item.what.replacingOccurrences(of: from, with: text)
-            }
-            for item in matter.deadlines ?? [] where item.what.contains(from) {
-                before.append((item.persistentModelID, item.what))
-                item.what = item.what.replacingOccurrences(of: from, with: text)
-            }
-            undo = .texts(before)
-        case .draftMessage:
-            // The one door out: Mail opens with the draft in it, and the owner sends it — or not.
-            let to = recipient(card.party, in: turn)?.address ?? ""
-            var parts = URLComponents()
-            parts.scheme = "mailto"
-            parts.path = to
-            parts.queryItems = [URLQueryItem(name: "subject", value: subject ?? card.subject ?? ""), URLQueryItem(name: "body", value: text)]
-            if let url = parts.url { NSWorkspace.shared.open(url) }
+        case .openMail(let url):
+            NSWorkspace.shared.open(url)
             // The version opened is the one kept: the thread remembers what went to Mail.
             if case .answered(var kept) = navigation.turns[position].state {
-                kept.reply.cards[index].text = text
+                kept.reply.cards[index].text = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 kept.reply.cards[index].subject = subject ?? card.subject
                 navigation.turns[position].state = .answered(kept)
             }
             navigation.turns[position].applied.insert(index)
-            return
-        case .newMatter:
-            guard !text.isEmpty, let matter = try? Matter.make(named: text, in: context) else { return }
+        case .madeMatter(let matter, let undo):
             navigation.turns[position].madeMatter = matter.persistentModelID
-            undo = .madeMatter(matter.persistentModelID)
             navigation.turns[position].applied.insert(index)
             navigation.turns[position].undos[index] = undo
             navigation.open(matter)
-            return
-        case .changeDate:
-            guard let day = card.due else { return }
-            if let todo = model(card.todo, as: Todo.self) {
-                undo = .date(todo.persistentModelID, day: todo.due, time: todo.dueTime)
-                todo.due = day
-                todo.dueTime = card.time ?? todo.dueTime
-            } else if let appointment = model(card.todo, as: Appointment.self) {
-                undo = .date(appointment.persistentModelID, day: appointment.day, time: appointment.time)
-                appointment.day = day
-                appointment.time = card.time ?? appointment.time
-            } else if let deadline = model(card.todo, as: Deadline.self) {
-                undo = .date(deadline.persistentModelID, day: deadline.day, time: nil)
-                deadline.day = day
-            } else { return }
-        case .addNote:
-            guard let todo = model(card.todo, as: Todo.self), !text.isEmpty else { return }
-            undo = .note(todo.persistentModelID, todo.note)
-            todo.note = [todo.note, text].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: "\n")
-        case .addLink:
-            guard let standIn = card.from, let address = answer.links?[standIn] ?? WebLink.address(in: standIn) else { return }
-            let todo = model(card.todo, as: Todo.self)
-            guard let matter = todo?.matter ?? scope else { return }
-            let link = WebLink(address: address, title: text)
-            context.insert(link)
-            link.matter = matter
-            link.todo = todo
-            try? context.save()
-            undo = .removeLink(link.persistentModelID)
-        case .waitsFor:
-            guard let todo = model(card.todo, as: Todo.self), let other = model(card.into, as: Todo.self) else { return }
-            let before = todo.waitsFor?.persistentModelID
-            guard todo.wait(for: other) else { return }
-            undo = .waits(todo.persistentModelID, before)
-        case .changeOwner:
-            guard let todo = model(card.todo, as: Todo.self), let owner = Todo.Owner(rawValue: card.owner) else { return }
-            undo = .owner(todo.persistentModelID, todo.owner)
-            todo.owner = owner
+        case .taken(let undo):
+            navigation.turns[position].applied.insert(index)
+            navigation.turns[position].undos[index] = undo
         }
-        try? context.save()
-        navigation.turns[position].applied.insert(index)
-        navigation.turns[position].undos[index] = undo
     }
 
     /// Puts back what a ticked card changed.
     func undo(_ index: Int, in turn: Navigation.Turn) {
         guard let position = navigation.turns.firstIndex(where: { $0.id == turn.id }),
-              let undo = navigation.turns[position].undos[index] else { return }
-        switch undo {
-        case .reopen(let id):
-            if let todo = live(id, as: Todo.self) { todo.isDone = false; todo.doneAt = nil; todo.doneSource = nil }
-        case .remove(let id):
-            if let todo = live(id, as: Todo.self) { context.delete(todo) }
-        case .owner(let id, let owner):
-            live(id, as: Todo.self)?.owner = owner
-        case .name(let id, let old, let rule):
-            if let party = live(id, as: Party.self) { party.name = old }
-            if let rule = live(rule, as: Rule.self) { context.delete(rule) }
-        case .texts(let before):
-            for (id, text) in before {
-                if let todo = live(id, as: Todo.self) { todo.text = text }
-                else if let item = live(id, as: Appointment.self) { item.what = text }
-                else if let item = live(id, as: Deadline.self) { item.what = text }
-            }
-        case .madeMatter(let id):
-            // Only while it is still empty: a matter with mail or to-dos in it is not undone by a click.
-            if let matter = live(id, as: Matter.self), (matter.entries ?? []).isEmpty, (matter.todos ?? []).isEmpty {
-                context.delete(matter)
-                navigation.turns[position].madeMatter = nil
-                navigation.place = .assistant
-            } else { return }
-        case .date(let id, let day, let time):
-            if let todo = live(id, as: Todo.self) { todo.due = day; todo.dueTime = time }
-            else if let item = live(id, as: Appointment.self), let day { item.day = day; item.time = time }
-            else if let item = live(id, as: Deadline.self), let day { item.day = day }
-        case .note(let id, let note):
-            live(id, as: Todo.self)?.note = note
-        case .removeLink(let id):
-            if let link = live(id, as: WebLink.self) { context.delete(link) }
-        case .waits(let id, let before):
-            live(id, as: Todo.self)?.waitsFor = before.flatMap { live($0, as: Todo.self) }
-        case .roles(let id, let roles):
-            live(id, as: Membership.self)?.roles = roles
-        case .merged(let rule):
-            // Switched off, so the next mail's spelling is its own party again.
-            live(rule, as: Rule.self)?.isOn = false
+              let undo = navigation.turns[position].undos[index], CardActions.undo(undo, in: context) else { return }
+        if case .madeMatter = undo {
+            navigation.turns[position].madeMatter = nil
+            navigation.place = .assistant
         }
-        try? context.save()
         navigation.turns[position].applied.remove(index)
         navigation.turns[position].undos[index] = nil
     }
