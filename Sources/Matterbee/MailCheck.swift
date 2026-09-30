@@ -202,8 +202,9 @@ struct MailCheckView: View {
 
     @ViewBuilder
     private var button: some View {
-        if DemoData.isRequested, !SetupState.isFresh {
+        if DemoData.isRequested, !SetupState.isFresh, IntroShot.current == nil {
             // The demo's matters are made up: no real mail comes into them, and the way back is here.
+            // The introduction's pictures show the button a real start has.
             Button { DemoData.restart(demo: false) } label: {
                 Label("Leave the demo", systemImage: "arrow.uturn.backward.circle")
             }

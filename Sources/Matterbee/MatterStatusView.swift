@@ -63,7 +63,7 @@ struct MatterStatusView: View {
                         notes
                         todos(status)
                         dates(status)
-                        files
+                        files.id("files")
                         links
                         parties(status)
                         history(status)
@@ -86,6 +86,12 @@ struct MatterStatusView: View {
                 .onChange(of: find.query) { find.index = 0 }
                 .onChange(of: find.current) { if let at = find.current { withAnimation { scroller.scrollTo(at, anchor: .center) } } }
                 .onChange(of: matter.persistentModelID) { find.query = "" }
+                // `--demo --shot`: the part of the page the introduction's picture shows.
+                .onAppear {
+                    if let section = IntroShot.current?.section {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { scroller.scrollTo(section, anchor: .top) }
+                    }
+                }
                 // A link dragged from the browser onto the matter is kept in it.
                 .dropDestination(for: URL.self) { urls, _ in
                     let web = urls.compactMap { WebLink.address(in: $0.absoluteString) }

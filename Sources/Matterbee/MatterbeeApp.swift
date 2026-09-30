@@ -125,7 +125,8 @@ final class Navigation {
     /// The sidebar folded away: the assistant's bar then starts right of the window's buttons.
     var sidebarHidden = false
     /// Reading: small actions and the AI's explanations put away. Kept for the next start.
-    var reading = UserDefaults.standard.bool(forKey: "ui.reading") {
+    /// The introduction's pictures show everything, whatever the owner chose.
+    var reading = IntroShot.current == nil && UserDefaults.standard.bool(forKey: "ui.reading") {
         didSet { UserDefaults.standard.set(reading, forKey: "ui.reading") }
     }
     /// Counts up to put the cursor in the assistant's field.
@@ -477,6 +478,8 @@ struct RootView: View {
         .lineSpacing(2)
         .onAppear {
             navigation.attach(context)
+            // `--demo --shot`: set up as one of the introduction's pictures.
+            IntroShot.current?.arrange(navigation, matters: matters)
             MirrorRunner.shared.start(context)
             // Not over the demo: it is started to be looked at, and photographed, as it is.
             // The setup's test starts as a first start does: the introduction, then the setup.
