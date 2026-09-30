@@ -26,8 +26,10 @@ struct BeeLoader: View {
 
     // MARK: The drawing, in the icon's own units (App/Resources/BeeStripesWings.icon)
 
-    /// The bee with room above it for the hover and the stripes dropping in.
-    private static let box = CGRect(x: -80, y: -300, width: 4361, height: 2900)
+    /// The bee with room above it for the hover and the stripes dropping in, and at each side for
+    /// the wings: swung out to 16°, a wing's tip reaches about 300 past the body's drawing — so 450,
+    /// the same on both sides, and the bee stays in the middle.
+    private static let box = CGRect(x: -450, y: -300, width: 4201 + 900, height: 2900)
     static let aspect = box.width / box.height
     private static let beat = 2.4
 
