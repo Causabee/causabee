@@ -112,7 +112,7 @@ struct BeeLoader: View {
     VStack(alignment: .leading, spacing: 20) {
         BeeLoader(size: 88)
         HStack(spacing: 8) { BeeLoader(); Text("Sorting in 12 mails …").foregroundStyle(.secondary) }
-        HStack(spacing: 6) { BeeLoader(size: 14); Text("Claude is thinking …").font(.caption).foregroundStyle(.secondary) }
+        HStack(spacing: 6) { BeeLoader(size: 14); Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary) }
     }
     .padding(32)
 }

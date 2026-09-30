@@ -223,7 +223,7 @@ struct MatterStatusView: View {
             HStack(spacing: 10) {
                 if askingStep {
                     BeeLoader(size: 14)
-                    Text("Claude is thinking …").font(.caption).foregroundStyle(.secondary)
+                    Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else {
                     Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
