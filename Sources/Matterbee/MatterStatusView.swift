@@ -563,6 +563,11 @@ struct MatterStatusView: View {
 
     /// Takes the file out of its mail — read-only, only this one mail — and hands it on.
     private func fetch(_ document: MatterCore.Document, then use: @escaping @MainActor (URL) -> Void) {
+        // A file the owner dropped in — a scanned letter — is the file itself, on this Mac.
+        if document.isOwnFile {
+            if let file = document.source.fileURL { use(file) } else { fetching[document.persistentModelID] = "The file is not on this Mac: \(document.source.pointer)" }
+            return
+        }
         // From a mail dropped in as a file: straight out of that file, no mail server.
         if let file = document.source.fileURL, let data = try? Data(contentsOf: file),
            let bytes = EMLParser.attachment(named: document.name, in: data) {
@@ -1667,6 +1672,16 @@ struct ThreadMailRow: View {
     /// How far in replies go; deeper ones stay at this depth.
     static let deepest = 4
 
+    /// A letter scanned and taken in is no mail: the button says what it opens.
+    static func openLabel(_ kind: Source.Kind) -> String {
+        switch kind {
+        case .screenshot: "Open screenshot"
+        case .document: "Open document"
+        case .photo: "Open photo"
+        default: "Open mail"
+        }
+    }
+
     var body: some View {
         let depth = min(row.depth, Self.deepest)
         let entry = row.entry
@@ -1689,7 +1704,7 @@ struct ThreadMailRow: View {
                             .help("The mail's text, kept on this Mac")
                             .popover(isPresented: $reading, arrowEdge: .leading) { MailReader(entry: entry, store: store) }
                     }
-                    SourceLink(source: entry.source, label: entry.source.kind == .screenshot ? "Open screenshot" : "Open mail")
+                    SourceLink(source: entry.source, label: Self.openLabel(entry.source.kind))
                     PinButton(action: talk).opacity(hovering ? 1 : 0)
                 }
                 if let digest = entry.digest, !digest.isEmpty {
@@ -1772,7 +1787,7 @@ struct DocumentRow: View {
                     .help("Read it on the Mac and show it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
                     .tool()
             }
-            Button("Open", action: open).help("Only this one mail is read from Gmail, and the file is opened.")
+            Button("Open", action: open).help(document.isOwnFile ? "Opens the file." : "Only this one mail is read from Gmail, and the file is opened.")
             MoreMenu { moreItems }
                 .popover(isPresented: $renaming, arrowEdge: .bottom) { renameField }
         }

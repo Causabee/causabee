@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import UniformTypeIdentifiers
 
 /// Turns what the pipeline concluded about each mail into matters: an entry per mail, one to-do
 /// per thing to do however often it is asked for, appointments, deadlines and the people involved.
@@ -25,6 +26,37 @@ public enum MatterImport {
     }
 
     /// `owner` is the names the owner goes by; they are never made a party.
+    /// The dropped file itself as a document of its matter, read already since it was taken in; nil
+    /// when the matter has it.
+    static func ownFile(_ file: URL, source: Source, known: Set<String>) -> Document? {
+        let name = Document.ownName(of: file)
+        guard !known.contains((source.messageID ?? "") + "/" + name) else { return nil }
+        let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        let type = UTType(filenameExtension: file.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+        let document = Document(name: name, contentType: type, byteCount: size, source: source)
+        document.readAt = Date()
+        return document
+    }
+
+    /// Files taken in before they were kept as files of their matter: each one still on this Mac
+    /// becomes one. Run once when Matterbee starts; returns how many it added.
+    @discardableResult
+    public static func addDroppedFiles(to context: ModelContext) throws -> Int {
+        var added = 0
+        for matter in try context.fetch(FetchDescriptor<Matter>()) {
+            var known = Set((matter.documents ?? []).map { $0.messageID + "/" + $0.name })
+            for entry in matter.entries ?? [] where [.screenshot, .document].contains(entry.source.kind) {
+                guard let file = entry.source.fileURL, let document = ownFile(file, source: entry.source, known: known) else { continue }
+                context.insert(document)
+                document.matter = matter
+                known.insert(document.messageID + "/" + document.name)
+                added += 1
+            }
+        }
+        if added > 0 { try context.save() }
+        return added
+    }
+
     public static func apply(_ judgements: [Judgement], to context: ModelContext, owner: [String] = []) throws -> Summary {
         var summary = Summary()
         var matters = try context.fetch(FetchDescriptor<Matter>())
@@ -93,6 +125,14 @@ public enum MatterImport {
             for attachment in judgement.attachments where !files.contains(judgement.emailID + "/" + attachment.filename) {
                 let document = Document(name: attachment.filename, contentType: attachment.contentType,
                                         byteCount: attachment.byteCount, source: source)
+                context.insert(document)
+                document.matter = matter
+                summary.documents += 1
+            }
+            // A file the owner dropped in — a scanned letter, a PDF, a screenshot — is a file of the
+            // matter too, not only what it says.
+            if [.screenshot, .document].contains(kind), let file = source.fileURL,
+               let document = ownFile(file, source: source, known: files) {
                 context.insert(document)
                 document.matter = matter
                 summary.documents += 1

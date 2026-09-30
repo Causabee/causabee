@@ -24,6 +24,8 @@ struct MatterbeeApp: App {
             let container = try MatterSchema.container(at: url, cloudKit: cloud.container)
             if cloud == .test { MainActor.assumeIsolated { CloudSync.seedTest(container.mainContext) } }
             if DemoData.isRequested { MainActor.assumeIsolated { Calendars.shared.isSealed = true; DemoData.seed(container.mainContext) } }
+            // Files taken in before they were kept as files of their matter.
+            MainActor.assumeIsolated { _ = try? MatterImport.addDroppedFiles(to: container.mainContext) }
             return container
         }
         CloudSync.shared.watch()

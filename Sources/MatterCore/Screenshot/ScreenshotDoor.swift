@@ -23,8 +23,9 @@ public struct ScreenshotDoor: Sendable {
 
     /// Where an image with no home of its own is kept: beside the store.
     public static func attachments(besides store: URL) -> URL {
-        store.deletingLastPathComponent().appendingPathComponent("Anhänge", isDirectory: true)
+        store.deletingLastPathComponent().appendingPathComponent(attachmentsFolder, isDirectory: true)
     }
+    public static let attachmentsFolder = "Anhänge"
 
     /// A file in a folder of the owner's has a home and is kept by reference. One in a temporary
     /// folder — dragged out of another app, pasted — has none, and is copied in.

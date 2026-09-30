@@ -58,9 +58,12 @@ public enum MatterFolders {
 
     /// What the owner dropped in themselves: screenshots and documents, but not a mail file —
     /// its words stay on this Mac; its attachments are among the documents.
+    /// One that is a file of the matter by now is saved with the documents instead.
     public static func dropped(_ matter: Matter) -> [(file: URL, name: String)] {
-        (matter.entries ?? []).compactMap { entry in
-            guard [.screenshot, .document].contains(entry.source.kind), let file = entry.source.fileURL else { return nil }
+        let documented = Set((matter.documents ?? []).filter(\.isOwnFile).map(\.messageID))
+        return (matter.entries ?? []).compactMap { entry in
+            guard [.screenshot, .document].contains(entry.source.kind), !documented.contains(entry.messageID),
+                  let file = entry.source.fileURL else { return nil }
             return (file, stamp(entry.date) + file.lastPathComponent)
         }
     }
@@ -93,6 +96,15 @@ public enum MatterFolders {
             guard let folder = folder(for: matter) else { continue }
             let target = place(for: document, in: folder)
             if FileManager.default.fileExists(atPath: target.path) { result.already += 1; continue }
+            // A file the owner dropped in is copied as it is — unless it was saved already, before it
+            // was a document, under the name its copy had.
+            if document.isOwnFile {
+                guard let file = document.source.fileURL else { result.failed.append(document.name); continue }
+                let before = folder.appendingPathComponent(stamp(document.source.date) + file.lastPathComponent)
+                if FileManager.default.fileExists(atPath: before.path) { result.already += 1; continue }
+                if (try? FileManager.default.copyItem(at: file, to: target)) != nil { result.saved += 1 } else { result.failed.append(document.name) }
+                continue
+            }
             var data: Data?
             if let file = document.source.fileURL, let mail = try? Data(contentsOf: file) {
                 data = EMLParser.attachment(named: document.name, in: mail)

@@ -363,8 +363,23 @@ public final class Document {
         self.messageID = source.messageID ?? ""
     }
 
-    /// A logo in a signature, a spacer: an image small enough to be nothing anyone attached.
-    public var isSmallImage: Bool { contentType.hasPrefix("image/") && byteCount < 30_000 }
+    /// Dropped in by the owner — a scanned letter, a PDF, a screenshot — rather than attached to a
+    /// mail: the file itself, at its source's path on this Mac.
+    public var isOwnFile: Bool { [.screenshot, .document].contains(source.kind) }
+
+    /// A logo in a signature, a spacer: an image small enough to be nothing anyone attached. A file
+    /// the owner dropped in is never one.
+    public var isSmallImage: Bool { !isOwnFile && contentType.hasPrefix("image/") && byteCount < 30_000 }
+
+    /// The name the owner gave the file: one copied in beside the store is kept as
+    /// `1A2B3C4D-Brief.pdf`, and is called `Brief.pdf` again here.
+    public static func ownName(of file: URL) -> String {
+        let name = file.lastPathComponent
+        let head = name.prefix(9)
+        guard file.deletingLastPathComponent().lastPathComponent == ScreenshotDoor.attachmentsFolder,
+              name.count > 9, head.last == "-", head.dropLast().allSatisfy(\.isHexDigit) else { return name }
+        return String(name.dropFirst(9))
+    }
 
     /// A PDF or a picture can be read; a Word file or an invitation cannot, yet.
     public var isReadable: Bool {
