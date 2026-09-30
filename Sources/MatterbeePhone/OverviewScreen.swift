@@ -46,6 +46,8 @@ struct OverviewScreen: View {
     @State private var search = ""
     @Environment(\.modelContext) private var context
     @State private var editsAccount = false
+    @AppStorage(WelcomeSheet.seenKey) private var introSeen = false
+    @State private var showsWelcome = false
 
     private var ordered: [Matter] { activeMatters(matters) }
 
@@ -104,6 +106,7 @@ struct OverviewScreen: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Settings …") { editsAccount = true }
+                    Button("Introduction …") { showsWelcome = true }
                     Button(store.isDemo ? "Leave the demo" : "Try the demo") { store.switchDemo(!store.isDemo) }
                 } label: { Image(systemName: "ellipsis") }
                 .tint(.primary)
@@ -111,6 +114,9 @@ struct OverviewScreen: View {
             }
         }
         .sheet(isPresented: $editsAccount) { SettingsSheet() }
+        // Once, at the first start: what Matterbee is and what it needs.
+        .sheet(isPresented: $showsWelcome) { WelcomeSheet() }
+        .onAppear { if !introSeen, !store.isDemo { showsWelcome = true } }
     }
 
     private var summary: String {
@@ -189,7 +195,7 @@ struct OverviewScreen: View {
             Text("No matters yet").font(.headline)
             Text(PhoneCloud.container == nil
                  ? "This store stays on the iPhone."
-                 : "Matterbee on your Mac takes in the mail and makes the matters. They come here through your iCloud — the first time can take a few minutes.")
+                 : "Get new mail above, and Matterbee makes the matters from it. From your Mac, they come here through your iCloud — the first time can take a few minutes.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if !store.isDemo {
                 Button("Try the demo") { store.switchDemo(true) }.buttonStyle(.phoneFilled)
