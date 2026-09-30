@@ -46,12 +46,35 @@ final class CloudSync {
     }()
     nonisolated static var isEntitled: Bool { !containers.isEmpty }
 
+    /// Signed for CloudKit's Production environment — a release, or the owner's own copy of one.
+    /// A development build without the entitlement talks to Development.
+    nonisolated static let isProduction: Bool = {
+        guard let task = SecTaskCreateFromSelf(nil),
+              let value = SecTaskCopyValueForEntitlement(task, "com.apple.developer.icloud-container-environment" as CFString, nil)
+        else { return false }
+        return (value as? String) == "Production"
+    }()
+
     /// Off, and each mode whose container this build may ask.
     nonisolated static var available: [Mode] {
         Mode.allCases.filter { mode in mode.container.map(containers.contains) ?? true }
     }
 
     static let shared = CloudSync()
+
+    /// `--fresh-cloud-copy <from> <to>`: the store's matters in a new store without the record of what
+    /// iCloud has, so the first start in Production sends every one. A store that synced with
+    /// Development believes all of it is sent already, and Production would stay empty. Only the
+    /// models' own records are copied; the mirroring's are not.
+    nonisolated static func freshCopy(from source: URL, to target: URL) throws {
+        guard let model = NSManagedObjectModel.makeManagedObjectModel(for: MatterSchema.models) else {
+            throw CocoaError(.featureUnsupported, userInfo: [NSLocalizedDescriptionKey: "The models make no Core Data model."])
+        }
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
+        let history: [AnyHashable: Any] = [NSPersistentHistoryTrackingKey: true as NSNumber]
+        let store = try coordinator.addPersistentStore(type: .sqlite, at: source, options: history)
+        _ = try coordinator.migratePersistentStore(store, to: target, options: history, type: .sqlite)
+    }
 
     /// `--init-cloudkit-schema`: makes every record type and field in the container's Development
     /// schema — a type only appears there once a record of it was sent — so the schema can be

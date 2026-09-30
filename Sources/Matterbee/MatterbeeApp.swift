@@ -27,6 +27,18 @@ struct MatterbeeApp: App {
                 exit(1)
             }
         }
+        // Once, moving the owner's matters from Development to Production: a copy iCloud has not seen.
+        if let flag = CommandLine.arguments.firstIndex(of: "--fresh-cloud-copy"), flag + 2 < CommandLine.arguments.count {
+            let from = URL(fileURLWithPath: CommandLine.arguments[flag + 1]), to = URL(fileURLWithPath: CommandLine.arguments[flag + 2])
+            do {
+                try CloudSync.freshCopy(from: from, to: to)
+                print("✓ \(to.path): the matters of \(from.lastPathComponent), not yet in iCloud.")
+                exit(0)
+            } catch {
+                print("✗ \(error)")
+                exit(1)
+            }
+        }
         Theme.registerFonts()
         // Started from the terminal with `swift run`, the process is not an app yet until it says so.
         NSApplication.shared.setActivationPolicy(.regular)
@@ -100,7 +112,10 @@ struct MatterbeeApp: App {
             return URL(fileURLWithPath: path)
         }
         // The iCloud test and the demo keep their own store, name list and record, apart from the owner's.
-        let name = DemoData.isRequested ? "Matterbee-Demo" : CloudSync.mode == .test ? "Matterbee-Test" : "Matterbee"
+        // So does a development build syncing with CloudKit's Development environment: the owner's
+        // matters sync in Production, and one store must never meet both.
+        let name = DemoData.isRequested ? "Matterbee-Demo" : CloudSync.mode == .test ? "Matterbee-Test"
+            : CloudSync.mode == .on && !CloudSync.isProduction ? "Matterbee-Development" : "Matterbee"
         let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent(name, isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
