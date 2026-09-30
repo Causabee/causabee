@@ -1,0 +1,73 @@
+<!doctype html>
+<!-- The website's preview image (site/assets/og.png), 1200 × 630. Made again with:
+     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars \
+       --force-device-scale-factor=2 --window-size=1200,630 --virtual-time-budget=3000 \
+       --screenshot=/tmp/og@2x.png "file://$PWD/scripts/og-image.html" \
+     && sips -z 630 1200 /tmp/og@2x.png --out site/assets/og.png -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Matterbee preview image</title>
+<style>
+  @font-face {
+    font-family: "Source Serif 4";
+    src: url("../site/assets/fonts/SourceSerif4.woff2") format("woff2");
+    font-weight: 200 900;
+  }
+  :root {
+    --ink: #1d1d1f; --ink-2: #424245; --muted: #6e6e73;
+    --honey: #ffdb0d; --gold: #7f5e00;
+    --serif: "Source Serif 4", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    --shadow-shot: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 40px 80px -24px rgba(0, 0, 0, 0.28), 0 18px 36px -18px rgba(0, 0, 0, 0.22);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    position: relative;
+    font-family: var(--sans); color: var(--ink);
+    background:
+      radial-gradient(640px 420px at 6% 0%, rgba(255, 219, 13, 0.22), rgba(255, 219, 13, 0) 70%),
+      linear-gradient(180deg, #ffffff 0%, #f5f5f4 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .text { position: absolute; left: 72px; top: 64px; width: 470px; }
+  .icon { width: 92px; height: 92px; display: block; filter: drop-shadow(0 12px 24px rgba(127, 94, 0, 0.28)); }
+  .eyebrow { display: flex; align-items: center; gap: 12px; margin-top: 30px; font-size: 20px; font-weight: 500; color: var(--ink-2); }
+  .pill { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--honey); color: var(--ink); font-size: 16px; font-weight: 600; }
+  h1 { margin-top: 18px; font: 600 74px / 1.02 var(--serif); letter-spacing: -0.025em; }
+  .lead { margin-top: 22px; font-size: 23px; line-height: 1.4; color: var(--muted); }
+  .private { position: absolute; left: 72px; bottom: 58px; display: flex; align-items: center; gap: 10px; font-size: 19px; color: var(--ink-2); }
+  .private strong { color: var(--ink); font-weight: 600; }
+
+  .mac {
+    position: absolute; left: 600px; top: 72px; width: 780px;
+    border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-shot); background: #fff;
+  }
+  .mac img { display: block; width: 100%; height: auto; }
+
+  .phone {
+    position: absolute; left: 574px; top: 262px; width: 214px;
+    padding: 6.4px; border-radius: 36px; background: var(--ink);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), var(--shadow-shot);
+  }
+  .phone img { display: block; width: 100%; height: auto; border-radius: 30px; }
+</style>
+</head>
+<body>
+  <div class="text">
+    <img class="icon" src="../site/assets/icon.svg" alt="">
+    <p class="eyebrow"><span class="pill">Beta</span><span>Matterbee for Mac</span></p>
+    <h1>Every matter.<br>In its place.</h1>
+    <p class="lead">Mail, files and screenshots sorted into matters: what comes next, who does what, by when.</p>
+  </div>
+  <p class="private">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7F5E00" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+    <span><strong>Private by design</strong> · Free and open source</span>
+  </p>
+
+  <div class="mac"><img src="../site/assets/img/overview-1800.webp" alt=""></div>
+  <div class="phone"><img src="../site/assets/img/iphone-matter.webp" alt=""></div>
+</body>
+</html>
