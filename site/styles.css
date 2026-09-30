@@ -73,8 +73,8 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* Type */
 
-.display { font: 600 clamp(48px, 7.2vw, 104px) / 1.03 var(--serif); letter-spacing: -0.025em; }
-.title { font: 600 clamp(38px, 4.8vw, 68px) / 1.07 var(--serif); letter-spacing: -0.02em; }
+.display { font: 400 clamp(48px, 7.2vw, 104px) / 1.03 var(--serif); letter-spacing: -0.025em; }
+.title { font: 400 clamp(38px, 4.8vw, 68px) / 1.07 var(--serif); letter-spacing: -0.02em; }
 .title--xl { font-size: clamp(44px, 6.1vw, 88px); letter-spacing: -0.025em; line-height: 1.05; }
 .lead { font-size: clamp(19px, 1.7vw, 24px); line-height: 1.42; color: var(--muted); }
 .sub { font-size: clamp(17px, 1.5vw, 21px); line-height: 1.47; color: var(--muted); }
@@ -160,7 +160,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* Statement */
 
-.statement { font: 600 clamp(28px, 3.6vw, 52px) / 1.22 var(--serif); letter-spacing: -0.02em; color: var(--quiet); text-align: center; max-width: 1080px; margin-inline: auto; }
+.statement { font: 400 clamp(28px, 3.6vw, 52px) / 1.22 var(--serif); letter-spacing: -0.02em; color: var(--quiet); text-align: center; max-width: 1080px; margin-inline: auto; }
 
 /* The matter page */
 
@@ -183,7 +183,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; width: 100%; text-align: left; }
 .tile { display: flex; flex-direction: column; gap: 28px; border-radius: 28px; overflow: hidden; background: var(--paper); }
 .tile__text { display: flex; flex-direction: column; gap: 10px; padding: 40px 40px 0; }
-.tile h3 { font: 600 clamp(24px, 2.1vw, 30px) / 1.15 var(--serif); letter-spacing: -0.01em; }
+.tile h3 { font: 400 clamp(24px, 2.1vw, 30px) / 1.15 var(--serif); letter-spacing: -0.01em; }
 .tile p { font-size: clamp(15px, 1.2vw, 17px); line-height: 1.45; color: var(--muted); }
 .tile__img {
   margin-top: auto; aspect-ratio: 900 / 525; overflow: hidden; border-top: 1px solid rgba(0, 0, 0, 0.06);
@@ -247,7 +247,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 .download { display: flex; flex-direction: column; align-items: center; gap: 28px; padding-block: clamp(88px, 10vw, 140px); }
 .download .app-icon { width: clamp(88px, 7.5vw, 104px); }
-.download__name { font: 600 clamp(52px, 6.1vw, 88px) / 1.05 var(--serif); letter-spacing: -0.025em; }
+.download__name { font: 400 clamp(52px, 6.1vw, 88px) / 1.05 var(--serif); letter-spacing: -0.025em; }
 .download__actions { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 8px; }
 @media (max-width: 639px) {
   .download { gap: 24px; }
@@ -269,9 +269,9 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 /* The privacy policy */
 
 .legal { width: min(100% - 2 * var(--gutter), 720px); margin-inline: auto; padding-block: clamp(56px, 7vw, 96px) clamp(72px, 9vw, 120px); }
-.legal h1 { font: 600 clamp(44px, 5.6vw, 72px) / 1.05 var(--serif); letter-spacing: -0.025em; }
+.legal h1 { font: 400 clamp(44px, 5.6vw, 72px) / 1.05 var(--serif); letter-spacing: -0.025em; }
 .legal .dated { margin-top: 16px; font-size: 15px; color: var(--muted); }
-.legal h2 { margin-top: 56px; font: 600 clamp(26px, 2.4vw, 32px) / 1.2 var(--serif); letter-spacing: -0.01em; }
+.legal h2 { margin-top: 56px; font: 400 clamp(26px, 2.4vw, 32px) / 1.2 var(--serif); letter-spacing: -0.01em; }
 .legal h3 { margin-top: 28px; font-size: 19px; font-weight: 600; }
 .legal p, .legal li { font-size: 17px; line-height: 1.62; color: var(--ink-2); }
 .legal p { margin-top: 14px; }
@@ -342,3 +342,8 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 @keyframes bee-wl { from { transform: rotate(-4deg); } to { transform: rotate(16deg); } }
 @keyframes bee-wr { from { transform: rotate(4deg); } to { transform: rotate(-16deg); } }
 @keyframes bee-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-90px); } }
+
+/* Every serif line in Source Serif 4 Regular and its text shape (opsz 20), as the app and the design
+   draw it — not the thinner headline shape a browser picks for big type by itself. Last, because the
+   `font` shorthand above resets it. */
+.display, .title, .statement, .tile h3, .disguise p, .download__name, .legal h1, .legal h2 { font-optical-sizing: none; }
