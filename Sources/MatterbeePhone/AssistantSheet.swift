@@ -43,6 +43,7 @@ struct AssistantSheet: View {
                         }
                     }
                     .padding(16)
+                    .containerRelativeFrame(.horizontal)
                 }
                 .defaultScrollAnchor(.bottom)
                 .onAppear { if let last = shown.last { scroller.scrollTo(last.turn.id, anchor: .bottom) } }
@@ -80,8 +81,10 @@ struct AssistantSheet: View {
                 TextField(matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
                 Button {} label: {
+                    // A black arrow on the bee's yellow, as every yellow thing has black on it.
                     Image(systemName: "arrow.up.circle.fill").font(.title2)
-                        .foregroundStyle(Theme.bee)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.black, Theme.bee)
                 }
                 .disabled(true)
                 .accessibilityLabel("Send")

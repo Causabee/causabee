@@ -36,6 +36,7 @@ struct OverviewScreen: View {
     @Environment(Navigation.self) private var navigation
     @Environment(PhoneStore.self) private var store
     @State private var search = ""
+    @Environment(\.modelContext) private var context
     @State private var editsAccount = false
 
     private var ordered: [Matter] { activeMatters(matters) }
@@ -53,6 +54,7 @@ struct OverviewScreen: View {
                             .frame(width: 44, height: 44)
                             .glassEffect(.regular.interactive(), in: Circle())
                     }
+                    .tint(.primary)
                     .accessibilityLabel("More")
                 }
                 VStack(alignment: .leading, spacing: 4) {
@@ -92,6 +94,7 @@ struct OverviewScreen: View {
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
+            .containerRelativeFrame(.horizontal)
         }
         .scrollDismissesKeyboard(.immediately)
         .background(Theme.canvas)
@@ -115,9 +118,13 @@ struct OverviewScreen: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Find a matter", text: $search)
+                TextField("Find or start a matter", text: $search)
                     .font(.body)
-                    .submitLabel(.search)
+                    .submitLabel(.go)
+                    .onSubmit {
+                        let hits = MatterSearch.find(query, in: matters)
+                        if let first = hits.first { search = ""; navigation.open(first.matter) } else if !query.isEmpty { start(query) }
+                    }
                     .autocorrectionDisabled()
                 if !search.isEmpty {
                     Button { search = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
@@ -144,13 +151,26 @@ struct OverviewScreen: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    if hits.isEmpty {
-                        Text("No matter has “\(query)”.").foregroundStyle(.secondary).padding(14)
+                    if !hits.isEmpty { Divider().padding(.leading, 14) }
+                    // Made here, nothing sent: the Mac sorts mail into it from the next "Get new mail".
+                    Button { start(query) } label: {
+                        Label("Start new matter: “\(query)”", systemImage: "plus.circle")
+                            .fontWeight(.medium).foregroundStyle(.primary)
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                 }
                 .phoneCard()
             }
         }
+    }
+
+    private func start(_ name: String) {
+        guard let matter = try? Matter.make(named: name, in: context) else { return }
+        search = ""
+        navigation.open(matter)
     }
 
     /// Nothing here yet: iCloud may still be bringing the matters, or they are made on the Mac.

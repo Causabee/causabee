@@ -32,6 +32,9 @@ struct MatterScreen: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 90)
+                // Exactly the screen's width: nothing on the page — a long address, a word without
+                // a break — can make it wider and let it slide sideways.
+                .containerRelativeFrame(.horizontal)
             }
             .onAppear { show(navigation.showing, with: scroller) }
         }
