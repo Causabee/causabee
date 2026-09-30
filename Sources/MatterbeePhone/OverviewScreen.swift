@@ -91,13 +91,11 @@ struct OverviewScreen: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 90)
+            .padding(.bottom, 24)
         }
         .scrollDismissesKeyboard(.immediately)
         .background(Theme.canvas)
-        .overlay(alignment: .bottomTrailing) {
-            AssistantButton { navigation.showsAssistant = true }
-        }
+        // No assistant here, as on the Mac: it opens from a matter, about that matter.
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $editsAccount) { MailAccountSheet() }
     }
