@@ -362,7 +362,10 @@ struct MatterStatusView: View {
     /// to read. A logo in a signature is not a file anyone attached, and is hidden.
     @ViewBuilder
     private var files: some View {
-        let all = (matter.documents ?? []).sorted { ($0.source.date ?? .distantPast) > ($1.source.date ?? .distantPast) }
+        let all = (matter.documents ?? []).sorted {
+            let (a, b) = ($0.source.date ?? .distantPast, $1.source.date ?? .distantPast)
+            return a != b ? a > b : alphabetically($0.name, $1.name)
+        }
         let small = all.filter { $0.isSmallImage && !$0.isHidden }
         let hidden = all.filter(\.isHidden)
         let shown = all.filter { document in
@@ -424,8 +427,8 @@ struct MatterStatusView: View {
     /// app never opens them itself, and the assistant only hears their names.
     @ViewBuilder
     private var links: some View {
-        let all = (matter.links ?? []).filter(\.isKept).sorted { $0.createdAt > $1.createdAt }
-        let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted { $0.createdAt > $1.createdAt }
+        let all = (matter.links ?? []).filter(\.isKept).sorted(by: newestFirst)
+        let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
@@ -835,7 +838,7 @@ struct MatterStatusView: View {
                 CalendarAccessBanner { loadCalendars() }.tool()
                 Card {
                     let rows: [DateRow.Item] = upcoming.map(DateRow.Item.init) + deadlines.filter { $0.day >= status.today }.map(DateRow.Item.init)
-                    ForEach(Array(rows.sorted { $0.day < $1.day }.enumerated()), id: \.offset) { index, item in
+                    ForEach(Array(rows.sorted { $0.day != $1.day ? $0.day < $1.day : DateRow.Item.sameDay($0, $1) }.enumerated()), id: \.offset) { index, item in
                         if index > 0 { RowDivider() }
                         DateRow(item: item, isPast: false, matterName: matter.name, tick: calendarTick, save: { try? context.save() }) { talk(item.what, item.kind) }
                             .findable(item.findID, item.what, item.place)
@@ -848,7 +851,7 @@ struct MatterStatusView: View {
                 if !earlier.isEmpty {
                     DisclosureGroup("Past · \(earlier.count)", isExpanded: open($showsPast)) {
                         Card {
-                            ForEach(Array(earlier.sorted { $0.day > $1.day }.enumerated()), id: \.offset) { index, item in
+                            ForEach(Array(earlier.sorted { $0.day != $1.day ? $0.day > $1.day : DateRow.Item.sameDay($0, $1) }.enumerated()), id: \.offset) { index, item in
                                 if index > 0 { RowDivider() }
                                 DateRow(item: item, isPast: true, matterName: matter.name, tick: calendarTick, save: { try? context.save() }) { talk(item.what, item.kind) }
                                     .findable(item.findID, item.what, item.place)
@@ -1344,6 +1347,11 @@ struct DateRow: View {
         var day: String
         var time: String?
         var what: String
+        /// On the same day: the whole-day ones first, then by the hour, then by name.
+        static func sameDay(_ a: Item, _ b: Item) -> Bool {
+            let (x, y) = (a.time ?? "", b.time ?? "")
+            return x != y ? x < y : alphabetically(a.what, b.what)
+        }
         var place: String?
         var kind: String
         var source: Source?
@@ -2006,4 +2014,14 @@ struct MailReader: View {
         .padding(16)
         .frame(width: 520, height: 480)
     }
+}
+
+/// The last word on a tie in a list — two files from the same mail, two links of one day, two dates
+/// at the same time: by name, as a person reads it, so the same matter always lists in the same order.
+func alphabetically(_ a: String, _ b: String) -> Bool { a.localizedStandardCompare(b) == .orderedAscending }
+
+/// Newest first; links of the same moment by their title, or their address when they have none.
+func newestFirst(_ a: WebLink, _ b: WebLink) -> Bool {
+    a.createdAt != b.createdAt ? a.createdAt > b.createdAt
+        : alphabetically(a.title.isEmpty ? a.address : a.title, b.title.isEmpty ? b.address : b.title)
 }

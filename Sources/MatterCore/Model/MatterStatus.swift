@@ -73,7 +73,11 @@ public struct MatterStatus {
     public var overdue: [Todo] { matter.openTodos.filter { !$0.isBlocked && ($0.due ?? "9999") < today } }
 
     public var memberships: [Membership] {
-        (matter.memberships ?? []).filter { $0.party != nil }.sorted { $0.mentions > $1.mentions }
+        // Named most often first; people named as often by name, so the order is the same every time.
+        (matter.memberships ?? []).filter { $0.party != nil }.sorted {
+            $0.mentions != $1.mentions ? $0.mentions > $1.mentions
+                : ($0.party?.name ?? "").localizedStandardCompare($1.party?.name ?? "") == .orderedAscending
+        }
     }
 }
 
