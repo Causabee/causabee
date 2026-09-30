@@ -1,4 +1,6 @@
+#if canImport(AppKit)
 import AppKit
+#endif
 import Foundation
 import MatterCore
 import SwiftData
@@ -21,6 +23,7 @@ enum DemoData {
 
     /// Into the demo, or back to the owner's own matters. A store is opened once, when Matterbee
     /// starts, so Matterbee starts again: the new one opens, then this one quits.
+    #if os(macOS)
     static func restart(demo: Bool) {
         UserDefaults.standard.set(demo, forKey: chosenKey)
         let configuration = NSWorkspace.OpenConfiguration()
@@ -29,6 +32,7 @@ enum DemoData {
             Task { @MainActor in NSApp.terminate(nil) }
         }
     }
+    #endif
 
     static func seed(_ context: ModelContext) {
         guard ((try? context.fetchCount(FetchDescriptor<Matter>())) ?? 0) == 0 else { return }

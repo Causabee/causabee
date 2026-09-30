@@ -8,8 +8,13 @@ import SwiftData
 public enum MatterFolders {
     /// iCloud Drive as Finder shows it; nil when it is not switched on for this Mac.
     public static var drive: URL? {
+        #if os(iOS)
+        // The iPhone keeps no matter folders: the files stay where the Mac put them.
+        return nil
+        #else
         let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs", isDirectory: true)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
+        #endif
     }
 
     /// The folder the owner chose in the settings — any folder, synced or not — or else iCloud
