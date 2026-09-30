@@ -9,6 +9,8 @@ import UniformTypeIdentifiers
 /// C2 · a matter's status: the place to drill down. What is open and whose, the dates, the
 /// people, and the history — every row with a door back into the assistant.
 struct MatterStatusView: View {
+    /// "1 deadline open", "2 deadlines open".
+    static func deadlinesOpen(_ count: Int) -> String { "\(count) \(count == 1 ? "deadline" : "deadlines") open" }
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
@@ -886,7 +888,7 @@ struct MatterStatusView: View {
         let deadlines = status.deadlines
         if !upcoming.isEmpty || !past.isEmpty || !deadlines.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Appointments and deadlines", detail: "\(upcoming.count) coming · \(deadlines.filter { $0.day >= status.today }.count) deadlines open")
+                SectionHeader(title: "Appointments and deadlines", detail: "\(upcoming.count) coming · \(Self.deadlinesOpen(deadlines.filter { $0.day >= status.today }.count))")
                 CalendarAccessBanner { loadCalendars() }.tool()
                 Card {
                     let rows: [DateRow.Item] = upcoming.map(DateRow.Item.init) + deadlines.filter { $0.day >= status.today }.map(DateRow.Item.init)

@@ -44,19 +44,33 @@ enum MailFiles {
 /// A logo in a signature is not a file anyone attached, and is left out, as on the Mac.
 struct FilesSection: View {
     let matter: Matter
+    @Environment(\.modelContext) private var context
     @State private var state: [PersistentIdentifier: String] = [:]
     @State private var preview: URL?
     @State private var addsAccount = false
     @State private var addsScan = false
+    @State private var showsHidden = false
+    @State private var showsSmallImages = false
+    @State private var renaming: MatterCore.Document?
+    @State private var newName = ""
 
     var body: some View {
-        let shown = (matter.documents ?? []).filter { !$0.isHidden && !$0.isSmallImage }.sorted {
-            ($0.source.date ?? .distantPast) > ($1.source.date ?? .distantPast)
+        // As on the Mac: newest first; a logo in a signature is not a file anyone attached.
+        let all = (matter.documents ?? []).sorted {
+            let (a, b) = ($0.source.date ?? .distantPast, $1.source.date ?? .distantPast)
+            return a != b ? a > b : $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
+        let small = all.filter { $0.isSmallImage && !$0.isHidden }
+        let hidden = all.filter(\.isHidden)
+        let shown = all.filter { document in
+            (!document.isHidden || showsHidden) && (!document.isSmallImage || showsSmallImages || document.isHidden)
         }
         let waiting = Scans.waiting(in: matter)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                SectionHeader(title: "Files", detail: shown.isEmpty ? nil : "\(shown.count)")
+                SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
+                              + (hidden.isEmpty ? "" : " · \(hidden.count) hidden")
+                              + (small.isEmpty ? "" : " · \(small.count) small \(small.count == 1 ? "image" : "images")"))
                 Button("Add a document", systemImage: "plus") { addsScan = true }
                     .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
             }
@@ -83,46 +97,134 @@ struct FilesSection: View {
                 }
                 .phoneCard()
             }
+            HStack(spacing: 14) {
+                if !hidden.isEmpty {
+                    Button(showsHidden ? "Hide the hidden ones" : "\(hidden.count) hidden · show") { showsHidden.toggle() }
+                }
+                if !small.isEmpty {
+                    Button(showsSmallImages ? "Hide small images" : "Show small images") { showsSmallImages.toggle() }
+                }
+            }
+            .font(.caption).foregroundStyle(Theme.gold).padding(.horizontal, 4)
         }
         .quickLookPreview($preview)
         .sheet(isPresented: $addsAccount) { MailAccountSheet() }
         .sheet(isPresented: $addsScan) { ScanSheet(matter: matter) }
+        .alert("Rename file", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            TextField("Name", text: $newName)
+            Button("Save") {
+                if let document = renaming {
+                    let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    document.title = name.isEmpty || name == document.name ? nil : name
+                    try? context.save()
+                }
+                renaming = nil
+            }
+            Button("Cancel", role: .cancel) { renaming = nil }
+        } message: {
+            Text("Only here in Matterbee: the file keeps its own name in the mail and in its folder.")
+        }
+    }
+
+    private func isPDF(_ document: MatterCore.Document) -> Bool {
+        document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf")
+    }
+
+    private func sender(of document: MatterCore.Document) -> String? {
+        (matter.entries ?? []).first { $0.messageID == document.messageID }.map { Email.displayName(in: $0.from) ?? Email.address(in: $0.from) }
     }
 
     private func row(_ document: MatterCore.Document) -> some View {
-        Button { open(document) } label: {
+        let id = document.persistentModelID
+        let offersName = document.title == nil && isPDF(document) && DocumentTitle.looksMachineMade(document.name) && !document.isOwnFile
+        return VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: Self.icon(document)).font(.title3).foregroundStyle(.secondary).frame(width: 26)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(document.shownName).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(2)
-                    Text(document.isOwnFile ? "added on your Mac · only there" : Sources.origin(document.source))
-                        .font(.caption).foregroundStyle(.secondary)
-                    if let message = state[document.persistentModelID] {
-                        Text(message).font(.caption)
-                            .foregroundStyle(message.hasPrefix("Getting") ? Color.secondary : Theme.warning)
-                            .fixedSize(horizontal: false, vertical: true)
+                Button { open(document) } label: {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: Self.icon(document)).font(.title3).foregroundStyle(.secondary).frame(width: 26)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(document.shownName).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(2)
+                            // With a name of its own, the file's name is still there to see, small.
+                            Text(document.isOwnFile ? "added on your Mac · only there"
+                                 : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
+                                    ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
+                                    .compactMap { $0 }.joined(separator: " · "))
+                                .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                        }
+                        Spacer(minLength: 0)
                     }
+                    .contentShape(Rectangle())
                 }
-                Spacer(minLength: 0)
-                if state[document.persistentModelID]?.hasPrefix("Getting") == true { ProgressView() }
+                .buttonStyle(.plain)
+                .disabled(document.isOwnFile)
+                if state[id]?.hasPrefix("Getting") == true { ProgressView() }
+                Menu { items(document) } label: {
+                    Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
+                }
+                .tint(.secondary)
+                .accessibilityLabel("More")
             }
-            .padding(14)
-            .contentShape(Rectangle())
+            Group {
+                if offersName, state[id] == nil {
+                    Button("Name it from its content") { nameFromContent(document) }
+                        .font(.caption).foregroundStyle(Theme.gold)
+                }
+                if let message = state[id] {
+                    Text(message).font(.caption)
+                        .foregroundStyle(message.hasPrefix("Getting") ? Color.secondary : Theme.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.leading, 38)
         }
-        .buttonStyle(.plain)
-        .disabled(document.isOwnFile)
+        .padding(14)
+        .opacity(document.isHidden ? 0.55 : 1)
+        .contextMenu { items(document) }
     }
 
-    private func open(_ document: MatterCore.Document) {
+    @ViewBuilder
+    private func items(_ document: MatterCore.Document) -> some View {
+        if !document.isOwnFile { Button("Open") { open(document) } }
+        Divider()
+        Button("Rename …") { newName = document.shownName; renaming = document }
+        if isPDF(document), !document.isOwnFile { Button("Name it from its content") { nameFromContent(document) } }
+        if document.title != nil {
+            Button("Use the file's own name") { document.title = nil; try? context.save() }
+        }
+        Divider()
+        Button(document.isHidden ? "Show again" : "Hide") {
+            withAnimation { document.isHidden.toggle() }
+            try? context.save()
+        }
+    }
+
+    /// Takes the file out of its mail — read-only, only this one mail — and hands it on.
+    private func fetch(_ document: MatterCore.Document, then use: @escaping (URL) -> Void) {
         let id = document.persistentModelID
         if MailFiles.account(for: document) == nil, !document.isOwnFile { addsAccount = true; return }
         state[id] = "Getting the file from the mail …"
         Task {
             do {
-                preview = try await MailFiles.open(document)
+                let url = try await MailFiles.open(document)
                 state[id] = nil
+                use(url)
             } catch {
                 state[id] = "\(error)"
+            }
+        }
+    }
+
+    private func open(_ document: MatterCore.Document) { fetch(document) { preview = $0 } }
+
+    /// A readable name from the file's first page — read on the iPhone, from the cache or the mail.
+    private func nameFromContent(_ document: MatterCore.Document) {
+        let id = document.persistentModelID
+        fetch(document) { url in
+            if let title = DocumentTitle.from(pdf: url) {
+                withAnimation { document.title = title }
+                try? context.save()
+            } else {
+                state[id] = "No heading found in it — give it a name with ⋯ → Rename."
             }
         }
     }

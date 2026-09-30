@@ -7,6 +7,8 @@ import SwiftUI
 /// dates, the people and the mail — read from the store the Mac fills. Ticking a task, writing
 /// the notes and closing the matter sync back.
 struct MatterScreen: View {
+    /// "1 deadline open", "2 deadlines open".
+    static func deadlinesOpen(_ count: Int) -> String { "\(count) \(count == 1 ? "deadline" : "deadlines") open" }
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
@@ -32,7 +34,8 @@ struct MatterScreen: View {
                     todos(status)
                     dates(status)
                     FilesSection(matter: matter)
-                    parties(status)
+                    LinksSection(matter: matter)
+                    PeopleSection(matter: matter)
                     history(status)
                 }
                 .padding(.horizontal, 16)
@@ -313,7 +316,7 @@ struct MatterScreen: View {
         let deadlines = status.deadlines
         if !upcoming.isEmpty || !past.isEmpty || !deadlines.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Appointments and deadlines", detail: "\(upcoming.count) coming · \(deadlines.filter { $0.day >= status.today }.count) deadlines open")
+                SectionHeader(title: "Appointments and deadlines", detail: "\(upcoming.count) coming · \(Self.deadlinesOpen(deadlines.filter { $0.day >= status.today }.count))")
                 CalendarAccessBanner { loadCalendars() }
                 let rows: [PhoneDateRow.Item] = upcoming.map(PhoneDateRow.Item.init) + deadlines.filter { $0.day >= status.today }.map(PhoneDateRow.Item.init)
                 dateRows(rows.sorted { $0.day != $1.day ? $0.day < $1.day : PhoneDateRow.Item.sameDay($0, $1) }, past: false)
@@ -350,34 +353,6 @@ struct MatterScreen: View {
     }
 
     // MARK: People
-
-    @ViewBuilder
-    private func parties(_ status: MatterStatus) -> some View {
-        let memberships = status.memberships
-        if !memberships.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "People", detail: "\(memberships.count)")
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(memberships.enumerated()), id: \.element.persistentModelID) { index, membership in
-                        if index > 0 { Divider().padding(.leading, 16) }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(membership.party?.name ?? "")
-                            if let role = membership.role { Text(role).font(.caption).foregroundStyle(.secondary) }
-                        }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                        .contextMenu {
-                            if let party = membership.party {
-                                Button("Talk about it with the assistant") { navigation.talk(party.name, kind: "Person", in: matter) }
-                            }
-                        }
-                    }
-                }
-                .phoneCard()
-            }
-        }
-    }
 
     // MARK: History
 
