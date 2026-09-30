@@ -58,7 +58,7 @@ struct AssistantButton: View {
     var body: some View {
         Button(action: action) {
             // Matterbee's own bee, black on its yellow as the app icon has it — not a speech bubble.
-            BeeMark(size: 24)
+            BeeMark(size: 24, livesNowAndThen: true)
                 .foregroundStyle(.black)
                 .frame(width: 60, height: 60)
                 .background(Theme.bee, in: Circle())

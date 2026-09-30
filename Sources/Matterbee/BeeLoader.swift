@@ -32,6 +32,7 @@ struct BeeLoader: View {
     private static let box = CGRect(x: -450, y: -300, width: 4201 + 900, height: 2900)
     static let aspect = box.width / box.height
     private static let beat = 2.4
+    static var beatLength: Double { beat }
 
     private static let bars: [(x: CGFloat, y: CGFloat, width: CGFloat)] = [
         (1525, 0, 1151), (1241, 436, 1719), (1241, 872, 1719), (1436, 1308, 1329), (1729.5, 1744, 742), (1925.5, 2180, 350),
@@ -58,8 +59,11 @@ struct BeeLoader: View {
     private static let leftRoot = CGPoint(x: 1010, y: 880)
     private static let rightRoot = CGPoint(x: 3191, y: 880)
 
-    /// `asIcon`: the pose of the app icon — wings straight, nothing moving.
-    fileprivate static func draw(in context: GraphicsContext, size: CGSize, time: TimeInterval, still: Bool, asIcon: Bool = false) {
+    /// `asIcon`: the pose of the app icon — wings straight, nothing moving. `flutter`: the icon's
+    /// bee lifting off for one beat — wings out and back twice, a hover — its stripes staying lit,
+    /// and at the end of the beat exactly the icon's pose again.
+    fileprivate static func draw(in context: GraphicsContext, size: CGSize, time: TimeInterval, still: Bool, asIcon: Bool = false,
+                                 flutter: Bool = false) {
         var context = context
         let scale = size.height / box.height
         context.scaleBy(x: scale, y: scale)
@@ -70,12 +74,12 @@ struct BeeLoader: View {
 
         // The wings, half see-through as on the icon: out to 16° and back in 1.2 s.
         let swing = still ? 0 : easeInOut(triangle(time / (beat / 2)))
-        let angle = Angle.degrees(asIcon ? 0 : -4 + 20 * swing)
+        let angle = Angle.degrees(flutter ? 20 * swing : asIcon ? 0 : -4 + 20 * swing)
         fill(leftWing, turned: angle, around: leftRoot, opacity: 0.55 * fade, in: context)
         fill(rightWing, turned: -angle, around: rightRoot, opacity: 0.55 * fade, in: context)
 
         for (index, bar) in bars.enumerated() {
-            let turn = still ? (opacity: 1.0, drop: CGFloat(0)) : sorting(fraction((time - Double(index) * 0.16) / beat))
+            let turn = still || flutter ? (opacity: 1.0, drop: CGFloat(0)) : sorting(fraction((time - Double(index) * 0.16) / beat))
             var layer = context
             layer.opacity = turn.opacity * fade
             let rect = CGRect(x: bar.x, y: bar.y + turn.drop, width: bar.width, height: 264)
@@ -115,14 +119,36 @@ struct BeeLoader: View {
 /// bubble. It takes the colour it is given — black on the bee's yellow, as the icon has it.
 struct BeeMark: View {
     var size: CGFloat = 16
+    /// Now and then — every ten to twenty seconds — the bee lifts off for one beat and settles
+    /// back. Never with Reduce Motion; otherwise it stands still, as the icon does.
+    var livesNowAndThen = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// When the beat started, while it lasts.
+    @State private var liftedAt: Date?
 
     var body: some View {
-        // Still and at full strength, the wings straight: the pose the icon has (and Figma's iOS/BeeMark).
-        Canvas { context, canvas in BeeLoader.draw(in: context, size: canvas, time: 0, still: true, asIcon: true) }
-            .frame(width: size * BeeLoader.aspect, height: size)
-            // The drawing keeps room above the bee for its hover; a mark that stands still sits in the middle.
-            .offset(y: -size * 0.036)
-            .accessibilityHidden(true)
+        TimelineView(.animation(paused: liftedAt == nil)) { timeline in
+            let time = liftedAt.map { timeline.date.timeIntervalSince($0) } ?? 0
+            // Still and at full strength, the wings straight: the pose the icon has (and Figma's iOS/BeeMark).
+            Canvas { context, canvas in
+                BeeLoader.draw(in: context, size: canvas, time: min(time, BeeLoader.beatLength), still: liftedAt == nil, asIcon: true,
+                               flutter: liftedAt != nil)
+            }
+        }
+        .frame(width: size * BeeLoader.aspect, height: size)
+        // The drawing keeps room above the bee for its hover; a mark that stands still sits in the middle.
+        .offset(y: -size * 0.036)
+        .accessibilityHidden(true)
+        .task(id: livesNowAndThen && !reduceMotion) {
+            guard livesNowAndThen, !reduceMotion else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(Double.random(in: 10...20)))
+                guard !Task.isCancelled else { return }
+                liftedAt = Date()
+                try? await Task.sleep(for: .seconds(BeeLoader.beatLength))
+                liftedAt = nil
+            }
+        }
     }
 }
 
