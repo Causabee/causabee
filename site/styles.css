@@ -203,12 +203,17 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .split__text { flex: 1; display: flex; flex-direction: column; gap: 18px; }
 .note { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
 .note svg { flex-shrink: 0; margin-top: 1px; }
-.ask-shot { flex-shrink: 0; width: 500px; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-shot); }
+.ask-side { flex-shrink: 0; width: 500px; display: flex; flex-direction: column; gap: 18px; }
+.ask-shot { width: 100%; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-shot); }
+/* The line the app shows while the assistant writes: the bee at work, then what it is doing. */
+.thinking { display: flex; align-items: center; gap: 10px; padding-left: 6px; font-size: 15px; color: var(--muted); }
+.thinking .bee-work { width: 26px; flex-shrink: 0; }
 .ask-shot img { width: 100%; height: auto; }
 @media (max-width: 899px) {
   .split { flex-direction: column; align-items: stretch; gap: 40px; }
   .split__text { gap: 14px; }
-  .ask-shot { width: 100%; max-width: 500px; border-radius: 20px; }
+  .ask-side { width: 100%; max-width: 500px; gap: 14px; }
+  .ask-shot { border-radius: 20px; }
   .br-wide { display: none; }
 }
 
@@ -316,6 +321,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .hero-icon .wl, .bee-work .wl { transform-box: view-box; transform-origin: 1010px 880px; }
 .hero-icon .wr, .bee-work .wr { transform-box: view-box; transform-origin: 3191px 880px; }
 .bee-work { width: 40px; height: auto; overflow: visible; fill: var(--honey); }
+.bee-work--ink { fill: var(--ink); }
 .bee-work .wl, .bee-work .wr { fill-opacity: 0.55; }
 
 @media (prefers-reduced-motion: no-preference) {
