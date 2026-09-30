@@ -47,7 +47,8 @@ struct MatterScreen: View {
                     } else {
                         Button("Close the matter …", systemImage: "archivebox") { asksToClose = true }
                     }
-                } label: { Image(systemName: "ellipsis").foregroundStyle(.primary) }
+                } label: { Image(systemName: "ellipsis") }
+                .tint(.primary)
                 .accessibilityLabel("More")
             }
         }

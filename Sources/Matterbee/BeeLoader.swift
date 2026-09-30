@@ -56,7 +56,7 @@ struct BeeLoader: View {
     private static let leftRoot = CGPoint(x: 1010, y: 880)
     private static let rightRoot = CGPoint(x: 3191, y: 880)
 
-    private static func draw(in context: GraphicsContext, size: CGSize, time: TimeInterval, still: Bool) {
+    fileprivate static func draw(in context: GraphicsContext, size: CGSize, time: TimeInterval, still: Bool) {
         var context = context
         let scale = size.height / box.height
         context.scaleBy(x: scale, y: scale)
@@ -108,9 +108,25 @@ struct BeeLoader: View {
     private static func easeOut(_ x: Double) -> Double { 1 - pow(1 - x, 3) }
 }
 
+/// The icon's bee standing still: the assistant's own mark, where another app would put a speech
+/// bubble. It takes the colour it is given — black on the bee's yellow, as the icon has it.
+struct BeeMark: View {
+    var size: CGFloat = 16
+
+    var body: some View {
+        // Still and at full strength: the pose the icon has, the wings at rest.
+        Canvas { context, canvas in BeeLoader.draw(in: context, size: canvas, time: 0, still: true) }
+            .frame(width: size * BeeLoader.aspect, height: size)
+            // The drawing keeps room above the bee for its hover; a mark that stands still sits in the middle.
+            .offset(y: -size * 0.036)
+            .accessibilityHidden(true)
+    }
+}
+
 #Preview("Bee at work") {
     VStack(alignment: .leading, spacing: 20) {
         BeeLoader(size: 88)
+        BeeMark(size: 24).foregroundStyle(.black).frame(width: 60, height: 60).background(Theme.bee, in: Circle())
         HStack(spacing: 8) { BeeLoader(); Text("Sorting in 12 mails …").foregroundStyle(.secondary) }
         HStack(spacing: 6) { BeeLoader(size: 14); Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary) }
     }

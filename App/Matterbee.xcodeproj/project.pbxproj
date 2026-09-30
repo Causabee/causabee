@@ -20,6 +20,7 @@
 		AA0000000000000000000045 /* Exceptions for "Matterbee" folder in "MatterbeePhone" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				BeeLoader.swift,
 				DemoData.swift,
 				Theme.swift,
 			);

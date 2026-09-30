@@ -51,14 +51,14 @@ extension View {
     }
 }
 
-/// The yellow round button in the corner: the assistant, over whatever is open.
+/// The yellow round button in the corner, with the bee on it: the assistant, over whatever is open.
 struct AssistantButton: View {
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "bubble.left.and.bubble.right")
-                .font(.system(size: 22, weight: .medium))
+            // Matterbee's own bee, black on its yellow as the app icon has it — not a speech bubble.
+            BeeMark(size: 24)
                 .foregroundStyle(.black)
                 .frame(width: 60, height: 60)
                 .background(Theme.bee, in: Circle())
