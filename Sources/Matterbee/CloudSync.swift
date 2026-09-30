@@ -109,10 +109,26 @@ struct CloudSettings: View {
     private let started = CloudSync.mode
 
     var body: some View {
+        // A build without the entitlement — the downloaded beta — never syncs, whatever is chosen:
+        // it says so instead of offering a choice that does nothing.
+        if !CloudSync.isEntitled {
+            LabeledContent("iCloud", value: "Not in this version")
+            Text("This version of Matterbee has no iCloud: your matters stay on this Mac.")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        } else {
+            choice
+        }
+    }
+
+    @ViewBuilder
+    private var choice: some View {
         Picker("iCloud", selection: $mode) {
             ForEach(CloudSync.Mode.allCases, id: \.rawValue) { Text($0.label).tag($0.rawValue) }
         }
-        if mode != started.rawValue {
+        if DemoData.isRequested {
+            Text("In the demo, iCloud stays off: the made-up matters never meet your iCloud. Your choice counts again when you leave the demo.")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        } else if mode != started.rawValue {
             HStack {
                 Text("Takes effect when Matterbee starts again.").font(.caption).foregroundStyle(Theme.warning)
                 Spacer()
