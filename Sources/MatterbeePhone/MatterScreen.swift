@@ -16,6 +16,8 @@ struct MatterScreen: View {
     @State private var showsPast = false
     @State private var editingNotes = false
     @State private var asksToClose = false
+    @State private var splitting = false
+    @State private var newMatterName = ""
     @State private var marked: PersistentIdentifier?
     @Query private var allMatters: [Matter]
     @Query private var profiles: [Profile]
@@ -59,6 +61,18 @@ struct MatterScreen: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                // Glasses, as on the Mac: on, black on the bee's yellow.
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
+                } label: {
+                    Image(systemName: "eyeglasses")
+                        .foregroundStyle(navigation.reading ? Color.black : Color.primary)
+                        .frame(width: 30, height: 30)
+                        .background { if navigation.reading { Circle().fill(Theme.bee) } }
+                }
+                .accessibilityLabel(navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
@@ -135,9 +149,39 @@ struct MatterScreen: View {
             let new = status.mailsSinceClosed.count
             Text(new == 0 ? "Nothing new since." : "\(new) new \(new == 1 ? "mail" : "mails") came after it was closed.")
                 .foregroundStyle(new == 0 ? Color.secondary : Theme.warning)
-            Button("Open again") { matter.reopen(); try? context.save() }.buttonStyle(.phone).padding(.top, 4)
+            HStack(spacing: 10) {
+                if new > 0 {
+                    // The new mails, with what they brought, become a matter of their own; this one stays closed.
+                    Button("Start a new matter") {
+                        newMatterName = Matter.suggestedName(for: status.mailsSinceClosed)
+                        splitting = true
+                    }
+                    .buttonStyle(.phoneFilled)
+                }
+                Button("Open again") { matter.reopen(); try? context.save() }.buttonStyle(.phone)
+            }
+            .padding(.top, 4)
         }
         .phoneBox()
+        .alert("A new matter with the \(status.mailsSinceClosed.count) new \(status.mailsSinceClosed.count == 1 ? "mail" : "mails")", isPresented: $splitting) {
+            TextField("Name", text: $newMatterName)
+            Button("Cancel", role: .cancel) {}
+            Button("Start", action: startNewMatter)
+                .disabled(newMatterName.trimmingCharacters(in: .whitespaces).isEmpty)
+        } message: {
+            Text("Their tasks, dates, files and links go with them. “\(matter.name)” stays closed.")
+        }
+    }
+
+    private func startNewMatter() {
+        let mails = MatterStatus(matter).mailsSinceClosed
+        let name = newMatterName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !mails.isEmpty, !name.isEmpty,
+              let new = try? matter.split(mails, intoNewMatterNamed: name, turnsSince: matter.closedAt, in: context) else { return }
+        try? context.save()
+        // The new matter in place of the closed one: back goes to the overview.
+        if navigation.path.last == matter.persistentModelID { navigation.path.removeLast() }
+        navigation.open(new)
     }
 
     // MARK: Next step
@@ -152,16 +196,16 @@ struct MatterScreen: View {
             if fresh, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM MATTERBEE")
                 Text(step).font(.headline).fixedSize(horizontal: false, vertical: true)
-                if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
                 let todo = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
-                stepButtons(text: step, todo: todo, waiting: todo?.owner == .other, scroller)
+                stepButtons(text: step, todo: todo, waiting: todo?.owner == .other, scroller).tool()
             } else if let rule {
                 BeeChip(text: rule.label.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(.headline).fixedSize(horizontal: false, vertical: true)
-                Text(rule.why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Text(rule.why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation()
                 // As on the Mac: a step worked out on the device has buttons when it is a task.
                 if let todo = rule.todo.flatMap({ id in matter.openTodos.first { $0.persistentModelID == id } }) {
-                    stepButtons(text: todo.text, todo: todo, waiting: rule.kind == .followUp || rule.kind == .wait, scroller)
+                    stepButtons(text: todo.text, todo: todo, waiting: rule.kind == .followUp || rule.kind == .wait, scroller).tool()
                 }
             } else {
                 Text("NEXT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
@@ -181,6 +225,7 @@ struct MatterScreen: View {
                     }
                 }
             }
+            .tool()
             if let stepError { Text(stepError).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
         }
         .phoneBox()
@@ -303,6 +348,7 @@ struct MatterScreen: View {
                     Button("Write summary · \(cost)", action: writeSummary).buttonStyle(.phone)
                 }
             }
+            .tool()
             if let summaryError { Text(summaryError).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
         }
         .padding(text.isEmpty ? 0 : 16)
@@ -319,7 +365,7 @@ struct MatterScreen: View {
                     .foregroundStyle(text.isEmpty ? .secondary : .primary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
-                Button(text.isEmpty ? "Write" : "Edit") { editingNotes = true }.buttonStyle(.phone)
+                Button(text.isEmpty ? "Write" : "Edit") { editingNotes = true }.buttonStyle(.phone).tool()
             }
             .padding(16)
             .phoneCard()

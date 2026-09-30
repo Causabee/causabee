@@ -177,8 +177,22 @@ enum Sources {
 
 extension EnvironmentValues {
     /// Reading: the small actions and the AI's explanations are put away; what is left is the
-    /// matter itself. The right-click menus still have everything.
+    /// matter itself. The right-click menus still have everything — on the iPhone, each row's ⋯.
     @Entry var reading = false
+}
+
+extension View {
+    /// A small action — a link, a ⋯, a pin, a button that asks the AI — gone while reading.
+    func tool() -> some View { modifier(PutAwayWhileReading()) }
+    /// What the AI says about why, what it cost, where it looked — gone while reading.
+    func explanation() -> some View { modifier(PutAwayWhileReading()) }
+}
+
+private struct PutAwayWhileReading: ViewModifier {
+    @Environment(\.reading) private var reading
+    func body(content: Content) -> some View {
+        if !reading { content }
+    }
 }
 
 /// A link-like button in the gold, in place of the Mac's blue one.

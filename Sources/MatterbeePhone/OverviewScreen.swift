@@ -32,6 +32,7 @@ struct RootView: View {
         .onAppear { MirrorRunner.shared.start(context) }
         // This iPhone's list of names into the store when it goes to the background, as the Mac's.
         .onChange(of: phase) { _, now in if now == .background { PhoneNames.publish(in: context) } }
+        .environment(\.reading, navigation.reading)
         .environment(navigation)
     }
 }

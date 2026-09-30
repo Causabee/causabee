@@ -244,6 +244,18 @@ extension Matter {
         if old != key, !aliases.contains(old) { aliases.append(old) }
     }
 
+    /// The first new mail's subject, without "Re:" and the like, and without a calendar invitation's
+    /// " - date and time" tail: "Einladung: Ralf Chille and Robbie Kerr".
+    public static func suggestedName(for mails: [Entry]) -> String {
+        var title = mails.min { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.title ?? ""
+        let prefixes = ["re:", "aw:", "fwd:", "fw:", "wg:", "[external]"]
+        while let prefix = prefixes.first(where: { title.trimmingCharacters(in: .whitespaces).lowercased().hasPrefix($0) }) {
+            title = String(title.trimmingCharacters(in: .whitespaces).dropFirst(prefix.count))
+        }
+        if let dash = title.range(of: " - ") { title = String(title[..<dash.lowerBound]) }
+        return String(title.trimmingCharacters(in: .whitespaces).prefix(80))
+    }
+
     /// These mails as a matter of their own, named by the owner: the model filed them here — often
     /// under a closed matter — and the owner meant a new one. What only they brought goes along:
     /// tasks, dates and decisions read out of them alone, their files and links, and the assistant's

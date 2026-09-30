@@ -68,7 +68,7 @@ struct PhoneThreadMailRow: View {
                 }
                 HStack(spacing: 14) {
                     if entry.source.pointer.hasPrefix("imap://") {
-                        Button("Read") { reading = true }
+                        Button("Read") { reading = true }.tool()
                     }
                     if let url = entry.mailURL {
                         Button(label(entry.source.kind)) { openURL(url) }

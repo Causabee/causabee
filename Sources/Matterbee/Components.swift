@@ -65,20 +65,6 @@ struct SidebarButton: View {
 
 
 extension View {
-    /// A small action — a link, a ⋯, a pin, a button that asks the AI — gone while reading.
-    func tool() -> some View { modifier(PutAwayWhileReading()) }
-    /// What the AI says about why, what it cost, where it looked — gone while reading.
-    func explanation() -> some View { modifier(PutAwayWhileReading()) }
-}
-
-private struct PutAwayWhileReading: ViewModifier {
-    @Environment(\.reading) private var reading
-    func body(content: Content) -> some View {
-        if !reading { content }
-    }
-}
-
-extension View {
     /// The system's soft scroll edge on top: what scrolls up blurs and fades out there.
     @ViewBuilder
     func softTopEdge() -> some View {

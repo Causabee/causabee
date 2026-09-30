@@ -9,6 +9,10 @@ import SwiftData
 final class Navigation {
     /// The matters pushed on the overview, the last one on top.
     var path: [PersistentIdentifier] = []
+    /// Reading: the small actions and the AI's explanations put away, as on the Mac; remembered.
+    var reading = UserDefaults.standard.bool(forKey: "ui.reading") {
+        didSet { UserDefaults.standard.set(reading, forKey: "ui.reading") }
+    }
     var showsAssistant = false
     /// A task to scroll to when its matter opens: the one an overdue line pointed at.
     var showing: PersistentIdentifier?

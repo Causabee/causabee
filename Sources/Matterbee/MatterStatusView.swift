@@ -668,7 +668,7 @@ struct MatterStatusView: View {
                     Spacer()
                     if !status.mailsSinceClosed.isEmpty {
                         Button("Start a new matter") {
-                            newMatterName = Self.suggestedName(for: status.mailsSinceClosed)
+                            newMatterName = Matter.suggestedName(for: status.mailsSinceClosed)
                             splitting = true
                         }
                         .help("The new mails, with what they brought, become a matter of their own; this one stays closed")
@@ -708,18 +708,6 @@ struct MatterStatusView: View {
               let new = try? matter.split(mails, intoNewMatterNamed: name, turnsSince: matter.closedAt, in: context) else { return }
         splitting = false
         navigation.open(new)
-    }
-
-    /// The first new mail's subject, without "Re:" and the like, and without a calendar invitation's
-    /// " - date and time" tail: "Einladung: Ralf Chille and Robbie Kerr".
-    static func suggestedName(for mails: [Entry]) -> String {
-        var title = mails.min { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.title ?? ""
-        let prefixes = ["re:", "aw:", "fwd:", "fw:", "wg:", "[external]"]
-        while let prefix = prefixes.first(where: { title.trimmingCharacters(in: .whitespaces).lowercased().hasPrefix($0) }) {
-            title = String(title.trimmingCharacters(in: .whitespaces).dropFirst(prefix.count))
-        }
-        if let dash = title.range(of: " - ") { title = String(title[..<dash.lowerBound]) }
-        return String(title.trimmingCharacters(in: .whitespaces).prefix(80))
     }
 
     /// The name, how much mail and since when, the page search and Close: on glass, always on top.

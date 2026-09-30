@@ -222,6 +222,7 @@ struct LinksSection: View {
                 SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
                 Button("Link", systemImage: "plus") { adding = true }
                     .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                    .tool()
             }
             if !all.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
@@ -266,8 +267,9 @@ struct LinksSection: View {
                 if searching?.hasSuffix("…") != true, !(matter.entries ?? []).isEmpty {
                     Button(matter.linksSearchedAt == nil ? "Look for links in the mails" : "Look in the mails again", action: search)
                         .font(.caption).foregroundStyle(Theme.gold)
+                        .tool()
                     if let at = matter.linksSearchedAt, searching == nil {
-                        Text("last on \(Dates.short(at))").font(.caption).foregroundStyle(.secondary)
+                        Text("last on \(Dates.short(at))").font(.caption).foregroundStyle(.secondary).tool()
                     }
                 }
             }

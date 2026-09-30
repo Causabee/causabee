@@ -73,6 +73,7 @@ struct FilesSection: View {
                               + (small.isEmpty ? "" : " · \(small.count) small \(small.count == 1 ? "image" : "images")"))
                 Button("Add a document", systemImage: "plus") { addsScan = true }
                     .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                    .tool()
             }
             if !shown.isEmpty || !waiting.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
@@ -168,6 +169,7 @@ struct FilesSection: View {
                 if offersName, state[id] == nil {
                     Button("Name it from its content") { nameFromContent(document) }
                         .font(.caption).foregroundStyle(Theme.gold)
+                        .tool()
                 }
                 if let message = state[id] {
                     Text(message).font(.caption)
