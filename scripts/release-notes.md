@@ -1,0 +1,33 @@
+A new beta of Matterbee for Mac.
+
+Matterbee turns scattered mail, documents and screenshots into clear matters: what comes next, who does what, and by when.
+
+## Try it without setting anything up
+
+At the end of the introduction, click **Try the demo**. Matterbee opens nine made-up matters — a trip, a move, care for a parent and more — kept apart from your own. **Leave the demo** in the sidebar takes you back. You can also find both in the Matterbee menu.
+
+## Install
+
+1. Download **{{ZIP}}** below and open it.
+2. Move **Matterbee** to your Applications folder and open it.
+
+The app is signed with a Developer ID and notarized by Apple.
+
+## What you need
+
+- macOS Sequoia 15 or later
+- For your own mail: a Gmail, iCloud or other IMAP account, and a label on the mail Matterbee should read (for example “Matterbee”). Gmail needs an app password.
+- An API key from Anthropic (Claude), OpenAI or Mistral. You pay the provider directly, and every answer shows what it cost.
+
+## Privacy
+
+Your mail and files stay on your Mac. Before anything goes to the AI, names, addresses and numbers are replaced — and only when you click. Matterbee has no server, no account and no analytics. [Privacy policy](https://ralfchille.github.io/matterbee/privacy.html)
+
+## Not in this beta yet
+
+- **iCloud sync.** Your matters stay on this Mac.
+- **Sign in with Google.** Use an app password for Gmail.
+
+## Feedback
+
+Found a bug or have an idea? [Open an issue](https://github.com/ralfchille/matterbee/issues).

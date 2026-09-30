@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- What a release is signed with: Calendar and Reminders only. No iCloud — Xcode makes no Developer ID
+     profile for it from the command line — so a release keeps its matters on the Mac. -->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.personal-information.calendars</key>
+	<true/>
+</dict>
+</plist>
