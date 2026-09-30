@@ -8,10 +8,11 @@ At the end of the introduction, click **Try the demo**. Matterbee opens nine mad
 
 ## Install
 
-1. Download **{{ZIP}}** below and open it.
-2. Move **Matterbee** to your Applications folder and open it.
+1. Download **{{FILE}}** below and open it.
+2. In the window that opens, drag **Matterbee** onto the **Applications** folder.
+3. Open Matterbee from your Applications folder.
 
-The app is signed with a Developer ID and notarized by Apple.
+The app and the disk image are signed with a Developer ID and notarized by Apple.
 
 ## What you need
 
