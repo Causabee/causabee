@@ -1,3 +1,4 @@
+import EventKit
 import MatterCore
 import SwiftData
 import SwiftUI
@@ -15,6 +16,9 @@ struct MatterScreen: View {
     @State private var asksToClose = false
     @State private var marked: PersistentIdentifier?
     @Query private var allMatters: [Matter]
+    /// The owner's reminders, read when the matter opens and again when Reminders changes.
+    @State private var reminders: [Calendars.Reminder] = []
+    @State private var calendarTick = 0
 
     var body: some View {
         let status = MatterStatus(matter)
@@ -37,7 +41,8 @@ struct MatterScreen: View {
                 // a break — can make it wider and let it slide sideways.
                 .containerRelativeFrame(.horizontal)
             }
-            .onAppear { show(navigation.showing, with: scroller) }
+            .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
+            .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
         }
         .background(Theme.canvas)
         .overlay(alignment: .bottomTrailing) {
@@ -284,7 +289,7 @@ struct MatterScreen: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(todos.enumerated()), id: \.element.persistentModelID) { index, todo in
                 if index > 0 { Divider().padding(.leading, 50) }
-                PhoneTodoRow(todo: todo, today: status.today, showsOwner: showsOwner) { withAnimation { toggle(todo) } }
+                PhoneTodoRow(todo: todo, today: status.today, showsOwner: showsOwner, reminders: reminders, calendarTick: calendarTick) { withAnimation { toggle(todo) } }
                     .background(marked == todo.persistentModelID ? Theme.mark : .clear)
                     .id(todo.persistentModelID)
             }
@@ -304,15 +309,18 @@ struct MatterScreen: View {
 
     @ViewBuilder
     private func dates(_ status: MatterStatus) -> some View {
-        let coming = status.upcomingAppointments.map(PhoneDate.init) + status.deadlines.filter { $0.day >= status.today }.map(PhoneDate.init)
-        let earlier = status.pastAppointments.map(PhoneDate.init) + status.deadlines.filter { $0.day < status.today }.map(PhoneDate.init)
-        if !coming.isEmpty || !earlier.isEmpty {
+        let upcoming = status.upcomingAppointments, past = status.pastAppointments
+        let deadlines = status.deadlines
+        if !upcoming.isEmpty || !past.isEmpty || !deadlines.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Appointments and deadlines", detail: "\(coming.count) coming")
-                dateRows(coming.sorted { ($0.day, $0.time ?? "") < ($1.day, $1.time ?? "") }, past: false)
+                SectionHeader(title: "Appointments and deadlines", detail: "\(upcoming.count) coming · \(deadlines.filter { $0.day >= status.today }.count) deadlines open")
+                CalendarAccessBanner { loadCalendars() }
+                let rows: [PhoneDateRow.Item] = upcoming.map(PhoneDateRow.Item.init) + deadlines.filter { $0.day >= status.today }.map(PhoneDateRow.Item.init)
+                dateRows(rows.sorted { $0.day != $1.day ? $0.day < $1.day : PhoneDateRow.Item.sameDay($0, $1) }, past: false)
+                let earlier: [PhoneDateRow.Item] = past.map(PhoneDateRow.Item.init) + deadlines.filter { $0.day < status.today }.map(PhoneDateRow.Item.init)
                 if !earlier.isEmpty {
                     DisclosureGroup("Past · \(earlier.count)", isExpanded: $showsPast) {
-                        dateRows(earlier.sorted { ($0.day, $0.time ?? "") > ($1.day, $1.time ?? "") }, past: true).padding(.top, 6)
+                        dateRows(earlier.sorted { $0.day != $1.day ? $0.day > $1.day : PhoneDateRow.Item.sameDay($0, $1) }, past: true).padding(.top, 6)
                     }
                     .padding(.horizontal, 4)
                 }
@@ -320,35 +328,25 @@ struct MatterScreen: View {
         }
     }
 
-    private func dateRows(_ items: [PhoneDate], past: Bool) -> some View {
+    private func dateRows(_ items: [PhoneDateRow.Item], past: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-                if index > 0 { Divider().padding(.leading, 16) }
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: item.isDeadline ? "flag" : "calendar")
-                        .foregroundStyle(item.isDeadline && !past ? Theme.warning : .secondary)
-                        .frame(width: 22)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(item.what).foregroundStyle(past ? .secondary : .primary).fixedSize(horizontal: false, vertical: true)
-                        Text(([item.isDeadline ? "Deadline" : nil, Dates.short(item.day), item.time.map { "at \($0)" }, item.place].compactMap { $0 })
-                            .joined(separator: " · "))
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(14)
-                .contentShape(Rectangle())
-                .contextMenu {
-                    Button("Talk about it with the assistant") {
-                        navigation.talk(item.what, kind: item.isDeadline ? "Deadline" : "Appointment", in: matter)
-                    }
-                }
+                if index > 0 { Divider().padding(.leading, 14) }
+                PhoneDateRow(item: item, isPast: past, matter: matter, tick: calendarTick)
             }
             if items.isEmpty {
-                Text("Nothing coming.").foregroundStyle(.secondary).padding(14)
+                Text("Nothing coming.").foregroundStyle(.secondary).padding(14).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .phoneCard()
+    }
+
+    /// The owner's reminders, read when the matter opens and again when Reminders changes.
+    private func loadCalendars() {
+        Task {
+            reminders = await Calendars.shared.allReminders()
+            calendarTick += 1
+        }
     }
 
     // MARK: People
@@ -426,6 +424,9 @@ struct PhoneTodoRow: View {
     let todo: Todo
     let today: String
     var showsOwner = false
+    /// The owner's reminders, for the Reminders chip; nil where none is shown.
+    var reminders: [Calendars.Reminder]? = nil
+    var calendarTick = 0
     let toggle: () -> Void
     @Environment(\.modelContext) private var context
     @Environment(Navigation.self) private var navigation
@@ -449,6 +450,14 @@ struct PhoneTodoRow: View {
                     .foregroundStyle(todo.isDone || todo.isBlocked ? .secondary : .primary)
                     .strikethrough(todo.isDone, color: .secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                if let reminders, !todo.isDone, !todo.isInfo, todo.owner == .me || todo.owner == .we || todo.reminderID != nil {
+                    CalendarChip(kind: .reminder, linkedID: todo.reminderID, title: todo.text, day: todo.due, time: todo.dueTime,
+                                 note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick) { id in
+                        todo.reminderID = id
+                        todo.reminderStamp = nil
+                        try? context.save()
+                    }
+                }
                 if !todo.isDone, let other = todo.waitsFor {
                     Label(other.isDone ? "its turn now — done: \(other.text)" : "only after: \(other.text)",
                           systemImage: other.isDone ? "arrow.right.circle.fill" : "hourglass")
@@ -563,23 +572,6 @@ struct PhoneTodoRow: View {
         if todo.isDone { return Theme.done }
         if let due = todo.due, due < today { return Theme.warning }
         return .secondary
-    }
-}
-
-/// An appointment or a deadline, for one list of both.
-struct PhoneDate {
-    var what: String
-    var day: String
-    var time: String?
-    var place: String?
-    var isDeadline: Bool
-
-    init(_ appointment: Appointment) {
-        what = appointment.what; day = appointment.day; time = appointment.time; place = appointment.place; isDeadline = false
-    }
-
-    init(_ deadline: Deadline) {
-        what = deadline.what; day = deadline.day; time = nil; place = nil; isDeadline = true
     }
 }
 
@@ -748,6 +740,182 @@ struct PhoneTodoEditor: View {
         } else {
             todo.due = nil
             todo.dueTime = nil
+        }
+        try? context.save()
+        dismiss()
+    }
+}
+
+/// An appointment or a deadline, as the Mac's date row: the day on the left, what it is, its kind
+/// and place, whether it is in Calendar — and its ⋯: talk about it, change it, delete it.
+struct PhoneDateRow: View {
+    struct Item {
+        var day: String
+        var time: String?
+        var what: String
+        var place: String?
+        var kind: String
+        var appointment: Appointment?
+        var deadline: Deadline?
+
+        /// On the same day: the whole-day ones first, then by the hour, then by name.
+        static func sameDay(_ a: Item, _ b: Item) -> Bool {
+            let (x, y) = (a.time ?? "", b.time ?? "")
+            return x != y ? x < y : a.what.localizedStandardCompare(b.what) == .orderedAscending
+        }
+
+        init(_ appointment: Appointment) {
+            (day, time, what, place, kind) = (appointment.day, appointment.time, appointment.what, appointment.place, "Appointment")
+            self.appointment = appointment
+        }
+
+        init(_ deadline: Deadline) {
+            (day, time, what, place, kind) = (deadline.day, nil, deadline.what, nil, "Deadline")
+            self.deadline = deadline
+        }
+
+        var calendarID: String? { appointment?.calendarID ?? deadline?.calendarID }
+        func connect(_ id: String?) {
+            appointment?.calendarID = id
+            deadline?.calendarID = id
+            // Connected anew: in step from here on, as each side is now.
+            appointment?.calendarStamp = nil
+            deadline?.calendarStamp = nil
+        }
+    }
+
+    let item: Item
+    let isPast: Bool
+    let matter: Matter
+    var tick = 0
+    @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
+    @State private var editing = false
+    @State private var deleting = false
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Dates.short(item.day)).font(.subheadline.weight(.semibold))
+                if let time = item.time { Text(time).font(.caption).foregroundStyle(.secondary) }
+            }
+            .frame(width: 64, alignment: .leading)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.what).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    Text(item.kind).font(.caption.weight(.medium))
+                        .foregroundStyle(item.kind == "Deadline" ? Theme.warning : .secondary)
+                    if let place = item.place { Text(place).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
+                }
+                if !isPast || item.calendarID != nil {
+                    CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time,
+                                 place: item.place, matterName: matter.name, tick: tick) { id in item.connect(id); try? context.save() }
+                }
+            }
+            Spacer(minLength: 0)
+            Menu { moreItems } label: {
+                Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
+            }
+            .tint(.secondary)
+            .accessibilityLabel("More")
+        }
+        .foregroundStyle(isPast ? .secondary : .primary)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+        .contextMenu { moreItems }
+        .sheet(isPresented: $editing) { PhoneDateEditor(item: item) }
+        .confirmationDialog("Delete “\(item.what)”?", isPresented: $deleting, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let appointment = item.appointment { context.delete(appointment) }
+                if let deadline = item.deadline { context.delete(deadline) }
+                try? context.save()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(item.calendarID == nil ? "It goes from this matter. This cannot be undone."
+                 : "It goes from this matter; the entry in Calendar stays. This cannot be undone.")
+        }
+    }
+
+    @ViewBuilder
+    private var moreItems: some View {
+        Button("Talk about it with the assistant") { navigation.talk(item.what, kind: item.kind, in: matter) }
+        Divider()
+        Button("Edit …") { editing = true }
+        Divider()
+        Button("Delete …", role: .destructive) { deleting = true }
+    }
+}
+
+/// An appointment or a deadline put right by hand, as the Mac's editor: what, which day, and for
+/// an appointment the time and the place. A connected Calendar entry follows on the next sync.
+struct PhoneDateEditor: View {
+    let item: PhoneDateRow.Item
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var what = ""
+    @State private var day = Date()
+    @State private var hasTime = false
+    @State private var time = Date()
+    @State private var place = ""
+
+    private var isAppointment: Bool { item.appointment != nil }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("What", text: $what, axis: .vertical).lineLimit(1...4)
+                DatePicker("Day", selection: $day, displayedComponents: .date)
+                if isAppointment {
+                    Toggle("Time", isOn: $hasTime)
+                    if hasTime { DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute) }
+                    TextField("Place", text: $place)
+                }
+            }
+            .environment(\.locale, Locale(identifier: "en_US"))
+            .navigationTitle(isAppointment ? "Change appointment" : "Change deadline")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: saveChanges).disabled(what.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .onAppear(perform: load)
+        }
+    }
+
+    private static func formatter(_ format: String) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = format
+        return formatter
+    }
+
+    private func load() {
+        what = item.what
+        place = item.place ?? ""
+        day = MatterStatus.date(of: item.day) ?? Date()
+        if let at = item.time, let parsed = Self.formatter("HH:mm").date(from: at) {
+            hasTime = true
+            time = parsed
+        }
+    }
+
+    private func saveChanges() {
+        let text = what.trimmingCharacters(in: .whitespacesAndNewlines)
+        let dayText = Self.formatter("yyyy-MM-dd").string(from: day)
+        if let appointment = item.appointment {
+            appointment.what = text
+            appointment.day = dayText
+            appointment.time = hasTime ? Self.formatter("HH:mm").string(from: time) : nil
+            let spot = place.trimmingCharacters(in: .whitespacesAndNewlines)
+            appointment.place = spot.isEmpty ? nil : spot
+        }
+        if let deadline = item.deadline {
+            deadline.what = text
+            deadline.day = dayText
         }
         try? context.save()
         dismiss()

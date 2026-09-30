@@ -21,8 +21,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				BeeLoader.swift,
+				CalendarChip.swift,
 				CardActions.swift,
 				DemoData.swift,
+				MirrorRunner.swift,
 				ModelChoice.swift,
 				Theme.swift,
 			);
@@ -297,6 +299,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Matterbee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Matterbee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Matterbee scans a letter that came on paper, to keep it in your mail with its matter.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -328,6 +332,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Matterbee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Matterbee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Matterbee scans a letter that came on paper, to keep it in your mail with its matter.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

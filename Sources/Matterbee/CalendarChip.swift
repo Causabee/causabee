@@ -1,4 +1,8 @@
+#if canImport(AppKit)
 import AppKit
+#else
+import UIKit
+#endif
 import EventKit
 import MatterCore
 import SwiftUI
@@ -52,7 +56,7 @@ struct CalendarChip: View {
                 } else {
                     Button(action: add) { Label("Add to \(where_)", systemImage: "plus") }
                         .buttonStyle(.gold).font(.caption)
-                        .help(kind == .event ? "Into the calendar chosen in Settings (⌘,)" : "Into the list chosen in Settings (⌘,)")
+                        .help(kind == .event ? "Into the calendar chosen in Settings" : "Into the list chosen in Settings")
                 }
                 if let error { Text(error).font(.caption).foregroundStyle(Theme.warning).lineLimit(1) }
             }
@@ -62,6 +66,7 @@ struct CalendarChip: View {
 
     /// Calendar at that event, Reminders at that reminder — the one door out, on a click.
     private func open(_ id: String) {
+        #if canImport(AppKit)
         switch kind {
         case .event:
             guard let event = calendars.event(id) else { return }
@@ -73,6 +78,19 @@ struct CalendarChip: View {
             if let url = URL(string: "x-apple-reminderkit://REMCDReminder/\(reminder.calendarItemIdentifier)"), NSWorkspace.shared.open(url) { return }
             NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Reminders.app"))
         }
+        #else
+        // The iPhone's Calendar opens at the event's day; Reminders at the reminder.
+        switch kind {
+        case .event:
+            guard let event = calendars.event(id), let start = event.startDate,
+                  let url = URL(string: "calshow:\(start.timeIntervalSinceReferenceDate)") else { return }
+            UIApplication.shared.open(url)
+        case .reminder:
+            guard let reminder = calendars.reminder(id),
+                  let url = URL(string: "x-apple-reminderkit://REMCDReminder/\(reminder.calendarItemIdentifier)") else { return }
+            UIApplication.shared.open(url)
+        }
+        #endif
     }
 
     /// What the connected entry is called now, or nil when it is gone.
@@ -119,8 +137,13 @@ struct CalendarAccessBanner: View {
                 Image(systemName: "calendar")
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Connect Calendar and Reminders").font(.callout.weight(.semibold))
+                    #if os(iOS)
+                    Text("To see which appointments and tasks are there already — nothing is added unless you tap.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    #else
                     Text("To see which appointments and tasks are there already — nothing is added unless you click.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    #endif
                 }
                 Spacer()
                 Button("Connect") {
@@ -137,6 +160,11 @@ struct CalendarAccessBanner: View {
 
 /// ⌘, · where new appointments and tasks go.
 struct CalendarSettings: View {
+    #if os(iOS)
+    static let press = "tap"
+    #else
+    static let press = "click"
+    #endif
     @AppStorage(Calendars.calendarKey) private var calendar = ""
     @AppStorage(Calendars.listKey) private var list = ""
     @State private var tick = 0
@@ -162,8 +190,13 @@ struct CalendarSettings: View {
             }
         } else {
             HStack {
-                Text(Calendars.shared.asked ? "No access. Allow it in System Settings → Privacy & Security → Calendars / Reminders."
-                                            : "Not connected yet.").font(.caption).foregroundStyle(.secondary)
+                #if os(iOS)
+                let settings = "Settings → Privacy & Security → Calendars / Reminders"
+                #else
+                let settings = "System Settings → Privacy & Security → Calendars / Reminders"
+                #endif
+                Text(Calendars.shared.asked ? "No access. Allow it in \(settings)." : "Not connected yet.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 if !Calendars.shared.asked {
                     Button("Connect") { Task { _ = await Calendars.shared.requestAccess(); tick += 1 } }
@@ -175,7 +208,7 @@ struct CalendarSettings: View {
             Text("Last kept in step at \(at.formatted(date: .omitted, time: .shortened)): \(last.pulled) taken in, \(last.pushed) written out.")
                 .font(.caption).foregroundStyle(.secondary)
         }
-        Text("Matterbee reads your calendars and reminders to show what is there already. It adds only when you click “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.")
+        Text("Matterbee reads your calendars and reminders to show what is there already. It adds only when you \(Self.press) “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.")
             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
     }
 }

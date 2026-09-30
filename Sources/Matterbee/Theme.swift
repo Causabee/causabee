@@ -174,3 +174,38 @@ enum Sources {
         }
     }
 }
+
+extension EnvironmentValues {
+    /// Reading: the small actions and the AI's explanations are put away; what is left is the
+    /// matter itself. The right-click menus still have everything.
+    @Entry var reading = false
+}
+
+/// A link-like button in the gold, in place of the Mac's blue one.
+struct GoldLinkStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(Theme.gold)
+            .opacity(configuration.isPressed ? 0.6 : 1)
+            .contentShape(Rectangle())
+    }
+}
+
+extension ButtonStyle where Self == GoldLinkStyle {
+    static var gold: GoldLinkStyle { GoldLinkStyle() }
+}
+
+extension View {
+    /// A box that asks for you — a card to take in, a merge to decide: grey, with a firmer frame.
+    func box(radius: CGFloat = 10) -> some View {
+        background(Theme.box, in: RoundedRectangle(cornerRadius: radius))
+            .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.strongLine))
+    }
+
+    /// A box of what is already done or on its way — a draft put in Gmail, a card taken in, what
+    /// came with the mail: the same grey, framed by a plain line, so it asks for nothing.
+    func quietBox(radius: CGFloat = 10) -> some View {
+        background(Theme.box, in: RoundedRectangle(cornerRadius: radius))
+            .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.line))
+    }
+}

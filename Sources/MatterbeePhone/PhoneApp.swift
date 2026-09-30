@@ -57,6 +57,8 @@ final class PhoneStore {
         let cloud = PhoneCloud.container
         return (url, Result {
             let container = try MatterSchema.container(at: url, cloudKit: cloud)
+            // The demo's made-up dates never go into the owner's calendars.
+            Calendars.shared.isSealed = DemoData.isRequested
             if DemoData.isRequested { DemoData.seed(container.mainContext) }
             return container
         })

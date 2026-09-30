@@ -5,6 +5,7 @@ import SwiftUI
 /// The overview, with each matter pushed on it, and the assistant as a sheet over both.
 struct RootView: View {
     @State private var navigation = Navigation()
+    @Environment(\.modelContext) private var context
     @Query private var matters: [Matter]
 
     var body: some View {
@@ -26,6 +27,8 @@ struct RootView: View {
                 .presentationDragIndicator(.visible)
         }
         .modifier(MatterQuestions())
+        // What is connected to Calendar and Reminders is kept in step both ways, as on the Mac.
+        .onAppear { MirrorRunner.shared.start(context) }
         .environment(navigation)
     }
 }

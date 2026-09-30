@@ -61,6 +61,8 @@ struct SettingsSheet: View {
                     Text("Only the store syncs: matters, tasks, dates, people, digests and the assistant's history. Full mail texts and files stay in your mail and on your Mac.")
                 }
 
+                Section { CalendarSettings() } header: { Text("Calendar and Reminders") }
+
                 Section {
                     if lists.isEmpty { Label("Not here yet", systemImage: "hourglass").foregroundStyle(Theme.warning) }
                     ForEach(lists) { list in
