@@ -26,6 +26,7 @@ struct MatterScreen: View {
                     notes
                     todos(status)
                     dates(status)
+                    FilesSection(matter: matter)
                     parties(status)
                     history(status)
                 }

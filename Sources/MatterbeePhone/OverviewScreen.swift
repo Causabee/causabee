@@ -36,12 +36,25 @@ struct OverviewScreen: View {
     @Environment(Navigation.self) private var navigation
     @Environment(PhoneStore.self) private var store
     @State private var search = ""
+    @State private var editsAccount = false
 
     private var ordered: [Matter] { activeMatters(matters) }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Spacer()
+                    Menu {
+                        Button("Mail account …", systemImage: "envelope") { editsAccount = true }
+                        Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: "sparkles") { store.switchDemo(!store.isDemo) }
+                    } label: {
+                        Image(systemName: "ellipsis").font(.body.weight(.semibold)).foregroundStyle(.primary)
+                            .frame(width: 44, height: 44)
+                            .glassEffect(.regular.interactive(), in: Circle())
+                    }
+                    .accessibilityLabel("More")
+                }
                 VStack(alignment: .leading, spacing: 4) {
                     Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))).uppercased())
                         .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
@@ -86,6 +99,7 @@ struct OverviewScreen: View {
             AssistantButton { navigation.showsAssistant = true }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $editsAccount) { MailAccountSheet() }
     }
 
     private var summary: String {
