@@ -1,20 +1,26 @@
 import CryptoKit
 import Foundation
 
-/// The one thing Matterbee writes to a mailbox: a draft, into the Drafts folder, on the owner's
-/// click. It never sends — IMAP cannot send mail — and it can do nothing else.
+/// The two things Matterbee writes to a mailbox, each on the owner's click: a draft, into the
+/// Drafts folder, and a letter the owner scanned, into the Matterbee label — so it lives in the
+/// mail like any attachment, and every device opens it from there. It never sends — IMAP cannot
+/// send mail — and it can do nothing else.
 ///
 /// It is not the reading client with one more command allowed. It is its own connection with its
-/// own short list: log in, find the folder the server marks as Drafts, `APPEND` one message
-/// flagged `\Draft` into that folder and no other, log out. `IMAPClient` still cannot send
-/// `APPEND` at all, so nothing that reads mail can write any.
+/// own short list: log in, find the one folder, `APPEND` one message into that folder and no
+/// other, log out. `IMAPClient` still cannot send `APPEND` at all, so nothing that reads mail can
+/// write any.
 public actor DraftDoor {
     public static let allowed: Set<String> = ["CAPABILITY", "LOGIN", "AUTHENTICATE", "LIST", "APPEND", "LOGOUT"]
 
     public enum Failure: Error, CustomStringConvertible {
         case noDraftsFolder
+        case noLabel(String)
         public var description: String {
-            switch self { case .noDraftsFolder: "The mailbox has no folder marked as Drafts." }
+            switch self {
+            case .noDraftsFolder: "The mailbox has no folder marked as Drafts."
+            case .noLabel(let label): "The mailbox has no label or folder called “\(label)”."
+            }
         }
     }
 
@@ -34,6 +40,22 @@ public actor DraftDoor {
         do {
             try await door.start(user: account.user, password: password, google: account.usesGoogle)
             let folder = try await door.put(message)
+            await door.logout()
+            return folder
+        } catch {
+            await door.logout()
+            throw error
+        }
+    }
+
+    /// Connects, puts the scanned letter into the label, and logs out. Says which folder.
+    public static func putLetter(_ message: Data, label: String, account: MailAccount, password: String) async throws -> String {
+        let transport = TLSTransport(host: account.host, port: account.port)
+        try await transport.open()
+        let door = DraftDoor(transport: transport)
+        do {
+            try await door.start(user: account.user, password: password, google: account.usesGoogle)
+            let folder = try await door.put(message, intoLabel: label)
             await door.logout()
             return folder
         } catch {
@@ -66,6 +88,21 @@ public actor DraftDoor {
         guard let drafts = folders.first(where: { $0.attributes.contains("\\drafts") }) else { throw Failure.noDraftsFolder }
         _ = try await command("APPEND", "\(try IMAPClient.quoted(MailboxName.encode(drafts.name))) (\\Draft)", literal: message)
         return drafts.name
+    }
+
+    /// Into the label and no other folder — found by its name, as the daily door finds it — and
+    /// flagged `\\Seen`: the owner put it there, there is nothing to read. No label, no letter.
+    public func put(_ message: Data, intoLabel label: String) async throws -> String {
+        let folders = try await command("LIST", "\"\" \"*\"").compactMap { response -> MailFolder? in
+            let tokens = response.tokens
+            guard tokens.count >= 4, tokens[0].text?.uppercased() == "LIST",
+                  case .list(let flags) = tokens[1], let name = tokens[3].text else { return nil }
+            return MailFolder(name: MailboxName.decode(name), attributes: Set(flags.compactMap(\.text)))
+        }
+        guard let folder = folders.first(where: { $0.name == label }) ?? folders.first(where: { $0.name.lowercased() == label.lowercased() }),
+              !folder.attributes.contains("\\noselect") else { throw Failure.noLabel(label) }
+        _ = try await command("APPEND", "\(try IMAPClient.quoted(MailboxName.encode(folder.name))) (\\Seen)", literal: message)
+        return folder.name
     }
 
     public func logout() async {
@@ -164,5 +201,58 @@ public struct DraftMessage: Sendable {
         let encoded = Data(body.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\n", with: "\r\n").utf8)
             .base64EncodedString(options: [.lineLength76Characters, .endLineWithCarriageReturn, .endLineWithLineFeed])
         return Data((lines.joined(separator: "\r\n") + "\r\n\r\n" + encoded).utf8)
+    }
+}
+
+/// A letter that came on paper, scanned: a mail from the owner to the owner, with the scan
+/// attached and the matter named in the subject, so the Mac's next "Get new mail" reads it and
+/// files it where it belongs — its tasks and dates too — like any mail under the label.
+public struct LetterMessage: Sendable {
+    public var owner: String
+    public var title: String
+    public var matter: String?
+    public var file: (name: String, contentType: String, data: Data)
+    public var date: Date
+
+    public init(owner: String, title: String, matter: String?, file: (name: String, contentType: String, data: Data), date: Date = Date()) {
+        self.owner = owner
+        self.title = title
+        self.matter = matter
+        self.file = file
+        self.date = date
+    }
+
+    public var subject: String { "Letter: " + title + (matter.map { " — for “\($0)”" } ?? "") }
+
+    /// Its own Message-ID, from the file and the moment: the same letter put in twice is two mails.
+    public var messageID: String {
+        let domain = owner.split(separator: "@").last.map(String.init) ?? "matterbee.local"
+        let id = SHA256.hash(data: file.data + Data("\(date.timeIntervalSince1970)".utf8)).prefix(12).map { String(format: "%02x", $0) }.joined()
+        return "matterbee.letter.\(id)@\(domain)"
+    }
+
+    public var data: Data {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
+        let boundary = "matterbee-" + messageID.prefix(24).filter(\.isLetter)
+        let text = ["A letter that came on paper, scanned and kept by Matterbee" + (matter.map { " for “\($0)”" } ?? "") + ".",
+                    "What it is: \(title)", "The scan is attached: \(file.name)"].joined(separator: "\n")
+        func encoded(_ data: Data) -> String {
+            data.base64EncodedString(options: [.lineLength76Characters, .endLineWithCarriageReturn, .endLineWithLineFeed])
+        }
+        let name = DraftMessage.header(file.name)
+        let lines = [
+            "From: \(owner)", "To: \(owner)", "Subject: \(DraftMessage.header(subject))", "Date: \(formatter.string(from: date))",
+            "Message-ID: <\(messageID)>", "X-Matterbee: letter", "MIME-Version: 1.0",
+            "Content-Type: multipart/mixed; boundary=\"\(boundary)\"", "",
+            "--\(boundary)", "Content-Type: text/plain; charset=utf-8", "Content-Transfer-Encoding: base64", "",
+            encoded(Data(text.replacingOccurrences(of: "\n", with: "\r\n").utf8)),
+            "--\(boundary)", "Content-Type: \(file.contentType); name=\"\(name)\"", "Content-Transfer-Encoding: base64",
+            "Content-Disposition: attachment; filename=\"\(name)\"", "",
+            encoded(file.data),
+            "--\(boundary)--", "",
+        ]
+        return Data(lines.joined(separator: "\r\n").utf8)
     }
 }
