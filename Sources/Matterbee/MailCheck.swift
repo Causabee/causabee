@@ -200,10 +200,19 @@ struct MailCheckView: View {
         .onChange(of: check.stateKey) { refresh() }
     }
 
+    @ViewBuilder
     private var button: some View {
-        Button { check.look(store: navigation.store) } label: {
-            Label("Get new mail", systemImage: "arrow.down.circle")
+        if DemoData.isRequested, !SetupState.isFresh {
+            // The demo's matters are made up: no real mail comes into them, and the way back is here.
+            Button { DemoData.restart(demo: false) } label: {
+                Label("Leave the demo", systemImage: "arrow.uturn.backward.circle")
+            }
+            .help("Starts Matterbee again with your own matters. The demo stays apart, in its own store.")
+        } else {
+            Button { check.look(store: navigation.store) } label: {
+                Label("Get new mail", systemImage: "arrow.down.circle")
+            }
+            .help("Reads only new mail with the label. Nothing is sent until you click “Sort in”.")
         }
-        .help("Reads only new mail with the label. Nothing is sent until you click “Sort in”.")
     }
 }

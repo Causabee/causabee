@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import MatterCore
 import SwiftData
@@ -9,8 +10,25 @@ import SwiftData
 /// Start it apart from the real store: `Matterbee --store ~/Desktop/matterbee-demo/matters.store --demo`.
 @MainActor
 enum DemoData {
+    /// "Try the demo", kept until "Leave the demo": every start in between opens the demo's own store.
+    nonisolated static let chosenKey = "demo.chosen"
+
     /// `--fresh-setup` runs on the demo too: the setup's test never touches the owner's store.
-    nonisolated static var isRequested: Bool { CommandLine.arguments.contains("--demo") || CommandLine.arguments.contains("--fresh-setup") }
+    nonisolated static var isRequested: Bool {
+        CommandLine.arguments.contains("--demo") || CommandLine.arguments.contains("--fresh-setup")
+            || UserDefaults.standard.bool(forKey: chosenKey)
+    }
+
+    /// Into the demo, or back to the owner's own matters. A store is opened once, when Matterbee
+    /// starts, so Matterbee starts again: the new one opens, then this one quits.
+    static func restart(demo: Bool) {
+        UserDefaults.standard.set(demo, forKey: chosenKey)
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in
+            Task { @MainActor in NSApp.terminate(nil) }
+        }
+    }
 
     static func seed(_ context: ModelContext) {
         guard ((try? context.fetchCount(FetchDescriptor<Matter>())) ?? 0) == 0 else { return }

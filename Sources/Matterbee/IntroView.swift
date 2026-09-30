@@ -79,6 +79,11 @@ struct IntroView: View {
                         Button("Back") { withAnimation(.easeOut(duration: 0.2)) { index -= 1 } }
                             .keyboardShortcut(.leftArrow, modifiers: [])
                     }
+                    // A look around first, with nothing to set up: the made-up matters, apart from any real ones.
+                    if index == Self.pages.count - 1, !DemoData.isRequested {
+                        Button("Try the demo") { seen = true; DemoData.restart(demo: true) }
+                            .help("Starts Matterbee again with nine made-up matters, kept apart from your own. The sidebar has the way back.")
+                    }
                     Button(index == Self.pages.count - 1 ? "Get started" : "Next") { next() }
                         .buttonStyle(.borderedProminent).tint(Theme.ink)
                         .keyboardShortcut(.defaultAction)

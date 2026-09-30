@@ -48,6 +48,7 @@ struct MatterbeeApp: App {
         .commands {
             CommandGroup(after: .appSettings) {
                 Button("Set Up Matterbee …") { NotificationCenter.default.post(name: .showSetup, object: nil) }
+                Button(DemoData.isRequested ? "Leave the Demo" : "Try the Demo") { DemoData.restart(demo: !DemoData.isRequested) }
             }
             CommandGroup(replacing: .help) {
                 Button("Introduction to Matterbee") { NotificationCenter.default.post(name: .showIntro, object: nil) }
