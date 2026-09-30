@@ -85,19 +85,44 @@ final class PhoneMailCheck {
             return
         }
         door.earlier = SortedMails.answered(in: context)
+        // Mail in a matter was sorted somewhere: not read again, whatever the record says.
+        let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
+        door.alsoKnown = Set(entries.map(\.messageID))
+        // A Mac that sorted mail before shares what it sorted when the new Matterbee starts there.
+        // Until it has, every mail it answered would look new here — read again, and offered to
+        // be sent again.
+        if door.earlier.isEmpty, entries.contains(where: { $0.source.kind == .mail }) {
+            state = .failed("Your Mac has not shared what it sorted yet. Open Matterbee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again.")
+            return
+        }
         state = .reading("Reading “\(door.label)” at \(door.account.host) …")
-        Task {
+        running = Task {
             do {
                 guard let password = try Keychain.password(for: account.user) else {
                     state = .failed("No password for \(account.user) on this iPhone: add it in Settings (⋯ above).")
                     return
                 }
-                let look = try await door.look(password: password)
+                let look = try await door.look(password: password) { step in
+                    Task { @MainActor in
+                        if case .reading = PhoneMailCheck.shared.state { PhoneMailCheck.shared.state = .reading(step + " …") }
+                    }
+                }
+                guard !Task.isCancelled else { return }
                 state = look.pending == 0 ? .nothingNew(known: look.intake.alreadyKnown) : .ready(look, door)
             } catch {
+                guard !Task.isCancelled else { return }
                 state = .failed("\(error)")
             }
         }
+    }
+
+    @ObservationIgnored private var running: Task<Void, Never>?
+
+    /// Stops reading: nothing was sent, and nothing is kept.
+    func cancel() {
+        running?.cancel()
+        running = nil
+        state = .idle
     }
 
     func classify(_ look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
@@ -192,7 +217,17 @@ struct PhoneMailCheckView: View {
             switch check.state {
             case .idle:
                 button
-            case .reading(let text), .sending(let text):
+            case .reading(let text):
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        BeeLoader()
+                        Text(text).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    Button("Cancel") { check.cancel() }.buttonStyle(.phone)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(14).phoneBox()
+            case .sending(let text):
                 HStack(spacing: 10) {
                     BeeLoader()
                     Text(text).font(.subheadline).foregroundStyle(.secondary)

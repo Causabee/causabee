@@ -20,6 +20,9 @@ public struct DailyDoor: Sendable {
     /// What the other devices sorted, from the store (`SortedMails`): known as if in the log, so
     /// no mail is sent twice. The log's own answer wins where both have one.
     public var earlier: [String: Judgement] = [:]
+    /// Mail already in a matter — the store's entries — whose answer this device may not have:
+    /// neither downloaded nor sent again.
+    public var alsoKnown: Set<String> = []
 
     public init(account: MailAccount, label: String = "Matterbee", log: URL, mapping: URL, cache: URL, model: Claude.Model = .opus) {
         self.account = account
@@ -70,7 +73,7 @@ public struct DailyDoor: Sendable {
 
     public func look(password: String, progress: @Sendable (String) -> Void = { _ in }) async throws -> Look {
         let answered = earlier.merging(Self.readLog(log)) { _, own in own }
-        let settled = Self.done(in: answered)
+        let settled = Self.done(in: answered).union(alsoKnown)
 
         let client = try await IMAPClient.connect(to: account, password: password)
         let intake: LabelIntake.Result
