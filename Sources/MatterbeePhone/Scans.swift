@@ -4,13 +4,13 @@ import SwiftUI
 import UniformTypeIdentifiers
 import VisionKit
 
-/// A letter that came on paper, into the mail: scanned with the camera or picked as a file, and
+/// A paper document — a letter, a contract, a bill — into the mail: scanned with the camera or picked as a file, and
 /// put into the Matterbee label as a mail from the owner to the owner. It is kept there like any
 /// attachment — no iCloud space — and the Mac's next "Get new mail" reads it and files it, its
 /// tasks and dates too. Until then the matter shows it as on its way.
-enum Letters {
+enum Scans {
     static let label = "Matterbee"
-    private static let pendingKey = "letters.pending"
+    private static let pendingKey = "scans.pending"
 
     struct Pending: Codable, Hashable {
         var matter: String
@@ -24,7 +24,7 @@ enum Letters {
         set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: pendingKey) }
     }
 
-    /// The letters of this matter the Mac has not read yet: one it has read is a mail of the matter.
+    /// The scans of this matter the Mac has not read yet: one it has read is a mail of the matter.
     @MainActor
     static func waiting(in matter: Matter) -> [Pending] {
         let read = Set((matter.entries ?? []).map(\.messageID))
@@ -44,8 +44,8 @@ enum Letters {
     }
 }
 
-/// Naming the letter and putting it into the mail.
-struct LetterSheet: View {
+/// Naming the scan and putting it into the mail.
+struct ScanSheet: View {
     let matter: Matter
     @Environment(\.dismiss) private var dismiss
     @State private var title = ""
@@ -71,18 +71,18 @@ struct LetterSheet: View {
                     }
                     Button(file == nil ? "Choose a PDF or a photo" : "Choose another file", systemImage: "folder") { picking = true }
                 } header: {
-                    Text("The letter")
+                    Text("The document")
                 }
                 Section {
-                    TextField("For example: Letter from the tax office", text: $title)
+                    TextField("For example: Tax assessment, rental contract, invoice", text: $title)
                 } header: {
                     Text("What is it?")
                 } footer: {
-                    Text("It goes into your mail, under the label “\(Letters.label)”, as a mail from you to you — so every device opens it from there and it takes no iCloud space. Your Mac reads it with the next “Get new mail” and files it in “\(matter.name)”, with its tasks and dates.")
+                    Text("It goes into your mail, under the label “\(Scans.label)”, as a mail from you to you — so every device opens it from there and it takes no iCloud space. Your Mac reads it with the next “Get new mail” and files it in “\(matter.name)”, with its tasks and dates.")
                 }
                 if let failure { Text(failure).foregroundStyle(Theme.warning) }
             }
-            .navigationTitle("Add a letter")
+            .navigationTitle("Add a document")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -95,7 +95,7 @@ struct LetterSheet: View {
             .fullScreenCover(isPresented: $scanning) {
                 DocumentCamera { pages in
                     scanning = false
-                    if let data = Letters.pdf(of: pages) { file = (name: fileName("pdf"), contentType: "application/pdf", data: data) }
+                    if let data = Scans.pdf(of: pages) { file = (name: fileName("pdf"), contentType: "application/pdf", data: data) }
                 } cancel: { scanning = false }
                 .ignoresSafeArea()
             }
@@ -111,23 +111,23 @@ struct LetterSheet: View {
         }
     }
 
-    /// "Letter 2026-09-30.pdf", or the title, when there is one.
+    /// "Scan 2026-09-30.pdf", or the title, when there is one.
     private func fileName(_ ending: String) -> String {
-        let base = title.trimmingCharacters(in: .whitespaces).isEmpty ? "Letter \(MatterStatus.day(Date()))" : title
+        let base = title.trimmingCharacters(in: .whitespaces).isEmpty ? "Scan \(MatterStatus.day(Date()))" : title
         return base.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-") + "." + ending
     }
 
     private func send() {
         guard let file else { return }
         guard let account, let password = try? Keychain.password(for: account.user) else { addsAccount = true; return }
-        let letter = LetterMessage(owner: account.user, title: title.trimmingCharacters(in: .whitespaces), matter: matter.name, file: file)
+        let scan = ScanMessage(owner: account.user, title: title.trimmingCharacters(in: .whitespaces), matter: matter.name, file: file)
         let key = matter.key
         sending = true
         failure = nil
         Task {
             do {
-                _ = try await DraftDoor.putLetter(letter.data, label: Letters.label, account: account, password: password)
-                Letters.pending.append(Letters.Pending(matter: key, title: letter.title, messageID: letter.messageID, date: letter.date))
+                _ = try await DraftDoor.putScan(scan.data, label: Scans.label, account: account, password: password)
+                Scans.pending.append(Scans.Pending(matter: key, title: scan.title, messageID: scan.messageID, date: scan.date))
                 sending = false
                 dismiss()
             } catch {

@@ -22,6 +22,11 @@ public struct LabelIntake: Sendable {
     /// Message-IDs already read and answered. Their mail is not downloaded again: only its
     /// Message-ID is asked for, to know it is there, and its thread to find the replies.
     public var known: Set<String> = []
+    /// A scan mailed from anywhere — a scanner app, the share sheet — with this word in the
+    /// subject counts as labelled, label or not. Only mail the owner sent to the owner: mail
+    /// about Matterbee from anyone else, or to anyone else, is not the owner's paper.
+    public var keyword: String?
+    public var ownAddresses: [String] = []
     static let batch = 25
 
     public init(label: String, since: Date? = nil, host: String, known: Set<String> = []) {
@@ -95,10 +100,40 @@ public struct LabelIntake: Sendable {
             if let thread = message.gmailThread, !threads.contains(thread) { threads.append(thread) }
         }
 
-        // The replies that followed it.
         let everything = (folders.first { $0.attributes.contains("\\all") }.map { [$0.name] }
             ?? folders.filter { $0.name.uppercased() == "INBOX" || $0.attributes.contains("\\sent") }.map(\.name))
             .filter { $0 != folder.name }
+        // Scans the owner mailed to themselves with the keyword: as if labelled.
+        if let keyword, !keyword.isEmpty, !ownAddresses.isEmpty {
+            var mine = Set(labelledIDs).union(result.labelled)
+            var found = 0
+            for name in everything {
+                let opened = try await mailbox.examine(name)
+                var candidates: [UInt32] = []
+                for from in ownAddresses {
+                    for to in ownAddresses { candidates += try await mailbox.search(window + [.subject(keyword), .from(from), .to(to)]) }
+                }
+                var wanted: [UInt32] = []
+                for chunk in Array(Set(candidates)).sorted().chunked(Self.batch) {
+                    for message in try await mailbox.fetch(Array(chunk), .messageID) {
+                        let id = Self.messageID(in: message)
+                        if let id, mine.contains(id) { continue }
+                        if let id, known.contains(id) { mine.insert(id); labelledIDs.append(id); result.alreadyKnown += 1; continue }
+                        wanted.append(message.uid)
+                    }
+                }
+                for message in try await fetchWhole(wanted, from: mailbox) {
+                    let email = parse(message, in: opened)
+                    guard mine.insert(email.id).inserted else { continue }
+                    result.labelled.insert(email.id)
+                    result.emails.append(email)
+                    found += 1
+                    if let thread = message.gmailThread, !threads.contains(thread) { threads.append(thread) }
+                }
+            }
+            if found > 0 { progress("\(found) mailed to yourself with “\(keyword)” in the subject") }
+        }
+        // The replies that followed it.
         result.searched = everything
         var known = Set(result.emails.map(\.id)).union(self.known).union(labelledIDs)
         var tried: [String: Set<UInt32>] = [:]

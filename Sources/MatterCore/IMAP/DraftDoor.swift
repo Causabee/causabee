@@ -2,9 +2,9 @@ import CryptoKit
 import Foundation
 
 /// The two things Matterbee writes to a mailbox, each on the owner's click: a draft, into the
-/// Drafts folder, and a letter the owner scanned, into the Matterbee label — so it lives in the
-/// mail like any attachment, and every device opens it from there. It never sends — IMAP cannot
-/// send mail — and it can do nothing else.
+/// Drafts folder, and a paper document the owner scanned (a letter, a contract, a bill), into the
+/// Matterbee label, so it lives in the mail like any attachment and every device opens it from
+/// there. It never sends — IMAP cannot send mail — and it can do nothing else.
 ///
 /// It is not the reading client with one more command allowed. It is its own connection with its
 /// own short list: log in, find the one folder, `APPEND` one message into that folder and no
@@ -48,8 +48,8 @@ public actor DraftDoor {
         }
     }
 
-    /// Connects, puts the scanned letter into the label, and logs out. Says which folder.
-    public static func putLetter(_ message: Data, label: String, account: MailAccount, password: String) async throws -> String {
+    /// Connects, puts the scanned document into the label, and logs out. Says which folder.
+    public static func putScan(_ message: Data, label: String, account: MailAccount, password: String) async throws -> String {
         let transport = TLSTransport(host: account.host, port: account.port)
         try await transport.open()
         let door = DraftDoor(transport: transport)
@@ -91,7 +91,7 @@ public actor DraftDoor {
     }
 
     /// Into the label and no other folder — found by its name, as the daily door finds it — and
-    /// flagged `\\Seen`: the owner put it there, there is nothing to read. No label, no letter.
+    /// flagged `\\Seen`: the owner put it there, there is nothing to read. No label, no scan.
     public func put(_ message: Data, intoLabel label: String) async throws -> String {
         let folders = try await command("LIST", "\"\" \"*\"").compactMap { response -> MailFolder? in
             let tokens = response.tokens
@@ -204,10 +204,10 @@ public struct DraftMessage: Sendable {
     }
 }
 
-/// A letter that came on paper, scanned: a mail from the owner to the owner, with the scan
+/// A paper document, scanned — a letter, a contract, a bill: a mail from the owner to the owner, with the scan
 /// attached and the matter named in the subject, so the Mac's next "Get new mail" reads it and
 /// files it where it belongs — its tasks and dates too — like any mail under the label.
-public struct LetterMessage: Sendable {
+public struct ScanMessage: Sendable {
     public var owner: String
     public var title: String
     public var matter: String?
@@ -222,13 +222,13 @@ public struct LetterMessage: Sendable {
         self.date = date
     }
 
-    public var subject: String { "Letter: " + title + (matter.map { " — for “\($0)”" } ?? "") }
+    public var subject: String { "Document: " + title + (matter.map { " — for “\($0)”" } ?? "") }
 
-    /// Its own Message-ID, from the file and the moment: the same letter put in twice is two mails.
+    /// Its own Message-ID, from the file and the moment: the same scan put in twice is two mails.
     public var messageID: String {
         let domain = owner.split(separator: "@").last.map(String.init) ?? "matterbee.local"
         let id = SHA256.hash(data: file.data + Data("\(date.timeIntervalSince1970)".utf8)).prefix(12).map { String(format: "%02x", $0) }.joined()
-        return "matterbee.letter.\(id)@\(domain)"
+        return "matterbee.scan.\(id)@\(domain)"
     }
 
     public var data: Data {
@@ -236,7 +236,7 @@ public struct LetterMessage: Sendable {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
         let boundary = "matterbee-" + messageID.prefix(24).filter(\.isLetter)
-        let text = ["A letter that came on paper, scanned and kept by Matterbee" + (matter.map { " for “\($0)”" } ?? "") + ".",
+        let text = ["A paper document, scanned and kept by Matterbee" + (matter.map { " for “\($0)”" } ?? "") + ".",
                     "What it is: \(title)", "The scan is attached: \(file.name)"].joined(separator: "\n")
         func encoded(_ data: Data) -> String {
             data.base64EncodedString(options: [.lineLength76Characters, .endLineWithCarriageReturn, .endLineWithLineFeed])
@@ -244,7 +244,7 @@ public struct LetterMessage: Sendable {
         let name = DraftMessage.header(file.name)
         let lines = [
             "From: \(owner)", "To: \(owner)", "Subject: \(DraftMessage.header(subject))", "Date: \(formatter.string(from: date))",
-            "Message-ID: <\(messageID)>", "X-Matterbee: letter", "MIME-Version: 1.0",
+            "Message-ID: <\(messageID)>", "X-Matterbee: scan", "MIME-Version: 1.0",
             "Content-Type: multipart/mixed; boundary=\"\(boundary)\"", "",
             "--\(boundary)", "Content-Type: text/plain; charset=utf-8", "Content-Transfer-Encoding: base64", "",
             encoded(Data(text.replacingOccurrences(of: "\n", with: "\r\n").utf8)),

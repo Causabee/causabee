@@ -72,7 +72,11 @@ public struct DailyDoor: Sendable {
         let client = try await IMAPClient.connect(to: account, password: password)
         let intake: LabelIntake.Result
         do {
-            intake = try await LabelIntake(label: label, host: account.host, known: settled).run(client, progress: progress)
+            var reading = LabelIntake(label: label, host: account.host, known: settled)
+            // A scan mailed to yourself with the label's name in the subject counts as labelled.
+            reading.keyword = label
+            reading.ownAddresses = [account.user]
+            intake = try await reading.run(client, progress: progress)
         } catch {
             await client.logout()
             throw error

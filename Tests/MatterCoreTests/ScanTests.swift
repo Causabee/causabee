@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import MatterCore
 
-/// A pretend Gmail with a Matterbee label, keeping what the letter connection sent.
+/// A pretend Gmail with a Matterbee label, keeping what the scan connection sent.
 private final class LabelServer: IMAPTransport, @unchecked Sendable {
     private let lock = NSLock()
     private var outgoing: [Data] = [Data("* OK Gimap ready\r\n".utf8)]
@@ -42,16 +42,16 @@ private final class LabelServer: IMAPTransport, @unchecked Sendable {
     func close() async {}
 }
 
-@Suite("A scanned letter into the Matterbee label: kept in the mail, like an attachment")
-struct LetterTests {
+@Suite("A scanned paper document into the Matterbee label: kept in the mail, like an attachment")
+struct ScanTests {
     let scan = Data("%PDF-1.7 a letter from the tax office".utf8)
 
-    @Test("The letter goes into the label and no other folder, marked read, and nothing else is sent")
+    @Test("The scan goes into the label and no other folder, marked read, and nothing else is sent")
     func intoLabel() async throws {
         let server = LabelServer()
         let door = DraftDoor(transport: server)
         try await door.start(user: "jan@example.com", password: "app-password")
-        let letter = LetterMessage(owner: "jan@example.com", title: "Steuerbescheid 2025", matter: "Steuer 2025",
+        let letter = ScanMessage(owner: "jan@example.com", title: "Steuerbescheid 2025", matter: "Steuer 2025",
                                    file: (name: "Steuerbescheid.pdf", contentType: "application/pdf", data: scan))
         let folder = try await door.put(letter.data, intoLabel: "matterbee")
         await door.logout()
@@ -63,7 +63,7 @@ struct LetterTests {
         #expect(try #require(server.message) == letter.data)
     }
 
-    @Test("A mailbox without the label gets the letter nowhere else")
+    @Test("A mailbox without the label gets the scan nowhere else")
     func noLabel() async throws {
         let server = LabelServer(folders: "* LIST (\\HasNoChildren) \"/\" \"INBOX\"\r\n")
         let door = DraftDoor(transport: server)
@@ -72,14 +72,14 @@ struct LetterTests {
         #expect(!server.lines.contains { $0.contains(" APPEND ") })
     }
 
-    @Test("The letter reads back as a mail from the owner with the scan attached, the matter named in the subject")
+    @Test("The scan reads back as a mail from the owner with the scan attached, the matter named in the subject")
     func message() throws {
-        let letter = LetterMessage(owner: "jan@example.com", title: "Brief der Hausverwaltung", matter: "Wohnung Lindenstraße",
+        let letter = ScanMessage(owner: "jan@example.com", title: "Brief der Hausverwaltung", matter: "Wohnung Lindenstraße",
                                    file: (name: "Brief März.pdf", contentType: "application/pdf", data: scan),
                                    date: Date(timeIntervalSince1970: 1_790_000_000))
         let email = EMLParser.parse(data: letter.data, url: URL(fileURLWithPath: "/letter.eml"))
         #expect(email.id == letter.messageID)
-        #expect(email.subject == "Letter: Brief der Hausverwaltung — for “Wohnung Lindenstraße”")
+        #expect(email.subject == "Document: Brief der Hausverwaltung — for “Wohnung Lindenstraße”")
         #expect(email.from.contains("jan@example.com"))
         #expect(email.attachments.map(\.filename) == ["Brief März.pdf"])
         #expect(EMLParser.attachment(named: "Brief März.pdf", in: letter.data) == scan)

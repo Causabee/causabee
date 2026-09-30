@@ -47,6 +47,10 @@ public enum SearchKey: Sendable, Equatable {
     case replies(to: String)
     /// The mail with this Message-ID.
     case messageID(String)
+    /// Mail whose subject has these words in it; mail from, or to, this address.
+    case subject(String)
+    case from(String)
+    case to(String)
 }
 
 public enum FetchPart: Sendable {
@@ -264,6 +268,9 @@ public actor IMAPClient: ReadOnlyMailbox {
         case .replies(let id):
             let quoted = try quoted("<\(id)>")
             return "OR HEADER References \(quoted) HEADER In-Reply-To \(quoted)"
+        case .subject(let words): return "SUBJECT \(try quoted(words))"
+        case .from(let address): return "FROM \(try quoted(address))"
+        case .to(let address): return "TO \(try quoted(address))"
         }
     }
 

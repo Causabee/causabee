@@ -47,29 +47,29 @@ struct FilesSection: View {
     @State private var state: [PersistentIdentifier: String] = [:]
     @State private var preview: URL?
     @State private var addsAccount = false
-    @State private var addsLetter = false
+    @State private var addsScan = false
 
     var body: some View {
         let shown = (matter.documents ?? []).filter { !$0.isHidden && !$0.isSmallImage }.sorted {
             ($0.source.date ?? .distantPast) > ($1.source.date ?? .distantPast)
         }
-        let waiting = Letters.waiting(in: matter)
+        let waiting = Scans.waiting(in: matter)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 SectionHeader(title: "Files", detail: shown.isEmpty ? nil : "\(shown.count)")
-                Button("Add a letter", systemImage: "plus") { addsLetter = true }
+                Button("Add a document", systemImage: "plus") { addsScan = true }
                     .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
             }
             if !shown.isEmpty || !waiting.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     // Put into the mail on this iPhone, not read by the Mac yet.
-                    ForEach(Array(waiting.enumerated()), id: \.element) { index, letter in
+                    ForEach(Array(waiting.enumerated()), id: \.element) { index, scan in
                         if index > 0 { Divider().padding(.leading, 50) }
                         HStack(alignment: .top, spacing: 12) {
                             Image(systemName: "envelope.badge.clock").font(.title3).foregroundStyle(.secondary).frame(width: 26)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(letter.title)
-                                Text("in your mail since \(Dates.short(letter.date)) · your Mac files it with the next “Get new mail”")
+                                Text(scan.title)
+                                Text("in your mail since \(Dates.short(scan.date)) · your Mac files it with the next “Get new mail”")
                                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                             }
                             Spacer(minLength: 0)
@@ -86,7 +86,7 @@ struct FilesSection: View {
         }
         .quickLookPreview($preview)
         .sheet(isPresented: $addsAccount) { MailAccountSheet() }
-        .sheet(isPresented: $addsLetter) { LetterSheet(matter: matter) }
+        .sheet(isPresented: $addsScan) { ScanSheet(matter: matter) }
     }
 
     private func row(_ document: MatterCore.Document) -> some View {

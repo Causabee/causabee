@@ -34,6 +34,9 @@ actor FakeMailbox: ReadOnlyMailbox {
                 case .messageID(let id): (headers["message-id"]?.first ?? "").contains(id)
                 case .replies(let id):
                     ((headers["references"] ?? []) + (headers["in-reply-to"] ?? [])).joined(separator: " ").contains("<\(id)>")
+                case .subject(let words): (headers["subject"]?.first ?? "").lowercased().contains(words.lowercased())
+                case .from(let address): (headers["from"]?.first ?? "").lowercased().contains(address.lowercased())
+                case .to(let address): (headers["to"]?.first ?? "").lowercased().contains(address.lowercased())
                 }
             }
         }.map(\.uid)
@@ -192,5 +195,73 @@ struct LabelIntakeTests {
         #expect(report.outcomes[0].judgement.isBulk == false)
         #expect(report.outcomes[1].judgement.isBulk == true)
         #expect(report.outcomes[0].judgement.source == url.absoluteString)
+    }
+
+    static let scan = """
+    Message-ID: <scan-1@gmail.com>
+    From: Owner <owner@gmail.com>
+    To: owner@gmail.com
+    Date: Thu, 4 Sep 2026 08:00:00 +0200
+    Subject: Matterbee Mietvertrag Scan
+
+    Scan attached.
+    """
+    static let aboutTheApp = """
+    Message-ID: <beta-1@gmail.com>
+    From: Owner <owner@gmail.com>
+    To: tester@example.org
+    Date: Thu, 4 Sep 2026 09:00:00 +0200
+    Subject: Matterbee beta 2
+
+    Here is the new beta.
+    """
+    static let fromSomeoneElse = """
+    Message-ID: <news-1@example.org>
+    From: Someone <someone@example.org>
+    To: owner@gmail.com
+    Date: Thu, 4 Sep 2026 10:00:00 +0200
+    Subject: Matterbee is great
+
+    Hi.
+    """
+
+    @Test("A scan mailed to yourself with Matterbee in the subject counts as labelled; mail about the app, or from anyone else, does not")
+    func mailedToYourself() async throws {
+        let mailbox = FakeMailbox(gmail: true, folders: [
+            MailFolder(name: "INBOX"), MailFolder(name: "Matterbee"),
+            MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
+        ], content: [
+            "Matterbee": [.init(uid: 1, thread: "100", raw: Self.first)],
+            "[Gmail]/All Mail": [.init(uid: 10, thread: "100", raw: Self.first),
+                                 .init(uid: 20, thread: "200", raw: Self.scan),
+                                 .init(uid: 21, thread: "201", raw: Self.aboutTheApp),
+                                 .init(uid: 22, thread: "202", raw: Self.fromSomeoneElse)],
+        ])
+        var intake = LabelIntake(label: "Matterbee", host: "imap.gmail.com")
+        intake.keyword = "Matterbee"
+        intake.ownAddresses = ["owner@gmail.com"]
+        let result = try await intake.run(mailbox)
+        #expect(Set(result.emails.map(\.id)) == ["a@berger-hv.example", "scan-1@gmail.com"])
+        #expect(result.labelled.contains("scan-1@gmail.com"))
+        #expect(await mailbox.wholeFetches["[Gmail]/All Mail"]?.contains(10) != true)
+
+        // Without the owner's address the keyword finds nothing: anybody can write "Matterbee".
+        let plain = try await LabelIntake(label: "Matterbee", host: "imap.gmail.com").run(mailbox)
+        #expect(plain.emails.map(\.id) == ["a@berger-hv.example"])
+    }
+
+    @Test("A scan mailed to yourself that was read before is not fetched again")
+    func mailedToYourselfKnown() async throws {
+        let mailbox = FakeMailbox(gmail: false, folders: [MailFolder(name: "INBOX"), MailFolder(name: "Matterbee")], content: [
+            "Matterbee": [],
+            "INBOX": [.init(uid: 5, thread: nil, raw: Self.scan)],
+        ])
+        var intake = LabelIntake(label: "Matterbee", host: "imap.example", known: ["scan-1@gmail.com"])
+        intake.keyword = "Matterbee"
+        intake.ownAddresses = ["owner@gmail.com"]
+        let result = try await intake.run(mailbox)
+        #expect(result.emails.isEmpty)
+        #expect(result.alreadyKnown == 1)
+        #expect(await mailbox.wholeFetches["INBOX"] == nil)
     }
 }
