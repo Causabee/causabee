@@ -56,7 +56,8 @@ struct BeeLoader: View {
     private static let leftRoot = CGPoint(x: 1010, y: 880)
     private static let rightRoot = CGPoint(x: 3191, y: 880)
 
-    fileprivate static func draw(in context: GraphicsContext, size: CGSize, time: TimeInterval, still: Bool) {
+    /// `asIcon`: the pose of the app icon — wings straight, nothing moving.
+    fileprivate static func draw(in context: GraphicsContext, size: CGSize, time: TimeInterval, still: Bool, asIcon: Bool = false) {
         var context = context
         let scale = size.height / box.height
         context.scaleBy(x: scale, y: scale)
@@ -67,7 +68,7 @@ struct BeeLoader: View {
 
         // The wings, half see-through as on the icon: out to 16° and back in 1.2 s.
         let swing = still ? 0 : easeInOut(triangle(time / (beat / 2)))
-        let angle = Angle.degrees(-4 + 20 * swing)
+        let angle = Angle.degrees(asIcon ? 0 : -4 + 20 * swing)
         fill(leftWing, turned: angle, around: leftRoot, opacity: 0.55 * fade, in: context)
         fill(rightWing, turned: -angle, around: rightRoot, opacity: 0.55 * fade, in: context)
 
@@ -114,8 +115,8 @@ struct BeeMark: View {
     var size: CGFloat = 16
 
     var body: some View {
-        // Still and at full strength: the pose the icon has, the wings at rest.
-        Canvas { context, canvas in BeeLoader.draw(in: context, size: canvas, time: 0, still: true) }
+        // Still and at full strength, the wings straight: the pose the icon has (and Figma's iOS/BeeMark).
+        Canvas { context, canvas in BeeLoader.draw(in: context, size: canvas, time: 0, still: true, asIcon: true) }
             .frame(width: size * BeeLoader.aspect, height: size)
             // The drawing keeps room above the bee for its hover; a mark that stands still sits in the middle.
             .offset(y: -size * 0.036)
