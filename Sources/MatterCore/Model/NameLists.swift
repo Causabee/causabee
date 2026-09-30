@@ -12,7 +12,7 @@ public enum NameLists {
         case none, unreadable
         public var errorDescription: String? {
             switch self {
-            case .none: "No list of names has come from your Mac yet, so nothing can be sent: open Matterbee on the Mac once, and wait until it has synced."
+            case .none: "No list of names has come from your Mac yet, so nothing can be sent: open Matterbee on the Mac once, and wait until it has synced. Settings (⋯ on the overview) shows when it is here."
             case .unreadable: "The list of names from your Mac cannot be read, so nothing was sent."
             }
         }

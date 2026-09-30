@@ -136,7 +136,7 @@ extension AssistantSheet {
         }
         let model = Claude.Model.opus
         guard let key = Claude.key(for: model) else {
-            failure = "No Claude key yet. Paste it on your Mac (Settings › API keys): it comes to the iPhone through iCloud Keychain."
+            failure = "No Claude key yet. Open Matterbee on your Mac once — its key comes here through iCloud Keychain — or paste it in Settings (⋯ on the overview)."
             return
         }
         let names: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])

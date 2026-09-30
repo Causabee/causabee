@@ -47,7 +47,7 @@ struct OverviewScreen: View {
                 HStack {
                     Spacer()
                     Menu {
-                        Button("Mail account …", systemImage: "envelope") { editsAccount = true }
+                        Button("Settings …", systemImage: "gearshape") { editsAccount = true }
                         Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: "sparkles") { store.switchDemo(!store.isDemo) }
                     } label: {
                         Image(systemName: "ellipsis").font(.body.weight(.semibold)).foregroundStyle(.primary)
@@ -100,7 +100,7 @@ struct OverviewScreen: View {
         .background(Theme.canvas)
         // No assistant here, as on the Mac: it opens from a matter, about that matter.
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $editsAccount) { MailAccountSheet() }
+        .sheet(isPresented: $editsAccount) { SettingsSheet() }
     }
 
     private var summary: String {

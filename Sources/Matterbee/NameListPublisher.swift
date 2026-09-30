@@ -22,6 +22,9 @@ enum NameListPublisher {
     static func start(_ context: ModelContext) {
         self.context = context
         publish()
+        // Reading a key shares it through iCloud Keychain, when it was saved before keys were:
+        // the iPhone then asks with it without the owner pasting it there.
+        for name in ["ANTHROPIC_API_KEY", "MISTRAL_API_KEY", "OPENAI_API_KEY"] { _ = APIKeys.get(name) }
         for name in [NSApplication.didResignActiveNotification, NSApplication.willTerminateNotification] {
             NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
                 MainActor.assumeIsolated { publish() }
