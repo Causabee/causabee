@@ -50,9 +50,9 @@ struct MatterScreen: View {
                     MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
                     Divider()
                     if matter.isClosed {
-                        Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
+                        Button("Open again") { matter.reopen(); try? context.save() }
                     } else {
-                        Button("Close the matter …", systemImage: "archivebox") { asksToClose = true }
+                        Button("Close") { asksToClose = true }
                     }
                 } label: { Image(systemName: "ellipsis") }
                 .tint(.primary)
@@ -60,7 +60,7 @@ struct MatterScreen: View {
             }
         }
         .sheet(isPresented: $editingNotes) { NotesEditor(matter: matter) }
-        .confirmationDialog("Close “\(matter.name)”?", isPresented: $asksToClose, titleVisibility: .visible) {
+        .confirmationDialog(closeQuestion, isPresented: $asksToClose, titleVisibility: .visible) {
             if matter.openTodos.isEmpty {
                 Button("Close") { close(markingOpenDone: false) }
             } else {
@@ -69,8 +69,14 @@ struct MatterScreen: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("The matter goes away from the overview. Nothing is deleted, and “Open again” brings it back.")
+            Text("The matter goes away from the list and from the assistant. Nothing is deleted, and “Open again” brings it back.")
         }
+    }
+
+    private var closeQuestion: String {
+        let open = matter.openTodos.count
+        return open == 0 ? "Close “\(matter.name)”?"
+            : "Close “\(matter.name)”? \(open) \(open == 1 ? "task is" : "tasks are") still open."
     }
 
     private func close(markingOpenDone: Bool) {
@@ -218,7 +224,21 @@ struct MatterScreen: View {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(infos.enumerated()), id: \.element.persistentModelID) { index, todo in
                             if index > 0 { Divider().padding(.leading, 16) }
-                            Label(todo.text, systemImage: "info.circle").padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "info.circle").foregroundStyle(.secondary).font(.title3)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(todo.text).fixedSize(horizontal: false, vertical: true)
+                                    Text(Sources.origin(todo.sources.first)).font(.caption).foregroundStyle(.secondary)
+                                    // A task after all: it goes back to the open tasks.
+                                    Button("Back to tasks", systemImage: "arrow.uturn.backward") {
+                                        withAnimation { todo.isInfo = false }
+                                        try? context.save()
+                                    }
+                                    .font(.footnote).foregroundStyle(Theme.gold)
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .padding(14)
                         }
                     }
                     .phoneCard().padding(.top, 6)
@@ -371,6 +391,9 @@ struct PhoneTodoRow: View {
     let today: String
     var showsOwner = false
     let toggle: () -> Void
+    @Environment(\.modelContext) private var context
+    @State private var editing = false
+    @State private var deleting = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -398,6 +421,13 @@ struct PhoneTodoRow: View {
                     Label { Text(Linked.text(note)).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: "note.text") }
                         .font(.footnote).foregroundStyle(.secondary)
                 }
+                if let note = todo.note, !note.isEmpty {
+                    let loose = WebLink.split(note: note).links.filter { found in !(todo.links ?? []).contains { $0.address == found.address } }
+                    if !loose.isEmpty {
+                        Button(loose.count == 1 ? "Save as link" : "Save \(loose.count) links") { keepLinks(from: note) }
+                            .font(.caption).foregroundStyle(Theme.gold)
+                    }
+                }
                 ForEach((todo.links ?? []).sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
                     if let url = link.url {
                         Link(destination: url) { Label(link.shownName, systemImage: "link").font(.footnote).lineLimit(1) }
@@ -406,9 +436,72 @@ struct PhoneTodoRow: View {
                 Text(line).font(.caption).foregroundStyle(lineColor)
             }
             Spacer(minLength: 0)
+            // The Mac's ⋯: change it by hand, say it is only worth knowing, what it waits for.
+            Menu { moreItems } label: {
+                Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
+            }
+            .tint(.secondary)
+            .accessibilityLabel("More")
         }
         .padding(.horizontal, 12).padding(.vertical, 12)
         .contentShape(Rectangle())
+        .contextMenu { moreItems }
+        .sheet(isPresented: $editing) { PhoneTodoEditor(todo: todo) }
+        .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                withAnimation { context.delete(todo) }
+                try? context.save()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(todo.reminderID == nil ? "It goes from this matter. This cannot be undone. Something only good to know can go to Info instead."
+                 : "It goes from this matter; the reminder stays in Reminders. This cannot be undone.")
+        }
+    }
+
+    @ViewBuilder
+    private var moreItems: some View {
+        Button("Edit …") { editing = true }
+        if !todo.isDone {
+            Button("Not a task — move to Info") {
+                withAnimation { todo.isInfo = true }
+                try? context.save()
+            }
+            Divider()
+            let others = (todo.matter?.openTodos ?? []).filter { $0 !== todo }.sorted { $0.text < $1.text }
+            Menu("Waits for …") {
+                ForEach(others, id: \.persistentModelID) { other in
+                    Button(other.text) {
+                        withAnimation { _ = todo.wait(for: other) }
+                        try? context.save()
+                    }
+                    .disabled(other === todo.waitsFor)
+                }
+            }
+            .disabled(others.isEmpty)
+            if todo.waitsFor != nil {
+                Button("Waits for nothing any more") {
+                    withAnimation { todo.waitsFor = nil }
+                    try? context.save()
+                }
+            }
+        }
+        Divider()
+        Button("Delete …", role: .destructive) { deleting = true }
+    }
+
+    /// The addresses in the note become the task's links, and their lines leave the note.
+    private func keepLinks(from note: String) {
+        guard let matter = todo.matter else { return }
+        let (found, rest) = WebLink.split(note: note)
+        for item in found where !(todo.links ?? []).contains(where: { $0.address == item.address }) {
+            let link = WebLink(address: item.address, title: item.title)
+            context.insert(link)
+            link.matter = matter
+            link.todo = todo
+        }
+        withAnimation { todo.note = rest }
+        try? context.save()
     }
 
     private var line: String {
@@ -486,5 +579,136 @@ struct NotesEditor: View {
             }
         }
         .onAppear { draft = matter.notes ?? ""; focused = true }
+    }
+}
+
+/// A task put right by hand, as the Mac's editor: its words, a note, whose it is, what it waits
+/// for, its links, and by when — a day, and a time if wanted.
+struct PhoneTodoEditor: View {
+    let todo: Todo
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var note = ""
+    @State private var owner = Todo.Owner.me
+    @State private var hasDay = false
+    @State private var day = Date()
+    @State private var hasTime = false
+    @State private var time = Date()
+    @State private var after: PersistentIdentifier?
+    @State private var circle = false
+    @State private var newLink = ""
+
+    private var others: [Todo] { (todo.matter?.openTodos ?? []).filter { $0 !== todo }.sorted { $0.text < $1.text } }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("What to do", text: $text, axis: .vertical).lineLimit(2...5)
+                    TextField("Note — a list, a detail, what was agreed", text: $note, axis: .vertical).lineLimit(2...8)
+                }
+                Section {
+                    Picker("Whose", selection: $owner) {
+                        Text("Mine").tag(Todo.Owner.me)
+                        Text("Ours").tag(Todo.Owner.we)
+                        Text("Waiting for").tag(Todo.Owner.other)
+                        Text("Unclear whose").tag(Todo.Owner.unknown)
+                    }
+                    // A menu, not the Mac's segments: four of them do not fit a phone's width in full.
+                    .pickerStyle(.menu)
+                    if !others.isEmpty {
+                        Picker("Only after", selection: $after) {
+                            Text("nothing — can go any time").tag(PersistentIdentifier?.none)
+                            ForEach(others, id: \.persistentModelID) { other in Text(other.text).lineLimit(1).tag(Optional(other.persistentModelID)) }
+                        }
+                        if circle {
+                            Text("The other one already waits for this one — neither could ever be done.").font(.footnote).foregroundStyle(Theme.warning)
+                        }
+                    }
+                }
+                Section {
+                    ForEach((todo.links ?? []).sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
+                        HStack {
+                            Label(link.shownName, systemImage: "link").lineLimit(1)
+                            Spacer()
+                            // Off the task; the link stays in the matter.
+                            Button { link.todo = nil } label: { Image(systemName: "xmark.circle") }
+                                .buttonStyle(.borderless).foregroundStyle(.secondary)
+                        }
+                    }
+                    TextField("Paste a link — https://docs.google.com/…", text: $newLink)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
+                    if !newLink.isEmpty, WebLink.address(in: newLink) == nil {
+                        Text("This is not a web address.").font(.footnote).foregroundStyle(Theme.warning)
+                    }
+                } header: { Text("Links") }
+                Section {
+                    Toggle("By a day", isOn: $hasDay)
+                    if hasDay {
+                        DatePicker("Day", selection: $day, displayedComponents: .date)
+                        Toggle("Time", isOn: $hasTime)
+                        if hasTime { DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute) }
+                    }
+                }
+            }
+            .environment(\.locale, Locale(identifier: "en_US"))
+            .navigationTitle("Change task")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Save", action: save) }
+            }
+            .onAppear(perform: load)
+        }
+    }
+
+    private func load() {
+        text = todo.text
+        note = todo.note ?? ""
+        owner = todo.owner
+        after = todo.waitsFor?.persistentModelID
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.dateFormat = "yyyy-MM-dd HH:mm"
+        if let due = todo.due, let date = parser.date(from: due + " " + (todo.dueTime ?? "09:00")) {
+            hasDay = true
+            day = date
+            time = date
+            hasTime = todo.dueTime != nil
+        }
+    }
+
+    /// As the Mac saves it: a wait in a circle stops the save before anything is changed.
+    private func save() {
+        let other = after.flatMap { id in others.first { $0.persistentModelID == id } }
+        if other !== todo.waitsFor, !todo.wait(for: other) {
+            circle = true
+            return
+        }
+        let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !words.isEmpty { todo.text = words }
+        let written = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        todo.note = written.isEmpty ? nil : written
+        if let address = WebLink.address(in: newLink), let matter = todo.matter,
+           !(todo.links ?? []).contains(where: { $0.address == address }) {
+            let link = WebLink(address: address)
+            context.insert(link)
+            link.matter = matter
+            link.todo = todo
+        }
+        todo.owner = owner
+        if hasDay {
+            todo.due = MatterStatus.day(day)
+            let format = DateFormatter()
+            format.locale = Locale(identifier: "en_US_POSIX")
+            format.dateFormat = "HH:mm"
+            todo.dueTime = hasTime ? format.string(from: time) : nil
+        } else {
+            todo.due = nil
+            todo.dueTime = nil
+        }
+        try? context.save()
+        dismiss()
     }
 }

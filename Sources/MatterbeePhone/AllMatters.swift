@@ -90,7 +90,7 @@ struct MatterMenuItems: View {
     @Environment(Navigation.self) private var navigation
 
     var body: some View {
-        Button("Rename …", systemImage: "pencil") { navigation.renaming = matter }
+        Button("Rename …") { navigation.renaming = matter }
         Menu("Merge with …") {
             ForEach(all.filter { $0 !== matter }) { other in
                 Button(other.name + (other.isClosed ? " (closed)" : "")) { navigation.merging = (matter, other) }
