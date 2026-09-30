@@ -1,11 +1,52 @@
-# Matterbee
+<p align="center"><img src="site/assets/icon.svg" width="96" height="96" alt="The Matterbee app icon: a bee in black stripes on yellow"></p>
 
-Turns scattered emails, documents and screenshots into organized **matters**: parties,
-timeline, to-dos, deadlines, decisions. Personal, private, iPhone and Mac.
+<h1 align="center">Matterbee</h1>
 
-The build plan is in [plan.md](plan.md). Phase 0, the spike, is done: it measured how the
-decision pipeline behaves on real mail. We are now in **Phase 2**, starting with the daily door —
-reading the mail under one Gmail label — before any of it becomes an app.
+<p align="center"><strong>Every matter. In its place.</strong><br>
+A Mac app that turns scattered mail, documents and screenshots into clear matters:<br>
+what comes next, who does what, and by when.</p>
+
+<p align="center">
+<a href="https://ralfchille.github.io/matterbee/">Website</a> ·
+<a href="https://github.com/ralfchille/matterbee/releases">Download the beta</a> ·
+<a href="https://ralfchille.github.io/matterbee/privacy.html">Privacy</a>
+</p>
+
+![The Matterbee overview: nine matters, each with its next step and what is overdue](site/assets/img/overview-1800.webp)
+
+## What it does
+
+A trip, a move, care for a parent: each one arrives in pieces — a mail here, a PDF there, a
+screenshot you meant to keep. Matterbee puts the pieces together.
+
+- **One page for each matter.** The next step, a short summary, your notes and every task.
+- **Who does what, and by when.** Tasks are yours, shared, or someone else's you're waiting for.
+  Dates and tasks go to Calendar and Reminders with one click, and stay in step both ways.
+- **Every fact has a source.** Each task and date links back to the mail it came from.
+- **Ask about a matter.** Answers come with their sources, and a suggestion becomes a task in one click.
+- **Mail, files and screenshots.** Put a label on a mail in Gmail or iCloud, or drag in a PDF or a
+  screenshot. A matter keeps the language its mail was written in.
+
+## Private by design
+
+- Your mail and files stay on your Mac.
+- Before any text goes to an AI, names, addresses and numbers are replaced on the Mac — and only
+  when you click. If the disguise can't be built, nothing is sent.
+- You pick Claude, OpenAI or Mistral for each job, with your own API key in the Keychain. Every
+  answer shows what it cost.
+- No server, no account, no analytics. The whole policy is on the
+  [website](https://ralfchille.github.io/matterbee/privacy.html).
+
+## Try it
+
+[Download the beta](https://github.com/ralfchille/matterbee/releases) (macOS Sequoia 15 or later),
+open it, and click **Try the demo** at the end of the introduction: nine made-up matters, with
+nothing to set up. For your own mail you need an IMAP account — Gmail needs an app password — and
+an API key from Anthropic, OpenAI or Mistral.
+
+Matterbee is in beta. Not in the beta yet: iCloud sync, and Sign in with Google
+([docs/google-sign-in.md](docs/google-sign-in.md)). Bugs and ideas are welcome as
+[issues](https://github.com/ralfchille/matterbee/issues).
 
 ## Building the Mac app
 
@@ -21,6 +62,17 @@ xcodebuild -project App/Matterbee.xcodeproj -scheme MatterbeeApp CODE_SIGNING_AL
 ```
 
 `scripts/release.sh` makes a signed, notarized release; see the top of that script.
+
+## License
+
+MIT — see [LICENSE](LICENSE). The Source Serif 4 font is under the SIL Open Font License
+([App/Resources/Fonts](App/Resources/Fonts/SourceSerif4-LICENSE.md)).
+
+---
+
+*The rest of this README is the working notes from building Matterbee: the mail pipeline and the
+`matter-spike` tool it started as, the data model, the app, and the tests. The plan is in
+[plan.md](plan.md).*
 
 ## What is built
 
