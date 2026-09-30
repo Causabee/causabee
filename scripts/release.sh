@@ -11,8 +11,7 @@
 #
 # Needs, once: a "Developer ID Application" certificate in the Keychain, and the notary login saved as
 #   xcrun notarytool store-credentials "matterbee-notary" --apple-id <you> --team-id <team>
-# Other names: MATTERBEE_NOTARY_PROFILE, MATTERBEE_DEVELOPER_ID. The Xcode project, App/Matterbee.xcodeproj,
-# is not in git: it is on the owner's Mac.
+# Other names: MATTERBEE_NOTARY_PROFILE, MATTERBEE_DEVELOPER_ID. It builds App/Matterbee.xcodeproj.
 #
 # A release is signed without the iCloud entitlement (scripts/release.entitlements): Xcode makes no
 # Developer ID profile for it from the command line, so a release keeps its matters on the Mac.
