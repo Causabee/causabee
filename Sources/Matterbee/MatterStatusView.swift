@@ -152,7 +152,7 @@ struct MatterStatusView: View {
                 } else {
                     Spacer()
                     Button("Write summary · \(cost)", action: writeSummary)
-                        .help("Claude writes three or four lines from the facts of this matter, pseudonymised.")
+                        .help("Matterbee writes three or four lines from the facts of this matter, pseudonymised.")
                 }
             }
             .tool()
@@ -196,7 +196,7 @@ struct MatterStatusView: View {
         let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(facts, model: ModelChoice.assistant) * 100)
         VStack(alignment: .leading, spacing: 10) {
             if fresh, let step = matter.nextStep {
-                BeeChip(text: "NEXT · FROM CLAUDE")
+                BeeChip(text: "NEXT · FROM MATTERBEE")
                 Text(step).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
@@ -227,9 +227,9 @@ struct MatterStatusView: View {
                 } else {
                     Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
-                        .help("Claude reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
+                        .help("Matterbee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
-                        Text("Claude's suggestion of \(Dates.short(at)) is older than the last change").font(.caption).foregroundStyle(.secondary)
+                        Text("Matterbee's suggestion of \(Dates.short(at)) is older than the last change").font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
