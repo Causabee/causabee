@@ -30,6 +30,11 @@ struct IntroView: View {
              text: "Ask a question and get an answer with its sources. A suggestion becomes a task with one click. Your question goes out disguised, like everything else."),
     ]
 
+    /// The pictures at three quarters of the 813 × 508 they filled before, and the sheet shorter by
+    /// what that frees, so no gap opens under the text.
+    private static let pictureWidth: CGFloat = 610
+    private static let size = CGSize(width: 880, height: 680)
+
     @Environment(\.dismiss) private var dismiss
     @AppStorage(IntroView.seenKey) private var seen = false
     @State private var index = 0
@@ -38,6 +43,7 @@ struct IntroView: View {
         let page = Self.pages[index]
         VStack(spacing: 0) {
             picture(page.image)
+                .frame(maxWidth: Self.pictureWidth)
                 .padding([.horizontal, .top], 28)
             VStack(spacing: 10) {
                 Text(page.title).font(Theme.titleFont)
@@ -92,7 +98,7 @@ struct IntroView: View {
             }
             .padding(.horizontal, 28).padding(.bottom, 24)
         }
-        .frame(width: 880, height: 800)
+        .frame(width: Self.size.width, height: Self.size.height)
         .background(Theme.canvas)
     }
 
