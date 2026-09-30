@@ -18,6 +18,12 @@ struct MatterScreen: View {
     @State private var asksToClose = false
     @State private var marked: PersistentIdentifier?
     @Query private var allMatters: [Matter]
+    @Query private var profiles: [Profile]
+    @Environment(PhoneStore.self) private var store
+    @State private var askingStep = false
+    @State private var stepError: String?
+    @State private var writingSummary = false
+    @State private var summaryError: String?
     /// The owner's reminders, read when the matter opens and again when Reminders changes.
     @State private var reminders: [Calendars.Reminder] = []
     @State private var calendarTick = 0
@@ -161,8 +167,80 @@ struct MatterScreen: View {
                 Text("NEXT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Text("Nothing open.").foregroundStyle(.secondary)
             }
+            // Asking Claude, below the buttons: apart from what the step itself offers — as on the Mac.
+            let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(summaryFacts, model: ModelChoice.assistant) * 100)
+            HStack(spacing: 8) {
+                if askingStep {
+                    BeeLoader(size: 14)
+                    Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
+                        .font(.caption).underline().foregroundStyle(.secondary)
+                    if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
+                        Text("Matterbee's suggestion of \(Dates.short(at)) is older than the last change").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            if let stepError { Text(stepError).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
         }
         .phoneBox()
+    }
+
+    /// The facts the step and the summary are asked from: this matter's, the last 40 mails.
+    private var summaryFacts: Facts { FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40) }
+
+    /// The names the iPhone asks with: the Mac's list — or, in the demo, none: its people are made up.
+    private func names() throws -> (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry]) {
+        store.isDemo ? (Pseudonymizer.Mapping(), []) : try NameLists.current(in: context)
+    }
+
+    private func askStep() {
+        let model = ModelChoice.assistant
+        guard let claude = ModelChoice.client(for: model) else { stepError = ModelChoice.missingKey(model); return }
+        let list: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])
+        do { list = try names() } catch { stepError = error.localizedDescription; return }
+        askingStep = true
+        stepError = nil
+        let facts = summaryFacts
+        let owner = profiles.first?.names.first
+        Task {
+            do {
+                let (step, why, ref, _) = try await AssistantAsk.nextStep(facts: facts, owner: owner, today: MatterStatus.day(Date()),
+                                                                          mapping: list.mapping, others: list.others, claude: claude, model: model)
+                matter.nextStep = step
+                matter.nextStepWhy = why
+                if case .todo(let id) = ref { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+                else { matter.nextStepTodo = nil }
+                matter.nextStepAt = Date()
+                try? context.save()
+            } catch {
+                stepError = "\(error)"
+            }
+            askingStep = false
+        }
+    }
+
+    private func writeSummary() {
+        let model = ModelChoice.assistant
+        guard let claude = ModelChoice.client(for: model) else { summaryError = ModelChoice.missingKey(model); return }
+        let list: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])
+        do { list = try names() } catch { summaryError = error.localizedDescription; return }
+        writingSummary = true
+        summaryError = nil
+        let facts = summaryFacts
+        let owner = profiles.first?.names.first
+        Task {
+            do {
+                let (lines, _) = try await AssistantAsk.summarize(facts: facts, owner: owner, today: MatterStatus.day(Date()),
+                                                                  mapping: list.mapping, others: list.others, claude: claude, model: model)
+                matter.summary = lines.joined(separator: "\n")
+                matter.summaryAt = Date()
+                try? context.save()
+            } catch {
+                summaryError = "\(error)"
+            }
+            writingSummary = false
+        }
     }
 
     /// What can be done with the step right here, as on the Mac: write the message it is, tick it
@@ -195,10 +273,13 @@ struct MatterScreen: View {
 
     // MARK: Summary and notes
 
+    /// Three or four lines on top, written only when asked for, and dated — as on the Mac.
     @ViewBuilder
     private var summary: some View {
-        if let text = matter.summary, !text.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
+        let cost = String(format: "≈ %.1f cents", AssistantAsk.summaryEstimate(summaryFacts, model: ModelChoice.assistant) * 100)
+        let text = matter.summary ?? ""
+        VStack(alignment: .leading, spacing: 10) {
+            if !text.isEmpty {
                 HStack(spacing: 8) {
                     BeeChip(text: "SUMMARY")
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
@@ -207,8 +288,25 @@ struct MatterScreen: View {
                     Text(String(line)).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .phoneBox()
+            // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
+            HStack(spacing: 8) {
+                if writingSummary {
+                    BeeLoader(size: 14)
+                    Text("Writing the summary …").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                } else if matter.summaryAt != nil {
+                    Button("Update · \(cost)", action: writeSummary).font(.caption).underline().foregroundStyle(.secondary)
+                    Spacer()
+                } else {
+                    Spacer()
+                    Button("Write summary · \(cost)", action: writeSummary).buttonStyle(.phone)
+                }
+            }
+            if let summaryError { Text(summaryError).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
         }
+        .padding(text.isEmpty ? 0 : 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(text.isEmpty ? Color.clear : Theme.box, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var notes: some View {

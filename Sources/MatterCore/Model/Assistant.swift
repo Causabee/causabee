@@ -348,8 +348,23 @@ extension AssistantAsk {
     /// The one next step and why, from the matter's facts, pseudonymised like every question.
     public static func nextStep(facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
                                 model: Claude.Model = .opus) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
-        let prepared = try prepare(question: "Was ist jetzt der beste nächste Schritt?", inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: nextStepQuestion, inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
+        return try await nextStep(prepared, facts: facts, claude: claude, model: model)
+    }
+
+    /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
+    public static func nextStep(facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
+                                claude: Claude, model: Claude.Model = .opus) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
+        let prepared = try prepare(question: nextStepQuestion, inHand: nil, earlier: [], facts: facts, owner: owner, today: today,
+                                   mapping: mapping, others: others, save: nil)
+        return try await nextStep(prepared, facts: facts, claude: claude, model: model)
+    }
+
+    static let nextStepQuestion = "Was ist jetzt der beste nächste Schritt?"
+    static let summaryQuestion = "Schreibe die Zusammenfassung dieser Sache."
+
+    static func nextStep(_ prepared: Prepared, facts: Facts, claude: Claude, model: Claude.Model) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
         let body = Claude.body(model: model, system: NextStepPrompt.system, user: prepared.sent, schema: NextStepPrompt.schema, effort: "low")
         let answer = try await claude.send(body, model: model)
         let reply = try JSONDecoder().decode(NextStepPrompt.Reply.self, from: answer.json)
@@ -360,8 +375,20 @@ extension AssistantAsk {
     /// Three or four lines on the matter, from its facts, pseudonymised like every question.
     public static func summarize(facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
                                  model: Claude.Model = .opus) async throws -> (lines: [String], cost: Double) {
-        let prepared = try prepare(question: "Schreibe die Zusammenfassung dieser Sache.", inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: summaryQuestion, inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
+        return try await summarize(prepared, claude: claude, model: model)
+    }
+
+    /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
+    public static func summarize(facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
+                                 claude: Claude, model: Claude.Model = .opus) async throws -> (lines: [String], cost: Double) {
+        let prepared = try prepare(question: summaryQuestion, inHand: nil, earlier: [], facts: facts, owner: owner, today: today,
+                                   mapping: mapping, others: others, save: nil)
+        return try await summarize(prepared, claude: claude, model: model)
+    }
+
+    static func summarize(_ prepared: Prepared, claude: Claude, model: Claude.Model) async throws -> (lines: [String], cost: Double) {
         let body = Claude.body(model: model, system: SummaryPrompt.system, user: prepared.sent, schema: SummaryPrompt.schema, effort: "low")
         let answer = try await claude.send(body, model: model)
         let reply = try JSONDecoder().decode(SummaryPrompt.Reply.self, from: answer.json)
