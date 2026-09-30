@@ -66,6 +66,8 @@ struct OverviewScreen: View {
                 }
                 ForEach(ordered) { matter in
                     PhoneMatterCard(matter: matter) { todo in navigation.open(matter, showing: todo) }
+                        // Held: renamed or merged, as a row of the Mac's sidebar.
+                        .contextMenu { MatterMenuItems(matter: matter, all: sidebarOrder(matters)) }
                 }
                 ForEach(matters.filter { $0.isClosed && !MatterStatus($0).mailsSinceClosed.isEmpty }) { matter in
                     let new = MatterStatus(matter).mailsSinceClosed.count
@@ -79,13 +81,8 @@ struct OverviewScreen: View {
                     }
                     .buttonStyle(.plain)
                 }
-                let quiet = matters.filter { !$0.isClosed }.count - ordered.count
-                if quiet > 0 {
-                    Text("\(quiet) \(quiet == 1 ? "matter is" : "matters are") quiet: nothing open, no date.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
-                // Every matter, as the Mac's sidebar lists them: the quiet and the closed ones too.
-                if !matters.isEmpty { AllMattersList(matters: matters) }
+                // The quiet and the closed ones, folded away: the ones going on are the cards.
+                OtherMattersList(matters: matters)
                 if store.isDemo {
                     Button("Leave the demo") { store.switchDemo(false) }
                         .font(.footnote).foregroundStyle(Theme.gold).padding(.top, 8)

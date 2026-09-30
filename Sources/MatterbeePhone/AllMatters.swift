@@ -15,28 +15,39 @@ func sidebarOrder(_ matters: [Matter]) -> [Matter] {
     return active + quiet + closed
 }
 
-/// All matters, under the overview's cards, as the Mac's sidebar lists them: the ones going on,
-/// the quiet ones, and the closed ones folded away. Each opens with a tap; held, it can be renamed
-/// or merged into another.
-struct AllMattersList: View {
+/// Under the overview's cards, only what the cards do not show: the quiet matters — nothing open,
+/// no date — and the closed ones, each folded away until opened. Not the Mac's sidebar again: the
+/// matters going on are the cards above. Each opens with a tap; held, it can be renamed or merged.
+struct OtherMattersList: View {
     let matters: [Matter]
     @Environment(Navigation.self) private var navigation
+    @State private var showsQuiet = false
     @State private var showsClosed = false
 
     var body: some View {
         let sorted = sidebarOrder(matters)
-        let open = sorted.filter { !$0.isClosed }, closed = sorted.filter(\.isClosed)
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Matters", detail: "\(open.count)")
-            rows(open, all: sorted)
-            if !closed.isEmpty {
-                DisclosureGroup("Closed · \(closed.count)", isExpanded: $showsClosed) {
-                    rows(closed, all: sorted).padding(.top, 6)
+        let active = Set(activeMatters(matters).map(\.persistentModelID))
+        let quiet = sorted.filter { !$0.isClosed && !active.contains($0.persistentModelID) }
+        let closed = sorted.filter(\.isClosed)
+        if !quiet.isEmpty || !closed.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                if !quiet.isEmpty {
+                    DisclosureGroup(isExpanded: $showsQuiet) {
+                        rows(quiet, all: sorted).padding(.top, 6)
+                    } label: {
+                        Text("Quiet · \(quiet.count)") + Text("  nothing open, no date").font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
-                .padding(.horizontal, 4)
+                if !closed.isEmpty {
+                    DisclosureGroup("Closed · \(closed.count)", isExpanded: $showsClosed) {
+                        rows(closed, all: sorted).padding(.top, 6)
+                    }
+                }
             }
+            .padding(.horizontal, 4)
+            .padding(.top, 8)
+            .tint(.primary)
         }
-        .padding(.top, 12)
     }
 
     private func rows(_ list: [Matter], all: [Matter]) -> some View {

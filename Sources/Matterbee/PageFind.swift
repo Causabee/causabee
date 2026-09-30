@@ -2,7 +2,8 @@ import SwiftData
 import SwiftUI
 
 /// Find on a matter's page, as ⌘F finds in a browser: every row that has the words is marked,
-/// the current one strongly, and ↩ / ⇧↩ go from one to the next.
+/// the current one strongly, and ↩ / ⇧↩ go from one to the next. The Mac and the iPhone alike,
+/// each with a field of its own.
 @MainActor
 @Observable
 final class PageFind {
@@ -75,6 +76,7 @@ extension ScrollViewProxy {
     }
 }
 
+#if os(macOS)
 /// The search of a page: a magnifier that opens into a field — the words, how many rows have
 /// them, and the way between them — and closes again once it is empty and left. It is one
 /// view throughout, never swapped: opening, its grey widens out of the magnifier, and the words
@@ -147,3 +149,4 @@ struct PageFindField: View {
         withAnimation(Self.move) { open = false }
     }
 }
+#endif

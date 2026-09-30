@@ -26,6 +26,7 @@
 				DemoData.swift,
 				MirrorRunner.swift,
 				ModelChoice.swift,
+				PageFind.swift,
 				Theme.swift,
 			);
 			target = AA0000000000000000000047 /* MatterbeePhone */;

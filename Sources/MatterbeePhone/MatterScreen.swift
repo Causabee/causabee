@@ -17,6 +17,9 @@ struct MatterScreen: View {
     @State private var editingNotes = false
     @State private var asksToClose = false
     @State private var splitting = false
+    @State private var find = PageFind()
+    @State private var finding = false
+    @FocusState private var findFocused: Bool
     @State private var newMatterName = ""
     @State private var marked: PersistentIdentifier?
     @Query private var allMatters: [Matter]
@@ -54,13 +57,33 @@ struct MatterScreen: View {
             }
             .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
             .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
+            .onPreferenceChange(PageFindMatches.self) { found in
+                MainActor.assumeIsolated {
+                    find.matches = found
+                    if find.index >= found.count { find.index = 0 }
+                }
+            }
+            .onChange(of: find.query) {
+                find.index = 0
+                // What is folded away is looked into too.
+                if find.isActive { showsDone = true; showsPast = true }
+            }
+            .onChange(of: find.current) { if let at = find.current { withAnimation { scroller.scrollTo(at, anchor: .center) } } }
         }
+        .environment(find)
+        .safeAreaInset(edge: .top) { if finding { findBar } }
         .background(Theme.canvas)
         .overlay(alignment: .bottomTrailing) {
-            AssistantButton { navigation.showsAssistant = true }
+            // Not over the keyboard while finding.
+            if !finding { AssistantButton { navigation.showsAssistant = true } }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { startFinding() } label: { Image(systemName: "magnifyingglass") }
+                    .tint(.primary)
+                    .accessibilityLabel("Find in this matter")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 // Glasses, as on the Mac: on, black on the bee's yellow.
                 Button {
@@ -143,6 +166,47 @@ struct MatterScreen: View {
         return parts.joined(separator: " · ")
     }
 
+    // MARK: Find
+
+    /// Under the bar while finding: the words, how many rows have them, and the way between them.
+    private var findBar: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Find in this matter", text: $find.query)
+                    .focused($findFocused)
+                    .submitLabel(.next)
+                    .onSubmit { find.next(); findFocused = true }
+                    .autocorrectionDisabled()
+                if find.isActive {
+                    Text(find.matches.isEmpty ? "none" : "\(find.index + 1) of \(find.matches.count)")
+                        .font(.footnote.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
+                }
+            }
+            .padding(.horizontal, 12).padding(.vertical, 9)
+            .background(Theme.box, in: Capsule())
+            Button(action: find.previous) { Image(systemName: "chevron.up") }
+                .disabled(find.matches.isEmpty).accessibilityLabel("Previous")
+            Button(action: find.next) { Image(systemName: "chevron.down") }
+                .disabled(find.matches.isEmpty).accessibilityLabel("Next")
+            Button("Done") { stopFinding() }.fontWeight(.semibold)
+        }
+        .tint(.primary)
+        .padding(.horizontal, 16).padding(.vertical, 8)
+        .background(Theme.canvas)
+    }
+
+    private func startFinding() {
+        withAnimation(.easeOut(duration: 0.2)) { finding = true }
+        findFocused = true
+    }
+
+    private func stopFinding() {
+        find.query = ""
+        findFocused = false
+        withAnimation(.easeOut(duration: 0.2)) { finding = false }
+    }
+
     private func closedBanner(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Closed on \(matter.closedAt.map(Dates.short) ?? "")", systemImage: "archivebox").font(.headline)
@@ -196,12 +260,14 @@ struct MatterScreen: View {
             if fresh, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM MATTERBEE")
                 Text(step).font(.headline).fixedSize(horizontal: false, vertical: true)
+                    .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
                 let todo = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
                 stepButtons(text: step, todo: todo, waiting: todo?.owner == .other, scroller).tool()
             } else if let rule {
                 BeeChip(text: rule.label.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(.headline).fixedSize(horizontal: false, vertical: true)
+                    .findable(.section("next"), rule.text, rule.why)
                 Text(rule.why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation()
                 // As on the Mac: a step worked out on the device has buttons when it is a task.
                 if let todo = rule.todo.flatMap({ id in matter.openTodos.first { $0.persistentModelID == id } }) {
@@ -330,8 +396,9 @@ struct MatterScreen: View {
                     BeeChip(text: "SUMMARY")
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
                 }
-                ForEach(Array(text.split(separator: "\n").enumerated()), id: \.offset) { _, line in
+                ForEach(Array(text.split(separator: "\n").enumerated()), id: \.offset) { index, line in
                     Text(String(line)).fixedSize(horizontal: false, vertical: true)
+                        .findable(.section("summary-\(index)"), String(line))
                 }
             }
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
@@ -364,6 +431,7 @@ struct MatterScreen: View {
                 Text(text.isEmpty ? "Your own words on the matter — the assistant reads them too." : text)
                     .foregroundStyle(text.isEmpty ? .secondary : .primary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .findable(.section("notes"), text)
                 Spacer(minLength: 0)
                 Button(text.isEmpty ? "Write" : "Edit") { editingNotes = true }.buttonStyle(.phone).tool()
             }
@@ -400,6 +468,7 @@ struct MatterScreen: View {
                                 Image(systemName: "info.circle").foregroundStyle(.secondary).font(.title3)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(todo.text).fixedSize(horizontal: false, vertical: true)
+                                        .findable(.model(todo.persistentModelID), todo.text)
                                     Text(Sources.origin(todo.sources.first)).font(.caption).foregroundStyle(.secondary)
                                     // A task after all: it goes back to the open tasks.
                                     Button("Back to tasks", systemImage: "arrow.uturn.backward") {
@@ -439,7 +508,8 @@ struct MatterScreen: View {
                 if index > 0 { Divider().padding(.leading, 50) }
                 PhoneTodoRow(todo: todo, today: status.today, showsOwner: showsOwner, reminders: reminders, calendarTick: calendarTick) { withAnimation { toggle(todo) } }
                     .background(marked == todo.persistentModelID ? Theme.mark : .clear)
-                    .id(todo.persistentModelID)
+                    // Also its place to scroll to, from an overdue line or the page search.
+                    .findable(.model(todo.persistentModelID), todo.text, todo.note)
             }
         }
         .phoneCard()
@@ -481,6 +551,7 @@ struct MatterScreen: View {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 if index > 0 { Divider().padding(.leading, 14) }
                 PhoneDateRow(item: item, isPast: past, matter: matter, tick: calendarTick)
+                    .findable(item.findID, item.what, item.place)
             }
             if items.isEmpty {
                 Text("Nothing coming.").foregroundStyle(.secondary).padding(14).frame(maxWidth: .infinity, alignment: .leading)
@@ -604,6 +675,8 @@ struct PhoneTodoRow: View {
             }
             .tint(.secondary)
             .accessibilityLabel("More")
+            // While reading, a long press still has everything.
+            .tool()
         }
         .padding(.horizontal, 12).padding(.vertical, 12)
         .contentShape(Rectangle())
@@ -874,6 +947,11 @@ struct PhoneDateRow: View {
         var appointment: Appointment?
         var deadline: Deadline?
 
+        var findID: PageFind.ID {
+            if let id = appointment?.persistentModelID ?? deadline?.persistentModelID { return .model(id) }
+            return .section("date \(day) \(what)")
+        }
+
         /// On the same day: the whole-day ones first, then by the hour, then by name.
         static func sameDay(_ a: Item, _ b: Item) -> Bool {
             let (x, y) = (a.time ?? "", b.time ?? "")
@@ -934,6 +1012,8 @@ struct PhoneDateRow: View {
             }
             .tint(.secondary)
             .accessibilityLabel("More")
+            // While reading, a long press still has everything.
+            .tool()
         }
         .foregroundStyle(isPast ? .secondary : .primary)
         .padding(.horizontal, 14)

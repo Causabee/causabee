@@ -93,7 +93,7 @@ struct FilesSection: View {
                     }
                     ForEach(Array(shown.enumerated()), id: \.element.persistentModelID) { index, document in
                         if index > 0 || !waiting.isEmpty { Divider().padding(.leading, 50) }
-                        row(document)
+                        row(document).findable(.model(document.persistentModelID), document.shownName, document.name)
                     }
                 }
                 .phoneCard()
@@ -164,6 +164,8 @@ struct FilesSection: View {
                 }
                 .tint(.secondary)
                 .accessibilityLabel("More")
+                // While reading, a long press still has everything.
+                .tool()
             }
             Group {
                 if offersName, state[id] == nil {

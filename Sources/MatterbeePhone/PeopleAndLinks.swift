@@ -110,11 +110,14 @@ struct PhonePartyRow: View {
             }
             .tint(.secondary)
             .accessibilityLabel("More")
+            // While reading, a long press still has everything.
+            .tool()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
         .contextMenu { items }
+        .findable(.model(party.persistentModelID), party.name, membership.role)
         .sheet(isPresented: $editing) {
             PartyEditor(party: party, membership: membership, matter: matter, save: save, remove: remove)
         }
@@ -359,10 +362,13 @@ struct PhoneLinkRow: View {
             }
             .tint(.secondary)
             .accessibilityLabel("More")
+            // While reading, a long press still has everything.
+            .tool()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .contextMenu { items }
+        .findable(.model(link.persistentModelID), link.shownName, link.address)
         .sheet(isPresented: $editing) {
             PhoneLinkEditor(link: link, todos: todos) { address, title, todo in
                 link.address = address

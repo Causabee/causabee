@@ -21,6 +21,7 @@ struct PhoneThreadCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(thread.rows) { row in
                     PhoneThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, matter: matter)
+                        .findable(.model(row.entry.persistentModelID), row.entry.title, row.entry.from, row.entry.digest)
                 }
             }
         }
