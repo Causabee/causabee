@@ -202,7 +202,7 @@
           "name" : "wing-left",
           "opacity-specializations" : [
             {
-              "value" : 0.1
+              "value" : 0.3
             },
             {
               "appearance" : "dark",
@@ -236,7 +236,7 @@
           "name" : "wing-right",
           "opacity-specializations" : [
             {
-              "value" : 0.1
+              "value" : 0.3
             },
             {
               "appearance" : "dark",
