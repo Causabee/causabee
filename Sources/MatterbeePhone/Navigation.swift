@@ -12,6 +12,9 @@ final class Navigation {
     var showsAssistant = false
     /// A task to scroll to when its matter opens: the one an overdue line pointed at.
     var showing: PersistentIdentifier?
+    /// Asked from a matter's menu, wherever it is: a new name, or merging one into another.
+    var renaming: Matter?
+    var merging: (from: Matter, into: Matter)?
 
     func open(_ matter: Matter, showing todo: PersistentIdentifier? = nil) {
         showing = todo

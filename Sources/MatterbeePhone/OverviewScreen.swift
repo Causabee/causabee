@@ -25,6 +25,7 @@ struct RootView: View {
             AssistantSheet(matter: navigation.path.last.flatMap { id in matters.first { $0.persistentModelID == id } })
                 .presentationDragIndicator(.visible)
         }
+        .modifier(MatterQuestions())
         .environment(navigation)
     }
 }
@@ -87,6 +88,8 @@ struct OverviewScreen: View {
                     Text("\(quiet) \(quiet == 1 ? "matter is" : "matters are") quiet: nothing open, no date.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
+                // Every matter, as the Mac's sidebar lists them: the quiet and the closed ones too.
+                if !matters.isEmpty { AllMattersList(matters: matters) }
                 if store.isDemo {
                     Button("Leave the demo") { store.switchDemo(false) }
                         .font(.footnote).foregroundStyle(Theme.gold).padding(.top, 8)

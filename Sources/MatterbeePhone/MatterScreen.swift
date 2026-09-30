@@ -14,6 +14,7 @@ struct MatterScreen: View {
     @State private var editingNotes = false
     @State private var asksToClose = false
     @State private var marked: PersistentIdentifier?
+    @Query private var allMatters: [Matter]
 
     var body: some View {
         let status = MatterStatus(matter)
@@ -46,6 +47,8 @@ struct MatterScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+                    MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
+                    Divider()
                     if matter.isClosed {
                         Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
                     } else {
