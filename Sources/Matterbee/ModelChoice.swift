@@ -1,7 +1,8 @@
 import MatterCore
 import SwiftUI
 
-/// Which model does which job, as the owner chose in the settings (⌘,). Opus unless changed.
+/// Which model does which job, as the owner chose in the settings (⌘,, or Settings on the iPhone).
+/// Opus unless changed. Shared by both apps; each device keeps its own choice.
 enum ModelChoice {
     static let mailKey = "model.mail", assistantKey = "model.assistant", strictKey = "model.strict"
 
@@ -21,11 +22,17 @@ enum ModelChoice {
     static func client(for model: Claude.Model) -> Claude? { Claude.key(for: model).map(Claude.init) }
 
     static func missingKey(_ model: Claude.Model) -> String {
-        model.isMistral ? "No Mistral key: paste it in Settings (⌘,)."
-            : model.isOpenAI ? "No OpenAI key: paste it in Settings (⌘,)." : "No Claude key: paste it in Settings (⌘,)."
+        #if os(iOS)
+        let settings = "Settings (⋯ on the overview) — or on your Mac: a key saved there comes through iCloud Keychain"
+        #else
+        let settings = "Settings (⌘,)"
+        #endif
+        return model.isMistral ? "No Mistral key: paste it in \(settings)."
+            : model.isOpenAI ? "No OpenAI key: paste it in \(settings)." : "No Claude key: paste it in \(settings)."
     }
 }
 
+#if os(macOS)
 /// ⌘, — which model sorts the mail and which answers. Both see only pseudonymised text.
 struct ModelSettingsView: View {
     @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
@@ -82,6 +89,7 @@ struct ModelSettingsView: View {
         return String(format: "About %.2f cents per mail.", model.perMail * 100)
     }
 }
+#endif
 
 /// One key: whether it is there and where from, a field to paste a new one, and a way to remove it.
 struct KeyField: View {

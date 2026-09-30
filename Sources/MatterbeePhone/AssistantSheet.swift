@@ -19,6 +19,13 @@ struct AssistantSheet: View {
     /// The question on its way, until its answer is in the thread.
     @State private var asking: (question: String, date: Date)?
     @State private var failure: String?
+    /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
+    @State private var showsMore = false
+
+    /// What a question here would take along: worked out only when the footer is opened.
+    private var seen: String {
+        FactSheet.facts(for: matter.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date())).seen
+    }
 
     private var shown: [(record: ThreadTurn, turn: Navigation.Turn)] {
         records
@@ -111,8 +118,13 @@ struct AssistantSheet: View {
             }
             .padding(.leading, 16).padding(.trailing, 7).padding(.vertical, 7)
             .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))
-            Text("Always pseudonymised: names are disguised on the iPhone, with your Mac's list, before anything is sent.")
-                .font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 8)
+            // As on the Mac: "more" and "less" are links inside the line, so the full one wraps like a sentence.
+            Text(LocalizedStringKey(showsMore
+                ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen) · goes pseudonymised, like the mails • [less](matterbee://footer)"
+                : "Always pseudonymised sent • [more](matterbee://footer)"))
+                .font(.caption2).foregroundStyle(.secondary).tint(Theme.gold)
+                .environment(\.openURL, OpenURLAction { _ in showsMore.toggle(); return .handled })
+                .padding(.horizontal, 8)
         }
         .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
         .background(Theme.canvas)
@@ -134,9 +146,10 @@ extension AssistantSheet {
             guard let answer = item.turn.answer, item.turn.note == nil else { return nil }
             return (item.turn.question, answer.reply.lines.map(\.text).joined(separator: " "))
         }
-        let model = Claude.Model.opus
-        guard let key = Claude.key(for: model) else {
-            failure = "No Claude key yet. Open Matterbee on your Mac once — its key comes here through iCloud Keychain — or paste it in Settings (⋯ on the overview)."
+        // The model chosen in Settings, as on the Mac, with the key its service takes.
+        let model = ModelChoice.assistant
+        guard let claude = ModelChoice.client(for: model) else {
+            failure = ModelChoice.missingKey(model)
             return
         }
         let names: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])
@@ -157,7 +170,7 @@ extension AssistantSheet {
             do {
                 let answer = try await AssistantAsk.ask(question: question, inHand: nil, earlier: earlier, facts: facts, owner: owner,
                                                         today: today, mapping: names.mapping, others: names.others,
-                                                        claude: Claude(key: key), model: model)
+                                                        claude: claude, model: model)
                 var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
                                            inHand: nil, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
                 turn.date = date

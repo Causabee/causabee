@@ -1,3 +1,5 @@
+import CloudKit
+import CoreData
 import MatterCore
 import SwiftData
 import SwiftUI
@@ -12,6 +14,7 @@ struct MatterbeePhoneApp: App {
 
     init() {
         Theme.registerFonts()
+        PhoneCloudStatus.shared.watch()
     }
 
     var body: some Scene {
@@ -96,5 +99,46 @@ enum PhoneCloud {
             .appendingPathComponent(name, isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         return folder.appendingPathComponent("matters.store")
+    }
+}
+
+/// What iCloud said last on this iPhone, as the Mac's Settings show it: sent, received, or why not.
+@MainActor
+@Observable
+final class PhoneCloudStatus {
+    static let shared = PhoneCloudStatus()
+    var lastExport: Date?
+    var lastImport: Date?
+    var lastError: String?
+    var account = "…"
+    private var watching = false
+
+    func watch() {
+        guard !watching else { return }
+        watching = true
+        NotificationCenter.default.addObserver(forName: NSPersistentCloudKitContainer.eventChangedNotification, object: nil, queue: .main) { note in
+            guard let event = note.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event,
+                  let ended = event.endDate else { return }
+            let error = event.error.map { ($0 as NSError).localizedDescription }
+            let type = event.type
+            MainActor.assumeIsolated {
+                switch type {
+                case .export: PhoneCloudStatus.shared.lastExport = ended
+                case .import: PhoneCloudStatus.shared.lastImport = ended
+                default: break
+                }
+                if let error { PhoneCloudStatus.shared.lastError = error } else if type != .setup { PhoneCloudStatus.shared.lastError = nil }
+            }
+        }
+        Task {
+            let status = try? await CKContainer(identifier: PhoneCloud.ownContainer).accountStatus()
+            account = switch status {
+            case .available: "signed in to iCloud"
+            case .noAccount: "no iCloud account on this iPhone"
+            case .restricted: "iCloud is restricted on this iPhone"
+            case .temporarilyUnavailable: "iCloud is not available right now"
+            default: "iCloud status unknown"
+            }
+        }
     }
 }
