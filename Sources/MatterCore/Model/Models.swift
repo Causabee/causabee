@@ -511,10 +511,30 @@ public final class Decision {
 }
 
 /// Everything above, for a `ModelContainer`.
+/// A Mac's list of names — its `mapping.json`, which disguises every name before anything goes to
+/// a model — for the owner's other devices: the iPhone asks with it, so the names it sends are
+/// disguised as the Mac disguises them. One record a Mac, written by that Mac only; compressed,
+/// and end-to-end encrypted in iCloud, so Apple cannot read a name of it.
+@Model
+public final class NameList {
+    /// The Mac it is from, as that Mac calls itself once: a random id, and its name for the screen.
+    public var device: String = ""
+    public var deviceName: String = ""
+    @Attribute(.allowsCloudEncryption) public var data: Data = Data()
+    /// A checksum of the list, so a Mac writes it again only when it changed.
+    @Attribute(.allowsCloudEncryption) public var digest: String = ""
+    public var updatedAt: Date = Date()
+
+    public init(device: String, deviceName: String) {
+        self.device = device
+        self.deviceName = deviceName
+    }
+}
+
 public enum MatterSchema {
     public static let models: [any PersistentModel.Type] = [
         Matter.self, Entry.self, Todo.self, Appointment.self, Deadline.self, Party.self, Membership.self,
-        Decision.self, Rule.self, Profile.self, Document.self, WebLink.self, ThreadTurn.self,
+        Decision.self, Rule.self, Profile.self, Document.self, WebLink.self, ThreadTurn.self, NameList.self,
     ]
 
     /// A store on disk, or in memory when `url` is nil.

@@ -87,8 +87,8 @@ public enum Keychain {
     enum Place: CaseIterable {
         case shared, own
 
-        func base(_ account: String? = nil) -> [String: Any] {
-            var query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: Keychain.service]
+        func base(_ account: String? = nil, service: String = Keychain.service) -> [String: Any] {
+            var query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service]
             if let account { query[kSecAttrAccount as String] = account }
             switch self {
             case .shared:
@@ -140,36 +140,52 @@ public enum Keychain {
 }
 
 /// The AI services' keys — Anthropic's, Mistral's — in the Keychain, as the owner pasted them in
-/// the app's settings. The app is started from the Dock, where no `.env` is at hand.
+/// the app's settings. The app is started from the Dock, where no `.env` is at hand. Like the mail
+/// password, a key is shared through iCloud Keychain, so Matterbee on the iPhone asks with the
+/// key pasted on the Mac; on a Mac it stays in the login keychain too.
 public enum APIKeys {
     static let service = "Matterbee API"
 
     public static func get(_ name: String) -> String? {
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                                    kSecAttrAccount as String: name, kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess, let data = item as? Data,
-              let key = String(data: data, encoding: .utf8), !key.isEmpty else { return nil }
-        return key
+        for place in Keychain.Place.allCases {
+            var query = place.base(name, service: service)
+            query[kSecReturnData as String] = true
+            query[kSecMatchLimit as String] = kSecMatchLimitOne
+            var item: CFTypeRef?
+            guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess, let data = item as? Data,
+                  let key = String(data: data, encoding: .utf8), !key.isEmpty else { continue }
+            // Saved before keys were shared: shared now, so the other devices have it too.
+            if place == .own { _ = write(key, as: name, to: .shared) }
+            return key
+        }
+        return nil
     }
 
     public static func save(_ key: String, as name: String) throws {
-        let base: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: name]
-        let data = Data(key.trimmingCharacters(in: .whitespacesAndNewlines).utf8)
-        let status = SecItemUpdate(base as CFDictionary, [kSecValueData as String: data] as CFDictionary)
-        if status == errSecItemNotFound {
-            var item = base
-            item[kSecValueData as String] = data
-            item[kSecAttrLabel as String] = "Matterbee — \(name)"
-            let added = SecItemAdd(item as CFDictionary, nil)
-            guard added == errSecSuccess else { throw Keychain.Failure.status(added) }
-        } else if status != errSecSuccess {
-            throw Keychain.Failure.status(status)
+        var saved = false
+        var failure: OSStatus?
+        for place in Keychain.Place.allCases {
+            let status = write(key.trimmingCharacters(in: .whitespacesAndNewlines), as: name, to: place)
+            if status == errSecSuccess { saved = true } else if status != errSecMissingEntitlement { failure = failure ?? status }
         }
+        if !saved { throw Keychain.Failure.status(failure ?? errSecMissingEntitlement) }
     }
 
+    /// From every device.
     public static func delete(_ name: String) {
-        let base: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: name]
-        SecItemDelete(base as CFDictionary)
+        for place in Keychain.Place.allCases { SecItemDelete(place.base(name, service: service) as CFDictionary) }
+    }
+
+    private static func write(_ key: String, as name: String, to place: Keychain.Place) -> OSStatus {
+        #if os(iOS)
+        if place == .own { return errSecMissingEntitlement }
+        #endif
+        let data = Data(key.utf8)
+        let status = SecItemUpdate(place.base(name, service: service) as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        guard status == errSecItemNotFound else { return status }
+        var item = place.base(name, service: service)
+        item[kSecValueData as String] = data
+        item[kSecAttrLabel as String] = "Matterbee — \(name)"
+        return SecItemAdd(item as CFDictionary, nil)
     }
 }

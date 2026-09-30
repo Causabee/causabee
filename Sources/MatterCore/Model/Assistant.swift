@@ -205,7 +205,27 @@ public enum AssistantAsk {
             mapping = try JSONDecoder().decode(Pseudonymizer.Mapping.self, from: data)
         }
         mapping.upgrade()
+        let file = url
+        return try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today,
+                           mapping: mapping, others: []) { learned in
+            guard saves else { return }
+            var mapping = mapping
+            mapping.placeholder = learned
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+            try encoder.encode(mapping).write(to: file, options: .atomic)
+        }
+    }
+
+    /// The same, with a list of names in hand instead of on the disk — the copy a Mac put into the
+    /// store — and `others`: names only another Mac's list knows, learned for this question too.
+    /// `save` gets the list with what was learned, when anything was; nil keeps nothing.
+    public static func prepare(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
+                               facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping,
+                               others: [Pseudonymizer.Entry], save: (([Pseudonymizer.Entry]) throws -> Void)?) throws -> Prepared {
         var pseudonymizer = Pseudonymizer(mode: .placeholder, entries: mapping.placeholder)
+        // Another Mac's names: every one of them gets a stand-in too, so none leaves as it is.
+        for entry in others { _ = pseudonymizer.learn(entry.kind, entry.original) }
 
         // A web address never leaves: the id in a doc's address may open it for anyone. It goes
         // as `[Link 1]`, and a card that keeps it is given the address back here.
@@ -229,12 +249,7 @@ public enum AssistantAsk {
             + EntityDetector(runsTagger: false).entities(in: user, field: .body)
         pseudonymizer.learn(entities, vocabulary: Vocabulary([user]))
         let newNames = pseudonymizer.entries.count - before
-        if newNames > 0, saves {
-            mapping.placeholder = pseudonymizer.entries
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-            try encoder.encode(mapping).write(to: url, options: .atomic)
-        }
+        if newNames > 0 { try save?(pseudonymizer.entries) }
 
         return Prepared(sent: pseudonymizer.disguiser.apply(user).text, pseudonymizer: pseudonymizer, newNames: newNames,
                         links: links.byStandIn)
@@ -244,6 +259,20 @@ public enum AssistantAsk {
                            facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
                            model: Claude.Model = .opus) async throws -> Answer {
         let prepared = try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today, mapping: url)
+        return try await send(prepared, claude: claude, model: model)
+    }
+
+    /// Asks with a list of names in hand — the iPhone's way: it uses the Mac's list and keeps
+    /// nothing it learned for the question.
+    public static func ask(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
+                           facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
+                           claude: Claude, model: Claude.Model = .opus) async throws -> Answer {
+        let prepared = try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today,
+                                   mapping: mapping, others: others, save: nil)
+        return try await send(prepared, claude: claude, model: model)
+    }
+
+    static func send(_ prepared: Prepared, claude: Claude, model: Claude.Model) async throws -> Answer {
         let (sent, pseudonymizer, newNames) = (prepared.sent, prepared.pseudonymizer, prepared.newNames)
         let body = Claude.body(model: model, system: AssistantPrompt.system, user: sent, schema: AssistantPrompt.schema, effort: "medium")
         let answer = try await claude.send(body, model: model)

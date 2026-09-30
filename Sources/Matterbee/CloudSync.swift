@@ -123,7 +123,9 @@ final class CloudSync {
             MainActor.assumeIsolated {
                 switch type {
                 case .export: CloudSync.shared.lastExport = ended
-                case .import: CloudSync.shared.lastImport = ended
+                case .import:
+                    CloudSync.shared.lastImport = ended
+                    NotificationCenter.default.post(name: .threadMayHaveChanged, object: nil)
                 default: break
                 }
                 if let error { CloudSync.shared.lastError = error } else if type != .setup { CloudSync.shared.lastError = nil }

@@ -2,10 +2,10 @@ import MatterCore
 import SwiftData
 import SwiftUI
 
-/// The assistant's thread as the Mac keeps it, over the overview or a matter: with a matter open,
-/// that matter's part of it. Suggested tasks and "done?" cards can be taken in here; asking from
-/// the iPhone comes later — it needs the list of names that disguises them, which stays on the Mac
-/// for now.
+/// The assistant's thread, one with the Mac's, over a matter: that matter's part of it. Asked here,
+/// a question goes out disguised by the Mac's own list of names — the copy the Mac put into the
+/// store — with the key pasted on the Mac, from iCloud Keychain. The list is not changed here: a
+/// name the Mac has not seen gets a stand-in for this question only.
 struct AssistantSheet: View {
     let matter: Matter?
     @Environment(Navigation.self) private var navigation
@@ -13,7 +13,12 @@ struct AssistantSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \ThreadTurn.date) private var records: [ThreadTurn]
     @Query private var matters: [Matter]
+    @Query private var profiles: [Profile]
+    @Environment(PhoneStore.self) private var store
     @State private var draft = ""
+    /// The question on its way, until its answer is in the thread.
+    @State private var asking: (question: String, date: Date)?
+    @State private var failure: String?
 
     private var shown: [(record: ThreadTurn, turn: Navigation.Turn)] {
         records
@@ -41,12 +46,21 @@ struct AssistantSheet: View {
                             PhoneTurnView(record: item.record, turn: item.turn, matter: item.record.matter)
                                 .id(item.turn.id)
                         }
+                        if let asking {
+                            PendingTurn(question: asking.question, scope: matter.map { "about \($0.name)" } ?? "about all matters")
+                                .id("asking")
+                        }
+                        if let failure {
+                            Label(failure, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.warning)
+                                .fixedSize(horizontal: false, vertical: true).id("failure")
+                        }
                     }
                     .padding(16)
                     .containerRelativeFrame(.horizontal)
                 }
                 .defaultScrollAnchor(.bottom)
                 .onAppear { if let last = shown.last { scroller.scrollTo(last.turn.id, anchor: .bottom) } }
+                .onChange(of: asking?.date) { withAnimation { scroller.scrollTo(asking == nil ? shown.last?.turn.id as AnyHashable? : "asking", anchor: .bottom) } }
             }
             composer
         }
@@ -74,28 +88,113 @@ struct AssistantSheet: View {
         .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 10)
     }
 
-    /// The field as the Mac has it; sending waits until the iPhone can disguise names itself.
+    /// The field as the Mac has it: what is typed goes out pseudonymised, and only on send.
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
                 TextField(matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
-                Button {} label: {
+                    .submitLabel(.send)
+                    .onSubmit(send)
+                Button(action: send) {
                     // A black arrow on the bee's yellow, as every yellow thing has black on it.
                     Image(systemName: "arrow.up.circle.fill").font(.title2)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.black, Theme.bee)
                 }
-                .disabled(true)
+                .disabled(asking != nil || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .accessibilityLabel("Send")
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
             .background(Theme.box, in: Capsule())
-            Text("Asking from the iPhone comes soon — for now, ask on your Mac. What you ask there shows up here.")
+            Text("Always pseudonymised: names are disguised on the iPhone, with your Mac's list, before anything is sent.")
                 .font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 8)
         }
         .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
         .background(Theme.canvas)
+    }
+}
+
+extension AssistantSheet {
+    /// Asks, as the Mac does: this matter's facts, what was said about it before, the owner's name.
+    /// The answer goes into the thread as a turn of its own record, so the Mac shows it too.
+    private func send() {
+        let typed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !typed.isEmpty, asking == nil else { return }
+        let scope = matter.map { [$0] } ?? activeMatters(matters)
+        let (question, readAs) = NameHints.correct(typed, knowing: scope.flatMap { $0.parties.map(\.name) })
+        let today = MatterStatus.day(Date())
+        let facts = FactSheet.facts(for: scope, today: today)
+        // Only this matter's talk: what was said about another matter would go out with it.
+        let earlier: [(question: String, answer: String)] = shown.compactMap { item in
+            guard let answer = item.turn.answer, item.turn.note == nil else { return nil }
+            return (item.turn.question, answer.reply.lines.map(\.text).joined(separator: " "))
+        }
+        let model = Claude.Model.opus
+        guard let key = Claude.key(for: model) else {
+            failure = "No Claude key yet. Paste it on your Mac (Settings › API keys): it comes to the iPhone through iCloud Keychain."
+            return
+        }
+        let names: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])
+        // The demo's people are made up, and no Mac has a list of them: the rules alone disguise
+        // what they find. With the owner's own matters, no list means nothing is sent.
+        if store.isDemo { names = (Pseudonymizer.Mapping(), []) } else { do { names = try NameLists.current(in: context) } catch {
+            failure = error.localizedDescription
+            return
+        } }
+        failure = nil
+        draft = ""
+        let date = Date()
+        asking = (question, date)
+        let owner = profiles.first?.names.first
+        let matter = self.matter
+        let context = self.context
+        Task {
+            do {
+                let answer = try await AssistantAsk.ask(question: question, inHand: nil, earlier: earlier, facts: facts, owner: owner,
+                                                        today: today, mapping: names.mapping, others: names.others,
+                                                        claude: Claude(key: key), model: model)
+                var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
+                                           inHand: nil, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
+                turn.date = date
+                turn.readAs = readAs.map { "read “\($0.typed)” as “\($0.known)”" }
+                turn.state = .answered(answer)
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = .sortedKeys
+                let record = ThreadTurn(id: turn.id, date: date, payload: try encoder.encode(turn))
+                context.insert(record)
+                record.matter = matter
+                try context.save()
+            } catch {
+                failure = "\(error)"
+                draft = question
+            }
+            asking = nil
+        }
+    }
+}
+
+/// The question just sent, while the answer is on its way: the bee at work.
+struct PendingTurn: View {
+    let question: String
+    let scope: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(scope).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                Text(question)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(Theme.honey, in: RoundedRectangle(cornerRadius: 18))
+                    .foregroundStyle(.black)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.leading, 40)
+            HStack(spacing: 8) {
+                BeeLoader()
+                Text("Sending, pseudonymised …").foregroundStyle(.secondary)
+            }
+        }
     }
 }
 

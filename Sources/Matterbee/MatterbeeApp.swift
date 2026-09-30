@@ -51,6 +51,9 @@ struct MatterbeeApp: App {
             if DemoData.isRequested { MainActor.assumeIsolated { Calendars.shared.isSealed = true; DemoData.seed(container.mainContext) } }
             // Files taken in before they were kept as files of their matter.
             MainActor.assumeIsolated { _ = try? MatterImport.addDroppedFiles(to: container.mainContext) }
+            // This Mac's list of names, for the iPhone to ask with: now, and whenever Matterbee
+            // goes to the background or quits — by then new mail may have taught it new names.
+            MainActor.assumeIsolated { NameListPublisher.start(container.mainContext) }
             return container
         }
         CloudSync.shared.watch()
@@ -277,9 +280,48 @@ final class Navigation {
         for record in stored {
             records[record.id] = record
             written[record.id] = record.payload
-            if let turn = try? JSONDecoder().decode(Turn.self, from: record.payload) { loaded.append(turn) }
+            if let turn = Self.turn(of: record) { loaded.append(turn) }
         }
         turns = loaded
+    }
+
+    /// A record's turn, with the matter it belongs to taken from the record: the id in the payload
+    /// is the store's that asked, and another device's store has ids of its own.
+    @MainActor
+    private static func turn(of record: ThreadTurn) -> Turn? {
+        guard var turn = try? JSONDecoder().decode(Turn.self, from: record.payload) else { return nil }
+        if let matter = record.matter { turn.matter = matter.persistentModelID }
+        return turn
+    }
+
+    /// Takes in the turns another device added or changed since — a question asked on the iPhone,
+    /// a card ticked there — and leaves the ones written here as they are.
+    @MainActor
+    func refresh() {
+        guard let context, !loading else { return }
+        let stored = (try? context.fetch(FetchDescriptor<ThreadTurn>(sortBy: [SortDescriptor(\.date)]))) ?? []
+        var updated = turns
+        var changed = false
+        for record in stored where written[record.id] != record.payload {
+            guard var turn = Self.turn(of: record) else { continue }
+            records[record.id] = record
+            written[record.id] = record.payload
+            if let index = updated.firstIndex(where: { $0.id == turn.id }) {
+                // One still being asked here, or a screenshot being read, is this Mac's to finish.
+                if case .asking = updated[index].state { continue }
+                turn.undos = updated[index].undos
+                turn.shot = updated[index].shot ?? turn.shot
+                turn.drafting = updated[index].drafting
+                updated[index] = turn
+            } else {
+                updated.append(turn)
+            }
+            changed = true
+        }
+        guard changed else { return }
+        loading = true
+        turns = updated.sorted { $0.date < $1.date }
+        loading = false
     }
 
     /// Writes the turns that changed since the last time, each into its own record.
@@ -506,6 +548,8 @@ struct RootView: View {
         .tint(.primary)
         // Lines of running text 18 apart, as in the design: the system's 16 and 2 more.
         .lineSpacing(2)
+        // A turn asked on the iPhone, or on the other Mac, arrives while Matterbee is open.
+        .onReceive(NotificationCenter.default.publisher(for: .threadMayHaveChanged)) { _ in navigation.refresh() }
         .onAppear {
             navigation.attach(context)
             // `--demo --shot`: set up as one of the introduction's pictures.
@@ -677,6 +721,8 @@ extension Navigation.Turn: Codable {
 }
 
 extension Notification.Name {
+    /// iCloud brought changes in: the assistant's thread may have new or changed turns.
+    static let threadMayHaveChanged = Notification.Name("matterbee.threadMayHaveChanged")
     /// Help → Introduction to Matterbee.
     static let showIntro = Notification.Name("matterbee.showIntro")
     /// Matterbee → Set Up Matterbee …
