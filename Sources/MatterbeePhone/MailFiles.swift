@@ -152,7 +152,7 @@ struct MailAccountSheet: View {
         NavigationStack {
             Form {
                 if !saved.isEmpty {
-                    Section("On this iPhone") {
+                    Section("Saved — shared with your Macs through iCloud Keychain") {
                         ForEach(saved, id: \.user) { account in
                             HStack {
                                 VStack(alignment: .leading) {
@@ -160,7 +160,7 @@ struct MailAccountSheet: View {
                                     Text(account.host).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Button("Remove", role: .destructive) {
+                                Button("Remove from all devices", role: .destructive) {
                                     try? Keychain.delete(account: account.user)
                                     saved = Keychain.accounts().filter { !$0.usesGoogle }
                                 }
@@ -181,7 +181,7 @@ struct MailAccountSheet: View {
                 } header: {
                     Text(saved.isEmpty ? "Mail account" : "Add another")
                 } footer: {
-                    Text("Files are taken out of your mail when you open them — read-only, one mail at a time — and are not kept in iCloud. The password stays in this iPhone's Keychain and goes only to your mail server. For Gmail, use an app password (Google Account › Security › App passwords).")
+                    Text("Files are taken out of your mail when you open them — read-only, one mail at a time — and are not kept in iCloud. The password is kept in your iCloud Keychain, end-to-end encrypted, so Matterbee on your Macs and this iPhone shares it — typed once — and it goes only to your mail server. For Gmail, use an app password (Google Account › Security › App passwords).")
                 }
                 if let failure { Text(failure).foregroundStyle(Theme.warning) }
             }
