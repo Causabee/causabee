@@ -22,9 +22,9 @@ IMG = OUT / "img"
 # The screenshots are 1800 × 1125: a 900-point window at 2x. Each crop is (left, top, right, bottom).
 CROPS = {
     "matter-phone": ("intro-2", (915, 0, 1785, 967), 684),
-    "tasks": ("intro-3", (900, 165, 1800, 690), None),
-    "calendar": ("intro-3", (900, 630, 1800, 1125), None),
-    "files": ("intro-4", (900, 362, 1800, 887), None),
+    "tasks": ("intro-3", (900, 290, 1800, 815), None),
+    "calendar": ("intro-3", (905, 760, 1535, 1125), None),
+    "files": ("intro-4", (900, 105, 1800, 630), None),
     "sources": ("intro-5", (900, 690, 1800, 1125), None),
     "assistant": ("intro-5", (342, 80, 897, 781), None),
 }
