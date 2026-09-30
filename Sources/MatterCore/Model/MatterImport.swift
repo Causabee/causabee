@@ -244,6 +244,44 @@ extension Matter {
         if old != key, !aliases.contains(old) { aliases.append(old) }
     }
 
+    /// These mails as a matter of their own, named by the owner: the model filed them here — often
+    /// under a closed matter — and the owner meant a new one. What only they brought goes along:
+    /// tasks, dates and decisions read out of them alone, their files and links, and the assistant's
+    /// words since `turnsSince` (the "mails taken in" note). A task another mail said too stays. The
+    /// people they name are in both matters.
+    public func split(_ moved: [Entry], intoNewMatterNamed name: String, turnsSince: Date?, in context: ModelContext) throws -> Matter {
+        let ids = Set(moved.map(\.messageID))
+        let new = try Matter.make(named: name, in: context)
+        let onlyTheirs: ([Source]) -> Bool = { sources in
+            !sources.isEmpty && sources.allSatisfy { ids.contains($0.messageID ?? "") }
+        }
+        for entry in moved where entry.matter === self { entry.matter = new }
+        for todo in todos ?? [] where onlyTheirs(todo.sources)
+            || (todo.sources.isEmpty && ids.contains(String(todo.origin.split(separator: "#").first ?? ""))) {
+            todo.matter = new
+        }
+        for item in appointments ?? [] where onlyTheirs(item.sources) { item.matter = new }
+        for item in deadlines ?? [] where onlyTheirs(item.sources) { item.matter = new }
+        for item in decisions ?? [] where onlyTheirs(item.sources) { item.matter = new }
+        for item in documents ?? [] where ids.contains(item.messageID) { item.matter = new }
+        for item in links ?? [] where ids.contains(item.messageID) { item.matter = new }
+        if let since = turnsSince { for turn in turns ?? [] where turn.date > since { turn.matter = new } }
+        // Who the mails name, by any spelling: in the new matter as well, with what they are here.
+        let words = moved.map { [$0.from, $0.title, $0.digest ?? ""].joined(separator: " ").lowercased() }.joined(separator: " ")
+        for membership in memberships ?? [] {
+            guard let party = membership.party, new.membership(of: party) == nil,
+                  ([party.name] + party.spellings).contains(where: { !$0.isEmpty && words.contains($0.lowercased()) }) else { continue }
+            let copy = Membership()
+            context.insert(copy)
+            copy.party = party
+            copy.matter = new
+            copy.roles = membership.roles
+            copy.mentions = moved.filter { [$0.from, $0.title, $0.digest ?? ""].joined(separator: " ").lowercased().contains(party.name.lowercased()) }.count
+        }
+        try context.save()
+        return new
+    }
+
     /// Everything of `other` becomes this matter's, and `other` is gone. Its names are kept as
     /// aliases: the model will go on filing mail under `reisestornierungmutter`, and that mail
     /// has to arrive here.

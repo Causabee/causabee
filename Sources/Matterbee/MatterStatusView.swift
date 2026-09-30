@@ -19,6 +19,9 @@ struct MatterStatusView: View {
     @State private var showsHidden = false
     /// Writing the notes, and what is written so far — its own text, so the cursor stays put.
     @State private var editingNotes = false
+    /// The new mails of a closed matter, being made a matter of their own: the name the owner gives it.
+    @State private var splitting = false
+    @State private var newMatterName = ""
     @State private var notesDraft = ""
     @State private var askingStep = false
     @State private var addingLink = false
@@ -661,11 +664,60 @@ struct MatterStatusView: View {
                         }
                     }
                     Spacer()
+                    if !status.mailsSinceClosed.isEmpty {
+                        Button("Start a new matter") {
+                            newMatterName = Self.suggestedName(for: status.mailsSinceClosed)
+                            splitting = true
+                        }
+                        .help("The new mails, with what they brought, become a matter of their own; this one stays closed")
+                        .popover(isPresented: $splitting, arrowEdge: .bottom) { splitForm(status) }
+                    }
                     Button("Open again") { matter.reopen(); try? context.save() }
                 }
                 .padding(20)
                 .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
             }
+    }
+
+    /// Mail the model filed under this closed matter, when the owner meant a new one: a name, and it goes.
+    private func splitForm(_ status: MatterStatus) -> some View {
+        let count = status.mailsSinceClosed.count
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("A new matter with the \(count) new \(count == 1 ? "mail" : "mails")").font(.headline)
+            Text("Their tasks, dates, files and links go with them. “\(matter.name)” stays closed.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            TextField("Name", text: $newMatterName).textFieldStyle(.roundedBorder).onSubmit(startNewMatter)
+            HStack {
+                Spacer()
+                Button("Cancel") { splitting = false }
+                Button("Start", action: startNewMatter)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(newMatterName.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(16)
+        .frame(width: 380)
+    }
+
+    private func startNewMatter() {
+        let mails = MatterStatus(matter).mailsSinceClosed
+        let name = newMatterName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !mails.isEmpty, !name.isEmpty,
+              let new = try? matter.split(mails, intoNewMatterNamed: name, turnsSince: matter.closedAt, in: context) else { return }
+        splitting = false
+        navigation.open(new)
+    }
+
+    /// The first new mail's subject, without "Re:" and the like, and without a calendar invitation's
+    /// " - date and time" tail: "Einladung: Ralf Chille and Robbie Kerr".
+    static func suggestedName(for mails: [Entry]) -> String {
+        var title = mails.min { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.title ?? ""
+        let prefixes = ["re:", "aw:", "fwd:", "fw:", "wg:", "[external]"]
+        while let prefix = prefixes.first(where: { title.trimmingCharacters(in: .whitespaces).lowercased().hasPrefix($0) }) {
+            title = String(title.trimmingCharacters(in: .whitespaces).dropFirst(prefix.count))
+        }
+        if let dash = title.range(of: " - ") { title = String(title[..<dash.lowerBound]) }
+        return String(title.trimmingCharacters(in: .whitespaces).prefix(80))
     }
 
     /// The name, how much mail and since when, the page search and Close: on glass, always on top.
