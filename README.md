@@ -7,6 +7,21 @@ The build plan is in [plan.md](plan.md). Phase 0, the spike, is done: it measure
 decision pipeline behaves on real mail. We are now in **Phase 2**, starting with the daily door —
 reading the mail under one Gmail label — before any of it becomes an app.
 
+## Building the Mac app
+
+Open `App/Matterbee.xcodeproj` in Xcode and run the **MatterbeeApp** scheme (macOS 15 or later).
+To sign it yourself, choose your own team and a bundle identifier of your own under Signing &
+Capabilities; iCloud needs a container of your own too. Without signing it still runs, on the
+Mac it was built on, with iCloud off.
+
+From the Terminal, without signing:
+
+```sh
+xcodebuild -project App/Matterbee.xcodeproj -scheme MatterbeeApp CODE_SIGNING_ALLOWED=NO build
+```
+
+`scripts/release.sh` makes a signed, notarized release; see the top of that script.
+
 ## What is built
 
 | Step | Stage | State |
