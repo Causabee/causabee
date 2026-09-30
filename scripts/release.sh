@@ -15,8 +15,11 @@
 #   xcrun notarytool store-credentials "matterbee-notary" --apple-id <you> --team-id <team>
 # Other names: MATTERBEE_NOTARY_PROFILE, MATTERBEE_DEVELOPER_ID. It builds App/Matterbee.xcodeproj.
 #
-# A release is signed without the iCloud entitlement (scripts/release.entitlements): Xcode makes no
-# Developer ID profile for it from the command line, so a release keeps its matters on the Mac.
+# A release syncs through the owner's iCloud, in CloudKit's Production environment: it is signed with
+# scripts/release.entitlements and carries scripts/release.provisionprofile, the Developer ID profile
+# made once on developer.apple.com (Xcode makes none from the command line). Production must have the
+# schema: after a change to the models, run a development build with --init-cloudkit-schema, then
+# "Deploy Schema Changes" in the CloudKit Console, before releasing.
 set -e -u -o pipefail
 cd "$(dirname "$0")/.."
 
@@ -83,10 +86,14 @@ ditto "$OUT/Matterbee.xcarchive/Products/Applications/Matterbee.app" "$APP"
 [[ $(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP/Contents/Info.plist") == "$SHORT" ]] || fail "The app does not say version $SHORT."
 
 step "Signing with $IDENTITY"
-# The development profile lists the owner's registered Macs; a download has no use for it.
-rm -f "$APP/Contents/embedded.provisionprofile"
+# The development profile lists the owner's registered Macs; a download carries the Developer ID one,
+# which lets any Mac use iCloud.
+[[ -f scripts/release.provisionprofile ]] || fail "No scripts/release.provisionprofile (see the top of this script)."
+cp scripts/release.provisionprofile "$APP/Contents/embedded.provisionprofile"
 codesign --force --options runtime --timestamp --entitlements scripts/release.entitlements --sign "$IDENTITY" "$APP"
 codesign --verify --deep --strict "$APP" || fail "The signature does not verify."
+codesign -d --entitlements - --xml "$APP" 2>/dev/null | grep -q "<string>Production</string>" \
+  || fail "The app is not signed for iCloud's Production environment."
 
 # The disk image: the app, the Applications folder beside it, and the picture that says to drag.
 disk_image() {

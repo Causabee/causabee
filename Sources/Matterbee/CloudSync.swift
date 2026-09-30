@@ -31,16 +31,25 @@ final class CloudSync {
     nonisolated static var mode: Mode {
         // The demo's made-up matters never meet the owner's iCloud, in either direction.
         guard isEntitled, !DemoData.isRequested else { return .off }
-        return Mode(rawValue: UserDefaults.standard.string(forKey: modeKey) ?? "") ?? .off
+        let chosen = Mode(rawValue: UserDefaults.standard.string(forKey: modeKey) ?? "") ?? .off
+        return available.contains(chosen) ? chosen : .off
     }
 
-    /// Only the signed app may ask iCloud. A build without the entitlement — from `swift build`,
-    /// or started from the terminal — is stopped by CloudKit the moment it tries, so it stays
-    /// on this Mac.
-    nonisolated static let isEntitled: Bool = {
-        guard let task = SecTaskCreateFromSelf(nil) else { return false }
-        return SecTaskCopyValueForEntitlement(task, "com.apple.developer.icloud-container-identifiers" as CFString, nil) != nil
+    /// The containers this build may ask. A build without the entitlement — from `swift build`, or
+    /// started from the terminal — is stopped by CloudKit the moment it tries, so it stays on this
+    /// Mac; a release may ask only the owner's real container, not the test one.
+    nonisolated static let containers: Set<String> = {
+        guard let task = SecTaskCreateFromSelf(nil),
+              let value = SecTaskCopyValueForEntitlement(task, "com.apple.developer.icloud-container-identifiers" as CFString, nil)
+        else { return [] }
+        return Set(value as? [String] ?? [])
     }()
+    nonisolated static var isEntitled: Bool { !containers.isEmpty }
+
+    /// Off, and each mode whose container this build may ask.
+    nonisolated static var available: [Mode] {
+        Mode.allCases.filter { mode in mode.container.map(containers.contains) ?? true }
+    }
 
     static let shared = CloudSync()
 
@@ -102,7 +111,8 @@ final class CloudSync {
 
     func checkAccount() async {
         guard Self.isEntitled else { account = "not available in this build"; return }
-        guard let id = Self.mode.container ?? Mode.test.container else { return }
+        // Off, the account is still worth knowing: asked through a container this build may use.
+        guard let id = Self.mode.container ?? Self.available.compactMap(\.container).first else { return }
         let status = try? await CKContainer(identifier: id).accountStatus()
         account = switch status {
         case .available: "signed in to iCloud"
@@ -150,13 +160,15 @@ struct CloudSettings: View {
 
     @ViewBuilder
     private var choice: some View {
-        Picker("iCloud", selection: $mode) {
-            ForEach(CloudSync.Mode.allCases, id: \.rawValue) { Text($0.label).tag($0.rawValue) }
+        // A mode this build may not use (the test one, in a release) shows as off, as it acts.
+        Picker("iCloud", selection: Binding(get: { CloudSync.available.map(\.rawValue).contains(mode) ? mode : CloudSync.Mode.off.rawValue },
+                                            set: { mode = $0 })) {
+            ForEach(CloudSync.available, id: \.rawValue) { Text($0.label).tag($0.rawValue) }
         }
         if DemoData.isRequested {
             Text("In the demo, iCloud stays off: the made-up matters never meet your iCloud. Your choice counts again when you leave the demo.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-        } else if mode != started.rawValue {
+        } else if (CloudSync.available.map(\.rawValue).contains(mode) ? mode : CloudSync.Mode.off.rawValue) != started.rawValue {
             HStack {
                 Text("Takes effect when Matterbee starts again.").font(.caption).foregroundStyle(Theme.warning)
                 Spacer()

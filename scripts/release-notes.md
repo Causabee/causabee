@@ -24,9 +24,12 @@ The app and the disk image are signed with a Developer ID and notarized by Apple
 
 Your mail and files stay on your Mac. Before anything goes to the AI, names, addresses and numbers are replaced — and only when you click. Matterbee has no server, no account and no analytics. [Privacy policy](https://ralfchille.github.io/matterbee/privacy.html)
 
+## iCloud
+
+In **Settings › iCloud**, choose **On** and start Matterbee again: your matters — tasks, dates, people, a short summary of each mail and the assistant's history — sync through your own private iCloud to your other Macs. Full mail texts and files stay on the Mac they came to. **Off** keeps everything on this Mac.
+
 ## Not in this beta yet
 
-- **iCloud sync.** Your matters stay on this Mac.
 - **Sign in with Google.** Use an app password for Gmail.
 
 ## Feedback

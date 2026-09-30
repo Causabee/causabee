@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- What a release is signed with: Calendar and Reminders only. No iCloud — Xcode makes no Developer ID
-     profile for it from the command line — so a release keeps its matters on the Mac. -->
+<!-- What a release is signed with: Calendar and Reminders, and iCloud for the owner's matters in
+     CloudKit's Production environment, with pushes so another Mac's changes arrive at once. The
+     Developer ID profile that allows it is scripts/release.provisionprofile (Matterbee Developer ID,
+     team 2F7QR8NL2D); only the real container, not the test one, whose schema stays in Development. -->
 <plist version="1.0">
 <dict>
+	<key>com.apple.application-identifier</key>
+	<string>2F7QR8NL2D.de.chille.matterbee</string>
+	<key>com.apple.developer.team-identifier</key>
+	<string>2F7QR8NL2D</string>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.de.chille.matterbee</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.icloud-container-environment</key>
+	<string>Production</string>
+	<key>com.apple.developer.aps-environment</key>
+	<string>production</string>
 	<key>com.apple.security.personal-information.calendars</key>
 	<true/>
 </dict>
