@@ -454,41 +454,37 @@ struct MatterScreen: View {
 
     // MARK: History
 
+    /// The mail, as the Mac shows it: conversation by conversation, the newest first, each reply
+    /// under the mail it answers — until about 60 mails are shown.
     private func history(_ status: MatterStatus) -> some View {
-        let entries = status.entries
+        let threads = MailThreads.build(status.entries)
+        var shown = 0
+        let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 }
+        let hidden = threads.count - visible.count
         return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "History", detail: entries.isEmpty ? "No mails yet" : "\(entries.count) \(entries.count == 1 ? "mail" : "mails")")
-            if !entries.isEmpty {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(entries.prefix(60).enumerated()), id: \.element.persistentModelID) { index, entry in
-                        if index > 0 { Divider().padding(.leading, 16) }
-                        VStack(alignment: .leading, spacing: 3) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(entry.from).font(.subheadline.weight(.semibold)).lineLimit(1)
-                                Spacer()
-                                if let date = entry.date { Text(Dates.short(date)).font(.caption).foregroundStyle(.secondary) }
-                            }
-                            Text(entry.title).font(.subheadline).lineLimit(2)
-                            if let digest = entry.digest, !digest.isEmpty {
-                                Text(digest).font(.caption).foregroundStyle(.secondary).lineLimit(3)
-                            }
-                        }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                        .contextMenu {
-                            Button("Talk about it with the assistant") { navigation.talk(entry.title, kind: "Mail", in: matter) }
-                        }
-                    }
-                }
-                .phoneCard()
-                if entries.count > 60 {
-                    Text("… and \(entries.count - 60) older mails").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
-                }
-                Text("The mails themselves stay on your Mac; here is what Matterbee kept of each.")
-                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+            SectionHeader(title: "History", detail: Self.count(status.entries)
+                          + (threads.count == status.entries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
+            ForEach(visible) { thread in
+                PhoneThreadCard(thread: thread, matter: matter)
+            }
+            if hidden > 0 {
+                Text("… and \(hidden) older \(hidden == 1 ? "conversation" : "conversations")").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
             }
         }
+    }
+
+    /// "32 mails · 3 screenshots · 1 document": each kind counted as what it is.
+    static func count(_ entries: [Entry]) -> String {
+        let names: [(Source.Kind, String, String)] = [
+            (.mail, "mail", "mails"), (.screenshot, "screenshot", "screenshots"), (.document, "document", "documents"),
+            (.photo, "photo", "photos"), (.spokenNote, "spoken note", "spoken notes"), (.phoneCall, "call", "calls"),
+            (.conversation, "from the assistant", "from the assistant"),
+        ]
+        let parts = names.compactMap { kind, one, many -> String? in
+            let n = entries.filter { $0.source.kind == kind }.count
+            return n == 0 ? nil : "\(n) \(n == 1 ? one : many)"
+        }
+        return parts.isEmpty ? "No mails yet" : parts.joined(separator: " · ")
     }
 }
 
