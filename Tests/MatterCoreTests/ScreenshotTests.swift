@@ -129,7 +129,7 @@ struct ScreenshotTests {
         let (text, notes, _) = try ScreenshotDoor.read(pdf: url)
         #expect(text.contains("— Seite 1 —") && text.contains("Sonderumlage"))
         #expect(text.contains("— Seite 2 —") && text.contains("Begehung"))
-        #expect(notes == ["Page 2: scanned, no text layer — read with text recognition on the Mac"])
+        #expect(notes == ["Page 2: scanned, no text layer — read with text recognition on this device"])
     }
 
     @Test("A screenshot with a home stays where it is; one from a temporary folder is copied in")

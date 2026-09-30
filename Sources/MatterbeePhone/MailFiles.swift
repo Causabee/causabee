@@ -45,6 +45,8 @@ enum MailFiles {
 struct FilesSection: View {
     let matter: Matter
     @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
+    @Query private var profiles: [Profile]
     @State private var state: [PersistentIdentifier: String] = [:]
     @State private var preview: URL?
     @State private var addsAccount = false
@@ -159,6 +161,12 @@ struct FilesSection: View {
                 .buttonStyle(.plain)
                 .disabled(document.isOwnFile)
                 if state[id]?.hasPrefix("Getting") == true { ProgressView() }
+                if let read = document.readAt {
+                    Label("read \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
+                        .labelStyle(.titleOnly)
+                } else if document.isReadable, !document.isOwnFile, state[id] == nil {
+                    Button("Read") { read(document) }.font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).tool()
+                }
                 Menu { items(document) } label: {
                     Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
                 }
@@ -189,6 +197,7 @@ struct FilesSection: View {
     @ViewBuilder
     private func items(_ document: MatterCore.Document) -> some View {
         if !document.isOwnFile { Button("Open") { open(document) } }
+        if document.isReadable, !document.isOwnFile, document.readAt == nil { Button("Read") { read(document) } }
         Divider()
         Button("Rename …") { newName = document.shownName; renaming = document }
         if isPDF(document), !document.isOwnFile { Button("Name it from its content") { nameFromContent(document) } }
@@ -219,6 +228,15 @@ struct FilesSection: View {
     }
 
     private func open(_ document: MatterCore.Document) { fetch(document) { preview = $0 } }
+
+    /// Into the assistant, as on the Mac: read on the iPhone, sorted in only on "Sort in".
+    private func read(_ document: MatterCore.Document) {
+        fetch(document) { url in
+            PhoneShots.shared.bring(url, matter: matter.persistentModelID, document: document.persistentModelID,
+                                    context: context, owner: profiles.first?.names.first)
+            navigation.showsAssistant = true
+        }
+    }
 
     /// A readable name from the file's first page — read on the iPhone, from the cache or the mail.
     private func nameFromContent(_ document: MatterCore.Document) {

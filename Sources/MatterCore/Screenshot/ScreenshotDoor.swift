@@ -142,7 +142,7 @@ public struct ScreenshotDoor: Sendable {
                     }
                 }
                 notes.append(text.isEmpty ? "Page \(index + 1): nothing readable — not even with text recognition"
-                                          : "Page \(index + 1): scanned, no text layer — read with text recognition on the Mac")
+                                          : "Page \(index + 1): scanned, no text layer — read with text recognition on this device")
             }
             parts.append("— Seite \(index + 1) —\n" + (text.isEmpty ? "[nicht lesbar]" : text))
         }

@@ -53,6 +53,10 @@ struct AssistantSheet: View {
                             PhoneTurnView(record: item.record, turn: item.turn, matter: item.record.matter)
                                 .id(item.turn.id)
                         }
+                        // Files brought in here: read on the iPhone, sorted in on a yes.
+                        ForEach(PhoneShots.shared.shots.filter { matter == nil || $0.matter == nil || $0.matter == matter?.persistentModelID }) { shot in
+                            PhoneShotCard(shot: shot).id(shot.id)
+                        }
                         if let asking {
                             PendingTurn(question: asking.question, scope: matter.map { "about \($0.name)" } ?? "about all matters")
                                 .id("asking")
@@ -67,6 +71,7 @@ struct AssistantSheet: View {
                 }
                 .defaultScrollAnchor(.bottom)
                 .onAppear { if let last = shown.last { scroller.scrollTo(last.turn.id, anchor: .bottom) } }
+                .onChange(of: PhoneShots.shared.shots.count) { if let last = PhoneShots.shared.shots.last { withAnimation { scroller.scrollTo(last.id, anchor: .bottom) } } }
                 .onChange(of: asking?.date) { withAnimation { scroller.scrollTo(asking == nil ? shown.last?.turn.id as AnyHashable? : "asking", anchor: .bottom) } }
             }
             composer
@@ -121,7 +126,8 @@ struct AssistantSheet: View {
             }
             // As on the Mac: the send button sits in the pill's round end, as far from the right as
             // from the top and bottom, and the corner's radius is that and half the button — 7 + 34 / 2.
-            HStack(alignment: .bottom, spacing: 10) {
+            HStack(alignment: .bottom, spacing: 6) {
+                AttachButton(matter: matter)
                 TextField(matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
                     .submitLabel(.send)
@@ -137,7 +143,7 @@ struct AssistantSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Send")
             }
-            .padding(.leading, 16).padding(.trailing, 7).padding(.vertical, 7)
+            .padding(.leading, 7).padding(.trailing, 7).padding(.vertical, 7)
             .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))
             // As on the Mac: "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(showsMore
