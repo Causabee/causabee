@@ -48,19 +48,6 @@ struct OverviewScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Spacer()
-                    Menu {
-                        Button("Settings …", systemImage: "gearshape") { editsAccount = true }
-                        Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: "sparkles") { store.switchDemo(!store.isDemo) }
-                    } label: {
-                        Image(systemName: "ellipsis").font(.body.weight(.semibold)).foregroundStyle(.primary)
-                            .frame(width: 44, height: 44)
-                            .glassEffect(.regular.interactive(), in: Circle())
-                    }
-                    .tint(.primary)
-                    .accessibilityLabel("More")
-                }
                 VStack(alignment: .leading, spacing: 4) {
                     Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))).uppercased())
                         .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
@@ -105,7 +92,19 @@ struct OverviewScreen: View {
         .scrollDismissesKeyboard(.immediately)
         .background(Theme.canvas)
         // No assistant here, as on the Mac: it opens from a matter, about that matter.
-        .toolbar(.hidden, for: .navigationBar)
+        // The ⋯ in the bar, drawn by the system as in a matter: a glass of our own on it, and the
+        // bar hidden here and shown there, broke the swipe back from a matter (iOS 27).
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button("Settings …") { editsAccount = true }
+                    Button(store.isDemo ? "Leave the demo" : "Try the demo") { store.switchDemo(!store.isDemo) }
+                } label: { Image(systemName: "ellipsis") }
+                .tint(.primary)
+                .accessibilityLabel("More")
+            }
+        }
         .sheet(isPresented: $editsAccount) { SettingsSheet() }
     }
 

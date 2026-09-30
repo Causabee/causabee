@@ -152,7 +152,7 @@ public enum AssistantPrompt {
 
 /// A matter's summary for the top of its status: three or four lines, from its facts alone.
 public enum SummaryPrompt {
-    public static let version = "summary-v2"
+    public static let version = "summary-v3"
 
     public static let system = """
     You are writing the summary at the top of one matter in Matterbee, a private app that keeps \
@@ -167,9 +167,14 @@ public enum SummaryPrompt {
     und an der Gebäudeversicherung." At most two lines, each one short sentence. No lists of to-dos, no \
     exact dates unless one decides everything, no list of who is involved, nothing already \
     finished unless it changed the situation. The owner's notes weigh more than the mail: they \
-    know what the matter is about. German unless the facts are in another language. Each line \
-    cites the ids it rests on, in `cites`, never in the text.
+    know what the matter is about. Each line cites the ids it rests on, in `cites`, never in the \
+    text.
     """
+
+    /// With the language to write in: the facts', never these instructions' or their example's.
+    public static func system(writingIn language: String?) -> String {
+        system + "\n\n" + AssistantAsk.languageRule(language)
+    }
 
     public static var schema: [String: Any] {
         let string: [String: Any] = ["type": "string"]
@@ -188,7 +193,7 @@ public enum SummaryPrompt {
 /// The one next step in a matter, from its facts: what the owner should do now, and why — asked
 /// for with a click, when the step worked out on the device is not good enough.
 public enum NextStepPrompt {
-    public static let version = "next-step-v1"
+    public static let version = "next-step-v2"
 
     public static let system = """
     You are choosing the one next step in a matter in Matterbee, a private app that keeps a \
@@ -205,10 +210,14 @@ public enum NextStepPrompt {
 
     `step` is the step itself, as an instruction of at most twelve words: "Beim Reisebüro wegen \
     der Antwort nachfragen". `why` is one short sentence on why this and not something else. \
-    `todo` is the id of the to-do it is about, or null. `cites` are the ids it rests on. Write in \
-    German unless the facts are in another language. Dates the way people write them: "30. \
-    September".
+    `todo` is the id of the to-do it is about, or null. `cites` are the ids it rests on. Dates the \
+    way people write them in the language you write in: "30. September", "September 30".
     """
+
+    /// With the language to write in: the facts', never these instructions' or their example's.
+    public static func system(writingIn language: String?) -> String {
+        system + "\n\n" + AssistantAsk.languageRule(language)
+    }
 
     public static var schema: [String: Any] {
         let string: [String: Any] = ["type": "string"]

@@ -16,9 +16,16 @@ final class MirrorRunner {
     @ObservationIgnored private var pending: Task<Void, Never>?
     @ObservationIgnored private var running = false
 
+    @ObservationIgnored private var watching = false
+
+    /// Again with the other store's context when the iPhone opens the demo or leaves it: a
+    /// context of the store just closed must never be read again — SwiftData stops the app.
     func start(_ context: ModelContext) {
-        guard self.context == nil else { return }
+        guard self.context !== context else { return }
+        pending?.cancel()
         self.context = context
+        guard !watching else { soon(after: 0.5); return }
+        watching = true
         NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { MirrorRunner.shared.soon() }
         }

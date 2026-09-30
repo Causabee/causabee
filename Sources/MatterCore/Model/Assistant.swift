@@ -1,4 +1,5 @@
 import Foundation
+import NaturalLanguage
 import SwiftData
 
 /// A fact the assistant was shown, by the id it was shown under — so a line that cites `T4` can
@@ -21,6 +22,9 @@ public struct Facts: Sendable {
     /// What the owner wrote in their own words — a matter's notes, a to-do's note. Read on the
     /// device for names like a typed question, because nothing has disguised it before.
     public var ownerText: String = ""
+    /// The language the matter is written in — its mails, tasks and notes — in English words:
+    /// "German", "English". What a summary or a next step is written in. Nil when it cannot be told.
+    public var language: String? = nil
 }
 
 @MainActor
@@ -142,8 +146,12 @@ public enum FactSheet {
         if detailed { seen.append("\(mailCount) \(mailCount == 1 ? "mail" : "mails")") } else { seen.append("\(matters.count) \(matters.count == 1 ? "matter" : "matters")") }
         seen.append("\(todos) open \(todos == 1 ? "task" : "tasks")")
         if dates > 0 { seen.append("\(dates) appointments and deadlines") }
+        // What the matter is written in: its own words, not the labels above them.
+        let words = matters.flatMap { matter in
+            [matter.notes ?? ""] + (matter.todos ?? []).map(\.text) + (matter.entries ?? []).prefix(40).flatMap { [$0.title, $0.digest ?? ""] }
+        }
         return Facts(text: blocks.joined(separator: "\n\n"), refs: refs, seen: seen.joined(separator: ", "),
-                     ownerText: ownerText.joined(separator: "\n"))
+                     ownerText: ownerText.joined(separator: "\n"), language: AssistantAsk.language(of: words))
     }
 }
 
@@ -348,7 +356,7 @@ extension AssistantAsk {
     /// The one next step and why, from the matter's facts, pseudonymised like every question.
     public static func nextStep(facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
                                 model: Claude.Model = .opus) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
-        let prepared = try prepare(question: nextStepQuestion, inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: nextStepQuestion(facts), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
         return try await nextStep(prepared, facts: facts, claude: claude, model: model)
     }
@@ -356,16 +364,35 @@ extension AssistantAsk {
     /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
     public static func nextStep(facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
                                 claude: Claude, model: Claude.Model = .opus) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
-        let prepared = try prepare(question: nextStepQuestion, inHand: nil, earlier: [], facts: facts, owner: owner, today: today,
+        let prepared = try prepare(question: nextStepQuestion(facts), inHand: nil, earlier: [], facts: facts, owner: owner, today: today,
                                    mapping: mapping, others: others, save: nil)
         return try await nextStep(prepared, facts: facts, claude: claude, model: model)
     }
 
-    static let nextStepQuestion = "Was ist jetzt der beste nächste Schritt?"
-    static let summaryQuestion = "Schreibe die Zusammenfassung dieser Sache."
+    /// The question in the matter's own language, so it does not pull the answer into another.
+    static func nextStepQuestion(_ facts: Facts) -> String {
+        facts.language == "German" ? "Was ist jetzt der beste nächste Schritt?" : "What is the best next step now?"
+    }
+    static func summaryQuestion(_ facts: Facts) -> String {
+        facts.language == "German" ? "Schreibe die Zusammenfassung dieser Sache." : "Write the summary of this matter."
+    }
+
+    /// Content keeps its language: an English matter gets an English summary, a German one a German one.
+    public static func languageRule(_ language: String?) -> String {
+        guard let language else { return "Write in the language the facts are written in — their to-dos, notes and mail — not in the language of these instructions or their examples." }
+        return "Write in \(language): the language the facts are written in — not the language of these instructions or their examples."
+    }
+
+    /// The language most of `texts` is written in, as its English name.
+    public static func language(of texts: [String]) -> String? {
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(texts.joined(separator: "\n"))
+        guard let language = recognizer.dominantLanguage, language != .undetermined else { return nil }
+        return Locale(identifier: "en_US").localizedString(forLanguageCode: language.rawValue)
+    }
 
     static func nextStep(_ prepared: Prepared, facts: Facts, claude: Claude, model: Claude.Model) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
-        let body = Claude.body(model: model, system: NextStepPrompt.system, user: prepared.sent, schema: NextStepPrompt.schema, effort: "low")
+        let body = Claude.body(model: model, system: NextStepPrompt.system(writingIn: facts.language), user: prepared.sent, schema: NextStepPrompt.schema, effort: "low")
         let answer = try await claude.send(body, model: model)
         let reply = try JSONDecoder().decode(NextStepPrompt.Reply.self, from: answer.json)
         let restorer = prepared.pseudonymizer.restorer
@@ -375,21 +402,21 @@ extension AssistantAsk {
     /// Three or four lines on the matter, from its facts, pseudonymised like every question.
     public static func summarize(facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
                                  model: Claude.Model = .opus) async throws -> (lines: [String], cost: Double) {
-        let prepared = try prepare(question: summaryQuestion, inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: summaryQuestion(facts), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
-        return try await summarize(prepared, claude: claude, model: model)
+        return try await summarize(prepared, facts: facts, claude: claude, model: model)
     }
 
     /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
     public static func summarize(facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
                                  claude: Claude, model: Claude.Model = .opus) async throws -> (lines: [String], cost: Double) {
-        let prepared = try prepare(question: summaryQuestion, inHand: nil, earlier: [], facts: facts, owner: owner, today: today,
+        let prepared = try prepare(question: summaryQuestion(facts), inHand: nil, earlier: [], facts: facts, owner: owner, today: today,
                                    mapping: mapping, others: others, save: nil)
-        return try await summarize(prepared, claude: claude, model: model)
+        return try await summarize(prepared, facts: facts, claude: claude, model: model)
     }
 
-    static func summarize(_ prepared: Prepared, claude: Claude, model: Claude.Model) async throws -> (lines: [String], cost: Double) {
-        let body = Claude.body(model: model, system: SummaryPrompt.system, user: prepared.sent, schema: SummaryPrompt.schema, effort: "low")
+    static func summarize(_ prepared: Prepared, facts: Facts, claude: Claude, model: Claude.Model) async throws -> (lines: [String], cost: Double) {
+        let body = Claude.body(model: model, system: SummaryPrompt.system(writingIn: facts.language), user: prepared.sent, schema: SummaryPrompt.schema, effort: "low")
         let answer = try await claude.send(body, model: model)
         let reply = try JSONDecoder().decode(SummaryPrompt.Reply.self, from: answer.json)
         let restorer = prepared.pseudonymizer.restorer
