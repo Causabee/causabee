@@ -4,7 +4,8 @@
     python3 scripts/site-assets.py
 
 Reads App/Resources (the intro screenshots, the icon's layers, Source Serif 4) and writes
-site/assets. Run it again when the intro screenshots change. Needs Pillow, fontTools with
+site/assets. Run it again when the intro screenshots change. The picture a shared link shows,
+site/assets/og.png, is made in Figma and left alone here. Needs Pillow, fontTools with
 brotli, and rsvg-convert (brew install librsvg).
 """
 import pathlib
@@ -54,9 +55,6 @@ def screenshots():
         if width:
             image = image.resize((width, round(image.height * width / image.width)), Image.LANCZOS)
         webp(image, name)
-    # The picture a shared link shows: the overview, cut to 1.91 : 1.
-    overview = Image.open(INTRO / "intro-1.png").convert("RGB")
-    overview.crop((0, 0, 1800, 942)).resize((1200, 628), Image.LANCZOS).save(OUT / "og.png", optimize=True)
 
 
 def icon():
