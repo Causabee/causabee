@@ -1,0 +1,848 @@
+import AppKit
+import MatterCore
+import SwiftData
+import SwiftUI
+import UniformTypeIdentifiers
+
+/// Which matters "über alle Sachen" means: those with something open or a date, overdue first,
+/// then the soonest.
+@MainActor
+func activeMatters(_ matters: [Matter]) -> [Matter] {
+    // Each matter's status read once, not again in every comparison.
+    matters.compactMap { matter -> (matter: Matter, late: Bool, next: String)? in
+        guard !matter.isClosed else { return nil }
+        let status = MatterStatus(matter), next = status.next
+        guard !matter.openTodos.isEmpty || next != nil else { return nil }
+        return (matter, !status.overdue.isEmpty, next?.day ?? "9999")
+    }
+    .sorted { a, b in
+        if a.late != b.late { return a.late }
+        if a.next != b.next { return a.next < b.next }
+        return a.matter.name.localizedStandardCompare(b.matter.name) == .orderedAscending
+    }
+    .map(\.matter)
+}
+
+/// C1 · the assistant, always there on the left: one thread over every matter, cards rather than
+/// paragraphs. The field is about what is open on the right — a matter, or all of them — and what
+/// a "reden" brings is pinned above it (C3). A question goes out pseudonymised, like the mail:
+/// the field says what the assistant can see, and under each answer is exactly what was sent.
+struct AssistantColumn: View {
+    let matters: [Matter]
+    @Environment(Navigation.self) private var navigation
+    @Environment(\.modelContext) private var context
+    @Query private var profiles: [Profile]
+    @State private var draft = ""
+    /// Scrolled up from the newest: a round button above the composer brings the thread down again.
+    @State private var scrolledUp = false
+    @FocusState private var focused: Bool
+
+    private var conversation: Conversation {
+        Conversation(context: context, navigation: navigation, owner: profiles.first?.names.first)
+    }
+
+    private var openMatter: Matter? {
+        guard case .matter(let id) = navigation.place else { return nil }
+        return matters.first { $0.persistentModelID == id }
+    }
+
+    /// What a question is about: the matter of what is in hand, else the one open on the right,
+    /// else — on the overview — every matter with something going on.
+    private var scopeMatter: Matter? {
+        if let pinned = navigation.pinned { return matters.first { $0.persistentModelID == pinned.matter } }
+        return openMatter
+    }
+
+    private var answeredCount: Int {
+        navigation.turns.filter { if case .asking = $0.state { false } else { true } }.count
+    }
+
+    /// With a matter open, its own conversation; on the overview, everything.
+    private var shown: [Navigation.Turn] {
+        guard let open = openMatter else { return navigation.turns }
+        return navigation.turns.filter { $0.matter == open.persistentModelID }
+    }
+
+    /// The bar on top of the thread: frosted glass that stays put; the thread scrolls under it
+    /// and shows through only blurred.
+    /// No title and no bar: only the room the window's buttons need on top.
+    private var header: some View {
+        Color.clear.frame(height: WindowMetrics.topLine)
+    }
+
+    private static let bottom = "thread-bottom"
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollViewReader { scroller in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if shown.isEmpty {
+                            Text(openMatter != nil
+                                 ? "No talk about this matter yet. Ask something — or click “talk” on a line on the right."
+                                 : "Find a matter below, or start a new one — then ask about it. Screenshots, mails and PDFs can be dropped here too.")
+                                .font(.callout).foregroundStyle(.secondary)
+                                .padding(.top, 20)
+                        }
+                        ForEach(Array(shown.enumerated()), id: \.element.id) { index, turn in
+                            // The day, where it changes: one thread since the first question.
+                            if index == 0 || !Calendar.current.isDate(shown[index - 1].date, inSameDayAs: turn.date) {
+                                Text(turn.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
+                                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 6)
+                            }
+                            if let note = turn.note {
+                                IntakeNote(text: note).id(turn.id)
+                            } else if let shot = turn.shot {
+                                ShotView(turn: turn, shot: shot, matters: matters,
+                                         classify: { conversation.classify(shot: turn.id, owner: profiles.first?.names ?? []) },
+                                         take: { conversation.take(shot: turn.id, into: $0, newName: $1, owner: profiles.first?.names ?? [], keep: $2) },
+                                         dismiss: { Conversation.set(shot: turn.id, .dismissed, in: navigation) },
+                                         open: { id in if let matter = matters.first(where: { $0.persistentModelID == id }) { navigation.open(matter) } },
+                                         bringBack: { conversation.bring(shot.file) })
+                                    .id(turn.id)
+                            } else {
+                                TurnView(turn: turn, open: conversation.open, label: conversation.label,
+                                         apply: { conversation.apply($0, text: $1, subject: $2, in: turn) },
+                                         putDraft: { conversation.putDraft($0, text: $1, subject: $2, in: turn) },
+                                         undo: { conversation.undo($0, in: turn) },
+                                         dismiss: { index, dismissed in
+                                             guard let at = navigation.turns.firstIndex(where: { $0.id == turn.id }) else { return }
+                                             if dismissed { navigation.turns[at].dismissedCards.insert(index) } else { navigation.turns[at].dismissedCards.remove(index) }
+                                         },
+                                         recipient: { conversation.recipient($0, in: turn) }).id(turn.id)
+                            }
+                        }
+                        Color.clear.frame(height: 1).id(Self.bottom)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .safeAreaInset(edge: .top, spacing: 0) { header }
+                // With the sidebar folded away, the window's buttons sit over the thread: it fades
+                // out under them — the page's own colour on top, thinning to nothing below their line.
+                .softTopEdge()
+                .overlay(alignment: .top) {
+                    if navigation.sidebarHidden {
+                    LinearGradient(stops: [.init(color: Theme.canvas, location: 0), .init(color: Theme.canvas, location: 0.55),
+                                           .init(color: Theme.canvas.opacity(0), location: 1)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: WindowMetrics.topLine + 20)
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                    }
+                }
+                // What is seen, not where the view starts: the glass bar on top shifts the offset.
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.visibleRect.maxY < geometry.contentSize.height - 60
+                } action: { _, up in
+                    withAnimation(.easeOut(duration: 0.15)) { scrolledUp = up }
+                }
+                .overlay(alignment: .bottom) {
+                    if scrolledUp {
+                        Button {
+                            withAnimation { scroller.scrollTo(Self.bottom, anchor: .bottom); scrolledUp = false }
+                        } label: {
+                            Image(systemName: "chevron.down")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 32, height: 32)
+                                .background(.regularMaterial, in: Circle())
+                                .overlay(Circle().stroke(Theme.line))
+                        }
+                        .buttonStyle(.plain)
+                        .help("To the newest")
+                        .padding(.bottom, 10)
+                        .transition(.opacity)
+                    }
+                }
+                .onAppear { if let last = shown.last { scroller.scrollTo(last.id, anchor: .top) } }
+                .onChange(of: navigation.place) { if let last = shown.last { scroller.scrollTo(last.id, anchor: .top) } }
+                .onChange(of: navigation.turns.count) {
+                    if let last = navigation.turns.last { withAnimation { scroller.scrollTo(last.id, anchor: .top) } }
+                }
+                .onChange(of: answeredCount) {
+                    if let last = navigation.turns.last { withAnimation { scroller.scrollTo(last.id, anchor: .top) } }
+                }
+            }
+            let scope = scopeMatter
+            if scope == nil {
+                // Only a dropped file brings the assistant to the overview: it is sorted into a
+                // matter from its card, and questions are asked inside a matter.
+                Text("Take the file into a matter above — or open a matter on the left to ask about it.")
+                    .font(.caption).foregroundStyle(.secondary).padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+            Composer(draft: $draft, focused: $focused, pinned: navigation.pinned,
+                     seen: { FactSheet.facts(for: scope.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date()),
+                                             focus: navigation.pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text }).seen },
+                     placeholder: scope.map { "Ask about \($0.name)" } ?? "Say anything",
+                     unpin: { navigation.pinned = nil },
+                     attach: chooseScreenshot,
+                     send: send)
+            }
+        }
+        .background(Theme.canvas)
+        // A screenshot dragged here is read on the Mac, like one chosen with the paper clip.
+        .dropDestination(for: URL.self) { urls, _ in
+            let files = urls.filter { ScreenshotDoor.readable.contains($0.pathExtension.lowercased()) }
+            for url in files { conversation.bring(url) }
+            return !files.isEmpty
+        }
+        .onPasteCommand(of: [.png, .tiff, .fileURL]) { providers in paste(providers) }
+        .onChange(of: navigation.focusRequest) {
+            if let words = navigation.prefill {
+                draft = words
+                navigation.prefill = nil
+            }
+            focused = true
+        }
+        .onAppear {
+            // `--ask "<question>"` asks once at launch, to see an answer without typing.
+            let arguments = CommandLine.arguments
+            if navigation.turns.isEmpty, let flag = arguments.firstIndex(of: "--ask"), flag + 1 < arguments.count {
+                draft = arguments[flag + 1]
+                send()
+            }
+        }
+    }
+
+    private func chooseScreenshot() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.png, .jpeg, .heic, .tiff, .pdf, UTType(filenameExtension: "eml") ?? .emailMessage]
+        panel.allowsMultipleSelection = true
+        panel.message = "Choose a screenshot, a mail (.eml) or a PDF — it is read on the Mac, and sent only after “Sort in”."
+        guard panel.runModal() == .OK else { return }
+        for url in panel.urls { conversation.bring(url) }
+    }
+
+    /// ⌘V with an image: it has no home, so it is written beside the store and read from there.
+    private func paste(_ providers: [NSItemProvider]) {
+        let conversation = self.conversation
+        for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier("public.file-url") {
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    guard let url else { return }
+                    Task { @MainActor in conversation.bring(url) }
+                }
+            } else if let image = NSPasteboard.general.readObjects(forClasses: [NSImage.self])?.first as? NSImage,
+                      let tiff = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff),
+                      let png = bitmap.representation(using: .png, properties: [:]) {
+                conversation.bringPasted(png)
+                return
+            }
+        }
+    }
+
+    private func send() {
+        let question = draft
+        draft = ""
+        let scope = scopeMatter
+        conversation.ask(question, about: scope.map { [$0] } ?? activeMatters(matters), pinnedMatter: scope)
+    }
+}
+
+/// What came in with "Get new mail", in the thread of the matter it went to.
+struct IntakeNote: View {
+    let text: String
+
+    var body: some View {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        // Notes written before the symbol took its place begin with the tray emoji.
+        let head = (lines.first ?? "").replacingOccurrences(of: "📥", with: "").trimmingCharacters(in: .whitespaces)
+        VStack(alignment: .leading, spacing: 3) {
+            Label(head, systemImage: "tray.and.arrow.down").font(.caption.weight(.semibold))
+            ForEach(Array(lines.dropFirst().enumerated()), id: \.offset) { _, line in
+                Text(line).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .quietBox(radius: 8)
+        .padding(.top, 6)
+    }
+}
+
+/// The overview: every matter with something going on, as cards, each a door into its status.
+/// Worked out on the device; nothing is sent.
+struct OverviewView: View {
+    let matters: [Matter]
+    @Binding var search: String
+    let start: (String) -> Void
+    @Environment(Navigation.self) private var navigation
+    @FocusState private var searching: Bool
+    /// The row the arrow keys or the mouse are on; Return opens it. The last row is "Start new".
+    @State private var picked = 0
+
+    private var ordered: [Matter] { activeMatters(matters) }
+
+    /// On top of the cards: a matter found by its name, a task or a mail — or started.
+    @ViewBuilder
+    private var searchField: some View {
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hits = MatterSearch.find(query, in: matters)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Find or start a matter", text: $search)
+                    .textFieldStyle(.plain).font(.title3)
+                    .focused($searching)
+                    .onSubmit {
+                        if hits.indices.contains(picked) { search = ""; navigation.open(hits[picked].matter) } else if !query.isEmpty { start(query) }
+                    }
+                    .onKeyPress(.downArrow) {
+                        guard !query.isEmpty else { return .ignored }
+                        picked = min(picked + 1, hits.count); return .handled
+                    }
+                    .onKeyPress(.upArrow) {
+                        guard !query.isEmpty else { return .ignored }
+                        picked = max(picked - 1, 0); return .handled
+                    }
+                    .onChange(of: search) { picked = 0 }
+                    .onExitCommand { search = "" }
+                if !search.isEmpty {
+                    Button { search = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }.buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Theme.card, in: Capsule())
+            .overlay(Capsule().stroke(searching ? Theme.strongLine : Theme.line, lineWidth: searching ? 1.5 : 1))
+            // Anywhere on the field puts the cursor in it, not only on its words.
+            .contentShape(Capsule())
+            .onTapGesture { searching = true }
+            if !query.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(Array(hits.enumerated()), id: \.offset) { index, hit in
+                        Button { search = ""; navigation.open(hit.matter) } label: {
+                            HStack(alignment: .firstTextBaseline) {
+                                Image(systemName: index == picked ? "return" : "folder").font(.caption).foregroundStyle(.secondary).frame(width: 18)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(hit.matter.name + (hit.matter.isClosed ? " · closed" : ""))
+                                    if let because = hit.because { Text(because).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
+                                }
+                                Spacer()
+                            }
+                            .padding(.vertical, 4).padding(.horizontal, 6).contentShape(Rectangle())
+                            .background(index == picked ? Theme.mark : .clear, in: RoundedRectangle(cornerRadius: 6))
+                        }
+                        .buttonStyle(.plain)
+                        .onHover { if $0 { picked = index } }
+                    }
+                    Button { start(query) } label: {
+                        HStack {
+                            Image(systemName: picked == hits.count ? "return" : "plus.circle").font(.caption).frame(width: 18)
+                            Text("Start new matter: “\(query)”").fontWeight(.medium)
+                            Spacer()
+                        }
+                        .padding(.vertical, 4).padding(.horizontal, 6).contentShape(Rectangle())
+                        .background(picked == hits.count ? Theme.mark : .clear, in: RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { if $0 { picked = hits.count } }
+                    .help("Made on the Mac, nothing is sent.")
+                }
+                .padding(.horizontal, 6).padding(.vertical, 6)
+                .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+            }
+        }
+        .padding(.bottom, 14)
+        // The overview opens ready to type: the cursor in the field.
+        .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { searching = true } }
+        .background {
+            Button("") { searching = true }.keyboardShortcut("f", modifiers: .command).hidden()
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
+                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                Text(summary).font(.title3)
+                searchField
+                ForEach(ordered) { matter in
+                    MatterCard(matter: matter, open: { navigation.open(matter) }, openTodo: { navigation.open(matter, showing: $0) })
+                }
+                // A closed matter is out of the overview, unless mail came for it after it was closed.
+                ForEach(matters.filter { $0.isClosed && !MatterStatus($0).mailsSinceClosed.isEmpty }) { matter in
+                    let new = MatterStatus(matter).mailsSinceClosed.count
+                    HStack {
+                        Image(systemName: "archivebox").foregroundStyle(.secondary)
+                        Text("\(new) new \(new == 1 ? "mail" : "mails") in the closed matter “\(matter.name)”")
+                        Spacer()
+                    }
+                    .font(.callout)
+                    .padding(12)
+                    .box()
+                    .contentShape(RoundedRectangle(cornerRadius: 10))
+                    .onTapGesture { navigation.open(matter) }
+                    .help("Open the matter")
+                }
+                let quiet = matters.filter { !$0.isClosed }.count - ordered.count
+                if quiet > 0 {
+                    Text("\(quiet) \(quiet == 1 ? "matter is" : "matters are") quiet: nothing open, no date.")
+                        .font(.callout).foregroundStyle(.secondary)
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: 760, alignment: .leading)
+            .frame(maxWidth: .infinity)
+        }
+        .navigationTitle("Overview")
+    }
+
+    private var summary: String {
+        let open = ordered.count
+        let overdue = ordered.filter { !MatterStatus($0).overdue.isEmpty }.count
+        var text = open == 1 ? "One matter is going on." : "\(open) matters are going on."
+        if overdue > 0 { text += overdue == 1 ? " One has something overdue." : " \(overdue) have something overdue." }
+        return text
+    }
+}
+
+/// One question and what came back: lines that cite their facts, cards to tick, and what was sent.
+struct TurnView: View {
+    let turn: Navigation.Turn
+    let open: (FactRef) -> Void
+    let label: (FactRef) -> String
+    let apply: (Int, String, String?) -> Void
+    let putDraft: (Int, String, String) -> Void
+    let undo: (Int) -> Void
+    var dismiss: (Int, Bool) -> Void = { _, _ in }
+    var recipient: (String?) -> (name: String, address: String?)? = { _ in nil }
+    @State private var showsSent = false
+    @Environment(\.reading) private var reading
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(turn.inHand.map { "\(turn.scope) · \($0.kind): \($0.text)" } ?? turn.scope)
+                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                Text(turn.question)
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .background(Theme.honey, in: RoundedRectangle(cornerRadius: 16))
+                    .foregroundStyle(.black)
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.leading, 80)
+            ForEach(turn.readAs, id: \.self) { note in
+                Label(note, systemImage: "character.cursor.ibeam").font(.caption2).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+
+            switch turn.state {
+            case .asking:
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Sending, pseudonymised …").foregroundStyle(.secondary)
+                }
+            case .failed(let message):
+                Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.warning).textSelection(.enabled)
+            case .answered(let answer):
+                answered(answer)
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    @ViewBuilder
+    private func answered(_ answer: AssistantAsk.Answer) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(answer.reply.lines.enumerated()), id: \.offset) { _, line in
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(line.text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                    CiteChips(cites: line.cites, refs: turn.refs, open: open, label: label).explanation()
+                }
+            }
+            if let missing = answer.reply.notInFacts {
+                Label(missing, systemImage: "questionmark.circle").font(.callout).foregroundStyle(.secondary)
+            }
+            ForEach(Array(answer.reply.cards.enumerated()), id: \.offset) { index, card in
+                // While reading, a draft asked for stays; the other suggestions are put away.
+                if !reading || card.kind == .draftMessage {
+                    ActionCard(card: card, done: turn.applied.contains(index), refs: turn.refs, open: open, label: label,
+                               apply: { apply(index, $0, $1) }, undo: turn.undos[index] == nil ? nil : { undo(index) },
+                               recipient: recipient(card.party), putDraft: { putDraft(index, $0, $1) },
+                               drafted: turn.drafted[index], drafting: turn.drafting[index],
+                               dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
+                }
+            }
+            DisclosureGroup(isExpanded: $showsSent) {
+                ScrollView {
+                    Text(answer.sent).font(.caption.monospaced()).textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 260)
+                .padding(8)
+                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            } label: {
+                // Only who answered and what it cost; what was sent is inside.
+                Text("\(answer.modelLabel) · \(String(format: "$%.3f", answer.cost))")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            .explanation()
+        }
+    }
+}
+
+/// The facts a line rests on, each a door into its matter.
+struct CiteChips: View {
+    let cites: [String]
+    let refs: [String: FactRef]
+    let open: (FactRef) -> Void
+    let label: (FactRef) -> String
+    /// Folded away by default: what an answer rests on is one click away, not a wall of chips.
+    @State private var shown = false
+
+    var body: some View {
+        let known = cites.filter { refs[$0] != nil }
+        if !known.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) { shown.toggle() }
+                } label: {
+                    HStack(spacing: 3) {
+                        Text("Sources · \(known.count)")
+                        Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
+                            .rotationEffect(.degrees(shown ? 90 : 0))
+                    }
+                    .font(.caption).foregroundStyle(.secondary).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(shown ? "Hide the sources" : "What this rests on: mails, tasks, dates")
+                if shown { chips(known) }
+            }
+        }
+    }
+
+    private func chips(_ known: [String]) -> some View {
+        FlowRow(spacing: 4) {
+            ForEach(known, id: \.self) { cite in
+                Button(refs[cite].map(label) ?? cite) { if let ref = refs[cite] { open(ref) } }
+                    .buttonStyle(.plain)
+                    .font(.caption2)
+                    .lineLimit(1)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.12), in: Capsule())
+                    .help(label(for: cite))
+            }
+        }
+    }
+
+    private func label(for cite: String) -> String {
+        switch cite.first {
+        case "E": "Mail — opens the matter"
+        case "T": "Task — opens the matter"
+        case "A": "Appointment — opens the matter"
+        case "D": "Deadline — opens the matter"
+        case "P": "People — opens the matter"
+        default: "opens the matter"
+        }
+    }
+}
+
+/// Something to do, record or correct, with its reason. Nothing changes until its button is
+/// clicked — a button that says what it does, not a checkbox that looks like "done" — and a name
+/// or a to-do can be put right on the card first.
+struct ActionCard: View {
+    let card: AssistantPrompt.Reply.Card
+    let done: Bool
+    let refs: [String: FactRef]
+    let open: (FactRef) -> Void
+    let label: (FactRef) -> String
+    let apply: (String, String?) -> Void
+    let undo: (() -> Void)?
+    var recipient: (name: String, address: String?)? = nil
+    var putDraft: ((String, String) -> Void)? = nil
+    /// The folder the draft was put into, when it was.
+    var drafted: String? = nil
+    var drafting: String? = nil
+    @State private var text: String
+    @State private var subject: String
+    /// Dismissed, as the thread keeps it.
+    var dismissed = false
+    var setDismissed: (Bool) -> Void = { _ in }
+    /// A draft opened in Mail folds to a few lines; "Bearbeiten" unfolds it again.
+    @State private var editingDraft = false
+
+    init(card: AssistantPrompt.Reply.Card, done: Bool, refs: [String: FactRef], open: @escaping (FactRef) -> Void,
+         label: @escaping (FactRef) -> String, apply: @escaping (String, String?) -> Void, undo: (() -> Void)?,
+         recipient: (name: String, address: String?)? = nil, putDraft: ((String, String) -> Void)? = nil,
+         drafted: String? = nil, drafting: String? = nil, dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
+        (self.card, self.done, self.refs, self.open, self.label, self.apply, self.undo) = (card, done, refs, open, label, apply, undo)
+        self.recipient = recipient
+        (self.putDraft, self.drafted, self.drafting) = (putDraft, drafted, drafting)
+        (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
+        _text = State(initialValue: card.text)
+        _subject = State(initialValue: card.subject ?? "")
+    }
+
+    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink].contains(card.kind) }
+
+    var body: some View {
+        if card.kind == .draftMessage, done, !editingDraft {
+            sentDraft
+        } else if dismissed, !done {
+            HStack {
+                Text("Suggestion dismissed: \(title.lowercased())").font(.caption).foregroundStyle(.secondary)
+                Button("show again") { setDismissed(false) }.buttonStyle(.gold).font(.caption)
+                Spacer()
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(title).font(.caption.weight(.semibold)).foregroundStyle(done ? Theme.done : .primary)
+                if let what = what { Text(what).fixedSize(horizontal: false, vertical: true) }
+                if card.kind == .draftMessage {
+                    TextField("Subject", text: $subject).cardField()
+                    TextEditor(text: $text)
+                        .font(.body)
+                        .scrollContentBackground(.hidden)
+                        .frame(minHeight: 140, maxHeight: 320)
+                        .padding(6)
+                        .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
+                } else if editable {
+                    TextField("", text: $text, axis: .vertical)
+                        .cardField()
+                        .disabled(done)
+                        .help("Change it before taking it in, if it is not quite right")
+                }
+                Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                CiteChips(cites: card.cites, refs: refs, open: open, label: label)
+                if card.kind == .sameParty, !done {
+                    Text("Later you can only turn merging off for new mail; you cannot split it again.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                if card.kind == .draftMessage, let drafting { draftingLine(drafting) }
+                HStack(spacing: 8) {
+                    Spacer()
+                    if done, card.kind == .draftMessage {
+                        Button("Cancel") { withAnimation { editingDraft = false } }
+                        gmailButton
+                        Button("Open in Mail") {
+                            apply(text, subject)
+                            withAnimation { editingDraft = false }
+                        }
+                        .inkButton()
+                    } else if done {
+                        Label("Taken in", systemImage: "checkmark")
+                            .font(.callout).foregroundStyle(Theme.done)
+                        if let undo {
+                            Button("Undo", action: undo)
+                                .help(card.kind == .sameParty ? "Turns the rule off: the next mail is not merged any more"
+                                                              : "Puts it back the way it was")
+                        }
+                    } else {
+                        Button("Dismiss") { withAnimation { setDismissed(true) } }
+                        if card.kind == .draftMessage { gmailButton }
+                        Button(verb) {
+                            apply(text, card.kind == .draftMessage ? subject : nil)
+                            withAnimation { editingDraft = false }
+                        }
+                            .inkButton()
+                    }
+                }
+                .padding(.top, 10)
+            }
+            .padding(12)
+            .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    /// What was opened in Mail, short and not to be typed in: who, what about, how it starts.
+    private var sentDraft: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(drafted.map { "Draft · in Gmail under “\($0)”" } ?? "Draft · opened in Mail")
+                .font(.caption.weight(.semibold))
+            Text("To: \(recipient?.name ?? "—")" + (subject.isEmpty ? "" : " · \(subject)")).font(.callout).lineLimit(1)
+            Text(text).font(.callout).foregroundStyle(.secondary).lineLimit(2)
+            HStack(spacing: 8) {
+                Spacer()
+                if let drafting { draftingLine(drafting) }
+                Button("Edit") { withAnimation { editingDraft = true } }
+                if drafted == nil { gmailButton }
+                Button("Open again") { apply(text, subject) }
+            }
+            .padding(.top, 10)
+        }
+        .padding(12)
+        .quietBox()
+    }
+
+    /// Into Gmail's Drafts, to send from the phone or the web. Put there again after a change, it
+    /// is a second draft beside the first.
+    @ViewBuilder
+    private var gmailButton: some View {
+        if let putDraft {
+            Button(drafted == nil ? "Put into Gmail" : "Put into Gmail again") {
+                putDraft(text, subject)
+                withAnimation { editingDraft = false }
+            }
+            .disabled(drafting?.hasSuffix("…") == true)
+            .help("Puts the draft into your Gmail drafts — you can see it on your phone and on the web. Nothing is sent: you do that."
+                  + (drafted == nil ? "" : " A second time makes a second draft."))
+        }
+    }
+
+    private func draftingLine(_ text: String) -> some View {
+        HStack(spacing: 6) {
+            if text.hasSuffix("…") { ProgressView().controlSize(.small) }
+            Text(text).font(.caption).foregroundStyle(text.hasPrefix("Not saved") ? Theme.warning : .secondary).textSelection(.enabled)
+        }
+    }
+
+    private func name(_ id: String?) -> String { id.flatMap { refs[$0] }.map(label) ?? "?" }
+
+    private var whose: String { ["me": "Mine", "we": "Ours", "other": "Waiting for"][card.owner] ?? "Unclear whose" }
+
+    /// What the button does, in a word or two.
+    private var verb: String {
+        switch card.kind {
+        case .markDone: "Done"
+        case .newTodo: "Add"
+        case .sameParty: "Merge"
+        case .addNote: "Save note"
+        case .draftMessage: "Open in Mail"
+        case .changeDate: "Change date"
+        case .newMatter: "Create"
+        case .waitsFor: "Link"
+        case .addLink: "Save link"
+        case .renameParty, .changeRole, .correctText, .changeOwner: "Change"
+        }
+    }
+
+    private var title: String {
+        switch card.kind {
+        case .markDone: return "Done?"
+        case .newTodo: return "New task? · " + whose + (card.due.map { " · by \(Dates.short($0))" } ?? "")
+        case .sameParty: return "Same person?"
+        case .renameParty: return "Change name?"
+        case .changeRole: return "Change role?"
+        case .addNote: return "Note for the task?"
+        case .draftMessage: return "Draft"
+        case .changeDate: return "Change date?"
+        case .newMatter: return "New matter?"
+        case .waitsFor: return "Waits for another task?"
+        case .addLink: return "Save link? · Name:"
+        case .correctText: return "Replace in the text?"
+        case .changeOwner: return "Whose task? → " + whose
+        }
+    }
+
+    /// The line above the field: what the card is about.
+    private var what: String? {
+        switch card.kind {
+        case .markDone: return card.text
+        case .newTodo: return nil
+        case .sameParty: return "\(name(card.party))  →  \(name(card.into))"
+        case .renameParty: return "\(name(card.party))  is called:"
+        case .changeRole: return "\(name(card.party))  is here:"
+        case .addNote: return name(card.todo)
+        case .draftMessage:
+            guard let recipient else { return "To: (fill in in Mail)" }
+            return "To: \(recipient.name)" + (recipient.address.map { " <\($0)>" } ?? " — address not known, fill it in in Mail")
+        case .correctText: return "“\(card.from ?? "")”  becomes:"
+        case .newMatter: return nil
+        case .waitsFor: return "\(name(card.todo))  →  only after: \(name(card.into))"
+        case .addLink: return card.todo == nil ? "to the matter" : "to: \(name(card.todo))"
+        case .changeDate:
+            let when = (card.due.map(Dates.short) ?? "?") + (card.time.map { " at \($0)" } ?? "")
+            return "\(name(card.todo))  →  \(when)"
+        case .changeOwner: return name(card.todo)
+        }
+    }
+}
+
+/// One matter in the assistant: what is open and whose, what comes next, and what is overdue —
+/// by name, each a door to that very to-do. "öffnen" is the door into its status.
+struct MatterCard: View {
+    let matter: Matter
+    let open: () -> Void
+    let openTodo: (PersistentIdentifier) -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        let status = MatterStatus(matter)
+        VStack(alignment: .leading, spacing: 8) {
+            let mine = status.open(.me).count, ours = status.open(.we).count, waiting = status.open(.other).count
+            BeeChip(text: line(mine: mine, ours: ours, waiting: waiting))
+            Text(matter.name).font(Theme.cardTitleFont).foregroundStyle(.primary)
+            if let next = status.next {
+                Text("Next, on \(Dates.short(next.day)): \(next.what)").foregroundStyle(.secondary).lineLimit(2)
+            }
+            let overdue = status.overdue.sorted { ($0.due ?? "") < ($1.due ?? "") }
+            ForEach(overdue.prefix(3)) { todo in
+                Button { openTodo(todo.persistentModelID) } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Image(systemName: "exclamationmark.circle")
+                        Text("Overdue since \(todo.due.map(Dates.short) ?? ""): \(todo.text)").lineLimit(2).multilineTextAlignment(.leading)
+                    }
+                    .font(.callout)
+                    .foregroundStyle(Theme.warning)
+                }
+                .buttonStyle(.plain)
+                .help("Open the matter, at this task")
+            }
+            if overdue.count > 3 {
+                Button("… and \(overdue.count - 3) more overdue", action: open).buttonStyle(.plain).font(.caption).foregroundStyle(Theme.warning)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(hovering ? Theme.strongLine : Theme.line))
+        // The whole card is the door into the matter; an overdue line inside opens it at that task.
+        .contentShape(RoundedRectangle(cornerRadius: 10))
+        .onTapGesture(perform: open)
+        .onHover { hovering = $0 }
+        .pointerStyle(.link)
+        .help("Open the matter")
+    }
+
+    private func line(mine: Int, ours: Int, waiting: Int) -> String {
+        var parts: [String] = []
+        if mine > 0 { parts.append("\(mine) for you") }
+        if ours > 0 { parts.append("\(ours) together") }
+        if waiting > 0 { parts.append("waiting for \(waiting)") }
+        return parts.isEmpty ? "Nothing open." : parts.joined(separator: " · ")
+    }
+}
+
+/// Chips side by side, wrapping onto the next line when there is no room.
+struct FlowRow: Layout {
+    var spacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(subviews, width: proposal.width ?? .infinity)
+        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: rows.last.map { $0.y + $0.height } ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for row in arrange(subviews, width: bounds.width) {
+            var x = bounds.minX
+            for index in row.items {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: bounds.minY + row.y), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+        }
+    }
+
+    private func arrange(_ subviews: Subviews, width: CGFloat) -> [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] {
+        var rows: [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] = []
+        var items: [Int] = [], x: CGFloat = 0, y: CGFloat = 0, height: CGFloat = 0
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            if x > 0, x + size.width > width {
+                rows.append((items, y, x - spacing, height))
+                y += height + spacing
+                items = []; x = 0; height = 0
+            }
+            items.append(index)
+            x += size.width + spacing
+            height = max(height, size.height)
+        }
+        if !items.isEmpty { rows.append((items, y, x - spacing, height)) }
+        return rows
+    }
+}
+

@@ -1,0 +1,17 @@
+Message-ID: <example/matterbee/issues/12/1847@forge.example>
+Date: Thu, 25 Sep 2025 14:22:41 +0000
+From: Priya Raghavan <notifications@forge.example>
+Reply-To: example/matterbee <reply+abc123@reply.forge.example>
+To: example/matterbee <matterbee@noreply.forge.example>
+Subject: Re: [example/matterbee] Parser drops attachments (Issue #12)
+List-Id: example/matterbee <matterbee.example.forge.example>
+List-Archive: https://forge.example/example/matterbee
+Precedence: list
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+
+I can reproduce this with a multipart/mixed message. The filename is on the
+Content-Disposition header, not Content-Type.
+
+--
+Reply to this email directly or view it on the forge.

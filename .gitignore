@@ -1,0 +1,47 @@
+.DS_Store
+.build/
+.swiftpm/
+*.xcodeproj
+
+# The decision log and the pseudonymization mapping are made from real mail. Neither one ever
+# leaves the device, and that starts with neither one ever reaching a commit.
+decisions*.jsonl
+mapping*.json
+labels*.csv
+SPIKE_REPORT.md
+
+# Step 5's answers and dry-run requests: disguised, but made from real mail all the same.
+.matter-cache/
+requests.jsonl
+review*.html
+report*.md
+
+# The API key. Read by matter-spike at startup; never committed.
+.env
+
+# Real mail, exported for a run. Samples/mail is the synthetic set and is checked in.
+Samples/private/
+
+# Local build folders and the matter store, which is made from real mail.
+.build-dev/
+matters.store*
+.old-stores/
+
+# The assistant's thread: questions and answers in real names. It stays on this Mac.
+assistant-thread.json
+Anhänge/
+
+# The local-model test package builds here
+LocalBench/.build/
+LocalBench/.build-xc/
+LocalBench/.swiftpm/
+
+# Mail text kept on this Mac only
+Mail-Text/
+*.moved-into-store.json
+
+# The signed Mac app, built by Xcode
+.build-app/
+
+# Which certificate signs the builds: the owner's own, see scripts/build.sh
+scripts/signing.local
