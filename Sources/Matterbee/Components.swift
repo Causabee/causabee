@@ -16,6 +16,8 @@ enum Theme {
     /// The yellow of the bee's body in the icon, #FFDB0D: the pills (Next, Summary, an overview card's
     /// counts) and what is in hand above the composer — always with black words.
     static let bee = Color(nsColor: rgb(Palette.yellowLight[0]))
+    /// The working bee (`BeeLoader`), as the icon draws its stripes: ink in the light, the bee's yellow in the dark.
+    static let beeMark = adaptive("beeMark", light: Palette.greyDark[5], dark: Palette.yellowLight[0])
     /// Where the Mac would put its blue — links, "Add to Reminders", focus rings: the yellow far enough
     /// down its ladder that words in it read on white; in dark mode a step up from the bee.
     static let gold = adaptive("gold", light: Palette.yellowDark[5], dark: Palette.yellowLight[2])

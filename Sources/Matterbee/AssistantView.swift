@@ -433,7 +433,7 @@ struct TurnView: View {
             switch turn.state {
             case .asking:
                 HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
+                    BeeLoader()
                     Text("Sending, pseudonymised …").foregroundStyle(.secondary)
                 }
             case .failed(let message):
@@ -685,7 +685,7 @@ struct ActionCard: View {
 
     private func draftingLine(_ text: String) -> some View {
         HStack(spacing: 6) {
-            if text.hasSuffix("…") { ProgressView().controlSize(.small) }
+            if text.hasSuffix("…") { BeeLoader(size: 14) }
             Text(text).font(.caption).foregroundStyle(text.hasPrefix("Not saved") ? Theme.warning : .secondary).textSelection(.enabled)
         }
     }

@@ -159,7 +159,7 @@ struct MailCheckView: View {
                 button
             case .reading(let text), .sending(let text):
                 HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
+                    BeeLoader()
                     Text(text).font(.caption).foregroundStyle(.secondary)
                 }
             case .nothingNew(let known):

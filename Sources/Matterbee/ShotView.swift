@@ -86,7 +86,7 @@ struct ShotView: View {
     }
 
     private func progress(_ text: String) -> some View {
-        HStack(spacing: 8) { ProgressView().controlSize(.small); Text(text).foregroundStyle(.secondary) }
+        HStack(spacing: 8) { BeeLoader(); Text(text).foregroundStyle(.secondary) }
     }
 
     private func buttons(primary: String, action: @escaping () -> Void) -> some View {
