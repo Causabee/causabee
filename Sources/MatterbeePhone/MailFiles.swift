@@ -148,11 +148,10 @@ struct FilesSection: View {
                 .disabled(document.isOwnFile && document.source.fileURL == nil)
                 if state[id]?.hasPrefix("Getting") == true { ProgressView() }
                 if let read = document.readAt {
-                    Label("read \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
+                    Label("scanned \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
                         .labelStyle(.titleOnly)
-                } else if document.isReadable, !document.isOwnFile, state[id] == nil {
-                    Button("Read") { read(document) }.font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).tool()
                 }
+                // A tap on the row opens the file; scanning and the rest are in ⋯.
                 Menu { items(document) } label: {
                     Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
                 }
@@ -183,7 +182,8 @@ struct FilesSection: View {
     @ViewBuilder
     private func items(_ document: MatterCore.Document) -> some View {
         if !document.isOwnFile || document.source.fileURL != nil { Button("Open", systemImage: "eye") { open(document) } }
-        if document.isReadable, !document.isOwnFile, document.readAt == nil { Button("Read", systemImage: "text.viewfinder") { read(document) } }
+        if document.isReadable, !document.isOwnFile, document.readAt == nil { Button("Scan", systemImage: "text.viewfinder") { read(document) } }
+        AskMatterbeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
         Button("Rename", systemImage: "pencil") { newName = document.shownName; renaming = document }
         if isPDF(document), !document.isOwnFile { Button("Name from content", systemImage: "text.magnifyingglass") { nameFromContent(document) } }
         if document.title != nil {

@@ -5,7 +5,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// A file brought into the assistant on the iPhone — a chat screenshot, a photo of a letter, a PDF
-/// from Files, or a matter's file taken out of its mail with "Read" — the way the Mac brings one
+/// from Files, or a matter's file taken out of its mail with "Scan" — the way the Mac brings one
 /// in: read on the iPhone, shown before anything is sent, sent pseudonymised only on "Sort in",
 /// and taken into a matter the owner chooses. A picture or a scan is kept on this iPhone, in Files
 /// (On My iPhone › Matterbee), as the Mac's stay on the Mac; what it said — tasks, dates, people —

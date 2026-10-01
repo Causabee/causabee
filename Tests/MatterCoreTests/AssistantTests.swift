@@ -115,6 +115,26 @@ struct AssistantTests {
         #expect(few.text.contains("T1"))  // the open to-dos stay: a correction may be about one
     }
 
+    @Test("With a file in hand, the mail it came with is shown, whatever its subject")
+    func fileInHand() throws {
+        let (context, matter) = try store()
+        let mail = Entry(title: "Heizung", from: "Hausmeister <h@example.com>", date: Date(), source: Source(kind: .mail, pointer: "x", messageID: "b@example"))
+        mail.matter = matter
+        let file = Document(name: "Wartungsprotokoll-2026.pdf", contentType: "application/pdf", byteCount: 1000,
+                            source: Source(kind: .mail, pointer: "x", messageID: "b@example"))
+        file.messageID = "b@example"
+        file.matter = matter
+        context.insert(mail)
+        context.insert(file)
+        try context.save()
+        let facts = FactSheet.facts(for: [matter], today: "2026-09-28", focus: "Wartungsprotokoll-2026.pdf")
+        #expect(facts.text.contains("The file in hand: Wartungsprotokoll-2026.pdf — came with the mail of"))
+        #expect(facts.text.contains("from Hausmeister: Heizung"))
+        #expect(facts.text.contains("not scanned yet"))
+        #expect(facts.text.contains("Mails, newest first:"))
+        #expect(!FactSheet.facts(for: [matter], today: "2026-09-28", focus: "Sebastian Süß").text.contains("file in hand"))
+    }
+
     @Test("A name typed a letter short is read as the one person it almost is", arguments: [
         ("Bereite die Mail für Geor vor", "Bereite die Mail für Georg vor", 1),
         ("Schreib Gerog", "Schreib Georg", 1),

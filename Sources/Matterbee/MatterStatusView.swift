@@ -399,7 +399,8 @@ struct MatterStatusView: View {
                                         open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
                                         read: { fetch(document, then: { conversation.bring($0, document: document) }) },
                                         hide: { setHidden(document, !document.isHidden) },
-                                        nameIt: { nameFromContent(document) })
+                                        nameIt: { nameFromContent(document) },
+                                        talk: { talk(document.shownName, "File") })
                                 .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
                         }
                     }
@@ -1806,8 +1807,10 @@ struct DocumentRow: View {
     let hide: () -> Void
     /// A name from the file's first page.
     let nameIt: () -> Void
+    let talk: () -> Void
     @Environment(\.modelContext) private var context
     @State private var renaming = false
+    @State private var hovering = false
     @State private var newName = ""
 
     private var isPDF: Bool { document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf") }
@@ -1835,30 +1838,33 @@ struct DocumentRow: View {
             }
             Spacer(minLength: 8)
             if let read = document.readAt {
-                Label("read \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
-            } else if document.isReadable {
-                Button("Read", action: read)
-                    .help("Read it on the Mac and show it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
-                    .tool()
+                Label("scanned \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
             }
-            Button("Open", action: open).help(document.isOwnFile ? "Opens the file." : "Only this one mail is read from Gmail, and the file is opened.")
+            PinButton(action: talk).opacity(hovering ? 1 : 0)
             MoreMenu { moreItems }
                 .popover(isPresented: $renaming, arrowEdge: .bottom) { renameField }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
+        // A click on the row opens the file; everything else is in ⋯ and the right click.
+        .contentShape(Rectangle())
+        .onTapGesture(perform: open)
+        .onHover { hovering = $0 }
+        .help(document.isOwnFile ? "Opens the file." : "Opens the file — only this one mail is read from the mailbox.")
         .opacity(document.isHidden ? 0.55 : 1)
         .disabled(state?.hasPrefix("Getting") == true)
-        .contextMenu {
-            Button("Open", action: open)
-            if document.isReadable, document.readAt == nil { Button("Read", action: read) }
-            Divider()
-            moreItems
-        }
+        .contextMenu { moreItems }
     }
 
     @ViewBuilder
     private var moreItems: some View {
+        Button("Open", action: open)
+        if document.isReadable, document.readAt == nil {
+            Button("Scan", action: read)
+                .help("Scans it on the Mac and shows it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
+        }
+        Button("Ask Matterbee", action: talk)
+        Divider()
         Button("Rename …") { newName = document.shownName; renaming = true }
         if isPDF { Button("Name it from its content", action: nameIt) }
         if document.title != nil {

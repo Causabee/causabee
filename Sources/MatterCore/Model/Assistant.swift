@@ -124,8 +124,22 @@ public enum FactSheet {
                     guard let party = membership.party else { continue }
                     lines.append("\(id("P", .party(party.persistentModelID))) \(party.name)\(membership.role.map { " — \($0)" } ?? "") (in \(membership.mentions) mails)")
                 }
+                // A file in hand: what is known of it, and the mail it came with — always listed,
+                // whatever its subject says. Its text is not kept; a scanned file's facts are above.
+                let files = focused ? (matter.documents ?? []).filter { $0.shownName == focus || $0.name == focus } : []
+                for file in files {
+                    var line = "The file in hand: \(file.shownName)"
+                    if file.title != nil { line += " (file name: \(file.name))" }
+                    if let came = status.entries.first(where: { !file.messageID.isEmpty && $0.messageID == file.messageID }) {
+                        line += " — came with the mail of \(came.date.map(MatterStatus.day) ?? "?") from \(Email.displayName(in: came.from) ?? Email.address(in: came.from)): \(came.title)"
+                    }
+                    line += file.readAt.map { " — scanned \(MatterStatus.day($0)): what it said is in the to-dos, dates and notes above, with their sources" }
+                        ?? " — not scanned yet: only its name and its mail are known; scanning it would tell more"
+                    lines.append(line)
+                }
+                let fileMails = Set(files.map(\.messageID).filter { !$0.isEmpty })
                 let entries = focused
-                    ? Array(status.entries.filter { mentions($0.title) || mentions($0.from) }.prefix(15))
+                    ? Array(status.entries.filter { fileMails.contains($0.messageID) || mentions($0.title) || mentions($0.from) }.prefix(15))
                     : Array(status.entries.prefix(mails))
                 if !entries.isEmpty { lines.append("Mails, newest first:") }
                 for entry in entries {
