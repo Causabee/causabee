@@ -36,14 +36,13 @@ struct PhoneThreadCard: View {
 }
 
 /// One mail in a conversation, set in by how deep it answers, with the lines to the mail it answers
-/// on its left; "Read" takes its text out of the mailbox — read-only, this one mail.
+/// on its left. To see the mail itself, it opens in Mail.
 struct PhoneThreadMailRow: View {
     let row: MailThreads.Row
     let started: Bool
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.openURL) private var openURL
-    @State private var reading = false
 
     static let step: CGFloat = 16
     static let deepest = 3
@@ -67,15 +66,10 @@ struct PhoneThreadMailRow: View {
                 if let digest = entry.digest, !digest.isEmpty {
                     Text(digest).font(.subheadline).foregroundStyle(.secondary).lineLimit(3).fixedSize(horizontal: false, vertical: true)
                 }
-                HStack(spacing: 14) {
-                    if entry.source.pointer.hasPrefix("imap://") {
-                        Button("Read") { reading = true }.tool()
-                    }
-                    if let url = entry.mailURL {
-                        Button(label(entry.source.kind)) { openURL(url) }
-                    }
+                if let url = entry.mailURL {
+                    Button(label(entry.source.kind)) { openURL(url) }
+                        .font(.caption).foregroundStyle(Theme.gold)
                 }
-                .font(.caption).foregroundStyle(Theme.gold)
             }
             .padding(.vertical, 6)
         }
@@ -83,7 +77,6 @@ struct PhoneThreadMailRow: View {
         .contextMenu {
             AskMatterbeeButton { navigation.talk(entry.title, kind: "Mail", in: matter) }
         }
-        .sheet(isPresented: $reading) { PhoneMailReader(entry: entry) }
     }
 
     /// A letter scanned and taken in is no mail: the button says what it opens.
@@ -117,62 +110,5 @@ struct PhoneThreadRails: Shape {
         path.move(to: CGPoint(x: x(depth), y: turn))
         path.addLine(to: CGPoint(x: x(depth) + step - 6, y: turn))
         return path
-    }
-}
-
-/// A mail's own words, as the Mac's reader shows them: here taken out of the mailbox when opened —
-/// read-only, only this one mail — and kept nowhere.
-struct PhoneMailReader: View {
-    let entry: Entry
-    @Environment(\.dismiss) private var dismiss
-    @State private var text: String?
-    @State private var failure: String?
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(entry.title.isEmpty ? "(no subject)" : entry.title).font(.headline)
-                    if let digest = entry.digest, !digest.isEmpty {
-                        Text(digest).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    }
-                    Divider()
-                    if let text {
-                        Text(Linked.text(text)).font(.callout).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-                    } else if let failure {
-                        Text(failure).font(.callout).foregroundStyle(Theme.warning)
-                    } else {
-                        HStack(spacing: 8) { BeeLoader(size: 15); Text("Getting the mail …").foregroundStyle(.secondary) }
-                    }
-                }
-                .padding(16)
-                .containerRelativeFrame(.horizontal)
-            }
-            .navigationTitle("Mail")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
-            .task { await load() }
-        }
-    }
-
-    private func load() async {
-        let host = entry.source.pointer.firstMatch(of: /^imap:\/\/([^\/]+)\//).map { String($0.output.1) }
-        let saved = Keychain.accounts().filter { !$0.usesGoogle }
-        guard let account = saved.first(where: { $0.host == host }) ?? saved.first else {
-            failure = "Add your mail account first: Settings (⋯ on the overview)."
-            return
-        }
-        do {
-            guard let password = try Keychain.password(for: account.user) else { throw MailFetch.Failure.gone(account.user) }
-            let client = try await IMAPClient.connect(to: account, password: password)
-            let data: Data
-            do { data = try await MailFetch.message(pointer: entry.source.pointer, messageID: entry.messageID, from: client) }
-            catch { await client.logout(); throw error }
-            await client.logout()
-            let email = EMLParser.parse(data: data, url: URL(string: entry.source.pointer) ?? URL(fileURLWithPath: "/"))
-            text = "From: \(email.from)\n\n" + email.body
-        } catch {
-            failure = "\(error)"
-        }
     }
 }

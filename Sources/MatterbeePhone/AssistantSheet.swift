@@ -80,6 +80,8 @@ struct AssistantSheet: View {
                 .onAppear { if let last = shown.last { scroller.scrollTo(last.turn.id, anchor: .bottom) } }
                 .onChange(of: PhoneShots.shared.shots.count) { if let last = PhoneShots.shared.shots.last { withAnimation { scroller.scrollTo(last.id, anchor: .bottom) } } }
                 .onChange(of: asking?.date) { withAnimation { scroller.scrollTo(asking == nil ? shown.last?.turn.id as AnyHashable? : "asking", anchor: .bottom) } }
+                // A question that could not go out says why, where it can be seen.
+                .onChange(of: failure) { if failure != nil { withAnimation { scroller.scrollTo("failure", anchor: .bottom) } } }
             }
             composer
         }
@@ -138,7 +140,13 @@ struct AssistantSheet: View {
                 TextField(matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
                     .submitLabel(.send)
-                    .onSubmit(send)
+                    // A field of several lines takes the keyboard's send key as a new line, and
+                    // never calls onSubmit: the line typed at the end is the send.
+                    .onChange(of: draft) { old, new in
+                        guard new.hasSuffix("\n"), !old.hasSuffix("\n") else { return }
+                        draft = String(new.dropLast())
+                        send()
+                    }
                     .focused($typing)
                     .id(fieldKey)
                     // One line sits in the middle of the send button; more lines grow upwards.

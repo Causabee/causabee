@@ -1011,7 +1011,7 @@ struct MatterStatusView: View {
             SectionHeader(title: "History", detail: Self.count(status.entries)
                           + (threads.count == status.entries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
             ForEach(visible) { thread in
-                ThreadCard(thread: thread, store: navigation.store) { entry in talk(entry.title, "Mail") }
+                ThreadCard(thread: thread) { entry in talk(entry.title, "Mail") }
             }
             if hidden > 0 {
                 Text("… and \(hidden) older \(hidden == 1 ? "conversation" : "conversations")").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
@@ -1681,7 +1681,6 @@ struct SuggestionCard: View {
 /// under the mail it answers, joined by a line.
 struct ThreadCard: View {
     let thread: MailThreads.Thread
-    let store: URL
     let talk: (Entry) -> Void
 
     var body: some View {
@@ -1696,7 +1695,7 @@ struct ThreadCard: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(thread.rows) { row in
-                    ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, store: store) { talk(row.entry) }
+                    ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1) { talk(row.entry) }
                         .findable(.model(row.entry.persistentModelID), row.entry.title, row.entry.from, row.entry.digest)
                 }
             }
@@ -1718,9 +1717,7 @@ struct ThreadCard: View {
 struct ThreadMailRow: View {
     let row: MailThreads.Row
     let started: Bool
-    let store: URL
     let talk: () -> Void
-    @State private var reading = false
     @State private var hovering = false
 
     static let step: CGFloat = 20
@@ -1752,13 +1749,6 @@ struct ThreadMailRow: View {
                     if started { BeeChip(text: "started") }
                     Text(entry.date.map(Dates.short) ?? "—").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                     Spacer(minLength: 8)
-                    if MailText.has(entry.messageID, besides: store) {
-                        Button("Read") { reading = true }
-                            .buttonStyle(.gold).font(.caption)
-                            .tool()
-                            .help("The mail's text, kept on this Mac")
-                            .popover(isPresented: $reading, arrowEdge: .leading) { MailReader(entry: entry, store: store) }
-                    }
                     SourceLink(source: entry.source, label: Self.openLabel(entry.source.kind))
                     PinButton(action: talk).opacity(hovering ? 1 : 0)
                 }
@@ -2043,28 +2033,6 @@ struct SuggestedLinkRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-    }
-}
-
-/// A mail's own words, as kept on this Mac when it was read.
-struct MailReader: View {
-    let entry: Entry
-    let store: URL
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(entry.title.isEmpty ? "(no subject)" : entry.title).font(.headline)
-            if let digest = entry.digest, !digest.isEmpty {
-                Text(digest).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            }
-            Divider()
-            ScrollView {
-                Text(Linked.text(MailText.load(entry.messageID, besides: store).map { "From: \($0.from)\n\n" + $0.body } ?? "Not kept on this Mac."))
-                    .font(.callout).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .padding(16)
-        .frame(width: 520, height: 480)
     }
 }
 
