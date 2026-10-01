@@ -28,6 +28,8 @@ struct RootView: View {
                 .presentationDragIndicator(.visible)
         }
         .modifier(MatterQuestions())
+        // The share sheet's matters, and what was shared to Matterbee meanwhile.
+        .modifier(SharedIn(matters: matters))
         // What is connected to Calendar and Reminders is kept in step both ways, as on the Mac.
         .onAppear { MirrorRunner.shared.start(context) }
         // This iPhone's list of names into the store when it goes to the background, as the Mac's.

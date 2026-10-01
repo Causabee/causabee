@@ -9,11 +9,38 @@
 /* Begin PBXBuildFile section */
 		AA0000000000000000000001 /* MatterCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000010 /* MatterCore */; };
 		AA0000000000000000000041 /* MatterCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000042 /* MatterCore */; };
+		AA0000000000000000000058 /* MatterCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000057 /* MatterCore */; };
+		AA0000000000000000000059 /* MatterbeeShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000050 /* MatterbeeShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AA000000000000000000005E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA000000000000000000000A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000052;
+			remoteInfo = MatterbeeShare;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AA000000000000000000005C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AA0000000000000000000059 /* MatterbeeShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		AA0000000000000000000002 /* Matterbee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Matterbee.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000043 /* Matterbee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Matterbee.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000050 /* MatterbeeShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MatterbeeShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -31,11 +58,27 @@
 			);
 			target = AA0000000000000000000047 /* MatterbeePhone */;
 		};
+		AA000000000000000000005A /* Exceptions for "MatterbeeShare" folder in "MatterbeePhone" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ShareInbox.swift,
+			);
+			target = AA0000000000000000000047 /* MatterbeePhone */;
+		};
+		AA000000000000000000005B /* Exceptions for "Matterbee" folder in "MatterbeeShare" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				BeeLoader.swift,
+				Theme.swift,
+			);
+			target = AA0000000000000000000052 /* MatterbeeShare */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA0000000000000000000003 /* Matterbee */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA0000000000000000000045 /* Exceptions for "Matterbee" folder in "MatterbeePhone" target */, ); name = Matterbee; path = ../Sources/Matterbee; sourceTree = "<group>"; };
+		AA0000000000000000000003 /* Matterbee */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA0000000000000000000045 /* Exceptions for "Matterbee" folder in "MatterbeePhone" target */, AA000000000000000000005B /* Exceptions for "Matterbee" folder in "MatterbeeShare" target */, ); name = Matterbee; path = ../Sources/Matterbee; sourceTree = "<group>"; };
 		AA0000000000000000000044 /* MatterbeePhone */ = {isa = PBXFileSystemSynchronizedRootGroup; name = MatterbeePhone; path = ../Sources/MatterbeePhone; sourceTree = "<group>"; };
+		AA0000000000000000000051 /* MatterbeeShare */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000000000000000000005A /* Exceptions for "MatterbeeShare" folder in "MatterbeePhone" target */, ); name = MatterbeeShare; path = ../Sources/MatterbeeShare; sourceTree = "<group>"; };
 		AA000000000000000000000C /* Resources */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Resources; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -56,6 +99,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000055 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000000000000000000058 /* MatterCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -64,6 +115,7 @@
 			children = (
 				AA0000000000000000000003 /* Matterbee */,
 				AA0000000000000000000044 /* MatterbeePhone */,
+				AA0000000000000000000051 /* MatterbeeShare */,
 				AA000000000000000000000C /* Resources */,
 				AA0000000000000000000006 /* Products */,
 			);
@@ -74,6 +126,7 @@
 			children = (
 				AA0000000000000000000002 /* Matterbee.app */,
 				AA0000000000000000000043 /* Matterbee.app */,
+				AA0000000000000000000050 /* MatterbeeShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -112,10 +165,12 @@
 				AA0000000000000000000048 /* Sources */,
 				AA0000000000000000000049 /* Frameworks */,
 				AA000000000000000000004A /* Resources */,
+				AA000000000000000000005C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AA000000000000000000005D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AA0000000000000000000044 /* MatterbeePhone */,
@@ -128,6 +183,29 @@
 			productName = Matterbee;
 			productReference = AA0000000000000000000043 /* Matterbee.app */;
 			productType = "com.apple.product-type.application";
+		};
+		AA0000000000000000000052 /* MatterbeeShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000053 /* Build configuration list for PBXNativeTarget "MatterbeeShare" */;
+			buildPhases = (
+				AA0000000000000000000054 /* Sources */,
+				AA0000000000000000000055 /* Frameworks */,
+				AA0000000000000000000056 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AA0000000000000000000051 /* MatterbeeShare */,
+			);
+			name = MatterbeeShare;
+			packageProductDependencies = (
+				AA0000000000000000000057 /* MatterCore */,
+			);
+			productName = MatterbeeShare;
+			productReference = AA0000000000000000000050 /* MatterbeeShare.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -143,6 +221,9 @@
 						CreatedOnToolsVersion = 27.0;
 					};
 					AA0000000000000000000047 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					AA0000000000000000000052 = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -166,6 +247,7 @@
 			targets = (
 				AA0000000000000000000007 /* MatterbeeApp */,
 				AA0000000000000000000047 /* MatterbeePhone */,
+				AA0000000000000000000052 /* MatterbeeShare */,
 			);
 		};
 /* End PBXProject section */
@@ -179,6 +261,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AA000000000000000000004A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000056 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -202,7 +291,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000054 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AA000000000000000000005D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000000000000000000052 /* MatterbeeShare */;
+			targetProxy = AA000000000000000000005E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AA0000000000000000000030 /* Debug */ = {
@@ -352,6 +456,56 @@
 			};
 			name = Release;
 		};
+		AA000000000000000000005F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MatterbeeShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2F7QR8NL2D;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "MatterbeeShare-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 0.4;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.matterbee.share;
+				PRODUCT_NAME = MatterbeeShare;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000060 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MatterbeeShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2F7QR8NL2D;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "MatterbeeShare-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 0.4;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.matterbee.share;
+				PRODUCT_NAME = MatterbeeShare;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -382,6 +536,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		AA0000000000000000000053 /* Build configuration list for PBXNativeTarget "MatterbeeShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA000000000000000000005F /* Debug */,
+				AA0000000000000000000060 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -397,6 +560,10 @@
 			productName = MatterCore;
 		};
 		AA0000000000000000000042 /* MatterCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MatterCore;
+		};
+		AA0000000000000000000057 /* MatterCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MatterCore;
 		};
