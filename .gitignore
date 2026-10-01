@@ -53,3 +53,4 @@ scripts/signing.local
 docs/film/*.mp4
 docs/film/*.mov
 docs/film/*.mp3
+docs/film/frames/
