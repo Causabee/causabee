@@ -18,6 +18,18 @@ final class MailCheck {
     }
 
     var state: State = .idle
+    /// Which step it is at, for the panel's transitions: one view each, faded into the next.
+    var phase: String {
+        switch state {
+        case .idle: "idle"
+        case .reading: "reading"
+        case .nothingNew: "nothing"
+        case .ready: "ready"
+        case .sending: "sending"
+        case .done: "done"
+        case .failed: "failed"
+        }
+    }
     /// Told what was taken in, to write it into the matters' threads.
     var taken: (([Judgement], String) -> Void)?
     /// Changes when a run ends, so the list of mail without a matter is read again.
@@ -40,7 +52,8 @@ final class MailCheck {
         // What the iPhone or the other Mac sorted is known here too, and their names disguised.
         NameListPublisher.adopt()
         door.earlier = SortedMails.answered(in: context)
-        state = .reading("Reading “\(door.label)” at \(door.account.host) …")
+        // Only that it is at it: how many mails the label holds is nothing to worry about.
+        state = .reading("Fetching mail …")
         Task {
             do {
                 guard let password = try await MailSecret.secret(for: account) else {
@@ -79,14 +92,15 @@ final class MailCheck {
                 try? context.save()
                 let matters = Set(judgements.compactMap(\.matter))
                 let names = try context.fetch(FetchDescriptor<Matter>()).filter { matter in matters.contains { matter.answers(to: $0) } }.map(\.name)
+                // Short: what came of it, and what it cost. The model is in each matter's history.
                 var text = "\(imported.mails) \(imported.mails == 1 ? "mail" : "mails") sorted"
-                if !names.isEmpty { text += " · in: " + names.joined(separator: ", ") }
+                if !names.isEmpty { text += " into " + names.joined(separator: ", ") }
                 if imported.mattersNew > 0 { text += " · \(imported.mattersNew) new \(imported.mattersNew == 1 ? "matter" : "matters")" }
                 if imported.todosNew > 0 { text += " · \(imported.todosNew) new \(imported.todosNew == 1 ? "task" : "tasks")" }
                 let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
                 if unplaced > 0 { text += " · \(unplaced) without a matter, below" }
                 if links > 0 { text += " · \(links) \(links == 1 ? "link" : "links") suggested" }
-                text += String(format: " · %@ · $%.3f", door.model.label, summary.cost)
+                text += String(format: " · $%.3f", summary.cost)
                 if !summary.failed.isEmpty { text += " · \(summary.failed.count) failed" }
                 state = .done(text)
             } catch {
@@ -105,6 +119,7 @@ struct MailCheckView: View {
     /// Owned above the sidebar: the sidebar comes and goes, a run of "Get new mail" must not —
     /// shown again, a fresh idle check would hide the one still running, and invite a second paid run.
     let check: MailCheck
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Mail that was read but found no matter: to put into one, or to set aside.
     @State private var unplaced: [Judgement] = []
     @State private var showsUnplaced = true
@@ -160,6 +175,27 @@ struct MailCheckView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             unplacedList
+            // One step at a time: the button gives way to the bee at work, that to the result —
+            // each faded into the next while the bottom of the sidebar takes its new height.
+            stage
+                .id(check.phase)
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 4)))
+        }
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.35), value: check.phase)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // The sidebar's own grey under it, a line above: part of the sidebar, not a bar on it.
+        .overlay(alignment: .top) { Divider() }
+        .onAppear {
+            refresh()
+            check.taken = { judgements, model in navigation.logIntake(judgements, matters: matters, model: model) }
+        }
+        .onChange(of: check.stateKey) { refresh() }
+    }
+
+    @ViewBuilder
+    private var stage: some View {
+        VStack(alignment: .leading, spacing: 8) {
             switch check.state {
             case .idle:
                 button
@@ -168,8 +204,8 @@ struct MailCheckView: View {
                     BeeLoader(size: 10)
                     Text(text).font(.caption).foregroundStyle(.secondary)
                 }
-            case .nothingNew(let known):
-                Text("Nothing new. Matterbee already knows \(known) mails.").font(.caption).foregroundStyle(.secondary)
+            case .nothingNew:
+                Text("No new mail.").font(.caption).foregroundStyle(.secondary)
                 button
             case .ready(let look, let door):
                 Text("\(look.pending) new \(look.pending == 1 ? "mail" : "mails")").font(.callout.weight(.semibold))
@@ -195,15 +231,6 @@ struct MailCheckView: View {
                 button
             }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // The sidebar's own grey under it, a line above: part of the sidebar, not a bar on it.
-        .overlay(alignment: .top) { Divider() }
-        .onAppear {
-            refresh()
-            check.taken = { judgements, model in navigation.logIntake(judgements, matters: matters, model: model) }
-        }
-        .onChange(of: check.stateKey) { refresh() }
     }
 
     @ViewBuilder

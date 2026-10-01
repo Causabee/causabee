@@ -51,6 +51,9 @@ public enum SearchKey: Sendable, Equatable {
     case subject(String)
     case from(String)
     case to(String)
+    /// Mail that fits any of these: many threads or Message-IDs in one question to the server,
+    /// not one round trip each.
+    case any([SearchKey])
 }
 
 public enum FetchPart: Sendable {
@@ -271,6 +274,10 @@ public actor IMAPClient: ReadOnlyMailbox {
         case .subject(let words): return "SUBJECT \(try quoted(words))"
         case .from(let address): return "FROM \(try quoted(address))"
         case .to(let address): return "TO \(try quoted(address))"
+        case .any(let keys):
+            guard let first = keys.first else { throw IMAPError.unsafeArgument("an empty OR") }
+            guard keys.count > 1 else { return try criterion(first) }
+            return "OR (\(try criterion(first))) (\(try criterion(.any(Array(keys.dropFirst())))))"
         }
     }
 

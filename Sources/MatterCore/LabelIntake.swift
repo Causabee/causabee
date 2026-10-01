@@ -28,6 +28,10 @@ public struct LabelIntake: Sendable {
     public var keyword: String?
     public var ownAddresses: [String] = []
     static let batch = 25
+    /// Only the Message-ID: a few bytes a mail, so many at once.
+    static let headerBatch = 200
+    /// Threads or Message-IDs asked for in one search.
+    static let searchBatch = 30
 
     public init(label: String, since: Date? = nil, host: String, known: Set<String> = []) {
         self.label = label
@@ -85,7 +89,7 @@ public struct LabelIntake: Sendable {
         // whole mail only for what is not known yet.
         var wanted: [UInt32] = []
         var labelledIDs: [String] = []
-        for chunk in uids.chunked(Self.batch) {
+        for chunk in uids.chunked(Self.headerBatch) {
             for message in try await mailbox.fetch(Array(chunk), .messageID) {
                 if let thread = message.gmailThread, !threads.contains(thread) { threads.append(thread) }
                 let id = Self.messageID(in: message)
@@ -114,7 +118,7 @@ public struct LabelIntake: Sendable {
                     for to in ownAddresses { candidates += try await mailbox.search(window + [.subject(keyword), .from(from), .to(to)]) }
                 }
                 var wanted: [UInt32] = []
-                for chunk in Array(Set(candidates)).sorted().chunked(Self.batch) {
+                for chunk in Array(Set(candidates)).sorted().chunked(Self.headerBatch) {
                     for message in try await mailbox.fetch(Array(chunk), .messageID) {
                         let id = Self.messageID(in: message)
                         if let id, mine.contains(id) { continue }
@@ -142,7 +146,9 @@ public struct LabelIntake: Sendable {
             for name in everything {
                 let opened = try await mailbox.examine(name)
                 var candidates: [UInt32] = []
-                for thread in threads { candidates += try await mailbox.search(window + [.gmailThread(thread)]) }
+                for chunk in threads.chunked(Self.searchBatch) {
+                    candidates += try await mailbox.search(window + [.any(chunk.map { .gmailThread($0) })])
+                }
                 let added = try await fetchNew(candidates, from: mailbox, in: opened, known: &known, tried: &tried[name, default: []])
                 for email in added { result.followed[email.id] = .gmailThread }
                 result.emails += added
@@ -156,7 +162,9 @@ public struct LabelIntake: Sendable {
                 for name in everything {
                     let opened = try await mailbox.examine(name)
                     var candidates: [UInt32] = []
-                    for id in frontier { candidates += try await mailbox.search(window + [.replies(to: id)]) }
+                    for chunk in frontier.chunked(Self.searchBatch) {
+                        candidates += try await mailbox.search(window + [.any(chunk.map { .replies(to: $0) })])
+                    }
                     round += try await fetchNew(candidates, from: mailbox, in: opened, known: &known, tried: &tried[name, default: []])
                 }
                 for email in round { result.followed[email.id] = .references }
@@ -178,7 +186,7 @@ public struct LabelIntake: Sendable {
         let fresh = candidates.filter { !tried.contains($0) && seen.insert($0).inserted }
         tried.formUnion(fresh)
         var wanted: [UInt32] = []
-        for chunk in fresh.chunked(Self.batch) {
+        for chunk in fresh.chunked(Self.headerBatch) {
             for message in try await mailbox.fetch(Array(chunk), .messageID) {
                 if let id = Self.messageID(in: message), known.contains(id) { continue }
                 wanted.append(message.uid)

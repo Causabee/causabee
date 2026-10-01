@@ -24,10 +24,13 @@ actor FakeMailbox: ReadOnlyMailbox {
         return OpenedFolder(name: folder, uidValidity: 7, exists: content[folder]?.count ?? 0)
     }
 
+    private(set) var searches = 0
+
     func search(_ keys: [SearchKey]) async throws -> [UInt32] {
-        (content[open ?? ""] ?? []).filter { stored in
+        searches += 1
+        return (content[open ?? ""] ?? []).filter { stored in
             let headers = EMLParser.parseHeaders(stored.raw)
-            return keys.allSatisfy { key in
+            func fits(_ key: SearchKey) -> Bool {
                 switch key {
                 case .all, .since: true
                 case .gmailThread(let thread): stored.thread == thread
@@ -37,8 +40,10 @@ actor FakeMailbox: ReadOnlyMailbox {
                 case .subject(let words): (headers["subject"]?.first ?? "").lowercased().contains(words.lowercased())
                 case .from(let address): (headers["from"]?.first ?? "").lowercased().contains(address.lowercased())
                 case .to(let address): (headers["to"]?.first ?? "").lowercased().contains(address.lowercased())
+                case .any(let keys): keys.contains(where: fits)
                 }
             }
+            return keys.allSatisfy(fits)
         }.map(\.uid)
     }
 
@@ -121,6 +126,22 @@ struct LabelIntakeTests {
         #expect(result.searched == ["[Gmail]/All Mail"])
         #expect(await mailbox.wholeFetches["[Gmail]/All Mail"] == [11])
         #expect(result.emails[0].source.absoluteString == "imap://imap.gmail.com/Matterbee;UIDVALIDITY=7/;UID=1")
+    }
+
+    @Test("Sixty labelled threads are followed in a few searches, not sixty")
+    func bundledThreads() async throws {
+        func mail(_ n: Int) -> String { "Message-ID: <m\(n)@x.example>\nFrom: a@x.example\nDate: Mon, 1 Sep 2026 09:00:00 +0200\nSubject: S\(n)\n\nText" }
+        let labelled = (1...60).map { FakeMailbox.Stored(uid: UInt32($0), thread: "\(1000 + $0)", raw: mail($0)) }
+        let reply = "Message-ID: <r@x.example>\nFrom: b@x.example\nIn-Reply-To: <m42@x.example>\nDate: Tue, 2 Sep 2026 09:00:00 +0200\nSubject: Re: S42\n\nYes"
+        let mailbox = FakeMailbox(gmail: true, folders: [
+            MailFolder(name: "Matterbee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
+        ], content: [
+            "Matterbee": labelled,
+            "[Gmail]/All Mail": labelled.map { .init(uid: $0.uid + 500, thread: $0.thread, raw: $0.raw) } + [.init(uid: 900, thread: "1042", raw: reply)],
+        ])
+        let result = try await LabelIntake(label: "Matterbee", host: "imap.gmail.com").run(mailbox)
+        #expect(result.followed == ["r@x.example": .gmailThread])
+        #expect(await mailbox.searches <= 3)  // the label, then two bundles of thirty
     }
 
     @Test("Elsewhere: replies of replies by References, in the inbox and in sent mail; a shared subject is not enough")

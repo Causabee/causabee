@@ -53,6 +53,18 @@ final class PhoneMailCheck {
     }
 
     var state: State = .idle
+    /// Which step it is at, for the panel's transitions: one view each, faded into the next.
+    var phase: String {
+        switch state {
+        case .idle: "idle"
+        case .reading: "reading"
+        case .nothingNew: "nothing"
+        case .ready: "ready"
+        case .sending: "sending"
+        case .done: "done"
+        case .failed: "failed"
+        }
+    }
     /// Changes when a run ends, so the list of mail without a matter is read again.
     var stateKey: String {
         switch state {
@@ -95,18 +107,15 @@ final class PhoneMailCheck {
             state = .failed("Your Mac has not shared what it sorted yet. Open Matterbee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again.")
             return
         }
-        state = .reading("Reading “\(door.label)” at \(door.account.host) …")
+        // Only that it is at it: how many mails the label holds is nothing to worry about.
+        state = .reading("Fetching mail …")
         running = Task {
             do {
                 guard let password = try Keychain.password(for: account.user) else {
                     state = .failed("No password for \(account.user) on this iPhone: add it in Settings (⋯ above).")
                     return
                 }
-                let look = try await door.look(password: password) { step in
-                    Task { @MainActor in
-                        if case .reading = PhoneMailCheck.shared.state { PhoneMailCheck.shared.state = .reading(step + " …") }
-                    }
-                }
+                let look = try await door.look(password: password)
                 guard !Task.isCancelled else { return }
                 state = look.pending == 0 ? .nothingNew(known: look.intake.alreadyKnown) : .ready(look, door)
             } catch {
@@ -148,14 +157,15 @@ final class PhoneMailCheck {
                 try? context.save()
                 let keys = Set(judgements.compactMap(\.matter))
                 let names = matters.filter { matter in keys.contains { matter.answers(to: $0) } }.map(\.name)
+                // Short: what came of it, and what it cost. The model is in each matter's history.
                 var text = "\(imported.mails) \(imported.mails == 1 ? "mail" : "mails") sorted"
-                if !names.isEmpty { text += " · in: " + names.joined(separator: ", ") }
+                if !names.isEmpty { text += " into " + names.joined(separator: ", ") }
                 if imported.mattersNew > 0 { text += " · \(imported.mattersNew) new \(imported.mattersNew == 1 ? "matter" : "matters")" }
                 if imported.todosNew > 0 { text += " · \(imported.todosNew) new \(imported.todosNew == 1 ? "task" : "tasks")" }
                 let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
                 if unplaced > 0 { text += " · \(unplaced) without a matter, below" }
                 if links > 0 { text += " · \(links) \(links == 1 ? "link" : "links") suggested" }
-                text += String(format: " · %@ · $%.3f", door.model.label, summary.cost)
+                text += String(format: " · $%.3f", summary.cost)
                 if !summary.failed.isEmpty { text += " · \(summary.failed.count) failed" }
                 state = .done(text)
             } catch {
@@ -201,6 +211,7 @@ struct PhoneMailCheckView: View {
     @Query private var profiles: [Profile]
     @Query private var matters: [Matter]
     @State private var check = PhoneMailCheck.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var unplaced: [Judgement] = []
     @State private var showsUnplaced = true
     /// Mail set aside with "Not needed" — on this device, as on the Mac.
@@ -213,6 +224,21 @@ struct PhoneMailCheckView: View {
     }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // One step at a time: the button opens into the panel, the panel turns into the
+            // result — each faded into the next while the box takes its new height.
+            stage
+                .id(check.phase)
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 4)))
+            unplacedList
+        }
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.35), value: check.phase)
+        .onAppear(perform: refresh)
+        .onChange(of: check.stateKey) { refresh() }
+    }
+
+    @ViewBuilder
+    private var stage: some View {
         VStack(alignment: .leading, spacing: 10) {
             switch check.state {
             case .idle:
@@ -234,8 +260,8 @@ struct PhoneMailCheckView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14).phoneBox()
-            case .nothingNew(let known):
-                Text("Nothing new. Matterbee already knows \(known) mails.").font(.subheadline).foregroundStyle(.secondary)
+            case .nothingNew:
+                Text("No new mail.").font(.subheadline).foregroundStyle(.secondary)
                 button
             case .ready(let look, let door):
                 VStack(alignment: .leading, spacing: 8) {
@@ -261,10 +287,7 @@ struct PhoneMailCheckView: View {
                 Label(text, systemImage: "exclamationmark.triangle").font(.subheadline).foregroundStyle(Theme.warning).textSelection(.enabled)
                 button
             }
-            unplacedList
         }
-        .onAppear(perform: refresh)
-        .onChange(of: check.stateKey) { refresh() }
     }
 
     private var button: some View {

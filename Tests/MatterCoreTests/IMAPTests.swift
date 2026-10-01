@@ -144,6 +144,15 @@ struct IMAPTests {
         }
     }
 
+    @Test("Many threads in one search: nested ORs, one round trip")
+    func anyOf() throws {
+        #expect(try IMAPClient.criterion(.any([.gmailThread("1")])) == "X-GM-THRID 1")
+        #expect(try IMAPClient.criterion(.any([.gmailThread("1"), .gmailThread("2"), .gmailThread("3")]))
+                == "OR (X-GM-THRID 1) (OR (X-GM-THRID 2) (X-GM-THRID 3))")
+        #expect(throws: IMAPError.self) { try IMAPClient.criterion(.any([])) }
+        #expect(throws: IMAPError.self) { try IMAPClient.criterion(.any([.gmailThread("1 OR ALL")])) }
+    }
+
     @Test("A line break cannot be smuggled into a command")
     func noInjection() throws {
         #expect(throws: IMAPError.self) { try IMAPClient.quoted("Matterbee\r\nM9 UID STORE 1:* +FLAGS (\\Deleted)") }
