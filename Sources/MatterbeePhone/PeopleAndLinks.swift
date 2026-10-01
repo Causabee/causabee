@@ -125,7 +125,7 @@ struct PhonePartyRow: View {
 
     @ViewBuilder
     private var items: some View {
-        Button("Ask the assistant", systemImage: "bubble.left.and.bubble.right") { navigation.talk(party.name, kind: "Person", in: matter) }
+        AskMatterbeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
         Button("Edit", systemImage: "pencil") { editing = true }
         Menu("Merge with", systemImage: "arrow.triangle.merge") {
             ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in

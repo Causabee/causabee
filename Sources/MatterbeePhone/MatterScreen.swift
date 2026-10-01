@@ -706,7 +706,7 @@ struct PhoneTodoRow: View {
     private var moreItems: some View {
         // Short, one line each, with an icon; one line only, above Delete.
         if let matter = todo.matter {
-            Button("Ask the assistant", systemImage: "bubble.left.and.bubble.right") { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
+            AskMatterbeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
         }
         Button("Edit", systemImage: "pencil") { editing = true }
         if !todo.isDone {
@@ -1043,7 +1043,7 @@ struct PhoneDateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
-        Button("Ask the assistant", systemImage: "bubble.left.and.bubble.right") { navigation.talk(item.what, kind: item.kind, in: matter) }
+        AskMatterbeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
         Button("Edit", systemImage: "pencil") { editing = true }
         Divider()
         Button("Delete", systemImage: "trash", role: .destructive) { deleting = true }

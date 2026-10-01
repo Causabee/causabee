@@ -70,6 +70,27 @@ struct AssistantButton: View {
     }
 }
 
+/// "Ask Matterbee" in a row's menu, with the bee — the same mark as the yellow button. A menu only
+/// takes pictures, so the bee is drawn once into one, as a template: grey like the other icons.
+struct AskMatterbeeButton: View {
+    let action: () -> Void
+
+    @MainActor private static let bee: Image = {
+        // Only the bee, without the room its drawing keeps for the hover and the wings' swing
+        // (the still bee is 4201 × 2509 of the drawing's 5101 × 2900), so it is as big as it can be.
+        let size: CGFloat = 15
+        let bee = BeeMark(size: size).foregroundStyle(.black).frame(width: size * 4201 / 2900, height: size * 2509 / 2900)
+        let renderer = ImageRenderer(content: bee)
+        renderer.scale = 3
+        guard let picture = renderer.uiImage else { return Image(systemName: "bubble.left.and.bubble.right") }
+        return Image(uiImage: picture.withRenderingMode(.alwaysTemplate))
+    }()
+
+    var body: some View {
+        Button(action: action) { Label { Text("Ask Matterbee") } icon: { Self.bee } }
+    }
+}
+
 /// One matter on the overview: what is open and whose, what comes next, and what is overdue —
 /// each overdue line a door to that very task.
 struct PhoneMatterCard: View {
