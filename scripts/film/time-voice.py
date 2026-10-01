@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 src, name = sys.argv[1], sys.argv[2]
 WORDS = [4, 14, 6, 4, 19, 10, 2, 12, 6, 6, 9, 10, 5, 6, 9, 13, 12, 6]   # the script's 18 lines
 PLANNED = [3, 5, 3, 3, 7, 5, 2, 5, 4, 4, 4, 4, 4, 4, 5, 5, 4, 4]
-LEAD, TAIL, PAD_IN, PAD_OUT = 0.5, 1.4, 0.12, 0.25
+LEAD, TAIL, PAD_IN, PAD_OUT = 0.5, 1.4, 0.2, 0.7
 
 def phrases(noise="-35dB", gap=0.25):
     log = subprocess.run(["ffmpeg", "-v", "info", "-i", src, "-af", f"silencedetect=noise={noise}:d={gap}", "-f", "null", "-"],
@@ -57,14 +57,17 @@ for k, ((a, b), p) in enumerate(zip(lines, PLANNED)):
 total = round(t, 1)
 out = ROOT / f"docs/film/{name}-timed.mp3"
 fc, mix = [], []
-for bt in beats:
-    a, b = max(0, bt["voice_in"] - PAD_IN), bt["voice_out"] + PAD_OUT
+length = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", src], capture_output=True, text=True).stdout)
+for idx, bt in enumerate(beats):
+    # Room before and after each line, so soft starts and tails are kept — but never into the neighbours.
+    a = max(0, bt["voice_in"] - PAD_IN)
+    if idx > 0: a = max(a, beats[idx - 1]["voice_out"] + 0.05)
+    b = length if idx == len(beats) - 1 else min(bt["voice_out"] + PAD_OUT, beats[idx + 1]["voice_in"] - 0.05)
     ms = int((bt["start"] + LEAD) * 1000)
     fc.append(f"[0:a]atrim=start={a}:end={b},asetpts=PTS-STARTPTS,adelay={ms}|{ms}[l{bt['beat']}]"); mix.append(f"[l{bt['beat']}]")
 fc.append("".join(mix) + f"amix=inputs={len(beats)}:normalize=0,apad=whole_dur={total}[out]")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-filter_complex", ";".join(fc), "-map", "[out]", "-c:a", "libmp3lame", "-q:a", "2", str(out)], check=True)
 (ROOT / "docs/film/timing.json").write_text(json.dumps({"voice": name, "total": total, "beats": beats}, indent=1))
-length = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", src], capture_output=True, text=True).stdout)
 rows = "\n".join(f"| {b['beat']} | {b['start']:.1f} | {b['dur']:.1f} | {b['spoken']:.1f} | {b['voice_in']:.1f}–{b['voice_out']:.1f} |" for b in beats)
 (ROOT / "docs/film-timing.md").write_text(f"""# The film's timing, from the voice
 
