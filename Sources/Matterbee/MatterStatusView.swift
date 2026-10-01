@@ -1112,11 +1112,9 @@ struct TodoRow: View {
                     }
                 }
                 if let note = todo.note, !note.isEmpty {
-                    HStack(alignment: .top, spacing: 6) {
-                        Image(systemName: "note.text").font(.caption).foregroundStyle(.secondary)
-                        Text(Linked.text(note)).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                            .textSelection(.enabled)
-                    }
+                    // The owner's note under the task, as words alone: an icon would only add clutter.
+                    Text(Linked.text(note)).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
                     let loose = WebLink.split(note: note).links.filter { found in !(todo.links ?? []).contains { $0.address == found.address } }
                     if !loose.isEmpty {
                         Button(loose.count == 1 ? "Save as link" : "Save \(loose.count) links") { keepLinks(from: note) }

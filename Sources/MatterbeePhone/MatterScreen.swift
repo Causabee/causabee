@@ -659,7 +659,8 @@ struct PhoneTodoRow: View {
                         .font(.footnote).foregroundStyle(other.isDone ? Theme.done : .secondary)
                 }
                 if let note = todo.note, !note.isEmpty {
-                    Label { Text(Linked.text(note)).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: "note.text") }
+                    // The owner's note under the task, as words alone: an icon would only add clutter.
+                    Text(Linked.text(note)).fixedSize(horizontal: false, vertical: true)
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 if let note = todo.note, !note.isEmpty {
