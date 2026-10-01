@@ -65,7 +65,7 @@ struct AssistantButton: View {
                 .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Assistant")
+        .accessibilityLabel("Ask Matterbee")
         .padding(.trailing, 16).padding(.bottom, 8)
     }
 }

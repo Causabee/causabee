@@ -94,7 +94,7 @@ struct AssistantSheet: View {
     private var header: some View {
         ZStack {
             VStack(spacing: 2) {
-                Text("Assistant").font(.headline)
+                Text("Matterbee").font(.headline)
                 Text(matter?.name ?? "All matters").font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             .padding(.horizontal, 60)
