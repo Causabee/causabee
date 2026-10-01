@@ -340,11 +340,23 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .device .badge .lb { fill: #fff; }
 .seen { top: 1130px; background: var(--box); border-radius: 36px; padding: 36px 40px 40px; box-sizing: border-box; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.5), calc(var(--v18) - 0.85s); }
 .seen .small { color: var(--grey); font-size: 24px; font-weight: 600; letter-spacing: 1px; }
-.seen .line { font-size: 40px; line-height: 54px; margin-top: 18px; }
-.seen .name { color: #8a6d00; font-weight: 500; display: inline-block; animation: settle-in 0.4s var(--ease-out) both; animation-delay: calc(var(--v17) + var(--s17) * 0.88); }
-.seen .name.second { animation-delay: calc(var(--v17) + var(--s17) * 0.94); }
-.arrow { position: absolute; left: 520px; top: 1010px; width: 40px; height: 80px; opacity: 0; animation: fade-in 0.3s both, fade-out 0.3s forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.45), calc(var(--v18) - 0.8s); }
-.arrow path { fill: none; stroke: var(--grey); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.seen .line { font-size: 40px; line-height: 58px; margin-top: 18px; }
+.seen .name { position: relative; display: inline-block; color: #8a6d00; font-weight: 500; padding: 2px 14px; margin: 0 -2px; border-radius: 12px; background: var(--honey); opacity: 0; animation: ph-pop 0.6s cubic-bezier(0.3, 0.7, 0.2, 1.25) both, ph-settle 0.8s ease-out forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86), calc(var(--v17) + var(--s17) * 0.86 + 0.7s); }
+.seen .name.second { animation-delay: calc(var(--v17) + var(--s17) * 0.94), calc(var(--v17) + var(--s17) * 0.94 + 0.7s); }
+@keyframes ph-pop { from { opacity: 0; transform: scale(0.6) translateY(-24px); filter: blur(4px); } to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes ph-settle { to { background: rgba(255,219,13,0); padding: 2px 0; margin: 0; } }
+.seen .name::after { content: ""; position: absolute; inset: 0; border-radius: 12px; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.7) 50%, transparent 70%); transform: translateX(-100%); animation: sheen 0.7s ease-out both; animation-delay: calc(var(--v17) + var(--s17) * 0.86 + 0.5s); }
+.seen .name.second::after { animation-delay: calc(var(--v17) + var(--s17) * 0.94 + 0.5s); }
+@keyframes sheen { to { transform: translateX(100%); } }
+/* the names leave the mail and fly down into the box, blurring on the way */
+.device .mail .preview b { animation: name-gone 0.5s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.6); }
+.ghost { position: absolute; font-size: 28px; font-weight: 500; color: var(--ink); opacity: 0; animation: ghost-fly 0.75s cubic-bezier(0.5, 0, 0.3, 1) both; animation-delay: calc(var(--v17) + var(--s17) * 0.6); }
+.ghost.a { left: 190px; top: 735px; --dx: -60px; --dy: 495px; }
+.ghost.b { left: 700px; top: 735px; --dx: -550px; --dy: 553px; animation-delay: calc(var(--v17) + var(--s17) * 0.68); }
+@keyframes ghost-fly { 0% { opacity: 0; transform: none; filter: blur(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.3); filter: blur(10px); } }
+.arrow { position: absolute; left: 520px; top: 1010px; width: 40px; height: 80px; opacity: 0; animation: fade-in 0.2s both, fade-out 0.3s forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.5), calc(var(--v18) - 0.8s); }
+.arrow path { fill: none; stroke: var(--grey); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 140; stroke-dashoffset: 140; animation: draw-arrow 0.5s var(--ease-out) both; animation-delay: calc(var(--v17) + var(--s17) * 0.5); }
+@keyframes draw-arrow { to { stroke-dashoffset: 0; } }
 
 /* ---- 18 · the icon, as on the website ---- */
 .icon { position: absolute; left: 260px; top: 560px; width: 560px; height: 560px; opacity: 0; animation: fade-in 0.4s both; animation-delay: calc(var(--v18) - 0.25s); }
@@ -444,6 +456,7 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 <div class="phone"><div class="screen"><div class="island"></div><div class="ov">Overview</div><div class="pcard p1"><span class="label pulse-b">3 for you · 1 together · waiting for 2</span><div class="name">Care for Mum (Helga) after her fall</div><div class="next">Next, on Oct 2: Read and sign the Sunrise contract</div></div><div class="pcard p2"><span class="label">5 for you · waiting for 1</span><div class="name">Buying the flat at Linden Street 8</div><div class="next">Next, on Oct 2: Send the last salary slip to Northbank</div></div><div class="pcard p3"><span class="label">4 for you · waiting for 1</span><div class="name">Parking-lot accident, 14 September</div><div class="next">Next, on Oct 2: Make sure the car is at the garage on Thursday</div></div></div></div>
 
 <div class="obj device"><div class="small">ON YOUR DEVICE</div><div class="mail"><div class="avatar">B</div><div class="body"><div class="headline"><span class="sender">Dr. Anselm Brandt</span><span class="date">Sep 28</span></div><div class="subject">Prescription for the bath seat is ready</div><div class="preview"><b>Dr. Brandt</b> has the bath seat prescription for <b>Helga</b>. The medical supply store needs it before delivery.</div></div></div><div class="badge"><svg viewBox="0 0 56 64"><path class="shackle" d="M14 30 V18 a14 14 0 0 1 28 0 V38"/><rect class="lb" x="4" y="30" width="48" height="34" rx="7"/></svg></div></div>
+<span class="ghost a">Dr. Brandt</span><span class="ghost b">Helga</span>
 <svg class="arrow" viewBox="0 0 40 80"><path d="M20 0V76M2 58l18 18 18-18"/></svg>
 <div class="obj seen"><div class="small">WHAT THE AI SEES</div><div class="line"><span class="name">[Person A]</span> has the bath seat prescription for <span class="name second">[Person B]</span>. The medical supply store needs it before delivery.</div></div>
 
