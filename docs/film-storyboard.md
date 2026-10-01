@@ -1,5 +1,9 @@
 # A day with Matterbee — storyboard for the portrait film
 
+> Superseded on 1 October 2026 by docs/film-script.md: a narrated 90-second script, one drawn
+> object per spoken line, instead of recorded screens. This file keeps the scene research, the
+> recording tools' notes and the draft's lessons.
+
 A vertical film (9:16, 1080 × 1920) of about 75 seconds. It walks through one everyday round in
 Matterbee, zoomed in close: the mail comes in, gets sorted, and the matter page, the tasks, the
 dates, the files and the assistant each get their moment. One story carries it all: Care for Mum
