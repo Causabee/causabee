@@ -62,8 +62,8 @@ struct OverviewScreen: View {
                     Text("Overview").font(Theme.phoneTitleFont)
                     Text(summary).font(.body).fixedSize(horizontal: false, vertical: true)
                 }
-                // The demo's matters are made up: no real mail comes into them.
-                if !store.isDemo { PhoneMailCheckView() }
+                // In the demo, three made-up mails come in: the whole round, nothing read or sent.
+                PhoneMailCheckView()
                 searchField
                 if matters.isEmpty {
                     empty

@@ -13,7 +13,7 @@ final class MailCheck {
         case nothingNew(known: Int)
         case ready(DailyDoor.Look, DailyDoor)
         case sending(String)
-        case done(String)
+        case done(String, [IntakeSummary.Item] = [])
         case failed(String)
     }
 
@@ -35,7 +35,7 @@ final class MailCheck {
     /// Changes when a run ends, so the list of mail without a matter is read again.
     var stateKey: String {
         switch state {
-        case .done(let text): "done " + text
+        case .done(let text, _): "done " + text
         case .idle: "idle"
         default: "busy"
         }
@@ -92,17 +92,13 @@ final class MailCheck {
                 try? context.save()
                 let matters = Set(judgements.compactMap(\.matter))
                 let names = try context.fetch(FetchDescriptor<Matter>()).filter { matter in matters.contains { matter.answers(to: $0) } }.map(\.name)
-                // Short: what came of it, and what it cost. The model is in each matter's history.
-                var text = "\(imported.mails) \(imported.mails == 1 ? "mail" : "mails") sorted"
-                if !names.isEmpty { text += " into " + names.joined(separator: ", ") }
-                if imported.mattersNew > 0 { text += " · \(imported.mattersNew) new \(imported.mattersNew == 1 ? "matter" : "matters")" }
-                if imported.todosNew > 0 { text += " · \(imported.todosNew) new \(imported.todosNew == 1 ? "task" : "tasks")" }
+                // Short: what came of it, and what it cost; what it brought, line by line, under it.
                 let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
-                if unplaced > 0 { text += " · \(unplaced) without a matter, below" }
-                if links > 0 { text += " · \(links) \(links == 1 ? "link" : "links") suggested" }
-                text += String(format: " · $%.3f", summary.cost)
+                var text = IntakeSummary.line(mails: imported.mails, matters: names, tasks: imported.todosNew,
+                                              dates: imported.appointments + imported.deadlines, unplaced: unplaced, cost: summary.cost)
                 if !summary.failed.isEmpty { text += " · \(summary.failed.count) failed" }
-                state = .done(text)
+                _ = links
+                state = .done(text, IntakeSummary.items(judgements))
             } catch {
                 state = .failed("\(error)")
             }
@@ -223,8 +219,12 @@ struct MailCheckView: View {
                     
                     .inkButton()
                 }
-            case .done(let text):
+            case .done(let text, let items):
                 Label(text, systemImage: "checkmark.circle").font(.caption).foregroundStyle(Theme.done)
+                // What it brought, to see without opening every matter.
+                ForEach(items, id: \.self) { item in
+                    Label(item.text, systemImage: item.symbol).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                }
                 button
             case .failed(let text):
                 Label(text, systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(Theme.warning).textSelection(.enabled)

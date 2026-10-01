@@ -47,8 +47,10 @@ final class PhoneMailCheck {
         case reading(String)
         case nothingNew(known: Int)
         case ready(DailyDoor.Look, DailyDoor)
+        /// The demo's three made-up mails, found: the same panel, nothing read or sent.
+        case demoReady
         case sending(String)
-        case done(String)
+        case done(String, [IntakeSummary.Item] = [])
         case failed(String)
     }
 
@@ -59,7 +61,7 @@ final class PhoneMailCheck {
         case .idle: "idle"
         case .reading: "reading"
         case .nothingNew: "nothing"
-        case .ready: "ready"
+        case .ready, .demoReady: "ready"
         case .sending: "sending"
         case .done: "done"
         case .failed: "failed"
@@ -68,7 +70,7 @@ final class PhoneMailCheck {
     /// Changes when a run ends, so the list of mail without a matter is read again.
     var stateKey: String {
         switch state {
-        case .done(let text): "done " + text
+        case .done(let text, _): "done " + text
         case .idle: "idle"
         default: "busy"
         }
@@ -84,6 +86,7 @@ final class PhoneMailCheck {
 
     func look(context: ModelContext) {
         guard !isBusy else { return }
+        if DemoData.isRequested { lookInDemo(context: context); return }
         guard let account = Keychain.accounts().first(where: { !$0.usesGoogle }) else {
             state = .failed("No mail account yet: add it in Settings (⋯ above).")
             return
@@ -128,6 +131,41 @@ final class PhoneMailCheck {
     @ObservationIgnored private var running: Task<Void, Never>?
 
     /// Stops reading: nothing was sent, and nothing is kept.
+    /// The demo's round, at the pace of a real one: fetching, three new mails, sorting, and what
+    /// came of it — the mails, a task and two dates in three matters. Nothing is read or sent.
+    private func lookInDemo(context: ModelContext) {
+        state = .reading("Fetching mail …")
+        running = Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            guard !Task.isCancelled else { return }
+            state = DemoData.hasNewMail(in: context) ? .nothingNew(known: 0) : .demoReady
+        }
+    }
+
+    func sortInDemo(context: ModelContext) {
+        state = .sending("Sorting \(DemoData.newMail.count) mails …")
+        running = Task {
+            try? await Task.sleep(for: .seconds(2.4))
+            guard !Task.isCancelled else { return }
+            let matters = DemoData.takeInNewMail(context)
+            // As a real run: a line in each matter's history, what came in.
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            for (index, matter) in matters.enumerated() {
+                let mail = DemoData.newMail[index]
+                let brought = index == 0 ? " · 1 new task" : " · 1 date"
+                var turn = Navigation.Turn(question: "", scope: "Mail", inHand: nil, seen: "", refs: [:], matter: matter.persistentModelID)
+                turn.note = "1 mail taken in" + brought + " · sorted by the demo\n• " + mail.subject
+                guard let payload = try? encoder.encode(turn) else { continue }
+                let record = ThreadTurn(id: turn.id, date: turn.date, payload: payload)
+                context.insert(record)
+                record.matter = matter
+            }
+            try? context.save()
+            state = .done(IntakeSummary.line(mails: matters.count, matters: matters.map(\.name), tasks: 1, dates: 2), DemoData.newMailItems)
+        }
+    }
+
     func cancel() {
         running?.cancel()
         running = nil
@@ -157,17 +195,13 @@ final class PhoneMailCheck {
                 try? context.save()
                 let keys = Set(judgements.compactMap(\.matter))
                 let names = matters.filter { matter in keys.contains { matter.answers(to: $0) } }.map(\.name)
-                // Short: what came of it, and what it cost. The model is in each matter's history.
-                var text = "\(imported.mails) \(imported.mails == 1 ? "mail" : "mails") sorted"
-                if !names.isEmpty { text += " into " + names.joined(separator: ", ") }
-                if imported.mattersNew > 0 { text += " · \(imported.mattersNew) new \(imported.mattersNew == 1 ? "matter" : "matters")" }
-                if imported.todosNew > 0 { text += " · \(imported.todosNew) new \(imported.todosNew == 1 ? "task" : "tasks")" }
+                // Short: what came of it, and what it cost; what it brought, line by line, under it.
                 let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
-                if unplaced > 0 { text += " · \(unplaced) without a matter, below" }
-                if links > 0 { text += " · \(links) \(links == 1 ? "link" : "links") suggested" }
-                text += String(format: " · $%.3f", summary.cost)
+                var text = IntakeSummary.line(mails: imported.mails, matters: names, tasks: imported.todosNew,
+                                              dates: imported.appointments + imported.deadlines, unplaced: unplaced, cost: summary.cost)
                 if !summary.failed.isEmpty { text += " · \(summary.failed.count) failed" }
-                state = .done(text)
+                _ = links
+                state = .done(text, IntakeSummary.items(judgements))
             } catch {
                 state = .failed("\(error)")
             }
@@ -253,14 +287,14 @@ struct PhoneMailCheckView: View {
                     Button("Cancel") { check.cancel() }.buttonStyle(.phone)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(16).phoneBox()
+                .phoneBox()
             case .sending(let text):
                 HStack(spacing: 10) {
                     BeeLoader(size: 15)
                     Text(text).font(.subheadline).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(16).phoneBox()
+                .phoneBox()
             case .nothingNew:
                 Text("No new mail.").font(.subheadline).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
@@ -281,10 +315,34 @@ struct PhoneMailCheckView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14).phoneBox()
-            case .done(let text):
+                .phoneBox()
+            case .demoReady:
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("\(DemoData.newMail.count) new mails").font(.headline)
+                    ForEach(DemoData.newMail, id: \.subject) { mail in
+                        Text("• " + mail.subject).font(.subheadline).lineLimit(2)
+                    }
+                    Text("In the demo, sorting in sends nothing and costs nothing.").font(.footnote).foregroundStyle(.secondary)
+                    HStack(spacing: 10) {
+                        Button("Cancel") { check.state = .idle }.buttonStyle(.phone)
+                        Button("Sort in") { check.sortInDemo(context: context) }.buttonStyle(.phoneFilled)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .phoneBox()
+            case .done(let text, let items):
                 Label(text, systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                if !items.isEmpty {
+                    // What it brought, to see without opening every matter.
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(items, id: \.self) { item in
+                            Label(item.text, systemImage: item.symbol).font(.subheadline)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .phoneBox()
+                }
                 button
             case .failed(let text):
                 Label(text, systemImage: "exclamationmark.triangle").font(.subheadline).foregroundStyle(Theme.warning).textSelection(.enabled)
@@ -344,7 +402,7 @@ struct PhoneMailCheckView: View {
                 Text("No matter found · \(unplaced.count)").font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
             }
             .tint(.secondary)
-            .padding(14).phoneBox()
+            .phoneBox()
         }
     }
 }

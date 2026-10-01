@@ -46,6 +46,74 @@ enum DemoData {
         try? context.save()
     }
 
+    // MARK: New mail, for "Get new mail" in the demo
+
+    /// Three mails that "come in" when the demo's "Get new mail" is tapped: made up, read from no
+    /// mailbox and sent nowhere — so the whole round can be seen, from the button to the matters.
+    struct NewMail {
+        let matter: String
+        let from: String
+        let subject: String
+        let digest: String
+    }
+
+    static let newMail = [
+        NewMail(matter: "lisbon-october", from: "Marta Sousa <marta@casa-do-largo.example>", subject: "The key box by the door",
+                digest: "Marta puts the keys in a box by the door. She sends its code the day before you arrive."),
+        NewMail(matter: "move-birch-road", from: "Carry & Co <office@carry-co.example>", subject: "Your move is confirmed",
+                digest: "Two movers and a van from 8 to 12 o'clock. Small things should be packed by then."),
+        NewMail(matter: "wedding-june", from: "Gut Birkenhof <events@gut-birkenhof.example>", subject: "Menu tasting: two Saturdays",
+                digest: "The kitchen offers a tasting on two Saturdays and needs an answer by next Friday."),
+    ]
+
+    /// What the three bring, as the result of a real round shows it.
+    static var newMailItems: [IntakeSummary.Item] {
+        [IntakeSummary.Item(symbol: "checklist", text: "Ask Marta for the key box code"),
+         IntakeSummary.Item(symbol: "calendar", text: "\(IntakeSummary.day(day(20))), 08:00 · Carry & Co come with the van"),
+         IntakeSummary.Item(symbol: "flag", text: "by \(IntakeSummary.day(day(9))) · Answer Gut Birkenhof about the tasting")]
+    }
+
+    /// Whether the three are in already: then "Get new mail" finds nothing new.
+    static func hasNewMail(in context: ModelContext) -> Bool {
+        let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
+        return entries.contains { $0.messageID.hasPrefix("demo-new-") }
+    }
+
+    /// Sorts the three in, as "Sort in" would: a mail each, with what it brings — a task for
+    /// Lisbon, the movers' day for the move, a deadline for the wedding. Returns the matters.
+    static func takeInNewMail(_ context: ModelContext) -> [Matter] {
+        let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
+        var touched: [Matter] = []
+        for (index, mail) in newMail.enumerated() {
+            guard let matter = matters.first(where: { $0.key == mail.matter }) else { continue }
+            let source = Source(kind: .mail, pointer: "imap://demo.example/INBOX;UID=\(900 + index)",
+                                messageID: "demo-new-\(index)@mail.example", date: Date())
+            let entry = Entry(title: mail.subject, from: mail.from, date: source.date, source: source)
+            entry.digest = mail.digest
+            entry.matter = matter
+            context.insert(entry)
+            switch index {
+            case 0:
+                let todo = Todo(text: "Ask Marta for the key box code", owner: .me, due: day(14),
+                                source: source.quoting("She sends its code the day before"), origin: source.messageID! + "#code")
+                todo.matter = matter
+                context.insert(todo)
+            case 1:
+                let movers = Appointment(what: "Carry & Co come with the van", day: day(20), time: "08:00", place: "Old flat",
+                                         source: source.quoting("from 8 to 12 o'clock"))
+                movers.matter = matter
+                context.insert(movers)
+            default:
+                let answer = Deadline(what: "Answer Gut Birkenhof about the tasting", day: day(9), source: source.quoting("an answer by next Friday"))
+                answer.matter = matter
+                context.insert(answer)
+            }
+            touched.append(matter)
+        }
+        try? context.save()
+        return touched
+    }
+
     // MARK: Dates
 
     nonisolated private static let calendar = Calendar(identifier: .gregorian)
