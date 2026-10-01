@@ -1,30 +1,29 @@
 # The film's timing, from the voice
 
-Voice: ElevenLabs, "Charmion – Soft and husky", 1 October 2026, 64.8 s as generated. The pauses
-it made between lines were about half a second, too short for the pictures, so the lines are cut
-apart and placed again: each line starts 0.5 s into its beat, and a beat lasts its planned
-length or the line plus 1.9 s of air, whichever is longer. The re-timed track is
-docs/film/voice-charmion-timed.mp3 (90.6 s), and the same numbers are in docs/film/timing.json.
+Voice: voice-jenny, 68.5 s as generated. The lines are cut apart and placed again: each line
+starts 0.5 s into its beat, and a beat lasts its planned length or the line plus 1.9 s
+of air, whichever is longer. The re-timed track is docs/film/voice-jenny-timed.mp3 (91.8 s); the
+numbers are in docs/film/timing.json. Made by scripts/film/time-voice.py.
 
 | Beat | Starts at (s) | Lasts (s) | Spoken (s) | In the original voice (s) |
 | --- | --- | --- | --- | --- |
-| 1 | 0.0 | 3.3 | 1.4 | 0.0–1.4 |
-| 2 | 3.3 | 7.5 | 5.6 | 2.5–8.1 |
-| 3 | 10.8 | 3.8 | 1.9 | 8.7–10.6 |
-| 4 | 14.6 | 3.7 | 1.8 | 11.1–12.9 |
-| 5 | 18.3 | 9.2 | 7.3 | 13.4–20.7 |
-| 6 | 27.5 | 5.3 | 3.4 | 21.2–24.6 |
-| 7 | 32.8 | 2.5 | 0.6 | 25.1–25.7 |
-| 8 | 35.3 | 5.9 | 4.0 | 26.2–30.2 |
-| 9 | 41.2 | 4.0 | 2.0 | 30.6–32.6 |
-| 10 | 45.2 | 4.1 | 2.2 | 33.0–35.2 |
-| 11 | 49.3 | 4.4 | 2.5 | 35.7–38.2 |
-| 12 | 53.7 | 5.2 | 3.3 | 38.7–42.0 |
-| 13 | 58.9 | 4.0 | 1.6 | 42.5–44.1 |
-| 14 | 62.9 | 4.0 | 1.8 | 44.5–46.3 |
-| 15 | 66.9 | 5.0 | 3.1 | 46.8–49.9 |
-| 16 | 71.9 | 7.1 | 5.2 | 50.4–55.6 |
-| 17 | 79.0 | 6.7 | 4.8 | 56.1–60.9 |
-| 18 | 85.7 | 4.9 | 1.9 | 61.6–63.5 |
+| 1 | 0.0 | 3.1 | 1.2 | 0.0–1.2 |
+| 2 | 3.1 | 7.8 | 5.9 | 2.4–8.3 |
+| 3 | 10.9 | 3.9 | 2.0 | 9.0–11.0 |
+| 4 | 14.8 | 3.9 | 2.0 | 11.6–13.6 |
+| 5 | 18.7 | 8.5 | 6.6 | 14.2–20.9 |
+| 6 | 27.2 | 5.3 | 3.4 | 21.4–24.8 |
+| 7 | 32.5 | 2.8 | 0.9 | 25.4–26.4 |
+| 8 | 35.3 | 5.8 | 3.9 | 27.0–30.9 |
+| 9 | 41.1 | 4.0 | 1.9 | 31.6–33.5 |
+| 10 | 45.1 | 4.1 | 2.2 | 34.0–36.2 |
+| 11 | 49.2 | 4.4 | 2.5 | 36.8–39.3 |
+| 12 | 53.6 | 5.4 | 3.5 | 39.9–43.4 |
+| 13 | 59.0 | 4.0 | 1.6 | 44.0–45.6 |
+| 14 | 63.0 | 4.0 | 1.8 | 46.2–48.0 |
+| 15 | 67.0 | 5.1 | 3.2 | 48.6–51.8 |
+| 16 | 72.1 | 7.5 | 5.6 | 52.4–58.0 |
+| 17 | 79.6 | 7.1 | 5.2 | 58.5–63.7 |
+| 18 | 86.7 | 5.1 | 2.1 | 65.1–67.2 |
 
-Total: 90.6 s.
+Total: 91.8 s.
