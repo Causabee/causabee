@@ -30,17 +30,17 @@ Show: the five lines slide together into one card: "Care for Mum (Helga) after h
 Move: the slide, then the card holds.
 
 **4 · 3 s**
-Say: New mail? One button.
+Say: New mail? Get it sorted.
 Show: the button "Get new mail".
 Move: a click; the bee appears beside it, stripes sorting, wings beating.
 
 **5 · 7 s**
-Say: It reads your selected mails or documents first, and shows you what came in. Nothing goes to the AI until you say so.
+Say: It fetches your selected mails or documents first, and shows you what came in. Nothing reaches the AI unless it is disguised.
 Show: "2 new mails" — "Prescription for the bath seat is ready", "Re: Who does what this week?" — then the button "Sort in".
 Move: the lines come one by one; "Sort in" comes last and waits.
 
 **6 · 5 s**
-Say: And before anything leaves your device, the names are gone.
+Say: Before anything leaves your device, the names and other identifiers are gone.
 Show: one sentence, large: "Dr. Brandt has the bath seat prescription for Helga."
 Move: "Dr. Brandt" becomes "[Person A]", "Helga" becomes "[Person B]". Nothing else moves.
 
@@ -106,7 +106,7 @@ Move: the stripes drop in once, the wings beat twice, the bee settles.
 
 ---
 
-Spoken words: 156. At a calm pace that is 75 to 80 seconds of voice, and the rest is silence
+Spoken words: 162. At a calm pace that is 75 to 80 seconds of voice, and the rest is silence
 where the picture does its work. Total: about 90 seconds.
 
 ## What we draw
