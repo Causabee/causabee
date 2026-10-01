@@ -103,9 +103,9 @@ struct MatterScreen: View {
                     MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
                     Divider()
                     if matter.isClosed {
-                        Button("Open again") { matter.reopen(); try? context.save() }
+                        Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
                     } else {
-                        Button("Close") { asksToClose = true }
+                        Button("Close", systemImage: "archivebox") { asksToClose = true }
                     }
                 } label: { Image(systemName: "ellipsis") }
                 .tint(.primary)

@@ -105,9 +105,9 @@ struct OverviewScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Settings …") { editsAccount = true }
-                    Button("Introduction …") { showsWelcome = true }
-                    Button(store.isDemo ? "Leave the demo" : "Try the demo") { store.switchDemo(!store.isDemo) }
+                    Button("Settings", systemImage: "gearshape") { editsAccount = true }
+                    Button("Introduction", systemImage: "info.circle") { showsWelcome = true }
+                    Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: store.isDemo ? "arrow.uturn.backward" : "sparkles") { store.switchDemo(!store.isDemo) }
                 } label: { Image(systemName: "ellipsis") }
                 .tint(.primary)
                 .accessibilityLabel("More")
