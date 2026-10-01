@@ -45,7 +45,49 @@ function play() { restart(); clearInterval(timer); timer = setInterval(restart, 
 function rest() { clearInterval(timer); for (const a of document.getAnimations()) a.pause(); }
 if (matchMedia('(prefers-reduced-motion: reduce)').matches) { seek(TOTAL - 2); }
 else new IntersectionObserver(([e]) => { if (e.isIntersecting && !shown) { shown = true; play(); } else if (!e.isIntersecting && shown) { shown = false; rest(); } }, { threshold: 0.35 }).observe(document.body);""")
-        out = ROOT / "site/film/index.html"; out.parent.mkdir(exist_ok=True)
+        # The voice, small enough for the web, and a speaker button in the lower right: off at first;
+        # on, the voice is set to the film's clock (its animations' time) and kept within 0.15 s of it.
+        (ROOT / "site/film").mkdir(exist_ok=True)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(ROOT / f"docs/film/{t['voice']}-timed.mp3"), "-ac", "1", "-b:a", "64k", str(ROOT / "site/film/voice.mp3")], check=True)
+        sound = """
+<style>
+.sound { position: fixed; right: 14px; bottom: 14px; width: 44px; height: 44px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; background: rgba(255,255,255,0.86); box-shadow: 0 2px 10px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06); color: #22211b; cursor: pointer; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); z-index: 10; }
+.sound svg { width: 22px; height: 22px; } .sound .on { display: none; } .sound[aria-pressed="true"] .on { display: block; } .sound[aria-pressed="true"] .off { display: none; }
+.sound:focus-visible { outline: 2px solid #22211b; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .sound { display: none; } }
+.clock { position: absolute; width: 0; height: 0; animation: clock-tick var(--end) linear both; }
+@keyframes clock-tick { to { opacity: 1; } }
+</style>
+<div class="clock"></div>
+<audio class="voice" src="voice.mp3" preload="none"></audio>
+<button class="sound" type="button" aria-pressed="false" aria-label="Sound on">
+  <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6M16 9l6 6"/></svg>
+  <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+</button>"""
+        src = src.replace("</div>\n<script>", "</div>" + sound + "\n<script>")
+        src = src.replace("function play() { restart(); clearInterval(timer); timer = setInterval(restart, TOTAL * 1000 + 1500); }",
+"""const voice = document.querySelector('.voice'), button = document.querySelector('.sound');
+let soundOn = false, onScreen = false;
+// The film's clock: an invisible animation as long as the film, started and restarted with all the others.
+function filmTime() { const a = document.querySelector('.clock').getAnimations()[0]; return a ? a.currentTime / 1000 : 0; }
+function syncVoice() {
+  if (!soundOn || !onScreen) { voice.pause(); return; }
+  const t = filmTime();
+  if (t >= voice.duration) { voice.pause(); return; }
+  if (Math.abs(voice.currentTime - t) > 0.15) voice.currentTime = t;
+  if (voice.paused) voice.play().catch(() => {});
+}
+button.addEventListener('click', () => {
+  soundOn = !soundOn;
+  button.setAttribute('aria-pressed', soundOn); button.setAttribute('aria-label', soundOn ? 'Sound off' : 'Sound on');
+  if (soundOn) { voice.preload = 'auto'; voice.load(); }
+  syncVoice();
+});
+setInterval(syncVoice, 500);
+function play() { onScreen = true; restart(); voice.currentTime = 0; syncVoice(); clearInterval(timer); timer = setInterval(() => { restart(); voice.currentTime = 0; syncVoice(); }, TOTAL * 1000 + 1500); }""")
+        src = src.replace("function rest() { clearInterval(timer); for (const a of document.getAnimations()) a.pause(); }",
+                          "function rest() { onScreen = false; clearInterval(timer); for (const a of document.getAnimations()) a.pause(); voice.pause(); }")
+        out = ROOT / "site/film/index.html"
         out.write_text(src); print("site", out); sys.exit(0)
     out = WEB / ("film-web-captions.html" if captions else "film-web.html")
     out.write_text(src); print("web", out); sys.exit(0)
