@@ -1594,6 +1594,11 @@ struct PartyRow: View {
                     Text(party.name).font(.body.weight(.medium))
                     if let role = membership.role { Text("· \(role)").foregroundStyle(.secondary).lineLimit(1) }
                 }
+                // How much they are in the matter — the one named most in gold.
+                if let share = membership.share {
+                    Text(share.isMost ? share.text + " · the most" : share.text).font(.caption)
+                        .foregroundStyle(share.isMost ? Theme.gold : .secondary)
+                }
                 let also = party.otherSpellings
                 if !also.isEmpty {
                     Text("also written: " + also.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2)
@@ -1605,7 +1610,6 @@ struct PartyRow: View {
             }
             Spacer(minLength: 8)
             HStack(spacing: 4) {
-            Text("\(membership.mentions)×").font(.caption).foregroundStyle(.secondary).padding(.trailing, 4)
             MoreMenu {
                 Button("Edit name and role …") {
                     name = party.name

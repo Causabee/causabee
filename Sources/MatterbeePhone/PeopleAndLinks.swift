@@ -77,7 +77,7 @@ struct PeopleSection: View {
 }
 
 /// One person, as the Mac's row: name and role, other spellings, the other matters they are in,
-/// how often they are named — and the ⋯.
+/// how many of its mails name them — and the ⋯.
 struct PhonePartyRow: View {
     let party: Party
     let membership: Membership
@@ -94,6 +94,11 @@ struct PhonePartyRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 (Text(party.name).fontWeight(.medium) + Text(membership.role.map { " · \($0)" } ?? "").foregroundStyle(.secondary))
                     .fixedSize(horizontal: false, vertical: true)
+                // How much they are in the matter — the one named most in gold.
+                if let share = membership.share {
+                    Text(share.isMost ? share.text + " · the most" : share.text).font(.caption)
+                        .foregroundStyle(share.isMost ? Theme.gold : .secondary)
+                }
                 let also = party.otherSpellings
                 if !also.isEmpty {
                     Text("also written: " + also.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2)
@@ -104,7 +109,6 @@ struct PhonePartyRow: View {
                 }
             }
             Spacer(minLength: 0)
-            Text("\(membership.mentions)×").font(.caption).foregroundStyle(.secondary)
             Menu { items } label: {
                 Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
             }

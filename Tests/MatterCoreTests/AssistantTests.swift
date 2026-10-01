@@ -115,6 +115,35 @@ struct AssistantTests {
         #expect(few.text.contains("T1"))  // the open to-dos stay: a correction may be about one
     }
 
+    @Test("A person's share of the matter in words, and the one named most")
+    func share() throws {
+        let (context, matter) = try store()
+        for index in 1...3 {
+            let mail = Entry(title: "Mail \(index)", from: "x@example.com", date: Date(), source: Source(kind: .mail, pointer: "x\(index)", messageID: "m\(index)@example"))
+            mail.matter = matter
+            context.insert(mail)
+        }
+        func member(_ name: String, _ mentions: Int) -> Membership {
+            let party = Party(name: name)
+            context.insert(party)
+            let membership = Membership()
+            membership.party = party
+            membership.matter = matter
+            membership.mentions = mentions
+            context.insert(membership)
+            return membership
+        }
+        let most = member("Sebastian Süß", 4), some = member("Anna Keller", 2), none = member("Max Weber", 0)
+        try context.save()
+        #expect(most.share?.text == "in all 4 mails")
+        #expect(most.share?.isMost == true)
+        #expect(some.share?.text == "in 2 of 4 mails")
+        #expect(some.share?.isMost == false)
+        #expect(none.share == nil)
+        some.mentions = 4
+        #expect(most.share?.isMost == false)  // a tie at the top: nobody is "the most"
+    }
+
     @Test("With a file in hand, the mail it came with is shown, whatever its subject")
     func fileInHand() throws {
         let (context, matter) = try store()

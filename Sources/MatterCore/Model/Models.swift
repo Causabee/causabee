@@ -273,6 +273,21 @@ public final class Membership {
         let text = role.lowercased()
         return text.isEmpty || text.hasPrefix("unklar") || text == "unknown"
     }
+
+    /// How much they are in the matter, in words: "in 3 of 8 mails", "in all 4 mails" — and
+    /// whether they are the one named most, alone at the top of more than one. Nil when no mail
+    /// named them.
+    public var share: (text: String, isMost: Bool)? {
+        let total = matter?.entries?.count ?? 0
+        let named = min(mentions, total)
+        guard named > 0 else { return nil }
+        let text = named == total
+            ? (total == 1 ? "in its one mail" : "in all \(total) mails")
+            : "in \(named) of \(total) \(total == 1 ? "mail" : "mails")"
+        let others = (matter?.memberships ?? []).filter { $0 !== self && $0.party != nil }
+        let isMost = !others.isEmpty && others.allSatisfy { $0.mentions < mentions }
+        return (text, isMost)
+    }
 }
 
 /// A standing instruction from the owner, with where it came from, how often it has been used,
