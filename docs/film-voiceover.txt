@@ -16,11 +16,11 @@ New mail? [short pause] One button.
 
 [pause]
 
-It reads your new mail first, and shows you what came in. [short pause] Nothing goes to the AI until you say so.
+It reads your selected mails or documents first, and shows you what came in. [short pause] Nothing goes to the AI until you say so.
 
 [pause]
 
-And before anything leaves your Mac, [short pause] the names are gone.
+And before anything leaves your device, [short pause] the names are gone.
 
 [pause]
 
@@ -29,21 +29,9 @@ Sorted in.
 [pause]
 
 Every matter has one next step, [short pause] and the reason it can't wait.
-
-[pause]
-
 Every task says whose it is.
-
-[pause]
-
 Some can only start after another.
-
-[pause]
-
-And every task shows the mail it came from.
-
-[pause]
-
+And every task shows where it came from.
 Dates go to Calendar in one click, [short pause] and stay in step.
 
 [pause]
@@ -64,7 +52,7 @@ On your Mac. [short pause] On your iPhone. [short pause] Synced through your own
 
 [pause]
 
-Your mail stays on your Mac. [short pause] The AI only ever sees a disguise.
+The originals stay on your device. [short pause] The AI only ever sees a disguise.
 
 [long pause]
 

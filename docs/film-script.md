@@ -35,12 +35,12 @@ Show: the button "Get new mail".
 Move: a click; the bee appears beside it, stripes sorting, wings beating.
 
 **5 · 7 s**
-Say: It reads your new mail first, and shows you what came in. Nothing goes to the AI until you say so.
+Say: It reads your selected mails or documents first, and shows you what came in. Nothing goes to the AI until you say so.
 Show: "2 new mails" — "Prescription for the bath seat is ready", "Re: Who does what this week?" — then the button "Sort in".
 Move: the lines come one by one; "Sort in" comes last and waits.
 
 **6 · 5 s**
-Say: And before anything leaves your Mac, the names are gone.
+Say: And before anything leaves your device, the names are gone.
 Show: one sentence, large: "Dr. Brandt has the bath seat prescription for Helga."
 Move: "Dr. Brandt" becomes "[Person A]", "Helga" becomes "[Person B]". Nothing else moves.
 
@@ -65,7 +65,7 @@ Show: two rows. "Read the Sunrise contract together with Nina" above, and under 
 Move: a tick on the first row; the second turns from grey to ink: "its turn now".
 
 **11 · 4 s**
-Say: And every task shows the mail it came from.
+Say: And every task shows where it came from.
 Show: the quote: "… if the signed contract is back by 2 October." · from the mail of Sep 24 · Yusuf Kaya.
 Move: "back by 2 October" is marked in yellow, left to right.
 
@@ -95,7 +95,7 @@ Show: the care card from beat 3, small, inside a Mac window outline; then the sa
 Move: the phone slides in; the card is the same on both.
 
 **17 · 4 s**
-Say: Your mail stays on your Mac. The AI only ever sees a disguise.
+Say: The originals stay on your device. The AI only ever sees a disguise.
 Show: the sentence from beat 6, already disguised: "[Person A] has the bath seat prescription for [Person B]."
 Move: nothing. The line holds.
 
@@ -106,7 +106,7 @@ Move: the stripes drop in once, the wings beat twice, the bee settles.
 
 ---
 
-Spoken words: 152. At a calm pace that is 75 to 80 seconds of voice, and the rest is silence
+Spoken words: 156. At a calm pace that is 75 to 80 seconds of voice, and the rest is silence
 where the picture does its work. Total: about 90 seconds.
 
 ## What we draw
