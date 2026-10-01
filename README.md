@@ -157,11 +157,9 @@ swift run matter-spike fetch --classify --since 2026-09-01
 - **Read-only, for real.** The client can only send the commands in `IMAPClient.allowed`. A
   folder is opened with `EXAMINE`, which the server keeps read-only, and mail is read with
   `BODY.PEEK[]`, so it stays unread. There is no command in it that moves, flags or deletes.
-- **One write, and only on a tap: a scanned document.** "Add a document" on the iPhone puts the
-  scan into the Matterbee label as a mail from the owner to the owner, marked read, so it lives in
-  the mail like any attachment. It is `ScanDoor`, its own connection with its own list —
-  `LOGIN`, `LIST`, `APPEND`, `LOGOUT` — not the reading client with a command more. Drafts are
-  not written to the mailbox: they open in Mail, and the owner sends them.
+- **No writes at all.** Matterbee never writes to the mailbox: a draft opens in Mail and the owner
+  sends it; a document scanned on the iPhone is kept on the iPhone, in Files (On My iPhone ›
+  Matterbee), and sorted in like a file brought in with the paperclip.
 - **Build with `scripts/build.sh`**, not `swift run`: it signs both programs with the personal
   development certificate under fixed identifiers, so macOS asks once for the Keychain and not
   again after every rebuild. Then start `.build/debug/Matterbee` and `.build/debug/matter-spike`.

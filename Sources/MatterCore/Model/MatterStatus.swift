@@ -93,13 +93,17 @@ extension Source {
         guard !pointer.hasPrefix("imap://") else { return nil }
         guard let url = pointer.hasPrefix("file://") ? URL(string: pointer) : URL(fileURLWithPath: pointer) else { return nil }
         if FileManager.default.fileExists(atPath: url.path) { return url }
-        // Kept beside the store: the iPhone's app folder gets a new name with an update, the
-        // part inside it stays.
+        // Kept beside the store or in the iPhone's Files folder: the app's folder gets a new name
+        // with an update, the part inside it stays.
         let path = url.path
-        guard let inside = path.range(of: "/Library/Application Support/") else { return nil }
-        let moved = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent(String(path[inside.upperBound...]))
-        return FileManager.default.fileExists(atPath: moved.path) ? moved : nil
+        for (marker, directory) in [("/Library/Application Support/", FileManager.SearchPathDirectory.applicationSupportDirectory),
+                                    ("/Documents/", .documentDirectory)] {
+            guard let inside = path.range(of: marker) else { continue }
+            let moved = FileManager.default.urls(for: directory, in: .userDomainMask)[0]
+                .appendingPathComponent(String(path[inside.upperBound...]))
+            if FileManager.default.fileExists(atPath: moved.path) { return moved }
+        }
+        return nil
     }
 
     /// Which device a file of the owner's was added on, told by its path: a Mac's are in /Users.

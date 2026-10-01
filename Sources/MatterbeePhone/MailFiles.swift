@@ -67,7 +67,6 @@ struct FilesSection: View {
         let shown = all.filter { document in
             (!document.isHidden || showsHidden) && (!document.isSmallImage || showsSmallImages || document.isHidden)
         }
-        let waiting = Scans.waiting(in: matter)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
@@ -77,24 +76,10 @@ struct FilesSection: View {
                     .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
                     .tool()
             }
-            if !shown.isEmpty || !waiting.isEmpty {
+            if !shown.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
-                    // Put into the mail on this iPhone, not read by the Mac yet.
-                    ForEach(Array(waiting.enumerated()), id: \.element) { index, scan in
-                        if index > 0 { Divider().padding(.leading, 50) }
-                        HStack(alignment: .top, spacing: 12) {
-                            Image(systemName: "envelope.badge.clock").font(.title3).foregroundStyle(.secondary).frame(width: 26)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(scan.title)
-                                Text("in your mail since \(Dates.short(scan.date)) · your Mac files it with the next “Get new mail”")
-                                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .padding(14)
-                    }
                     ForEach(Array(shown.enumerated()), id: \.element.persistentModelID) { index, document in
-                        if index > 0 || !waiting.isEmpty { Divider().padding(.leading, 50) }
+                        if index > 0 { Divider().padding(.leading, 50) }
                         row(document).findable(.model(document.persistentModelID), document.shownName, document.name)
                     }
                 }
@@ -149,7 +134,7 @@ struct FilesSection: View {
                             Text(document.shownName).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(2)
                             // With a name of its own, the file's name is still there to see, small.
                             Text(document.isOwnFile
-                                 ? (document.source.fileURL != nil ? "added on this iPhone" : "added on \(document.source.addedOn) · only there")
+                                 ? (document.source.fileURL != nil ? "on this iPhone, in Files › Matterbee" : "added on \(document.source.addedOn) · only there")
                                  : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
                                     ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
                                     .compactMap { $0 }.joined(separator: " · "))

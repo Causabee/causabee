@@ -1,39 +1,16 @@
 import MatterCore
 import PDFKit
+import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 import VisionKit
 
-/// A paper document — a letter, a contract, a bill — into the mail: scanned with the camera or picked as a file, and
-/// put into the Matterbee label as a mail from the owner to the owner. It is kept there like any
-/// attachment — no iCloud space — and the Mac's next "Get new mail" reads it and files it, its
-/// tasks and dates too. Until then the matter shows it as on its way.
+/// A paper document — a letter, a contract, a bill — scanned with the camera or picked as a file,
+/// kept on this iPhone where Files shows it (On My iPhone › Matterbee), and sorted into the matter
+/// the way the paperclip sorts one in: read here, sent pseudonymised only on "Sort in", taken in
+/// with a tap. What it says goes to every device; the file stays on this iPhone. Nothing goes
+/// into the mailbox.
 enum Scans {
-    static let label = "Matterbee"
-    private static let pendingKey = "scans.pending"
-
-    struct Pending: Codable, Hashable {
-        var matter: String
-        var title: String
-        var messageID: String
-        var date: Date
-    }
-
-    static var pending: [Pending] {
-        get { (try? JSONDecoder().decode([Pending].self, from: UserDefaults.standard.data(forKey: pendingKey) ?? Data())) ?? [] }
-        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: pendingKey) }
-    }
-
-    /// The scans of this matter the Mac has not read yet: one it has read is a mail of the matter.
-    @MainActor
-    static func waiting(in matter: Matter) -> [Pending] {
-        let read = Set((matter.entries ?? []).map(\.messageID))
-        let all = pending
-        let left = all.filter { !read.contains($0.messageID) }
-        if left.count != all.count { pending = left }
-        return left.filter { $0.matter == matter.key }
-    }
-
     /// Pages from the camera, as one PDF.
     static func pdf(of pages: [UIImage]) -> Data? {
         let document = PDFDocument()
@@ -44,19 +21,18 @@ enum Scans {
     }
 }
 
-/// Naming the scan and putting it into the mail.
+/// Naming the document and keeping it.
 struct ScanSheet: View {
     let matter: Matter
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
+    @Query private var profiles: [Profile]
     @State private var title = ""
-    @State private var file: (name: String, contentType: String, data: Data)?
+    @State private var file: (name: String, data: Data, isPDF: Bool)?
     @State private var scanning = false
     @State private var picking = false
-    @State private var sending = false
     @State private var failure: String?
-    @State private var addsAccount = false
-
-    private var account: MailAccount? { Keychain.accounts().first { !$0.usesGoogle } }
 
     var body: some View {
         NavigationStack {
@@ -64,7 +40,7 @@ struct ScanSheet: View {
                 Section {
                     if let file {
                         Label("\(file.name) · \(ByteCountFormatter.string(fromByteCount: Int64(file.data.count), countStyle: .file))",
-                              systemImage: file.contentType == "application/pdf" ? "doc.richtext" : "photo")
+                              systemImage: file.isPDF ? "doc.richtext" : "photo")
                     }
                     if VNDocumentCameraViewController.isSupported {
                         Button(file == nil ? "Scan with the camera" : "Scan again", systemImage: "doc.viewfinder") { scanning = true }
@@ -78,7 +54,7 @@ struct ScanSheet: View {
                 } header: {
                     Text("What is it?")
                 } footer: {
-                    Text("It goes into your mail, under the label “\(Scans.label)”, as a mail from you to you — so every device opens it from there and it takes no iCloud space. Your Mac reads it with the next “Get new mail” and files it in “\(matter.name)”, with its tasks and dates.")
+                    Text("Saved on this iPhone, in \(PhoneShots.place), under this name. Then read here and sorted into “\(matter.name)” when you tap “Sort in” — about 4 cents — as with the paperclip. Its tasks and dates go to all your devices; the file stays on this iPhone.")
                 }
                 if let failure { Text(failure).foregroundStyle(Theme.warning) }
             }
@@ -87,15 +63,13 @@ struct ScanSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    if sending { ProgressView() } else {
-                        Button("Put into mail", action: send).disabled(file == nil || title.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
+                    Button("Add", action: add).disabled(file == nil)
                 }
             }
             .fullScreenCover(isPresented: $scanning) {
                 DocumentCamera { pages in
                     scanning = false
-                    if let data = Scans.pdf(of: pages) { file = (name: fileName("pdf"), contentType: "application/pdf", data: data) }
+                    if let data = Scans.pdf(of: pages) { file = (name: "Scan \(MatterStatus.day(Date())).pdf", data: data, isPDF: true) }
                 } cancel: { scanning = false }
                 .ignoresSafeArea()
             }
@@ -104,37 +78,30 @@ struct ScanSheet: View {
                 let access = url.startAccessingSecurityScopedResource()
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
                 guard let data = try? Data(contentsOf: url) else { failure = "The file cannot be read."; return }
-                let type = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
-                file = (name: url.lastPathComponent, contentType: type, data: data)
+                file = (name: url.lastPathComponent, data: data, isPDF: url.pathExtension.lowercased() == "pdf")
             }
-            .sheet(isPresented: $addsAccount) { MailAccountSheet() }
         }
     }
 
-    /// "Scan 2026-09-30.pdf", or the title, when there is one.
-    private func fileName(_ ending: String) -> String {
-        let base = title.trimmingCharacters(in: .whitespaces).isEmpty ? "Scan \(MatterStatus.day(Date()))" : title
-        return base.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-") + "." + ending
+    /// Named by what it is, when it was said — "Tax assessment.pdf" — else by its own name.
+    private var keptName: String? {
+        guard let file else { return nil }
+        let named = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !named.isEmpty else { return file.name }
+        let ending = (file.name as NSString).pathExtension
+        return named + (ending.isEmpty ? "" : ".\(ending)")
     }
 
-    private func send() {
-        guard let file else { return }
-        guard let account, let password = try? Keychain.password(for: account.user) else { addsAccount = true; return }
-        let scan = ScanMessage(owner: account.user, title: title.trimmingCharacters(in: .whitespaces), matter: matter.name, file: file)
-        let key = matter.key
-        sending = true
-        failure = nil
-        Task {
-            do {
-                _ = try await ScanDoor.putScan(scan.data, label: Scans.label, account: account, password: password)
-                Scans.pending.append(Scans.Pending(matter: key, title: scan.title, messageID: scan.messageID, date: scan.date))
-                sending = false
-                dismiss()
-            } catch {
-                sending = false
-                failure = "\(error)"
-            }
+    /// Kept, then into the assistant, where it is read and waits for "Sort in".
+    private func add() {
+        guard let file, let name = keptName else { return }
+        guard let kept = PhoneShots.shared.keep(file.data, named: name) else {
+            failure = "It could not be saved on this iPhone. Is there space left?"
+            return
         }
+        PhoneShots.shared.bring(kept, matter: matter.persistentModelID, context: context, owner: profiles.first?.names.first)
+        dismiss()
+        navigation.showsAssistant = true
     }
 }
 

@@ -7,8 +7,9 @@ import UniformTypeIdentifiers
 /// A file brought into the assistant on the iPhone — a chat screenshot, a photo of a letter, a PDF
 /// from Files, or a matter's file taken out of its mail with "Read" — the way the Mac brings one
 /// in: read on the iPhone, shown before anything is sent, sent pseudonymised only on "Sort in",
-/// and taken into a matter the owner chooses. A picture kept only here stays on this iPhone, as
-/// the Mac's stay on the Mac; what it said — tasks, dates, people — goes to every device.
+/// and taken into a matter the owner chooses. A picture or a scan is kept on this iPhone, in Files
+/// (On My iPhone › Matterbee), as the Mac's stay on the Mac; what it said — tasks, dates, people —
+/// goes to every device.
 @MainActor
 @Observable
 final class PhoneShots {
@@ -37,11 +38,32 @@ final class PhoneShots {
 
     private var store: URL { PhoneCloud.storeLocation() }
 
-    /// Where a picture or a file with no home of its own is kept: beside the store, on this iPhone.
+    /// Where a picture, a scan or a file brought in here is kept: Matterbee's own folder on this
+    /// iPhone, which Files shows as On My iPhone › Matterbee — the owner can find, share or delete
+    /// it there. The demo's in a folder of their own.
+    static var folder: URL {
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return DemoData.isRequested ? documents.appendingPathComponent("Demo", isDirectory: true) : documents
+    }
+    /// The same, in the words Files uses.
+    static let place = "Files › On My iPhone › Matterbee"
+
+    static func isKept(_ file: URL) -> Bool {
+        file.resolvingSymlinksInPath().path.hasPrefix(folder.resolvingSymlinksInPath().path)
+    }
+
+    /// Under its own name — "Tax assessment.pdf" — and "Tax assessment 2.pdf" when that is taken.
     func keep(_ data: Data, named name: String) -> URL? {
-        let folder = ScreenshotDoor.attachments(besides: store)
+        let folder = Self.folder
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let file = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name)
+        let safe = name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+        let base = (safe as NSString).deletingPathExtension, ending = (safe as NSString).pathExtension
+        var file = folder.appendingPathComponent(safe)
+        var number = 2
+        while FileManager.default.fileExists(atPath: file.path) {
+            file = folder.appendingPathComponent("\(base) \(number)" + (ending.isEmpty ? "" : ".\(ending)"))
+            number += 1
+        }
         return (try? data.write(to: file)) != nil ? file : nil
     }
 
@@ -160,7 +182,7 @@ struct PhoneShotCard: View {
 
     private var shots: PhoneShots { PhoneShots.shared }
 
-    /// The file's own name, without the few letters it was kept under.
+    /// The file's own name, without the few letters an earlier version kept it under.
     private var name: String {
         let raw = shot.file.lastPathComponent
         return raw.count > 9 && raw.dropFirst(8).first == "-" ? String(raw.dropFirst(9)) : raw
@@ -170,6 +192,9 @@ struct PhoneShotCard: View {
         VStack(alignment: .leading, spacing: 10) {
             Label(name, systemImage: shot.file.pathExtension.lowercased() == "pdf" ? "doc.text" : "photo")
                 .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            if PhoneShots.isKept(shot.file) {
+                Text("Saved on this iPhone, in \(PhoneShots.place).").font(.caption).foregroundStyle(.secondary)
+            }
             switch shot.stage {
             case .reading:
                 HStack(spacing: 8) { BeeLoader(size: 14); Text("Reading it on this iPhone …").font(.subheadline).foregroundStyle(.secondary) }
