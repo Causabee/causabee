@@ -189,7 +189,7 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 
 /* ---- 9 · whose it is: one row, the pill flips ---- */
 .owner { top: 760px; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v9) - 0.25s), calc(var(--v10) - 0.85s); }
-.stage9 { position: absolute; left: 66px; top: 88px; display: inline-grid; transform-origin: 0 0; animation: stage9-in 0.4s var(--ease-out) both, stage9-land 0.8s cubic-bezier(0.6, 0, 0.2, 1) forwards; animation-delay: calc(var(--v9) - 0.2s), calc(var(--v9) + var(--s9) * 0.75 + 1.2s); }
+.stage9 { position: absolute; left: 66px; top: 88px; display: inline-grid; transform-origin: 0 0; animation: stage9-in 0.4s var(--ease-out) both, stage9-land 0.8s cubic-bezier(0.6, 0, 0.2, 1) forwards; animation-delay: calc(var(--v9) - 0.2s), calc(var(--v9) + var(--s9) * 0.75 + 0.8s); }
 .stage9 .pill { grid-area: 1 / 1; justify-self: center; opacity: 0; backface-visibility: hidden; }
 .stage9 .pill:nth-child(1) { animation: flip-in 0.45s var(--ease-out) both, flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) - 0.2s), calc(var(--v9) + var(--s9) * 0.35); }
 .stage9 .pill:nth-child(2) { animation: flip-in 0.45s var(--ease-out) both, flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.35 + 0.3s), calc(var(--v9) + var(--s9) * 0.75); }
@@ -344,17 +344,17 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .device .badge .shackle { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: round; transform-box: fill-box; transform-origin: 100% 100%; animation: shackle-shut 0.9s cubic-bezier(0.3, 0.7, 0.2, 1.2) both; animation-delay: calc(var(--v17) + var(--s17) * 0.22); }
 @keyframes shackle-shut { 0% { transform: translateY(-10px) rotateY(70deg); } 45% { transform: translateY(-12px) rotateY(0); } 80% { transform: translateY(2px) rotateY(0); } 100% { transform: translateY(0) rotateY(0); } }
 .device .badge .lb { fill: #fff; }
-.seen { top: 1060px; background: var(--box); border-radius: 36px; padding: 36px 40px 40px; box-sizing: border-box; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.5), calc(var(--v18) - 0.85s); }
-.seen .small { color: var(--grey); font-size: 24px; font-weight: 600; letter-spacing: 1px; }
-.seen .line { font-size: 40px; line-height: 58px; margin-top: 18px; }
-.seen .name { display: inline-block; position: relative; font-weight: 500; vertical-align: baseline; height: 58px; width: var(--wr); animation: name-width 0.6s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86 + 0.1s); }
-.seen .name.second { animation-delay: calc(var(--v17) + var(--s17) * 0.94 + 0.1s); }
-.seen .name > span { position: absolute; left: 0; top: 0; white-space: nowrap; }
+.seen17 { top: 1060px; background: var(--box); border-radius: 36px; padding: 36px 40px 40px; box-sizing: border-box; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.5), calc(var(--v18) - 0.85s); }
+.seen17 .small { color: var(--grey); font-size: 24px; font-weight: 600; letter-spacing: 1px; }
+.seen17 .line { font-size: 40px; line-height: 58px; margin-top: 18px; }
+.seen17 .name { display: inline-block; position: relative; font-weight: 500; vertical-align: baseline; height: 58px; width: var(--wr); animation: name-width 0.6s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86 + 0.1s); }
+.seen17 .name.second { animation-delay: calc(var(--v17) + var(--s17) * 0.94 + 0.1s); }
+.seen17 .name > span { position: absolute; left: 0; top: 0; white-space: nowrap; }
 @keyframes name-width { from { width: var(--wr); } to { width: var(--wf); } }
-.seen .name .real { color: var(--ink); animation: blur-out 0.6s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86); }
-.seen .name .fake { color: #8a6d00; opacity: 0; filter: blur(10px); animation: blur-in 0.6s var(--ease-out) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86 + 0.25s); }
-.seen .name.second .real { animation-delay: calc(var(--v17) + var(--s17) * 0.94); }
-.seen .name.second .fake { animation-delay: calc(var(--v17) + var(--s17) * 0.94 + 0.25s); }
+.seen17 .name .real { color: var(--ink); animation: blur-out 0.6s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86); }
+.seen17 .name .fake { color: #8a6d00; opacity: 0; filter: blur(10px); animation: blur-in 0.6s var(--ease-out) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86 + 0.25s); }
+.seen17 .name.second .real { animation-delay: calc(var(--v17) + var(--s17) * 0.94); }
+.seen17 .name.second .fake { animation-delay: calc(var(--v17) + var(--s17) * 0.94 + 0.25s); }
 @keyframes blur-out { to { opacity: 0; filter: blur(10px); } }
 @keyframes blur-in { to { opacity: 1; filter: blur(0); } }
 /* ---- 18 · the icon, as on the website ---- */
@@ -460,7 +460,7 @@ body.captions .cap { display: block; }
 <div class="phone"><div class="screen"><div class="island"></div><div class="ov">Overview</div><div class="pcard p1"><span class="label pulse-b">3 for you · 1 together · waiting for 2</span><div class="name">Care for Mum (Helga) after her fall</div><div class="next">Next, on Oct 2: Read and sign the Sunrise contract</div></div><div class="pcard p2"><span class="label">5 for you · waiting for 1</span><div class="name">Buying the flat at Linden Street 8</div><div class="next">Next, on Oct 2: Send the last salary slip to Northbank</div></div><div class="pcard p3"><span class="label">4 for you · waiting for 1</span><div class="name">Parking-lot accident, 14 September</div><div class="next">Next, on Oct 2: Make sure the car is at the garage on Thursday</div></div></div></div>
 
 <div class="obj device"><div class="small">ON YOUR DEVICE</div><div class="mail"><div class="avatar">B</div><div class="body"><div class="headline"><span class="sender">Dr. Anselm Brandt</span><span class="date">Sep 28</span></div><div class="subject">Prescription for the bath seat is ready</div><div class="preview"><b>Dr. Brandt</b> has the bath seat prescription for <b>Helga</b>. The medical supply store needs it before delivery.</div></div></div><div class="badge"><svg viewBox="0 0 56 64"><path class="shackle" d="M14 30 V18 a14 14 0 0 1 28 0 V38"/><rect class="lb" x="4" y="30" width="48" height="34" rx="7"/></svg></div></div>
-<div class="obj seen"><div class="small">WHAT THE AI SEES</div><div class="line"><span class="name"><span class="real">Dr. Brandt</span><span class="fake">[Person A]</span></span> has the bath seat prescription for <span class="name second"><span class="real">Helga</span><span class="fake">[Person B]</span></span>. The medical supply store needs it before delivery.</div></div>
+<div class="obj seen17"><div class="small">WHAT THE AI SEES</div><div class="line"><span class="name"><span class="real">Dr. Brandt</span><span class="fake">[Person A]</span></span> has the bath seat prescription for <span class="name second"><span class="real">Helga</span><span class="fake">[Person B]</span></span>. The medical supply store needs it before delivery.</div></div>
 
 <svg class="icon" viewBox="0 0 1024 1024"><defs><linearGradient id="honey-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE14D"/><stop offset="1" stop-color="#FFC700"/></linearGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#honey-g)"/><svg x="112" y="243.1" width="800" height="477.8" viewBox="0 0 4201 2509" overflow="visible"><path class="wl" d="M840.879 830.165C919.099 742.266 1064.5 797.594 1064.5 915.257V1953.13C1064.83 1960.84 1065 1968.59 1065 1976.37C1065 1984.16 1064.83 1991.9 1064.5 1999.61V2052.87L1059.83 2050.87C1023.6 2309.69 801.309 2508.87 532.5 2508.87C238.408 2508.87 0 2270.46 0 1976.37C0 1829.33 59.598 1696.21 155.956 1599.85L840.879 830.165Z"/><path class="wr" d="M3360.12 830.165C3281.9 742.267 3136.5 797.594 3136.5 915.257V1953.13C3136.17 1960.84 3136 1968.59 3136 1976.37C3136 1984.16 3136.17 1991.9 3136.5 1999.61V2052.87L3141.17 2050.87C3177.4 2309.69 3399.69 2508.87 3668.5 2508.87C3962.59 2508.87 4201 2270.46 4201 1976.37C4201 1829.33 4141.4 1696.21 4045.04 1599.85L3360.12 830.165Z"/><rect class="bar" style="--i:0" x="1525" y="0" width="1151" height="264" rx="112"/><rect class="bar" style="--i:1" x="1241" y="436" width="1719" height="264" rx="112"/><rect class="bar" style="--i:2" x="1241" y="872" width="1719" height="264" rx="112"/><rect class="bar" style="--i:3" x="1436" y="1308" width="1329" height="264" rx="112"/><rect class="bar" style="--i:4" x="1729.5" y="1744" width="742" height="264" rx="112"/><rect class="bar" style="--i:5" x="1925.5" y="2180" width="350" height="264" rx="112"/></svg></svg>
 <div class="brand name">Matterbee</div>
@@ -486,6 +486,6 @@ body.captions .cap { display: block; }
 <div class="white"></div>
 </div>
 <script>
-for (const n of document.querySelectorAll('.seen .name')) { const r = n.querySelector('.real'), f = n.querySelector('.fake'); n.style.setProperty('--wr', r.offsetWidth + 'px'); n.style.setProperty('--wf', f.offsetWidth + 'px'); }
+for (const n of document.querySelectorAll('.seen17 .name')) { const r = n.querySelector('.real'), f = n.querySelector('.fake'); if (!r || !f) continue; n.style.setProperty('--wr', r.offsetWidth + 'px'); n.style.setProperty('--wf', f.offsetWidth + 'px'); }
 function seek(t) { for (const a of document.getAnimations()) { a.pause(); a.currentTime = t * 1000; } }
 </script></body></html>
