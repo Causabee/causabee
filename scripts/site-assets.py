@@ -32,7 +32,7 @@ CROPS = {
     "sources": ("intro-5", (1440, 1104, 2880, 1800)),
     "assistant": ("intro-5", (547, 128, 1435, 1250)),
 }
-FULL = {"overview": "intro-1", "matter": "intro-2"}
+FULL = {"overview": "intro-1", "matter": "intro-2", "care": "intro-5"}
 
 # The icon as Icon Composer draws it: the bee's stripes and wings over the yellow, the wings
 # half see-through. The layers are App/Resources/BeeStripesWings.icon/Assets, moved up 30 points.
