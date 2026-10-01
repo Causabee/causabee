@@ -11,6 +11,17 @@ extension Theme {
     static let phoneCardTitleFont = Font.custom("Source Serif 4", size: 22, relativeTo: .title2)
 }
 
+extension View {
+    /// A tap on the page, or scrolling it, puts the keyboard away — to see all of the page; what
+    /// was typed stays in its field. Buttons on the page still work as before.
+    func dismissesKeyboard() -> some View {
+        scrollDismissesKeyboard(.interactively)
+            .simultaneousGesture(TapGesture().onEnded {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            })
+    }
+}
+
 /// The filled button and the grey one beside it: "Write message", "Done", "Show".
 struct PhoneButtonStyle: ButtonStyle {
     var filled = false

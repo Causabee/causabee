@@ -55,6 +55,7 @@ struct MatterScreen: View {
                 // a break — can make it wider and let it slide sideways.
                 .containerRelativeFrame(.horizontal)
             }
+            .dismissesKeyboard()
             .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
             // Asked to show a task while the page is open already — from a card in the assistant.
             .onChange(of: navigation.showing) { if navigation.showing != nil { show(navigation.showing, with: scroller) } }

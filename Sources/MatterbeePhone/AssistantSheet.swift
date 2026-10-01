@@ -77,6 +77,8 @@ struct AssistantSheet: View {
                     .containerRelativeFrame(.horizontal)
                 }
                 .defaultScrollAnchor(.bottom)
+                // The keyboard goes when the thread is scrolled or tapped, to see all of it.
+                .dismissesKeyboard()
                 .onAppear { if let last = shown.last { scroller.scrollTo(last.turn.id, anchor: .bottom) } }
                 .onChange(of: PhoneShots.shared.shots.count) { if let last = PhoneShots.shared.shots.last { withAnimation { scroller.scrollTo(last.id, anchor: .bottom) } } }
                 .onChange(of: asking?.date) { withAnimation { scroller.scrollTo(asking == nil ? shown.last?.turn.id as AnyHashable? : "asking", anchor: .bottom) } }

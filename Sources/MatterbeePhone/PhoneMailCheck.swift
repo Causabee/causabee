@@ -298,6 +298,8 @@ struct PhoneMailCheckView: View {
             case .nothingNew:
                 Text("No new mail.").font(.subheadline).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
+                    // Apart from the overview's sentence above: its own line, not part of it.
+                    .padding(.top, 14)
                 button
             case .ready(let look, let door):
                 VStack(alignment: .leading, spacing: 8) {
@@ -333,6 +335,7 @@ struct PhoneMailCheckView: View {
             case .done(let text, let items):
                 Label(text, systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                    .padding(.top, 14)
                 if !items.isEmpty {
                     // What it brought, to see without opening every matter.
                     VStack(alignment: .leading, spacing: 6) {
@@ -347,6 +350,7 @@ struct PhoneMailCheckView: View {
             case .failed(let text):
                 Label(text, systemImage: "exclamationmark.triangle").font(.subheadline).foregroundStyle(Theme.warning).textSelection(.enabled)
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                    .padding(.top, 14)
                 button
             }
         }

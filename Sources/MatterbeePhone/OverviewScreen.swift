@@ -96,9 +96,9 @@ struct OverviewScreen: View {
             .padding(.bottom, 24)
             .containerRelativeFrame(.horizontal)
         }
-        .scrollDismissesKeyboard(.immediately)
-        // Pulled down: new mail is read — free — and waits for "Sort in".
-        .refreshable { if !store.isDemo { PhoneMailCheck.shared.look(context: context) } }
+        .dismissesKeyboard()
+        // Pulled down: new mail is read — free — and waits for "Sort in"; in the demo, its three.
+        .refreshable { PhoneMailCheck.shared.look(context: context) }
         .background(Theme.canvas)
         // No assistant here, as on the Mac: it opens from a matter, about that matter.
         // The ⋯ in the bar, drawn by the system as in a matter: a glass of our own on it, and the
