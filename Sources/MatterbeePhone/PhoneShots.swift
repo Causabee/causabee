@@ -111,8 +111,12 @@ final class PhoneShots {
     }
 
     /// Takes what it said into a matter: the one chosen, or a new one with the name given.
-    func take(_ id: UUID, into matter: Matter?, newName: String, owner: [String], context: ModelContext) {
+    func take(_ id: UUID, into matter: Matter?, newName: String, owner: [String], skipping skipped: Set<String> = [], context: ModelContext) {
         guard let shot = shots.first(where: { $0.id == id }), case .answered(let look, var judgement) = shot.stage else { return }
+        // Only what the owner left ticked, as on the Mac; the file and its words come in either way.
+        judgement.todos = judgement.todos.enumerated().filter { !skipped.contains("t\($0.offset)") }.map(\.element)
+        judgement.appointments = judgement.appointments.enumerated().filter { !skipped.contains("a\($0.offset)") }.map(\.element)
+        judgement.deadlines = judgement.deadlines.enumerated().filter { !skipped.contains("d\($0.offset)") }.map(\.element)
         if let matter {
             judgement.matter = matter.key
             judgement.matterTitle = nil
@@ -150,6 +154,8 @@ final class PhoneShots {
                 if document.title == nil, look.kind == .chat { document.title = look.heading }
                 document.readAt = document.readAt ?? Date()
             }
+            // Its words kept on this iPhone with it, as a mail's text is: for the assistant, later.
+            if let email = look.report.outcomes.first?.email { MailText.save(email, besides: store) }
             // Known on every device, so the Mac never sends it again.
             if !DemoData.isRequested { try? SortedMails.record([judgement], device: PhoneNames.device, in: context) }
             try context.save()
@@ -177,6 +183,8 @@ struct PhoneShotCard: View {
     @Query private var profiles: [Profile]
     /// The matter to take it into: nil for a new one, with `newName`.
     @State private var target: PersistentIdentifier?
+    /// What the owner untick: "t0", "a1", "d0" — left out when it is taken in.
+    @State private var skipped: Set<String> = []
     @State private var chosen = false
     @State private var newName = ""
 
@@ -248,17 +256,32 @@ struct PhoneShotCard: View {
     /// What the answer found: what will go into the matter.
     @ViewBuilder
     private func found(_ judgement: Judgement) -> some View {
-        let lines = judgement.todos.map { "☐ " + $0.text }
-            + judgement.appointments.map { "📅 \(Dates.short($0.date)) \($0.what)" }
-            + judgement.deadlines.map { "⏱ \(Dates.short($0.date)) \($0.what)" }
+        // Each with a tick, as on the Mac: untick what is not wanted. The file and its words are
+        // kept with the matter either way.
+        let lines: [(id: String, text: String)] = judgement.todos.enumerated().map { ("t\($0.offset)", $0.element.text) }
+            + judgement.appointments.enumerated().map { ("a\($0.offset)", "\(Dates.short($0.element.date))\($0.element.time.map { " \($0)" } ?? "") \($0.element.what)") }
+            + judgement.deadlines.enumerated().map { ("d\($0.offset)", "by \(Dates.short($0.element.date)) \($0.element.what)") }
         if lines.isEmpty {
-            Text("Nothing to do or to note in it.").font(.subheadline).foregroundStyle(.secondary)
+            Text("Nothing to do or to note in it — it is kept with the matter, with its words.").font(.subheadline).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         } else {
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(lines.prefix(8).enumerated()), id: \.offset) { _, line in
-                    Text(line).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(lines, id: \.id) { line in
+                    let on = !skipped.contains(line.id)
+                    Button {
+                        if on { skipped.insert(line.id) } else { skipped.remove(line.id) }
+                    } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Image(systemName: on ? "checkmark.circle.fill" : "circle").foregroundStyle(on ? Theme.gold : .secondary)
+                            Text(line.text).font(.subheadline).foregroundStyle(on ? .primary : .secondary)
+                                .strikethrough(!on).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 4).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(on ? .isSelected : [])
                 }
-                if lines.count > 8 { Text("… and \(lines.count - 8) more").font(.caption).foregroundStyle(.secondary) }
             }
         }
     }
@@ -289,7 +312,7 @@ struct PhoneShotCard: View {
 
     private func take(_ judgement: Judgement) {
         let matter = target.flatMap { id in matters.first { $0.persistentModelID == id } }
-        shots.take(shot.id, into: matter, newName: newName, owner: profiles.first?.names ?? [], context: context)
+        shots.take(shot.id, into: matter, newName: newName, owner: profiles.first?.names ?? [], skipping: skipped, context: context)
     }
 }
 

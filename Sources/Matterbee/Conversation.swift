@@ -21,7 +21,9 @@ struct Conversation {
         let (question, readAs) = NameHints.correct(typed, knowing: names)
         let today = MatterStatus.day(Date())
         let pinned = navigation.pinned
-        let facts = FactSheet.facts(for: scope, today: today, focus: pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text })
+        let store = navigation.store
+        let facts = FactSheet.facts(for: scope, today: today, focus: pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text },
+                                    keptText: { MailText.load($0.messageID, besides: store)?.body })
         let inHand = pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : (kind: $0.kind, text: $0.text) }
         // Only this matter's talk: what was said about another matter is not needed here, and
         // would go out with this question.
@@ -165,8 +167,9 @@ struct Conversation {
             // A mail dropped in brings its important links along, as suggestions.
             if look.kind == .mail, let email = look.report.outcomes.first?.email, let taken {
                 MailLinks.suggest(email.links, messageID: email.id, to: taken, in: context)
-                MailText.save(email, besides: navigation.store)
             }
+            // Its words kept on this Mac with it — a mail's, a chat's, a screen's, a PDF's — for the assistant.
+            if let email = look.report.outcomes.first?.email { MailText.save(email, besides: navigation.store) }
             if let taken { try? context.save(); FolderSaver.shared.save([taken]) }
             // The people in a chat are its parties, whatever the model thought of the chat: read on
             // the device from who spoke and who the header names, the owner left out. Taking the

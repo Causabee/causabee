@@ -115,6 +115,19 @@ struct AssistantTests {
         #expect(few.text.contains("T1"))  // the open to-dos stay: a correction may be about one
     }
 
+    @Test("A screenshot taken in gives the assistant its kept words, not only its summary")
+    func keptWords() throws {
+        let (context, matter) = try store()
+        let chat = Entry(title: "Chat: Beirat", from: "Beirat", date: Date(), source: Source(kind: .screenshot, pointer: "/x.png", messageID: "screenshot:ab"))
+        chat.matter = matter
+        context.insert(chat)
+        try context.save()
+        let words = "Bei mir ist kein Schreiben angekommen.\nWollen wir 11 Uhr telefonieren?"
+        let facts = FactSheet.facts(for: [matter], today: "2026-10-01", keptText: { $0.messageID == "screenshot:ab" ? words : nil })
+        #expect(facts.text.contains("its words: \"Bei mir ist kein Schreiben angekommen. / Wollen wir 11 Uhr telefonieren?\""))
+        #expect(!FactSheet.facts(for: [matter], today: "2026-10-01").text.contains("its words"))
+    }
+
     @Test("A person's share of the matter in words, and the one named most")
     func share() throws {
         let (context, matter) = try store()

@@ -35,7 +35,10 @@ public enum FactSheet {
     /// With something in hand — a person, a to-do — a matter is shown without its whole history:
     /// its people, its open to-dos and dates, and only the mail that mentions what is in hand.
     /// Changing a person's role does not need seventy-five mail subjects.
-    public static func facts(for matters: [Matter], today: String, focus: String? = nil, mails: Int = 120) -> Facts {
+    /// `keptText`: the words kept on this device of a screenshot or a PDF the owner brought in —
+    /// a chat, a portal page — given with it, since its summary line alone is too little.
+    public static func facts(for matters: [Matter], today: String, focus: String? = nil, mails: Int = 120,
+                             keptText: ((Entry) -> String?)? = nil) -> Facts {
         let focusWords = (focus ?? "").lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber })
             .map(String.init).filter { $0.count >= 4 }
         func mentions(_ text: String) -> Bool {
@@ -147,6 +150,9 @@ public enum FactSheet {
                     var line = "\(id("E", .entry(entry.persistentModelID))) \(entry.date.map(MatterStatus.day) ?? "?") from \(from): \(entry.title)"
                     // What the mail said, so a question about its details has something to go on.
                     if let digest = entry.digest, !digest.isEmpty { line += " — " + digest.replacingOccurrences(of: "\n", with: " ") }
+                    if [.screenshot, .document].contains(entry.source.kind), let text = keptText?(entry), !text.isEmpty {
+                        line += " — its words: \"" + String(text.prefix(1500)).replacingOccurrences(of: "\n", with: " / ") + "\""
+                    }
                     lines.append(line)
                 }
                 mailCount += entries.count

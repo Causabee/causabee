@@ -189,7 +189,9 @@ extension AssistantSheet {
         let (question, readAs) = NameHints.correct(typed, knowing: scope.flatMap { $0.parties.map(\.name) })
         let today = MatterStatus.day(Date())
         let pinned = navigation.pinned
-        let facts = FactSheet.facts(for: scope, today: today, focus: pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text })
+        let place = PhoneCloud.storeLocation()
+        let facts = FactSheet.facts(for: scope, today: today, focus: pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text },
+                                    keptText: { MailText.load($0.messageID, besides: place)?.body })
         let inHand = pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : (kind: $0.kind, text: $0.text) }
         // Only this matter's talk: what was said about another matter would go out with it.
         let earlier: [(question: String, answer: String)] = shown.compactMap { item in
