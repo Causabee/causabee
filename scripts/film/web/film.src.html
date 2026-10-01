@@ -201,12 +201,16 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .after .row.first .ring2 { left: 22px; top: 26px; animation-delay: calc(var(--v10) + var(--s10) * 0.3 - 0.1s); }
 .after .row.first .text, .after .row.first .meta { animation: done-look 0.4s both; animation-delay: calc(var(--v10) + var(--s10) * 0.3 + 0.25s); }
 @keyframes done-look { to { color: #a09f9a; } }
-.after .row.second { opacity: 0.45; animation: wake 0.45s var(--ease-out) both; animation-delay: calc(var(--v10) + var(--s10) * 0.62); }
-@keyframes wake { from { opacity: 0.45; transform: none; } 60% { transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.after .row.second { opacity: 0.45; border-radius: 20px; padding-left: 20px; padding-right: 20px; margin: 0 -20px; animation: wake 0.6s var(--ease-out) both, wake-tint 1.6s ease-out both; animation-delay: calc(var(--v10) + var(--s10) * 0.62), calc(var(--v10) + var(--s10) * 0.62); }
+@keyframes wake { from { opacity: 0.45; transform: none; } 50% { transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+@keyframes wake-tint { 0% { background: rgba(255,219,13,0); } 20% { background: rgba(255,219,13,0.45); } 100% { background: rgba(255,219,13,0); } }
+.after .row.second .check { animation: check-ink 0.4s both; animation-delay: calc(var(--v10) + var(--s10) * 0.62 + 0.2s); }
+@keyframes check-ink { to { border-color: var(--ink); } }
 .swap { position: relative; display: block; height: 40px; }
-.swap span { position: absolute; left: 0; top: 0; white-space: nowrap; }
+.swap span { position: absolute; left: 0; top: 0; right: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .swap .a { animation: fade-out 0.25s forwards; animation-delay: calc(var(--v10) + var(--s10) * 0.62); }
-.swap .b { opacity: 0; animation: fade-in 0.3s both; animation-delay: calc(var(--v10) + var(--s10) * 0.62 + 0.2s); color: var(--ink); }
+.swap .b { opacity: 0; color: #8a6d00; font-weight: 500; animation: rise-in 0.4s var(--ease-out) both; animation-delay: calc(var(--v10) + var(--s10) * 0.62 + 0.35s); }
+.swap .b em { font-style: normal; color: var(--grey); font-weight: 400; }
 
 /* ---- 11 · where it came from ---- */
 .from-row { top: 600px; animation: rise-in 0.5s var(--ease-out) both, drop-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v11) - 0.3s), calc(var(--v12) - 0.35s); }
@@ -405,7 +409,7 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 
 <div class="obj after">
   <div class="row first"><span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span class="ring2"></span></span><div class="body"><div class="text">Read the Sunrise contract together with Nina</div><div class="meta"><span>Ours · by Oct 2</span><span class="src">from the mail of Sep 24</span></div></div><span class="more">···</span></div>
-  <div class="row second"><span class="check"></span><div class="body"><div class="text">Sign the Sunrise contract and send it back</div><div class="note swap"><span class="a">only after: Read the Sunrise contract together with Nina</span><span class="b">its turn now — done: Read the Sunrise contract together with Nina</span></div><div class="meta"><span>Mine · by Oct 3</span><span class="src">from the mail of Sep 24</span></div></div><span class="more">···</span></div>
+  <div class="row second"><span class="check"></span><div class="body"><div class="text">Sign the Sunrise contract and send it back</div><div class="note swap"><span class="a">only after: Read the Sunrise contract together with Nina</span><span class="b">its turn now <em>— done: Read the Sunrise contract together with Nina</em></span></div><div class="meta"><span>Mine · by Oct 3</span><span class="src">from the mail of Sep 24</span></div></div><span class="more">···</span></div>
 </div>
 
 <div class="obj from-row"><div class="row"><span class="check"></span><div class="body"><div class="text">Sign the Sunrise contract and send it back</div><div class="meta"><span>Mine · by Oct 3</span><span class="src">from the mail of Sep 24<span class="ring2"></span></span></div></div><span class="more">···</span></div></div>
