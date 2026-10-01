@@ -44,7 +44,9 @@ struct AssistantSheet: View {
             Divider()
             ScrollViewReader { scroller in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 14) {
+                    // Laid out whole, not lazily: rows measured only as they came into view made the
+                    // thread jump while scrolling. A matter's thread is short enough.
+                    VStack(alignment: .leading, spacing: 14) {
                         let turns = shown
                         if turns.isEmpty {
                             Text(matter == nil ? "Nothing asked yet." : "Nothing asked about this matter yet.")
@@ -385,6 +387,15 @@ struct PhoneActionCard: View {
     let index: Int
     let card: AssistantPrompt.Reply.Card
     let matter: Matter?
+
+    /// In its own state and size from the first frame: a card that came in full and shrank — or
+    /// got its words a moment later — made the thread jump while scrolling past it.
+    init(record: ThreadTurn, turn: Navigation.Turn, index: Int, card: AssistantPrompt.Reply.Card, matter: Matter?) {
+        (self.record, self.turn, self.index, self.card, self.matter) = (record, turn, index, card, matter)
+        _text = State(initialValue: card.text)
+        _subject = State(initialValue: card.subject ?? "")
+        _quiet = State(initialValue: turn.applied.contains(index))
+    }
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
     @Environment(\.openURL) private var openURL
@@ -436,7 +447,7 @@ struct PhoneActionCard: View {
         }
         // Undo plays it backwards; with Reduce Motion it is a short cross-fade. Taken in or out on
         // another device, it changes the same way.
-        .onAppear { text = card.text; subject = card.subject ?? ""; quiet = done }
+
         .onChange(of: done) { if quiet != done { step { quiet = done; editingDraft = false } } }
     }
 

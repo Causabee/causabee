@@ -584,6 +584,8 @@ struct ActionCard: View {
         (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
         _text = State(initialValue: card.text)
         _subject = State(initialValue: card.subject ?? "")
+        // In its own state from the first frame, so a card scrolled into view does not shrink.
+        _quiet = State(initialValue: done)
     }
 
     private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink].contains(card.kind) }
@@ -656,7 +658,6 @@ struct ActionCard: View {
             }
         }
         // Undo plays it backwards; with Reduce Motion it is a short cross-fade.
-        .onAppear { quiet = done }
         .onChange(of: done) { if quiet != done { step { quiet = done; editingDraft = false } } }
     }
 
