@@ -54,3 +54,7 @@ docs/film/*.mp4
 docs/film/*.mov
 docs/film/*.mp3
 docs/film/frames/
+scripts/film/web/film.html
+scripts/film/web/film-web*.html
+scripts/film/web/test.html
+scripts/film/web/assets/
