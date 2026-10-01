@@ -361,7 +361,8 @@ struct PhoneMailCheckView: View {
                 .contentShape(Capsule())
             }
             .buttonStyle(.plain)
-            Text(DemoData.isRequested ? "In the demo: three made-up mails" : "Checked when you opened Matterbee")
+            // The same words in the demo: its list says it is the demo, once opened.
+            Text("Checked when you opened Matterbee")
                 .font(.caption).foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
