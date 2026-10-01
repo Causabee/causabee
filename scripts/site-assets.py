@@ -3,8 +3,9 @@
 
     python3 scripts/site-assets.py
 
-Reads App/Resources (the intro screenshots, the icon's layers, Source Serif 4) and writes
-site/assets. Run it again when the intro screenshots change. The picture a shared link shows,
+Reads the intro screenshots at their full Retina size (scripts/shots, from scripts/intro-shots.sh)
+and App/Resources (the icon's layers, Source Serif 4), and writes site/assets. Run it again when the
+intro screenshots change. The picture a shared link shows,
 site/assets/og.png, is made in Figma and left alone here. Needs Pillow, fontTools with
 brotli, and rsvg-convert (brew install librsvg).
 """
@@ -16,18 +17,20 @@ from fontTools import subset
 from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-INTRO = ROOT / "App/Resources/Intro"
+SHOTS = ROOT / "scripts/shots"
 OUT = ROOT / "site/assets"
 IMG = OUT / "img"
 
-# The screenshots are 1800 × 1125: a 900-point window at 2x. Each crop is (left, top, right, bottom).
+# The screenshots are 2880 × 1800: a 1440-point window at 2x, every pixel kept, so the website's
+# pictures are as sharp as the app on a Retina screen. Each crop is (left, top, right, bottom); the
+# animations in site/index.html measure the same parts in the older 1800-wide pixels (× 1.6 here).
 CROPS = {
-    "matter-phone": ("intro-2", (915, 0, 1785, 967), 684),
-    "tasks": ("intro-3", (900, 290, 1800, 815), None),
-    "calendar": ("intro-3", (905, 760, 1535, 1125), None),
-    "files": ("intro-4", (900, 105, 1800, 630), None),
-    "sources": ("intro-5", (900, 690, 1800, 1125), None),
-    "assistant": ("intro-5", (342, 80, 897, 781), None),
+    "matter-phone": ("intro-2", (1464, 0, 2856, 1547)),
+    "tasks": ("intro-3", (1440, 464, 2880, 1304)),
+    "calendar": ("intro-3", (1448, 1216, 2456, 1800)),
+    "files": ("intro-4", (1440, 168, 2880, 1008)),
+    "sources": ("intro-5", (1440, 1104, 2880, 1800)),
+    "assistant": ("intro-5", (547, 128, 1435, 1250)),
 }
 FULL = {"overview": "intro-1", "matter": "intro-2"}
 
@@ -47,14 +50,11 @@ def webp(image, name):
 def screenshots():
     IMG.mkdir(parents=True, exist_ok=True)
     for name, source in FULL.items():
-        image = Image.open(INTRO / f"{source}.png").convert("RGB")
-        webp(image, f"{name}-1800")
-        webp(image.resize((900, 563), Image.LANCZOS), f"{name}-900")
-    for name, (source, box, width) in CROPS.items():
-        image = Image.open(INTRO / f"{source}.png").convert("RGB").crop(box)
-        if width:
-            image = image.resize((width, round(image.height * width / image.width)), Image.LANCZOS)
-        webp(image, name)
+        image = Image.open(SHOTS / f"{source}.png").convert("RGB")
+        webp(image, f"{name}-2880")
+        webp(image.resize((1440, 900), Image.LANCZOS), f"{name}-1440")
+    for name, (source, box) in CROPS.items():
+        webp(Image.open(SHOTS / f"{source}.png").convert("RGB").crop(box), name)
 
 
 def icon():

@@ -203,16 +203,13 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .split__text { flex: 1; display: flex; flex-direction: column; gap: 18px; }
 .note { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
 .note svg { flex-shrink: 0; margin-top: 1px; }
-.ask-side { flex-shrink: 0; width: 500px; display: flex; flex-direction: column; gap: 18px; }
+.ask-side { flex-shrink: 0; width: 444px; display: flex; flex-direction: column; gap: 18px; }
 .ask-shot { width: 100%; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-shot); }
-/* The line the app shows while the assistant writes: the bee at work, then what it is doing. */
-.thinking { display: flex; align-items: center; gap: 10px; padding-left: 6px; font-size: 15px; color: var(--muted); }
-.thinking .bee-work { width: 26px; flex-shrink: 0; }
 .ask-shot img { width: 100%; height: auto; }
 @media (max-width: 899px) {
   .split { flex-direction: column; align-items: stretch; gap: 40px; }
   .split__text { gap: 14px; }
-  .ask-side { width: 100%; max-width: 500px; gap: 14px; }
+  .ask-side { width: 100%; max-width: 444px; gap: 14px; }
   .ask-shot { border-radius: 20px; }
   .br-wide { display: none; }
 }
@@ -347,3 +344,301 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
    draw it — not the thinner headline shape a browser picks for big type by itself. Last, because the
    `font` shorthand above resets it. */
 .display, .title, .statement, .tile h3, .disguise p, .download__name, .legal h1, .legal h2 { font-optical-sizing: none; }
+
+/* Live screenshots. Over a screenshot lies a stage of its own size, in the screenshot's own
+   pixels: --u is one of them (the stage's width over --W). The stage is built from cuts of the
+   very same picture (.cut, at --x --y, --w × --h, showing that part of it) and the few words and
+   signs the app adds in that moment, set as the app sets them; then those parts move. The picture
+   under it stays as it is — for Reduce Motion, and for whatever reads the page. */
+
+.live { position: relative; container-type: inline-size; }
+.live__stage {
+  --u: calc(100cqw / var(--W));
+  position: absolute; left: 0; top: 0; overflow: hidden; pointer-events: none;
+  width: calc(var(--W) * var(--u)); height: calc(var(--H) * var(--u));
+  background: var(--paper);
+  font-family: var(--sans); color: rgba(0, 0, 0, 0.85); line-height: 1.25; text-align: left;
+  font-size: calc(var(--fs, 16.25) * var(--u));
+}
+.live__stage > *, .live__stage .at {
+  position: absolute; margin: 0;
+  left: calc(var(--x, 0) * var(--u)); top: calc(var(--y, 0) * var(--u));
+  width: calc(var(--w) * var(--u)); height: calc(var(--h) * var(--u));
+}
+.live__stage .cut {
+  background-image: var(--img); background-repeat: no-repeat;
+  background-size: calc(var(--W) * var(--u)) auto;
+  background-position: calc(var(--sx, var(--x, 0)) * var(--u) * -1) calc(var(--sy, var(--y, 0)) * var(--u) * -1);
+}
+.live__stage .t { white-space: nowrap; font-size: calc(var(--fs, 16.25) * var(--u)); }
+/* The app's text styles, in the picture's pixels: macOS points × 1.25. */
+.live .caption { --fs: 12.5; }
+.live .callout { --fs: 15; }
+.live .title3 { --fs: 18.75; }
+.live .caption, .live .callout, .live .title3 { font-size: calc(var(--fs) * var(--u)); }
+.live .secondary { color: rgba(0, 0, 0, 0.55); }
+.live .done { color: #53524a; }
+.live .gold { color: var(--gold); }
+.live .ink-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: calc(7.5 * var(--u)); background: #22211b; color: #fff; }
+/* The pointer: the tip of the arrow is its spot. */
+.live .pointer { width: calc(21 * var(--u)); height: auto; left: calc((var(--x) - 1.6) * var(--u)); top: calc((var(--y) - 1.6) * var(--u)); overflow: visible; }
+.live .work { display: flex; align-items: center; gap: calc(7.5 * var(--u)); }
+.live .work .bee-work { width: calc(26 * var(--u)); }
+
+@media (prefers-reduced-motion: reduce) { .live__stage { display: none; } }
+
+/* The assistant: the question goes out, the bee is on it, the answers come with their sources,
+   and the suggested task is added — the card closes into its small quiet box. 20 s, then again. */
+.live--ask { --img: url("assets/img/assistant.webp?v=2"); --T: 20s; }
+:where(.live--ask .live__stage) > * { animation: var(--T) ease-in-out infinite both; }
+.live--ask .ask-q { animation-name: ask-q; }
+.live--ask .ask-work { animation-name: ask-work; }
+.live--ask .ask-a1 { animation-name: ask-a1; }
+.live--ask .ask-a2 { animation-name: ask-a2; }
+.live--ask .ask-a3 { animation-name: ask-a3; }
+.live--ask .ask-card { animation-name: ask-card; }
+.live--ask .ask-box { animation-name: ask-box; border-radius: calc(12.5 * var(--u)); background: #f5f5f4; }
+.live--ask .ask-taken { animation-name: ask-taken; display: flex; align-items: center; gap: calc(10 * var(--u)); }
+.ask-taken > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(1.25 * var(--u)); }
+.ask-taken > span { flex-shrink: 0; }
+.ask-taken strong { font-weight: 500; }
+.live--ask .ask-press { animation-name: ask-press; border-radius: calc(7.5 * var(--u)); background: rgba(255, 255, 255, 0.25); }
+.live--ask .ask-pointer { animation-name: ask-pointer; }
+
+@keyframes ask-q { 0%, 2.5% { opacity: 0; transform: translateY(calc(10 * var(--u))); } 5%, 87.5% { opacity: 1; transform: none; } 91%, 100% { opacity: 0; } }
+@keyframes ask-work { 0%, 6.5% { opacity: 0; } 8%, 19% { opacity: 1; } 20%, 100% { opacity: 0; } }
+@keyframes ask-a1 { 0%, 20% { opacity: 0; transform: translateY(calc(8 * var(--u))); } 22.5%, 87.5% { opacity: 1; transform: none; } 91%, 100% { opacity: 0; } }
+@keyframes ask-a2 { 0%, 23% { opacity: 0; transform: translateY(calc(8 * var(--u))); } 25.5%, 87.5% { opacity: 1; transform: none; } 91%, 100% { opacity: 0; } }
+@keyframes ask-a3 { 0%, 26% { opacity: 0; transform: translateY(calc(8 * var(--u))); } 28.5%, 87.5% { opacity: 1; transform: none; } 91%, 100% { opacity: 0; } }
+/* The card: in, then its content goes (0.14 s) while the grey box under it stays. */
+@keyframes ask-card { 0%, 29.5% { opacity: 0; transform: translateY(calc(10 * var(--u))); } 32%, 49% { opacity: 1; transform: none; } 49.7%, 100% { opacity: 0; } }
+/* The box: there under the card from its arrival, closes to its quiet size with the spring, then frames itself with a line. */
+@keyframes ask-box {
+  0%, 31.9% { opacity: 0; height: calc(var(--h) * var(--u)); }
+  32%, 49.7% { opacity: 1; height: calc(var(--h) * var(--u)); box-shadow: none; }
+  51.2% { height: calc(var(--h2) * var(--u) - 1.5 * var(--u)); }
+  51.6%, 87.5% { opacity: 1; height: calc(var(--h2) * var(--u)); box-shadow: inset 0 0 0 calc(1.25 * var(--u)) #e3e3e0; }
+  91%, 100% { opacity: 0; height: calc(var(--h2) * var(--u)); }
+}
+@keyframes ask-taken { 0%, 51.6% { opacity: 0; } 52.4%, 87.5% { opacity: 1; } 91%, 100% { opacity: 0; } }
+@keyframes ask-press { 0%, 48% { opacity: 0; } 48.2%, 49.3% { opacity: 1; } 49.6%, 100% { opacity: 0; } }
+@keyframes ask-pointer {
+  0%, 38% { opacity: 0; transform: translate(calc(70 * var(--u)), calc(60 * var(--u))); }
+  40% { opacity: 1; transform: translate(calc(70 * var(--u)), calc(60 * var(--u))); }
+  47.5% { opacity: 1; transform: none; animation-timing-function: ease-in-out; }
+  48.2%, 49.2% { transform: scale(0.9); }
+  49.6%, 54% { opacity: 1; transform: none; }
+  57%, 100% { opacity: 0; transform: none; }
+}
+
+.live__stage .patch, .live__stage .rail { background: var(--paper); }
+.live .live__stage p { color: inherit; line-height: inherit; }
+.live__stage .patch > *, .live__stage .rail > * { position: absolute; left: calc(var(--x, 0) * var(--u)); top: calc(var(--y, 0) * var(--u)); width: calc(var(--w) * var(--u)); height: calc(var(--h) * var(--u)); }
+/* Words placed by the top of their capitals (--y), as measured in the picture. */
+.live__stage .cap { line-height: 1; top: calc((var(--y) - var(--fs, 16.25) * 0.151) * var(--u)) !important; }
+.live .struck { text-decoration: line-through; text-decoration-thickness: calc(1.25 * var(--u)); }
+.live .ico { display: block; width: 100%; height: 100%; }
+.live .chip { display: inline-flex; align-items: center; gap: calc(4 * var(--u)); }
+.live .chip .ico { width: calc(11 * var(--u)); height: calc(11 * var(--u)); }
+.live .chip .ico--cal { width: calc(13 * var(--u)); }
+/* A list's frame runs down its left: the rails that open between its rows carry it on. */
+.live .rail { box-shadow: inset calc(22 * var(--u)) 0 0 var(--paper), inset calc(24 * var(--u)) 0 0 #e8e8e8; }
+.live .cover { opacity: 0; }
+.live--tasks, .live--cal, .live--files, .live--src { container-type: size; }
+.tile__img.live .live__stage { --u: max(calc(100cqw / var(--W)), calc(100cqh / var(--H))); }
+:where(.tile__img.live .live__stage) > * { animation: 10s ease-in-out infinite both; }
+@keyframes cover { 0%, 86% { opacity: 0; } 92%, 100% { opacity: 1; } }
+.tile__img.live .cover { animation-name: cover; }
+
+/* Tasks: the one for both of you is ticked off, and the one that waited on it has its turn. */
+.live--tasks { --img: url("assets/img/tasks.webp?v=2"); }
+.live--tasks .tk-box { animation-name: tk-box; }
+.live--tasks .tk-t1 { animation-name: tk-box; }
+.live--tasks .tk-t3, .live--tasks .tk-h3 { animation-name: tk-next; }
+.live--tasks .tk-pointer { animation-name: tk-pointer; }
+@keyframes tk-box { 0%, 27.5% { opacity: 0; } 28.5%, 100% { opacity: 1; } }
+@keyframes tk-next { 0%, 36% { opacity: 0; } 39%, 100% { opacity: 1; } }
+@keyframes tk-pointer {
+  0%, 8% { opacity: 0; transform: translate(calc(330 * var(--u)), calc(150 * var(--u))); }
+  11% { opacity: 1; transform: translate(calc(330 * var(--u)), calc(150 * var(--u))); }
+  25% { transform: none; }
+  27%, 28% { transform: scale(0.88); }
+  30% { opacity: 1; transform: none; }
+  34%, 100% { opacity: 0; transform: translate(calc(14 * var(--u)), calc(8 * var(--u))); }
+}
+
+/* Calendar: connected with a click, every date offers "Add to Calendar" — one is added. */
+.live--cal { --img: url("assets/img/calendar.webp?v=2"); }
+.live--cal .cl-banner { animation-name: cl-banner; }
+.live--cal .cl-l0, .live--cal .cl-l1, .live--cal .cl-l2, .live--cal .cl-l3 { animation-name: cl-move; }
+.live--cal .cl-chip, .live--cal .cl-tail { animation-name: cl-chip; }
+.live--cal .cl-add { animation: cl-add 10s infinite both; }
+.live--cal .cl-in { animation: cl-in 10s infinite both; }
+.live--cal .cl-pointer { animation-name: cl-pointer; }
+@keyframes cl-banner { 0%, 19.3% { opacity: 1; filter: none; } 19.6%, 20.4% { filter: brightness(0.95); } 20.8% { opacity: 1; filter: none; } 23%, 100% { opacity: 0; } }
+@keyframes cl-move { 0%, 23% { transform: none; } 27.5%, 100% { transform: translateY(calc(var(--dy) * var(--u))); } }
+@keyframes cl-chip { 0%, 26% { opacity: 0; } 30%, 100% { opacity: 1; } }
+@keyframes cl-add { 0%, 41.5% { opacity: 1; } 41.6%, 41.9% { opacity: 0.6; } 42.6%, 100% { opacity: 0; } }
+@keyframes cl-in { 0%, 42.6% { opacity: 0; } 44%, 100% { opacity: 1; } }
+@keyframes cl-pointer {
+  0%, 6% { opacity: 0; transform: translate(calc(150 * var(--u)), calc(-40 * var(--u))); }
+  9% { opacity: 1; transform: translate(calc(150 * var(--u)), calc(-40 * var(--u))); }
+  17% { transform: translate(calc(130 * var(--u)), calc(-115 * var(--u))); }
+  19.5%, 20.5% { transform: translate(calc(130 * var(--u)), calc(-115 * var(--u))) scale(0.88); }
+  22%, 28% { transform: translate(calc(130 * var(--u)), calc(-115 * var(--u))); }
+  39% { transform: none; }
+  41.5%, 42.2% { transform: scale(0.88); }
+  44% { opacity: 1; transform: none; }
+  48%, 100% { opacity: 0; transform: translate(calc(14 * var(--u)), calc(10 * var(--u))); }
+}
+
+/* Files: a file comes in with its mail — the list opens for it at the top, lightly marked. */
+.live--files { --img: url("assets/img/files.webp?v=2"); }
+.live--files .fl-row { animation-name: fl-row; }
+.live--files .fl-mark { animation-name: fl-mark; border-radius: calc(4 * var(--u)); background: #ecebe6; mix-blend-mode: multiply; }
+.live--files .fl-rest { animation-name: fl-rest; }
+.live--files .fl-count { animation-name: fl-count; }
+@keyframes fl-row { 0%, 27% { opacity: 0; } 32%, 100% { opacity: 1; } }
+@keyframes fl-mark { 0%, 28% { opacity: 0; } 32%, 48% { opacity: 1; } 62%, 100% { opacity: 0; } }
+@keyframes fl-rest { 0%, 22% { transform: translateY(calc(-64 * var(--u))); } 28%, 100% { transform: none; } }
+@keyframes fl-count { 0%, 26% { opacity: 1; } 27%, 100% { opacity: 0; } }
+
+/* Sources: each "from the mail of …" opens that mail; the pointer goes from one to the next. */
+.live--src { --img: url("assets/img/sources.webp?v=2"); }
+.live--src .sr-pointer { animation-name: sr-pointer; }
+.live--src .sr-d1 { animation-name: sr-d1; }
+.live--src .sr-d2 { animation-name: sr-d2; }
+.live--src .sr-d3 { animation-name: sr-d3; }
+.live--src .tip { padding: calc(3 * var(--u)) calc(7 * var(--u)); border-radius: calc(5 * var(--u)); background: #f6f6f6; color: #1d1d1f;
+  font-size: calc(13.75 * var(--u)); line-height: 1.3; box-shadow: 0 0 0 calc(0.75 * var(--u)) rgba(0, 0, 0, 0.16), 0 calc(3 * var(--u)) calc(10 * var(--u)) rgba(0, 0, 0, 0.16); }
+.live--src .tip:nth-of-type(1) { animation-name: sr-t1; }
+.live--src .tip:nth-of-type(2) { animation-name: sr-t2; }
+.live--src .tip:nth-of-type(3) { animation-name: sr-t3; }
+.live--src .sr-dim { opacity: 0; background-color: var(--paper); }
+@keyframes sr-pointer {
+  0%, 4% { opacity: 0; transform: translate(calc(240 * var(--u)), calc(60 * var(--u))); }
+  7% { opacity: 1; transform: translate(calc(240 * var(--u)), calc(60 * var(--u))); }
+  14%, 34% { transform: none; }
+  40%, 60% { transform: translate(calc(-50 * var(--u)), calc(138 * var(--u))); }
+  66%, 84% { transform: translate(calc(17 * var(--u)), calc(205 * var(--u))); }
+  88% { opacity: 1; }
+  92%, 100% { opacity: 0; transform: translate(calc(30 * var(--u)), calc(215 * var(--u))); }
+}
+/* A press dims the link to 0.6, as the app's gold links do. */
+@keyframes sr-d1 { 0%, 25% { opacity: 0; } 25.5%, 27% { opacity: 0.4; } 28%, 100% { opacity: 0; } }
+@keyframes sr-d2 { 0%, 51% { opacity: 0; } 51.5%, 53% { opacity: 0.4; } 54%, 100% { opacity: 0; } }
+@keyframes sr-d3 { 0%, 76% { opacity: 0; } 76.5%, 78% { opacity: 0.4; } 79%, 100% { opacity: 0; } }
+@keyframes sr-t1 { 0%, 18% { opacity: 0; } 19.5%, 33% { opacity: 1; } 35%, 100% { opacity: 0; } }
+@keyframes sr-t2 { 0%, 44% { opacity: 0; } 45.5%, 59% { opacity: 1; } 61%, 100% { opacity: 0; } }
+@keyframes sr-t3 { 0%, 70% { opacity: 0; } 71.5%, 84% { opacity: 1; } 86%, 100% { opacity: 0; } }
+
+.live .box-bg { background: #f5f5f5; }
+.live .side-bg { background: #e4e3e3; }
+.live .work-at { width: calc(18.8 * var(--u)); height: calc(12.5 * var(--u)); }
+.live .work-at .bee-work { width: 100%; }
+.live .mac-btn { display: inline-flex; align-items: center; gap: calc(9 * var(--u)); height: calc(30 * var(--u)); padding: 0 calc(15 * var(--u)); border-radius: calc(8 * var(--u)); background: rgba(0, 0, 0, 0.062); color: rgba(0, 0, 0, 0.85); }
+.live .mac-btn svg { width: calc(17 * var(--u)); height: calc(17 * var(--u)); }
+.live .ink-btn { height: calc(30 * var(--u)); padding: 0 calc(12.5 * var(--u)); }
+.live .panel { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: calc(10 * var(--u)); padding: calc(15 * var(--u)) calc(15 * var(--u)) calc(16 * var(--u)); box-shadow: inset 0 calc(2 * var(--u)) 0 #d2d1d1; }
+.live .panel strong { font-weight: 600; }
+.live .panel .buttons { display: flex; gap: calc(10 * var(--u)); }
+.live .panel .label { display: flex; gap: calc(6 * var(--u)); align-items: flex-start; line-height: 1.3; }
+.live .panel .label svg { flex-shrink: 0; width: calc(13 * var(--u)); height: calc(13 * var(--u)); margin-top: calc(1.5 * var(--u)); }
+.live .panel .callout { line-height: 1.25; }
+.live .panel .caption { line-height: 1.3; }
+
+/* The overview: "Get new mail" — fetched, two new mails shown with what sorting them costs, sorted
+   in with a click; Lisbon has one task more. 20 s, then again. */
+.live--hero { --img: image-set(url("assets/img/overview-1440.webp") 1x, url("assets/img/overview-2880.webp") 2x); }
+:where(.live--hero .live__stage) > * { animation: 20s ease-in-out infinite both; }
+.live--hero .hr-caret { animation: hr-caret 1.06s steps(1, end) infinite; }
+@keyframes hr-caret { 0% { opacity: 0; } 50% { opacity: 1; } }
+.live--hero .hr-press { animation-name: hr-press; border-radius: calc(8 * var(--u)); background: rgba(0, 0, 0, 0.09); }
+.live--hero .hr-fetch { animation-name: hr-fetch; }
+.live--hero .hr-ready { animation-name: hr-ready; }
+.live--hero .hr-sort { animation-name: hr-sort; }
+.live--hero .hr-done { animation-name: hr-done; }
+.live--hero .hr-lisbon { animation-name: hr-lisbon; }
+.live--hero .hr-pointer { animation-name: hr-pointer; }
+@keyframes hr-press { 0%, 15.7% { opacity: 0; } 15.9%, 16.6% { opacity: 1; } 16.9%, 100% { opacity: 0; } }
+@keyframes hr-fetch { 0%, 16.6% { opacity: 0; transform: translateY(calc(5 * var(--u))); } 18.3%, 26.5% { opacity: 1; transform: none; } 28%, 100% { opacity: 0; } }
+@keyframes hr-ready { 0%, 26.8% { opacity: 0; transform: translateY(calc(5 * var(--u))); } 28.5%, 37.4% { opacity: 1; transform: none; } 39%, 100% { opacity: 0; } }
+@keyframes hr-sort { 0%, 37.6% { opacity: 0; transform: translateY(calc(5 * var(--u))); } 39.3%, 49.5% { opacity: 1; transform: none; } 51%, 100% { opacity: 0; } }
+@keyframes hr-done { 0%, 49.8% { opacity: 0; transform: translateY(calc(5 * var(--u))); } 51.5%, 82% { opacity: 1; transform: none; } 85%, 100% { opacity: 0; } }
+@keyframes hr-lisbon { 0%, 50.5% { opacity: 0; } 52%, 82% { opacity: 1; } 85%, 100% { opacity: 0; } }
+@keyframes hr-pointer {
+  0%, 8% { opacity: 0; transform: translate(calc(560 * var(--u)), calc(-300 * var(--u))); }
+  10% { opacity: 1; transform: translate(calc(560 * var(--u)), calc(-300 * var(--u))); }
+  15% { transform: none; }
+  15.9%, 16.6% { transform: scale(0.88); }
+  17.5%, 28% { transform: none; }
+  33% { transform: translate(calc(42 * var(--u)), calc(3 * var(--u))); }
+  36.6%, 37.4% { transform: translate(calc(42 * var(--u)), calc(3 * var(--u))) scale(0.88); }
+  38.3% { opacity: 1; transform: translate(calc(42 * var(--u)), calc(3 * var(--u))); }
+  42%, 100% { opacity: 0; transform: translate(calc(56 * var(--u)), calc(14 * var(--u))); }
+}
+.live--hero .hr-ready .ink-btn { animation: hr-sortin 20s infinite both; }
+@keyframes hr-sortin { 0%, 36.6% { background: #22211b; } 36.7%, 37.4% { background: rgba(34, 33, 27, 0.75); } 37.6%, 100% { background: #22211b; } }
+
+/* The matter page: the next step asked for again, the summary brought up to date, a note written —
+   each with what the app shows meanwhile. The three points under it follow along. 15 s. */
+.live--matter { --img: image-set(url("assets/img/matter-1440.webp") 1x, url("assets/img/matter-2880.webp") 2x); }
+:where(.live--matter .live__stage) > * { animation: 15s ease-in-out infinite both; }
+.live--matter .mt-step { animation-name: mt-step; }
+.live--matter .mt-ask { animation-name: mt-ask; }
+.live--matter .mt-sum { animation-name: mt-sum; }
+.live--matter .mt-upd { animation-name: mt-upd; }
+.live--matter .mt-note { animation-name: mt-note; transform-origin: right center; }
+.live--matter .mt-caret { animation-name: mt-caret; background: #1d1d1f; border-radius: calc(1 * var(--u)); }
+.live--matter .mt-pointer { animation-name: mt-pointer; }
+@keyframes mt-ask { 0%, 7.3% { opacity: 0; } 8.6%, 19.6% { opacity: 1; } 21%, 100% { opacity: 0; } }
+@keyframes mt-step { 0%, 17.5% { opacity: 0; } 19.5%, 21.5% { opacity: 1; } 24.5%, 100% { opacity: 0; } }
+@keyframes mt-upd { 0%, 41.2% { opacity: 0; } 42.5%, 55% { opacity: 1; } 56.4%, 100% { opacity: 0; } }
+@keyframes mt-sum { 0%, 52% { opacity: 0; } 54%, 56% { opacity: 1; } 59%, 100% { opacity: 0; } }
+@keyframes mt-note {
+  0%, 68% { transform: none; opacity: 1; animation-timing-function: steps(30, end); }
+  82%, 95% { transform: scaleX(0); opacity: 1; }
+  95.1% { transform: none; opacity: 0; }
+  98%, 100% { transform: none; opacity: 1; }
+}
+@keyframes mt-caret {
+  0%, 65.5% { opacity: 0; transform: none; }
+  66%, 68% { opacity: 1; transform: none; animation-timing-function: steps(30, end); }
+  82% { opacity: 1; transform: translateX(calc(240 * var(--u))); animation-timing-function: steps(1, end); }
+  85% { opacity: 0; transform: translateX(calc(240 * var(--u))); animation-timing-function: steps(1, end); }
+  88% { opacity: 1; transform: translateX(calc(240 * var(--u))); animation-timing-function: steps(1, end); }
+  91% { opacity: 0; transform: translateX(calc(240 * var(--u))); animation-timing-function: steps(1, end); }
+  94%, 100% { opacity: 0; transform: translateX(calc(240 * var(--u))); }
+}
+@keyframes mt-pointer {
+  0% { opacity: 0; transform: translate(calc(320 * var(--u)), calc(260 * var(--u))); }
+  2% { opacity: 1; transform: translate(calc(320 * var(--u)), calc(260 * var(--u))); }
+  6% { transform: none; }
+  6.7%, 7.4% { transform: scale(0.88); }
+  8%, 30% { transform: none; }
+  37% { transform: translateY(calc(205 * var(--u))); }
+  40%, 41% { transform: translateY(calc(205 * var(--u))) scale(0.88); }
+  43% { opacity: 1; transform: translateY(calc(205 * var(--u))); }
+  48%, 100% { opacity: 0; transform: translate(calc(14 * var(--u)), calc(215 * var(--u))); }
+}
+/* Under it, a line over each point fills while the picture shows it. */
+.cols--live .point { position: relative; padding-top: 22px; }
+.cols--live .point::before, .cols--live .point::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 3px; background: var(--line); }
+.cols--live .point::after { background: var(--honey); transform: scaleX(0); transform-origin: left center; }
+@media (prefers-reduced-motion: no-preference) {
+  .cols--live .point::after { animation: col-1 15s linear infinite both; }
+  .cols--live .point:nth-child(2)::after { animation-name: col-2; }
+  .cols--live .point:nth-child(3)::after { animation-name: col-3; }
+}
+@keyframes col-1 { 0% { transform: scaleX(0); opacity: 1; } 33.3% { transform: scaleX(1); opacity: 1; } 35.5%, 100% { transform: scaleX(1); opacity: 0; } }
+@keyframes col-2 { 0%, 33.3% { transform: scaleX(0); opacity: 1; } 66.6% { transform: scaleX(1); opacity: 1; } 68.8%, 100% { transform: scaleX(1); opacity: 0; } }
+@keyframes col-3 { 0%, 66.6% { transform: scaleX(0); opacity: 1; } 99.9% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+@media (max-width: 639px) {
+  .live--matter .live__stage { display: none; }
+  .cols--live .point { padding-top: 0; }
+  .cols--live .point::before, .cols--live .point::after { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cols--live .point { padding-top: 0; }
+  .cols--live .point::before, .cols--live .point::after { display: none; }
+}
