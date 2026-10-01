@@ -65,6 +65,22 @@ public struct ScreenshotDoor: Sendable {
         "screenshot:" + SHA256.hash(data: data).prefix(8).map { String(format: "%02x", $0) }.joined()
     }
 
+    /// A screenshot that is no chat, as text: its lines from the top, without the status bar, and
+    /// its first line of some length as the heading. Nil when there are no words in it at all.
+    public static func pictureText(_ lines: [ScreenText.Line]) -> (heading: String, body: String)? {
+        // The status bar sits lower beside the Dynamic Island: a clock or a few signs near the top.
+        func isStatusBar(_ line: ScreenText.Line) -> Bool {
+            let text = line.text.trimmingCharacters(in: .whitespaces)
+            return line.bottom < 0.045 || (line.top < 0.07 && (text.wholeMatch(of: /\d{1,2}[:.]\d{2}/) != nil || text.count <= 4))
+        }
+        let words = lines.filter { !isStatusBar($0) && !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }
+            .sorted { abs($0.top - $1.top) < 0.008 ? $0.box.minX < $1.box.minX : $0.top < $1.top }
+            .map { $0.text.trimmingCharacters(in: .whitespaces) }
+        guard !words.isEmpty else { return nil }
+        let heading = words.first { $0.count >= 8 } ?? words[0]
+        return (String(heading.prefix(70)), words.joined(separator: "\n"))
+    }
+
     /// Reads it on the device and pseudonymises it. Nothing is sent.
     public func look(at file: URL, owner: String, taken: Date? = nil) throws -> Look {
         let data = try Data(contentsOf: file)
@@ -72,6 +88,7 @@ public struct ScreenshotDoor: Sendable {
         let kind: Kind
         var transcript = ChatTranscript(title: nil, subtitle: nil, messages: [], leftOut: [], notes: [])
         var notes: [String] = []
+        var picture: (heading: String, body: String)?
         let email: Email
         switch file.pathExtension.lowercased() {
         case "eml", "emlx":
@@ -88,10 +105,20 @@ public struct ScreenshotDoor: Sendable {
             kind = .chat
             let (lines, _) = try ScreenText.lines(in: file)
             transcript = ChatReader.read(lines)
-            let title = transcript.title ?? "ohne Namen"
-            email = Email(source: file, id: Self.id(of: data), headers: ["subject": ["Chat: \(title)"]],
-                          subject: "Chat: \(title)", from: title, to: [owner], cc: [], date: date,
-                          body: transcript.text(owner: owner), attachments: [])
+            if transcript.messages.isEmpty, let text = Self.pictureText(lines) {
+                // Not a chat — a note, a portal page, a letter on screen: its words as they stand,
+                // under an id of their own, so an earlier reading as an empty chat is not reused.
+                picture = text
+                transcript = ChatTranscript(title: nil, subtitle: nil, messages: [], leftOut: [], notes: [])
+                email = Email(source: file, id: Self.id(of: data) + "-text", headers: ["subject": ["Screenshot: \(text.heading)"]],
+                              subject: "Screenshot: \(text.heading)", from: "Screenshot", to: [owner], cc: [], date: date,
+                              body: text.body, attachments: [])
+            } else {
+                let title = transcript.title ?? "ohne Namen"
+                email = Email(source: file, id: Self.id(of: data), headers: ["subject": ["Chat: \(title)"]],
+                              subject: "Chat: \(title)", from: title, to: [owner], cc: [], date: date,
+                              body: transcript.text(owner: owner), attachments: [])
+            }
         }
         let id = email.id
 
@@ -105,12 +132,12 @@ public struct ScreenshotDoor: Sendable {
         let when = email.date.map { MatterStatus.day($0) } ?? ""
         let pages = max(notes.count, email.body.components(separatedBy: "— Seite ").count - 1)
         let byline = switch kind {
-        case .chat: transcript.subtitle ?? "Chat"
+        case .chat: picture != nil ? "Screenshot · text" : (transcript.subtitle ?? "Chat")
         case .mail: [Email.displayName(in: email.from) ?? email.fromAddress, when].filter { !$0.isEmpty }.joined(separator: " · ")
         case .document: pages == 1 ? "PDF · 1 page" : "PDF · \(pages) pages"
         }
         return Look(file: file, kind: kind, transcript: transcript,
-                    heading: kind == .chat ? (transcript.title ?? "Chat without a name") : (email.subject.isEmpty ? file.lastPathComponent : email.subject),
+                    heading: picture?.heading ?? (kind == .chat ? (transcript.title ?? "Chat without a name") : (email.subject.isEmpty ? file.lastPathComponent : email.subject)),
                     byline: byline, preview: String(email.body.prefix(600)), notes: notes,
                     report: report, answered: answered,
                     earlier: answered[id].flatMap { Extractor.isSettled($0) ? $0 : nil },

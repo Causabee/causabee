@@ -132,6 +132,20 @@ struct ScreenshotTests {
         #expect(notes == ["Page 2: scanned, no text layer — read with text recognition on this device"])
     }
 
+    @Test("A screenshot that is no chat keeps its words: from the top, without the status bar")
+    func pictureText() {
+        func line(_ text: String, _ top: CGFloat, x: CGFloat = 0.06) -> ScreenText.Line {
+            ScreenText.Line(text: text, box: CGRect(x: x, y: top, width: 0.6, height: 0.02))
+        }
+        let lines = [line("09:41", 0.01), line("bis 1. Oktober bestätigen.", 0.30), line("Meilenstein Wasserschaden", 0.20),
+                     line("Die Hausverwaltung hat nicht reagiert.", 0.40)]
+        let text = ScreenshotDoor.pictureText(lines)
+        #expect(text?.heading == "Meilenstein Wasserschaden")
+        #expect(text?.body == "Meilenstein Wasserschaden\nbis 1. Oktober bestätigen.\nDie Hausverwaltung hat nicht reagiert.")
+        #expect(ScreenshotDoor.pictureText([line("09:41", 0.01)]) == nil)
+        #expect(ScreenshotDoor.pictureText([line("10:29", 0.05), line("5G", 0.05, x: 0.8)]) == nil)  // beside the Dynamic Island
+    }
+
     @Test("A screenshot with a home stays where it is; one from a temporary folder is copied in")
     func home() {
         #expect(ScreenshotDoor.hasHome(URL(fileURLWithPath: "/Users/x/Desktop/Bildschirmfoto.png")))
