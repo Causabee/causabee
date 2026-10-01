@@ -124,7 +124,7 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .row .note { color: var(--grey); font-size: 30px; line-height: 40px; margin-top: 6px; }
 .row .more { margin-left: auto; color: var(--grey); font-size: 36px; letter-spacing: 4px; }
 .row .body { flex: 1; }
-.pill { display: inline-flex; align-items: center; height: 44px; padding: 0 18px; border-radius: 22px; background: var(--pale); color: var(--ink); font-size: 28px; font-weight: 500; }
+.pill { display: inline-flex; align-items: center; line-height: 34px; padding: 5px 16px; border-radius: 22px; background: var(--pale); color: var(--ink); font-size: 28px; font-weight: 500; }
 .pill.gold { background: var(--honey); }
 .chip { display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 18px; border-radius: 23px; background: var(--pale); font-size: 28px; }
 .chip svg { width: 26px; height: 26px; }
@@ -185,10 +185,13 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 /* ---- 9 · whose it is: one row, the pill flips ---- */
 .owner { top: 900px; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) - 0.3s), calc(var(--v10) - 0.35s); }
 .flip { position: relative; display: inline-block; height: 44px; width: 320px; perspective: 600px; }
+.flip .pill:nth-child(2), .flip .pill:nth-child(3) { animation-name: flip-in-bold, flip-out; }
+.flip .pill:nth-child(3) { animation-name: flip-in-bold; }
+@keyframes flip-in-bold { 0% { opacity: 0; transform: rotateX(-90deg) scale(1.15); background: var(--honey); } 35% { opacity: 1; transform: rotateX(0) scale(1.15); background: var(--honey); } 70% { transform: scale(1.15); background: var(--honey); } 100% { opacity: 1; transform: none; background: var(--pale); } }
 .flip .pill { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; backface-visibility: hidden; }
 .flip .pill:nth-child(1) { animation: flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.35); }
-.flip .pill:nth-child(2) { opacity: 0; animation: flip-in 0.35s var(--ease-out) both, flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.35 + 0.3s), calc(var(--v9) + var(--s9) * 0.75); }
-.flip .pill:nth-child(3) { opacity: 0; animation: flip-in 0.35s var(--ease-out) both; animation-delay: calc(var(--v9) + var(--s9) * 0.75 + 0.3s); }
+.flip .pill:nth-child(2) { opacity: 0; animation: flip-in 0.9s var(--ease-out) both, flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.35 + 0.3s), calc(var(--v9) + var(--s9) * 0.75); }
+.flip .pill:nth-child(3) { opacity: 0; animation: flip-in 0.9s var(--ease-out) both; animation-delay: calc(var(--v9) + var(--s9) * 0.75 + 0.3s); }
 @keyframes flip-out { from { opacity: 1; transform: rotateX(0); } to { opacity: 0; transform: rotateX(90deg); } }
 @keyframes flip-in { from { opacity: 0; transform: rotateX(-90deg); } to { opacity: 1; transform: rotateX(0); } }
 
