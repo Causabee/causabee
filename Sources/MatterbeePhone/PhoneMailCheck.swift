@@ -244,22 +244,23 @@ struct PhoneMailCheckView: View {
             case .idle:
                 button
             case .reading(let text):
-                VStack(alignment: .leading, spacing: 10) {
+                // Centred, as the button it came from: the bee at work, and Cancel under it.
+                VStack(spacing: 12) {
                     HStack(spacing: 10) {
                         BeeLoader(size: 15)
                         Text(text).font(.subheadline).foregroundStyle(.secondary)
                     }
                     Button("Cancel") { check.cancel() }.buttonStyle(.phone)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14).phoneBox()
+                .frame(maxWidth: .infinity)
+                .padding(16).phoneBox()
             case .sending(let text):
                 HStack(spacing: 10) {
                     BeeLoader(size: 15)
                     Text(text).font(.subheadline).foregroundStyle(.secondary)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14).phoneBox()
+                .frame(maxWidth: .infinity)
+                .padding(16).phoneBox()
             case .nothingNew:
                 Text("No new mail.").font(.subheadline).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
