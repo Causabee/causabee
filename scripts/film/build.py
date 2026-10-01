@@ -73,9 +73,15 @@ function filmTime() { const a = document.querySelector('.clock').getAnimations()
 function syncVoice() {
   if (!soundOn || !onScreen) { voice.pause(); return; }
   const t = filmTime();
-  if (t >= voice.duration) { voice.pause(); return; }
-  if (Math.abs(voice.currentTime - t) > 0.15) voice.currentTime = t;
-  if (voice.paused) voice.play().catch(() => {});
+  if (voice.paused) {
+    // Started once, at the film's time; from then on the voice is never moved while it plays.
+    if (isFinite(voice.duration) && t >= voice.duration) return;
+    voice.currentTime = t; voice.play().catch(() => {});
+    return;
+  }
+  // Drifted apart: the pictures follow the voice — silent and instant — instead of the voice jumping.
+  const v = voice.currentTime;
+  if (Math.abs(t - v) > 0.25) for (const a of document.getAnimations()) a.currentTime = v * 1000;
 }
 button.addEventListener('click', () => {
   soundOn = !soundOn;
@@ -83,8 +89,8 @@ button.addEventListener('click', () => {
   if (soundOn) { voice.preload = 'auto'; voice.load(); }
   syncVoice();
 });
-setInterval(syncVoice, 500);
-function play() { onScreen = true; restart(); voice.currentTime = 0; syncVoice(); clearInterval(timer); timer = setInterval(() => { restart(); voice.currentTime = 0; syncVoice(); }, TOTAL * 1000 + 1500); }""")
+setInterval(syncVoice, 1000);
+function play() { onScreen = true; restart(); voice.pause(); syncVoice(); clearInterval(timer); timer = setInterval(() => { restart(); voice.pause(); syncVoice(); }, TOTAL * 1000 + 1500); }""")
         src = src.replace("function rest() { clearInterval(timer); for (const a of document.getAnimations()) a.pause(); }",
                           "function rest() { onScreen = false; clearInterval(timer); for (const a of document.getAnimations()) a.pause(); voice.pause(); }")
         out = ROOT / "site/film/index.html"
