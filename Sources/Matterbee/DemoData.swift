@@ -73,15 +73,30 @@ enum DemoData {
          IntakeSummary.Item(symbol: "flag", text: "by \(IntakeSummary.day(day(9))) · Answer Gut Birkenhof about the tasting")]
     }
 
-    /// Whether the three are in already: then "Get new mail" finds nothing new.
-    static func hasNewMail(in context: ModelContext) -> Bool {
-        let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
-        return entries.contains { $0.messageID.hasPrefix("demo-new-") }
+    /// What an earlier round brought, taken out again — the three mails, their task, their dates
+    /// and their lines in the history — so the demo's "Get new mail" shows the whole round every time.
+    static func removeNewMail(_ context: ModelContext) {
+        let isNew = { (id: String?) in id?.hasPrefix("demo-new-") == true }
+        for entry in (try? context.fetch(FetchDescriptor<Entry>())) ?? [] where isNew(entry.messageID) { context.delete(entry) }
+        for todo in (try? context.fetch(FetchDescriptor<Todo>())) ?? [] where todo.origin.hasPrefix("demo-new-") { context.delete(todo) }
+        for item in (try? context.fetch(FetchDescriptor<Appointment>())) ?? [] where item.sources.contains(where: { isNew($0.messageID) }) {
+            context.delete(item)
+        }
+        for item in (try? context.fetch(FetchDescriptor<Deadline>())) ?? [] where item.sources.contains(where: { isNew($0.messageID) }) {
+            context.delete(item)
+        }
+        for turn in (try? context.fetch(FetchDescriptor<ThreadTurn>())) ?? []
+        where String(decoding: turn.payload, as: UTF8.self).contains(demoIntakeMark) { context.delete(turn) }
+        try? context.save()
     }
+
+    /// In the history line of a demo round, so the next round can find and replace it.
+    static let demoIntakeMark = "sorted in the demo"
 
     /// Sorts the three in, as "Sort in" would: a mail each, with what it brings — a task for
     /// Lisbon, the movers' day for the move, a deadline for the wedding. Returns the matters.
     static func takeInNewMail(_ context: ModelContext) -> [Matter] {
+        removeNewMail(context)
         let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
         var touched: [Matter] = []
         for (index, mail) in newMail.enumerated() {

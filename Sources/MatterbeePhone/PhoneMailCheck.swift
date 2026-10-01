@@ -138,7 +138,8 @@ final class PhoneMailCheck {
         running = Task {
             try? await Task.sleep(for: .seconds(1.8))
             guard !Task.isCancelled else { return }
-            state = DemoData.hasNewMail(in: context) ? .nothingNew(known: 0) : .demoReady
+            // Every time the whole round: the last one's three mails are taken out on Sort in.
+            state = .demoReady
         }
     }
 
@@ -155,7 +156,7 @@ final class PhoneMailCheck {
                 let mail = DemoData.newMail[index]
                 let brought = index == 0 ? " · 1 new task" : " · 1 date"
                 var turn = Navigation.Turn(question: "", scope: "Mail", inHand: nil, seen: "", refs: [:], matter: matter.persistentModelID)
-                turn.note = "1 mail taken in" + brought + " · sorted by the demo\n• " + mail.subject
+                turn.note = "1 mail taken in" + brought + " · \(DemoData.demoIntakeMark)\n• " + mail.subject
                 guard let payload = try? encoder.encode(turn) else { continue }
                 let record = ThreadTurn(id: turn.id, date: turn.date, payload: payload)
                 context.insert(record)
