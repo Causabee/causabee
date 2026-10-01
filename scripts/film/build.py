@@ -12,7 +12,8 @@ import json, pathlib, subprocess, sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 WEB = ROOT / "scripts/film/web"
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
-captions, web = "--captions" in sys.argv, "--web" in sys.argv
+captions, web, site = "--captions" in sys.argv, "--web" in sys.argv, "--site" in sys.argv
+web = web or site
 t = json.load(open(ROOT / "docs/film/timing.json"))
 LEAD = 0.5
 vars_ = []
@@ -35,6 +36,17 @@ addEventListener('resize', fit); fit();
 function restart() { for (const a of document.getAnimations()) { a.cancel(); a.play(); } }
 setInterval(restart, TOTAL * 1000 + 1500);
 function seek(t) { for (const a of document.getAnimations()) { a.pause(); a.currentTime = t * 1000; } }""" % t["total"])
+    if site:
+        # The website's copy: the site's own font file, and it only runs while it is on screen —
+        # it starts from the beginning when scrolled into view, and rests when scrolled away.
+        src = src.replace('src: url(assets/SourceSerif4.ttf);', 'src: url("../assets/fonts/SourceSerif4.woff2") format("woff2"); font-weight: 200 900;')
+        src = src.replace("setInterval(restart, TOTAL * 1000 + 1500);", """let timer = null, shown = false;
+function play() { restart(); clearInterval(timer); timer = setInterval(restart, TOTAL * 1000 + 1500); }
+function rest() { clearInterval(timer); for (const a of document.getAnimations()) a.pause(); }
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) { seek(TOTAL - 2); }
+else new IntersectionObserver(([e]) => { if (e.isIntersecting && !shown) { shown = true; play(); } else if (!e.isIntersecting && shown) { shown = false; rest(); } }, { threshold: 0.35 }).observe(document.body);""")
+        out = ROOT / "site/film/index.html"; out.parent.mkdir(exist_ok=True)
+        out.write_text(src); print("site", out); sys.exit(0)
     out = WEB / ("film-web-captions.html" if captions else "film-web.html")
     out.write_text(src); print("web", out); sys.exit(0)
 (WEB / "film.html").write_text(src)
