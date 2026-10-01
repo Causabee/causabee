@@ -1310,7 +1310,6 @@ struct TodoEditor: View {
                 Text("The other one already waits for this one — neither could ever be done.").font(.caption).foregroundStyle(Theme.warning)
             }
             HStack(spacing: 8) {
-                Text("Return saves · Esc cancels").font(.caption).foregroundStyle(.tertiary)
                 Spacer()
                 Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
                 Button("Save", action: save).keyboardShortcut(.defaultAction).inkButton()
