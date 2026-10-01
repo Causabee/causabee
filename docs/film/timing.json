@@ -1,106 +1,106 @@
 {
  "voice": "voice-jenny",
- "total": 91.8,
+ "total": 86.3,
  "beats": [
   {
    "beat": 1,
    "start": 0.0,
-   "dur": 3.1,
+   "dur": 3,
    "voice_in": 0.0,
    "voice_out": 1.17,
    "spoken": 1.17
   },
   {
    "beat": 2,
-   "start": 3.1,
-   "dur": 7.8,
+   "start": 3.0,
+   "dur": 7.4,
    "voice_in": 2.38,
    "voice_out": 8.29,
    "spoken": 5.91
   },
   {
    "beat": 3,
-   "start": 10.9,
-   "dur": 3.9,
+   "start": 10.4,
+   "dur": 3.5,
    "voice_in": 9.02,
    "voice_out": 11.02,
    "spoken": 2.0
   },
   {
    "beat": 4,
-   "start": 14.8,
-   "dur": 3.9,
+   "start": 13.9,
+   "dur": 3.5,
    "voice_in": 11.64,
    "voice_out": 13.62,
    "spoken": 1.98
   },
   {
    "beat": 5,
-   "start": 18.7,
-   "dur": 8.5,
+   "start": 17.4,
+   "dur": 8.1,
    "voice_in": 14.24,
    "voice_out": 20.85,
    "spoken": 6.61
   },
   {
    "beat": 6,
-   "start": 27.2,
-   "dur": 5.3,
+   "start": 25.5,
+   "dur": 5,
    "voice_in": 21.44,
    "voice_out": 24.84,
    "spoken": 3.4
   },
   {
    "beat": 7,
-   "start": 32.5,
-   "dur": 2.8,
+   "start": 30.5,
+   "dur": 2.4,
    "voice_in": 25.45,
    "voice_out": 26.36,
    "spoken": 0.91
   },
   {
    "beat": 8,
-   "start": 35.3,
-   "dur": 5.8,
+   "start": 32.9,
+   "dur": 5.4,
    "voice_in": 27.01,
    "voice_out": 30.95,
    "spoken": 3.94
   },
   {
    "beat": 9,
-   "start": 41.1,
-   "dur": 4,
+   "start": 38.3,
+   "dur": 3.4,
    "voice_in": 31.57,
    "voice_out": 33.49,
    "spoken": 1.92
   },
   {
    "beat": 10,
-   "start": 45.1,
-   "dur": 4.1,
+   "start": 41.7,
+   "dur": 3.7,
    "voice_in": 34.01,
    "voice_out": 36.23,
    "spoken": 2.22
   },
   {
    "beat": 11,
-   "start": 49.2,
-   "dur": 4.4,
+   "start": 45.4,
+   "dur": 4.0,
    "voice_in": 36.8,
    "voice_out": 39.29,
    "spoken": 2.49
   },
   {
    "beat": 12,
-   "start": 53.6,
-   "dur": 5.4,
+   "start": 49.4,
+   "dur": 5.0,
    "voice_in": 39.89,
    "voice_out": 43.42,
    "spoken": 3.53
   },
   {
    "beat": 13,
-   "start": 59.0,
+   "start": 54.4,
    "dur": 4,
    "voice_in": 44.04,
    "voice_out": 45.64,
@@ -108,7 +108,7 @@
   },
   {
    "beat": 14,
-   "start": 63.0,
+   "start": 58.4,
    "dur": 4,
    "voice_in": 46.18,
    "voice_out": 48.0,
@@ -116,31 +116,31 @@
   },
   {
    "beat": 15,
-   "start": 67.0,
-   "dur": 5.1,
+   "start": 62.4,
+   "dur": 5,
    "voice_in": 48.56,
    "voice_out": 51.76,
    "spoken": 3.2
   },
   {
    "beat": 16,
-   "start": 72.1,
-   "dur": 7.5,
+   "start": 67.4,
+   "dur": 7.1,
    "voice_in": 52.38,
    "voice_out": 57.98,
    "spoken": 5.6
   },
   {
    "beat": 17,
-   "start": 79.6,
-   "dur": 7.1,
+   "start": 74.5,
+   "dur": 6.7,
    "voice_in": 58.51,
    "voice_out": 63.74,
    "spoken": 5.23
   },
   {
    "beat": 18,
-   "start": 86.7,
+   "start": 81.2,
    "dur": 5.06,
    "voice_in": 65.1,
    "voice_out": 67.16,

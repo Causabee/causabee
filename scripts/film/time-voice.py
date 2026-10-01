@@ -12,8 +12,8 @@ import json, pathlib, re, subprocess, sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 src, name = sys.argv[1], sys.argv[2]
 WORDS = [4, 14, 6, 4, 19, 10, 2, 12, 6, 6, 9, 10, 5, 6, 9, 13, 12, 6]   # the script's 18 lines
-PLANNED = [3, 5, 3, 3, 7, 5, 2, 5, 4, 4, 4, 4, 4, 4, 5, 5, 4, 4]
-LEAD, TAIL, PAD_IN, PAD_OUT = 0.5, 1.4, 0.2, 0.7
+PLANNED = [3, 5, 3, 3, 7, 5, 2, 4, 3, 3, 3, 4, 4, 4, 5, 5, 4, 4]   # 8–12 tightened: short lines, one object each
+LEAD, TAIL, PAD_IN, PAD_OUT = 0.5, 1.0, 0.2, 0.7
 
 def phrases(noise="-35dB", gap=0.25):
     log = subprocess.run(["ffmpeg", "-v", "info", "-i", src, "-af", f"silencedetect=noise={noise}:d={gap}", "-f", "null", "-"],
