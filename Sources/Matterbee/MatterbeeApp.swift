@@ -364,6 +364,24 @@ final class Navigation {
         }
     }
 
+    /// The demo's round: a line in each of the three matters, as a real round writes them. The
+    /// last round's lines go first, as its mails and dates did, so nothing is there twice.
+    @MainActor
+    func logDemoIntake(_ matters: [Matter]) {
+        let mark = DemoData.demoIntakeMark
+        let old = turns.filter { $0.note?.contains(mark) == true }
+        for turn in old { records[turn.id] = nil; written[turn.id] = nil }
+        turns.removeAll { $0.note?.contains(mark) == true }
+        for (index, matter) in matters.enumerated() {
+            let mail = DemoData.newMail[index]
+            let brought = index == 0 ? " · 1 new task" : " · 1 date"
+            var turn = Turn(question: "", scope: "Mail", inHand: nil, seen: "", refs: [:], matter: matter.persistentModelID)
+            turn.note = "1 mail taken in" + brought + " · \(mark)\n• " + mail.subject
+            turn.state = .failed("")
+            turns.append(turn)
+        }
+    }
+
     /// Puts an item in hand without leaving where the owner is: typing in a matter stays there.
     func pin(_ text: String, kind: String, in matter: Matter) {
         pinned = Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: kind, text: text)

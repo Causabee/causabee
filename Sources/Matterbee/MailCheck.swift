@@ -12,6 +12,8 @@ final class MailCheck {
         case reading(String)
         case nothingNew(known: Int)
         case ready(DailyDoor.Look, DailyDoor)
+        /// The demo's three made-up mails, found: the same panel, nothing read or sent.
+        case demoReady
         case sending(String)
         case done(String, [IntakeSummary.Item] = [])
         case failed(String)
@@ -24,7 +26,7 @@ final class MailCheck {
         case .idle: "idle"
         case .reading: "reading"
         case .nothingNew: "nothing"
-        case .ready: "ready"
+        case .ready, .demoReady: "ready"
         case .sending: "sending"
         case .done: "done"
         case .failed: "failed"
@@ -41,7 +43,11 @@ final class MailCheck {
         }
     }
 
+    /// Told what the demo's round took in, to write its lines into the matters' threads.
+    var demoTaken: (([Matter]) -> Void)?
+
     func look(store: URL, context: ModelContext) {
+        if DemoData.isRequested { lookInDemo(); return }
         guard let account = Keychain.accounts().first else {
             state = .failed("No mail account yet. Choose Matterbee → Set Up Matterbee … to log in.")
             return
@@ -102,6 +108,31 @@ final class MailCheck {
             } catch {
                 state = .failed("\(error)")
             }
+        }
+    }
+}
+
+extension MailCheck {
+    /// The demo's round, at the pace of a real one: fetching, three new mails, sorting, and what
+    /// came of it — the mails, a task and two dates in three matters. Nothing is read or sent.
+    private func lookInDemo() {
+        state = .reading("Fetching mail …")
+        Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            guard case .reading = state else { return }
+            // Every time the whole round: the last one's three mails are taken out on Sort in.
+            state = .demoReady
+        }
+    }
+
+    func sortInDemo(context: ModelContext) {
+        state = .sending("Sorting \(DemoData.newMail.count) mails …")
+        Task {
+            try? await Task.sleep(for: .seconds(2.4))
+            guard case .sending = state else { return }
+            let matters = DemoData.takeInNewMail(context)
+            demoTaken?(matters)
+            state = .done(IntakeSummary.line(mails: matters.count, matters: matters.map(\.name), tasks: 1, dates: 2), DemoData.newMailItems)
         }
     }
 }
@@ -185,6 +216,7 @@ struct MailCheckView: View {
         .onAppear {
             refresh()
             check.taken = { judgements, model in navigation.logIntake(judgements, matters: matters, model: model) }
+            check.demoTaken = { matters in navigation.logDemoIntake(matters) }
         }
         .onChange(of: check.stateKey) { refresh() }
     }
@@ -219,6 +251,16 @@ struct MailCheckView: View {
                     
                     .inkButton()
                 }
+            case .demoReady:
+                Text("\(DemoData.newMail.count) new mails").font(.callout.weight(.semibold))
+                ForEach(DemoData.newMail, id: \.subject) { mail in
+                    Text("• " + mail.subject).font(.caption).lineLimit(2)
+                }
+                Text("In the demo, sorting in sends nothing and costs nothing.").font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Button("Cancel") { check.state = .idle }
+                    Button("Sort in") { check.sortInDemo(context: context) }.inkButton()
+                }
             case .done(let text, let items):
                 Label(text, systemImage: "checkmark.circle").font(.caption).foregroundStyle(Theme.done)
                 // What it brought, to see without opening every matter.
@@ -235,18 +277,11 @@ struct MailCheckView: View {
 
     @ViewBuilder
     private var button: some View {
-        if DemoData.isRequested, !SetupState.isFresh, IntroShot.current == nil {
-            // The demo's matters are made up: no real mail comes into them, and the way back is here.
-            // The introduction's pictures show the button a real start has.
-            Button { DemoData.restart(demo: false) } label: {
-                Label("Leave the demo", systemImage: "arrow.uturn.backward.circle")
-            }
-            .help("Starts Matterbee again with your own matters. The demo stays apart, in its own store.")
-        } else {
-            Button { check.look(store: navigation.store, context: context) } label: {
-                Label("Get new mail", systemImage: "arrow.down.circle")
-            }
-            .help("Reads only new mail with the label. Nothing is sent until you click “Sort in”.")
+        Button { check.look(store: navigation.store, context: context) } label: {
+            Label("Get new mail", systemImage: "arrow.down.circle")
         }
+        // In the demo too: its round is made up, and the way back is Matterbee → Leave the Demo.
+        .help(DemoData.isRequested ? "Fetches the demo's three made-up mails. Nothing is read or sent."
+                                   : "Reads only new mail with the label. Nothing is sent until you click “Sort in”.")
     }
 }
