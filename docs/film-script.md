@@ -35,8 +35,8 @@ Show: the button "Get new mail".
 Move: a click; the bee appears beside it, stripes sorting, wings beating.
 
 **5 · 7 s**
-Say: It reads your new mail first, and tells you what sorting it in would cost. Nothing goes to the AI until you say so.
-Show: "2 new mails" — "Prescription for the bath seat is ready", "Re: Who does what this week?" — then the line "Sorting in costs about $0.02." — then the button "Sort in".
+Say: It reads your new mail first, and shows you what came in. Nothing goes to the AI until you say so.
+Show: "2 new mails" — "Prescription for the bath seat is ready", "Re: Who does what this week?" — then the button "Sort in".
 Move: the lines come one by one; "Sort in" comes last and waits.
 
 **6 · 5 s**
@@ -46,7 +46,7 @@ Move: "Dr. Brandt" becomes "[Person A]", "Helga" becomes "[Person B]". Nothing e
 
 **7 · 2 s**
 Say: Sorted in.
-Show: the line "2 mails sorted into Care for Mum · 1 new task · $0.012" with the tick mark.
+Show: the line "2 mails sorted into Care for Mum · 1 new task" with the tick mark.
 Move: the tick draws itself.
 
 **8 · 5 s**
@@ -106,7 +106,7 @@ Move: the stripes drop in once, the wings beat twice, the bee settles.
 
 ---
 
-Spoken words: 155. At a calm pace that is 75 to 80 seconds of voice, and the rest is silence
+Spoken words: 152. At a calm pace that is 75 to 80 seconds of voice, and the rest is silence
 where the picture does its work. Total: about 90 seconds.
 
 ## What we draw
@@ -118,7 +118,7 @@ the real components to draw them from):
 2. the matter card — beats 3, 16
 3. the button "Get new mail" — beat 4
 4. the bee at work — beats 4, 5, 13
-5. the new-mail list with the cost line and "Sort in" — beat 5
+5. the new-mail list and "Sort in" — beat 5
 6. a sentence with two names, and its disguise — beats 6, 17
 7. the sorted-in line with the tick — beat 7
 8. the next-step card — beat 8
