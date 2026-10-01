@@ -18,7 +18,7 @@ seconds = float(sys.argv[1]) if len(sys.argv) > 1 else t["total"]
 frames = pathlib.Path("/tmp/film-clips/film-frames")
 subprocess.run(["rm", "-rf", str(frames)])
 subprocess.run(["swift", str(ROOT / "scripts/film/render.swift"), str(WEB / "film.html"), str(frames), str(seconds), "30"], check=True)
-out = ROOT / "docs/film/film.mp4"
+out = ROOT / ("docs/film/film.mp4" if len(sys.argv) == 1 else "docs/film/film-preview.mp4")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", "30", "-i", str(frames / "f%05d.png"), "-i", str(ROOT / f"docs/film/{t['voice']}-timed.mp3"),
                 "-vf", "scale=1080:1920:flags=lanczos,format=yuv420p", "-c:v", "libx264", "-crf", "18", "-c:a", "aac", "-b:a", "160k", "-t", str(seconds), str(out)], check=True)
 print("film", out, seconds, "s")
