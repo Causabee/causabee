@@ -262,6 +262,7 @@ struct PhoneMailCheckView: View {
                 .padding(14).phoneBox()
             case .nothingNew:
                 Text("No new mail.").font(.subheadline).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
                 button
             case .ready(let look, let door):
                 VStack(alignment: .leading, spacing: 8) {
@@ -282,19 +283,24 @@ struct PhoneMailCheckView: View {
                 .padding(14).phoneBox()
             case .done(let text):
                 Label(text, systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
+                    .multilineTextAlignment(.center).frame(maxWidth: .infinity)
                 button
             case .failed(let text):
                 Label(text, systemImage: "exclamationmark.triangle").font(.subheadline).foregroundStyle(Theme.warning).textSelection(.enabled)
+                    .multilineTextAlignment(.center).frame(maxWidth: .infinity)
                 button
             }
         }
     }
 
+    /// In the middle, with room above and below: the overview's one thing to do.
     private var button: some View {
         Button { check.look(context: context) } label: {
             Label("Get new mail", systemImage: "arrow.down.circle")
         }
         .buttonStyle(.phone)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
         .accessibilityHint("Reads only new mail with the label. Nothing is sent until you tap Sort in.")
     }
 
