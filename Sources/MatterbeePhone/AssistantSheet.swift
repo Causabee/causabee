@@ -512,22 +512,27 @@ struct PhoneActionCard: View {
         navigation.open(target, showing: todo)
     }
 
-    /// What was opened in Mail, short and not to be typed in: who, what about, how it starts.
+    /// What was opened in Mail, as small and quiet as a card taken in: its subject, where it went
+    /// and to whom. A tap opens it in Mail again; Edit unfolds it. Opened is not sent: the
+    /// envelope, not a tick.
     private var sentDraft: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("Draft · opened in Mail").font(.footnote.weight(.semibold))
-            Text("To: \(recipient?.name ?? "—")" + (subject.isEmpty ? "" : " · \(subject)")).font(.subheadline).lineLimit(1)
-            Text(text).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
-            HStack(spacing: 8) {
-                Button("Edit") { withAnimation { editingDraft = true } }.buttonStyle(.phone)
-                Button("Open again") { take() }.buttonStyle(.phone)
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: "envelope").font(.footnote).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(subject.isEmpty ? text : subject).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2)
+                Text("Draft opened in Mail · To: \(recipient?.name ?? "—")").font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
-            .padding(.top, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Edit") { withAnimation { editingDraft = true } }
+                .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12).padding(.vertical, 10)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .onTapGesture { take() }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Opens it in Mail again")
     }
 
     /// The answer's matter: one a card beside this one made, the one it was asked in, or the one
