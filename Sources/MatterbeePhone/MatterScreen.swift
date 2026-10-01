@@ -623,6 +623,12 @@ struct PhoneTodoRow: View {
     @State private var deleting = false
 
     var body: some View {
+        // Taken back with Undo in the assistant, the task is gone while this row is drawn once more:
+        // a deleted model must not be read — SwiftData stops the app.
+        if todo.isDeleted || todo.modelContext == nil { EmptyView() } else { row }
+    }
+
+    private var row: some View {
         HStack(alignment: .top, spacing: 12) {
             Button(action: toggle) {
                 Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")

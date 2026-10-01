@@ -375,6 +375,14 @@ struct PhoneActionCard: View {
     @State private var subject = ""
     /// A draft opened in Mail folds to a few lines; "Edit" unfolds it again.
     @State private var editingDraft = false
+    /// Taken in, the card turns into its small quiet box rather than being swapped for it: the grey
+    /// box closes around what stays, the words move to their place, the rest fades.
+    @Namespace private var morph
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private var motion: Animation { reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.86) }
+    /// Shown small: follows "taken in", but changed in one animated step from the tap itself, so
+    /// the whole thread moves with the card instead of jumping under it.
+    @State private var quiet = false
 
     private var done: Bool { turn.applied.contains(index) }
     private var dismissed: Bool { turn.dismissedCards.contains(index) }
@@ -384,9 +392,9 @@ struct PhoneActionCard: View {
 
     var body: some View {
         Group {
-            if card.kind == .draftMessage, done, !editingDraft {
+            if card.kind == .draftMessage, quiet, !editingDraft {
                 sentDraft
-            } else if done {
+            } else if quiet {
                 taken
             } else if dismissed, !done {
                 HStack {
@@ -399,7 +407,10 @@ struct PhoneActionCard: View {
                 full
             }
         }
-        .onAppear { text = card.text; subject = card.subject ?? "" }
+        // Undo plays it backwards; with Reduce Motion it is a short cross-fade. Taken in or out on
+        // another device, it changes the same way.
+        .onAppear { text = card.text; subject = card.subject ?? ""; quiet = done }
+        .onChange(of: done) { if quiet != done { withAnimation(motion) { quiet = done } } }
     }
 
     private var full: some View {
@@ -410,6 +421,7 @@ struct PhoneActionCard: View {
                 TextField("Subject", text: $subject)
                     .padding(.horizontal, 10).padding(.vertical, 8)
                     .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
+                    .matchedGeometryEffect(id: "words", in: morph, isSource: !quiet || editingDraft)
                 TextEditor(text: $text)
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 140, maxHeight: 320)
@@ -420,6 +432,7 @@ struct PhoneActionCard: View {
                     .padding(.horizontal, 10).padding(.vertical, 8)
                     .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
                     .disabled(done)
+                    .matchedGeometryEffect(id: "words", in: morph, isSource: !quiet)
             }
             Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if !card.cites.isEmpty { SourcesLine(cites: card.cites, refs: turn.refs, matter: matter) }
@@ -429,8 +442,8 @@ struct PhoneActionCard: View {
             }
             HStack(spacing: 8) {
                 if done, card.kind == .draftMessage {
-                    Button("Cancel") { withAnimation { editingDraft = false } }.buttonStyle(.phone)
-                    Button("Open in Mail") { take(); withAnimation { editingDraft = false } }.buttonStyle(.phoneFilled)
+                    Button("Cancel") { withAnimation(motion) { editingDraft = false } }.buttonStyle(.phone)
+                    Button("Open in Mail") { take(); withAnimation(motion) { editingDraft = false } }.buttonStyle(.phoneFilled)
                 } else if done {
                     Label("Taken in", systemImage: "checkmark").font(.footnote.weight(.medium)).foregroundStyle(Theme.done)
                     Spacer()
@@ -445,7 +458,8 @@ struct PhoneActionCard: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
+        .transition(.opacity)
     }
 
     /// A card taken in, small and quiet: what was done, what kind, and Undo while the app is open.
@@ -455,6 +469,7 @@ struct PhoneActionCard: View {
             Image(systemName: "checkmark").font(.footnote.weight(.semibold)).foregroundStyle(Theme.done)
             VStack(alignment: .leading, spacing: 2) {
                 Text(takenWhat).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2)
+                    .matchedGeometryEffect(id: "words", in: morph, isSource: quiet)
                 Text(takenKind).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -463,8 +478,9 @@ struct PhoneActionCard: View {
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+        .transition(.opacity)
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .onTapGesture(perform: openTaken)
         .accessibilityAddTraits(.isButton)
@@ -520,15 +536,17 @@ struct PhoneActionCard: View {
             Image(systemName: "envelope").font(.footnote).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(subject.isEmpty ? text : subject).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2)
+                    .matchedGeometryEffect(id: "words", in: morph, isSource: quiet && !editingDraft)
                 Text("Draft opened in Mail · To: \(recipient?.name ?? "—")").font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Button("Edit") { withAnimation { editingDraft = true } }
+            Button("Edit") { withAnimation(motion) { editingDraft = true } }
                 .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain)
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+        .transition(.opacity)
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .onTapGesture { take() }
         .accessibilityAddTraits(.isButton)
@@ -549,6 +567,7 @@ struct PhoneActionCard: View {
             return
         case .openMail(let url):
             openURL(url)
+            withAnimation(motion) { quiet = true }
             // The version opened is the one kept: the thread remembers what went to Mail.
             navigation.mark(record, card: index, applied: true, text: text.trimmingCharacters(in: .whitespacesAndNewlines),
                             subject: subject, context: context)
@@ -559,6 +578,7 @@ struct PhoneActionCard: View {
             navigation.open(made)
         case .taken(let undo):
             navigation.undos[turn.id, default: [:]][index] = undo
+            withAnimation(motion) { quiet = true }
             navigation.mark(record, card: index, applied: true, context: context)
         }
     }
@@ -567,6 +587,7 @@ struct PhoneActionCard: View {
         guard let undo, CardActions.undo(undo, in: context) else { return }
         if case .madeMatter = undo { navigation.madeMatter[turn.id] = nil }
         navigation.undos[turn.id]?[index] = nil
+        withAnimation(motion) { quiet = false }
         navigation.mark(record, card: index, applied: false, context: context)
     }
 

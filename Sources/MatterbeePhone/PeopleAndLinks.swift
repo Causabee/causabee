@@ -346,6 +346,11 @@ struct PhoneLinkRow: View {
     @State private var editing = false
 
     var body: some View {
+        // A link a card kept and Undo took out again: gone while this row is drawn once more.
+        if link.isDeleted || link.modelContext == nil { EmptyView() } else { row }
+    }
+
+    private var row: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: LinkIcon.of(link)).font(.title3).foregroundStyle(.secondary).frame(width: 26)
             VStack(alignment: .leading, spacing: 3) {
