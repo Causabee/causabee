@@ -191,7 +191,7 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .flip { position: relative; display: inline-block; height: 44px; width: 320px; perspective: 600px; }
 @keyframes flip-in-bold { 0% { opacity: 0; transform: rotateX(-90deg) scale(2); background: var(--honey); } 40% { opacity: 1; transform: rotateX(0) scale(2); background: var(--honey); } 100% { opacity: 1; transform: scale(2); background: var(--honey); } }
 @keyframes settle-size { from { transform: scale(2); background: var(--honey); } to { transform: scale(1); background: var(--pale); } }
-.flip .pill:nth-child(2) { transform-origin: 0 50%; } .flip .pill:nth-child(3) { transform-origin: 0 50%; }
+.flip .pill:nth-child(2) { transform-origin: 0 0; } .flip .pill:nth-child(3) { transform-origin: 0 0; }
 .flip .pill { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; backface-visibility: hidden; }
 .flip .pill:nth-child(1) { animation: flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.35); }
 .flip .pill:nth-child(2) { opacity: 0; animation: flip-in-bold 0.5s var(--ease-out) both, flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.35 + 0.3s), calc(var(--v9) + var(--s9) * 0.75); }
@@ -246,7 +246,7 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .daterow .chips { position: relative; height: 46px; margin-top: 14px; }
 .daterow .chip { position: absolute; left: 0; top: 0; }
 .daterow .chip.add { animation: fade-out 0.3s forwards; animation-delay: calc(var(--v12) + var(--s12) * 0.52); }
-.daterow .chip.linked { opacity: 0; transform-origin: 0 50%; animation: chip-flip 0.5s var(--ease-out) both, settle-size 0.5s var(--ease-out) forwards; animation-delay: calc(var(--v12) + var(--s12) * 0.52 + 0.1s), calc(var(--v12) + var(--s12) * 0.52 + 1.0s); }
+.daterow .chip.linked { opacity: 0; transform-origin: 0 0; animation: chip-flip 0.5s var(--ease-out) both, settle-size 0.5s var(--ease-out) forwards; animation-delay: calc(var(--v12) + var(--s12) * 0.52 + 0.1s), calc(var(--v12) + var(--s12) * 0.52 + 1.0s); }
 @keyframes chip-flip { 0% { opacity: 0; transform: rotateX(-90deg) scale(2); background: var(--honey); } 40% { opacity: 1; transform: rotateX(0) scale(2); background: var(--honey); } 100% { opacity: 1; transform: scale(2); background: var(--honey); } }
 .daterow .chips { perspective: 600px; }
 .daterow .ring2 { left: 90px; top: 23px; animation-delay: calc(var(--v12) + var(--s12) * 0.5); }
