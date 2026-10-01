@@ -125,16 +125,15 @@ struct PhonePartyRow: View {
 
     @ViewBuilder
     private var items: some View {
-        Button("Talk about it with the assistant") { navigation.talk(party.name, kind: "Person", in: matter) }
-        Divider()
-        Button("Edit name and role …") { editing = true }
-        Menu("Merge with …") {
+        Button("Ask the assistant", systemImage: "bubble.left.and.bubble.right") { navigation.talk(party.name, kind: "Person", in: matter) }
+        Button("Edit", systemImage: "pencil") { editing = true }
+        Menu("Merge with", systemImage: "arrow.triangle.merge") {
             ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
                 Button(other.name) { merge(other) }
             }
         }
         Divider()
-        Button("Remove from this matter", role: .destructive, action: remove)
+        Button("Remove", systemImage: "person.badge.minus", role: .destructive, action: remove)
     }
 }
 
@@ -386,8 +385,9 @@ struct PhoneLinkRow: View {
 
     @ViewBuilder
     private var items: some View {
-        Button("Edit name, address, task …") { editing = true }
-        Button("Remove link", role: .destructive, action: remove)
+        Button("Edit", systemImage: "pencil") { editing = true }
+        Divider()
+        Button("Remove", systemImage: "trash", role: .destructive, action: remove)
     }
 }
 

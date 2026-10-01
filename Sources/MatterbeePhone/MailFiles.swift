@@ -182,16 +182,14 @@ struct FilesSection: View {
 
     @ViewBuilder
     private func items(_ document: MatterCore.Document) -> some View {
-        if !document.isOwnFile || document.source.fileURL != nil { Button("Open") { open(document) } }
-        if document.isReadable, !document.isOwnFile, document.readAt == nil { Button("Read") { read(document) } }
-        Divider()
-        Button("Rename …") { newName = document.shownName; renaming = document }
-        if isPDF(document), !document.isOwnFile { Button("Name it from its content") { nameFromContent(document) } }
+        if !document.isOwnFile || document.source.fileURL != nil { Button("Open", systemImage: "eye") { open(document) } }
+        if document.isReadable, !document.isOwnFile, document.readAt == nil { Button("Read", systemImage: "text.viewfinder") { read(document) } }
+        Button("Rename", systemImage: "pencil") { newName = document.shownName; renaming = document }
+        if isPDF(document), !document.isOwnFile { Button("Name from content", systemImage: "text.magnifyingglass") { nameFromContent(document) } }
         if document.title != nil {
-            Button("Use the file's own name") { document.title = nil; try? context.save() }
+            Button("Use file name", systemImage: "arrow.uturn.backward") { document.title = nil; try? context.save() }
         }
-        Divider()
-        Button(document.isHidden ? "Show again" : "Hide") {
+        Button(document.isHidden ? "Show again" : "Hide", systemImage: document.isHidden ? "eye" : "eye.slash") {
             withAnimation { document.isHidden.toggle() }
             try? context.save()
         }

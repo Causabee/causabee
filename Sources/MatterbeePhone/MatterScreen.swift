@@ -704,19 +704,18 @@ struct PhoneTodoRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
+        // Short, one line each, with an icon; one line only, above Delete.
         if let matter = todo.matter {
-            Button("Talk about it with the assistant") { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
-            Divider()
+            Button("Ask the assistant", systemImage: "bubble.left.and.bubble.right") { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
         }
-        Button("Edit …") { editing = true }
+        Button("Edit", systemImage: "pencil") { editing = true }
         if !todo.isDone {
-            Button("Not a task — move to Info") {
+            Button("Move to Info", systemImage: "info.circle") {
                 withAnimation { todo.isInfo = true }
                 try? context.save()
             }
-            Divider()
             let others = (todo.matter?.openTodos ?? []).filter { $0 !== todo }.sorted { $0.text < $1.text }
-            Menu("Waits for …") {
+            Menu("Waits for", systemImage: "hourglass") {
                 ForEach(others, id: \.persistentModelID) { other in
                     Button(other.text) {
                         withAnimation { _ = todo.wait(for: other) }
@@ -727,14 +726,14 @@ struct PhoneTodoRow: View {
             }
             .disabled(others.isEmpty)
             if todo.waitsFor != nil {
-                Button("Waits for nothing any more") {
+                Button("Stop waiting", systemImage: "xmark.circle") {
                     withAnimation { todo.waitsFor = nil }
                     try? context.save()
                 }
             }
         }
         Divider()
-        Button("Delete …", role: .destructive) { deleting = true }
+        Button("Delete", systemImage: "trash", role: .destructive) { deleting = true }
     }
 
     /// The addresses in the note become the task's links, and their lines leave the note.
@@ -1044,11 +1043,10 @@ struct PhoneDateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
-        Button("Talk about it with the assistant") { navigation.talk(item.what, kind: item.kind, in: matter) }
+        Button("Ask the assistant", systemImage: "bubble.left.and.bubble.right") { navigation.talk(item.what, kind: item.kind, in: matter) }
+        Button("Edit", systemImage: "pencil") { editing = true }
         Divider()
-        Button("Edit …") { editing = true }
-        Divider()
-        Button("Delete …", role: .destructive) { deleting = true }
+        Button("Delete", systemImage: "trash", role: .destructive) { deleting = true }
     }
 }
 

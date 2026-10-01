@@ -81,7 +81,7 @@ struct PhoneThreadMailRow: View {
         }
         .contentShape(Rectangle())
         .contextMenu {
-            Button("Talk about it with the assistant") { navigation.talk(entry.title, kind: "Mail", in: matter) }
+            Button("Ask the assistant", systemImage: "bubble.left.and.bubble.right") { navigation.talk(entry.title, kind: "Mail", in: matter) }
         }
         .sheet(isPresented: $reading) { PhoneMailReader(entry: entry) }
     }
