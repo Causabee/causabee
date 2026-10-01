@@ -237,8 +237,8 @@ struct PendingTurn: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.leading, 40)
             HStack(spacing: 8) {
-                BeeLoader(size: 15)
-                Text("Sending, pseudonymised …").foregroundStyle(.secondary)
+                BeeLoader(size: 12)
+                Text("Sending, pseudonymised …").font(.caption).foregroundStyle(.secondary)
             }
         }
     }
@@ -386,6 +386,8 @@ struct PhoneActionCard: View {
         Group {
             if card.kind == .draftMessage, done, !editingDraft {
                 sentDraft
+            } else if done {
+                taken
             } else if dismissed, !done {
                 HStack {
                     Text("Suggestion dismissed: \(title.lowercased())").font(.caption).foregroundStyle(.secondary)
@@ -444,6 +446,70 @@ struct PhoneActionCard: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    /// A card taken in, small and quiet: what was done, what kind, and Undo while the app is open.
+    /// The reason and the sources stay with what it made; a tap opens that in its matter.
+    private var taken: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: "checkmark").font(.footnote.weight(.semibold)).foregroundStyle(Theme.done)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(takenWhat).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2)
+                Text(takenKind).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if undo != nil {
+                Button("Undo", action: takeBack).font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .onTapGesture(perform: openTaken)
+        .accessibilityAddTraits(.isButton)
+    }
+
+    /// What the card did, in its own words.
+    private var takenWhat: String {
+        let words = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? card.text : text
+        switch card.kind {
+        case .sameParty: return "\(name(card.party))  →  \(name(card.into))"
+        case .waitsFor, .changeOwner: return name(card.todo)
+        default: return words
+        }
+    }
+
+    /// What kind of thing it was, and the little that tells it apart.
+    private var takenKind: String {
+        switch card.kind {
+        case .newTodo: return "Task added · " + whose + (card.due.map { " · by \(Dates.short($0))" } ?? "")
+        case .markDone: return "Marked done"
+        case .sameParty: return "Merged into one person"
+        case .renameParty: return "Name changed"
+        case .changeRole: return "Role changed · " + name(card.party)
+        case .addNote: return "Note added · " + name(card.todo)
+        case .changeDate: return "Date changed"
+        case .newMatter: return "Matter started"
+        case .waitsFor: return "Now waits for " + name(card.into)
+        case .addLink: return "Link saved"
+        case .correctText: return "Text corrected"
+        case .changeOwner: return "Now " + whose.lowercased()
+        case .draftMessage: return "Opened in Mail"
+        }
+    }
+
+    /// Into its matter, at the task it made or changed when there is one.
+    private func openTaken() {
+        guard let target = scope ?? matter else { return }
+        var todo: PersistentIdentifier?
+        if case .remove(let id) = undo { todo = id }
+        if todo == nil, let ref = card.todo.flatMap({ turn.refs[$0] }), case .todo(let id) = ref { todo = id }
+        if todo == nil, card.kind == .newTodo {
+            let words = takenWhat.lowercased()
+            todo = target.openTodos.first { $0.text.lowercased() == words }?.persistentModelID
+        }
+        navigation.open(target, showing: todo)
     }
 
     /// What was opened in Mail, short and not to be typed in: who, what about, how it starts.

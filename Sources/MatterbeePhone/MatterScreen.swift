@@ -56,6 +56,8 @@ struct MatterScreen: View {
                 .containerRelativeFrame(.horizontal)
             }
             .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
+            // Asked to show a task while the page is open already — from a card in the assistant.
+            .onChange(of: navigation.showing) { if navigation.showing != nil { show(navigation.showing, with: scroller) } }
             .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
             .onPreferenceChange(PageFindMatches.self) { found in
                 MainActor.assumeIsolated {
