@@ -452,8 +452,9 @@ struct TurnView: View {
                     CiteChips(cites: line.cites, refs: turn.refs, open: open, label: label).explanation()
                 }
             }
+            // What the facts do not say is part of the answer, said like the rest of it — not a notice.
             if let missing = answer.reply.notInFacts {
-                Label(missing, systemImage: "questionmark.circle").font(.callout).foregroundStyle(.secondary)
+                Text(missing).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
             }
             ForEach(Array(answer.reply.cards.enumerated()), id: \.offset) { index, card in
                 // While reading, a draft asked for stays; the other suggestions are put away.
