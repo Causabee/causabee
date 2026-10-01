@@ -1165,6 +1165,12 @@ struct TodoRow: View {
         .padding(.vertical, 10)
         .contentShape(Rectangle())
         .contextMenu { moreItems }
+        .task {
+            // The picture of the popover: this one task's open, once the page has settled.
+            guard IntroShot.current == .lisbonEdit, todo.text.hasPrefix("Ask for express") else { return }
+            try? await Task.sleep(for: .seconds(2.5))
+            editing = true
+        }
         .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting) {
             Button("Delete", role: .destructive) {
                 withAnimation { context.delete(todo) }
@@ -1252,70 +1258,139 @@ struct TodoEditor: View {
 
     private var others: [Todo] { (todo.matter?.openTodos ?? []).filter { $0 !== todo }.sorted { $0.text < $1.text } }
 
+    @FocusState private var focus: Field?
+    private enum Field { case text, note, link }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        // As Figma's "Mac popovers" draw it: the words first, whose in pills, then one card with
+        // the day, what it waits for and its links — each with its label on the left.
+        VStack(alignment: .leading, spacing: 14) {
             Text("Change task").font(.headline)
-            TextField("What to do", text: $text, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(2...5)
-                .frame(width: 360)
-            TextField("Note — a list, a detail, what was agreed", text: $note, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(2...8)
-                .frame(width: 360)
-            Picker("Whose", selection: $owner) {
-                Text("Mine").tag(Todo.Owner.me)
-                Text("Ours").tag(Todo.Owner.we)
-                Text("Waiting for").tag(Todo.Owner.other)
-                Text("Unclear whose").tag(Todo.Owner.unknown)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 360)
-            if !others.isEmpty {
-                Picker("Only after", selection: $after) {
-                    Text("nothing — can go any time").tag(PersistentIdentifier?.none)
-                    ForEach(others, id: \.persistentModelID) { other in Text(other.text).lineLimit(1).tag(Optional(other.persistentModelID)) }
-                }
-                .frame(width: 360)
-                .help("When this task can only go ahead after another one is done")
-                if circle {
-                    Text("The other one already waits for this one — neither could ever be done.").font(.caption).foregroundStyle(Theme.warning)
-                }
+            VStack(spacing: 8) {
+                box(TextField("What to do", text: $text, axis: .vertical).lineLimit(1...5), field: .text)
+                box(TextField("Note — a list, a detail, what was agreed", text: $note, axis: .vertical).lineLimit(2...8), field: .note)
             }
             VStack(alignment: .leading, spacing: 6) {
-                ForEach((todo.links ?? []).sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
-                    HStack {
-                        Label(link.shownName, systemImage: LinkRow.icon(link)).lineLimit(1)
-                        Spacer()
-                        Button { link.todo = nil } label: { Image(systemName: "xmark.circle") }
-                            .buttonStyle(.borderless).foregroundStyle(.secondary)
-                            .help("Take it off the task. The link stays in the matter.")
+                Text("WHOSE").font(.caption).foregroundStyle(.secondary).kerning(0.4)
+                HStack(spacing: 6) {
+                    pill("Mine", .me)
+                    pill("Ours", .we)
+                    pill("Waiting for", .other)
+                    pill("Unclear", .unknown)
+                }
+            }
+            VStack(spacing: 0) {
+                row("Due") { dueControl }
+                if !others.isEmpty {
+                    Divider().padding(.leading, 12)
+                    row("Only after") {
+                        Menu {
+                            Picker("Only after", selection: $after) {
+                                Text("nothing — can go any time").tag(PersistentIdentifier?.none)
+                                ForEach(others, id: \.persistentModelID) { other in Text(other.text).tag(Optional(other.persistentModelID)) }
+                            }
+                            .pickerStyle(.inline).labelsHidden()
+                        } label: {
+                            HStack {
+                                Text(others.first { $0.persistentModelID == after }?.text ?? "nothing — can go any time").lineLimit(1)
+                                Spacer(minLength: 4)
+                                Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden)
+                        .help("When this task can only go ahead after another one is done")
                     }
                 }
-                TextField("Paste a link — https://docs.google.com/…", text: $newLink)
-                    .textFieldStyle(.roundedBorder)
-                if !newLink.isEmpty, WebLink.address(in: newLink) == nil {
-                    Text("This is not a web address.").font(.caption).foregroundStyle(Theme.warning)
-                }
+                Divider().padding(.leading, 12)
+                row("Link") { linkControl }
             }
-            .frame(width: 360)
-            Toggle("By a day", isOn: $hasDay)
-            if hasDay {
-                HStack {
-                    DatePicker("Day", selection: $day, displayedComponents: .date).labelsHidden()
-                    Toggle("Time", isOn: $hasTime)
-                    if hasTime { DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute).labelsHidden() }
-                }
+            .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
+            if circle {
+                Text("The other one already waits for this one — neither could ever be done.").font(.caption).foregroundStyle(Theme.warning)
             }
-            HStack {
+            HStack(spacing: 8) {
+                Text("Return saves · Esc cancels").font(.caption).foregroundStyle(.tertiary)
                 Spacer()
-                Button("Cancel", action: cancel)
-                Button("Save", action: save).keyboardShortcut(.defaultAction)
+                Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
+                Button("Save", action: save).keyboardShortcut(.defaultAction).inkButton()
             }
         }
-        .padding(16)
+        .padding(.horizontal, 18).padding(.vertical, 16)
+        .frame(width: 396)
         .environment(\.locale, Locale(identifier: "en_US"))
-        .onAppear(perform: load)
+        .onAppear { load(); focus = .text }
+    }
+
+    /// A field on white, a thin line round it, gold while typing in it.
+    private func box(_ content: some View, field: Field) -> some View {
+        content
+            .textFieldStyle(.plain)
+            .focused($focus, equals: field)
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(focus == field ? Theme.gold : Theme.line, lineWidth: focus == field ? 1.5 : 1))
+    }
+
+    private func pill(_ label: String, _ value: Todo.Owner) -> some View {
+        let on = owner == value
+        return Button { owner = value } label: {
+            Text(label).font(.subheadline)
+                .padding(.horizontal, 11).padding(.vertical, 4)
+                .foregroundStyle(on ? Theme.onInk : Color.primary)
+                .background(on ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(Color.primary.opacity(0.06)), in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func row<Control: View>(_ label: String, @ViewBuilder control: () -> Control) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(label).font(.callout).foregroundStyle(.secondary).frame(width: 76, alignment: .leading)
+            control().font(.callout).frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+    }
+
+    @ViewBuilder
+    private var dueControl: some View {
+        if hasDay {
+            HStack(spacing: 6) {
+                DatePicker("Day", selection: $day, displayedComponents: .date).labelsHidden().datePickerStyle(.field).fixedSize()
+                if hasTime {
+                    DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute).labelsHidden().datePickerStyle(.field).fixedSize()
+                } else {
+                    Button("+ time") { hasTime = true }.buttonStyle(.plain).foregroundStyle(Theme.gold)
+                }
+                Spacer(minLength: 4)
+                Button { hasDay = false; hasTime = false } label: { Image(systemName: "xmark").font(.caption) }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                    .help("No day")
+            }
+        } else {
+            Button("Add a day") { hasDay = true }.buttonStyle(.plain).foregroundStyle(Theme.gold)
+        }
+    }
+
+    @ViewBuilder
+    private var linkControl: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach((todo.links ?? []).sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
+                HStack(spacing: 6) {
+                    Label(link.shownName, systemImage: LinkRow.icon(link)).lineLimit(1)
+                    Spacer(minLength: 4)
+                    Button { link.todo = nil } label: { Image(systemName: "xmark").font(.caption) }
+                        .buttonStyle(.plain).foregroundStyle(.secondary)
+                        .help("Take it off the task. The link stays in the matter.")
+                }
+            }
+            TextField("Paste a link", text: $newLink).textFieldStyle(.plain).focused($focus, equals: .link)
+            if !newLink.isEmpty, WebLink.address(in: newLink) == nil {
+                Text("This is not a web address.").font(.caption).foregroundStyle(Theme.warning)
+            }
+        }
     }
 
     private func load() {

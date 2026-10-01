@@ -58,6 +58,9 @@ struct MatterbeeApp: App {
         }
         CloudSync.shared.watch()
         DispatchQueue.main.async { NSApp.activate() }
+        if let folder = DesignRender.folder, case .success(let container) = opened {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { DesignRender.editor(container, to: folder) }
+        }
     }
 
     var body: some Scene {
