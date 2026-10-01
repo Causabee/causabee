@@ -21,12 +21,15 @@ enum Palette {
 
 enum Theme {
     /// The yellow of the bee's body in the icon, #FFDB0D: the pills (Next, Summary, an overview card's
-    /// counts) and what is in hand above the composer — always with black words.
+    /// counts) and the send button — always with black words.
     static let bee = fixed(Palette.yellowLight[0])
     /// The working bee (`BeeLoader`), as the icon draws its stripes: ink in the light, the bee's yellow in the dark.
     static let beeMark = adaptive("beeMark", light: Palette.greyDark[5], dark: Palette.yellowLight[0])
     /// Where the Mac would put its blue — links, "Add to Reminders", focus rings: the yellow far enough
     /// down its ladder that words in it read on white; in dark mode a step up from the bee.
+    /// The thing in hand above the field: pale honey in the light, a warm honey-grey in the dark —
+    /// calm, so the send button stays the one yellow thing (Figma "bg/bee-soft").
+    static let beeSoft = adaptive("beeSoft", light: Palette.yellowLight[8], dark: 0x3A3528)
     static let gold = adaptive("gold", light: Palette.yellowDark[5], dark: Palette.yellowLight[2])
     /// What the owner said to the assistant: #FFE23E, in both modes, with black words.
     static let honey = fixed(0xFFE23E)

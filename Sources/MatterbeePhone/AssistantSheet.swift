@@ -118,20 +118,21 @@ struct AssistantSheet: View {
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let pinned = navigation.pinned {
-                // What is in hand, on the bee's yellow: black words in both modes — as on the Mac.
+                // What is in hand, on a pale honey: the pin and its kind in gold, the words as any
+                // words — as on the Mac. Calm, so the send button stays the one yellow thing.
                 HStack(spacing: 8) {
-                    Image(systemName: "pin.fill").font(.caption).foregroundStyle(.black)
+                    Image(systemName: "pin.fill").font(.caption).foregroundStyle(Theme.gold)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(pinned.kind.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(.black.opacity(0.5))
-                        Text(pinned.text).lineLimit(2).foregroundStyle(.black)
+                        Text(pinned.kind.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(Theme.gold)
+                        Text(pinned.text).lineLimit(2).foregroundStyle(.primary)
                     }
                     Spacer()
-                    Button { navigation.pinned = nil } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.black.opacity(0.5)) }
+                    Button { navigation.pinned = nil } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary) }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Put it down")
                 }
                 .padding(10)
-                .background(Theme.bee, in: RoundedRectangle(cornerRadius: 10))
+                .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
             }
             // As on the Mac: the send button sits in the pill's round end, as far from the right as
             // from the top and bottom, and the corner's radius is that and half the button — 7 + 34 / 2.
