@@ -197,10 +197,10 @@ struct PhoneShotCard: View {
             }
             switch shot.stage {
             case .reading:
-                HStack(spacing: 8) { BeeLoader(size: 15); Text("Reading it on this iPhone …").font(.subheadline).foregroundStyle(.secondary) }
+                HStack(spacing: 8) { BeeLoader(size: 15); Text("Scanning it on this iPhone …").font(.subheadline).foregroundStyle(.secondary) }
             case .read(let look):
                 preview(look)
-                Text(look.earlier != nil ? "Read before: its answer is kept, nothing is sent again."
+                Text(look.earlier != nil ? "Scanned before: its answer is kept, nothing is sent again."
                      : String(format: "Sorting in costs about %.1f cents. Sent pseudonymised to %@.", look.estimate * 100, ModelChoice.mail.label))
                     .font(.footnote).foregroundStyle(.secondary)
                 HStack(spacing: 10) {

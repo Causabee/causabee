@@ -54,7 +54,7 @@ struct ScanSheet: View {
                 } header: {
                     Text("What is it?")
                 } footer: {
-                    Text("Saved on this iPhone, in \(PhoneShots.place), under this name. Then read here and sorted into “\(matter.name)” when you tap “Sort in” — about 4 cents — as with the paperclip. Its tasks and dates go to all your devices; the file stays on this iPhone.")
+                    Text("Saved on this iPhone, in \(PhoneShots.place), under this name. Then scanned here and sorted into “\(matter.name)” when you tap “Sort in” — about 4 cents — as with the paperclip. Its tasks and dates go to all your devices; the file stays on this iPhone.")
                 }
                 if let failure { Text(failure).foregroundStyle(Theme.warning) }
             }

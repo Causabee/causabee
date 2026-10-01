@@ -208,7 +208,7 @@ struct AssistantColumn: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.png, .jpeg, .heic, .tiff, .pdf, UTType(filenameExtension: "eml") ?? .emailMessage]
         panel.allowsMultipleSelection = true
-        panel.message = "Choose a screenshot, a mail (.eml) or a PDF — it is read on the Mac, and sent only after “Sort in”."
+        panel.message = "Choose a screenshot, a mail (.eml) or a PDF — it is scanned on the Mac, and sent only after “Sort in”."
         guard panel.runModal() == .OK else { return }
         for url in panel.urls { conversation.bring(url) }
     }

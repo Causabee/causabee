@@ -1830,7 +1830,7 @@ struct DocumentRow: View {
                     Button("Name it from its content", action: nameIt)
                         .buttonStyle(.gold).font(.caption)
                         .tool()
-                        .help("Reads the first page on the Mac and takes its heading as the name. Costs nothing, sends nothing.")
+                        .help("Scans the first page on the Mac and takes its heading as the name. Costs nothing, sends nothing.")
                 }
                 if let state {
                     Text(state).font(.caption).foregroundStyle(state.hasPrefix("Getting") ? Color.secondary : Theme.warning).textSelection(.enabled)

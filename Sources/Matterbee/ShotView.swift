@@ -51,10 +51,10 @@ struct ShotView: View {
             }
             switch shot.stage {
             case .reading:
-                progress("Reading on the Mac …")
+                progress("Scanning on the Mac …")
             case .read(let look):
                 read(look)
-                buttons(primary: look.earlier == nil ? String(format: "Sort in · ≈ %.0f cents", (look.estimate * 100).rounded(.up)) : "Sort in · already read, costs nothing",
+                buttons(primary: look.earlier == nil ? String(format: "Sort in · ≈ %.0f cents", (look.estimate * 100).rounded(.up)) : "Sort in · already scanned, costs nothing",
                         action: classify)
             case .sending(let look):
                 read(look)
@@ -74,7 +74,7 @@ struct ShotView: View {
                     Text("Dismissed — nothing was taken into a matter.").font(.caption).foregroundStyle(.secondary)
                     if let bringBack, FileManager.default.fileExists(atPath: shot.file.path) {
                         Button("Bring back", action: bringBack).buttonStyle(.gold).font(.caption)
-                            .help("Read it again. If it was sorted in before, that answer is used again and costs nothing.")
+                            .help("Scan it again. If it was sorted in before, that answer is used again and costs nothing.")
                     }
                 }
             }
@@ -167,7 +167,7 @@ struct ShotView: View {
                 }
                 .padding(.top, 4)
             } label: {
-                Text("\(chat.messages.count) messages read").font(.caption.weight(.semibold))
+                Text("\(chat.messages.count) messages scanned").font(.caption.weight(.semibold))
             }
             if !chat.leftOut.isEmpty {
                 Text("Left out: " + chat.leftOut.map { "“\($0.text)” (\($0.why))" }.joined(separator: ", "))

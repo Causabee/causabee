@@ -320,7 +320,7 @@ struct Composer: View {
                     Button(action: attach) { Image(systemName: "paperclip").font(.title3).frame(height: 26) }
                         .buttonStyle(.plain)
                         .foregroundStyle(.secondary)
-                        .help("Attach a screenshot, a mail (.eml) or a PDF — or drag it here, or paste it (⌘V). It is read on the Mac.")
+                        .help("Attach a screenshot, a mail (.eml) or a PDF — or drag it here, or paste it (⌘V). It is scanned on the Mac.")
                 }
                 TextField(placeholder, text: $draft, axis: .vertical)
                     .textFieldStyle(.plain)
