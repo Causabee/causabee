@@ -35,7 +35,7 @@ Show: the button "Get new mail".
 Move: a click; the bee appears beside it, stripes sorting, wings beating.
 
 **5 · 7 s**
-Say: It reads first, and tells you what sending would cost. Nothing goes out until you say so.
+Say: It reads your new mail first, and tells you what sorting it in would cost. Nothing goes to the AI until you say so.
 Show: "2 new mails" — "Prescription for the bath seat is ready", "Re: Who does what this week?" — then the line "Sorting in costs about $0.02." — then the button "Sort in".
 Move: the lines come one by one; "Sort in" comes last and waits.
 
@@ -106,7 +106,7 @@ Move: the stripes drop in once, the wings beat twice, the bee settles.
 
 ---
 
-Spoken words: 150. At a calm pace that is 75 to 80 seconds of voice, and the rest is silence
+Spoken words: 155. At a calm pace that is 75 to 80 seconds of voice, and the rest is silence
 where the picture does its work. Total: about 90 seconds.
 
 ## What we draw

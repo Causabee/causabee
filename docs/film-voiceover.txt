@@ -16,7 +16,7 @@ New mail? [short pause] One button.
 
 [pause]
 
-It reads first, and tells you what sending would cost. [short pause] Nothing goes out until you say so.
+It reads your new mail first, and tells you what sorting it in would cost. [short pause] Nothing goes to the AI until you say so.
 
 [pause]
 
