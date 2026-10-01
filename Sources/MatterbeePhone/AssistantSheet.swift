@@ -16,6 +16,11 @@ struct AssistantSheet: View {
     @Query private var profiles: [Profile]
     @Environment(PhoneStore.self) private var store
     @State private var draft = ""
+    /// A new field after each send. Emptying the words is not enough while the keyboard still
+    /// holds some of them — dictation, a word being autocorrected: the old field kept showing
+    /// them, and with the words gone from `draft` nothing could be sent again.
+    @State private var fieldKey = 0
+    @FocusState private var typing: Bool
     /// The question on its way, until its answer is in the thread.
     @State private var asking: (question: String, date: Date)?
     @State private var failure: String?
@@ -132,6 +137,8 @@ struct AssistantSheet: View {
                     .lineLimit(1...5)
                     .submitLabel(.send)
                     .onSubmit(send)
+                    .focused($typing)
+                    .id(fieldKey)
                     // One line sits in the middle of the send button; more lines grow upwards.
                     .frame(minHeight: 34)
                 Button(action: send) {
@@ -141,6 +148,9 @@ struct AssistantSheet: View {
                         .foregroundStyle(.black, Theme.bee)
                 }
                 .buttonStyle(.plain)
+                // One question at a time: while an answer is on its way, it rests.
+                .disabled(asking != nil)
+                .opacity(asking != nil ? 0.4 : 1)
                 .accessibilityLabel("Send")
             }
             .padding(.leading, 7).padding(.trailing, 7).padding(.vertical, 7)
@@ -189,7 +199,12 @@ extension AssistantSheet {
             return
         } }
         failure = nil
+        // The keyboard lets go of what it holds first, then the field starts afresh, empty.
+        typing = false
         draft = ""
+        fieldKey += 1
+        // The new field keeps the keyboard, as in Messages.
+        DispatchQueue.main.async { typing = true }
         let date = Date()
         asking = (question, date)
         let owner = profiles.first?.names.first
@@ -214,6 +229,7 @@ extension AssistantSheet {
             } catch {
                 failure = "\(error)"
                 draft = question
+                fieldKey += 1
             }
             asking = nil
         }
