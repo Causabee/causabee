@@ -27,10 +27,10 @@ if web:
     src = src.replace("html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflow: hidden;",
                       "html, body { margin: 0; width: 100%; height: 100%; background: #fff; overflow: hidden;")
     src = src.replace(".stage { position: relative; width: 1080px; height: 1920px; }",
-                      ".stage { position: absolute; left: 50%; top: 50%; width: 1080px; height: 1920px; transform-origin: 0 0; }")
+                      ".stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; }")
     src = src.replace("function seek(t) { for (const a of document.getAnimations()) { a.pause(); a.currentTime = t * 1000; } }",
         """const TOTAL = %s;
-function fit() { const s = Math.min(innerWidth / 1080, innerHeight / 1920); const st = document.querySelector('.stage'); st.style.transform = `translate(-50%%, -50%%) scale(${s})`; st.style.left = '50%%'; st.style.top = '50%%'; }
+function fit() { const s = Math.min(innerWidth / 1080, innerHeight / 1920); const st = document.querySelector('.stage'); st.style.transform = `scale(${s})`; st.style.left = ((innerWidth - 1080 * s) / 2) + 'px'; st.style.top = ((innerHeight - 1920 * s) / 2) + 'px'; }
 addEventListener('resize', fit); fit();
 function restart() { for (const a of document.getAnimations()) { a.cancel(); a.play(); } }
 setInterval(restart, TOTAL * 1000 + 1500);

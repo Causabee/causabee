@@ -188,17 +188,18 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .summary .text { color: var(--grey); font-size: 34px; line-height: 46px; margin-top: 16px; }
 
 /* ---- 9 · whose it is: one row, the pill flips ---- */
-.owner { top: 900px; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v9) - 0.25s), calc(var(--v10) - 0.85s); }
-.flip { position: relative; display: inline-block; height: 44px; width: 320px; perspective: 600px; }
-@keyframes flip-in-bold { 0% { opacity: 0; transform: rotateX(-90deg) scale(2); background: var(--honey); } 40% { opacity: 1; transform: rotateX(0) scale(2); background: var(--honey); } 100% { opacity: 1; transform: scale(2); background: var(--honey); } }
-@keyframes settle-size { from { transform: scale(2); background: var(--honey); } to { transform: scale(1); background: var(--pale); } }
-.flip .pill:nth-child(2) { transform-origin: 0 0; } .flip .pill:nth-child(3) { transform-origin: 0 0; }
-.flip .pill { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; backface-visibility: hidden; }
-.flip .pill:nth-child(1) { animation: flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.35); }
-.flip .pill:nth-child(2) { opacity: 0; animation: flip-in-bold 0.5s var(--ease-out) both, flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.35 + 0.3s), calc(var(--v9) + var(--s9) * 0.75); }
-.flip .pill:nth-child(3) { opacity: 0; animation: flip-in-bold 0.5s var(--ease-out) both, settle-size 0.5s var(--ease-out) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.75 + 0.3s), calc(var(--v9) + var(--s9) * 0.75 + 1.3s); }
+.owner { top: 760px; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v9) - 0.25s), calc(var(--v10) - 0.85s); }
+.stage9 { position: absolute; left: 66px; top: 88px; display: inline-grid; transform-origin: 0 0; animation: stage9-in 0.4s var(--ease-out) both, stage9-land 0.8s cubic-bezier(0.6, 0, 0.2, 1) forwards; animation-delay: calc(var(--v9) - 0.2s), calc(var(--v9) + var(--s9) * 0.75 + 1.2s); }
+.stage9 .pill { grid-area: 1 / 1; justify-self: center; opacity: 0; backface-visibility: hidden; }
+.stage9 .pill:nth-child(1) { animation: flip-in 0.45s var(--ease-out) both, flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) - 0.2s), calc(var(--v9) + var(--s9) * 0.35); }
+.stage9 .pill:nth-child(2) { animation: flip-in 0.45s var(--ease-out) both, flip-out 0.35s var(--ease-in) forwards; animation-delay: calc(var(--v9) + var(--s9) * 0.35 + 0.3s), calc(var(--v9) + var(--s9) * 0.75); }
+.stage9 .pill:nth-child(3) { animation: flip-in 0.45s var(--ease-out) both; animation-delay: calc(var(--v9) + var(--s9) * 0.75 + 0.3s); }
+@keyframes stage9-in { from { opacity: 0; transform: translate(166px, 190px) scale(2); } to { opacity: 1; transform: translate(166px, 190px) scale(2); } }
+@keyframes stage9-land { from { transform: translate(166px, 190px) scale(2); } to { transform: translate(0, 0) scale(1); } }
 @keyframes flip-out { from { opacity: 1; transform: rotateX(0); } to { opacity: 0; transform: rotateX(90deg); } }
 @keyframes flip-in { from { opacity: 0; transform: rotateX(-90deg); } to { opacity: 1; transform: rotateX(0); } }
+.owner .row { perspective: 900px; }
+.owner .meta .slot { visibility: hidden; }
 
 /* ---- 10 · only after another: two rows ---- */
 .after { top: 700px; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v10) - 0.25s), calc(var(--v11) - 0.85s); }
@@ -228,7 +229,6 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .source .quote { font-size: 44px; line-height: 64px; color: var(--grey); margin-top: 26px; }
 .source .mark { color: var(--ink); font-weight: 500; }
 .from-row .src.origin { position: relative; z-index: 0; padding: 2px 10px; margin: 0 -10px; }
-.from-row .src.origin::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: var(--honey); opacity: 0.6; border-radius: 10px; z-index: -1; transform: scaleX(0); transform-origin: 0 50%; animation: pill-draw 0.45s var(--ease-out) both; animation-delay: calc(var(--v11) + var(--s11) * 0.3); }
 .from-row .src.origin { animation: ink-in 0.3s both; animation-delay: calc(var(--v11) + var(--s11) * 0.3); }
 .source .who { position: relative; z-index: 0; display: inline-block; padding: 2px 10px; margin: 4px -10px 0; animation: ink-in 0.4s both; animation-delay: calc(var(--v11) + var(--s11) * 0.78); }
 .source .who::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: var(--honey); opacity: 0.6; border-radius: 10px; z-index: -1; transform: scaleX(0); transform-origin: 0 50%; animation: pill-draw 0.45s var(--ease-out) both; animation-delay: calc(var(--v11) + var(--s11) * 0.78); }
@@ -247,9 +247,12 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .daterow .chips { position: relative; height: 46px; margin-top: 14px; }
 .daterow .chip { position: absolute; left: 0; top: 0; }
 .daterow .chip.add { animation: fade-out 0.3s forwards; animation-delay: calc(var(--v12) + var(--s12) * 0.52); }
-.daterow .chip.linked { opacity: 0; transform-origin: 0 0; animation: chip-flip 0.5s var(--ease-out) both, settle-size 0.5s var(--ease-out) forwards; animation-delay: calc(var(--v12) + var(--s12) * 0.52 + 0.1s), calc(var(--v12) + var(--s12) * 0.52 + 1.0s); }
-@keyframes chip-flip { 0% { opacity: 0; transform: rotateX(-90deg) scale(2); background: var(--honey); } 40% { opacity: 1; transform: rotateX(0) scale(2); background: var(--honey); } 100% { opacity: 1; transform: scale(2); background: var(--honey); } }
-.daterow .chips { perspective: 600px; }
+.daterow .chip.add + .stage12 .chip { opacity: 1; }
+.daterow .stage12 { position: absolute; left: 0; top: 0; transform-origin: 0 0; opacity: 0; animation: stage12-in 0.45s var(--ease-out) both, stage12-land 0.8s cubic-bezier(0.6, 0, 0.2, 1) forwards; animation-delay: calc(var(--v12) + var(--s12) * 0.52 + 0.1s), calc(var(--v12) + var(--s12) * 0.52 + 1.3s); }
+.daterow .stage12 .chip { position: static; backface-visibility: hidden; }
+@keyframes stage12-in { from { opacity: 0; transform: translate(-60px, 150px) scale(2) rotateX(-90deg); } to { opacity: 1; transform: translate(-60px, 150px) scale(2) rotateX(0); } }
+@keyframes stage12-land { from { transform: translate(-60px, 150px) scale(2); } to { transform: translate(0, 0) scale(1); } }
+.daterow .chips { perspective: 900px; }
 .daterow .ring2 { left: 90px; top: 23px; animation-delay: calc(var(--v12) + var(--s12) * 0.5); }
 .calendar { top: 1180px; background: #fff; border: 2px solid var(--line); border-radius: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); height: 430px; overflow: hidden; animation: slide-in 0.6s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v12) + var(--s12) * 0.7), calc(var(--v13) - 0.85s); }
 @keyframes slide-in { from { opacity: 0; transform: translateX(120px); } to { opacity: 1; transform: none; } }
@@ -325,11 +328,11 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .phone .pcard.p1 { top: 150px; } .phone .pcard.p2 { top: 330px; opacity: 0.45; } .phone .pcard.p3 { top: 510px; opacity: 0.2; }
 .phone .pcard .label { font-size: 14px; padding: 3px 8px; border-radius: 6px; } .phone .pcard .name { font-family: "Source Serif 4", serif; font-size: 25px; line-height: 30px; margin-top: 8px; } .phone .pcard .next { color: var(--grey); font-size: 15px; line-height: 20px; margin-top: 6px; }
 .pulse-a { animation: pulse 0.5s ease-in-out both; animation-delay: calc(var(--v16) + var(--s16) * 0.5); }
-.pulse-b { animation: pulse 0.5s ease-in-out both; animation-delay: calc(var(--v16) + var(--s16) * 0.5 + 0.7s); }
+.macwin { animation-name: rise-in, bump, drop-out; animation-duration: 0.55s, 0.6s, 0.4s; animation-timing-function: var(--ease-out), ease-in-out, var(--ease-in); animation-fill-mode: both, both, forwards; animation-delay: calc(var(--v16) + 0.1s), calc(var(--v16) + var(--s16) * 0.5), calc(var(--v17) - 0.85s); }
+.phone { animation-name: rise-in, bump, drop-out; animation-duration: 0.55s, 0.6s, 0.4s; animation-timing-function: var(--ease-out), ease-in-out, var(--ease-in); animation-fill-mode: both, both, forwards; animation-delay: calc(var(--v16) + var(--s16) * 0.24), calc(var(--v16) + var(--s16) * 0.5 + 0.45s), calc(var(--v17) - 0.85s); }
+@keyframes bump { 0%, 100% { transform: none; } 35% { transform: scale(1.035); } 70% { transform: scale(0.99); } }
+.pulse-b { animation: pulse 0.5s ease-in-out both; animation-delay: calc(var(--v16) + var(--s16) * 0.5 + 0.45s); }
 @keyframes pulse { 50% { transform: scale(1.08); filter: brightness(1.15); } }
-.blob { position: absolute; left: 290px; top: 866px; width: 26px; height: 26px; border-radius: 50%; background: var(--honey); opacity: 0; animation: blob-fly 0.8s cubic-bezier(0.5, 0, 0.3, 1) both; animation-delay: calc(var(--v16) + var(--s16) * 0.5); }
-@keyframes blob-fly { 0% { opacity: 0; transform: translate(0, 0) scale(0.4); } 12% { opacity: 1; transform: translate(30px, -10px) scale(1); } 50% { transform: translate(200px, -110px) scaleX(2.2) scaleY(0.8) rotate(-24deg); } 88% { opacity: 1; transform: translate(400px, -170px) scale(1.1); } 100% { opacity: 0; transform: translate(400px, -170px) scale(0.3); } }
-
 /* ---- 17 · only a disguise ---- */
 .device { top: 560px; background: #fff; border: 2px solid var(--line); border-radius: 36px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); padding: 32px 40px 40px; box-sizing: border-box; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: var(--v17), calc(var(--v18) - 0.85s); }
 .device .small { color: var(--grey); font-size: 24px; font-weight: 600; letter-spacing: 1px; }
@@ -344,8 +347,10 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .seen { top: 1060px; background: var(--box); border-radius: 36px; padding: 36px 40px 40px; box-sizing: border-box; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.5), calc(var(--v18) - 0.85s); }
 .seen .small { color: var(--grey); font-size: 24px; font-weight: 600; letter-spacing: 1px; }
 .seen .line { font-size: 40px; line-height: 58px; margin-top: 18px; }
-.seen .name { display: inline-grid; font-weight: 500; vertical-align: baseline; }
-.seen .name > span { grid-area: 1 / 1; white-space: nowrap; }
+.seen .name { display: inline-block; position: relative; font-weight: 500; vertical-align: baseline; height: 58px; width: var(--wr); animation: name-width 0.6s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86 + 0.1s); }
+.seen .name.second { animation-delay: calc(var(--v17) + var(--s17) * 0.94 + 0.1s); }
+.seen .name > span { position: absolute; left: 0; top: 0; white-space: nowrap; }
+@keyframes name-width { from { width: var(--wr); } to { width: var(--wf); } }
 .seen .name .real { color: var(--ink); animation: blur-out 0.6s var(--ease-in) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86); }
 .seen .name .fake { color: #8a6d00; opacity: 0; filter: blur(10px); animation: blur-in 0.6s var(--ease-out) forwards; animation-delay: calc(var(--v17) + var(--s17) * 0.86 + 0.25s); }
 .seen .name.second .real { animation-delay: calc(var(--v17) + var(--s17) * 0.94); }
@@ -422,7 +427,7 @@ body.captions .cap { display: block; }
 <div class="obj nextbox"><span class="label">NEXT · FROM MATTERBEE</span><div class="step">Read and sign the Sunrise contract</div><div class="why">It has to be <span class="mark">back by 2 October</span> for the first visit on 7 October.</div><div class="buttons"><span class="btn ink">Write message</span><span class="btn">Done</span><span class="btn">Show</span></div></div>
 <div class="obj summary box"><span class="label">SUMMARY</span><div class="text">Mum is recovering at home after a fall. The care level application is in and the assessment visit is on 6 October. Sunrise Home Care starts on 7 October, but only if the signed contract is back by 2 October.</div></div>
 
-<div class="obj owner"><div class="row"><span class="check"></span><div class="body"><div class="text">Sign the Sunrise contract and send it back</div><div class="meta"><span class="flip"><span class="pill">Mine</span><span class="pill">Ours</span><span class="pill">Waiting for Nina</span></span><span>by Oct 3</span><span class="src">from the mail of Sep 24</span></div></div><span class="more">···</span></div></div>
+<div class="obj owner"><div class="row"><span class="check"></span><div class="body"><div class="text">Sign the Sunrise contract and send it back</div><div class="meta"><span class="pill slot">Waiting for Nina</span><span>by Oct 3</span><span class="src">from the mail of Sep 24</span></div></div><span class="more">···</span><span class="stage9"><span class="pill">Mine</span><span class="pill">Ours</span><span class="pill">Waiting for Nina</span></span></div></div>
 
 <div class="obj after">
   <div class="row first"><span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div class="body"><div class="text">Read the Sunrise contract together with Nina</div><div class="meta"><span>Ours · by Oct 2</span><span class="src">from the mail of Sep 24</span></div></div><span class="more">···</span></div>
@@ -432,7 +437,7 @@ body.captions .cap { display: block; }
 <div class="obj from-row"><div class="row"><span class="check"></span><div class="body"><div class="text">Sign the Sunrise contract and send it back</div><div class="meta"><span>Mine · by Oct 3</span><span class="src origin">from the mail of Sep 24</span></div></div><span class="more">···</span></div></div>
 <div class="obj source"><div class="subj">Contract draft: please sign and return by 2 October</div><div class="who">Yusuf Kaya, Sunrise Home Care · Sep 24</div><div class="quote">… if the signed contract is <span class="mark">back by 2 October</span>.</div></div>
 
-<div class="obj daterow"><div class="when"><div class="day">Oct 6</div><div class="time"><span class="t1">10:00</span><span class="t2">10:30</span></div></div><div class="body"><div class="what">Assessment visit (medical service)</div><div class="kind">Appointment · Mum's flat</div><div class="chips"><span class="chip add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Add to Calendar</span><span class="chip linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>in Calendar · Oct 6, 10:00</span></div></div><span class="more">···</span></div>
+<div class="obj daterow"><div class="when"><div class="day">Oct 6</div><div class="time"><span class="t1">10:00</span><span class="t2">10:30</span></div></div><div class="body"><div class="what">Assessment visit (medical service)</div><div class="kind">Appointment · Mum's flat</div><div class="chips"><span class="chip add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Add to Calendar</span><span class="stage12"><span class="chip linked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>in Calendar · Oct 6, 10:00</span></span></div></div><span class="more">···</span></div>
 <div class="obj calendar"><div class="dayhead">TUE <span class="no">6</span> October 2026</div>
   <div class="hour" style="top:110px"><span>9:00</span></div><div class="hour" style="top:206px"><span>10:00</span></div><div class="hour" style="top:302px"><span>11:00</span></div><div class="hour" style="top:398px"><span>12:00</span></div>
   <div class="event" style="top:209px"><b>Assessment visit (medical service)</b><span>Mum's flat</span></div></div>
@@ -451,7 +456,7 @@ body.captions .cap { display: block; }
 <div class="obj takencard"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div class="body"><div class="what">Ask a neighbour to be at Mum's flat by 09:45 on 6 October</div><div class="kind">Task added · Waiting for · by Oct 5</div></div><span class="undo">Undo</span></div>
 
 <div class="macwin"><div class="titlebar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span class="t">Matterbee</span></div><div class="mcard m1"><span class="label pulse-a">3 for you · 1 together · waiting for 2</span><div class="name">Care for Mum (Helga) after her fall</div><div class="next">Next, on Oct 2: Read and sign the Sunrise contract</div></div><div class="mcard m2"><span class="label">5 for you · waiting for 1</span><div class="name">Buying the flat at Linden Street 8</div><div class="next">Next, on Oct 2: Send the last salary slip to Northbank</div></div></div>
-<div class="blob"></div>
+
 <div class="phone"><div class="screen"><div class="island"></div><div class="ov">Overview</div><div class="pcard p1"><span class="label pulse-b">3 for you · 1 together · waiting for 2</span><div class="name">Care for Mum (Helga) after her fall</div><div class="next">Next, on Oct 2: Read and sign the Sunrise contract</div></div><div class="pcard p2"><span class="label">5 for you · waiting for 1</span><div class="name">Buying the flat at Linden Street 8</div><div class="next">Next, on Oct 2: Send the last salary slip to Northbank</div></div><div class="pcard p3"><span class="label">4 for you · waiting for 1</span><div class="name">Parking-lot accident, 14 September</div><div class="next">Next, on Oct 2: Make sure the car is at the garage on Thursday</div></div></div></div>
 
 <div class="obj device"><div class="small">ON YOUR DEVICE</div><div class="mail"><div class="avatar">B</div><div class="body"><div class="headline"><span class="sender">Dr. Anselm Brandt</span><span class="date">Sep 28</span></div><div class="subject">Prescription for the bath seat is ready</div><div class="preview"><b>Dr. Brandt</b> has the bath seat prescription for <b>Helga</b>. The medical supply store needs it before delivery.</div></div></div><div class="badge"><svg viewBox="0 0 56 64"><path class="shackle" d="M14 30 V18 a14 14 0 0 1 28 0 V38"/><rect class="lb" x="4" y="30" width="48" height="34" rx="7"/></svg></div></div>
@@ -481,5 +486,6 @@ body.captions .cap { display: block; }
 <div class="white"></div>
 </div>
 <script>
+for (const n of document.querySelectorAll('.seen .name')) { const r = n.querySelector('.real'), f = n.querySelector('.fake'); n.style.setProperty('--wr', r.offsetWidth + 'px'); n.style.setProperty('--wf', f.offsetWidth + 'px'); }
 function seek(t) { for (const a of document.getAnimations()) { a.pause(); a.currentTime = t * 1000; } }
 </script></body></html>
