@@ -17,7 +17,7 @@ final class MailCheck {
         /// The demo's three made-up mails, found: the same panel, nothing read or sent.
         case demoReady
         case sending(String)
-        case done(String, [IntakeSummary.Item] = [])
+        case done(String, [IntakeSummary.Item] = [], [IntakeSummary.Mail] = [])
         case failed(String)
     }
 
@@ -40,7 +40,7 @@ final class MailCheck {
     /// Changes when a run ends, so the list of mail without a matter is read again.
     var stateKey: String {
         switch state {
-        case .done(let text, _): "done " + text
+        case .done(let text, _, _): "done " + text
         case .idle: "idle"
         default: "busy"
         }
@@ -94,6 +94,13 @@ final class MailCheck {
         door.earlier = SortedMails.answered(in: context)
         door.setAside = Self.setAside
         return door
+    }
+
+    /// A mail of the round moved by the owner: its line says where it is now.
+    func moved(_ messageID: String, to name: String) {
+        guard case .done(let text, let items, var mails) = state, let at = mails.firstIndex(where: { $0.messageID == messageID }) else { return }
+        mails[at].matter = name
+        state = .done(text, items, mails)
     }
 
     /// Sort in the ticked ones; the others are set aside, so they are not offered again.
@@ -156,7 +163,10 @@ final class MailCheck {
                                               dates: imported.appointments + imported.deadlines, unplaced: unplaced, cost: summary.cost)
                 if !summary.failed.isEmpty { text += " · \(summary.failed.count) failed" }
                 _ = links
-                state = .done(text, IntakeSummary.items(judgements))
+                // Each mail with the matter it went into: a wrong one is moved from here.
+                let all = try context.fetch(FetchDescriptor<Matter>())
+                let mails = IntakeSummary.mails(judgements) { key in all.first { $0.answers(to: key) }?.name }
+                state = .done(text, IntakeSummary.items(judgements), mails)
             } catch {
                 state = .failed("\(error)")
             }
@@ -186,7 +196,8 @@ extension MailCheck {
             demoTaken?(taken)
             let tasks = chosen.contains(0) ? 1 : 0
             state = .done(IntakeSummary.line(mails: taken.count, matters: taken.map(\.matter.name), tasks: tasks, dates: taken.count - tasks),
-                          DemoData.newMailItems(chosen))
+                          DemoData.newMailItems(chosen),
+                          taken.map { IntakeSummary.Mail(messageID: "demo-new-\($0.index)@mail.example", subject: DemoData.newMail[$0.index].subject, matter: $0.matter.name) })
         }
     }
 }
@@ -313,9 +324,12 @@ struct MailCheckView: View {
                 }
             case .demoReady:
                 DemoMailReview(later: { check.state = .idle }) { chosen in check.sortInDemo(context: context, only: chosen) }
-            case .done(let text, let items):
+            case .done(let text, let items, let mails):
                 Label(text, systemImage: "checkmark.circle").font(.caption).foregroundStyle(Theme.done)
-                // What it brought, to see without opening every matter.
+                // Where each mail went — a wrong one moved from here — and what it brought.
+                ForEach(mails, id: \.messageID) { mail in
+                    IntakeMailRow(mail: mail) { name in check.moved(mail.messageID, to: name) }
+                }
                 ForEach(items, id: \.self) { item in
                     Label(item.text, systemImage: item.symbol).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
@@ -450,5 +464,40 @@ struct DemoMailReview: View {
                     .inkButton().disabled(chosen.isEmpty)
             }
         }
+    }
+}
+
+/// One mail of the round: its subject, the matter it went into, and Move — to another matter.
+struct IntakeMailRow: View {
+    let mail: IntakeSummary.Mail
+    let moved: (String) -> Void
+    @Query private var matters: [Matter]
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Label(mail.subject, systemImage: "envelope").font(.caption).lineLimit(1)
+            HStack(spacing: 6) {
+                Text("→ " + mail.matter).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Spacer(minLength: 4)
+                Menu("Move") {
+                    ForEach(MoveMailMenu.order(matters, current: nil).filter { $0.name != mail.matter }) { matter in
+                        Button(matter.name) {
+                            guard let entry = entry else { return }
+                            MoveMailMenu.move(entry, to: matter, in: context)
+                            moved(matter.name)
+                        }
+                    }
+                }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .font(.caption).foregroundStyle(Theme.gold)
+            }
+            .padding(.leading, 20)
+        }
+    }
+
+    private var entry: Entry? {
+        let id = mail.messageID
+        return try? context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { $0.messageID == id })).first
     }
 }

@@ -1804,6 +1804,9 @@ struct ThreadMailRow: View {
     let row: MailThreads.Row
     let started: Bool
     let talk: () -> Void
+    @Environment(\.modelContext) private var context
+    @State private var naming = false
+    @State private var newName = ""
 
     static let step: CGFloat = 20
     /// How far in replies go; deeper ones stay at this depth.
@@ -1844,7 +1847,23 @@ struct ThreadMailRow: View {
         }
         .contentShape(Rectangle())
         // Asking about it is in the right click, as on every row: no button that comes and goes.
-        .contextMenu { Button("Ask Matterbee", action: talk) }
+        .contextMenu {
+            Button("Ask Matterbee", action: talk)
+            MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
+            Divider()
+            if let url = row.entry.mailURL { Button("Open in Mail") { NSWorkspace.shared.open(url) } }
+        }
+        .alert("Move to a new matter", isPresented: $naming) {
+            TextField("Name", text: $newName)
+            Button("Cancel", role: .cancel) {}
+            Button("Move") {
+                let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !name.isEmpty, let from = row.entry.matter else { return }
+                _ = try? from.split([row.entry], intoNewMatterNamed: name, turnsSince: nil, in: context)
+            }
+        } message: {
+            Text("The mail goes, with the tasks, dates and files only it brought.")
+        }
     }
 }
 
@@ -2126,4 +2145,39 @@ func alphabetically(_ a: String, _ b: String) -> Bool { a.localizedStandardCompa
 func newestFirst(_ a: WebLink, _ b: WebLink) -> Bool {
     a.createdAt != b.createdAt ? a.createdAt > b.createdAt
         : alphabetically(a.title.isEmpty ? a.address : a.title, b.title.isEmpty ? b.address : b.title)
+}
+
+/// "Move to Another Matter": the open matters, the newest mail first, the one it is in ticked; and a
+/// new one. The mail goes with what only it brought — its tasks, dates, decisions, files and links.
+struct MoveMailMenu: View {
+    let entry: Entry
+    let newMatter: () -> Void
+    @Query private var matters: [Matter]
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        Menu("Move to Another Matter") {
+            ForEach(MoveMailMenu.order(matters, current: entry.matter)) { matter in
+                if matter === entry.matter {
+                    Button { } label: { Label(matter.name, systemImage: "checkmark") }.disabled(true)
+                } else {
+                    Button(matter.name) { MoveMailMenu.move(entry, to: matter, in: context) }
+                }
+            }
+            Divider()
+            Button("New Matter …", action: newMatter)
+        }
+    }
+
+    /// The one it is in first, then the open ones by their newest mail.
+    static func order(_ matters: [Matter], current: Matter?) -> [Matter] {
+        let open = matters.filter { !$0.isClosed && $0 !== current }
+            .map { ($0, MatterStatus($0).lastDate ?? .distantPast) }.sorted { $0.1 > $1.1 }.map(\.0)
+        return (current.map { [$0] } ?? []) + open
+    }
+
+    static func move(_ entry: Entry, to matter: Matter, in context: ModelContext) {
+        guard let from = entry.matter else { return }
+        withAnimation { try? from.move([entry], into: matter, in: context) }
+    }
 }

@@ -262,8 +262,18 @@ extension Matter {
     /// words since `turnsSince` (the "mails taken in" note). A task another mail said too stays. The
     /// people they name are in both matters.
     public func split(_ moved: [Entry], intoNewMatterNamed name: String, turnsSince: Date?, in context: ModelContext) throws -> Matter {
-        let ids = Set(moved.map(\.messageID))
         let new = try Matter.make(named: name, in: context)
+        try move(moved, into: new, turnsSince: turnsSince, in: context)
+        return new
+    }
+
+    /// These mails into another matter, one that is there already: the model filed them here, and
+    /// the owner knows better. What only they brought goes along — tasks, dates and decisions read
+    /// out of them alone, their files and links; a task another mail said too stays. The people
+    /// they name are in both matters.
+    public func move(_ moved: [Entry], into new: Matter, turnsSince: Date? = nil, in context: ModelContext) throws {
+        guard new !== self else { return }
+        let ids = Set(moved.map(\.messageID))
         let onlyTheirs: ([Source]) -> Bool = { sources in
             !sources.isEmpty && sources.allSatisfy { ids.contains($0.messageID ?? "") }
         }
@@ -291,7 +301,6 @@ extension Matter {
             copy.mentions = moved.filter { [$0.from, $0.title, $0.digest ?? ""].joined(separator: " ").lowercased().contains(party.name.lowercased()) }.count
         }
         try context.save()
-        return new
     }
 
     /// Everything of `other` becomes this matter's, and `other` is gone. Its names are kept as

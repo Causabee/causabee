@@ -54,7 +54,7 @@ final class PhoneMailCheck {
         /// The demo's three, found by the check that runs by itself.
         case demoNew
         case sending(String)
-        case done(String, [IntakeSummary.Item] = [])
+        case done(String, [IntakeSummary.Item] = [], [IntakeSummary.Mail] = [])
         case failed(String)
     }
 
@@ -75,7 +75,7 @@ final class PhoneMailCheck {
     /// Changes when a run ends, so the list of mail without a matter is read again.
     var stateKey: String {
         switch state {
-        case .done(let text, _): "done " + text
+        case .done(let text, _, _): "done " + text
         case .idle: "idle"
         default: "busy"
         }
@@ -155,6 +155,13 @@ final class PhoneMailCheck {
         }
     }
 
+    /// A mail of the round moved by the owner: its line says where it is now.
+    func moved(_ messageID: String, to name: String) {
+        guard case .done(let text, let items, var mails) = state, let at = mails.firstIndex(where: { $0.messageID == messageID }) else { return }
+        mails[at].matter = name
+        state = .done(text, items, mails)
+    }
+
     /// Sort in the ticked ones; the others are set aside, so they are not offered again.
     func sortIn(_ chosen: Set<String>, of look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
         Self.setAside.formUnion(Set(look.newIDs).subtracting(chosen))
@@ -223,7 +230,8 @@ final class PhoneMailCheck {
             try? context.save()
             let tasks = chosen.contains(0) ? 1 : 0
             state = .done(IntakeSummary.line(mails: taken.count, matters: taken.map(\.matter.name), tasks: tasks, dates: taken.count - tasks),
-                          DemoData.newMailItems(chosen))
+                          DemoData.newMailItems(chosen),
+                          taken.map { IntakeSummary.Mail(messageID: "demo-new-\($0.index)@mail.example", subject: DemoData.newMail[$0.index].subject, matter: $0.matter.name) })
         }
     }
 
@@ -262,7 +270,10 @@ final class PhoneMailCheck {
                                               dates: imported.appointments + imported.deadlines, unplaced: unplaced, cost: summary.cost)
                 if !summary.failed.isEmpty { text += " · \(summary.failed.count) failed" }
                 _ = links
-                state = .done(text, IntakeSummary.items(judgements))
+                // Each mail with the matter it went into: a wrong one is moved from here.
+                let all = try context.fetch(FetchDescriptor<Matter>())
+                let mails = IntakeSummary.mails(judgements) { key in all.first { $0.answers(to: key) }?.name }
+                state = .done(text, IntakeSummary.items(judgements), mails)
             } catch {
                 state = .failed("\(error)")
             }
@@ -399,13 +410,16 @@ struct PhoneMailCheckView: View {
                 }
             case .demoReady:
                 PhoneDemoMailReview(later: { check.state = .demoNew }) { chosen in check.sortInDemo(context: context, only: chosen) }
-            case .done(let text, let items):
+            case .done(let text, let items, let mails):
                 Label(text, systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
                     .padding(.top, 14)
-                if !items.isEmpty {
-                    // What it brought, to see without opening every matter.
-                    VStack(alignment: .leading, spacing: 6) {
+                if !items.isEmpty || !mails.isEmpty {
+                    // Where each mail went — a wrong one moved from here — and what it brought.
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(mails, id: \.messageID) { mail in
+                            PhoneIntakeMailRow(mail: mail) { name in check.moved(mail.messageID, to: name) }
+                        }
                         ForEach(items, id: \.self) { item in
                             Label(item.text, systemImage: item.symbol).font(.subheadline)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -575,5 +589,35 @@ struct PhoneDemoMailReview: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .phoneBox()
+    }
+}
+
+/// One mail of the round: its subject, the matter it went into, and Move — to another matter.
+struct PhoneIntakeMailRow: View {
+    let mail: IntakeSummary.Mail
+    let moved: (String) -> Void
+    @Query private var matters: [Matter]
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Label(mail.subject, systemImage: "envelope").font(.subheadline.weight(.medium)).lineLimit(2)
+            HStack(spacing: 6) {
+                Text("→ " + mail.matter).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                Spacer(minLength: 4)
+                Menu("Move") {
+                    ForEach(PhoneMoveMail.order(matters, current: nil).filter { $0.name != mail.matter }) { matter in
+                        Button(matter.name) {
+                            let id = mail.messageID
+                            guard let entry = try? context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { $0.messageID == id })).first else { return }
+                            PhoneMoveMail.move(entry, to: matter, in: context)
+                            moved(matter.name)
+                        }
+                    }
+                }
+                .font(.footnote).tint(Theme.gold)
+            }
+            .padding(.leading, 28)
+        }
     }
 }

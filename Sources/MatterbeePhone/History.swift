@@ -43,6 +43,9 @@ struct PhoneThreadMailRow: View {
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.openURL) private var openURL
+    @Environment(\.modelContext) private var context
+    @State private var naming = false
+    @State private var newName = ""
 
     static let step: CGFloat = 16
     static let deepest = 3
@@ -76,6 +79,18 @@ struct PhoneThreadMailRow: View {
         .contentShape(Rectangle())
         .contextMenu {
             AskMatterbeeButton { navigation.talk(entry.title, kind: "Mail", in: matter) }
+            PhoneMoveMail(entry: entry) { newName = Matter.suggestedName(for: [entry]); naming = true }
+        }
+        .alert("Move to a new matter", isPresented: $naming) {
+            TextField("Name", text: $newName)
+            Button("Cancel", role: .cancel) {}
+            Button("Move") {
+                let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !name.isEmpty, let from = entry.matter else { return }
+                _ = try? from.split([entry], intoNewMatterNamed: name, turnsSince: nil, in: context)
+            }
+        } message: {
+            Text("The mail goes, with the tasks, dates and files only it brought.")
         }
     }
 
@@ -110,5 +125,42 @@ struct PhoneThreadRails: Shape {
         path.move(to: CGPoint(x: x(depth), y: turn))
         path.addLine(to: CGPoint(x: x(depth) + step - 6, y: turn))
         return path
+    }
+}
+
+/// "Move to another matter": the open matters, the newest mail first, the one it is in ticked; and
+/// a new one. The mail goes with what only it brought — its tasks, dates, decisions, files and links.
+struct PhoneMoveMail: View {
+    let entry: Entry
+    let newMatter: () -> Void
+    @Query private var matters: [Matter]
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        Menu {
+            ForEach(Self.order(matters, current: entry.matter)) { matter in
+                if matter === entry.matter {
+                    Button(matter.name, systemImage: "checkmark") { }.disabled(true)
+                } else {
+                    Button(matter.name) { Self.move(entry, to: matter, in: context) }
+                }
+            }
+            Divider()
+            Button("A new matter", systemImage: "plus.circle", action: newMatter)
+        } label: {
+            Label("Move to another matter", systemImage: "folder")
+        }
+    }
+
+    /// The one it is in first, then the open ones by their newest mail.
+    static func order(_ matters: [Matter], current: Matter?) -> [Matter] {
+        let open = matters.filter { !$0.isClosed && $0 !== current }
+            .map { ($0, MatterStatus($0).lastDate ?? .distantPast) }.sorted { $0.1 > $1.1 }.map(\.0)
+        return (current.map { [$0] } ?? []) + open
+    }
+
+    static func move(_ entry: Entry, to matter: Matter, in context: ModelContext) {
+        guard let from = entry.matter else { return }
+        withAnimation { try? from.move([entry], into: matter, in: context) }
     }
 }

@@ -155,6 +155,38 @@ struct MatterImportTests {
         #expect(MatterStatus(trip).mailsSinceClosed.count == 1)
     }
 
+    @Test("A mail moved to another matter takes what only it brought; a task another mail said too stays")
+    func moveMail() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let shine = try Matter.make(named: "Shine application", in: context)
+        let superhuman = try Matter.make(named: "Superhuman application", in: context)
+        func entry(_ id: String) -> (Entry, Source) {
+            let source = Source(kind: .mail, pointer: "imap://x/\(id)", messageID: id, date: Date())
+            let e = Entry(title: "Mail \(id)", from: "Robbie Kerr <robbie@superhuman.example>", date: Date(), source: source)
+            e.matter = shine
+            context.insert(e)
+            return (e, source)
+        }
+        let (wrong, wrongSource) = entry("w@x"), (_, otherSource) = entry("o@x")
+        let alone = Todo(text: "Prepare for the interview", owner: .me, due: nil, source: wrongSource, origin: "w@x#interview")
+        let shared = Todo(text: "Send the portfolio", owner: .me, due: nil, source: wrongSource, origin: "w@x#portfolio")
+        shared.sources.append(otherSource)
+        for todo in [alone, shared] { todo.matter = shine; context.insert(todo) }
+        let date = Appointment(what: "Interview", day: "2026-10-08", time: "17:30", place: nil, source: wrongSource)
+        date.matter = shine
+        context.insert(date)
+        try context.save()
+
+        try shine.move([wrong], into: superhuman, in: context)
+        #expect(wrong.matter === superhuman)
+        #expect(alone.matter === superhuman)
+        #expect(date.matter === superhuman)
+        #expect(shared.matter === shine)  // another mail said it too
+        #expect((shine.entries ?? []).count == 1)
+        try superhuman.move([wrong], into: superhuman, in: context)  // into itself: nothing happens
+        #expect(wrong.matter === superhuman)
+    }
+
     @Test("Merging keeps the owner's notes of both matters")
     func mergingKeepsNotes() throws {
         let context = ModelContext(try MatterSchema.container(at: nil))
