@@ -237,7 +237,7 @@ struct PendingTurn: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.leading, 40)
             HStack(spacing: 8) {
-                BeeLoader()
+                BeeLoader(size: 15)
                 Text("Sending, pseudonymised …").foregroundStyle(.secondary)
             }
         }

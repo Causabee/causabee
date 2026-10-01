@@ -142,7 +142,7 @@ struct PhoneMailReader: View {
                     } else if let failure {
                         Text(failure).font(.callout).foregroundStyle(Theme.warning)
                     } else {
-                        HStack(spacing: 8) { BeeLoader(size: 14); Text("Getting the mail …").foregroundStyle(.secondary) }
+                        HStack(spacing: 8) { BeeLoader(size: 15); Text("Getting the mail …").foregroundStyle(.secondary) }
                     }
                 }
                 .padding(16)

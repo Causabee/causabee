@@ -281,7 +281,7 @@ struct MatterScreen: View {
             let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(summaryFacts, model: ModelChoice.assistant) * 100)
             HStack(spacing: 8) {
                 if askingStep {
-                    BeeLoader(size: 14)
+                    BeeLoader(size: 12)
                     Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else {
                     Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
@@ -404,7 +404,7 @@ struct MatterScreen: View {
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 8) {
                 if writingSummary {
-                    BeeLoader(size: 14)
+                    BeeLoader(size: 12)
                     Text("Writing the summary …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
                 } else if matter.summaryAt != nil {

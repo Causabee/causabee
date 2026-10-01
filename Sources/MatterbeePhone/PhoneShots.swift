@@ -197,7 +197,7 @@ struct PhoneShotCard: View {
             }
             switch shot.stage {
             case .reading:
-                HStack(spacing: 8) { BeeLoader(size: 14); Text("Reading it on this iPhone …").font(.subheadline).foregroundStyle(.secondary) }
+                HStack(spacing: 8) { BeeLoader(size: 15); Text("Reading it on this iPhone …").font(.subheadline).foregroundStyle(.secondary) }
             case .read(let look):
                 preview(look)
                 Text(look.earlier != nil ? "Read before: its answer is kept, nothing is sent again."
@@ -209,7 +209,7 @@ struct PhoneShotCard: View {
                 }
             case .sending(let look):
                 preview(look)
-                HStack(spacing: 8) { BeeLoader(size: 14); Text("Sorting it in …").font(.subheadline).foregroundStyle(.secondary) }
+                HStack(spacing: 8) { BeeLoader(size: 15); Text("Sorting it in …").font(.subheadline).foregroundStyle(.secondary) }
             case .answered(let look, let judgement):
                 Text(look.heading).font(.headline).fixedSize(horizontal: false, vertical: true)
                 found(judgement)

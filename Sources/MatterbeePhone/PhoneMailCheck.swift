@@ -220,7 +220,7 @@ struct PhoneMailCheckView: View {
             case .reading(let text):
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 10) {
-                        BeeLoader()
+                        BeeLoader(size: 15)
                         Text(text).font(.subheadline).foregroundStyle(.secondary)
                     }
                     Button("Cancel") { check.cancel() }.buttonStyle(.phone)
@@ -229,7 +229,7 @@ struct PhoneMailCheckView: View {
                 .padding(14).phoneBox()
             case .sending(let text):
                 HStack(spacing: 10) {
-                    BeeLoader()
+                    BeeLoader(size: 15)
                     Text(text).font(.subheadline).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
