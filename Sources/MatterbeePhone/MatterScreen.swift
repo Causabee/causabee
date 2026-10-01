@@ -428,17 +428,23 @@ struct MatterScreen: View {
     private var notes: some View {
         let text = matter.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "Notes")
-            HStack(alignment: .top, spacing: 12) {
-                Text(text.isEmpty ? "Your own words on the matter — the assistant reads them too." : text)
-                    .foregroundStyle(text.isEmpty ? .secondary : .primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .findable(.section("notes"), text)
-                Spacer(minLength: 0)
-                Button(text.isEmpty ? "Write" : "Edit") { editingNotes = true }.buttonStyle(.phone).tool()
+            // "Edit" in the heading, as "Add a document" beside Files: the note has the card's width.
+            HStack {
+                SectionHeader(title: "Notes")
+                Button(text.isEmpty ? "Write" : "Edit") { editingNotes = true }
+                    .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                    .tool()
             }
-            .padding(16)
-            .phoneCard()
+            Text(text.isEmpty ? "Your own words on the matter — the assistant reads them too." : text)
+                .foregroundStyle(text.isEmpty ? .secondary : .primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .findable(.section("notes"), text)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .phoneCard()
+                // A tap on the note opens it too.
+                .contentShape(Rectangle())
+                .onTapGesture { editingNotes = true }
         }
     }
 

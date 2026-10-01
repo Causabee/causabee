@@ -312,7 +312,15 @@ struct MatterStatusView: View {
     private var notes: some View {
         let text = matter.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "Notes")
+            // "Edit" in the heading: the note has the card's width.
+            HStack {
+                SectionHeader(title: "Notes")
+                if !editingNotes, !text.isEmpty {
+                    Button("Edit") { notesDraft = matter.notes ?? ""; editingNotes = true }
+                        .buttonStyle(.gold).font(.caption)
+                        .tool()
+                }
+            }
             if editingNotes {
                 TextEditor(text: $notesDraft)
                     .font(.body)
@@ -339,13 +347,11 @@ struct MatterStatusView: View {
                     .tool()
                     .padding(.horizontal, 4)
             } else {
-                HStack(alignment: .top) {
-                    Text(Linked.text(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
-                        .findable(.section("notes"), text)
-                    Spacer(minLength: 8)
-                    Button("Edit") { notesDraft = matter.notes ?? ""; editingNotes = true }.tool()
-                }
-                .padding(14)
+                Text(Linked.text(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                    .findable(.section("notes"), text)
+                    .padding(14)
+                    // A double-click on the note opens it too; one click still selects its words.
+                    .onTapGesture(count: 2) { notesDraft = matter.notes ?? ""; editingNotes = true }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
