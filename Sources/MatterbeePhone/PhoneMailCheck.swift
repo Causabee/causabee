@@ -47,8 +47,12 @@ final class PhoneMailCheck {
         case reading(String)
         case nothingNew(known: Int)
         case ready(DailyDoor.Look, DailyDoor)
+        /// New mail found by the check that runs by itself, waiting quietly to be looked at.
+        case newMail(DailyDoor.Look, DailyDoor)
         /// The demo's three made-up mails, found: the same panel, nothing read or sent.
         case demoReady
+        /// The demo's three, found by the check that runs by itself.
+        case demoNew
         case sending(String)
         case done(String, [IntakeSummary.Item] = [])
         case failed(String)
@@ -62,6 +66,7 @@ final class PhoneMailCheck {
         case .reading: "reading"
         case .nothingNew: "nothing"
         case .ready, .demoReady: "ready"
+        case .newMail, .demoNew: "new"
         case .sending: "sending"
         case .done: "done"
         case .failed: "failed"
@@ -84,32 +89,84 @@ final class PhoneMailCheck {
 
     static var log: URL { PhoneCloud.storeLocation().deletingLastPathComponent().appendingPathComponent("decisions-fetch.jsonl") }
 
-    func look(context: ModelContext) {
-        guard !isBusy else { return }
-        if DemoData.isRequested { lookInDemo(context: context); return }
+    /// When the last check, by hand or by itself, came back.
+    var lastChecked: Date?
+    private var checking = false
+
+    /// New mail unticked once: not offered again on this iPhone.
+    static let setAsideKey = "mail.setAside"
+    static var setAside: Set<String> {
+        get { Set((try? JSONDecoder().decode([String].self, from: Data((UserDefaults.standard.string(forKey: setAsideKey) ?? "[]").utf8))) ?? []) }
+        set { UserDefaults.standard.set(String(decoding: (try? JSONEncoder().encode(newValue.sorted())) ?? Data("[]".utf8), as: UTF8.self), forKey: setAsideKey) }
+    }
+
+    /// The door to the label, or why there is none — the same for a check by hand or by itself.
+    private func door(context: ModelContext) -> (door: DailyDoor?, why: String?) {
         guard let account = Keychain.accounts().first(where: { !$0.usesGoogle }) else {
-            state = .failed("No mail account yet: add it in Settings (⋯ above).")
-            return
+            return (nil, "No mail account yet: add it in Settings (⋯ above).")
         }
         var door = DailyDoor(account: account, besides: PhoneCloud.storeLocation())
         door.model = ModelChoice.mail
         door.strict = ModelChoice.strict
         // This iPhone's own list, started from the Mac's, with the other devices' names in it.
         do { try NameLists.adopt(into: door.mapping, device: PhoneNames.device, in: context) } catch {
-            state = .failed("The list of names cannot be written: \(error.localizedDescription)")
-            return
+            return (nil, "The list of names cannot be written: \(error.localizedDescription)")
         }
         door.earlier = SortedMails.answered(in: context)
         // Mail in a matter was sorted somewhere: not read again, whatever the record says.
         let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
         door.alsoKnown = Set(entries.map(\.messageID))
+        door.setAside = Self.setAside
         // A Mac that sorted mail before shares what it sorted when the new Matterbee starts there.
         // Until it has, every mail it answered would look new here — read again, and offered to
         // be sent again.
         if door.earlier.isEmpty, entries.contains(where: { $0.source.kind == .mail }) {
-            state = .failed("Your Mac has not shared what it sorted yet. Open Matterbee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again.")
+            return (nil, "Your Mac has not shared what it sorted yet. Open Matterbee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again.")
+        }
+        return (door, nil)
+    }
+
+    private var isQuiet: Bool {
+        switch state {
+        case .idle, .nothingNew, .done, .failed, .newMail, .demoNew: true
+        default: false
+        }
+    }
+
+    /// Checks by itself when Matterbee opens or comes back to the front — not more than every two
+    /// minutes — and only says something when there is new mail. Reading is free; nothing is sent.
+    func checkQuietly(context: ModelContext) {
+        guard isQuiet, !checking, lastChecked.map({ Date().timeIntervalSince($0) > 120 }) ?? true else { return }
+        if DemoData.isRequested {
+            // The demo's three are always new: the quiet line, ready to be looked at.
+            lastChecked = Date()
+            state = .demoNew
             return
         }
+        guard let door = door(context: context).door else { return }
+        checking = true
+        Task {
+            defer { checking = false }
+            guard let password = try? Keychain.password(for: door.account.user),
+                  let look = try? await door.look(password: password) else { return }
+            lastChecked = Date()
+            guard isQuiet else { return }
+            if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
+        }
+    }
+
+    /// Sort in the ticked ones; the others are set aside, so they are not offered again.
+    func sortIn(_ chosen: Set<String>, of look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
+        Self.setAside.formUnion(Set(look.newIDs).subtracting(chosen))
+        classify(look.only(chosen), with: door, context: context, owner: owner)
+    }
+
+    func look(context: ModelContext) {
+        guard !isBusy else { return }
+        if DemoData.isRequested { lookInDemo(context: context); return }
+        let (found, why) = door(context: context)
+        guard let door = found else { state = .failed(why ?? "Mail cannot be read."); return }
+        let account = door.account
         // Only that it is at it: how many mails the label holds is nothing to worry about.
         state = .reading("Fetching mail …")
         running = Task {
@@ -120,6 +177,7 @@ final class PhoneMailCheck {
                 }
                 let look = try await door.look(password: password)
                 guard !Task.isCancelled else { return }
+                lastChecked = Date()
                 state = look.pending == 0 ? .nothingNew(known: look.intake.alreadyKnown) : .ready(look, door)
             } catch {
                 guard !Task.isCancelled else { return }
@@ -143,16 +201,16 @@ final class PhoneMailCheck {
         }
     }
 
-    func sortInDemo(context: ModelContext) {
-        state = .sending("Sorting \(DemoData.newMail.count) mails …")
+    func sortInDemo(context: ModelContext, only chosen: Set<Int> = Set(DemoData.newMail.indices)) {
+        state = .sending("Sorting \(chosen.count) \(chosen.count == 1 ? "mail" : "mails") …")
         running = Task {
             try? await Task.sleep(for: .seconds(2.4))
             guard !Task.isCancelled else { return }
-            let matters = DemoData.takeInNewMail(context)
+            let taken = DemoData.takeInNewMail(context, only: chosen)
             // As a real run: a line in each matter's history, what came in.
             let encoder = JSONEncoder()
             encoder.outputFormatting = .sortedKeys
-            for (index, matter) in matters.enumerated() {
+            for (index, matter) in taken {
                 let mail = DemoData.newMail[index]
                 let brought = index == 0 ? " · 1 new task" : " · 1 date"
                 var turn = Navigation.Turn(question: "", scope: "Mail", inHand: nil, seen: "", refs: [:], matter: matter.persistentModelID)
@@ -163,7 +221,9 @@ final class PhoneMailCheck {
                 record.matter = matter
             }
             try? context.save()
-            state = .done(IntakeSummary.line(mails: matters.count, matters: matters.map(\.name), tasks: 1, dates: 2), DemoData.newMailItems)
+            let tasks = chosen.contains(0) ? 1 : 0
+            state = .done(IntakeSummary.line(mails: taken.count, matters: taken.map(\.matter.name), tasks: tasks, dates: taken.count - tasks),
+                          DemoData.newMailItems(chosen))
         }
     }
 
@@ -247,6 +307,7 @@ struct PhoneMailCheckView: View {
     @Query private var matters: [Matter]
     @State private var check = PhoneMailCheck.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var phase
     @State private var unplaced: [Judgement] = []
     @State private var showsUnplaced = true
     /// Mail set aside with "Not needed" — on this device, as on the Mac.
@@ -268,8 +329,32 @@ struct PhoneMailCheckView: View {
             unplacedList
         }
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.35), value: check.phase)
-        .onAppear(perform: refresh)
+        .onAppear { refresh(); check.checkQuietly(context: context) }
         .onChange(of: check.stateKey) { refresh() }
+        // Back to the front: a look whether new mail came, by itself — iOS lets no app check
+        // reliably while it is away.
+        .onChange(of: phase) { _, now in if now == .active { check.checkQuietly(context: context) } }
+    }
+
+    /// Found by itself: a small capsule in the middle, opened when the owner wants.
+    private func quiet(_ count: Int, open: @escaping () -> Void) -> some View {
+        VStack(spacing: 8) {
+            Button(action: open) {
+                HStack(spacing: 8) {
+                    Circle().fill(Theme.bee).frame(width: 8, height: 8)
+                    Text("\(count) new \(count == 1 ? "mail" : "mails")").font(.subheadline.weight(.medium)).foregroundStyle(.primary)
+                    Text("Review").font(.subheadline).foregroundStyle(Theme.gold)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(Theme.box, in: Capsule())
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            Text(DemoData.isRequested ? "In the demo: three made-up mails" : "Checked when you opened Matterbee")
+                .font(.caption).foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
     }
 
     @ViewBuilder
@@ -302,37 +387,18 @@ struct PhoneMailCheckView: View {
                     // Apart from the overview's sentence above: its own line, not part of it.
                     .padding(.top, 14)
                 button
+            case .newMail(let look, let door):
+                quiet(look.pending) { check.state = .ready(look, door) }
+            case .demoNew:
+                quiet(DemoData.newMail.count) { check.state = .demoReady }
             case .ready(let look, let door):
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("\(look.pending) new \(look.pending == 1 ? "mail" : "mails")").font(.headline)
-                    ForEach(Array(look.report.outcomes.filter { $0.judgement.disguise != nil }.prefix(5).enumerated()), id: \.offset) { _, outcome in
-                        Text("• " + (outcome.email.subject.isEmpty ? "(no subject)" : outcome.email.subject))
-                            .font(.subheadline).lineLimit(2)
-                    }
-                    Text(String(format: "Sorting in costs about $%.2f. Sent pseudonymised to %@.", look.estimate, door.model.label))
-                        .font(.footnote).foregroundStyle(.secondary)
-                    HStack(spacing: 10) {
-                        Button("Cancel") { check.state = .idle }.buttonStyle(.phone)
-                        Button("Sort in") { check.classify(look, with: door, context: context, owner: profiles.first?.names ?? []) }
-                            .buttonStyle(.phoneFilled)
-                    }
+                PhoneMailReview(look: look, door: door) {
+                    check.state = .newMail(look, door)
+                } sortIn: { chosen in
+                    check.sortIn(chosen, of: look, with: door, context: context, owner: profiles.first?.names ?? [])
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .phoneBox()
             case .demoReady:
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("\(DemoData.newMail.count) new mails").font(.headline)
-                    ForEach(DemoData.newMail, id: \.subject) { mail in
-                        Text("• " + mail.subject).font(.subheadline).lineLimit(2)
-                    }
-                    Text("In the demo, sorting in sends nothing and costs nothing.").font(.footnote).foregroundStyle(.secondary)
-                    HStack(spacing: 10) {
-                        Button("Cancel") { check.state = .idle }.buttonStyle(.phone)
-                        Button("Sort in") { check.sortInDemo(context: context) }.buttonStyle(.phoneFilled)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .phoneBox()
+                PhoneDemoMailReview(later: { check.state = .demoNew }) { chosen in check.sortInDemo(context: context, only: chosen) }
             case .done(let text, let items):
                 Label(text, systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
@@ -409,5 +475,105 @@ struct PhoneMailCheckView: View {
             .tint(.secondary)
             .phoneBox()
         }
+    }
+}
+
+/// The new mails, each with a tick: Sort in sends only the ticked ones, at the cost shown; the
+/// unticked ones are set aside. Later puts the list away; the capsule stays.
+struct PhoneMailReview: View {
+    let look: DailyDoor.Look
+    let door: DailyDoor
+    let later: () -> Void
+    let sortIn: (Set<String>) -> Void
+    @State private var chosen: Set<String>
+
+    init(look: DailyDoor.Look, door: DailyDoor, later: @escaping () -> Void, sortIn: @escaping (Set<String>) -> Void) {
+        self.look = look
+        self.door = door
+        self.later = later
+        self.sortIn = sortIn
+        _chosen = State(initialValue: Set(look.newIDs))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("\(look.pending) new \(look.pending == 1 ? "mail" : "mails")").font(.headline)
+            ForEach(look.newMails, id: \.judgement.emailID) { outcome in
+                let id = outcome.judgement.emailID, on = chosen.contains(id)
+                Button {
+                    if on { chosen.remove(id) } else { chosen.insert(id) }
+                } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.title3)
+                            .foregroundStyle(on ? Theme.gold : .secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(outcome.email.subject.isEmpty ? "(no subject)" : outcome.email.subject).font(.subheadline)
+                                .strikethrough(!on).foregroundStyle(on ? .primary : .secondary)
+                                .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                            Text(Self.from(outcome.email)).font(.caption).foregroundStyle(.tertiary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+            Text(chosen.isEmpty ? "Tick the mails to sort in."
+                 : String(format: "Sorting in %d %@ costs about $%.2f. Sent pseudonymised to %@.", chosen.count, chosen.count == 1 ? "mail" : "mails",
+                          look.only(chosen).estimate, door.model.label))
+                .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                Button("Later", action: later).buttonStyle(.phone)
+                Button(chosen.count == look.pending ? "Sort in" : "Sort in \(chosen.count)") { sortIn(chosen) }
+                    .buttonStyle(.phoneFilled).disabled(chosen.isEmpty)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .phoneBox()
+    }
+
+    static func from(_ email: Email) -> String {
+        let who = Email.displayName(in: email.from) ?? Email.address(in: email.from)
+        guard let date = email.date else { return who }
+        let time = Calendar.current.isDateInToday(date) ? date.formatted(.dateTime.hour().minute()) : Dates.short(date)
+        return who + " · " + time
+    }
+}
+
+/// The demo's three, each with a tick, as a real round has them: nothing is read, sent or paid.
+struct PhoneDemoMailReview: View {
+    let later: () -> Void
+    let sortIn: (Set<Int>) -> Void
+    @State private var chosen = Set(DemoData.newMail.indices)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("\(DemoData.newMail.count) new mails").font(.headline)
+            ForEach(Array(DemoData.newMail.enumerated()), id: \.offset) { index, mail in
+                let on = chosen.contains(index)
+                Button { if on { chosen.remove(index) } else { chosen.insert(index) } } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.title3).foregroundStyle(on ? Theme.gold : .secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(mail.subject).font(.subheadline).strikethrough(!on).foregroundStyle(on ? .primary : .secondary)
+                                .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                            Text(Email.displayName(in: mail.from) ?? mail.from).font(.caption).foregroundStyle(.tertiary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            Text("In the demo, sorting in sends nothing and costs nothing.").font(.footnote).foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Button("Later", action: later).buttonStyle(.phone)
+                Button(chosen.count == DemoData.newMail.count ? "Sort in" : "Sort in \(chosen.count)") { sortIn(chosen) }
+                    .buttonStyle(.phoneFilled).disabled(chosen.isEmpty)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .phoneBox()
     }
 }

@@ -367,12 +367,15 @@ final class Navigation {
     /// The demo's round: a line in each of the three matters, as a real round writes them. The
     /// last round's lines go first, as its mails and dates did, so nothing is there twice.
     @MainActor
-    func logDemoIntake(_ matters: [Matter]) {
+    func logDemoIntake(_ matters: [Matter]) { logDemoIntake(matters.enumerated().map { ($0.offset, $0.element) }) }
+
+    @MainActor
+    func logDemoIntake(_ taken: [(index: Int, matter: Matter)]) {
         let mark = DemoData.demoIntakeMark
         let old = turns.filter { $0.note?.contains(mark) == true }
         for turn in old { records[turn.id] = nil; written[turn.id] = nil }
         turns.removeAll { $0.note?.contains(mark) == true }
-        for (index, matter) in matters.enumerated() {
+        for (index, matter) in taken {
             let mail = DemoData.newMail[index]
             let brought = index == 0 ? " · 1 new task" : " · 1 date"
             var turn = Turn(question: "", scope: "Mail", inHand: nil, seen: "", refs: [:], matter: matter.persistentModelID)
@@ -559,6 +562,22 @@ struct RootView: View {
             if SetupState.isFresh { showsIntro = true }
             else if !introSeen, !DemoData.isRequested { showsIntro = true }
             else if !setupLater, !DemoData.isRequested, SetupAssistant.isMissingSomething { showsSetup = true }
+        }
+        // New mail by itself: on start, every ten minutes while Matterbee is open, and after sleep.
+        // Reading is free; it waits as "3 new mails" until the owner sorts in what they tick.
+        .task {
+            try? await Task.sleep(for: .seconds(4))
+            while !Task.isCancelled {
+                mailCheck.checkQuietly(store: navigation.store, context: context)
+                try? await Task.sleep(for: .seconds(600))
+            }
+        }
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)) { _ in
+            Task {
+                // The network needs a moment after sleep.
+                try? await Task.sleep(for: .seconds(20))
+                mailCheck.checkQuietly(store: navigation.store, context: context)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showIntro)) { _ in showsIntro = true }
         .onReceive(NotificationCenter.default.publisher(for: .showSetup)) { _ in showsSetup = true }

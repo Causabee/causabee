@@ -67,6 +67,11 @@ enum DemoData {
     ]
 
     /// What the three bring, as the result of a real round shows it.
+    /// What the chosen ones of the three bring.
+    static func newMailItems(_ chosen: Set<Int>) -> [IntakeSummary.Item] {
+        newMailItems.enumerated().filter { chosen.contains($0.offset) }.map(\.element)
+    }
+
     static var newMailItems: [IntakeSummary.Item] {
         [IntakeSummary.Item(symbol: "checklist", text: "Ask Marta for the key box code"),
          IntakeSummary.Item(symbol: "calendar", text: "\(IntakeSummary.day(day(20))), 08:00 · Carry & Co come with the van"),
@@ -95,11 +100,14 @@ enum DemoData {
 
     /// Sorts the three in, as "Sort in" would: a mail each, with what it brings — a task for
     /// Lisbon, the movers' day for the move, a deadline for the wedding. Returns the matters.
-    static func takeInNewMail(_ context: ModelContext) -> [Matter] {
+    static func takeInNewMail(_ context: ModelContext) -> [Matter] { takeInNewMail(context, only: Set(newMail.indices)).map(\.matter) }
+
+    /// Only the ticked ones of the three, each with its place in `newMail`.
+    static func takeInNewMail(_ context: ModelContext, only chosen: Set<Int>) -> [(index: Int, matter: Matter)] {
         removeNewMail(context)
         let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
-        var touched: [Matter] = []
-        for (index, mail) in newMail.enumerated() {
+        var touched: [(index: Int, matter: Matter)] = []
+        for (index, mail) in newMail.enumerated() where chosen.contains(index) {
             guard let matter = matters.first(where: { $0.key == mail.matter }) else { continue }
             let source = Source(kind: .mail, pointer: "imap://demo.example/INBOX;UID=\(900 + index)",
                                 messageID: "demo-new-\(index)@mail.example", date: Date())
@@ -123,7 +131,7 @@ enum DemoData {
                 answer.matter = matter
                 context.insert(answer)
             }
-            touched.append(matter)
+            touched.append((index, matter))
         }
         try? context.save()
         return touched

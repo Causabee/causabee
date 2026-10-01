@@ -75,3 +75,24 @@ struct SortedMailTests {
         #expect(others.map(\.original) == ["Petra Lindner"])
     }
 }
+
+@Suite("New mail: ticked for Sort in, or set aside")
+struct NewMailChoiceTests {
+    func mail(_ id: String) -> Email {
+        Email(source: URL(fileURLWithPath: "/\(id).eml"), id: id, headers: [:], subject: "Mail \(id)", from: "a@example.org",
+              to: ["me@example.com"], cc: [], date: nil, body: "Bitte bis Freitag antworten.", attachments: [])
+    }
+
+    @Test("Only the ticked new mails go out; the others stay out of the run")
+    func only() {
+        let report = Spike(detector: EntityDetector()).run(emails: ["a", "b", "c"].map(mail), labelled: ["a", "b", "c"],
+                                                           pseudonymizer: Pseudonymizer(mode: .placeholder, entries: []))
+        let look = DailyDoor.Look(report: report, answered: [:], intake: LabelIntake.Result(), pending: 3, estimate: 0.09, newIDs: ["a", "b", "c"])
+        let kept = look.only(["a", "c"])
+        #expect(kept.newIDs == ["a", "c"])
+        #expect(kept.pending == 2)
+        #expect(abs(kept.estimate - 0.06) < 0.0001)
+        #expect(kept.report.outcomes.map(\.judgement.emailID) == ["a", "c"])
+        #expect(look.newMails.count == 3)
+    }
+}

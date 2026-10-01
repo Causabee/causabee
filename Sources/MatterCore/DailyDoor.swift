@@ -23,6 +23,8 @@ public struct DailyDoor: Sendable {
     /// Mail already in a matter — the store's entries — whose answer this device may not have:
     /// neither downloaded nor sent again.
     public var alsoKnown: Set<String> = []
+    /// New mail the owner unticked once: read, but not offered again until put back.
+    public var setAside: Set<String> = []
 
     public init(account: MailAccount, label: String = "Matterbee", log: URL, mapping: URL, cache: URL, model: Claude.Model = .opus) {
         self.account = account
@@ -48,6 +50,25 @@ public struct DailyDoor: Sendable {
         /// Mails that would be sent.
         public var pending: Int
         public var estimate: Double
+        /// The new mails, in their order: what the owner ticks or unticks before Sort in.
+        public var newIDs: [String] = []
+
+        public var newMails: [Spike.Outcome] {
+            let ids = Set(newIDs)
+            return report.outcomes.filter { ids.contains($0.judgement.emailID) }
+        }
+
+        /// Only these of the new mails, to be sent: the others stay out of this run. What was
+        /// answered before stays in, as it is never sent again anyway.
+        public func only(_ chosen: Set<String>) -> Look {
+            var kept = self
+            let new = Set(newIDs)
+            kept.report.outcomes = report.outcomes.filter { !new.contains($0.judgement.emailID) || chosen.contains($0.judgement.emailID) }
+            kept.newIDs = newIDs.filter(chosen.contains)
+            kept.estimate = pending == 0 ? 0 : estimate * Double(kept.newIDs.count) / Double(pending)
+            kept.pending = kept.newIDs.count
+            return kept
+        }
     }
 
     public static func costPerMail(_ model: Claude.Model) -> Double {
@@ -95,9 +116,14 @@ public struct DailyDoor: Sendable {
         let report = Spike(detector: EntityDetector())
             .run(emails: intake.emails, labelled: intake.labelled,
                  pseudonymizer: Pseudonymizer(mode: .placeholder, entries: mapping.placeholder))
-        let pending = report.outcomes.filter { $0.judgement.disguise != nil && !settled.contains($0.judgement.emailID) }.count
-        return Look(report: report, answered: answered, intake: intake, pending: pending,
-                    estimate: Double(pending) * Self.costPerMail(model))
+        let new = report.outcomes.filter {
+            $0.judgement.disguise != nil && !settled.contains($0.judgement.emailID) && !setAside.contains($0.judgement.emailID)
+        }.map(\.judgement.emailID)
+        // Set aside: not sent in this run, whatever is ticked.
+        var offered = report
+        offered.outcomes.removeAll { setAside.contains($0.judgement.emailID) && !settled.contains($0.judgement.emailID) }
+        return Look(report: offered, answered: answered, intake: intake, pending: new.count,
+                    estimate: Double(new.count) * Self.costPerMail(model), newIDs: new)
     }
 
     /// Sends what `look` found new, and returns the new answers. Every earlier answer is kept and
