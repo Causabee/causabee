@@ -152,6 +152,15 @@ struct BeeMark: View {
     }
 }
 
+extension BeeMark {
+    /// Only the bee, without the room its drawing keeps for the hover and the wings' swing (the
+    /// still bee is 4201 × 2509 of the drawing's 5101 × 2900): as big as it can be in a small
+    /// place — a row's button, a menu's icon.
+    func tight() -> some View {
+        frame(width: size * 4201 / 2900, height: size * 2509 / 2900)
+    }
+}
+
 #Preview("Bee at work") {
     VStack(alignment: .leading, spacing: 20) {
         BeeLoader(size: 88)

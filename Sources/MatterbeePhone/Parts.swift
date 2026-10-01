@@ -76,11 +76,7 @@ struct AskMatterbeeButton: View {
     let action: () -> Void
 
     @MainActor private static let bee: Image = {
-        // Only the bee, without the room its drawing keeps for the hover and the wings' swing
-        // (the still bee is 4201 × 2509 of the drawing's 5101 × 2900), so it is as big as it can be.
-        let size: CGFloat = 15
-        let bee = BeeMark(size: size).foregroundStyle(.black).frame(width: size * 4201 / 2900, height: size * 2509 / 2900)
-        let renderer = ImageRenderer(content: bee)
+        let renderer = ImageRenderer(content: BeeMark(size: 15).tight().foregroundStyle(.black))
         renderer.scale = 3
         guard let picture = renderer.uiImage else { return Image(systemName: "bubble.left.and.bubble.right") }
         return Image(uiImage: picture.withRenderingMode(.alwaysTemplate))

@@ -955,7 +955,7 @@ struct MatterStatusView: View {
                                         Button(other.name) { merging = (party, other) }
                                     }
                                 }
-                                Button("Talk about it with the assistant") { talk(party.name, "Person") }
+                                Button("Ask Matterbee") { talk(party.name, "Person") }
                                 Divider()
                                 Button("Remove from this matter") {
                                     withAnimation { membership.remove(in: context, origin: origin) }

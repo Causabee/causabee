@@ -203,9 +203,11 @@ struct PinButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) { Image(systemName: "pin") }
+        // The bee, as the iPhone's "Ask Matterbee": the row goes to the assistant, pinned there.
+        Button(action: action) { BeeMark(size: 13).tight() }
             .buttonStyle(.rowIcon)
-            .help("Pin it to the assistant, to ask about it")
+            .help("Ask Matterbee about it")
+            .accessibilityLabel("Ask Matterbee")
             .tool()
     }
 }
