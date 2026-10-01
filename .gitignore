@@ -52,3 +52,4 @@ scripts/signing.local
 # The film: the draft and every cut stay off the public repo; the storyboard and the letter may go.
 docs/film/*.mp4
 docs/film/*.mov
+docs/film/*.mp3
