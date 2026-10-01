@@ -360,7 +360,7 @@ struct SourcesLine: View {
 
 /// A card the assistant suggested, as the Mac's ActionCard: what it is about, its words to change
 /// before taking it in, why, and its sources; Dismiss, and the one thing it does. What it does is
-/// CardActions' — the Mac's own code. A draft opens in Mail, or goes into Gmail's drafts; a card
+/// CardActions' — the Mac's own code. A draft opens in Mail, ready to send from there; a card
 /// taken in here can be undone while the app is open.
 struct PhoneActionCard: View {
     let record: ThreadTurn
@@ -375,11 +375,9 @@ struct PhoneActionCard: View {
     @State private var subject = ""
     /// A draft opened in Mail folds to a few lines; "Edit" unfolds it again.
     @State private var editingDraft = false
-    @State private var drafting: String?
 
     private var done: Bool { turn.applied.contains(index) }
     private var dismissed: Bool { turn.dismissedCards.contains(index) }
-    private var drafted: String? { turn.drafted[index] }
     private var undo: CardActions.Undo? { navigation.undos[turn.id]?[index] }
     private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink].contains(card.kind) }
     private var recipient: (name: String, address: String?)? { CardActions.recipient(card.party, refs: turn.refs, in: context) }
@@ -427,11 +425,9 @@ struct PhoneActionCard: View {
                 Text("Later you can only turn merging off for new mail; you cannot split it again.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
-            if card.kind == .draftMessage, let drafting { draftingLine(drafting) }
             HStack(spacing: 8) {
                 if done, card.kind == .draftMessage {
                     Button("Cancel") { withAnimation { editingDraft = false } }.buttonStyle(.phone)
-                    gmailButton
                     Button("Open in Mail") { take(); withAnimation { editingDraft = false } }.buttonStyle(.phoneFilled)
                 } else if done {
                     Label("Taken in", systemImage: "checkmark").font(.footnote.weight(.medium)).foregroundStyle(Theme.done)
@@ -440,7 +436,6 @@ struct PhoneActionCard: View {
                 } else {
                     Button("Dismiss") { withAnimation { navigation.mark(record, card: index, dismissed: true, context: context) } }
                         .buttonStyle(.phone(wide: true))
-                    if card.kind == .draftMessage { gmailButton }
                     Button(verb) { take() }.buttonStyle(.phone(filled: true, wide: true))
                 }
             }
@@ -454,13 +449,11 @@ struct PhoneActionCard: View {
     /// What was opened in Mail, short and not to be typed in: who, what about, how it starts.
     private var sentDraft: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(drafted.map { "Draft · in Gmail under “\($0)”" } ?? "Draft · opened in Mail").font(.footnote.weight(.semibold))
+            Text("Draft · opened in Mail").font(.footnote.weight(.semibold))
             Text("To: \(recipient?.name ?? "—")" + (subject.isEmpty ? "" : " · \(subject)")).font(.subheadline).lineLimit(1)
             Text(text).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
-            if let drafting { draftingLine(drafting) }
             HStack(spacing: 8) {
                 Button("Edit") { withAnimation { editingDraft = true } }.buttonStyle(.phone)
-                if drafted == nil { gmailButton }
                 Button("Open again") { take() }.buttonStyle(.phone)
             }
             .padding(.top, 6)
@@ -469,21 +462,6 @@ struct PhoneActionCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
-    }
-
-    /// Into Gmail's Drafts, to send from anywhere. Put there again after a change, it is a second
-    /// draft beside the first.
-    private var gmailButton: some View {
-        Button(drafted == nil ? "Put into Gmail" : "Put into Gmail again", action: putDraft)
-            .buttonStyle(.phone(wide: true))
-            .disabled(drafting?.hasSuffix("…") == true)
-    }
-
-    private func draftingLine(_ line: String) -> some View {
-        HStack(spacing: 6) {
-            if line.hasSuffix("…") { BeeLoader(size: 14) }
-            Text(line).font(.caption).foregroundStyle(line.hasPrefix("Not saved") ? Theme.warning : .secondary)
-        }
     }
 
     /// The answer's matter: one a card beside this one made, the one it was asked in, or the one
@@ -519,37 +497,6 @@ struct PhoneActionCard: View {
         if case .madeMatter = undo { navigation.madeMatter[turn.id] = nil }
         navigation.undos[turn.id]?[index] = nil
         navigation.mark(record, card: index, applied: false, context: context)
-    }
-
-    /// Into the mailbox's Drafts folder, on this tap only; answering a mail of the matter, into
-    /// that mail's conversation — as the Mac puts it there.
-    private func putDraft() {
-        guard let account = Keychain.accounts().first(where: { !$0.usesGoogle }) else {
-            drafting = "No mail account saved: add it in Settings (⋯ on the overview)."
-            return
-        }
-        let to = recipient
-        let entries = (scope ?? matter)?.entries ?? []
-        let answering = to?.address.flatMap { address in
-            entries.filter { Email.address(in: $0.from).lowercased() == address.lowercased() && !$0.messageID.isEmpty }
-                .max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.messageID
-        }
-        let message = DraftMessage(from: account.user, to: to?.address.map { (name: to?.name, address: $0) }, subject: subject,
-                                   body: text, replyingTo: answering).data
-        // The version put into Gmail is the one kept.
-        navigation.mark(record, card: index, text: text, subject: subject, context: context)
-        drafting = "Putting the draft into Gmail …"
-        Task {
-            do {
-                guard let password = try Keychain.password(for: account.user) else { throw MailFetch.Failure.gone(account.user) }
-                let folder = try await DraftDoor.put(message, account: account, password: password)
-                navigation.mark(record, card: index, applied: true, drafted: folder, context: context)
-                drafting = nil
-                withAnimation { editingDraft = false }
-            } catch {
-                drafting = "Not saved: \(error)"
-            }
-        }
     }
 
     private func name(_ id: String?) -> String { id.flatMap { turn.refs[$0] }.map { CardActions.label($0, in: context) } ?? "?" }

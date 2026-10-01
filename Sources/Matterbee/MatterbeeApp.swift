@@ -203,10 +203,6 @@ final class Navigation {
         var undos: [Int: Undo] = [:]
         /// Cards the owner dismissed, by position: kept, so they stay dismissed after a restart.
         var dismissedCards: Set<Int> = []
-        /// Drafts put into the mailbox, by card: the folder they are in.
-        var drafted: [Int: String] = [:]
-        /// A draft on its way into the mailbox, or why it did not get there.
-        var drafting: [Int: String] = [:]
     }
 
     /// A screenshot in the thread, from reading it to taking what it says into a matter.
@@ -294,7 +290,6 @@ final class Navigation {
                 if case .asking = updated[index].state { continue }
                 turn.undos = updated[index].undos
                 turn.shot = updated[index].shot ?? turn.shot
-                turn.drafting = updated[index].drafting
                 updated[index] = turn
             } else {
                 updated.append(turn)
@@ -632,7 +627,7 @@ struct MatterRow: View {
 /// screenshot not taken in yet, come back saying so.
 extension Navigation.Turn: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, date, question, scope, inHand, seen, refs, matter, answer, failed, applied, readAs, drafted, dismissedCards, note
+        case id, date, question, scope, inHand, seen, refs, matter, answer, failed, applied, readAs, dismissedCards, note
         case shotFile, shotCopied, shotTaken, shotTakenInto, shotDismissed, shotDocument
     }
 
@@ -646,7 +641,6 @@ extension Navigation.Turn: Codable {
         date = try c.decode(Date.self, forKey: .date)
         applied = try c.decodeIfPresent(Set<Int>.self, forKey: .applied) ?? []
         readAs = try c.decodeIfPresent([String].self, forKey: .readAs) ?? []
-        drafted = try c.decodeIfPresent([Int: String].self, forKey: .drafted) ?? [:]
         dismissedCards = try c.decodeIfPresent(Set<Int>.self, forKey: .dismissedCards) ?? []
         note = try c.decodeIfPresent(String.self, forKey: .note)
         if let answer = try c.decodeIfPresent(AssistantAsk.Answer.self, forKey: .answer) {
@@ -677,7 +671,6 @@ extension Navigation.Turn: Codable {
         try c.encodeIfPresent(inHand, forKey: .inHand)
         try c.encode(seen, forKey: .seen)
         try c.encode(refs, forKey: .refs)
-        if !drafted.isEmpty { try c.encode(drafted, forKey: .drafted) }
         if !dismissedCards.isEmpty { try c.encode(dismissedCards, forKey: .dismissedCards) }
         try c.encodeIfPresent(note, forKey: .note)
         try c.encodeIfPresent(matter, forKey: .matter)

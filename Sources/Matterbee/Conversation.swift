@@ -232,49 +232,6 @@ struct Conversation {
         CardActions.recipient(id, refs: turn.refs, in: context)
     }
 
-    /// Puts the draft into the mailbox's Drafts folder — the one write Matterbee makes, on this
-    /// click only. Answering a mail of the matter, it goes into that mail's conversation.
-    func putDraft(_ index: Int, text: String, subject: String, in turn: Navigation.Turn) {
-        guard case .answered(let answer) = turn.state, answer.reply.cards.indices.contains(index),
-              answer.reply.cards[index].kind == .draftMessage,
-              let position = navigation.turns.firstIndex(where: { $0.id == turn.id }) else { return }
-        guard let account = Keychain.accounts().first else {
-            navigation.turns[position].drafting[index] = "No mail account saved. First: matter-spike login"
-            return
-        }
-        let card = answer.reply.cards[index]
-        let to = recipient(card.party, in: turn)
-        let matter = turn.matter.flatMap { live($0, as: Matter.self) }
-            ?? card.cites.compactMap { turn.refs[$0] }.compactMap(matter(of:)).first
-        let answering = to?.address.flatMap { address in
-            (matter?.entries ?? []).filter { Email.address(in: $0.from).lowercased() == address.lowercased() && !$0.messageID.isEmpty }
-                .max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.messageID
-        }
-        let message = DraftMessage(from: account.user, to: to?.address.map { (name: to?.name, address: $0) }, subject: subject,
-                                   body: text, replyingTo: answering).data
-        // The version put into Gmail is the one kept.
-        if case .answered(var kept) = navigation.turns[position].state {
-            kept.reply.cards[index].text = text
-            kept.reply.cards[index].subject = subject
-            navigation.turns[position].state = .answered(kept)
-        }
-        navigation.turns[position].drafting[index] = "Putting the draft into Gmail …"
-        let navigation = navigation
-        let id = turn.id
-        Task {
-            func set(_ change: (inout Navigation.Turn) -> Void) {
-                if let at = navigation.turns.firstIndex(where: { $0.id == id }) { change(&navigation.turns[at]) }
-            }
-            do {
-                guard let password = try await MailSecret.secret(for: account) else { throw MailFetch.Failure.gone(account.user) }
-                let folder = try await DraftDoor.put(message, account: account, password: password)
-                set { $0.drafted[index] = folder; $0.drafting[index] = nil; $0.applied.insert(index) }
-            } catch {
-                set { $0.drafting[index] = "Not saved: \(error)" }
-            }
-        }
-    }
-
     /// A card the owner ticked: what it does is CardActions' — the same on the iPhone; the turn
     /// keeps that it was taken in, and how to take it back.
     func apply(_ index: Int, text: String, subject: String? = nil, in turn: Navigation.Turn) {

@@ -126,7 +126,7 @@ struct ScanSheet: View {
         failure = nil
         Task {
             do {
-                _ = try await DraftDoor.putScan(scan.data, label: Scans.label, account: account, password: password)
+                _ = try await ScanDoor.putScan(scan.data, label: Scans.label, account: account, password: password)
                 Scans.pending.append(Scans.Pending(matter: key, title: scan.title, messageID: scan.messageID, date: scan.date))
                 sending = false
                 dismiss()

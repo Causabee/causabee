@@ -91,8 +91,6 @@ final class Navigation {
         var state: State = .failed("")
         var applied: Set<Int> = []
         var dismissedCards: Set<Int> = []
-        /// Drafts put into the mailbox, by card: the folder they are in.
-        var drafted: [Int: String] = [:]
         /// A line Matterbee wrote itself — what came in with "Get new mail" — not a question.
         var note: String?
         var readAs: [String] = []
@@ -130,10 +128,10 @@ final class Navigation {
     @ObservationIgnored var madeMatter: [UUID: PersistentIdentifier] = [:]
 
     /// A card's state, written into the turn's own record, keeping every key the Mac put there,
-    /// so the Mac shows it the same: taken in or not, dismissed or not, the draft as it was sent
-    /// on, and the folder a draft was put into.
+    /// so the Mac shows it the same: taken in or not, dismissed or not, and the draft as it was
+    /// opened in Mail.
     func mark(_ record: ThreadTurn, card index: Int, applied: Bool? = nil, dismissed: Bool? = nil,
-              text: String? = nil, subject: String? = nil, drafted folder: String? = nil, context: ModelContext) {
+              text: String? = nil, subject: String? = nil, context: ModelContext) {
         guard var json = (try? JSONSerialization.jsonObject(with: record.payload)) as? [String: Any] else { return }
         func set(_ key: String, _ on: Bool?) {
             guard let on else { return }
@@ -151,13 +149,6 @@ final class Navigation {
             answer["reply"] = reply
             json["answer"] = answer
         }
-        if let folder {
-            // As Swift writes a dictionary with number keys: key, value, key, value.
-            var pairs = (json["drafted"] as? [Any]) ?? []
-            if let at = stride(from: 0, to: pairs.count - 1, by: 2).first(where: { (pairs[$0] as? Int) == index }) { pairs[at + 1] = folder }
-            else { pairs += [index, folder] }
-            json["drafted"] = pairs
-        }
         guard let data = try? JSONSerialization.data(withJSONObject: json, options: [.sortedKeys]) else { return }
         record.payload = data
         try? context.save()
@@ -166,7 +157,7 @@ final class Navigation {
 
 extension Navigation.Turn: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, date, question, scope, inHand, seen, refs, matter, answer, failed, applied, readAs, dismissedCards, drafted, note, shotFile
+        case id, date, question, scope, inHand, seen, refs, matter, answer, failed, applied, readAs, dismissedCards, note, shotFile
     }
 
     init(from decoder: any Decoder) throws {
@@ -181,7 +172,6 @@ extension Navigation.Turn: Codable {
         applied = try c.decodeIfPresent(Set<Int>.self, forKey: .applied) ?? []
         readAs = try c.decodeIfPresent([String].self, forKey: .readAs) ?? []
         dismissedCards = try c.decodeIfPresent(Set<Int>.self, forKey: .dismissedCards) ?? []
-        drafted = (try? c.decodeIfPresent([Int: String].self, forKey: .drafted)) ?? [:]
         note = try c.decodeIfPresent(String.self, forKey: .note)
         hasShot = c.contains(.shotFile)
         if let answer = try? c.decodeIfPresent(AssistantAsk.Answer.self, forKey: .answer) {
@@ -201,7 +191,6 @@ extension Navigation.Turn: Codable {
         try c.encodeIfPresent(inHand, forKey: .inHand)
         try c.encode(seen, forKey: .seen)
         try c.encode(refs, forKey: .refs)
-        if !drafted.isEmpty { try c.encode(drafted, forKey: .drafted) }
         if !dismissedCards.isEmpty { try c.encode(dismissedCards, forKey: .dismissedCards) }
         try c.encodeIfPresent(note, forKey: .note)
         try c.encodeIfPresent(matter, forKey: .matter)

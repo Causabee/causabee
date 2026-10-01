@@ -216,7 +216,7 @@ extension View {
             .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.strongLine))
     }
 
-    /// A box of what is already done or on its way — a draft put in Gmail, a card taken in, what
+    /// A box of what is already done or on its way — a draft opened in Mail, a card taken in, what
     /// came with the mail: the same grey, framed by a plain line, so it asks for nothing.
     func quietBox(radius: CGFloat = 10) -> some View {
         background(Theme.box, in: RoundedRectangle(cornerRadius: radius))

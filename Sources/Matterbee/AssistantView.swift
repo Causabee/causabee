@@ -103,7 +103,6 @@ struct AssistantColumn: View {
                             } else {
                                 TurnView(turn: turn, open: conversation.open, label: conversation.label,
                                          apply: { conversation.apply($0, text: $1, subject: $2, in: turn) },
-                                         putDraft: { conversation.putDraft($0, text: $1, subject: $2, in: turn) },
                                          undo: { conversation.undo($0, in: turn) },
                                          dismiss: { index, dismissed in
                                              guard let at = navigation.turns.firstIndex(where: { $0.id == turn.id }) else { return }
@@ -405,7 +404,6 @@ struct TurnView: View {
     let open: (FactRef) -> Void
     let label: (FactRef) -> String
     let apply: (Int, String, String?) -> Void
-    let putDraft: (Int, String, String) -> Void
     let undo: (Int) -> Void
     var dismiss: (Int, Bool) -> Void = { _, _ in }
     var recipient: (String?) -> (name: String, address: String?)? = { _ in nil }
@@ -462,8 +460,7 @@ struct TurnView: View {
                 if !reading || card.kind == .draftMessage {
                     ActionCard(card: card, done: turn.applied.contains(index), refs: turn.refs, open: open, label: label,
                                apply: { apply(index, $0, $1) }, undo: turn.undos[index] == nil ? nil : { undo(index) },
-                               recipient: recipient(card.party), putDraft: { putDraft(index, $0, $1) },
-                               drafted: turn.drafted[index], drafting: turn.drafting[index],
+                               recipient: recipient(card.party),
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
             }
@@ -553,10 +550,6 @@ struct ActionCard: View {
     let apply: (String, String?) -> Void
     let undo: (() -> Void)?
     var recipient: (name: String, address: String?)? = nil
-    var putDraft: ((String, String) -> Void)? = nil
-    /// The folder the draft was put into, when it was.
-    var drafted: String? = nil
-    var drafting: String? = nil
     @State private var text: String
     @State private var subject: String
     /// Dismissed, as the thread keeps it.
@@ -567,11 +560,10 @@ struct ActionCard: View {
 
     init(card: AssistantPrompt.Reply.Card, done: Bool, refs: [String: FactRef], open: @escaping (FactRef) -> Void,
          label: @escaping (FactRef) -> String, apply: @escaping (String, String?) -> Void, undo: (() -> Void)?,
-         recipient: (name: String, address: String?)? = nil, putDraft: ((String, String) -> Void)? = nil,
-         drafted: String? = nil, drafting: String? = nil, dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
+         recipient: (name: String, address: String?)? = nil,
+         dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
         (self.card, self.done, self.refs, self.open, self.label, self.apply, self.undo) = (card, done, refs, open, label, apply, undo)
         self.recipient = recipient
-        (self.putDraft, self.drafted, self.drafting) = (putDraft, drafted, drafting)
         (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
         _text = State(initialValue: card.text)
         _subject = State(initialValue: card.subject ?? "")
@@ -612,12 +604,10 @@ struct ActionCard: View {
                     Text("Later you can only turn merging off for new mail; you cannot split it again.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
-                if card.kind == .draftMessage, let drafting { draftingLine(drafting) }
                 HStack(spacing: 8) {
                     Spacer()
                     if done, card.kind == .draftMessage {
                         Button("Cancel") { withAnimation { editingDraft = false } }
-                        gmailButton
                         Button("Open in Mail") {
                             apply(text, subject)
                             withAnimation { editingDraft = false }
@@ -633,7 +623,6 @@ struct ActionCard: View {
                         }
                     } else {
                         Button("Dismiss") { withAnimation { setDismissed(true) } }
-                        if card.kind == .draftMessage { gmailButton }
                         Button(verb) {
                             apply(text, card.kind == .draftMessage ? subject : nil)
                             withAnimation { editingDraft = false }
@@ -651,43 +640,19 @@ struct ActionCard: View {
     /// What was opened in Mail, short and not to be typed in: who, what about, how it starts.
     private var sentDraft: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(drafted.map { "Draft · in Gmail under “\($0)”" } ?? "Draft · opened in Mail")
+            Text("Draft · opened in Mail")
                 .font(.caption.weight(.semibold))
             Text("To: \(recipient?.name ?? "—")" + (subject.isEmpty ? "" : " · \(subject)")).font(.callout).lineLimit(1)
             Text(text).font(.callout).foregroundStyle(.secondary).lineLimit(2)
             HStack(spacing: 8) {
                 Spacer()
-                if let drafting { draftingLine(drafting) }
                 Button("Edit") { withAnimation { editingDraft = true } }
-                if drafted == nil { gmailButton }
                 Button("Open again") { apply(text, subject) }
             }
             .padding(.top, 10)
         }
         .padding(12)
         .quietBox()
-    }
-
-    /// Into Gmail's Drafts, to send from the phone or the web. Put there again after a change, it
-    /// is a second draft beside the first.
-    @ViewBuilder
-    private var gmailButton: some View {
-        if let putDraft {
-            Button(drafted == nil ? "Put into Gmail" : "Put into Gmail again") {
-                putDraft(text, subject)
-                withAnimation { editingDraft = false }
-            }
-            .disabled(drafting?.hasSuffix("…") == true)
-            .help("Puts the draft into your Gmail drafts — you can see it on your phone and on the web. Nothing is sent: you do that."
-                  + (drafted == nil ? "" : " A second time makes a second draft."))
-        }
-    }
-
-    private func draftingLine(_ text: String) -> some View {
-        HStack(spacing: 6) {
-            if text.hasSuffix("…") { BeeLoader(size: 14) }
-            Text(text).font(.caption).foregroundStyle(text.hasPrefix("Not saved") ? Theme.warning : .secondary).textSelection(.enabled)
-        }
     }
 
     private func name(_ id: String?) -> String { id.flatMap { refs[$0] }.map(label) ?? "?" }

@@ -49,7 +49,7 @@ struct ScanTests {
     @Test("The scan goes into the label and no other folder, marked read, and nothing else is sent")
     func intoLabel() async throws {
         let server = LabelServer()
-        let door = DraftDoor(transport: server)
+        let door = ScanDoor(transport: server)
         try await door.start(user: "jan@example.com", password: "app-password")
         let letter = ScanMessage(owner: "jan@example.com", title: "Steuerbescheid 2025", matter: "Steuer 2025",
                                    file: (name: "Steuerbescheid.pdf", contentType: "application/pdf", data: scan))
@@ -63,12 +63,19 @@ struct ScanTests {
         #expect(try #require(server.message) == letter.data)
     }
 
+    @Test("The reading client still cannot send APPEND; the scan connection cannot send anything but its six")
+    func lists() {
+        #expect(!IMAPClient.allowed.contains("APPEND"))
+        #expect(ScanDoor.allowed == ["CAPABILITY", "LOGIN", "AUTHENTICATE", "LIST", "APPEND", "LOGOUT"])
+        #expect(!ScanDoor.allowed.contains { ["STORE", "COPY", "MOVE", "EXPUNGE", "SELECT", "UID STORE", "DELETE"].contains($0) })
+    }
+
     @Test("A mailbox without the label gets the scan nowhere else")
     func noLabel() async throws {
         let server = LabelServer(folders: "* LIST (\\HasNoChildren) \"/\" \"INBOX\"\r\n")
-        let door = DraftDoor(transport: server)
+        let door = ScanDoor(transport: server)
         try await door.start(user: "jan@example.com", password: "x")
-        await #expect(throws: DraftDoor.Failure.self) { try await door.put(Data("x".utf8), intoLabel: "Matterbee") }
+        await #expect(throws: ScanDoor.Failure.self) { try await door.put(Data("x".utf8), intoLabel: "Matterbee") }
         #expect(!server.lines.contains { $0.contains(" APPEND ") })
     }
 
