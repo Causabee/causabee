@@ -68,11 +68,12 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 .card .next { color: var(--grey); font-size: 30px; line-height: 40px; margin-top: 10px; }
 .card.main { top: 940px; animation: card-in 0.6s var(--ease-out) both, drop-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v3) + 0.45s), calc(var(--v4) - 0.85s); }
 .card.main .label { animation: fade-in 0.3s both; animation-delay: calc(var(--v3) + 1.0s); }
-.card.faint { opacity: 0; transform: scale(0.96); box-shadow: none; animation: faint-in 0.5s var(--ease-out) both, fade-out 0.3s var(--ease-in) forwards; animation-delay: calc(var(--v3) + 1.1s), calc(var(--v4) - 0.8s); }
+.card.faint { opacity: 0; transform: scale(0.96); box-shadow: none; animation: faint-in 0.5s var(--ease-out) both, faint-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v3) + 1.1s), calc(var(--v4) - 0.8s); }
 .card.faint .label { opacity: 1; }
 .card.faint.above { top: 560px; } .card.faint.below { top: 1320px; }
 @keyframes card-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
 @keyframes faint-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 0.4; transform: scale(0.96); } }
+@keyframes faint-out { from { opacity: 0.4; transform: scale(0.96); } to { opacity: 0; transform: scale(0.96) translateY(48px); } }
 
 /* ---- Get new mail (beats 4–5): the panel at the foot of the overview ---- */
 .panel { position: absolute; left: 78px; top: 880px; width: 924px; background: var(--box); border-radius: 30px; padding: 36px 40px; box-sizing: border-box; opacity: 0; animation: rise-in 0.55s var(--ease-out) both, drop-out 0.4s var(--ease-in) both; animation-delay: var(--v4), calc(var(--v6) - 0.85s); }
@@ -182,7 +183,7 @@ html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; overflo
 @keyframes unfold { from { max-height: 0; opacity: 0; } to { max-height: 140px; opacity: 1; } }
 .nextbox .buttons { display: flex; gap: 18px; margin-top: 28px; }
 .nextbox .buttons .btn { height: 76px; font-size: 34px; padding: 0 30px; }
-.summary { top: 1210px; animation: faint-in 0.5s var(--ease-out) both, fade-out 0.3s var(--ease-in) forwards; animation-delay: calc(var(--v8) + 0.4s), calc(var(--v9) - 0.8s); }
+.summary { top: 1210px; animation: faint-in 0.5s var(--ease-out) both, faint-out 0.4s var(--ease-in) forwards; animation-delay: calc(var(--v8) + 0.4s), calc(var(--v9) - 0.8s); }
 .summary .label { background: var(--honey); }
 .summary .text { color: var(--grey); font-size: 34px; line-height: 46px; margin-top: 16px; }
 
