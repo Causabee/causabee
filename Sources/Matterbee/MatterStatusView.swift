@@ -236,12 +236,14 @@ struct MatterStatusView: View {
                     BeeLoader(size: 10)
                     Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else {
+                    // An older suggestion says only its day; the link beside it says what to do.
+                    if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
+                        Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
+                            .help("Matterbee suggested this on \(Dates.short(at)); the matter has changed since.")
+                    }
                     Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
                         .help("Matterbee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
-                    if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
-                        Text("Matterbee's suggestion of \(Dates.short(at)) is older than the last change").font(.caption).foregroundStyle(.secondary)
-                    }
                 }
                 Spacer()
             }

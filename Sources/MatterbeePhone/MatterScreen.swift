@@ -281,16 +281,17 @@ struct MatterScreen: View {
             }
             // Asking Claude, below the buttons: apart from what the step itself offers — as on the Mac.
             let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(summaryFacts, model: ModelChoice.assistant) * 100)
-            HStack(spacing: 8) {
+            HStack(spacing: 4) {
                 if askingStep {
                     BeeLoader(size: 12)
                     Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else {
+                    // An older suggestion says only its day; the link beside it says what to do.
+                    if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
+                        Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
+                    }
                     Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
                         .font(.caption).underline().foregroundStyle(.secondary)
-                    if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
-                        Text("Matterbee's suggestion of \(Dates.short(at)) is older than the last change").font(.caption).foregroundStyle(.secondary)
-                    }
                 }
             }
             .tool()
