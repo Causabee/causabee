@@ -165,7 +165,7 @@ struct MailCheckView: View {
                 button
             case .reading(let text), .sending(let text):
                 HStack(spacing: 8) {
-                    BeeLoader()
+                    BeeLoader(size: 10)
                     Text(text).font(.caption).foregroundStyle(.secondary)
                 }
             case .nothingNew(let known):

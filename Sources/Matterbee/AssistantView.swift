@@ -431,8 +431,8 @@ struct TurnView: View {
             switch turn.state {
             case .asking:
                 HStack(spacing: 8) {
-                    BeeLoader()
-                    Text("Sending, pseudonymised …").foregroundStyle(.secondary)
+                    BeeLoader(size: 10)
+                    Text("Sending, pseudonymised …").font(.caption).foregroundStyle(.secondary)
                 }
             case .failed(let message):
                 Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.warning).textSelection(.enabled)
@@ -555,8 +555,24 @@ struct ActionCard: View {
     /// Dismissed, as the thread keeps it.
     var dismissed = false
     var setDismissed: (Bool) -> Void = { _ in }
-    /// A draft opened in Mail folds to a few lines; "Bearbeiten" unfolds it again.
+    /// A draft opened in Mail folds to a few lines; "Edit" unfolds it again.
     @State private var editingDraft = false
+    /// Taken in, the card turns into its small quiet box in three steps, as on the iPhone: its
+    /// content fades out, the empty grey box closes to its new size, the new content fades in.
+    @Namespace private var morph
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var quiet = false
+    @State private var showsContent = true
+
+    /// Out, change, in. With Reduce Motion: a short cross-fade.
+    private func step(_ change: @escaping () -> Void) {
+        if reduceMotion { withAnimation(.easeInOut(duration: 0.2)) { change() }; return }
+        withAnimation(.easeOut(duration: 0.14)) { showsContent = false } completion: {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.9)) { change() } completion: {
+                withAnimation(.easeIn(duration: 0.16)) { showsContent = true }
+            }
+        }
+    }
 
     init(card: AssistantPrompt.Reply.Card, done: Bool, refs: [String: FactRef], open: @escaping (FactRef) -> Void,
          label: @escaping (FactRef) -> String, apply: @escaping (String, String?) -> Void, undo: (() -> Void)?,
@@ -572,9 +588,12 @@ struct ActionCard: View {
     private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink].contains(card.kind) }
 
     var body: some View {
-        if card.kind == .draftMessage, done, !editingDraft {
-            sentDraft
-        } else if dismissed, !done {
+        Group {
+            if card.kind == .draftMessage, quiet, !editingDraft {
+                sentDraft
+            } else if quiet {
+                taken
+            } else if dismissed, !done {
             HStack {
                 Text("Suggestion dismissed: \(title.lowercased())").font(.caption).foregroundStyle(.secondary)
                 Button("show again") { setDismissed(false) }.buttonStyle(.gold).font(.caption)
@@ -582,7 +601,7 @@ struct ActionCard: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                Text(title).font(.caption.weight(.semibold)).foregroundStyle(done ? Theme.done : .primary)
+                Text(title).font(.caption.weight(.semibold)).foregroundStyle(.primary)
                 if let what = what { Text(what).fixedSize(horizontal: false, vertical: true) }
                 if card.kind == .draftMessage {
                     TextField("Subject", text: $subject).cardField()
@@ -606,14 +625,14 @@ struct ActionCard: View {
                 }
                 HStack(spacing: 8) {
                     Spacer()
-                    if done, card.kind == .draftMessage {
-                        Button("Cancel") { withAnimation { editingDraft = false } }
+                    if quiet, card.kind == .draftMessage {
+                        Button("Cancel") { step { editingDraft = false } }
                         Button("Open in Mail") {
                             apply(text, subject)
-                            withAnimation { editingDraft = false }
+                            step { editingDraft = false }
                         }
                         .inkButton()
-                    } else if done {
+                    } else if quiet {
                         Label("Taken in", systemImage: "checkmark")
                             .font(.callout).foregroundStyle(Theme.done)
                         if let undo {
@@ -623,36 +642,101 @@ struct ActionCard: View {
                         }
                     } else {
                         Button("Dismiss") { withAnimation { setDismissed(true) } }
-                        Button(verb) {
-                            apply(text, card.kind == .draftMessage ? subject : nil)
-                            withAnimation { editingDraft = false }
-                        }
+                        Button(verb) { apply(text, card.kind == .draftMessage ? subject : nil) }
                             .inkButton()
                     }
                 }
                 .padding(.top, 10)
             }
+            .opacity(showsContent ? 1 : 0)
             .padding(12)
-            .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
+            .background { RoundedRectangle(cornerRadius: 10).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
+            .transition(.opacity)
+            }
+        }
+        // Undo plays it backwards; with Reduce Motion it is a short cross-fade.
+        .onAppear { quiet = done }
+        .onChange(of: done) { if quiet != done { step { quiet = done; editingDraft = false } } }
+    }
+
+    /// A card taken in, small and quiet: what was done, what kind, and Undo while the app is open.
+    /// The reason and the sources stay with what it made; a click opens its matter.
+    private var taken: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Image(systemName: "checkmark").font(.caption.weight(.semibold)).foregroundStyle(Theme.done)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(takenWhat).fontWeight(.medium).lineLimit(2)
+                Text(takenKind).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if let undo {
+                Button("Undo") { undo() }
+                    .buttonStyle(.gold).font(.caption)
+                    .help(card.kind == .sameParty ? "Turns the rule off: the next mail is not merged any more" : "Puts it back the way it was")
+            }
+        }
+        .opacity(showsContent ? 1 : 0)
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background { RoundedRectangle(cornerRadius: 10).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+        .contentShape(RoundedRectangle(cornerRadius: 10))
+        .onTapGesture(perform: openTaken)
+        .help("Opens it in its matter")
+        .transition(.opacity)
+    }
+
+    private var takenWhat: String {
+        switch card.kind {
+        case .sameParty: return "\(name(card.party))  →  \(name(card.into))"
+        case .waitsFor, .changeOwner: return name(card.todo)
+        default: return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? card.text : text
         }
     }
 
-    /// What was opened in Mail, short and not to be typed in: who, what about, how it starts.
-    private var sentDraft: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("Draft · opened in Mail")
-                .font(.caption.weight(.semibold))
-            Text("To: \(recipient?.name ?? "—")" + (subject.isEmpty ? "" : " · \(subject)")).font(.callout).lineLimit(1)
-            Text(text).font(.callout).foregroundStyle(.secondary).lineLimit(2)
-            HStack(spacing: 8) {
-                Spacer()
-                Button("Edit") { withAnimation { editingDraft = true } }
-                Button("Open again") { apply(text, subject) }
-            }
-            .padding(.top, 10)
+    private var takenKind: String {
+        switch card.kind {
+        case .newTodo: return "Task added · " + whose + (card.due.map { " · by \(Dates.short($0))" } ?? "")
+        case .markDone: return "Marked done"
+        case .sameParty: return "Merged into one person"
+        case .renameParty: return "Name changed"
+        case .changeRole: return "Role changed · " + name(card.party)
+        case .addNote: return "Note added · " + name(card.todo)
+        case .changeDate: return "Date changed"
+        case .newMatter: return "Matter started"
+        case .waitsFor: return "Now waits for " + name(card.into)
+        case .addLink: return "Link saved"
+        case .correctText: return "Text corrected"
+        case .changeOwner: return "Now " + whose.lowercased()
+        case .draftMessage: return "Opened in Mail"
         }
-        .padding(12)
-        .quietBox()
+    }
+
+    /// The matter it is about: the task it names, else what it rests on.
+    private func openTaken() {
+        if let ref = ([card.todo, card.party] + card.cites).compactMap({ $0.flatMap { refs[$0] } }).first { open(ref) }
+    }
+
+    /// What was opened in Mail, as small and quiet as a card taken in: its subject, where it went
+    /// and to whom. A click opens it in Mail again; Edit unfolds it. Opened is not sent: the
+    /// envelope, not a tick.
+    private var sentDraft: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Image(systemName: "envelope").font(.caption).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(subject.isEmpty ? text : subject).fontWeight(.medium).lineLimit(2)
+                Text("Draft opened in Mail · To: \(recipient?.name ?? "—")").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Edit") { step { editingDraft = true } }.buttonStyle(.gold).font(.caption)
+        }
+        .opacity(showsContent ? 1 : 0)
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background { RoundedRectangle(cornerRadius: 10).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+        .contentShape(RoundedRectangle(cornerRadius: 10))
+        .onTapGesture { apply(text, subject) }
+        .help("Opens it in Mail again")
+        .transition(.opacity)
     }
 
     private func name(_ id: String?) -> String { id.flatMap { refs[$0] }.map(label) ?? "?" }

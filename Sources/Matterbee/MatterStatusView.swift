@@ -153,7 +153,7 @@ struct MatterStatusView: View {
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 10) {
                 if writingSummary {
-                    BeeLoader(size: 14)
+                    BeeLoader(size: 10)
                     Text("Writing the summary …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
                 } else if matter.summaryAt != nil {
@@ -233,7 +233,7 @@ struct MatterStatusView: View {
             // Asking Claude, below the buttons on the left: apart from what the step itself offers.
             HStack(spacing: 10) {
                 if askingStep {
-                    BeeLoader(size: 14)
+                    BeeLoader(size: 10)
                     Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else {
                     Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
