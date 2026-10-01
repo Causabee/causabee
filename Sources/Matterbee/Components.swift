@@ -197,21 +197,6 @@ struct RowDivider: View {
     var body: some View { Divider().padding(.leading, 14) }
 }
 
-/// The door back into the assistant, on every row: with this item already in hand.
-/// Pins the row's item to the assistant, so the next question is about it.
-struct PinButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        // The bee, as the iPhone's "Ask Matterbee": the row goes to the assistant, pinned there.
-        Button(action: action) { BeeMark(size: 13).tight() }
-            .buttonStyle(.rowIcon)
-            .help("Ask Matterbee about it")
-            .accessibilityLabel("Ask Matterbee")
-            .tool()
-    }
-}
-
 /// The ⋯ at the end of a row: what can be done with it — edit, move, remove — in one menu.
 struct MoreMenu<Items: View>: View {
     @ViewBuilder let items: Items

@@ -1159,7 +1159,6 @@ struct TodoRow: View {
                     .popover(isPresented: $editing, arrowEdge: .bottom) {
                         TodoEditor(todo: todo, done: { editing = false; try? context.save() }, cancel: { editing = false })
                     }
-                PinButton(action: talk)
             }
         }
         .padding(.horizontal, 14)
@@ -1196,6 +1195,7 @@ struct TodoRow: View {
     /// what it waits for.
     @ViewBuilder
     private var moreItems: some View {
+        Button("Ask Matterbee", action: talk)
         Button("Edit …") { editing = true }
         if let info {
             Button("Not a task — move to Info", action: info)
@@ -1386,12 +1386,14 @@ struct InfoRow: View {
                 .buttonStyle(.gold).font(.callout)
                 .tool()
                 .help("A task after all: it goes back to the open tasks")
-            PinButton(action: talk)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
         .contentShape(Rectangle())
-        .contextMenu { Button("Back to tasks", action: back) }
+        .contextMenu {
+            Button("Ask Matterbee", action: talk)
+            Button("Back to tasks", action: back)
+        }
     }
 }
 
@@ -1472,7 +1474,6 @@ struct DateRow: View {
                     .popover(isPresented: $editing, arrowEdge: .bottom) {
                         DateEditor(item: item, done: { editing = false; save() }, cancel: { editing = false })
                     }
-                PinButton(action: talk)
             }
         }
         .foregroundStyle(isPast ? .secondary : .primary)
@@ -1495,6 +1496,7 @@ struct DateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
+        Button("Ask Matterbee", action: talk)
         Button("Edit …") { editing = true }
         Divider()
         Button("Delete …", role: .destructive) { deleting = true }
@@ -1617,6 +1619,7 @@ struct PartyRow: View {
             Spacer(minLength: 8)
             HStack(spacing: 4) {
             MoreMenu {
+                Button("Ask Matterbee", action: talk)
                 Button("Edit name and role …") {
                     name = party.name
                     role = membership.role ?? ""
@@ -1645,7 +1648,6 @@ struct PartyRow: View {
                     }
                     .padding(16)
                 }
-            PinButton(action: talk)
             }
         }
         .padding(.horizontal, 14)
@@ -1728,7 +1730,6 @@ struct ThreadMailRow: View {
     let row: MailThreads.Row
     let started: Bool
     let talk: () -> Void
-    @State private var hovering = false
 
     static let step: CGFloat = 20
     /// How far in replies go; deeper ones stay at this depth.
@@ -1760,7 +1761,6 @@ struct ThreadMailRow: View {
                     Text(entry.date.map(Dates.short) ?? "—").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                     Spacer(minLength: 8)
                     SourceLink(source: entry.source, label: Self.openLabel(entry.source.kind))
-                    PinButton(action: talk).opacity(hovering ? 1 : 0)
                 }
                 if let digest = entry.digest, !digest.isEmpty {
                     Text(digest).font(.callout).foregroundStyle(.secondary).lineLimit(3).fixedSize(horizontal: false, vertical: true)
@@ -1769,7 +1769,8 @@ struct ThreadMailRow: View {
             .padding(.vertical, 6)
         }
         .contentShape(Rectangle())
-        .onHover { hovering = $0 }
+        // Asking about it is in the right click, as on every row: no button that comes and goes.
+        .contextMenu { Button("Ask Matterbee", action: talk) }
     }
 }
 
@@ -1810,7 +1811,6 @@ struct DocumentRow: View {
     let talk: () -> Void
     @Environment(\.modelContext) private var context
     @State private var renaming = false
-    @State private var hovering = false
     @State private var newName = ""
 
     private var isPDF: Bool { document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf") }
@@ -1840,7 +1840,6 @@ struct DocumentRow: View {
             if let read = document.readAt {
                 Label("scanned \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
             }
-            PinButton(action: talk).opacity(hovering ? 1 : 0)
             MoreMenu { moreItems }
                 .popover(isPresented: $renaming, arrowEdge: .bottom) { renameField }
         }
@@ -1849,7 +1848,6 @@ struct DocumentRow: View {
         // A click on the row opens the file; everything else is in ⋯ and the right click.
         .contentShape(Rectangle())
         .onTapGesture(perform: open)
-        .onHover { hovering = $0 }
         .help(document.isOwnFile ? "Opens the file." : "Opens the file — only this one mail is read from the mailbox.")
         .opacity(document.isHidden ? 0.55 : 1)
         .disabled(state?.hasPrefix("Getting") == true)
