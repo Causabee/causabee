@@ -15,7 +15,7 @@ let package = Package(
     ],
     targets: [
         .executableTarget(name: "matter-bench", dependencies: [
-            .product(name: "MatterCore", package: "matterbee"),
+            .product(name: "MatterCore", package: "causabee"),
             .product(name: "MLXLLM", package: "mlx-swift-lm"),
             .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
             .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
