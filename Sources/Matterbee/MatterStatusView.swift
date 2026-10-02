@@ -366,13 +366,8 @@ struct MatterStatusView: View {
                     .keyboardShortcut(.defaultAction)
                 }
             } else if text.isEmpty {
-                HStack(spacing: 10) {
-                    Text("None yet. What you know, what was agreed — the assistant reads it too.")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Button { notesDraft = ""; editingNotes = true } label: { Label("Write note", systemImage: "square.and.pencil") }
-                        .buttonStyle(.gold).font(.caption)
-                }
-                .padding(.horizontal, 4)
+                EmptyBox(text: "What you know, what was agreed — the assistant reads it too.",
+                         action: "Write Note", symbol: "square.and.pencil") { notesDraft = ""; editingNotes = true }
             } else {
                 Text(Linked.text(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     .findable(.section("notes"), text)
@@ -414,12 +409,11 @@ struct MatterStatusView: View {
                     SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
                                   + (hidden.isEmpty ? "" : " · \(hidden.count) hidden")
                                   + (small.isEmpty ? "" : " · \(small.count) small \(small.count == 1 ? "image" : "images")"))
-                    Button { addingFile = true } label: { Label("File", systemImage: "plus") }
-                        .buttonStyle(.borderless).font(.caption)
-                        .help("Add a PDF, a scan or any file from this Mac — or drag it onto the matter")
-                        .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
-                            if case .success(let files) = result { addFiles(files) }
-                        }
+                    if !all.isEmpty {
+                        Button { addingFile = true } label: { Label("File", systemImage: "plus") }
+                            .buttonStyle(.borderless).font(.caption)
+                            .help("Add a PDF, a scan or any file from this Mac — or drag it onto the matter")
+                    }
                     if MatterFolders.root != nil {
                         Button { if let folder = MatterFolders.folder(for: matter) { try? context.save(); FolderSaver.reveal(folder) } } label: {
                             Label("Folder", systemImage: "folder")
@@ -429,9 +423,12 @@ struct MatterStatusView: View {
                         .help("This matter's folder in iCloud Drive → Matterbee")
                     }
                 }
+                .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
+                    if case .success(let files) = result { addFiles(files) }
+                }
                 if all.isEmpty {
-                    Text("None yet. A letter, a scan, a PDF: add it with +, or drag it here from the Finder. Files in mail come by themselves.")
-                        .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                    EmptyBox(text: "A letter, a scan, a PDF — or drag it here from the Finder. Files in mail come by themselves.",
+                             action: "Add File", symbol: "doc.badge.plus") { addingFile = true }
                 }
                 if !shown.isEmpty {
                     Card {
@@ -447,6 +444,7 @@ struct MatterStatusView: View {
                         }
                     }
                 }
+                if !hidden.isEmpty || !small.isEmpty {
                 HStack(spacing: 14) {
                     if !hidden.isEmpty {
                         Button(showsHidden ? "Hide the hidden ones" : "\(hidden.count) hidden · show") { showsHidden.toggle() }
@@ -456,6 +454,7 @@ struct MatterStatusView: View {
                     }
                 }
                 .buttonStyle(.gold).font(.caption).padding(.horizontal, 4)
+                }
         }
     }
 
@@ -500,15 +499,17 @@ struct MatterStatusView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
-                Button { addingLink = true } label: { Label("Link", systemImage: "plus") }
-                    .buttonStyle(.borderless).font(.caption)
-                    .help("Paste a link — or drag it from the browser onto the matter")
-                    .popover(isPresented: $addingLink, arrowEdge: .bottom) {
-                        LinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
-                            addLink(address, title: title, todo: todo)
-                            addingLink = false
-                        } cancel: { addingLink = false }
-                    }
+                if !all.isEmpty {
+                    Button { addingLink = true } label: { Label("Link", systemImage: "plus") }
+                        .buttonStyle(.borderless).font(.caption)
+                        .help("Paste a link — or drag it from the browser onto the matter")
+                }
+            }
+            .popover(isPresented: $addingLink, arrowEdge: .bottom) {
+                LinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
+                    addLink(address, title: title, todo: todo)
+                    addingLink = false
+                } cancel: { addingLink = false }
             }
             if !all.isEmpty {
                 Card {
@@ -519,8 +520,8 @@ struct MatterStatusView: View {
                     }
                 }
             } else if offered.isEmpty {
-                Text("None yet. A Google Doc, a sheet: add it with +, or drag it here from the browser.")
-                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                EmptyBox(text: "A Google Doc, a sheet — or drag it here from the browser.",
+                         action: "Add Link", symbol: "link.badge.plus") { addingLink = true }
             }
             if !offered.isEmpty, !reading {
                 DisclosureGroup(isExpanded: open($showsSuggestions)) {
@@ -851,23 +852,28 @@ struct MatterStatusView: View {
 
     // MARK: To-dos
 
+    /// Any task at all, open or done — a task being written with "+ Task" not yet among them.
+    private var hasTodos: Bool { (matter.todos ?? []).contains { $0 !== newTodo } }
+
     @ViewBuilder
     private func todos(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                SectionHeader(title: "Tasks", detail: matter.todos?.isEmpty ?? true ? nil : "\(matter.openTodos.count) open · \(status.done.count) done")
-                Button(action: addTodo) { Label("Task", systemImage: "plus") }
-                    .buttonStyle(.borderless).font(.caption)
-                    .help("Write a task of your own")
-                    .popover(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .bottom) {
-                        if let newTodo {
-                            TodoEditor(todo: newTodo, done: { self.newTodo = nil; try? context.save() }, cancel: dropNewTodo, isNew: true)
-                        }
-                    }
+                SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open · \(status.done.count) done" : nil)
+                if hasTodos {
+                    Button(action: addTodo) { Label("Task", systemImage: "plus") }
+                        .buttonStyle(.borderless).font(.caption)
+                        .help("Write a task of your own")
+                }
             }
-            if matter.todos?.isEmpty ?? true {
-                Text("None yet. Add one with +; tasks in mail are found when it is sorted in.")
-                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+            .popover(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .bottom) {
+                if let newTodo {
+                    TodoEditor(todo: newTodo, done: { self.newTodo = nil; try? context.save() }, cancel: dropNewTodo, isNew: true)
+                }
+            }
+            if !hasTodos {
+                EmptyBox(text: "What is to do, and whose. Tasks in mail are found when it is sorted in.",
+                         action: "Add Task", symbol: "checklist", run: addTodo)
             }
             // What is past its day first, whoever's it is; the groups below hold the rest.
             let overdue = status.overdue.sorted { ($0.due ?? "") < ($1.due ?? "") }
@@ -973,8 +979,7 @@ struct MatterStatusView: View {
         if upcoming.isEmpty && past.isEmpty && deadlines.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "Appointments and deadlines")
-                Text("None yet. They are found in mail when it is sorted in; a task can have a day too.")
-                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                EmptyBox(text: "Appointments and deadlines are found in mail when it is sorted in. A task can have a day too.")
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
@@ -1022,8 +1027,7 @@ struct MatterStatusView: View {
         if memberships.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "People")
-                Text("No one yet. Who writes, who is named: they come in with mail and screenshots.")
-                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                EmptyBox(text: "Who writes and who is named come in with mail and screenshots.")
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
@@ -1114,8 +1118,7 @@ struct MatterStatusView: View {
             SectionHeader(title: "History", detail: Self.count(status.entries)
                           + (threads.count == status.entries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
             if status.entries.isEmpty {
-                Text("Mail sorted into this matter shows here, newest first. Mail cannot be added by hand — it comes from your mailbox.")
-                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                EmptyBox(text: "Mail sorted into this matter shows here, newest first. It comes from your mailbox, not by hand.")
             }
             ForEach(visible) { thread in
                 ThreadCard(thread: thread) { entry in talk(entry.title, "Mail") }
@@ -2303,5 +2306,27 @@ struct MoveMailMenu: View {
     static func move(_ entry: Entry, to matter: Matter, in context: ModelContext) {
         guard let from = entry.matter else { return }
         withAnimation { try? from.move([entry], into: matter, in: context) }
+    }
+}
+
+/// A section with nothing in it yet: a grey box, what goes in it in the middle, and — where the
+/// owner can add it by hand — the button that does.
+struct EmptyBox: View {
+    let text: String
+    var action: String? = nil
+    var symbol = "plus"
+    var run: () -> Void = {}
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(text).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            if let action {
+                Button(action: run) { Label(action, systemImage: symbol) }.inkButton()
+            }
+        }
+        .padding(.horizontal, 24).padding(.vertical, action == nil ? 18 : 22)
+        .frame(maxWidth: .infinity)
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
     }
 }

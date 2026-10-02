@@ -770,15 +770,13 @@ extension Navigation.Turn: Codable {
     }
 }
 
-/// The Matter menu, after Edit: what can be added to the matter that is open — or a new matter.
-/// Mail is not among it: it comes from the mailbox.
+/// The Matter menu, after Edit: what can be added to the matter that is open; a new matter is
+/// File → New Matter. Mail is not among it: it comes from the mailbox.
 struct MatterCommands: Commands {
     @FocusedValue(\.openMatter) private var open
 
     var body: some Commands {
         CommandMenu("Matter") {
-            Button("New Matter …") { NotificationCenter.default.post(name: .newMatter, object: nil) }
-            Divider()
             item("New Task …", .newTask).keyboardShortcut("t", modifiers: [.command, .shift])
             item("Write Note", .writeNote)
             item("Add File …", .addFile)
