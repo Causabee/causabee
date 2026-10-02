@@ -57,7 +57,7 @@ struct MatterbeeApp: App {
             return container
         }
         CloudSync.shared.watch()
-        DispatchQueue.main.async { NSApp.activate() }
+        DispatchQueue.main.async { NSApp.activate(); MenuOrder.keep() }
         if let folder = DesignRender.folder, case .success(let container) = opened {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { DesignRender.editor(container, to: folder) }
         }
@@ -87,6 +87,7 @@ struct MatterbeeApp: App {
                 Button("New Matter …") { NotificationCenter.default.post(name: .newMatter, object: nil) }
                     .keyboardShortcut("n", modifiers: .command)
             }
+            MatterCommands()
             CommandGroup(after: .appSettings) {
                 Button("Set Up Matterbee …") { NotificationCenter.default.post(name: .showSetup, object: nil) }
                 Button(DemoData.isRequested ? "Leave the Demo" : "Try the Demo") { DemoData.restart(demo: !DemoData.isRequested) }
@@ -769,7 +770,64 @@ extension Navigation.Turn: Codable {
     }
 }
 
+/// The Matter menu, after Edit: what can be added to the matter that is open — or a new matter.
+/// Mail is not among it: it comes from the mailbox.
+struct MatterCommands: Commands {
+    @FocusedValue(\.openMatter) private var open
+
+    var body: some Commands {
+        CommandMenu("Matter") {
+            Button("New Matter …") { NotificationCenter.default.post(name: .newMatter, object: nil) }
+            Divider()
+            item("New Task …", .newTask).keyboardShortcut("t", modifiers: [.command, .shift])
+            item("Write Note", .writeNote)
+            item("Add File …", .addFile)
+            item("Add Link …", .addLink)
+        }
+    }
+
+    private func item(_ title: String, _ action: MatterAction) -> some View {
+        Button(title) { NotificationCenter.default.post(name: .matterAction, object: action.rawValue) }
+            .disabled(open == nil)
+    }
+}
+
+/// An action of the Matter menu, for the matter that is open.
+enum MatterAction: String {
+    case newTask, writeNote, addFile, addLink
+}
+
+extension FocusedValues {
+    /// The matter open in the window: the Matter menu's actions go to it.
+    @Entry var openMatter: PersistentIdentifier?
+}
+
+/// SwiftUI puts a menu of its own before Window; the Matter menu belongs after Edit, where a
+/// document's menu is. Moved again whenever SwiftUI builds the menu bar anew.
+@MainActor
+enum MenuOrder {
+    static func keep() {
+        place()
+        NotificationCenter.default.addObserver(forName: NSMenu.didAddItemNotification, object: nil, queue: .main) { note in
+            guard (note.object as? NSMenu) === NSApp.mainMenu else { return }
+            MainActor.assumeIsolated { place() }
+        }
+    }
+
+    private static func place() {
+        guard let menu = NSApp.mainMenu,
+              let matter = menu.items.first(where: { $0.title == "Matter" }),
+              let edit = menu.items.firstIndex(where: { $0.title == "Edit" }) else { return }
+        let at = menu.index(of: matter)
+        guard at != edit + 1 else { return }
+        menu.removeItem(matter)
+        menu.insertItem(matter, at: min(menu.index(of: menu.items[edit]) + 1, menu.items.count))
+    }
+}
+
 extension Notification.Name {
+    /// Matter → New Task …, Write Note, Add File …, Add Link …: the action as its raw value.
+    static let matterAction = Notification.Name("matterbee.matterAction")
     /// iCloud brought changes in: the assistant's thread may have new or changed turns.
     static let threadMayHaveChanged = Notification.Name("matterbee.threadMayHaveChanged")
     /// Help → Introduction to Matterbee.

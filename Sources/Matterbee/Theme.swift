@@ -186,7 +186,12 @@ enum Sources {
         switch source.kind {
         case .mail: return "from the mail of \(day)"
         case .screenshot: return "from the screenshot of \(day)"
-        case .conversation: return source.pointer == "matter-closed" ? "marked done when closing, \(day)" : "from you in the assistant, \(day)"
+        case .conversation:
+            switch source.pointer {
+            case "matter-closed": return "marked done when closing, \(day)"
+            case "you": return "added by you, \(day)"
+            default: return "from you in the assistant, \(day)"
+            }
         case .spokenNote: return "spoken on \(day)"
         case .photo: return "from the photo of \(day)"
         case .phoneCall: return "from the phone call of \(day)"

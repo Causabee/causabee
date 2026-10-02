@@ -27,6 +27,10 @@ struct MatterStatusView: View {
     @State private var notesDraft = ""
     @State private var askingStep = false
     @State private var addingLink = false
+    /// A task the owner is writing with "+ Task": in the matter while its popover is open, taken
+    /// out again if it is left without words.
+    @State private var newTodo: Todo?
+    @State private var addingFile = false
     /// The owner's reminders, read when the matter opens and again when Reminders changes.
     @State private var reminders: [Calendars.Reminder] = []
     @State private var calendarTick = 0
@@ -65,11 +69,11 @@ struct MatterStatusView: View {
                         closedBanner(status)
                         if !matter.isClosed { nextStep(status, facts) }
                         summary(facts)
-                        notes
-                        todos(status)
+                        notes.id("notes")
+                        todos(status).id("tasks")
                         dates(status)
                         files.id("files")
-                        links
+                        links.id("links")
                         parties(status)
                         history(status)
                     }
@@ -98,17 +102,35 @@ struct MatterStatusView: View {
                     }
                 }
                 // A link dragged from the browser onto the matter is kept in it.
+                // A file from the Finder becomes one of its files.
                 .dropDestination(for: URL.self) { urls, _ in
-                    let web = urls.compactMap { WebLink.address(in: $0.absoluteString) }
+                    let files = urls.filter(\.isFileURL)
+                    if !files.isEmpty { addFiles(files) }
+                    let web = urls.filter { !$0.isFileURL }.compactMap { WebLink.address(in: $0.absoluteString) }
                     for address in web { addLink(address, title: "", todo: nil) }
-                    return !web.isEmpty
+                    return !web.isEmpty || !files.isEmpty
                 }
                 .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
+                // The Matter menu: the section scrolled to, then what adds to it opened.
+                .onReceive(NotificationCenter.default.publisher(for: .matterAction)) { note in
+                    guard let action = (note.object as? String).flatMap(MatterAction.init) else { return }
+                    let section = switch action { case .newTask: "tasks"; case .writeNote: "notes"; case .addFile: "files"; case .addLink: "links" }
+                    withAnimation { scroller.scrollTo(section, anchor: .top) }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        switch action {
+                        case .newTask: addTodo()
+                        case .writeNote: notesDraft = matter.notes ?? ""; editingNotes = true
+                        case .addFile: addingFile = true
+                        case .addLink: addingLink = true
+                        }
+                    }
+                }
                 .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
                 .onChange(of: navigation.showing) { show(navigation.showing, with: scroller) }
             }
         }
         .environment(find)
+        .focusedSceneValue(\.openMatter, matter.persistentModelID)
         .navigationTitle(matter.name)
         .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
             Button("Merge") {
@@ -344,10 +366,13 @@ struct MatterStatusView: View {
                     .keyboardShortcut(.defaultAction)
                 }
             } else if text.isEmpty {
-                Button { notesDraft = ""; editingNotes = true } label: { Label("Write note", systemImage: "square.and.pencil") }
-                    .buttonStyle(.gold)
-                    .tool()
-                    .padding(.horizontal, 4)
+                HStack(spacing: 10) {
+                    Text("None yet. What you know, what was agreed — the assistant reads it too.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Button { notesDraft = ""; editingNotes = true } label: { Label("Write note", systemImage: "square.and.pencil") }
+                        .buttonStyle(.gold).font(.caption)
+                }
+                .padding(.horizontal, 4)
             } else {
                 Text(Linked.text(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     .findable(.section("notes"), text)
@@ -384,12 +409,17 @@ struct MatterStatusView: View {
         let shown = all.filter { document in
             (!document.isHidden || showsHidden) && (!document.isSmallImage || showsSmallImages || document.isHidden)
         }
-        if !all.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    SectionHeader(title: "Files", detail: "\(all.count - small.count - hidden.count)"
+                    SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
                                   + (hidden.isEmpty ? "" : " · \(hidden.count) hidden")
                                   + (small.isEmpty ? "" : " · \(small.count) small \(small.count == 1 ? "image" : "images")"))
+                    Button { addingFile = true } label: { Label("File", systemImage: "plus") }
+                        .buttonStyle(.borderless).font(.caption)
+                        .help("Add a PDF, a scan or any file from this Mac — or drag it onto the matter")
+                        .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
+                            if case .success(let files) = result { addFiles(files) }
+                        }
                     if MatterFolders.root != nil {
                         Button { if let folder = MatterFolders.folder(for: matter) { try? context.save(); FolderSaver.reveal(folder) } } label: {
                             Label("Folder", systemImage: "folder")
@@ -398,6 +428,10 @@ struct MatterStatusView: View {
                         .tool()
                         .help("This matter's folder in iCloud Drive → Matterbee")
                     }
+                }
+                if all.isEmpty {
+                    Text("None yet. A letter, a scan, a PDF: add it with +, or drag it here from the Finder. Files in mail come by themselves.")
+                        .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
                 }
                 if !shown.isEmpty {
                     Card {
@@ -422,8 +456,28 @@ struct MatterStatusView: View {
                     }
                 }
                 .buttonStyle(.gold).font(.caption).padding(.horizontal, 4)
-            }
         }
+    }
+
+    /// Files from this Mac, copied in beside the store so they stay when the originals move, each
+    /// a file of the matter — and into its iCloud Drive folder, when there is one.
+    private func addFiles(_ files: [URL]) {
+        let folder = ScreenshotDoor.attachments(besides: navigation.store)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for file in files {
+            let scoped = file.startAccessingSecurityScopedResource()
+            defer { if scoped { file.stopAccessingSecurityScopedResource() } }
+            let target = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + file.lastPathComponent)
+            guard (try? FileManager.default.copyItem(at: file, to: target)) != nil else { continue }
+            let size = (try? target.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            let type = UTType(filenameExtension: file.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+            let source = Source(kind: .document, pointer: target.path, messageID: "file-" + UUID().uuidString, date: Date())
+            let document = MatterCore.Document(name: file.lastPathComponent, contentType: type, byteCount: size, source: source)
+            context.insert(document)
+            document.matter = matter
+        }
+        try? context.save()
+        FolderSaver.shared.save([matter])
     }
 
     // MARK: Calendar and Reminders
@@ -448,7 +502,6 @@ struct MatterStatusView: View {
                 SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
                 Button { addingLink = true } label: { Label("Link", systemImage: "plus") }
                     .buttonStyle(.borderless).font(.caption)
-                    .tool()
                     .help("Paste a link — or drag it from the browser onto the matter")
                     .popover(isPresented: $addingLink, arrowEdge: .bottom) {
                         LinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
@@ -538,6 +591,22 @@ struct MatterStatusView: View {
                 searchingLinks = "\(error)"
             }
         }
+    }
+
+    /// "+ Task": an empty task of the owner's, opened in the editor.
+    private func addTodo() {
+        let todo = Todo(text: "", owner: .me, due: nil, source: Source(kind: .conversation, pointer: "you", date: Date()),
+                        origin: "you#" + UUID().uuidString)
+        context.insert(todo)
+        todo.matter = matter
+        newTodo = todo
+    }
+
+    /// The new task closed without words: it was never there.
+    private func dropNewTodo() {
+        guard let todo = newTodo else { return }
+        newTodo = nil
+        if todo.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { context.delete(todo); try? context.save() }
     }
 
     private func addLink(_ address: String, title: String, todo: Todo?) {
@@ -785,7 +854,21 @@ struct MatterStatusView: View {
     @ViewBuilder
     private func todos(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Tasks", detail: "\(matter.openTodos.count) open · \(status.done.count) done")
+            HStack {
+                SectionHeader(title: "Tasks", detail: matter.todos?.isEmpty ?? true ? nil : "\(matter.openTodos.count) open · \(status.done.count) done")
+                Button(action: addTodo) { Label("Task", systemImage: "plus") }
+                    .buttonStyle(.borderless).font(.caption)
+                    .help("Write a task of your own")
+                    .popover(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .bottom) {
+                        if let newTodo {
+                            TodoEditor(todo: newTodo, done: { self.newTodo = nil; try? context.save() }, cancel: dropNewTodo, isNew: true)
+                        }
+                    }
+            }
+            if matter.todos?.isEmpty ?? true {
+                Text("None yet. Add one with +; tasks in mail are found when it is sorted in.")
+                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+            }
             // What is past its day first, whoever's it is; the groups below hold the rest.
             let overdue = status.overdue.sorted { ($0.due ?? "") < ($1.due ?? "") }
             let late = Set(overdue.map(\.persistentModelID))
@@ -887,7 +970,13 @@ struct MatterStatusView: View {
     private func dates(_ status: MatterStatus) -> some View {
         let upcoming = status.upcomingAppointments, past = status.pastAppointments
         let deadlines = status.deadlines
-        if !upcoming.isEmpty || !past.isEmpty || !deadlines.isEmpty {
+        if upcoming.isEmpty && past.isEmpty && deadlines.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader(title: "Appointments and deadlines")
+                Text("None yet. They are found in mail when it is sorted in; a task can have a day too.")
+                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+            }
+        } else {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "Appointments and deadlines", detail: "\(upcoming.count) coming · \(Self.deadlinesOpen(deadlines.filter { $0.day >= status.today }.count))")
                 CalendarAccessBanner { loadCalendars() }.tool()
@@ -930,7 +1019,13 @@ struct MatterStatusView: View {
     @ViewBuilder
     private func parties(_ status: MatterStatus) -> some View {
         let memberships = status.memberships
-        if !memberships.isEmpty {
+        if memberships.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader(title: "People")
+                Text("No one yet. Who writes, who is named: they come in with mail and screenshots.")
+                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+            }
+        } else {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "People", detail: "\(memberships.count) · to merge, drag one name onto another")
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
@@ -1018,6 +1113,10 @@ struct MatterStatusView: View {
         return VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "History", detail: Self.count(status.entries)
                           + (threads.count == status.entries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
+            if status.entries.isEmpty {
+                Text("Mail sorted into this matter shows here, newest first. Mail cannot be added by hand — it comes from your mailbox.")
+                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+            }
             ForEach(visible) { thread in
                 ThreadCard(thread: thread) { entry in talk(entry.title, "Mail") }
             }
@@ -1244,6 +1343,8 @@ struct TodoEditor: View {
     let done: () -> Void
     /// Cancel: closes, and nothing of it is written.
     var cancel: () -> Void = {}
+    /// A task just started with "+ Task": "New task", and nothing to save until it has words.
+    var isNew = false
     @State private var text = ""
     @State private var note = ""
     @State private var owner = Todo.Owner.me
@@ -1265,7 +1366,7 @@ struct TodoEditor: View {
         // As Figma's "Mac popovers" draw it: the words first, whose in pills, then one card with
         // the day, what it waits for and its links — each with its label on the left.
         VStack(alignment: .leading, spacing: 14) {
-            Text("Change task").font(.headline)
+            Text(isNew ? "New task" : "Change task").font(.headline)
             VStack(spacing: 8) {
                 box(TextField("What to do", text: $text, axis: .vertical).lineLimit(1...5), field: .text)
                 box(TextField("Note — a list, a detail, what was agreed", text: $note, axis: .vertical).lineLimit(2...8), field: .note)
@@ -1312,7 +1413,8 @@ struct TodoEditor: View {
             HStack(spacing: 8) {
                 Spacer()
                 Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
-                Button("Save", action: save).keyboardShortcut(.defaultAction).inkButton()
+                Button(isNew ? "Add" : "Save", action: save).keyboardShortcut(.defaultAction).inkButton()
+                    .disabled(isNew && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding(.horizontal, 18).padding(.vertical, 16)
