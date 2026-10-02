@@ -2,6 +2,19 @@
 
 Small things noticed while using the app, to pick up later. Newest first.
 
+## Welcome
+
+- **The iPhone's welcome page needs an overhaul, in content and look** (Welcome.swift; ⋯ →
+  Introduction, and at the first start). Now: the bee, "Matterbee", one long paragraph of what it
+  does, then "What it needs" as four ticked rows with long grey explanations (iCloud, Mail, an AI
+  key, a list of names), then Try the demo / Start. It reads like a checklist of parts, not like a
+  welcome. What it could become: one short promise in the website's voice (care first — "Mum's
+  care, a claim, a move: each in its own place"), one picture of a matter as it looks; the setup as
+  short steps only where something is still missing (a tick and two words where it is done, no
+  explanations for what already works); privacy in one line ("names are disguised before anything
+  is sent"); the demo as the first thing to try, not a side button. Draw it in Figma first.
+  (2026-10-02)
+
 ## Widgets
 
 - **A matter on the Home Screen.** A widget the owner sets up by choosing one matter (the
