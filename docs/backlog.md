@@ -22,8 +22,11 @@ Small things noticed while using the app, to pick up later. Newest first.
   - **A summary that says more:** "9 matters are going on. 7 have something overdue." could name
     the most urgent ones: "Overdue: the bath seat prescription (Care for Mum) and 6 more."
 
-  Same on the Mac's overview. Draw it in Figma first, with the demo's matters doubled to fifteen.
-  (2026-10-02)
+  Same on the Mac's overview. Drawn in Figma with the demo's matters doubled to fifteen: "Overview
+  with many matters". **Chosen: the week across matters and pinned on top** (3 + 4) — the seven
+  days as a strip under the search, a dot per date (orange where something is overdue), the
+  selected day's things listed under it; the pinned matter as its card; every other matter one
+  line, overdue ones in orange. (2026-10-02)
 
 ## Welcome
 
