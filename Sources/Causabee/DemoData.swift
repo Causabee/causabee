@@ -972,7 +972,7 @@ enum DemoData {
         let quote2 = c.mail(-32, "Dieter Wolf <d.wolf@wolf-renovations.example>", "Our quote for the bathroom",
             "Complete work: 12,900 euros, five weeks, start in January. Tiles from a cheaper range.",
             files: [("Quote-Wolf.pdf", "application/pdf", 280_000)])
-        let landlord = c.mail(-26, "Housing Association North <service@wohnen-nord.example>", "Permission for structural changes",
+        c.mail(-26, "Housing Association North <service@wohnen-nord.example>", "Permission for structural changes",
             "Moving the shower needs written permission. Send drawings and the plumber's plan. A decision takes up to three weeks.")
         let tile = c.mail(-20, "Tile Hall <sales@tile-hall.example>", "Your sample tiles are ready",
             "Three samples are ready at the store. The chosen tile has a delivery time of five weeks.")

@@ -63,7 +63,7 @@ struct PhoneThreadMailRow: View {
     @State private var naming = false
     @State private var newName = ""
 
-    static let step: CGFloat = 16
+    nonisolated static let step: CGFloat = 16
     static let deepest = 3
 
     var body: some View {

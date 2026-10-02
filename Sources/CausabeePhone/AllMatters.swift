@@ -36,7 +36,7 @@ struct OtherMattersList: View {
                     DisclosureGroup(isExpanded: $showsQuiet) {
                         PhoneMatterRows(matters: quiet, all: sorted).padding(.top, 6)
                     } label: {
-                        Text("Quiet · \(quiet.count)") + Text("  nothing open, no date").font(.footnote).foregroundStyle(.secondary)
+                        Text("Quiet · \(quiet.count)\(Text("  nothing open, no date").font(.footnote).foregroundStyle(.secondary))")
                     }
                 }
                 if !closed.isEmpty {

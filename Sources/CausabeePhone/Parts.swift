@@ -108,7 +108,7 @@ struct AssistantButton: View {
 struct AskCausabeeButton: View {
     let action: () -> Void
 
-    @MainActor private static let bee: Image = {
+    @MainActor private static let bee: Image = { @MainActor in
         let renderer = ImageRenderer(content: BeeMark(size: 15).tight().foregroundStyle(.black))
         renderer.scale = 3
         guard let picture = renderer.uiImage else { return Image(systemName: "bubble.left.and.bubble.right") }

@@ -97,7 +97,7 @@ struct PhonePartyRow: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "person.crop.circle").font(.title2).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 3) {
-                (Text(party.name).fontWeight(.medium) + Text(membership.role.map { " · \($0)" } ?? "").foregroundStyle(.secondary))
+                Text("\(Text(party.name).fontWeight(.medium))\(Text(membership.role.map { " · \($0)" } ?? "").foregroundStyle(.secondary))")
                     .fixedSize(horizontal: false, vertical: true)
                 // How much they are in the matter — the one named most in gold.
                 if let share = membership.share {
@@ -368,7 +368,7 @@ struct PhoneLinkRow: View {
                     Text(link.shownName).multilineTextAlignment(.leading)
                 }
                 .foregroundStyle(Theme.gold)
-                (Text(link.kind) + Text(link.todo.map { " · for: \($0.text)" } ?? "") + Text(" · \(Dates.short(link.createdAt))"))
+                Text("\(link.kind)\(link.todo.map { " · for: \($0.text)" } ?? "") · \(Dates.short(link.createdAt))")
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2)
             }
             Spacer(minLength: 0)
@@ -481,7 +481,7 @@ struct PhoneSuggestedLinkRow: View {
                         Text(link.shownName).multilineTextAlignment(.leading)
                     }
                     .foregroundStyle(Theme.gold)
-                    (Text(link.kind) + Text(mail.map { " · from the mail of \($0.date.map(Dates.short) ?? "?"): \($0.title)" } ?? ""))
+                    Text("\(link.kind)\(mail.map { " · from the mail of \($0.date.map(Dates.short) ?? "?"): \($0.title)" } ?? "")")
                         .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
             }
