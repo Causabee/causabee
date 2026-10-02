@@ -9,13 +9,15 @@ struct PhoneWeek: View {
     let matters: [Matter]
     @Environment(Navigation.self) private var navigation
     @State private var chosen: String?
+    @State private var showsOverdue = false
 
     var body: some View {
         let days = Week.days()
         let today = days[0]
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today
-        let late = matters.contains { !$0.isClosed && !MatterStatus($0).overdue.isEmpty }
+        let late = !overdue.isEmpty
         let things = Week.things(on: day, in: matters)
+        let lateToday = day == today ? overdue : []
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 4) {
                 ForEach(days, id: \.self) { each in
@@ -26,12 +28,63 @@ struct PhoneWeek: View {
             SectionHeader(title: day == today ? "Today · " + Self.heading(day) : Self.heading(day),
                           detail: things.isEmpty ? "nothing" : things.count == 1 ? "1 thing" : "\(things.count) things")
                 .padding(.top, 4)
-            if things.isEmpty {
-                nothing(on: day, isToday: day == today)
-            } else {
+            // Today first says what is overdue, as the Mac's first tile does; "Nothing today" only
+            // when nothing is late either.
+            if !lateToday.isEmpty { overdueBox(lateToday) }
+            if !things.isEmpty {
                 list(things)
+            } else if lateToday.isEmpty {
+                nothing(on: day, isToday: day == today)
             }
         }
+    }
+
+    /// What is overdue in the open matters, the longest first.
+    private var overdue: [Todo] {
+        matters.filter { !$0.isClosed }.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "") < ($1.due ?? "") }
+    }
+
+    /// How many are overdue, and the longest since when; a tap opens the list in place, each line
+    /// a door to its task.
+    private func overdueBox(_ late: [Todo]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button { withAnimation(.snappy) { showsOverdue.toggle() } } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.circle")
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("\(late.count) overdue").fontWeight(.semibold)
+                        Text("the longest since \(late.first?.due.map(Dates.short) ?? "")").font(.caption)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down").font(.footnote.weight(.semibold))
+                        .rotationEffect(.degrees(showsOverdue ? 180 : 0))
+                }
+                .foregroundStyle(Theme.warning)
+                .padding(.horizontal, 14).padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(showsOverdue ? "Hides the list" : "Shows the list")
+            if showsOverdue {
+                ForEach(late) { todo in
+                    Divider().padding(.leading, 14)
+                    Button {
+                        if let matter = todo.matter { navigation.open(matter, showing: todo.persistentModelID) }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(todo.text).font(.subheadline).foregroundStyle(.primary).multilineTextAlignment(.leading)
+                            Text("since \(todo.due.map(Dates.short) ?? "") · \(todo.matter?.name ?? "")")
+                                .font(.caption).foregroundStyle(Theme.warning).lineLimit(1)
+                        }
+                        .padding(.horizontal, 14).padding(.vertical, 10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func cell(_ day: String, isToday: Bool, isChosen: Bool, count: Int, late: Bool) -> some View {
@@ -98,8 +151,10 @@ struct PhoneWeek: View {
                 .buttonStyle(.plain)
             }
         }
+        // Grey and without a line, as the Mac's tile: a quiet note, not a card.
         .padding(.horizontal, 14).padding(.vertical, 12)
-        .phoneCard()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
     }
 
     /// "Thu, Oct 8"

@@ -44,8 +44,18 @@ enum IntroShot: String {
     @MainActor
     func arrange(_ navigation: Navigation, matters: [Matter]) {
         DispatchQueue.main.async {
-            NSApp.windows.first { $0.isVisible && $0.canBecomeMain }?.setContentSize(Self.window)
+            guard let window = NSApp.windows.first(where: { $0.isVisible && $0.canBecomeMain }) else { return }
+            // Its whole size, even on a screen whose menu bar leaves less: the window hangs under the
+            // screen's lower edge, and the picture is still taken of all of it, not stretched.
+            var frame = window.frameRect(forContentRect: NSRect(origin: .zero, size: Self.window))
+            if let screen = window.screen ?? NSScreen.main {
+                frame.origin = NSPoint(x: screen.visibleFrame.minX, y: screen.visibleFrame.maxY - frame.height)
+            }
+            window.setFrame(frame, display: true)
         }
+        // The overview as it is used: with the care matter pinned on top. Not saved; the shot's store
+        // is its own and gone after it.
+        if self == .overview { matters.first { $0.name.hasPrefix("Care for Mum") }?.pinnedAt = Date() }
         guard let name = matter, let open = matters.first(where: { $0.name.hasPrefix(name) }) else { return }
         let shown = todo.flatMap { start in (open.todos ?? []).first { $0.text.hasPrefix(start) }?.persistentModelID }
         navigation.open(open, showing: shown)
