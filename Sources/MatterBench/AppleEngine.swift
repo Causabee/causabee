@@ -46,7 +46,7 @@ struct AppleEngine: LocalEngine {
 
     func read(instructions: String, prompt: String) async throws -> LocalAnswer {
         let session = LanguageModelSession(instructions: instructions)
-        let answer = try await session.respond(to: prompt, generating: Answer.self, options: GenerationOptions(sampling: .greedy)).content
+        let answer = try await session.respond(to: prompt, generating: Answer.self, options: GenerationOptions(samplingMode: .greedy)).content
         return LocalAnswer(matter: answer.matter, newMatterTitle: answer.newMatterTitle,
                            todos: answer.todos.map { .init(text: $0.text, owner: $0.owner, due: $0.due) },
                            dates: answer.dates.map { .init(day: $0.day, time: $0.time, what: $0.what, kind: $0.kind) },

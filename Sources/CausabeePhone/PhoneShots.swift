@@ -157,7 +157,7 @@ final class PhoneShots {
             // Its words kept on this iPhone with it, as a mail's text is: for the assistant, later.
             if let email = look.report.outcomes.first?.email { MailText.save(email, besides: store) }
             // Known on every device, so the Mac never sends it again.
-            if !DemoData.isRequested { try? SortedMails.record([judgement], device: PhoneNames.device, in: context) }
+            if !DemoData.isRequested { _ = try? SortedMails.record([judgement], device: PhoneNames.device, in: context) }
             try context.save()
             if !DemoData.isRequested { PhoneNames.publish(in: context) }
             set(id, .taken(taken?.name ?? judgement.matter ?? "", taken?.persistentModelID))

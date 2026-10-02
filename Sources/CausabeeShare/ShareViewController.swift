@@ -88,10 +88,12 @@ final class ShareModel {
     }
 
     private static func file(of provider: NSItemProvider, type: UTType) async -> (Data, String)? {
-        await withCheckedContinuation { done in
+        // The name is taken before the file comes, so the provider itself stays where it is.
+        let suggestedName = provider.suggestedName
+        return await withCheckedContinuation { done in
             _ = provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { url, _ in
                 guard let url, let data = try? Data(contentsOf: url) else { done.resume(returning: nil); return }
-                let name = provider.suggestedName.map { $0 + "." + url.pathExtension } ?? url.lastPathComponent
+                let name = suggestedName.map { $0 + "." + url.pathExtension } ?? url.lastPathComponent
                 done.resume(returning: (data, name))
             }
         }

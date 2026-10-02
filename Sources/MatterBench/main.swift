@@ -193,6 +193,6 @@ extension LocalAnswer {
                   todos: judgement.todos.map { .init(text: $0.text, owner: $0.owner.rawValue, due: $0.due ?? "") },
                   dates: judgement.appointments.map { .init(day: $0.date, time: $0.time ?? "", what: $0.what, kind: "appointment") }
                       + judgement.deadlines.map { .init(day: $0.date, time: "", what: $0.what, kind: "deadline") },
-                  parties: judgement.parties.map { .init(name: $0.name, role: $0.role ?? "") })
+                  parties: judgement.parties.map { .init(name: $0.name, role: $0.role) })
     }
 }

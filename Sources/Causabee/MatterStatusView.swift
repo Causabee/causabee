@@ -1930,7 +1930,7 @@ struct ThreadMailRow: View {
     @State private var naming = false
     @State private var newName = ""
 
-    static let step: CGFloat = 20
+    nonisolated static let step: CGFloat = 20
     /// How far in replies go; deeper ones stay at this depth.
     static let deepest = 4
 
