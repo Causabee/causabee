@@ -39,8 +39,9 @@ struct RootView: View {
     }
 }
 
-/// Every matter with something going on, as cards, each a door into its page. Worked out on the
-/// iPhone; nothing is sent.
+/// The week across all matters, the pinned matters as cards, and every other matter going on as
+/// one line — each a door into its page (Figma "Overview with many matters", 3 + 4). Worked out on
+/// the iPhone; nothing is sent.
 struct OverviewScreen: View {
     let matters: [Matter]
     @Environment(Navigation.self) private var navigation
@@ -67,11 +68,24 @@ struct OverviewScreen: View {
                 searchField
                 if matters.isEmpty {
                     empty
+                } else {
+                    PhoneWeek(matters: matters)
                 }
-                ForEach(ordered) { matter in
-                    PhoneMatterCard(matter: matter) { todo in navigation.open(matter, showing: todo) }
-                        // Held: renamed or merged, as a row of the Mac's sidebar.
-                        .contextMenu { MatterMenuItems(matter: matter, all: sidebarOrder(matters)) }
+                let pinned = Pins.pinned(matters)
+                if !pinned.isEmpty {
+                    SectionHeader(title: "Pinned", detail: "stays on top").padding(.top, 4)
+                    ForEach(pinned) { matter in
+                        PhoneMatterCard(matter: matter) { todo in navigation.open(matter, showing: todo) }
+                            // Held: unpinned, renamed or merged, as a row of the Mac's sidebar.
+                            .contextMenu { MatterMenuItems(matter: matter, all: sidebarOrder(matters)) }
+                    }
+                }
+                let rest = ordered.filter { !$0.isPinned }
+                if !rest.isEmpty {
+                    SectionHeader(title: pinned.isEmpty ? "Matters" : "Everything else",
+                                  detail: pinned.isEmpty ? "hold one to pin it" : rest.count == 1 ? "1 matter" : "\(rest.count) matters")
+                        .padding(.top, 4)
+                    PhoneMatterRows(matters: rest, all: sidebarOrder(matters))
                 }
                 ForEach(matters.filter { $0.isClosed && !MatterStatus($0).mailsSinceClosed.isEmpty }) { matter in
                     let new = MatterStatus(matter).mailsSinceClosed.count
@@ -121,11 +135,16 @@ struct OverviewScreen: View {
         .onAppear { if !introSeen, !store.isDemo { showsWelcome = true } }
     }
 
+    /// How many are going on, and the task overdue the longest by name — the one line that says
+    /// where to start.
     private var summary: String {
         let open = ordered.count
-        let overdue = ordered.filter { !MatterStatus($0).overdue.isEmpty }.count
         var text = open == 1 ? "One matter is going on." : "\(open) matters are going on."
-        if overdue > 0 { text += overdue == 1 ? " One has something overdue." : " \(overdue) have something overdue." }
+        let overdue = ordered.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "", $0.text) < ($1.due ?? "", $1.text) }
+        if let first = overdue.first {
+            text += " Overdue since \(first.due.map(Dates.short) ?? ""): “\(first.text)”"
+            text += overdue.count == 1 ? "." : overdue.count == 2 ? ", and 1 more." : ", and \(overdue.count - 1) more."
+        }
         return text
     }
 

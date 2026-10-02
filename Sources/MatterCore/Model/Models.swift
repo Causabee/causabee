@@ -51,6 +51,8 @@ public final class Matter {
     public var aliases: [String] = []
     public var createdAt: Date = Date()
     public var closedAt: Date?
+    /// When the owner pinned it to the top of the overview; nil when it is not pinned.
+    public var pinnedAt: Date?
     /// The phase the matter is in, from its template. Nil until templates exist.
     public var phase: String?
     /// Three or four lines on what it is about, where it stands and what comes next — written

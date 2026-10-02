@@ -151,6 +151,8 @@ extension Matter {
             }
         }
         closedAt = date
+        // A closed matter is not on the overview: it loses its pin, and opened again it has none.
+        pinnedAt = nil
     }
 
     /// Opens it again. What closing ticked is open again too; what was done before stays done.

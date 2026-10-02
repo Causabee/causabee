@@ -31,6 +31,8 @@ final class Navigation {
     /// Asked from a matter's menu, wherever it is: a new name, or merging one into another.
     var renaming: Matter?
     var merging: (from: Matter, into: Matter)?
+    /// A matter to pin while as many as fit are pinned already: which one it replaces is asked.
+    var pinning: Matter?
 
     func open(_ matter: Matter, showing todo: PersistentIdentifier? = nil) {
         showing = todo

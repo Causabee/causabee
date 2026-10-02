@@ -27,20 +27,21 @@ struct OtherMattersList: View {
     var body: some View {
         let sorted = sidebarOrder(matters)
         let active = Set(activeMatters(matters).map(\.persistentModelID))
-        let quiet = sorted.filter { !$0.isClosed && !active.contains($0.persistentModelID) }
+        // A pinned one is on top already, even when it is quiet.
+        let quiet = sorted.filter { !$0.isClosed && !$0.isPinned && !active.contains($0.persistentModelID) }
         let closed = sorted.filter(\.isClosed)
         if !quiet.isEmpty || !closed.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 if !quiet.isEmpty {
                     DisclosureGroup(isExpanded: $showsQuiet) {
-                        rows(quiet, all: sorted).padding(.top, 6)
+                        PhoneMatterRows(matters: quiet, all: sorted).padding(.top, 6)
                     } label: {
                         Text("Quiet · \(quiet.count)") + Text("  nothing open, no date").font(.footnote).foregroundStyle(.secondary)
                     }
                 }
                 if !closed.isEmpty {
                     DisclosureGroup("Closed · \(closed.count)", isExpanded: $showsClosed) {
-                        rows(closed, all: sorted).padding(.top, 6)
+                        PhoneMatterRows(matters: closed, all: sorted).padding(.top, 6)
                     }
                 }
             }
@@ -49,10 +50,18 @@ struct OtherMattersList: View {
             .tint(.primary)
         }
     }
+}
 
-    private func rows(_ list: [Matter], all: [Matter]) -> some View {
+/// Matters one line each, in a card: each opens with a tap; held, it can be pinned, renamed or merged.
+struct PhoneMatterRows: View {
+    let matters: [Matter]
+    /// Every matter, for "Merge with".
+    let all: [Matter]
+    @Environment(Navigation.self) private var navigation
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(list.enumerated()), id: \.element.persistentModelID) { index, matter in
+            ForEach(Array(matters.enumerated()), id: \.element.persistentModelID) { index, matter in
                 if index > 0 { Divider().padding(.leading, 14) }
                 Button { navigation.open(matter) } label: {
                     PhoneMatterRow(matter: matter)
@@ -93,14 +102,23 @@ struct PhoneMatterRow: View {
     }
 }
 
-/// "Rename …" and "Merge with …", as the Mac's sidebar menu has them; the questions they ask are
-/// the root's, so they are asked the same way from wherever the menu is.
+/// "Pin to top", then "Rename …" and "Merge with …", as the Mac's sidebar menu has them; the
+/// questions they ask are the root's, so they are asked the same way from wherever the menu is.
 struct MatterMenuItems: View {
     let matter: Matter
     let all: [Matter]
     @Environment(Navigation.self) private var navigation
+    @Environment(\.modelContext) private var context
 
     var body: some View {
+        if matter.isPinned {
+            Button("Unpin", systemImage: "pin.slash") { matter.pinnedAt = nil; try? context.save() }
+        } else if !matter.isClosed {
+            Button("Pin to top", systemImage: "pin") {
+                // Full: which one it replaces is asked.
+                if Pins.pinned(all).count >= Pins.most { navigation.pinning = matter } else { matter.pinnedAt = Date(); try? context.save() }
+            }
+        }
         Button("Rename", systemImage: "pencil") { navigation.renaming = matter }
         Menu("Merge with", systemImage: "arrow.triangle.merge") {
             ForEach(all.filter { $0 !== matter }) { other in
@@ -110,14 +128,30 @@ struct MatterMenuItems: View {
     }
 }
 
-/// The Mac's two questions: a new name, and whether to merge — with its words.
+/// The Mac's two questions: a new name, and whether to merge — with its words. And which pinned
+/// matter makes room when as many as fit are pinned.
 struct MatterQuestions: ViewModifier {
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
+    @Query private var matters: [Matter]
     @State private var newName = ""
 
     func body(content: Content) -> some View {
         content
+            .confirmationDialog("Pin “\(navigation.pinning?.name ?? "")” instead of …", isPresented: Binding(get: { navigation.pinning != nil }, set: { if !$0 { navigation.pinning = nil } }),
+                                titleVisibility: .visible) {
+                ForEach(Pins.pinned(matters)) { pinned in
+                    Button(pinned.name) {
+                        pinned.pinnedAt = nil
+                        navigation.pinning?.pinnedAt = Date()
+                        try? context.save()
+                        navigation.pinning = nil
+                    }
+                }
+                Button("Cancel", role: .cancel) { navigation.pinning = nil }
+            } message: {
+                Text("Up to \(Pins.most) matters stay on top of the overview.")
+            }
             .confirmationDialog(mergeQuestion, isPresented: Binding(get: { navigation.merging != nil }, set: { if !$0 { navigation.merging = nil } }),
                                 titleVisibility: .visible) {
                 Button("Merge") {
