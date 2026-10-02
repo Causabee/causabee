@@ -2,6 +2,29 @@
 
 Small things noticed while using the app, to pick up later. Newest first.
 
+## Overview
+
+- **More out of the overview when there are many matters.** Now the overview is one long column
+  of cards (`activeMatters`: overdue first, then by the next date, then by name), with the quiet
+  and the closed ones folded away underneath (`OtherMattersList`). With five matters that reads
+  well; with fifteen, the card that matters today is a long scroll away, and every card takes the
+  same room whether its next step is today or in six weeks. Ideas, to choose from:
+  - **By when, not one list:** "Overdue", "This week", "Later" as section titles over the cards
+    (sticky, as the matter page's titles in the UI item below). Later ones shrink to one line —
+    the name and "Next, on Nov 12" — and open to their card on a tap.
+  - **Whose turn:** a quiet switch over the cards — "For me", "Waiting", "All" — from what the
+    tasks already know (mine, shared, someone else's). "Waiting" lists, across all matters, who
+    still owes an answer and since when: the chasing list for the owners' association.
+  - **The week across matters:** a strip under the title with the next seven days and their
+    dates and deadlines from every matter, a dot per matter; a tap on a day lists them.
+  - **Pinned on top:** the one or two matters that matter most right now stay first, whatever
+    their dates (the pin exists in Figma's "Pinned item · lighter").
+  - **A summary that says more:** "9 matters are going on. 7 have something overdue." could name
+    the most urgent ones: "Overdue: the bath seat prescription (Care for Mum) and 6 more."
+
+  Same on the Mac's overview. Draw it in Figma first, with the demo's matters doubled to fifteen.
+  (2026-10-02)
+
 ## Welcome
 
 - **The iPhone's welcome page needs an overhaul, in content and look** (Welcome.swift; ⋯ →
