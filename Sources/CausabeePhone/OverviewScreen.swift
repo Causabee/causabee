@@ -28,7 +28,7 @@ struct RootView: View {
                 .presentationDragIndicator(.visible)
         }
         .modifier(MatterQuestions())
-        // The share sheet's matters, and what was shared to Matterbee meanwhile.
+        // The share sheet's matters, and what was shared to Causabee meanwhile.
         .modifier(SharedIn(matters: matters))
         // What is connected to Calendar and Reminders is kept in step both ways, as on the Mac.
         .onAppear { MirrorRunner.shared.start(context) }
@@ -130,7 +130,7 @@ struct OverviewScreen: View {
             }
         }
         .sheet(isPresented: $editsAccount) { SettingsSheet() }
-        // Once, at the first start: what Matterbee is and what it needs.
+        // Once, at the first start: what Causabee is and what it needs.
         .sheet(isPresented: $showsWelcome) { WelcomeSheet() }
         .onAppear { if !introSeen, !store.isDemo { showsWelcome = true } }
     }
@@ -203,7 +203,7 @@ struct OverviewScreen: View {
             Text("No matters yet").font(.headline)
             Text(PhoneCloud.container == nil
                  ? "This store stays on the iPhone."
-                 : "Get new mail above, and Matterbee makes the matters from it. From your Mac, they come here through your iCloud — the first time can take a few minutes.")
+                 : "Get new mail above, and Causabee makes the matters from it. From your Mac, they come here through your iCloud — the first time can take a few minutes.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if !store.isDemo {
                 Button("Try the demo") { store.switchDemo(true) }.buttonStyle(.phoneFilled)

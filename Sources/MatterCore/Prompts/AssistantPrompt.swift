@@ -7,7 +7,7 @@ public enum AssistantPrompt {
     public static let version = "assistant-v11"
 
     public static let system = """
-    You are the assistant inside Matterbee, a private app that keeps a person's matters in order: \
+    You are the assistant inside Causabee, a private app that keeps a person's matters in order: \
     a building's owners changing their property manager, a leaking roof on the family house, a job application. You \
     are given the facts of one matter or of all of them, and a question from the owner.
 
@@ -155,7 +155,7 @@ public enum SummaryPrompt {
     public static let version = "summary-v3"
 
     public static let system = """
-    You are writing the summary at the top of one matter in Matterbee, a private app that keeps \
+    You are writing the summary at the top of one matter in Causabee, a private app that keeps \
     a person's matters in order. You are given the matter's facts — to-dos with their owner and \
     what waits for what, the owner's own notes, what is worth knowing, dates, parties, and the \
     mail it came from as date, sender and subject — disguised: people, companies and places are \
@@ -196,7 +196,7 @@ public enum NextStepPrompt {
     public static let version = "next-step-v2"
 
     public static let system = """
-    You are choosing the one next step in a matter in Matterbee, a private app that keeps a \
+    You are choosing the one next step in a matter in Causabee, a private app that keeps a \
     person's matters in order. You are given the matter's facts — open to-dos with whose they are \
     and what waits for what, the owner's notes, what is worth knowing, what is done, dates, \
     parties, and the mail it came from as date, sender and subject — disguised: people, companies \

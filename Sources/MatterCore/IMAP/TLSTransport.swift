@@ -5,7 +5,7 @@ import Network
 /// Safari checks them; there is no switch to turn that off.
 public final class TLSTransport: IMAPTransport, @unchecked Sendable {
     private let connection: NWConnection
-    private let queue = DispatchQueue(label: "matterbee.imap")
+    private let queue = DispatchQueue(label: "causabee.imap")
     /// A server that stops answering fails the read rather than hanging the run.
     private let timeout: TimeInterval
 

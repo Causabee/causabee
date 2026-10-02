@@ -65,10 +65,10 @@ enum SetupState {
 }
 
 struct SetupAssistant: View {
-    /// The owner chose "Later": not shown by itself again. Still in the Matterbee menu.
+    /// The owner chose "Later": not shown by itself again. Still in the Causabee menu.
     static let laterKey = "setup.later"
 
-    /// The two things Matterbee cannot work without: a key for the model that sorts mail, and a mail account.
+    /// The two things Causabee cannot work without: a key for the model that sorts mail, and a mail account.
     @MainActor static var isMissingSomething: Bool {
         !SetupState.hasKey(for: SetupState.mailModel) || SetupState.mailAccount == nil
     }
@@ -143,7 +143,7 @@ struct SetupAssistant: View {
 
     private var steps: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Set up Matterbee").font(.headline).padding(.bottom, SetupState.isFresh ? 4 : 12)
+            Text("Set up Causabee").font(.headline).padding(.bottom, SetupState.isFresh ? 4 : 12)
             if SetupState.isFresh {
                 Text("Test mode: nothing is saved").font(.caption.weight(.semibold))
                     .padding(.horizontal, 8).padding(.vertical, 3)
@@ -191,7 +191,7 @@ struct SetupAssistant: View {
         HStack {
             if step == .you {
                 Button("Later") { if !SetupState.isFresh { later = true }; dismiss() }
-                    .help("Close for now. Matterbee → Set Up Matterbee … opens it again.")
+                    .help("Close for now. Causabee → Set Up Causabee … opens it again.")
             } else {
                 Button("Back") { step = Step(rawValue: step.rawValue - 1) ?? .you }
             }
@@ -236,8 +236,8 @@ struct SetupAssistant: View {
             Divider().padding(.vertical, 4)
             Text("How it goes from here")
                 .font(.headline)
-            Hint(number: 1, text: "Put the label “Matterbee” on the mails you want sorted. Start with a few from one matter.")
-            Hint(number: 2, text: "Click “Get new mail”. Matterbee reads them for free and tells you what sorting will cost.")
+            Hint(number: 1, text: "Put the label “Causabee” on the mails you want sorted. Start with a few from one matter.")
+            Hint(number: 2, text: "Click “Get new mail”. Causabee reads them for free and tells you what sorting will cost.")
             Hint(number: 3, text: "Click “Sort in”. Each mail is sorted once, into a matter with its tasks, dates and people.")
             Hint(number: 4, text: "Drop a screenshot or a PDF onto the window any time. It is sorted the same way.")
         }
@@ -285,7 +285,7 @@ private struct YouStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Explain("Your name and the email addresses you use, one per line. Matterbee needs them to tell you apart from everyone else: you are never listed as a person in your own matters, and tasks for you are marked “Mine”.")
+            Explain("Your name and the email addresses you use, one per line. Causabee needs them to tell you apart from everyone else: you are never listed as a person in your own matters, and tasks for you are marked “Mine”.")
             TextEditor(text: $text)
                 .font(.body)
                 .frame(height: 110)
@@ -356,7 +356,7 @@ private struct AIStep: View {
         let _ = tick
         let hasKey = SetupState.hasKey(for: provider.model)
         VStack(alignment: .leading, spacing: 14) {
-            Explain("Matterbee uses an AI to read each mail and find its matter, tasks and dates. You pay the AI company yourself, by use. Before anything is sent, names, addresses and numbers are replaced.")
+            Explain("Causabee uses an AI to read each mail and find its matter, tasks and dates. You pay the AI company yourself, by use. Before anything is sent, names, addresses and numbers are replaced.")
             Picker("AI", selection: Binding(get: { provider }, set: { choose($0) })) {
                 ForEach(Provider.allCases) { Text($0.name).tag($0) }
             }
@@ -459,7 +459,7 @@ private struct MailStep: View {
     @State private var googleTried = false
     @State private var tick = 0
 
-    private let labelName = "Matterbee"
+    private let labelName = "Causabee"
 
     private var known: MailAccount? { MailAccount(user: address.trimmingCharacters(in: .whitespaces)) }
     private var isGmail: Bool { (known?.host ?? server).contains("gmail") }
@@ -468,7 +468,7 @@ private struct MailStep: View {
         let _ = tick
         let saved = SetupState.mailAccount
         VStack(alignment: .leading, spacing: 14) {
-            Explain("Matterbee reads your mail the way a mail app does, with a password made just for it. It only reads: it never sends, deletes, moves or marks mail as read.")
+            Explain("Causabee reads your mail the way a mail app does, with a password made just for it. It only reads: it never sends, deletes, moves or marks mail as read.")
             if let saved {
                 Outcome(text: "Connected: \(saved.user)" + (saved.usesGoogle ? ", signed in with Google" : " on \(saved.host)"), good: true)
                 labelSection(saved)
@@ -478,7 +478,7 @@ private struct MailStep: View {
         }
     }
 
-    // A password for Matterbee alone, where the provider makes one.
+    // A password for Causabee alone, where the provider makes one.
     private var login: some View {
         VStack(alignment: .leading, spacing: 12) {
             if GoogleSignIn.isConfigured {
@@ -497,7 +497,7 @@ private struct MailStep: View {
                 Explain("iCloud: make an app-specific password at account.apple.com → Sign-In and Security → App-Specific Passwords.")
                 Link("Open account.apple.com →", destination: URL(string: "https://account.apple.com")!).foregroundStyle(Theme.gold)
             } else {
-                Explain("Gmail: turn on 2-Step Verification, then make an app password named “Matterbee”. Your normal Google password does not work here.")
+                Explain("Gmail: turn on 2-Step Verification, then make an app password named “Causabee”. Your normal Google password does not work here.")
                 Link("Open Google app passwords →", destination: URL(string: "https://myaccount.google.com/apppasswords")!).foregroundStyle(Theme.gold)
             }
             HStack {
@@ -511,14 +511,14 @@ private struct MailStep: View {
         }
     }
 
-    /// How the mail gets to Matterbee: one label in Gmail, one folder anywhere else — shown before
+    /// How the mail gets to Causabee: one label in Gmail, one folder anywhere else — shown before
     /// logging in too, since it is the first thing a new owner has to understand.
     private func labelHowTo(gmail: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(gmail ? "The label “\(labelName)” in Gmail" : "The folder “\(labelName)”").font(.headline).padding(.top, 6)
             Explain(gmail
-                    ? "Matterbee reads only the mail that has the label “\(labelName)”. Nothing else in your mailbox is read. You decide what it sees by putting the label on a mail."
-                    : "Matterbee reads only the mail in the folder “\(labelName)”. Nothing else in your mailbox is read. You decide what it sees by moving a mail there.")
+                    ? "Causabee reads only the mail that has the label “\(labelName)”. Nothing else in your mailbox is read. You decide what it sees by putting the label on a mail."
+                    : "Causabee reads only the mail in the folder “\(labelName)”. Nothing else in your mailbox is read. You decide what it sees by moving a mail there.")
             if gmail {
                 Hint(number: 1, text: "In Gmail, on the left, click “+” next to Labels and make a label called “\(labelName)”.")
                 Hint(number: 2, text: "Open a mail, click the label icon, and tick “\(labelName)”. Start with a few mails from one matter.")
@@ -566,7 +566,7 @@ private struct MailStep: View {
             }
             .inkButton()
             .disabled(working)
-            Explain("For Gmail and Google Workspace. No app password needed: you sign in on Google's page, and Google shows what Matterbee may do. Matterbee only reads, and writes nothing but a draft when you click for one.")
+            Explain("For Gmail and Google Workspace. No app password needed: you sign in on Google's page, and Google shows what Causabee may do. Causabee only reads, and writes nothing but a draft when you click for one.")
             if let result, working == false, googleTried { Outcome(text: result.text, good: result.good) }
             HStack {
                 VStack { Divider() }
@@ -663,7 +663,7 @@ private struct CalendarStep: View {
         let _ = tick
         let calendars = Calendars.shared
         VStack(alignment: .leading, spacing: 14) {
-            Explain("Appointments and deadlines can go into Calendar, and tasks into Reminders, with one click. Matterbee also sees what is already there, so nothing is added twice. It only adds what you click.")
+            Explain("Appointments and deadlines can go into Calendar, and tasks into Reminders, with one click. Causabee also sees what is already there, so nothing is added twice. It only adds what you click.")
             if SetupState.isCalendarConnected {
                 Outcome(text: "Connected\(calendars.canReadEvents ? " to Calendar" : "")\(calendars.canReadEvents && calendars.canReadReminders ? " and" : "")\(calendars.canReadReminders ? " to Reminders" : "").", good: true)
             } else if calendars.asked, !SetupState.isFresh {

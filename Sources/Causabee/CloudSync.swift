@@ -5,7 +5,7 @@ import SwiftData
 import SwiftUI
 
 /// iCloud for the store: off, a test with made-up data in its own container, or the owner's own
-/// data. Chosen in the settings, and taken up when Matterbee starts, since a store is opened once.
+/// data. Chosen in the settings, and taken up when Causabee starts, since a store is opened once.
 @MainActor
 @Observable
 final class CloudSync {
@@ -14,8 +14,8 @@ final class CloudSync {
         var container: String? {
             switch self {
             case .off: nil
-            case .test: "iCloud.de.chille.matterbee.test"
-            case .on: "iCloud.de.chille.matterbee"
+            case .test: "iCloud.de.chille.causabee.test"
+            case .on: "iCloud.de.chille.causabee"
             }
         }
         var label: String {
@@ -81,7 +81,7 @@ final class CloudSync {
     /// deployed to Production whole. Works on an empty store of its own, never the owner's, and is
     /// for a development-signed build: only that one reaches Development.
     nonisolated static func initializeSchema(container id: String) throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("matterbee-schema-" + UUID().uuidString, isDirectory: true)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("causabee-schema-" + UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         guard let model = NSManagedObjectModel.makeManagedObjectModel(for: MatterSchema.models) else {
@@ -92,7 +92,7 @@ final class CloudSync {
             let description = NSPersistentStoreDescription(url: folder.appendingPathComponent("schema.store"))
             description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: id)
             description.shouldAddStoreAsynchronously = false
-            let container = NSPersistentCloudKitContainer(name: "Matterbee", managedObjectModel: model)
+            let container = NSPersistentCloudKitContainer(name: "Causabee", managedObjectModel: model)
             container.persistentStoreDescriptions = [description]
             var failure: Error?
             container.loadPersistentStores { _, error in failure = error }
@@ -176,7 +176,7 @@ struct CloudSettings: View {
         // it says so instead of offering a choice that does nothing.
         if !CloudSync.isEntitled {
             LabeledContent("iCloud", value: "Not in this version")
-            Text("This version of Matterbee has no iCloud: your matters stay on this Mac.")
+            Text("This version of Causabee has no iCloud: your matters stay on this Mac.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         } else {
             choice
@@ -195,9 +195,9 @@ struct CloudSettings: View {
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         } else if (CloudSync.available.map(\.rawValue).contains(mode) ? mode : CloudSync.Mode.off.rawValue) != started.rawValue {
             HStack {
-                Text("Takes effect when Matterbee starts again.").font(.caption).foregroundStyle(Theme.warning)
+                Text("Takes effect when Causabee starts again.").font(.caption).foregroundStyle(Theme.warning)
                 Spacer()
-                Button("Quit Matterbee") { NSApp.terminate(nil) }
+                Button("Quit Causabee") { NSApp.terminate(nil) }
             }
         }
         if started != .off {

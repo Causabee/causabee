@@ -10,8 +10,8 @@ public final class Calendars {
     public static let shared = Calendars()
     public let store = EKEventStore()
 
-    /// The name of what Matterbee makes when the owner has not chosen one of their own.
-    public static let ownName = "Matterbee"
+    /// The name of what Causabee makes when the owner has not chosen one of their own.
+    public static let ownName = "Causabee"
 
     /// Set for the demo: its made-up matters neither find the owner's own events and reminders
     /// nor add to them.
@@ -96,7 +96,7 @@ public final class Calendars {
         }
     }
 
-    /// The reminder a task already is. In Matterbee's own list, or the one chosen for it, half the
+    /// The reminder a task already is. In Causabee's own list, or the one chosen for it, half the
     /// words are enough; in the owner's other lists only nearly the same words: "Online-Antrag
     /// durchführen" in "Anschlussfinanzierung" is not "Online Check-in bei easyJet durchführen".
     public static func findReminder(_ text: String, in reminders: [Reminder], ownLists: Set<String> = [ownName]) -> Reminder? {
@@ -104,7 +104,7 @@ public final class Calendars {
             ?? reminders.first { !ownLists.contains($0.list) && Duplicates.same($0.title, text) }
     }
 
-    /// The names of the lists Matterbee adds to: its own, and the one chosen in Settings.
+    /// The names of the lists Causabee adds to: its own, and the one chosen in Settings.
     public var ownLists: Set<String> {
         var names: Set<String> = [Self.ownName]
         if let id = UserDefaults.standard.string(forKey: Self.listKey), !id.isEmpty, let chosen = store.calendar(withIdentifier: id) {
@@ -117,7 +117,7 @@ public final class Calendars {
 
     public static let calendarKey = "calendar.events", listKey = "calendar.reminders"
 
-    /// The calendar the owner chose, or "Matterbee", made the first time it is needed — never one
+    /// The calendar the owner chose, or "Causabee", made the first time it is needed — never one
     /// of the owner's own lists: a task in "Anschlussfinanzierung" is lost there.
     public func targetCalendar(for type: EKEntityType) throws -> EKCalendar {
         let key = type == .event ? Self.calendarKey : Self.listKey
@@ -154,11 +154,11 @@ public final class Calendars {
         public var errorDescription: String? {
             switch self {
             case .noOwnList(let app, let reason):
-                "Matterbee could not make its list “\(Self.ownName)” in \(app)\(reason.map { " (\($0))" } ?? ""). "
+                "Causabee could not make its list “\(Self.ownName)” in \(app)\(reason.map { " (\($0))" } ?? ""). "
                     + "Make a list called “\(Self.ownName)” there, or choose a list in Settings → Calendar and Reminders."
             }
         }
-        static let ownName = "Matterbee"
+        static let ownName = "Causabee"
     }
 
     // MARK: Adding, on a click
@@ -173,7 +173,7 @@ public final class Calendars {
         event.isAllDay = time == nil
         event.endDate = time == nil ? start : start.addingTimeInterval(3_600)
         event.location = place
-        event.notes = "Matterbee · \(matter)"
+        event.notes = "Causabee · \(matter)"
         event.calendar = try targetCalendar(for: .event)
         try store.save(event, span: .thisEvent, commit: true)
         return event.calendarItemExternalIdentifier
@@ -184,7 +184,7 @@ public final class Calendars {
         guard !isSealed else { throw CocoaError(.featureUnsupported) }
         let reminder = EKReminder(eventStore: store)
         reminder.title = text
-        reminder.notes = ["Matterbee · \(matter)", note].compactMap { $0 }.joined(separator: "\n")
+        reminder.notes = ["Causabee · \(matter)", note].compactMap { $0 }.joined(separator: "\n")
         if let due, let date = Self.start(day: due, time: time) {
             var parts = Calendar.current.dateComponents([.year, .month, .day], from: date)
             if time != nil { parts.hour = Calendar.current.component(.hour, from: date); parts.minute = Calendar.current.component(.minute, from: date) }

@@ -82,7 +82,7 @@ struct SettingsSheet: View {
                                        value: list.updatedAt.formatted(date: .abbreviated, time: .shortened))
                     }
                 } header: { Text("List of names") } footer: {
-                    Text("Names are disguised before anything is sent. Each device keeps its own list — this iPhone once it gets new mail — and puts it into iCloud, end-to-end encrypted, when you switch away from Matterbee; a name one device learned, the others disguise too. Without any list, the assistant sends nothing.")
+                    Text("Names are disguised before anything is sent. Each device keeps its own list — this iPhone once it gets new mail — and puts it into iCloud, end-to-end encrypted, when you switch away from Causabee; a name one device learned, the others disguise too. Without any list, the assistant sends nothing.")
                 }
 
                 Section {
@@ -90,7 +90,7 @@ struct SettingsSheet: View {
                     KeyField(title: "Mistral", name: "MISTRAL_API_KEY")
                     KeyField(title: "OpenAI", name: "OPENAI_API_KEY")
                 } header: { Text("API keys") } footer: {
-                    Text("Pasted here or on your Mac, kept in iCloud Keychain like the mail password, and shared by Matterbee on all your devices. Never in a file.")
+                    Text("Pasted here or on your Mac, kept in iCloud Keychain like the mail password, and shared by Causabee on all your devices. Never in a file.")
                 }
 
                 Section {

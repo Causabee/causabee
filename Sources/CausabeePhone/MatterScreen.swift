@@ -257,7 +257,7 @@ struct MatterScreen: View {
 
     // MARK: Next step
 
-    /// The one thing to do now, and why: Matterbee's suggestion while nothing has changed since,
+    /// The one thing to do now, and why: Causabee's suggestion while nothing has changed since,
     /// else the one worked out on the device.
     @ViewBuilder
     private func nextStep(_ status: MatterStatus, _ scroller: ScrollViewProxy) -> some View {
@@ -265,7 +265,7 @@ struct MatterScreen: View {
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
         VStack(alignment: .leading, spacing: 10) {
             if fresh, let step = matter.nextStep {
-                BeeChip(text: "NEXT · FROM MATTERBEE")
+                BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(.headline).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
@@ -289,7 +289,7 @@ struct MatterScreen: View {
             HStack(spacing: 4) {
                 if askingStep {
                     BeeLoader(size: 12)
-                    Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary)
+                    Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else {
                     // An older suggestion says only its day; the link beside it says what to do.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
@@ -764,7 +764,7 @@ struct PhoneTodoRow: View {
     private var moreItems: some View {
         // Short, one line each, with an icon; one line only, above Delete.
         if let matter = todo.matter {
-            AskMatterbeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
+            AskCausabeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
         }
         Button("Edit", systemImage: "pencil") { editing = true }
         if !todo.isDone {
@@ -1106,7 +1106,7 @@ struct PhoneDateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
-        AskMatterbeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
+        AskCausabeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
         Button("Edit", systemImage: "pencil") { editing = true }
         Divider()
         Button("Delete", systemImage: "trash", role: .destructive) { deleting = true }

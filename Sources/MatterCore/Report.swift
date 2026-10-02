@@ -100,7 +100,7 @@ public enum Report {
     public struct Result: Sendable {
         public var mails = 0
         public var todos = Tally()
-        public var myTodos = Tally()          // the owner's own, alone or with others: what Matterbee is for
+        public var myTodos = Tally()          // the owner's own, alone or with others: what Causabee is for
         public var waiting = Tally()          // someone else's, that the owner is waiting for
         public var ownerRight = 0             // among matched pairs with an owner on both sides
         public var ownerJudged = 0

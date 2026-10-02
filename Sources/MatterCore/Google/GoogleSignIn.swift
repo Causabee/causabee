@@ -2,17 +2,17 @@ import CryptoKit
 import Foundation
 import Security
 
-/// Signing in with Google instead of an app password: the owner allows Matterbee on Google's own
+/// Signing in with Google instead of an app password: the owner allows Causabee on Google's own
 /// page, and Gmail is then opened with a token, never a password. OAuth 2.0 for a native app, with
 /// PKCE, as Google describes it for iOS and macOS: no client secret, a redirect to the app's own
 /// address, and a refresh token that stays in the Keychain.
 ///
 /// The token is only ever sent to Google — to Gmail's IMAP server and to Google's token address.
-/// The scope is the one Gmail's IMAP takes, `https://mail.google.com/`; Matterbee's IMAP clients
+/// The scope is the one Gmail's IMAP takes, `https://mail.google.com/`; Causabee's IMAP clients
 /// still only read, and write nothing but a draft on a click.
 public enum GoogleSignIn {
-    /// The OAuth client for Matterbee, of the type "iOS" in the Google Cloud console, made for the
-    /// bundle ID `de.chille.matterbee`. Not a secret: a native app carries it, and without its
+    /// The OAuth client for Causabee, of the type "iOS" in the Google Cloud console, made for the
+    /// bundle ID `de.chille.causabee`. Not a secret: a native app carries it, and without its
     /// redirect it is worth nothing. Empty until the owner has made one; then sign-in is offered.
     public static let clientID = ""
 
@@ -44,7 +44,7 @@ public enum GoogleSignIn {
             case .refused(let why): "Google said no: \(why)"
             case .noCode: "Google's answer had no code in it."
             case .wrongState: "The answer did not belong to this sign-in. Please try again."
-            case .signInAgain(let user): "Google asks you to sign in again for \(user): Matterbee → Set Up Matterbee …"
+            case .signInAgain(let user): "Google asks you to sign in again for \(user): Causabee → Set Up Causabee …"
             case .noEmail: "Google did not say which address was signed in."
             }
         }
@@ -152,7 +152,7 @@ public enum GoogleSignIn {
 
     // MARK: The Keychain
 
-    static let service = "Matterbee Google"
+    static let service = "Causabee Google"
 
     public static func refreshToken(for user: String) -> String? {
         var query = base(user)
@@ -169,7 +169,7 @@ public enum GoogleSignIn {
         if status == errSecItemNotFound {
             var item = base(user)
             item[kSecValueData as String] = data
-            item[kSecAttrLabel as String] = "Matterbee — Google sign-in for \(user)"
+            item[kSecAttrLabel as String] = "Causabee — Google sign-in for \(user)"
             let added = SecItemAdd(item as CFDictionary, nil)
             guard added == errSecSuccess else { throw Keychain.Failure.status(added) }
         } else if status != errSecSuccess {
@@ -178,7 +178,7 @@ public enum GoogleSignIn {
     }
 
     /// Signs out on this Mac: the refresh token goes. Google's own list of apps still shows
-    /// Matterbee until it is removed there.
+    /// Causabee until it is removed there.
     public static func signOut(_ user: String) async {
         SecItemDelete(base(user) as CFDictionary)
         await Cache.shared.put(nil, for: user, expiring: 0)

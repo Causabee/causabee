@@ -128,7 +128,7 @@ struct CalendarChip: View {
     }
 }
 
-/// Once, where the dates are: Matterbee asks to read the calendars and reminders only on a click.
+/// Once, where the dates are: Causabee asks to read the calendars and reminders only on a click.
 struct CalendarAccessBanner: View {
     let done: () -> Void
     @State private var asking = false
@@ -176,7 +176,7 @@ struct CalendarSettings: View {
         if Calendars.shared.canReadEvents || Calendars.shared.canReadReminders {
             if Calendars.shared.canReadEvents {
                 Picker("Add appointments to", selection: $calendar) {
-                    Text("“Matterbee” (made when first needed)").tag("")
+                    Text("“Causabee” (made when first needed)").tag("")
                     ForEach(store.calendars(for: .event).filter(\.allowsContentModifications), id: \.calendarIdentifier) {
                         Text("\($0.title) · \($0.source?.title ?? "")").tag($0.calendarIdentifier)
                     }
@@ -184,7 +184,7 @@ struct CalendarSettings: View {
             }
             if Calendars.shared.canReadReminders {
                 Picker("Add tasks to", selection: $list) {
-                    Text("“Matterbee” (made when first needed)").tag("")
+                    Text("“Causabee” (made when first needed)").tag("")
                     ForEach(store.calendars(for: .reminder).filter(\.allowsContentModifications), id: \.calendarIdentifier) {
                         Text("\($0.title) · \($0.source?.title ?? "")").tag($0.calendarIdentifier)
                     }
@@ -210,7 +210,7 @@ struct CalendarSettings: View {
             Text("Last kept in step at \(at.formatted(date: .omitted, time: .shortened)): \(last.pulled) taken in, \(last.pushed) written out.")
                 .font(.caption).foregroundStyle(.secondary)
         }
-        Text("Matterbee reads your calendars and reminders to show what is there already. It adds only when you \(Self.press) “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.")
+        Text("Causabee reads your calendars and reminders to show what is there already. It adds only when you \(Self.press) “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.")
             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
     }
 }

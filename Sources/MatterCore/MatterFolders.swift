@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// A folder per matter — in iCloud Drive's Matterbee, or a folder the owner chose — with the matter's files:
+/// A folder per matter — in iCloud Drive's Causabee, or a folder the owner chose — with the matter's files:
 /// what mails had attached, fetched once and read-only, and what the owner dropped in. The mail
 /// texts are not put there: they stay on this Mac. A file the owner hid is left out.
 @MainActor
@@ -18,12 +18,12 @@ public enum MatterFolders {
     }
 
     /// The folder the owner chose in the settings — any folder, synced or not — or else iCloud
-    /// Drive's "Matterbee" when it is switched on.
+    /// Drive's "Causabee" when it is switched on.
     public static let rootKey = "folders.root"
     public static var chosen: URL? {
         UserDefaults.standard.string(forKey: rootKey).flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
     }
-    public static var root: URL? { rootForTests ?? chosen ?? drive?.appendingPathComponent("Matterbee", isDirectory: true) }
+    public static var root: URL? { rootForTests ?? chosen ?? drive?.appendingPathComponent("Causabee", isDirectory: true) }
     /// A folder of its own for a test, never the owner's iCloud Drive.
     static var rootForTests: URL?
 

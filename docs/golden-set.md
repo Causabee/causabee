@@ -191,7 +191,7 @@ way you read it.
 
 | Column | What goes in it |
 | --- | --- |
-| `tapped` | `yes` on the mail you would put the Matterbee label on — usually the first of a thread. `no` on the replies, which are meant to follow by themselves. |
+| `tapped` | `yes` on the mail you would put the Causabee label on — usually the first of a thread. `no` on the replies, which are meant to follow by themselves. |
 | `matter` | as before, the same spelling on every mail of the thread |
 | `todos` | **the main part.** `(me)` for your own, `(we)` for what you do together with others, `(other)` for someone else's that you are waiting for. A date only when the mail gives one |
 | `parties` | as before: `Name (role) \| Name (role)` |

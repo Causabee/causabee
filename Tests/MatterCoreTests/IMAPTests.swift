@@ -65,7 +65,7 @@ struct IMAPTests {
             case let v where v.hasPrefix("LIST"):
                 return """
                 * LIST (\\HasNoChildren) "/" "INBOX"\r
-                * LIST (\\HasNoChildren) "/" "Matterbee"\r
+                * LIST (\\HasNoChildren) "/" "Causabee"\r
                 * LIST (\\HasNoChildren) "/" "Vertr&AOQ-ge"\r
                 * LIST (\\All \\HasNoChildren) "/" "[Gmail]/Alle Nachrichten"\r
                 * LIST (\\HasChildren \\Noselect) "/" "[Gmail]"\r
@@ -102,7 +102,7 @@ struct IMAPTests {
         #expect(folders.map(\.name).contains("Verträge"))
         #expect(folders.first { $0.attributes.contains("\\all") }?.name == "[Gmail]/Alle Nachrichten")
 
-        let opened = try await client.examine("Matterbee")
+        let opened = try await client.examine("Causabee")
         #expect(opened.uidValidity == 3857529045)
         #expect(opened.exists == 3)
 
@@ -117,7 +117,7 @@ struct IMAPTests {
 
         await client.logout()
         let verbs = server.sent.map { $0.split(separator: " ").prefix(2).joined(separator: " ") }
-        #expect(server.sent.contains("EXAMINE \"Matterbee\""))
+        #expect(server.sent.contains("EXAMINE \"Causabee\""))
         #expect(!server.sent.contains { $0.uppercased().hasPrefix("SELECT") })
         #expect(server.sent.contains("UID FETCH 4,9 (UID X-GM-THRID BODY.PEEK[])"))
         for verb in verbs {
@@ -155,7 +155,7 @@ struct IMAPTests {
 
     @Test("A line break cannot be smuggled into a command")
     func noInjection() throws {
-        #expect(throws: IMAPError.self) { try IMAPClient.quoted("Matterbee\r\nM9 UID STORE 1:* +FLAGS (\\Deleted)") }
+        #expect(throws: IMAPError.self) { try IMAPClient.quoted("Causabee\r\nM9 UID STORE 1:* +FLAGS (\\Deleted)") }
         #expect(throws: IMAPError.self) { try IMAPClient.criterion(.gmailThread("1 OR ALL")) }
         #expect(try IMAPClient.quoted("a\"b\\c") == "\"a\\\"b\\\\c\"")
     }

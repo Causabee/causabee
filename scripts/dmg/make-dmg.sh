@@ -1,13 +1,13 @@
 #!/bin/zsh
-# Puts Matterbee into a disk image the usual Mac way: its window shows the app on the left and the
+# Puts Causabee into a disk image the usual Mac way: its window shows the app on the left and the
 # Applications folder on the right, on scripts/dmg/background.tiff, so one drag installs it.
 #
-#   scripts/dmg/make-dmg.sh <Matterbee.app> <out.dmg> "<volume name>"
+#   scripts/dmg/make-dmg.sh <Causabee.app> <out.dmg> "<volume name>"
 #
 # Finder arranges the window, so the first run asks once whether this Terminal may control Finder.
 # The image is not signed here: scripts/release.sh signs and notarizes it.
 set -e -u -o pipefail
-(( $# == 3 )) || { print -u2 "Usage: scripts/dmg/make-dmg.sh <Matterbee.app> <out.dmg> \"<volume name>\""; exit 64 }
+(( $# == 3 )) || { print -u2 "Usage: scripts/dmg/make-dmg.sh <Causabee.app> <out.dmg> \"<volume name>\""; exit 64 }
 APP=${1:A}; OUT=${2:A}; VOL=$3
 HERE=${0:A:h}
 [[ -d $APP ]] || { print -u2 "✗ No app at $APP."; exit 1 }
@@ -19,7 +19,7 @@ trap '[[ -n $MNT ]] && hdiutil detach -quiet -force "$MNT" 2>/dev/null; rm -rf "
 
 # What the disk holds: the app, a link to /Applications, the picture and the disk's own icon (hidden).
 mkdir -p "$TMP/stage/.background"
-ditto "$APP" "$TMP/stage/Matterbee.app"
+ditto "$APP" "$TMP/stage/Causabee.app"
 ln -s /Applications "$TMP/stage/Applications"
 cp "$HERE/background.tiff" "$TMP/stage/.background/background.tiff"
 ICON=$(print -l "$APP"/Contents/Resources/*.icns(N) | head -1)
@@ -44,7 +44,7 @@ tell application "Finder"
     set icon size of options to 128
     set text size of options to 13
     set background picture of options to file ".background:background.tiff"
-    set position of item "Matterbee.app" of container window to {170, 170}
+    set position of item "Causabee.app" of container window to {170, 170}
     set position of item "Applications" of container window to {490, 170}
     close
     open

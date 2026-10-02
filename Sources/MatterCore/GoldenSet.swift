@@ -19,7 +19,7 @@ public struct Label: Equatable, Sendable {
 
     /// Empty until somebody says. The count of these is how far the labelling has got.
     public var isBulk: Bool?
-    /// In a thread set: whether this is the mail the owner would put the Matterbee label on. The
+    /// In a thread set: whether this is the mail the owner would put the Causabee label on. The
     /// replies below it are `no` — they are meant to follow by thread, and whether they do is
     /// one of the things the set measures.
     public var tapped: Bool? = nil

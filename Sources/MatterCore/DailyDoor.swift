@@ -26,7 +26,7 @@ public struct DailyDoor: Sendable {
     /// New mail the owner unticked once: read, but not offered again until put back.
     public var setAside: Set<String> = []
 
-    public init(account: MailAccount, label: String = "Matterbee", log: URL, mapping: URL, cache: URL, model: Claude.Model = .opus) {
+    public init(account: MailAccount, label: String = "Causabee", log: URL, mapping: URL, cache: URL, model: Claude.Model = .opus) {
         self.account = account
         self.label = label
         self.log = log

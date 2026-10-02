@@ -39,7 +39,7 @@ public enum MatterImport {
     }
 
     /// Files taken in before they were kept as files of their matter: each one still on this Mac
-    /// becomes one. Run once when Matterbee starts; returns how many it added.
+    /// becomes one. Run once when Causabee starts; returns how many it added.
     @discardableResult
     public static func addDroppedFiles(to context: ModelContext) throws -> Int {
         var added = 0

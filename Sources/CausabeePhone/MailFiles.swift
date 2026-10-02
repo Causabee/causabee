@@ -118,7 +118,7 @@ struct FilesSection: View {
             }
             Button("Cancel", role: .cancel) { renaming = nil }
         } message: {
-            Text("Only here in Matterbee: the file keeps its own name in the mail and in its folder.")
+            Text("Only here in Causabee: the file keeps its own name in the mail and in its folder.")
         }
     }
 
@@ -142,7 +142,7 @@ struct FilesSection: View {
                             Text(document.shownName).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(2)
                             // With a name of its own, the file's name is still there to see, small.
                             Text(document.isOwnFile
-                                 ? (document.source.fileURL != nil ? "on this iPhone, in Files › Matterbee" : "added on \(document.source.addedOn) · only there")
+                                 ? (document.source.fileURL != nil ? "on this iPhone, in Files › Causabee" : "added on \(document.source.addedOn) · only there")
                                  : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
                                     ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
                                     .compactMap { $0 }.joined(separator: " · "))
@@ -191,7 +191,7 @@ struct FilesSection: View {
     private func items(_ document: MatterCore.Document) -> some View {
         if !document.isOwnFile || document.source.fileURL != nil { Button("Open", systemImage: "eye") { open(document) } }
         if document.isReadable, !document.isOwnFile, document.readAt == nil { Button("Scan", systemImage: "text.viewfinder") { read(document) } }
-        AskMatterbeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
+        AskCausabeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
         Button("Rename", systemImage: "pencil") { newName = document.shownName; renaming = document }
         if isPDF(document), !document.isOwnFile { Button("Name from content", systemImage: "text.magnifyingglass") { nameFromContent(document) } }
         if document.title != nil {
@@ -299,7 +299,7 @@ struct MailAccountSheet: View {
                 } header: {
                     Text(saved.isEmpty ? "Mail account" : "Add another")
                 } footer: {
-                    Text("Files are taken out of your mail when you open them — read-only, one mail at a time — and are not kept in iCloud. The password is kept in your iCloud Keychain, end-to-end encrypted, so Matterbee on your Macs and this iPhone shares it — typed once — and it goes only to your mail server. For Gmail, use an app password (Google Account › Security › App passwords).")
+                    Text("Files are taken out of your mail when you open them — read-only, one mail at a time — and are not kept in iCloud. The password is kept in your iCloud Keychain, end-to-end encrypted, so Causabee on your Macs and this iPhone shares it — typed once — and it goes only to your mail server. For Gmail, use an app password (Google Account › Security › App passwords).")
                 }
                 if let failure { Text(failure).foregroundStyle(Theme.warning) }
             }

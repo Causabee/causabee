@@ -88,7 +88,7 @@ public enum IMAPError: Error, CustomStringConvertible, Equatable {
         case .refused(let command, let answer):
             "the mail server said no to \(command): \(answer)"
         case .notReadOnly(let command):
-            "\(command) is not a command Matterbee sends: it only ever reads mail"
+            "\(command) is not a command Causabee sends: it only ever reads mail"
         case .unexpected(let text):
             "the mail server answered something this reader does not understand: \(text.prefix(120))"
         case .unsafeArgument(let text):

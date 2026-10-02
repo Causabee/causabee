@@ -293,7 +293,7 @@ public final class Membership {
 }
 
 /// A standing instruction from the owner, with where it came from, how often it has been used,
-/// and a switch. Nothing Matterbee learns is learned where the owner cannot see it.
+/// and a switch. Nothing Causabee learns is learned where the owner cannot see it.
 @Model
 public final class Rule {
     public enum Kind: String, Codable, Sendable, CaseIterable {
@@ -317,7 +317,7 @@ public final class Rule {
     public var fired: Int = 0
     public var isOn: Bool = true
 
-    /// Nil for a kind this version does not know — one a newer Matterbee on another device made.
+    /// Nil for a kind this version does not know — one a newer Causabee on another device made.
     /// Such a rule is left alone, never taken for another kind: read as "the same person", it would
     /// merge people.
     public var kind: Kind? {

@@ -185,7 +185,7 @@ struct MatterStatusView: View {
                 } else {
                     Spacer()
                     Button("Write summary · \(cost)", action: writeSummary)
-                        .help("Matterbee writes three or four lines from the facts of this matter, pseudonymised.")
+                        .help("Causabee writes three or four lines from the facts of this matter, pseudonymised.")
                 }
             }
             .tool()
@@ -229,7 +229,7 @@ struct MatterStatusView: View {
         let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(facts, model: ModelChoice.assistant) * 100)
         VStack(alignment: .leading, spacing: 10) {
             if fresh, let step = matter.nextStep {
-                BeeChip(text: "NEXT · FROM MATTERBEE")
+                BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
@@ -256,16 +256,16 @@ struct MatterStatusView: View {
             HStack(spacing: 10) {
                 if askingStep {
                     BeeLoader(size: 10)
-                    Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary)
+                    Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else {
                     // An older suggestion says only its day; the link beside it says what to do.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
-                            .help("Matterbee suggested this on \(Dates.short(at)); the matter has changed since.")
+                            .help("Causabee suggested this on \(Dates.short(at)); the matter has changed since.")
                     }
                     Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
-                        .help("Matterbee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
+                        .help("Causabee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
                 }
                 Spacer()
             }
@@ -388,7 +388,7 @@ struct MatterStatusView: View {
     }
 
     private static var cache: URL {
-        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Matterbee/Anhänge", isDirectory: true)
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Causabee/Anhänge", isDirectory: true)
     }
 
     /// C2 · the files: what was attached to the matter's mail, each to open, and a PDF or a picture
@@ -420,7 +420,7 @@ struct MatterStatusView: View {
                         }
                         .buttonStyle(.borderless).font(.caption)
                         .tool()
-                        .help("This matter's folder in iCloud Drive → Matterbee")
+                        .help("This matter's folder in iCloud Drive → Causabee")
                     }
                 }
                 .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
@@ -1063,7 +1063,7 @@ struct MatterStatusView: View {
                                         Button(other.name) { merging = (party, other) }
                                     }
                                 }
-                                Button("Ask Matterbee") { talk(party.name, "Person") }
+                                Button("Ask Causabee") { talk(party.name, "Person") }
                                 Divider()
                                 Button("Remove from this matter") {
                                     withAnimation { membership.remove(in: context, origin: origin) }
@@ -1303,7 +1303,7 @@ struct TodoRow: View {
     /// what it waits for.
     @ViewBuilder
     private var moreItems: some View {
-        Button("Ask Matterbee", action: talk)
+        Button("Ask Causabee", action: talk)
         Button("Edit …") { editing = true }
         if let info {
             Button("Not a task — move to Info", action: info)
@@ -1570,7 +1570,7 @@ struct InfoRow: View {
         .padding(.vertical, 9)
         .contentShape(Rectangle())
         .contextMenu {
-            Button("Ask Matterbee", action: talk)
+            Button("Ask Causabee", action: talk)
             Button("Back to tasks", action: back)
         }
     }
@@ -1675,7 +1675,7 @@ struct DateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
-        Button("Ask Matterbee", action: talk)
+        Button("Ask Causabee", action: talk)
         Button("Edit …") { editing = true }
         Divider()
         Button("Delete …", role: .destructive) { deleting = true }
@@ -1798,7 +1798,7 @@ struct PartyRow: View {
             Spacer(minLength: 8)
             HStack(spacing: 4) {
             MoreMenu {
-                Button("Ask Matterbee", action: talk)
+                Button("Ask Causabee", action: talk)
                 Button("Edit name and role …") {
                     name = party.name
                     role = membership.role ?? ""
@@ -1975,7 +1975,7 @@ struct ThreadMailRow: View {
         .contentShape(Rectangle())
         // Asking about it is in the right click, as on every row: no button that comes and goes.
         .contextMenu {
-            Button("Ask Matterbee", action: talk)
+            Button("Ask Causabee", action: talk)
             MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
             Divider()
             if let url = row.entry.mailURL { Button("Open in Mail") { NSWorkspace.shared.open(url) } }
@@ -2081,7 +2081,7 @@ struct DocumentRow: View {
             Button("Scan", action: read)
                 .help("Scans it on the Mac and shows it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
         }
-        Button("Ask Matterbee", action: talk)
+        Button("Ask Causabee", action: talk)
         Divider()
         Button("Rename …") { newName = document.shownName; renaming = true }
         if isPDF { Button("Name it from its content", action: nameIt) }
@@ -2097,7 +2097,7 @@ struct DocumentRow: View {
             Text("Rename file").font(.headline)
             TextField("Name", text: $newName).textFieldStyle(.roundedBorder).frame(width: 320)
                 .onSubmit(saveName)
-            Text("Only here in Matterbee: the file keeps its own name in the mail and in its folder.")
+            Text("Only here in Causabee: the file keeps its own name in the mail and in its folder.")
                 .font(.caption).foregroundStyle(.secondary).frame(width: 320, alignment: .leading)
             HStack {
                 Spacer()
@@ -2193,7 +2193,7 @@ struct LinkEditor: View {
                     .font(.caption).foregroundStyle(valid == nil ? Theme.warning : .secondary)
             }
             TextField("Name, e.g. Cost list", text: $title).textFieldStyle(.roundedBorder).frame(width: 380)
-            Text("Matterbee does not open the link by itself. The assistant learns only the name, never the address.")
+            Text("Causabee does not open the link by itself. The assistant learns only the name, never the address.")
                 .font(.caption).foregroundStyle(.secondary).frame(width: 380, alignment: .leading).fixedSize(horizontal: false, vertical: true)
             if !todos.isEmpty {
                 Picker("For task", selection: $todo) {

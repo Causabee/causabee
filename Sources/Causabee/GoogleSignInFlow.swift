@@ -2,8 +2,8 @@ import AppKit
 import AuthenticationServices
 import MatterCore
 
-/// Google's sign-in page in the Mac's own sign-in window, not in Matterbee: the owner types their
-/// Google password there, where Matterbee cannot see it, and Google comes back to the app's own
+/// Google's sign-in page in the Mac's own sign-in window, not in Causabee: the owner types their
+/// Google password there, where Causabee cannot see it, and Google comes back to the app's own
 /// address with a code. The window is the one Safari's passwords and passkeys work in.
 @MainActor
 final class GoogleSignInFlow: NSObject, ASWebAuthenticationPresentationContextProviding {

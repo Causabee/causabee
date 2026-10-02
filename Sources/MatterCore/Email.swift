@@ -4,7 +4,7 @@ import CryptoKit
 /// One message, as far as the spike needs it: the headers it was asked about, the readable
 /// text, and the names of whatever was hanging off it.
 ///
-/// Note what is *not* here — the raw source. Matterbee stores facts and a pointer to the
+/// Note what is *not* here — the raw source. Causabee stores facts and a pointer to the
 /// original, never a copy of the mailbox, and the spike keeps that promise from the first
 /// commit so the shape of the thing cannot quietly drift later.
 public struct Email: Equatable, Sendable {

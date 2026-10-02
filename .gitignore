@@ -1,7 +1,7 @@
 .DS_Store
 .build/
 .swiftpm/
-# Projects Xcode generates from the package. The app's own, App/Matterbee.xcodeproj, is checked in;
+# Projects Xcode generates from the package. The app's own, App/Causabee.xcodeproj, is checked in;
 # what Xcode keeps per person inside it is not.
 /*.xcodeproj
 xcuserdata/

@@ -6,10 +6,10 @@ import SwiftUI
 /// The Mac app: the assistant and each matter's status, with a door in each direction.
 ///
 /// It reads the same store `matter-spike import` writes. Where that store is: `--store <path>`,
-/// then `MATTERBEE_STORE`, then `~/Library/Application Support/Matterbee/matters.store`.
-/// `--demo` fills an empty store with made-up matters, in `Matterbee-Demo` unless a store is named.
+/// then `CAUSABEE_STORE`, then `~/Library/Application Support/Causabee/matters.store`.
+/// `--demo` fills an empty store with made-up matters, in `Causabee-Demo` unless a store is named.
 @main
-struct MatterbeeApp: App {
+struct CausabeeApp: App {
     let storeURL: URL
     let opened: Result<ModelContainer, Error>
 
@@ -42,7 +42,9 @@ struct MatterbeeApp: App {
         Theme.registerFonts()
         // Started from the terminal with `swift run`, the process is not an app yet until it says so.
         NSApplication.shared.setActivationPolicy(.regular)
-        let url = MatterbeeApp.storeLocation()
+        FromMatterbee.settings()
+        let url = CausabeeApp.storeLocation()
+        FromMatterbee.store(at: url)
         storeURL = url
         let cloud = CloudSync.mode
         opened = Result {
@@ -51,7 +53,7 @@ struct MatterbeeApp: App {
             if DemoData.isRequested { MainActor.assumeIsolated { Calendars.shared.isSealed = true; DemoData.seed(container.mainContext) } }
             // Files taken in before they were kept as files of their matter.
             MainActor.assumeIsolated { _ = try? MatterImport.addDroppedFiles(to: container.mainContext) }
-            // This Mac's list of names, for the iPhone to ask with: now, and whenever Matterbee
+            // This Mac's list of names, for the iPhone to ask with: now, and whenever Causabee
             // goes to the background or quits — by then new mail may have taught it new names.
             MainActor.assumeIsolated { NameListPublisher.start(container.mainContext) }
             return container
@@ -67,7 +69,7 @@ struct MatterbeeApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Matterbee") {
+        WindowGroup("Causabee") {
             switch opened {
             case .success(let container):
                 RootView().modelContainer(container).frame(minWidth: 960, minHeight: 640)
@@ -78,7 +80,7 @@ struct MatterbeeApp: App {
                     .frame(minWidth: 600, minHeight: 400)
             }
         }
-        // No bar of the Mac's: the window is drawn by Matterbee, and moved by its empty places.
+        // No bar of the Mac's: the window is drawn by Causabee, and moved by its empty places.
         .windowStyle(.hiddenTitleBar)
         .windowBackgroundDragBehavior(.enabled)
         .commands {
@@ -89,11 +91,11 @@ struct MatterbeeApp: App {
             }
             MatterCommands()
             CommandGroup(after: .appSettings) {
-                Button("Set Up Matterbee …") { NotificationCenter.default.post(name: .showSetup, object: nil) }
+                Button("Set Up Causabee …") { NotificationCenter.default.post(name: .showSetup, object: nil) }
                 Button(DemoData.isRequested ? "Leave the Demo" : "Try the Demo") { DemoData.restart(demo: !DemoData.isRequested) }
             }
             CommandGroup(replacing: .help) {
-                Button("Introduction to Matterbee") { NotificationCenter.default.post(name: .showIntro, object: nil) }
+                Button("Introduction to Causabee") { NotificationCenter.default.post(name: .showIntro, object: nil) }
             }
         }
         // With the store: the folder settings save the matters' files, and need to see them.
@@ -106,13 +108,13 @@ struct MatterbeeApp: App {
         }
     }
 
-    /// `--mapping <path>`, then `MATTERBEE_MAPPING`, then `mapping.json` next to the store.
+    /// `--mapping <path>`, then `CAUSABEE_MAPPING`, then `mapping.json` next to the store.
     nonisolated static func mappingLocation() -> URL {
         let arguments = CommandLine.arguments
         if let flag = arguments.firstIndex(of: "--mapping"), flag + 1 < arguments.count {
             return URL(fileURLWithPath: arguments[flag + 1])
         }
-        if let path = ProcessInfo.processInfo.environment["MATTERBEE_MAPPING"], !path.isEmpty {
+        if let path = ProcessInfo.processInfo.environment["CAUSABEE_MAPPING"], !path.isEmpty {
             return URL(fileURLWithPath: path)
         }
         return storeLocation().deletingLastPathComponent().appendingPathComponent("mapping.json")
@@ -123,14 +125,14 @@ struct MatterbeeApp: App {
         if let flag = arguments.firstIndex(of: "--store"), flag + 1 < arguments.count {
             return URL(fileURLWithPath: arguments[flag + 1])
         }
-        if let path = ProcessInfo.processInfo.environment["MATTERBEE_STORE"], !path.isEmpty {
+        if let path = ProcessInfo.processInfo.environment["CAUSABEE_STORE"], !path.isEmpty {
             return URL(fileURLWithPath: path)
         }
         // The iCloud test and the demo keep their own store, name list and record, apart from the owner's.
         // So does a development build syncing with CloudKit's Development environment: the owner's
         // matters sync in Production, and one store must never meet both.
-        let name = DemoData.isRequested ? "Matterbee-Demo" : CloudSync.mode == .test ? "Matterbee-Test"
-            : CloudSync.mode == .on && !CloudSync.isProduction ? "Matterbee-Development" : "Matterbee"
+        let name = DemoData.isRequested ? "Causabee-Demo" : CloudSync.mode == .test ? "Causabee-Test"
+            : CloudSync.mode == .on && !CloudSync.isProduction ? "Causabee-Development" : "Causabee"
         let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent(name, isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -185,9 +187,9 @@ final class Navigation {
     /// after a restart too. It holds real names — it is the owner's own record, like the store.
     var turns: [Turn] = [] { didSet { saveThread() } }
     /// `mapping.json`: the disguise, read and added to when the assistant asks.
-    let mapping = MatterbeeApp.mappingLocation()
+    let mapping = CausabeeApp.mappingLocation()
     /// The store, and beside it the record of what the label has answered.
-    let store = MatterbeeApp.storeLocation()
+    let store = CausabeeApp.storeLocation()
 
     struct Turn: Identifiable {
         enum State {
@@ -208,7 +210,7 @@ final class Navigation {
         var applied: Set<Int> = []
         /// Set when this turn is a screenshot brought in, not a question.
         var shot: Shot?
-        /// A line Matterbee wrote itself — what came in with "Get new mail" — not a question.
+        /// A line Causabee wrote itself — what came in with "Get new mail" — not a question.
         var note: String?
         /// Typed names read as the known names they almost were: "„Geor“ als „Georg“".
         var readAs: [String] = []
@@ -411,7 +413,7 @@ struct RootView: View {
     @State private var mailCheck = MailCheck()
     /// The closed matters in the sidebar, folded away until opened; remembered on this Mac.
     @AppStorage("sidebar.showsClosed") private var showsClosed = false
-    /// The five pages on what Matterbee is: once at the first start, then from Help.
+    /// The five pages on what Causabee is: once at the first start, then from Help.
     @AppStorage(IntroView.seenKey) private var introSeen = false
     @State private var showsIntro = false
     @State private var showsSetup = false
@@ -464,7 +466,7 @@ struct RootView: View {
         return "Merge “\(from.name)” into “\(into.name)”?"
     }
 
-    /// Matterbee's own sidebar, not the Mac's: 270 wide, the window's buttons and the sidebar's on
+    /// Causabee's own sidebar, not the Mac's: 270 wide, the window's buttons and the sidebar's on
     /// its top 52 points, the matters below, getting new mail at the bottom.
     /// One matter in the sidebar, open or closed alike, with its menu.
     private func sidebarRow(_ matter: Matter, _ sorted: [Matter]) -> some View {
@@ -484,7 +486,7 @@ struct RootView: View {
     private func sidebar(_ sorted: [Matter]) -> some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: WindowMetrics.topLine)
-            // The selection drawn by Matterbee, not by the Mac: a light grey, as in the design.
+            // The selection drawn by Causabee, not by the Mac: a light grey, as in the design.
             List {
                 let overview = navigation.place == .assistant || navigation.place == nil
                 Text("Overview").fontWeight(.semibold)
@@ -517,7 +519,7 @@ struct RootView: View {
 
     var body: some View {
         let sorted = sidebarOrder()
-        // The whole window is Matterbee's: nothing of the Mac's bar is seen. Its three buttons sit in
+        // The whole window is Causabee's: nothing of the Mac's bar is seen. Its three buttons sit in
         // the middle of a 52-point top line (WindowChrome), the sidebar's button right of them.
         HStack(spacing: 0) {
             if !navigation.sidebarHidden {
@@ -572,7 +574,7 @@ struct RootView: View {
         .tint(.primary)
         // Lines of running text 18 apart, as in the design: the system's 16 and 2 more.
         .lineSpacing(2)
-        // A turn asked on the iPhone, or on the other Mac, arrives while Matterbee is open.
+        // A turn asked on the iPhone, or on the other Mac, arrives while Causabee is open.
         .onReceive(NotificationCenter.default.publisher(for: .threadMayHaveChanged)) { _ in navigation.refresh() }
         .onAppear {
             navigation.attach(context)
@@ -585,7 +587,7 @@ struct RootView: View {
             else if !introSeen, !DemoData.isRequested { showsIntro = true }
             else if !setupLater, !DemoData.isRequested, SetupAssistant.isMissingSomething { showsSetup = true }
         }
-        // New mail by itself: on start, every ten minutes while Matterbee is open, and after sleep.
+        // New mail by itself: on start, every ten minutes while Causabee is open, and after sleep.
         // Reading is free; it waits as "3 new mails" until the owner sorts in what they tick.
         .task {
             try? await Task.sleep(for: .seconds(4))
@@ -604,7 +606,7 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .showIntro)) { _ in showsIntro = true }
         .onReceive(NotificationCenter.default.publisher(for: .showSetup)) { _ in showsSetup = true }
         .onReceive(NotificationCenter.default.publisher(for: .newMatter)) { _ in newMatterName = ""; startsMatter = true }
-        // After the introduction, the setup — when something Matterbee needs is still missing.
+        // After the introduction, the setup — when something Causabee needs is still missing.
         .sheet(isPresented: $showsIntro, onDismiss: {
             if SetupState.isFresh || (!setupLater && !DemoData.isRequested && SetupAssistant.isMissingSomething) { showsSetup = true }
         }) { IntroView() }
@@ -825,13 +827,13 @@ enum MenuOrder {
 
 extension Notification.Name {
     /// Matter → New Task …, Write Note, Add File …, Add Link …: the action as its raw value.
-    static let matterAction = Notification.Name("matterbee.matterAction")
+    static let matterAction = Notification.Name("causabee.matterAction")
     /// iCloud brought changes in: the assistant's thread may have new or changed turns.
-    static let threadMayHaveChanged = Notification.Name("matterbee.threadMayHaveChanged")
-    /// Help → Introduction to Matterbee.
-    static let showIntro = Notification.Name("matterbee.showIntro")
-    /// Matterbee → Set Up Matterbee …
-    static let showSetup = Notification.Name("matterbee.showSetup")
+    static let threadMayHaveChanged = Notification.Name("causabee.threadMayHaveChanged")
+    /// Help → Introduction to Causabee.
+    static let showIntro = Notification.Name("causabee.showIntro")
+    /// Causabee → Set Up Causabee …
+    static let showSetup = Notification.Name("causabee.showSetup")
     /// File → New Matter …
-    static let newMatter = Notification.Name("matterbee.newMatter")
+    static let newMatter = Notification.Name("causabee.newMatter")
 }

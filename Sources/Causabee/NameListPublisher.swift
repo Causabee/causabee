@@ -3,7 +3,7 @@ import MatterCore
 import SwiftData
 
 /// Puts this Mac's list of names into the store, where the other devices read it: at start, and
-/// each time Matterbee goes to the background or quits. Written only when the list changed; only
+/// each time Causabee goes to the background or quits. Written only when the list changed; only
 /// this Mac ever writes its own. Before, it takes in the names the other devices' lists know — the
 /// iPhone's, the other Mac's — each with a stand-in of this Mac's own, so a name first met on the
 /// iPhone is disguised here too. And at start, what this Mac sorted before goes into the store's
@@ -24,7 +24,7 @@ enum NameListPublisher {
 
     static func start(_ context: ModelContext) {
         self.context = context
-        let log = MatterbeeApp.storeLocation().deletingLastPathComponent().appendingPathComponent("decisions-fetch.jsonl")
+        let log = CausabeeApp.storeLocation().deletingLastPathComponent().appendingPathComponent("decisions-fetch.jsonl")
         _ = try? SortedMails.record(Array(DailyDoor.readLog(log).values), device: device, in: context)
         publish()
         // Reading a key shares it through iCloud Keychain, when it was saved before keys were:
@@ -40,7 +40,7 @@ enum NameListPublisher {
     static func publish() {
         guard let context else { return }
         adopt()
-        _ = try? NameLists.publish(MatterbeeApp.mappingLocation(), device: device,
+        _ = try? NameLists.publish(CausabeeApp.mappingLocation(), device: device,
                                    deviceName: Host.current().localizedName ?? "Mac", in: context)
     }
 
@@ -48,7 +48,7 @@ enum NameListPublisher {
     /// is kept beside it.
     static func adopt() {
         guard let context else { return }
-        let mapping = MatterbeeApp.mappingLocation()
+        let mapping = CausabeeApp.mappingLocation()
         let before = mapping.deletingLastPathComponent().appendingPathComponent("mapping.before-other-devices.json")
         if !FileManager.default.fileExists(atPath: before.path) { try? FileManager.default.copyItem(at: mapping, to: before) }
         _ = try? NameLists.adopt(into: mapping, device: device, in: context)

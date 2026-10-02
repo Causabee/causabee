@@ -93,7 +93,7 @@ final class Navigation {
         var state: State = .failed("")
         var applied: Set<Int> = []
         var dismissedCards: Set<Int> = []
-        /// A line Matterbee wrote itself — what came in with "Get new mail" — not a question.
+        /// A line Causabee wrote itself — what came in with "Get new mail" — not a question.
         var note: String?
         var readAs: [String] = []
         /// A screenshot brought in on the Mac: its file stays there.

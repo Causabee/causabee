@@ -5,14 +5,14 @@ import Security
 /// never in a log: it is read from here, handed to the server, and forgotten. The server it
 /// belongs to is kept beside it, so the password only ever goes to that one.
 ///
-/// Two places. **iCloud Keychain**, shared by Matterbee on the owner's Macs and iPhone — typed
+/// Two places. **iCloud Keychain**, shared by Causabee on the owner's Macs and iPhone — typed
 /// once, there on every device, end-to-end encrypted, and readable by no other app: the item is
-/// in Matterbee's own access group (`2F7QR8NL2D.de.chille.matterbee`), which only a build signed
+/// in Causabee's own access group (`2F7QR8NL2D.de.chille.causabee`), which only a build signed
 /// for it has. And, on a Mac, the **login keychain**, as before: the command line and a build
 /// without that signing still find the password there. Saving writes both; reading tries the
 /// shared one first.
 public enum Keychain {
-    static let service = "Matterbee IMAP"
+    static let service = "Causabee IMAP"
 
     public enum Failure: Error, CustomStringConvertible {
         case status(OSStatus)
@@ -115,7 +115,7 @@ public enum Keychain {
             var item = base(account.user)
             item[kSecValueData as String] = data
             item[kSecAttrGeneric as String] = server
-            item[kSecAttrLabel as String] = "Matterbee — \(account.user)"
+            item[kSecAttrLabel as String] = "Causabee — \(account.user)"
             return SecItemAdd(item as CFDictionary, nil)
         }
 
@@ -141,10 +141,10 @@ public enum Keychain {
 
 /// The AI services' keys — Anthropic's, Mistral's — in the Keychain, as the owner pasted them in
 /// the app's settings. The app is started from the Dock, where no `.env` is at hand. Like the mail
-/// password, a key is shared through iCloud Keychain, so Matterbee on the iPhone asks with the
+/// password, a key is shared through iCloud Keychain, so Causabee on the iPhone asks with the
 /// key pasted on the Mac; on a Mac it stays in the login keychain too.
 public enum APIKeys {
-    static let service = "Matterbee API"
+    static let service = "Causabee API"
 
     public static func get(_ name: String) -> String? {
         for place in Keychain.Place.allCases {
@@ -185,7 +185,49 @@ public enum APIKeys {
         guard status == errSecItemNotFound else { return status }
         var item = place.base(name, service: service)
         item[kSecValueData as String] = data
-        item[kSecAttrLabel as String] = "Matterbee — \(name)"
+        item[kSecAttrLabel as String] = "Causabee — \(name)"
         return SecItemAdd(item as CFDictionary, nil)
     }
 }
+
+#if os(macOS)
+extension Keychain {
+    /// The app was called Matterbee until version 0.5. Its passwords, keys and Google sign-ins are
+    /// in this Mac's login keychain under the old names; each is copied once to the name Causabee
+    /// uses, and the old one is left as it was. The Keychain asks the owner once per item, since
+    /// the old items were made by the old app. From there, reading one shares it through iCloud
+    /// Keychain as always. Returns how many were copied.
+    /// The mail passwords, the AI keys and the Google sign-ins, each from its old name.
+    public static func takeOverFromMatterbee() -> Int {
+        takeOver(from: "Matterbee IMAP", to: service) + takeOver(from: "Matterbee API", to: APIKeys.service)
+            + takeOver(from: "Matterbee Google", to: GoogleSignIn.service)
+    }
+
+    public static func takeOver(from oldService: String, to newService: String) -> Int {
+        let list: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: oldService,
+                                   kSecReturnAttributes as String: true, kSecMatchLimit as String: kSecMatchLimitAll]
+        var found: CFTypeRef?
+        guard SecItemCopyMatching(list as CFDictionary, &found) == errSecSuccess, let items = found as? [[String: Any]] else { return 0 }
+        var copied = 0
+        for old in items {
+            guard let account = old[kSecAttrAccount as String] as? String else { continue }
+            let mine: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: newService,
+                                       kSecAttrAccount as String: account]
+            guard SecItemCopyMatching(mine as CFDictionary, nil) == errSecItemNotFound else { continue }
+            var one: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: oldService,
+                                      kSecAttrAccount as String: account, kSecReturnData as String: true,
+                                      kSecMatchLimit as String: kSecMatchLimitOne]
+            var data: CFTypeRef?
+            guard SecItemCopyMatching(one as CFDictionary, &data) == errSecSuccess, let secret = data as? Data else { continue }
+            one = mine
+            one[kSecValueData as String] = secret
+            if let generic = old[kSecAttrGeneric as String] { one[kSecAttrGeneric as String] = generic }
+            if let label = old[kSecAttrLabel as String] as? String {
+                one[kSecAttrLabel as String] = label.replacingOccurrences(of: "Matterbee", with: "Causabee")
+            }
+            if SecItemAdd(one as CFDictionary, nil) == errSecSuccess { copied += 1 }
+        }
+        return copied
+    }
+}
+#endif

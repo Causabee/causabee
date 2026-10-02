@@ -153,7 +153,7 @@ struct Conversation {
             judgement.matterTitle = name.isEmpty ? nil : name
         }
         judgement.decidedBy = .claude
-        // A mail file is kept inside Matterbee once taken in: its attachments are read from it,
+        // A mail file is kept inside Causabee once taken in: its attachments are read from it,
         // and Downloads gets cleaned up.
         if look.kind == .mail, !look.file.path.hasPrefix(ScreenshotDoor.attachments(besides: navigation.store).path) {
             let folder = ScreenshotDoor.attachments(besides: navigation.store)
@@ -357,8 +357,8 @@ struct Composer: View {
             .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 23))
             // "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(showsMore
-                ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen()) · goes pseudonymised, like the mails • [less](matterbee://footer)"
-                : "Always pseudonymised sent • [more](matterbee://footer)"))
+                ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen()) · goes pseudonymised, like the mails • [less](causabee://footer)"
+                : "Always pseudonymised sent • [more](causabee://footer)"))
                 .font(.caption2).foregroundStyle(.secondary).tint(Theme.gold)
                 .environment(\.openURL, OpenURLAction { _ in showsMore.toggle(); return .handled })
                 .padding(.horizontal, 8)

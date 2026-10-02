@@ -24,7 +24,7 @@ public struct LabelIntake: Sendable {
     public var known: Set<String> = []
     /// A scan mailed from anywhere — a scanner app, the share sheet — with this word in the
     /// subject counts as labelled, label or not. Only mail the owner sent to the owner: mail
-    /// about Matterbee from anyone else, or to anyone else, is not the owner's paper.
+    /// about Causabee from anyone else, or to anyone else, is not the owner's paper.
     public var keyword: String?
     public var ownAddresses: [String] = []
     static let batch = 25

@@ -98,7 +98,7 @@ struct AssistantSheet: View {
     private var header: some View {
         ZStack {
             VStack(spacing: 2) {
-                Text("Matterbee").font(.headline)
+                Text("Causabee").font(.headline)
                 Text(matter?.name ?? "All matters").font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             .padding(.horizontal, 60)
@@ -170,8 +170,8 @@ struct AssistantSheet: View {
             .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))
             // As on the Mac: "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(showsMore
-                ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen) · goes pseudonymised, like the mails • [less](matterbee://footer)"
-                : "Always pseudonymised sent • [more](matterbee://footer)"))
+                ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen) · goes pseudonymised, like the mails • [less](causabee://footer)"
+                : "Always pseudonymised sent • [more](causabee://footer)"))
                 .font(.caption2).foregroundStyle(.secondary).tint(Theme.gold)
                 .environment(\.openURL, OpenURLAction { _ in showsMore.toggle(); return .handled })
                 .padding(.horizontal, 8)

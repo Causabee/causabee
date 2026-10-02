@@ -8,7 +8,7 @@ import UniformTypeIdentifiers
 /// from Files, or a matter's file taken out of its mail with "Scan" — the way the Mac brings one
 /// in: read on the iPhone, shown before anything is sent, sent pseudonymised only on "Sort in",
 /// and taken into a matter the owner chooses. A picture or a scan is kept on this iPhone, in Files
-/// (On My iPhone › Matterbee), as the Mac's stay on the Mac; what it said — tasks, dates, people —
+/// (On My iPhone › Causabee), as the Mac's stay on the Mac; what it said — tasks, dates, people —
 /// goes to every device.
 @MainActor
 @Observable
@@ -38,15 +38,15 @@ final class PhoneShots {
 
     private var store: URL { PhoneCloud.storeLocation() }
 
-    /// Where a picture, a scan or a file brought in here is kept: Matterbee's own folder on this
-    /// iPhone, which Files shows as On My iPhone › Matterbee — the owner can find, share or delete
+    /// Where a picture, a scan or a file brought in here is kept: Causabee's own folder on this
+    /// iPhone, which Files shows as On My iPhone › Causabee — the owner can find, share or delete
     /// it there. The demo's in a folder of their own.
     static var folder: URL {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return DemoData.isRequested ? documents.appendingPathComponent("Demo", isDirectory: true) : documents
     }
     /// The same, in the words Files uses.
-    static let place = "Files › On My iPhone › Matterbee"
+    static let place = "Files › On My iPhone › Causabee"
 
     static func isKept(_ file: URL) -> Bool {
         file.resolvingSymlinksInPath().path.hasPrefix(folder.resolvingSymlinksInPath().path)

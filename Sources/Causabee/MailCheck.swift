@@ -112,7 +112,7 @@ final class MailCheck {
     func look(store: URL, context: ModelContext) {
         if DemoData.isRequested { lookInDemo(); return }
         guard let account = Keychain.accounts().first else {
-            state = .failed("No mail account yet. Choose Matterbee → Set Up Matterbee … to log in.")
+            state = .failed("No mail account yet. Choose Causabee → Set Up Causabee … to log in.")
             return
         }
         let door = door(for: account, store: store, context: context)
@@ -121,7 +121,7 @@ final class MailCheck {
         Task {
             do {
                 guard let password = try await MailSecret.secret(for: account) else {
-                    state = .failed("No password for \(account.user) in the Keychain. Choose Matterbee → Set Up Matterbee … to log in again.")
+                    state = .failed("No password for \(account.user) in the Keychain. Choose Causabee → Set Up Causabee … to log in again.")
                     return
                 }
                 let look = try await door.look(password: password)
@@ -356,7 +356,7 @@ struct MailCheckView: View {
         Button { check.look(store: navigation.store, context: context) } label: {
             Label("Get new mail", systemImage: "arrow.down.circle")
         }
-        // In the demo too: its round is made up, and the way back is Matterbee → Leave the Demo.
+        // In the demo too: its round is made up, and the way back is Causabee → Leave the Demo.
         .help(DemoData.isRequested ? "Fetches the demo's three made-up mails. Nothing is read or sent."
                                    : "Reads only new mail with the label. Nothing is sent until you click “Sort in”.")
     }

@@ -44,8 +44,8 @@ struct ShotView: View {
                     Text(kindLabel).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                     Text(shot.file.lastPathComponent).lineLimit(1)
                     Text(shot.document != nil ? "Taken from the mail it is attached to. It stays there; here it is only a cached copy."
-                         : shot.copied ? "Copied into Matterbee: it had no place of its own."
-                                     : "Stays where it is: \(shot.file.deletingLastPathComponent().lastPathComponent). Matterbee only remembers the path.")
+                         : shot.copied ? "Copied into Causabee: it had no place of its own."
+                                     : "Stays where it is: \(shot.file.deletingLastPathComponent().lastPathComponent). Causabee only remembers the path.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }

@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 import VisionKit
 
 /// A paper document — a letter, a contract, a bill — scanned with the camera or picked as a file,
-/// kept on this iPhone where Files shows it (On My iPhone › Matterbee), and sorted into the matter
+/// kept on this iPhone where Files shows it (On My iPhone › Causabee), and sorted into the matter
 /// the way the paperclip sorts one in: read here, sent pseudonymised only on "Sort in", taken in
 /// with a tap. What it says goes to every device; the file stays on this iPhone. Nothing goes
 /// into the mailbox.

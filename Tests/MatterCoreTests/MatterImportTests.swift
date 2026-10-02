@@ -7,7 +7,7 @@ import Testing
 private func mail(_ id: String, _ matter: String?, day: Int, todos: [[String: Any]] = [], done: [[String: Any]] = [],
                   appointments: [[String: Any]] = [], parties: [[String: Any]] = [], bulk: Bool = false) throws -> Judgement {
     let json: [String: Any] = [
-        "email_id": id, "source": "imap://imap.gmail.com/matterbee;UIDVALIDITY=7/;UID=\(day)",
+        "email_id": id, "source": "imap://imap.gmail.com/causabee;UIDVALIDITY=7/;UID=\(day)",
         "date": "2026-09-\(String(format: "%02d", day))T10:00:00Z", "subject": "Mail \(id)", "from": "x@example.com",
         "is_bulk": bulk, "matter": matter as Any? ?? NSNull(), "matter_confidence": 0.9, "matter_reason": "",
         "decided_by": bulk ? "rule" : "claude", "parties": parties, "todos": todos, "deadlines": [],

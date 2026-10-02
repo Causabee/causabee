@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// What Matterbee is, in five pictures of the demo's matters: shown once, the first time the app
+/// What Causabee is, in five pictures of the demo's matters: shown once, the first time the app
 /// starts, and again from Help. The pictures ship with the app bundle; a build without them — from
 /// `swift run` — shows an empty frame in their place.
 struct IntroView: View {
@@ -18,7 +18,7 @@ struct IntroView: View {
 
     static let pages = [
         Page(image: "intro-1", title: "Mail, files, screenshots: sorted into matters",
-             text: "Give Matterbee whatever you have: a mail, a PDF, a screenshot. It sorts everything into matters, like a trip, a move or care for a parent, and the overview shows what comes next and what is late.",
+             text: "Give Causabee whatever you have: a mail, a PDF, a screenshot. It sorts everything into matters, like a trip, a move or care for a parent, and the overview shows what comes next and what is late.",
              privacy: "Private by design: your mail and files stay on your Mac. Before anything goes to the AI, names, addresses and numbers are replaced."),
         Page(image: "intro-2", title: "One page for each matter",
              text: "The next step, a short summary, your own notes and every task, all in one place. On the left is the assistant for this matter."),
@@ -88,7 +88,7 @@ struct IntroView: View {
                     // A look around first, with nothing to set up: the made-up matters, apart from any real ones.
                     if index == Self.pages.count - 1, !DemoData.isRequested {
                         Button("Try the demo") { seen = true; DemoData.restart(demo: true) }
-                            .help("Starts Matterbee again with nine made-up matters, kept apart from your own. The sidebar has the way back.")
+                            .help("Starts Causabee again with nine made-up matters, kept apart from your own. The sidebar has the way back.")
                     }
                     Button(index == Self.pages.count - 1 ? "Get started" : "Next") { next() }
                         .buttonStyle(.borderedProminent).tint(Theme.ink)

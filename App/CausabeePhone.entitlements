@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
-		<string>iCloud.de.chille.matterbee</string>
+		<string>iCloud.de.chille.causabee</string>
 	</array>
 	<key>com.apple.developer.icloud-services</key>
 	<array>
@@ -12,7 +12,7 @@
 	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.de.chille.matterbee</string>
+		<string>group.de.chille.causabee</string>
 	</array>
 	<key>aps-environment</key>
 	<string>development</string>

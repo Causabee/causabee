@@ -13,12 +13,12 @@
 set -e -u -o pipefail
 cd "$(dirname "$0")/.."
 
-APP="$PWD/.build-app/shots/Build/Products/Release/Matterbee.app"
+APP="$PWD/.build-app/shots/Build/Products/Release/Causabee.app"
 if [[ ${1:-} != --reuse || ! -d $APP ]]; then
   print "→ Building the Release app"
   # A build folder of its own: the owner's Release app may be running from .build-app, and must not be
   # replaced under it.
-  xcodebuild -project App/Matterbee.xcodeproj -scheme MatterbeeApp -configuration Release -derivedDataPath .build-app/shots \
+  xcodebuild -project App/Causabee.xcodeproj -scheme CausabeeApp -configuration Release -derivedDataPath .build-app/shots \
     -allowProvisioningUpdates -skipMacroValidation build -quiet > /dev/null
 fi
 mkdir -p scripts/shots
@@ -30,11 +30,11 @@ for i in {1..5}; do
   shot=$SHOTS[$i]
   print "→ intro-$i: $shot"
   mkdir -p "$TMP/$shot"
-  # Opened as an app, not run from this shell: then it is in front, and macOS gives it Matterbee's own
+  # Opened as an app, not run from this shell: then it is in front, and macOS gives it Causabee's own
   # Calendar and Reminders access, so the dates show "Add to Calendar" (the demo still adds nothing).
   open -n -a "$APP" --args --store "$TMP/$shot/matters.store" --demo --shot "$shot"
   for _ in {1..20}; do pid=$(pgrep -n -f -- "--shot $shot" || true); [[ -n $pid ]] && break; sleep 0.25; done
-  [[ -n $pid ]] || { print -u2 "✗ Matterbee did not start for $shot."; exit 1 }
+  [[ -n $pid ]] || { print -u2 "✗ Causabee did not start for $shot."; exit 1 }
   # The demo fills its store, opens the matter, scrolls, and a marked to-do fades again.
   sleep 6
   id=$(swift scripts/window-id.swift $pid) || { kill $pid; print -u2 "✗ No window for $shot."; exit 1 }

@@ -9,7 +9,7 @@ import SwiftData
 /// Every person, company and address is invented (`.example` domains), and every date is counted
 /// from today, so the matters always look current: some things done, one thing late, the rest ahead.
 ///
-/// Start it apart from the real store: `Matterbee --store ~/Desktop/matterbee-demo/matters.store --demo`.
+/// Start it apart from the real store: `Causabee --store ~/Desktop/causabee-demo/matters.store --demo`.
 @MainActor
 enum DemoData {
     /// "Try the demo", kept until "Leave the demo": every start in between opens the demo's own store.
@@ -21,8 +21,8 @@ enum DemoData {
             || UserDefaults.standard.bool(forKey: chosenKey)
     }
 
-    /// Into the demo, or back to the owner's own matters. A store is opened once, when Matterbee
-    /// starts, so Matterbee starts again: the new one opens, then this one quits.
+    /// Into the demo, or back to the owner's own matters. A store is opened once, when Causabee
+    /// starts, so Causabee starts again: the new one opens, then this one quits.
     #if os(macOS)
     static func restart(demo: Bool) {
         UserDefaults.standard.set(demo, forKey: chosenKey)

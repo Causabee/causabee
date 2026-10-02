@@ -99,7 +99,7 @@ struct PhoneThreadMailRow: View {
         }
         .contentShape(Rectangle())
         .contextMenu {
-            AskMatterbeeButton { navigation.talk(entry.title, kind: "Mail", in: matter) }
+            AskCausabeeButton { navigation.talk(entry.title, kind: "Mail", in: matter) }
             PhoneMoveMail(entry: entry) { newName = Matter.suggestedName(for: [entry]); naming = true }
         }
         .alert("Move to a new matter", isPresented: $naming) {

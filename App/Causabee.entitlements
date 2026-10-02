@@ -4,8 +4,8 @@
 <dict>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
-		<string>iCloud.de.chille.matterbee</string>
-		<string>iCloud.de.chille.matterbee.test</string>
+		<string>iCloud.de.chille.causabee</string>
+		<string>iCloud.de.chille.causabee.test</string>
 	</array>
 	<key>com.apple.developer.icloud-services</key>
 	<array>

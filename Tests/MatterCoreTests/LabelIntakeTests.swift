@@ -110,22 +110,22 @@ struct LabelIntakeTests {
     @Test("Gmail: the thread Gmail knows brings the reply in, and the labelled mail is not read twice")
     func gmailThread() async throws {
         let mailbox = FakeMailbox(gmail: true, folders: [
-            MailFolder(name: "INBOX"), MailFolder(name: "Matterbee"),
+            MailFolder(name: "INBOX"), MailFolder(name: "Causabee"),
             MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
         ], content: [
-            "Matterbee": [.init(uid: 1, thread: "100", raw: Self.first)],
+            "Causabee": [.init(uid: 1, thread: "100", raw: Self.first)],
             "[Gmail]/All Mail": [.init(uid: 10, thread: "100", raw: Self.first),
                                  .init(uid: 11, thread: "100", raw: Self.reply),
                                  .init(uid: 12, thread: "200", raw: Self.unrelated)],
         ])
-        let result = try await LabelIntake(label: "Matterbee", host: "imap.gmail.com").run(mailbox)
+        let result = try await LabelIntake(label: "Causabee", host: "imap.gmail.com").run(mailbox)
 
         #expect(result.emails.map(\.id) == ["a@berger-hv.example", "b@owner.example"])
         #expect(result.labelled == ["a@berger-hv.example"])
         #expect(result.followed == ["b@owner.example": .gmailThread])
         #expect(result.searched == ["[Gmail]/All Mail"])
         #expect(await mailbox.wholeFetches["[Gmail]/All Mail"] == [11])
-        #expect(result.emails[0].source.absoluteString == "imap://imap.gmail.com/Matterbee;UIDVALIDITY=7/;UID=1")
+        #expect(result.emails[0].source.absoluteString == "imap://imap.gmail.com/Causabee;UIDVALIDITY=7/;UID=1")
     }
 
     @Test("Sixty labelled threads are followed in a few searches, not sixty")
@@ -134,12 +134,12 @@ struct LabelIntakeTests {
         let labelled = (1...60).map { FakeMailbox.Stored(uid: UInt32($0), thread: "\(1000 + $0)", raw: mail($0)) }
         let reply = "Message-ID: <r@x.example>\nFrom: b@x.example\nIn-Reply-To: <m42@x.example>\nDate: Tue, 2 Sep 2026 09:00:00 +0200\nSubject: Re: S42\n\nYes"
         let mailbox = FakeMailbox(gmail: true, folders: [
-            MailFolder(name: "Matterbee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
+            MailFolder(name: "Causabee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
         ], content: [
-            "Matterbee": labelled,
+            "Causabee": labelled,
             "[Gmail]/All Mail": labelled.map { .init(uid: $0.uid + 500, thread: $0.thread, raw: $0.raw) } + [.init(uid: 900, thread: "1042", raw: reply)],
         ])
-        let result = try await LabelIntake(label: "Matterbee", host: "imap.gmail.com").run(mailbox)
+        let result = try await LabelIntake(label: "Causabee", host: "imap.gmail.com").run(mailbox)
         #expect(result.followed == ["r@x.example": .gmailThread])
         #expect(await mailbox.searches <= 3)  // the label, then two bundles of thirty
     }
@@ -147,13 +147,13 @@ struct LabelIntakeTests {
     @Test("Elsewhere: replies of replies by References, in the inbox and in sent mail; a shared subject is not enough")
     func references() async throws {
         let mailbox = FakeMailbox(gmail: false, folders: [
-            MailFolder(name: "INBOX"), MailFolder(name: "Matterbee"), MailFolder(name: "Sent", attributes: ["\\Sent"]),
+            MailFolder(name: "INBOX"), MailFolder(name: "Causabee"), MailFolder(name: "Sent", attributes: ["\\Sent"]),
         ], content: [
-            "Matterbee": [.init(uid: 1, raw: Self.first)],
+            "Causabee": [.init(uid: 1, raw: Self.first)],
             "Sent": [.init(uid: 5, raw: Self.reply)],
             "INBOX": [.init(uid: 8, raw: Self.replyToReply), .init(uid: 9, raw: Self.unrelated)],
         ])
-        let result = try await LabelIntake(label: "matterbee", host: "imap.example").run(mailbox)
+        let result = try await LabelIntake(label: "causabee", host: "imap.example").run(mailbox)
 
         #expect(Set(result.emails.map(\.id)) == ["a@berger-hv.example", "b@owner.example", "c@berger-hv.example"])
         #expect(result.followed.values.allSatisfy { $0 == .references })
@@ -163,31 +163,31 @@ struct LabelIntakeTests {
     @Test("Mail already known is not downloaded again, and its thread still brings the new reply in")
     func onlyTheNewOne() async throws {
         let mailbox = FakeMailbox(gmail: true, folders: [
-            MailFolder(name: "Matterbee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
+            MailFolder(name: "Causabee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
         ], content: [
-            "Matterbee": [.init(uid: 1, thread: "100", raw: Self.first)],
+            "Causabee": [.init(uid: 1, thread: "100", raw: Self.first)],
             "[Gmail]/All Mail": [.init(uid: 10, thread: "100", raw: Self.first), .init(uid: 11, thread: "100", raw: Self.reply)],
         ])
-        let result = try await LabelIntake(label: "Matterbee", host: "imap.gmail.com", known: ["a@berger-hv.example"]).run(mailbox)
+        let result = try await LabelIntake(label: "Causabee", host: "imap.gmail.com", known: ["a@berger-hv.example"]).run(mailbox)
         #expect(result.emails.map(\.id) == ["b@owner.example"])
         #expect(result.alreadyKnown == 1)
-        #expect(await mailbox.wholeFetches["Matterbee"] == nil)
+        #expect(await mailbox.wholeFetches["Causabee"] == nil)
         #expect(await mailbox.wholeFetches["[Gmail]/All Mail"] == [11])
     }
 
     @Test("One mail read again by its pointer, or by its Message-ID when the pointer no longer fits")
     func fetchOne() async throws {
         let mailbox = FakeMailbox(gmail: true, folders: [
-            MailFolder(name: "Matterbee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
+            MailFolder(name: "Causabee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
         ], content: [
-            "Matterbee": [.init(uid: 1, thread: "100", raw: Self.first)],
+            "Causabee": [.init(uid: 1, thread: "100", raw: Self.first)],
             "[Gmail]/All Mail": [.init(uid: 11, thread: "100", raw: Self.reply)],
         ])
-        let direct = try await MailFetch.message(pointer: "imap://imap.gmail.com/Matterbee;UIDVALIDITY=7/;UID=1",
+        let direct = try await MailFetch.message(pointer: "imap://imap.gmail.com/Causabee;UIDVALIDITY=7/;UID=1",
                                                  messageID: "a@berger-hv.example", from: mailbox)
         #expect(String(decoding: direct, as: UTF8.self).contains("Sonderumlage"))
         // The label was taken off: the pointer finds nothing, All Mail still has it.
-        let moved = try await MailFetch.message(pointer: "imap://imap.gmail.com/Matterbee;UIDVALIDITY=99/;UID=5",
+        let moved = try await MailFetch.message(pointer: "imap://imap.gmail.com/Causabee;UIDVALIDITY=99/;UID=5",
                                                 messageID: "b@owner.example", from: mailbox)
         #expect(String(decoding: moved, as: UTF8.self).contains("Mache ich"))
     }
@@ -198,7 +198,7 @@ struct LabelIntakeTests {
             MailFolder(name: "INBOX"), MailFolder(name: "Verträge"), MailFolder(name: "[Gmail]", attributes: ["\\Noselect"]),
         ], content: [:])
         await #expect {
-            _ = try await LabelIntake(label: "Matterbee", host: "imap.gmail.com").run(mailbox)
+            _ = try await LabelIntake(label: "Causabee", host: "imap.gmail.com").run(mailbox)
         } throws: { error in
             let text = "\(error)"
             return text.contains("Verträge") && !text.contains("[Gmail]\n")
@@ -208,7 +208,7 @@ struct LabelIntakeTests {
     @Test("The filter does not overrule a label, but it still decides for a reply that came by thread")
     func labelOverrulesFilter() {
         let spike = Spike(detector: EntityDetector(runsTagger: false))
-        let url = URL(string: "imap://imap.gmail.com/Matterbee;UIDVALIDITY=7/;UID=1")!
+        let url = URL(string: "imap://imap.gmail.com/Causabee;UIDVALIDITY=7/;UID=1")!
         let first = EMLParser.parse(source: Self.first, url: url)
         let later = EMLParser.parse(source: Self.replyToReply, url: url)
         let report = spike.run(emails: [first, later], labelled: [first.id])
@@ -223,7 +223,7 @@ struct LabelIntakeTests {
     From: Owner <owner@gmail.com>
     To: owner@gmail.com
     Date: Thu, 4 Sep 2026 08:00:00 +0200
-    Subject: Matterbee Mietvertrag Scan
+    Subject: Causabee Mietvertrag Scan
 
     Scan attached.
     """
@@ -232,7 +232,7 @@ struct LabelIntakeTests {
     From: Owner <owner@gmail.com>
     To: tester@example.org
     Date: Thu, 4 Sep 2026 09:00:00 +0200
-    Subject: Matterbee beta 2
+    Subject: Causabee beta 2
 
     Here is the new beta.
     """
@@ -241,44 +241,44 @@ struct LabelIntakeTests {
     From: Someone <someone@example.org>
     To: owner@gmail.com
     Date: Thu, 4 Sep 2026 10:00:00 +0200
-    Subject: Matterbee is great
+    Subject: Causabee is great
 
     Hi.
     """
 
-    @Test("A scan mailed to yourself with Matterbee in the subject counts as labelled; mail about the app, or from anyone else, does not")
+    @Test("A scan mailed to yourself with Causabee in the subject counts as labelled; mail about the app, or from anyone else, does not")
     func mailedToYourself() async throws {
         let mailbox = FakeMailbox(gmail: true, folders: [
-            MailFolder(name: "INBOX"), MailFolder(name: "Matterbee"),
+            MailFolder(name: "INBOX"), MailFolder(name: "Causabee"),
             MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
         ], content: [
-            "Matterbee": [.init(uid: 1, thread: "100", raw: Self.first)],
+            "Causabee": [.init(uid: 1, thread: "100", raw: Self.first)],
             "[Gmail]/All Mail": [.init(uid: 10, thread: "100", raw: Self.first),
                                  .init(uid: 20, thread: "200", raw: Self.scan),
                                  .init(uid: 21, thread: "201", raw: Self.aboutTheApp),
                                  .init(uid: 22, thread: "202", raw: Self.fromSomeoneElse)],
         ])
-        var intake = LabelIntake(label: "Matterbee", host: "imap.gmail.com")
-        intake.keyword = "Matterbee"
+        var intake = LabelIntake(label: "Causabee", host: "imap.gmail.com")
+        intake.keyword = "Causabee"
         intake.ownAddresses = ["owner@gmail.com"]
         let result = try await intake.run(mailbox)
         #expect(Set(result.emails.map(\.id)) == ["a@berger-hv.example", "scan-1@gmail.com"])
         #expect(result.labelled.contains("scan-1@gmail.com"))
         #expect(await mailbox.wholeFetches["[Gmail]/All Mail"]?.contains(10) != true)
 
-        // Without the owner's address the keyword finds nothing: anybody can write "Matterbee".
-        let plain = try await LabelIntake(label: "Matterbee", host: "imap.gmail.com").run(mailbox)
+        // Without the owner's address the keyword finds nothing: anybody can write "Causabee".
+        let plain = try await LabelIntake(label: "Causabee", host: "imap.gmail.com").run(mailbox)
         #expect(plain.emails.map(\.id) == ["a@berger-hv.example"])
     }
 
     @Test("A scan mailed to yourself that was read before is not fetched again")
     func mailedToYourselfKnown() async throws {
-        let mailbox = FakeMailbox(gmail: false, folders: [MailFolder(name: "INBOX"), MailFolder(name: "Matterbee")], content: [
-            "Matterbee": [],
+        let mailbox = FakeMailbox(gmail: false, folders: [MailFolder(name: "INBOX"), MailFolder(name: "Causabee")], content: [
+            "Causabee": [],
             "INBOX": [.init(uid: 5, thread: nil, raw: Self.scan)],
         ])
-        var intake = LabelIntake(label: "Matterbee", host: "imap.example", known: ["scan-1@gmail.com"])
-        intake.keyword = "Matterbee"
+        var intake = LabelIntake(label: "Causabee", host: "imap.example", known: ["scan-1@gmail.com"])
+        intake.keyword = "Causabee"
         intake.ownAddresses = ["owner@gmail.com"]
         let result = try await intake.run(mailbox)
         #expect(result.emails.isEmpty)

@@ -18,7 +18,7 @@ public struct Judgement: Codable, Sendable {
     }
 
     public var emailID: String
-    /// The pointer to the original. Matterbee stores facts and a way back to the source, never
+    /// The pointer to the original. Causabee stores facts and a way back to the source, never
     /// the source itself.
     public var source: String
     public var date: Date?

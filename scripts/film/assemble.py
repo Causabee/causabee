@@ -65,14 +65,14 @@ clip("s06", "s06-nextstep", RIGHT_TOP, 6, "One thing to do now, and why it can't
 phone("s07a", "scan", [(0.5, 5)], "The same matter on your iPhone, out and about.")
 clip("s07b", "s07-mac-tick", RIGHT_TOP, 4, "Tick it on the phone. The Mac at home knows.", start=1)
 phone("s08", "scan", [(14.0, 3.5), (21.5, 2.0), (31.0, 4.0), (49.5, 4.5)], "Scan a letter, and it goes into the matter. The paper stays on your phone.")
-phone("s09", "mail", [(0.0, 3.2)], "Move a mail to the Matterbee folder. It finds the matter it belongs to.")
+phone("s09", "mail", [(0.0, 3.2)], "Move a mail to the Causabee folder. It finds the matter it belongs to.")
 clip("s10", "s10-tasks", RIGHT, 8, "Tasks are yours, shared, or someone else's you're waiting for. Some can only start after another.")
 clip("s11", "s11-source", THREAD, 6, "Each task and date links back to the mail it came from.")
 clip("s12", "s12-dates", RIGHT, 6, "Add a date to Calendar with one click. Change it in either place, and the other follows.")
 clip("s13", "s13-files-people", RIGHT, 5, "Files, shared documents and everyone involved, each with their role.")
 clip("s14", "s14-ask", THREAD, 10, "Ask in your own words. The answer shows its sources, and a good suggestion becomes a task in one click.")
 clip("s15", "s15-overview-after", CARDS_AFTER, 7, "The next step is always clear. On the Mac, and on your iPhone.", start=1.5)
-card("s16", "Matterbee", "Free and open source · for Mac and iPhone · ralfchille.github.io/matterbee", 4, bg=yellow, ink="0x1c1c1c", soft="0x1c1c1c")
+card("s16", "Causabee", "Free and open source · for Mac and iPhone · causabee.github.io/causabee", 4, bg=yellow, ink="0x1c1c1c", soft="0x1c1c1c")
 
 order = ["s01", "s02", "s03", "s04", "s05", "s06", "s07a", "s07b", "s08", "s09", "s10", "s11", "s12", "s13", "s14", "s15", "s16"]
 (OUT / "list.txt").write_text("".join(f"file '{OUT / (n + '.mp4')}'\n" for n in order))

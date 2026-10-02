@@ -10,7 +10,7 @@
 		AA0000000000000000000001 /* MatterCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000010 /* MatterCore */; };
 		AA0000000000000000000041 /* MatterCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000042 /* MatterCore */; };
 		AA0000000000000000000058 /* MatterCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000057 /* MatterCore */; };
-		AA0000000000000000000059 /* MatterbeeShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000050 /* MatterbeeShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AA0000000000000000000059 /* CausabeeShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000050 /* CausabeeShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -19,7 +19,7 @@
 			containerPortal = AA000000000000000000000A /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = AA0000000000000000000052;
-			remoteInfo = MatterbeeShare;
+			remoteInfo = CausabeeShare;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -30,7 +30,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				AA0000000000000000000059 /* MatterbeeShare.appex in Embed Foundation Extensions */,
+				AA0000000000000000000059 /* CausabeeShare.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -38,13 +38,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		AA0000000000000000000002 /* Matterbee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Matterbee.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AA0000000000000000000043 /* Matterbee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Matterbee.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AA0000000000000000000050 /* MatterbeeShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MatterbeeShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000002 /* Causabee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Causabee.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000043 /* Causabee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Causabee.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000050 /* CausabeeShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CausabeeShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		AA0000000000000000000045 /* Exceptions for "Matterbee" folder in "MatterbeePhone" target */ = {
+		AA0000000000000000000045 /* Exceptions for "Causabee" folder in "CausabeePhone" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				BeeLoader.swift,
@@ -56,29 +56,29 @@
 				PageFind.swift,
 				Theme.swift,
 			);
-			target = AA0000000000000000000047 /* MatterbeePhone */;
+			target = AA0000000000000000000047 /* CausabeePhone */;
 		};
-		AA000000000000000000005A /* Exceptions for "MatterbeeShare" folder in "MatterbeePhone" target */ = {
+		AA000000000000000000005A /* Exceptions for "CausabeeShare" folder in "CausabeePhone" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ShareInbox.swift,
 			);
-			target = AA0000000000000000000047 /* MatterbeePhone */;
+			target = AA0000000000000000000047 /* CausabeePhone */;
 		};
-		AA000000000000000000005B /* Exceptions for "Matterbee" folder in "MatterbeeShare" target */ = {
+		AA000000000000000000005B /* Exceptions for "Causabee" folder in "CausabeeShare" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				BeeLoader.swift,
 				Theme.swift,
 			);
-			target = AA0000000000000000000052 /* MatterbeeShare */;
+			target = AA0000000000000000000052 /* CausabeeShare */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA0000000000000000000003 /* Matterbee */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA0000000000000000000045 /* Exceptions for "Matterbee" folder in "MatterbeePhone" target */, AA000000000000000000005B /* Exceptions for "Matterbee" folder in "MatterbeeShare" target */, ); name = Matterbee; path = ../Sources/Matterbee; sourceTree = "<group>"; };
-		AA0000000000000000000044 /* MatterbeePhone */ = {isa = PBXFileSystemSynchronizedRootGroup; name = MatterbeePhone; path = ../Sources/MatterbeePhone; sourceTree = "<group>"; };
-		AA0000000000000000000051 /* MatterbeeShare */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000000000000000000005A /* Exceptions for "MatterbeeShare" folder in "MatterbeePhone" target */, ); name = MatterbeeShare; path = ../Sources/MatterbeeShare; sourceTree = "<group>"; };
+		AA0000000000000000000003 /* Causabee */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA0000000000000000000045 /* Exceptions for "Causabee" folder in "CausabeePhone" target */, AA000000000000000000005B /* Exceptions for "Causabee" folder in "CausabeeShare" target */, ); name = Causabee; path = ../Sources/Causabee; sourceTree = "<group>"; };
+		AA0000000000000000000044 /* CausabeePhone */ = {isa = PBXFileSystemSynchronizedRootGroup; name = CausabeePhone; path = ../Sources/CausabeePhone; sourceTree = "<group>"; };
+		AA0000000000000000000051 /* CausabeeShare */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000000000000000000005A /* Exceptions for "CausabeeShare" folder in "CausabeePhone" target */, ); name = CausabeeShare; path = ../Sources/CausabeeShare; sourceTree = "<group>"; };
 		AA000000000000000000000C /* Resources */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Resources; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -113,9 +113,9 @@
 		AA0000000000000000000005 = {
 			isa = PBXGroup;
 			children = (
-				AA0000000000000000000003 /* Matterbee */,
-				AA0000000000000000000044 /* MatterbeePhone */,
-				AA0000000000000000000051 /* MatterbeeShare */,
+				AA0000000000000000000003 /* Causabee */,
+				AA0000000000000000000044 /* CausabeePhone */,
+				AA0000000000000000000051 /* CausabeeShare */,
 				AA000000000000000000000C /* Resources */,
 				AA0000000000000000000006 /* Products */,
 			);
@@ -124,9 +124,9 @@
 		AA0000000000000000000006 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AA0000000000000000000002 /* Matterbee.app */,
-				AA0000000000000000000043 /* Matterbee.app */,
-				AA0000000000000000000050 /* MatterbeeShare.appex */,
+				AA0000000000000000000002 /* Causabee.app */,
+				AA0000000000000000000043 /* Causabee.app */,
+				AA0000000000000000000050 /* CausabeeShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -134,9 +134,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AA0000000000000000000007 /* MatterbeeApp */ = {
+		AA0000000000000000000007 /* CausabeeApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA0000000000000000000020 /* Build configuration list for PBXNativeTarget "MatterbeeApp" */;
+			buildConfigurationList = AA0000000000000000000020 /* Build configuration list for PBXNativeTarget "CausabeeApp" */;
 			buildPhases = (
 				AA0000000000000000000008 /* Sources */,
 				AA0000000000000000000004 /* Frameworks */,
@@ -147,20 +147,20 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				AA0000000000000000000003 /* Matterbee */,
+				AA0000000000000000000003 /* Causabee */,
 				AA000000000000000000000C /* Resources */,
 			);
-			name = MatterbeeApp;
+			name = CausabeeApp;
 			packageProductDependencies = (
 				AA0000000000000000000010 /* MatterCore */,
 			);
-			productName = Matterbee;
-			productReference = AA0000000000000000000002 /* Matterbee.app */;
+			productName = Causabee;
+			productReference = AA0000000000000000000002 /* Causabee.app */;
 			productType = "com.apple.product-type.application";
 		};
-		AA0000000000000000000047 /* MatterbeePhone */ = {
+		AA0000000000000000000047 /* CausabeePhone */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA000000000000000000004B /* Build configuration list for PBXNativeTarget "MatterbeePhone" */;
+			buildConfigurationList = AA000000000000000000004B /* Build configuration list for PBXNativeTarget "CausabeePhone" */;
 			buildPhases = (
 				AA0000000000000000000048 /* Sources */,
 				AA0000000000000000000049 /* Frameworks */,
@@ -173,20 +173,20 @@
 				AA000000000000000000005D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				AA0000000000000000000044 /* MatterbeePhone */,
+				AA0000000000000000000044 /* CausabeePhone */,
 				AA000000000000000000000C /* Resources */,
 			);
-			name = MatterbeePhone;
+			name = CausabeePhone;
 			packageProductDependencies = (
 				AA0000000000000000000042 /* MatterCore */,
 			);
-			productName = Matterbee;
-			productReference = AA0000000000000000000043 /* Matterbee.app */;
+			productName = Causabee;
+			productReference = AA0000000000000000000043 /* Causabee.app */;
 			productType = "com.apple.product-type.application";
 		};
-		AA0000000000000000000052 /* MatterbeeShare */ = {
+		AA0000000000000000000052 /* CausabeeShare */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA0000000000000000000053 /* Build configuration list for PBXNativeTarget "MatterbeeShare" */;
+			buildConfigurationList = AA0000000000000000000053 /* Build configuration list for PBXNativeTarget "CausabeeShare" */;
 			buildPhases = (
 				AA0000000000000000000054 /* Sources */,
 				AA0000000000000000000055 /* Frameworks */,
@@ -197,14 +197,14 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				AA0000000000000000000051 /* MatterbeeShare */,
+				AA0000000000000000000051 /* CausabeeShare */,
 			);
-			name = MatterbeeShare;
+			name = CausabeeShare;
 			packageProductDependencies = (
 				AA0000000000000000000057 /* MatterCore */,
 			);
-			productName = MatterbeeShare;
-			productReference = AA0000000000000000000050 /* MatterbeeShare.appex */;
+			productName = CausabeeShare;
+			productReference = AA0000000000000000000050 /* CausabeeShare.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -228,7 +228,7 @@
 					};
 				};
 			};
-			buildConfigurationList = AA0000000000000000000021 /* Build configuration list for PBXProject "Matterbee" */;
+			buildConfigurationList = AA0000000000000000000021 /* Build configuration list for PBXProject "Causabee" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -245,9 +245,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AA0000000000000000000007 /* MatterbeeApp */,
-				AA0000000000000000000047 /* MatterbeePhone */,
-				AA0000000000000000000052 /* MatterbeeShare */,
+				AA0000000000000000000007 /* CausabeeApp */,
+				AA0000000000000000000047 /* CausabeePhone */,
+				AA0000000000000000000052 /* CausabeeShare */,
 			);
 		};
 /* End PBXProject section */
@@ -303,7 +303,7 @@
 /* Begin PBXTargetDependency section */
 		AA000000000000000000005D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = AA0000000000000000000052 /* MatterbeeShare */;
+			target = AA0000000000000000000052 /* CausabeeShare */;
 			targetProxy = AA000000000000000000005E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -345,7 +345,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = BeeStripesWings;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Matterbee.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Causabee.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -353,14 +353,14 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
+				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Matterbee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";
-				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Matterbee shows which of a matter's tasks are already in your reminders, and adds new ones when you click — so nothing is there twice.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you click — so nothing is there twice.";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MARKETING_VERSION = 0.3;
-				PRODUCT_BUNDLE_IDENTIFIER = de.chille.matterbee;
-				PRODUCT_NAME = Matterbee;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee;
+				PRODUCT_NAME = Causabee;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 			};
 			name = Debug;
@@ -370,7 +370,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = BeeStripesWings;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Matterbee.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Causabee.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -378,14 +378,14 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
+				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Matterbee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";
-				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Matterbee shows which of a matter's tasks are already in your reminders, and adds new ones when you click — so nothing is there twice.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you click — so nothing is there twice.";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MARKETING_VERSION = 0.3;
-				PRODUCT_BUNDLE_IDENTIFIER = de.chille.matterbee;
-				PRODUCT_NAME = Matterbee;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee;
+				PRODUCT_NAME = Causabee;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 			};
 			name = Release;
@@ -395,26 +395,26 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = BeeStripesWings;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = MatterbeePhone.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CausabeePhone.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2F7QR8NL2D;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "MatterbeePhone-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
+				INFOPLIST_FILE = "CausabeePhone-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Matterbee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
-				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Matterbee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Matterbee scans a letter that came on paper, to keep it in your mail with its matter.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Causabee scans a letter that came on paper, to keep it in your mail with its matter.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 0.4;
-				PRODUCT_BUNDLE_IDENTIFIER = de.chille.matterbee;
-				PRODUCT_NAME = Matterbee;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee;
+				PRODUCT_NAME = Causabee;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -428,26 +428,26 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = BeeStripesWings;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = MatterbeePhone.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CausabeePhone.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2F7QR8NL2D;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "MatterbeePhone-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
+				INFOPLIST_FILE = "CausabeePhone-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Matterbee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
-				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Matterbee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Matterbee scans a letter that came on paper, to keep it in your mail with its matter.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Causabee scans a letter that came on paper, to keep it in your mail with its matter.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 0.4;
-				PRODUCT_BUNDLE_IDENTIFIER = de.chille.matterbee;
-				PRODUCT_NAME = Matterbee;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee;
+				PRODUCT_NAME = Causabee;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -459,19 +459,19 @@
 		AA000000000000000000005F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = MatterbeeShare.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CausabeeShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2F7QR8NL2D;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "MatterbeeShare-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
+				INFOPLIST_FILE = "CausabeeShare-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				MARKETING_VERSION = 0.4;
-				PRODUCT_BUNDLE_IDENTIFIER = de.chille.matterbee.share;
-				PRODUCT_NAME = MatterbeeShare;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee.share;
+				PRODUCT_NAME = CausabeeShare;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -484,19 +484,19 @@
 		AA0000000000000000000060 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = MatterbeeShare.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CausabeeShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2F7QR8NL2D;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "MatterbeeShare-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = Matterbee;
+				INFOPLIST_FILE = "CausabeeShare-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				MARKETING_VERSION = 0.4;
-				PRODUCT_BUNDLE_IDENTIFIER = de.chille.matterbee.share;
-				PRODUCT_NAME = MatterbeeShare;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee.share;
+				PRODUCT_NAME = CausabeeShare;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -509,7 +509,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AA0000000000000000000020 /* Build configuration list for PBXNativeTarget "MatterbeeApp" */ = {
+		AA0000000000000000000020 /* Build configuration list for PBXNativeTarget "CausabeeApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA0000000000000000000032 /* Debug */,
@@ -518,7 +518,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA0000000000000000000021 /* Build configuration list for PBXProject "Matterbee" */ = {
+		AA0000000000000000000021 /* Build configuration list for PBXProject "Causabee" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA0000000000000000000030 /* Debug */,
@@ -527,7 +527,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA000000000000000000004B /* Build configuration list for PBXNativeTarget "MatterbeePhone" */ = {
+		AA000000000000000000004B /* Build configuration list for PBXNativeTarget "CausabeePhone" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA000000000000000000004C /* Debug */,
@@ -536,7 +536,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA0000000000000000000053 /* Build configuration list for PBXNativeTarget "MatterbeeShare" */ = {
+		AA0000000000000000000053 /* Build configuration list for PBXNativeTarget "CausabeeShare" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA000000000000000000005F /* Debug */,

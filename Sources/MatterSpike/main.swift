@@ -8,7 +8,7 @@ import SwiftData
 // `--classify` is passed, and then only the disguised text of mail that got past the filter.
 
 let usage = """
-matter-spike — Matterbee Phase 0
+matter-spike — Causabee Phase 0
 
 USAGE
   matter-spike run    <folder> [--log <path>] [--mode placeholder|standin] [--mapping <path>]
@@ -102,7 +102,7 @@ USAGE
             that followed it by thread, and run it through the same steps as run. Labelled
             mail is never thrown out by the bulk filter; a reply found by thread can be
             --account   which saved account (default: the only one saved)
-            --label     the Gmail label or IMAP folder (default: Matterbee)
+            --label     the Gmail label or IMAP folder (default: Causabee)
             --since     only mail from this day on
             --import    put what it found into the matter store (--store) as well
             The log defaults to decisions-fetch.jsonl here, the record of what the label has
@@ -128,7 +128,7 @@ USAGE
   same      merge the first party into the second — or accept a numbered suggestion. Kept as
             a rule, so the next mail's spelling goes to the right party too
   notsame   the two are different people; do not suggest them again
-  rules     everything you told Matterbee, where it came from, how often it was used, and a
+  rules     everything you told Causabee, where it came from, how often it was used, and a
             switch: --off <n> stops rule n for the mail that comes next, --delete <n> removes it
 
   ask       the assistant, from the terminal: a question about one matter, or about all of
@@ -186,7 +186,7 @@ struct Options {
     var report = URL(fileURLWithPath: "report.md")
     var account: String?
     var host: String?
-    var label = "Matterbee"
+    var label = "Causabee"
     var since: Date?
     var forget = false
     var reclassify = false
@@ -295,7 +295,7 @@ struct Options {
         // The app's data, where the app keeps it: `--data`, or Application Support once a store is
         // there. What is named with its own flag wins. Without either, files are where you are.
         let appData = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Matterbee", isDirectory: true)
+            .appendingPathComponent("Causabee", isDirectory: true)
         if let folder = data ?? (FileManager.default.fileExists(atPath: appData.appendingPathComponent("matters.store").path) ? appData : nil) {
             if !given.contains("store") { options.store = folder.appendingPathComponent("matters.store") }
             if !given.contains("mapping") { options.mapping = folder.appendingPathComponent("mapping.json") }
@@ -603,7 +603,7 @@ func makeLabels() throws {
     if kind == .threads {
         print("")
         print("Sorted thread by thread, oldest first. `tapped` is yes on the mail you would put the")
-        print("Matterbee label on and no on the replies below it; to-dos are the main part.")
+        print("Causabee label on and no on the replies below it; to-dos are the main part.")
     }
     print("")
     print("The judgement columns are deliberately empty. A golden set filled in with the")
@@ -730,7 +730,7 @@ func review() throws {
     let decisions = readLog()
     let labels = (try? String(contentsOf: options.labels, encoding: .utf8)).map { GoldenSet.read($0).labels } ?? []
 
-    let html = ReviewPage.render(decisions: decisions, labels: labels, title: "Matterbee — what the model said")
+    let html = ReviewPage.render(decisions: decisions, labels: labels, title: "Causabee — what the model said")
     try html.write(to: options.page, atomically: true, encoding: .utf8)
 
     let classified = decisions.filter { $0.extraction != nil }.count
@@ -851,16 +851,16 @@ func login() async throws {
 
     try Keychain.save(password, for: account)
     print("")
-    print("Logged in, and saved in the Keychain as \"Matterbee IMAP\" · \(address), for \(account.host).")
-    print("It is only ever used to read. Matterbee opens folders read-only and never marks mail as read.")
+    print("Logged in, and saved in the Keychain as \"Causabee IMAP\" · \(address), for \(account.host).")
+    print("It is only ever used to read. Causabee opens folders read-only and never marks mail as read.")
     let names = folders.filter { !$0.attributes.contains("\\noselect") }.map(\.name)
     if !names.isEmpty {
         print("")
         print("Labels and folders on this account (\(names.count)):")
-        for name in names.prefix(40) { print("  \(name)\(name.lowercased() == options.label.lowercased() ? "   ← the Matterbee label" : "")") }
+        for name in names.prefix(40) { print("  \(name)\(name.lowercased() == options.label.lowercased() ? "   ← the Causabee label" : "")") }
         if names.count > 40 { print("  … and \(names.count - 40) more") }
     }
-    // Gmail labels are found whatever their case, so `matterbee` is the label too.
+    // Gmail labels are found whatever their case, so `causabee` is the label too.
     if !names.contains(where: { $0.lowercased() == options.label.lowercased() }) {
         print("")
         print("There is no \"\(options.label)\" label yet. Make one in Gmail, put it on a mail, then run fetch.")
@@ -1142,7 +1142,7 @@ func notSame() throws {
     let a = party(options.words[1], in: matter), b = party(options.words[2], in: matter)
     context.insert(Rule(.notSameParty, subject: a.name, object: b.name, matterKey: matter.key, origin: origin(matter)))
     try context.save()
-    print("\(a.name) and \(b.name) are two parties. Matterbee will not ask again.")
+    print("\(a.name) and \(b.name) are two parties. Causabee will not ask again.")
 }
 
 func rules() throws {
@@ -1162,15 +1162,15 @@ func rules() throws {
         print(isOn ? "Rule \(number) is on again." : "Rule \(number) is off. Mail that comes next is no longer merged by it; what is merged already stays merged.")
     }
     print("")
-    guard !all.isEmpty else { print("No rules yet. They come from what you tell Matterbee: same, notsame."); print(""); return }
-    print("What you told Matterbee (\(all.count))")
+    guard !all.isEmpty else { print("No rules yet. They come from what you tell Causabee: same, notsame."); print(""); return }
+    print("What you told Causabee (\(all.count))")
     for (number, rule) in all.enumerated() {
         let what = switch rule.kind {
         case .sameParty: "\(rule.subject) is \(rule.object)"
         case .notSameParty: "\(rule.subject) is not \(rule.object)"
         case .partyName: "\(rule.subject) is called \(rule.object)"
         case .notInMatter: "\(rule.subject) is not part of \(rule.matterKey ?? "the matter")"
-        case nil: "a rule of a newer Matterbee (\(rule.kindRaw)), left alone"
+        case nil: "a rule of a newer Causabee (\(rule.kindRaw)), left alone"
         }
         print("  \(number + 1). \(rule.isOn ? "on " : "off") \(what)")
         print("        from \(rule.origin) · used \(rule.fired)×")

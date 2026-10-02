@@ -4,7 +4,7 @@ import Testing
 @MainActor @Suite struct FoundReminderTests {
     let reminders = [
         Calendars.Reminder(id: "a", title: "Online-Antrag durchführen", isDone: false, list: "Anschlussfinanzierung"),
-        Calendars.Reminder(id: "b", title: "Check-in bei easyJet", isDone: false, list: "Matterbee"),
+        Calendars.Reminder(id: "b", title: "Check-in bei easyJet", isDone: false, list: "Causabee"),
     ]
 
     @Test func looseOnlyInOwnList() {

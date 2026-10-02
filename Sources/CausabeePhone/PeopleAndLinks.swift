@@ -134,7 +134,7 @@ struct PhonePartyRow: View {
 
     @ViewBuilder
     private var items: some View {
-        AskMatterbeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
+        AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
         Button("Edit", systemImage: "pencil") { editing = true }
         Menu("Merge with", systemImage: "arrow.triangle.merge") {
             ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
@@ -426,7 +426,7 @@ struct PhoneLinkEditor: View {
                     }
                     TextField("Name, e.g. Cost list", text: $title)
                 } footer: {
-                    Text("Matterbee does not open the link by itself. The assistant learns only the name, never the address.")
+                    Text("Causabee does not open the link by itself. The assistant learns only the name, never the address.")
                 }
                 if !todos.isEmpty {
                     Picker("For task", selection: $todo) {

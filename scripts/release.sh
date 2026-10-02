@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Makes a Matterbee release: builds the app, signs it with a Developer ID, has Apple notarize it, puts
+# Makes a Causabee release: builds the app, signs it with a Developer ID, has Apple notarize it, puts
 # it in a disk image (drag to Applications), puts that on GitHub as a release, and points the
 # website's download buttons at it.
 #
@@ -12,8 +12,8 @@
 # image's SHA-256 is added at the end. The disk image is made by scripts/dmg/make-dmg.sh.
 #
 # Needs, once: a "Developer ID Application" certificate in the Keychain, and the notary login saved as
-#   xcrun notarytool store-credentials "matterbee-notary" --apple-id <you> --team-id <team>
-# Other names: MATTERBEE_NOTARY_PROFILE, MATTERBEE_DEVELOPER_ID, MATTERBEE_RELEASE_DIR. It builds App/Matterbee.xcodeproj.
+#   xcrun notarytool store-credentials "causabee-notary" --apple-id <you> --team-id <team>
+# Other names: CAUSABEE_NOTARY_PROFILE, CAUSABEE_DEVELOPER_ID, CAUSABEE_RELEASE_DIR. It builds App/Causabee.xcodeproj.
 #
 # A release syncs through the owner's iCloud, in CloudKit's Production environment: it is signed with
 # scripts/release.entitlements and carries scripts/release.provisionprofile, the Developer ID profile
@@ -40,26 +40,26 @@ while (( $# )); do
   shift
 done
 
-# 0.4.0-beta.1 → tag v0.4.0-beta.1, "Matterbee 0.4 Beta 1", Matterbee-0.4-beta.1.dmg, the app's version 0.4.
+# 0.4.0-beta.1 → tag v0.4.0-beta.1, "Causabee 0.4 Beta 1", Causabee-0.4-beta.1.dmg, the app's version 0.4.
 [[ $VERSION =~ '^([0-9]+)\.([0-9]+)\.([0-9]+)(-(alpha|beta|rc)\.([0-9]+))?$' ]] || fail "A version looks like 0.4.0 or 0.4.0-beta.1, not '$VERSION'."
 MAJOR=$match[1]; MINOR=$match[2]; PATCH=$match[3]; KIND=${match[5]:-}; NUMBER=${match[6]:-}
 SHORT="$MAJOR.$MINOR"; [[ $PATCH == 0 ]] || SHORT+=".$PATCH"
 TAG="v$VERSION"
 if [[ -n $KIND ]]; then
   WORD=${(C)KIND}; [[ $KIND == rc ]] && WORD="RC"
-  TITLE="Matterbee $SHORT $WORD $NUMBER"; LABEL="Version $SHORT $WORD $NUMBER"; DMG_NAME="Matterbee-$SHORT-$KIND.$NUMBER.dmg"; PRE=(--prerelease)
+  TITLE="Causabee $SHORT $WORD $NUMBER"; LABEL="Version $SHORT $WORD $NUMBER"; DMG_NAME="Causabee-$SHORT-$KIND.$NUMBER.dmg"; PRE=(--prerelease)
 else
-  TITLE="Matterbee $SHORT"; LABEL="Version $SHORT"; DMG_NAME="Matterbee-$SHORT.dmg"; PRE=()
+  TITLE="Causabee $SHORT"; LABEL="Version $SHORT"; DMG_NAME="Causabee-$SHORT.dmg"; PRE=()
 fi
 # Built outside the repo: where Documents syncs with iCloud Drive, the file provider marks a fresh
-# app with Finder information, which codesign refuses. Other place: MATTERBEE_RELEASE_DIR.
-OUT=${MATTERBEE_RELEASE_DIR:-$HOME/Library/Caches/matterbee-release}/$TAG
+# app with Finder information, which codesign refuses. Other place: CAUSABEE_RELEASE_DIR.
+OUT=${CAUSABEE_RELEASE_DIR:-$HOME/Library/Caches/causabee-release}/$TAG
 DMG=$OUT/$DMG_NAME
 
-PROFILE=${MATTERBEE_NOTARY_PROFILE:-matterbee-notary}
-IDENTITY=${MATTERBEE_DEVELOPER_ID:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)}
+PROFILE=${CAUSABEE_NOTARY_PROFILE:-causabee-notary}
+IDENTITY=${CAUSABEE_DEVELOPER_ID:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)}
 [[ -n $IDENTITY ]] || fail "No 'Developer ID Application' certificate in the Keychain."
-[[ -d App/Matterbee.xcodeproj ]] || fail "No App/Matterbee.xcodeproj on this Mac."
+[[ -d App/Causabee.xcodeproj ]] || fail "No App/Causabee.xcodeproj on this Mac."
 
 # Before building: the release is made from main as it is on GitHub, under a tag that is still free.
 step "Checking git, GitHub and the notary login"
@@ -77,16 +77,16 @@ if [[ -n $(git ls-remote --tags origin "refs/tags/$TAG") ]] || gh release view "
 fi
 $DRY || xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1 || fail "No notary login saved as '$PROFILE' (see the top of this script)."
 
-APP=$OUT/Matterbee.app
+APP=$OUT/Causabee.app
 rm -rf "$OUT"; mkdir -p "$OUT"
 
 step "Building $TITLE (Release)"
 BUILD=$(date +%Y%m%d%H%M)
-xcodebuild archive -project App/Matterbee.xcodeproj -scheme MatterbeeApp -configuration Release \
-  -archivePath "$OUT/Matterbee.xcarchive" -allowProvisioningUpdates \
+xcodebuild archive -project App/Causabee.xcodeproj -scheme CausabeeApp -configuration Release \
+  -archivePath "$OUT/Causabee.xcarchive" -allowProvisioningUpdates \
   MARKETING_VERSION="$SHORT" CURRENT_PROJECT_VERSION="$BUILD" > "$OUT/build.log" 2>&1 \
   || { tail -25 "$OUT/build.log"; fail "The build failed; all of it is in $OUT/build.log."; }
-ditto "$OUT/Matterbee.xcarchive/Products/Applications/Matterbee.app" "$APP"
+ditto "$OUT/Causabee.xcarchive/Products/Applications/Causabee.app" "$APP"
 [[ $(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP/Contents/Info.plist") == "$SHORT" ]] || fail "The app does not say version $SHORT."
 
 step "Signing with $IDENTITY"
@@ -155,7 +155,7 @@ gh release create "$TAG" "$DMG" -R "$REPO" --target main --title "$TITLE" --note
 
 step "Pointing the website at it"
 sed -E -i '' \
-  -e "s#releases/download/v[^/\"]+/Matterbee-[^\"]+\.(zip|dmg)#releases/download/$TAG/$DMG_NAME#g" \
+  -e "s#releases/download/v[^/\"]+/(Causabee|Matterbee)-[^\"]+\.(zip|dmg)#releases/download/$TAG/$DMG_NAME#g" \
   -e "s#releases/tag/v[^\"]+#releases/tag/$TAG#g" \
   -e "s#Version [0-9]+(\.[0-9]+)+( (Alpha|Beta|RC) [0-9]+)?#$LABEL#g" \
   site/index.html

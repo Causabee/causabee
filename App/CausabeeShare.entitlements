@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.de.chille.matterbee</string>
+		<string>group.de.chille.causabee</string>
 	</array>
 </dict>
 </plist>

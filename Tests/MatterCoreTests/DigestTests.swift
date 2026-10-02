@@ -8,7 +8,7 @@ import Testing
 struct DigestTests {
     func judgement(_ extra: [String: Any]) throws -> Judgement {
         var json: [String: Any] = [
-            "email_id": "dachrinne-1@example.org", "source": "imap://imap.gmail.com/matterbee;UIDVALIDITY=7/;UID=3",
+            "email_id": "dachrinne-1@example.org", "source": "imap://imap.gmail.com/causabee;UIDVALIDITY=7/;UID=3",
             "date": "2026-09-18T10:00:00Z", "subject": "Lieferung Dachrinne", "from": "Petra Lindner <petra@example.org>",
             "is_bulk": false, "matter": "dach", "matter_confidence": 0.9, "matter_reason": "", "decided_by": "claude",
             "parties": [], "todos": [], "deadlines": [], "appointments": [], "done": [],

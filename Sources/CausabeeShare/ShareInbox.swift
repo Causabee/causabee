@@ -5,7 +5,7 @@ import Foundation
 /// in an inbox until the app opens and brings it into the assistant. Nothing here leaves the
 /// iPhone; part of both the app and its share extension.
 enum ShareInbox {
-    static let group = "group.de.chille.matterbee"
+    static let group = "group.de.chille.causabee"
 
     /// One open matter, as the share sheet lists it.
     struct Choice: Codable, Identifiable, Hashable {
@@ -16,7 +16,7 @@ enum ShareInbox {
     }
 
     /// One shared file, waiting: its file in the inbox, its own name, and the matter chosen — none
-    /// when Matterbee decides.
+    /// when Causabee decides.
     struct Item: Codable {
         let file: String
         let name: String
@@ -44,7 +44,7 @@ enum ShareInbox {
 
     enum Failure: LocalizedError {
         case noGroup
-        var errorDescription: String? { "Matterbee's shared folder on this iPhone cannot be reached." }
+        var errorDescription: String? { "Causabee's shared folder on this iPhone cannot be reached." }
     }
 
     static func put(_ data: Data, named name: String, into matterKey: String?) throws {

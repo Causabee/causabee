@@ -90,7 +90,7 @@ struct AssistantButton: View {
 
     var body: some View {
         Button(action: action) {
-            // Matterbee's own bee, black on its yellow as the app icon has it — not a speech bubble.
+            // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
             BeeMark(size: 24, livesNowAndThen: true)
                 .foregroundStyle(.black)
                 .frame(width: 60, height: 60)
@@ -98,14 +98,14 @@ struct AssistantButton: View {
                 .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Ask Matterbee")
+        .accessibilityLabel("Ask Causabee")
         .padding(.trailing, 16).padding(.bottom, 8)
     }
 }
 
-/// "Ask Matterbee" in a row's menu, with the bee — the same mark as the yellow button. A menu only
+/// "Ask Causabee" in a row's menu, with the bee — the same mark as the yellow button. A menu only
 /// takes pictures, so the bee is drawn once into one, as a template: grey like the other icons.
-struct AskMatterbeeButton: View {
+struct AskCausabeeButton: View {
     let action: () -> Void
 
     @MainActor private static let bee: Image = {
@@ -116,7 +116,7 @@ struct AskMatterbeeButton: View {
     }()
 
     var body: some View {
-        Button(action: action) { Label { Text("Ask Matterbee") } icon: { Self.bee } }
+        Button(action: action) { Label { Text("Ask Causabee") } icon: { Self.bee } }
     }
 }
 

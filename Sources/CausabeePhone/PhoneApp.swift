@@ -9,7 +9,7 @@ import SwiftUI
 ///
 /// `--demo` (or "Try the demo") opens the made-up matters in a store of their own, never synced.
 @main
-struct MatterbeePhoneApp: App {
+struct CausabeePhoneApp: App {
     @State private var store = PhoneStore()
 
     init() {
@@ -67,7 +67,7 @@ final class PhoneStore {
 
 /// iCloud on the iPhone: the owner's container, in the environment this build is signed for.
 enum PhoneCloud {
-    static let ownContainer = "iCloud.de.chille.matterbee"
+    static let ownContainer = "iCloud.de.chille.causabee"
 
     /// The container to sync with, or nil to keep the store on the iPhone: the demo's made-up
     /// matters never meet the owner's iCloud, and `--no-cloud` keeps a store local for a test.
@@ -96,7 +96,7 @@ enum PhoneCloud {
     /// Development environment — the owner's matters sync in Production, and one store must never
     /// meet both.
     static func storeLocation() -> URL {
-        let name = DemoData.isRequested ? "Matterbee-Demo" : container != nil && !isProduction ? "Matterbee-Development" : "Matterbee"
+        let name = DemoData.isRequested ? "Causabee-Demo" : container != nil && !isProduction ? "Causabee-Development" : "Causabee"
         let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent(name, isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Matterbee at work: the icon's bee, its stripes lighting up one after another from the top as if
+/// Causabee at work: the icon's bee, its stripes lighting up one after another from the top as if
 /// sorting, its wings beating, the whole bee hovering. One beat of 2.4 seconds holds one sort, two
 /// wing beats and one hover, so the three never drift apart.
 ///
@@ -166,7 +166,7 @@ extension BeeMark {
         BeeLoader(size: 88)
         BeeMark(size: 24).foregroundStyle(.black).frame(width: 60, height: 60).background(Theme.bee, in: Circle())
         HStack(spacing: 8) { BeeLoader(); Text("Sorting in 12 mails …").foregroundStyle(.secondary) }
-        HStack(spacing: 6) { BeeLoader(size: 14); Text("Matterbee is on it …").font(.caption).foregroundStyle(.secondary) }
+        HStack(spacing: 6) { BeeLoader(size: 14); Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary) }
     }
     .padding(32)
 }

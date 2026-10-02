@@ -43,13 +43,13 @@ struct FolderSettings: View {
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
         panel.prompt = "Use this folder"
-        panel.message = "The folder for Matterbee's matter folders — one subfolder per matter."
+        panel.message = "The folder for Causabee's matter folders — one subfolder per matter."
         if panel.runModal() == .OK, let url = panel.url { chosen = url.path }
     }
 
     var body: some View {
         HStack {
-            Text(chosen.isEmpty ? (MatterFolders.drive != nil ? "iCloud Drive → Matterbee" : "No folder chosen yet")
+            Text(chosen.isEmpty ? (MatterFolders.drive != nil ? "iCloud Drive → Causabee" : "No folder chosen yet")
                                 : (chosen as NSString).abbreviatingWithTildeInPath)
                 .font(.caption).lineLimit(1).truncationMode(.middle)
             Spacer()

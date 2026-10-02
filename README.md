@@ -1,23 +1,23 @@
-<p align="center"><img src="site/assets/icon.svg" width="96" height="96" alt="The Matterbee app icon: a bee in black stripes on yellow"></p>
+<p align="center"><img src="site/assets/icon.svg" width="96" height="96" alt="The Causabee app icon: a bee in black stripes on yellow"></p>
 
-<h1 align="center">Matterbee</h1>
+<h1 align="center">Causabee</h1>
 
 <p align="center"><strong>Every matter. In its place.</strong><br>
 A Mac app that turns scattered mail, documents and screenshots into clear matters:<br>
 what comes next, who does what, and by when.</p>
 
 <p align="center">
-<a href="https://ralfchille.github.io/matterbee/">Website</a> ·
-<a href="https://github.com/ralfchille/matterbee/releases">Download the beta</a> ·
-<a href="https://ralfchille.github.io/matterbee/privacy.html">Privacy</a>
+<a href="https://causabee.github.io/causabee/">Website</a> ·
+<a href="https://github.com/causabee/causabee/releases">Download the beta</a> ·
+<a href="https://causabee.github.io/causabee/privacy.html">Privacy</a>
 </p>
 
-![The Matterbee overview: nine matters, each with its next step and what is overdue](site/assets/img/overview-1800.webp)
+![The Causabee overview: nine matters, each with its next step and what is overdue](site/assets/img/overview-1800.webp)
 
 ## What it does
 
 A trip, a move, care for a parent: each one arrives in pieces — a mail here, a PDF there, a
-screenshot you meant to keep. Matterbee puts the pieces together.
+screenshot you meant to keep. Causabee puts the pieces together.
 
 - **One page for each matter.** The next step, a short summary, your notes and every task.
 - **Who does what, and by when.** Tasks are yours, shared, or someone else's you're waiting for.
@@ -35,22 +35,22 @@ screenshot you meant to keep. Matterbee puts the pieces together.
 - You pick Claude, OpenAI or Mistral for each job, with your own API key in the Keychain. Every
   answer shows what it cost.
 - No server, no account, no analytics. The whole policy is on the
-  [website](https://ralfchille.github.io/matterbee/privacy.html).
+  [website](https://causabee.github.io/causabee/privacy.html).
 
 ## Try it
 
-[Download the beta](https://github.com/ralfchille/matterbee/releases) (macOS Sequoia 15 or later),
+[Download the beta](https://github.com/causabee/causabee/releases) (macOS Sequoia 15 or later),
 open it, and click **Try the demo** at the end of the introduction: nine made-up matters, with
 nothing to set up. For your own mail you need an IMAP account — Gmail needs an app password — and
 an API key from Anthropic, OpenAI or Mistral.
 
-Matterbee is in beta. Not in the beta yet: iCloud sync, and Sign in with Google
+Causabee is in beta. Not in the beta yet: iCloud sync, and Sign in with Google
 ([docs/google-sign-in.md](docs/google-sign-in.md)). Bugs and ideas are welcome as
-[issues](https://github.com/ralfchille/matterbee/issues).
+[issues](https://github.com/causabee/causabee/issues).
 
 ## Building the Mac app
 
-Open `App/Matterbee.xcodeproj` in Xcode and run the **MatterbeeApp** scheme (macOS 15 or later).
+Open `App/Causabee.xcodeproj` in Xcode and run the **CausabeeApp** scheme (macOS 15 or later).
 To sign it yourself, choose your own team and a bundle identifier of your own under Signing &
 Capabilities; iCloud needs a container of your own too. Without signing it still runs, on the
 Mac it was built on, with iCloud off.
@@ -58,7 +58,7 @@ Mac it was built on, with iCloud off.
 From the Terminal, without signing:
 
 ```sh
-xcodebuild -project App/Matterbee.xcodeproj -scheme MatterbeeApp CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project App/Causabee.xcodeproj -scheme CausabeeApp CODE_SIGNING_ALLOWED=NO build
 ```
 
 `scripts/release.sh` makes a signed, notarized release; see the top of that script.
@@ -70,7 +70,7 @@ MIT — see [LICENSE](LICENSE). The Source Serif 4 font is under the SIL Open Fo
 
 ---
 
-*The rest of this README is the working notes from building Matterbee: the mail pipeline and the
+*The rest of this README is the working notes from building Causabee: the mail pipeline and the
 `matter-spike` tool it started as, the data model, the app, and the tests. The plan is in
 [plan.md](plan.md).*
 
@@ -144,7 +144,7 @@ was written from the mail rather than from the tool's opinion of it.
 
 ## Reading the label (Phase 2)
 
-In the manual edition you put one label, `Matterbee`, on the mail that starts something.
+In the manual edition you put one label, `Causabee`, on the mail that starts something.
 `fetch` reads that label and nothing else, finds the replies that came after it, and runs it all
 through the same steps as `run`.
 
@@ -157,13 +157,13 @@ swift run matter-spike fetch --classify --since 2026-09-01
 - **Read-only, for real.** The client can only send the commands in `IMAPClient.allowed`. A
   folder is opened with `EXAMINE`, which the server keeps read-only, and mail is read with
   `BODY.PEEK[]`, so it stays unread. There is no command in it that moves, flags or deletes.
-- **No writes at all.** Matterbee never writes to the mailbox: a draft opens in Mail and the owner
+- **No writes at all.** Causabee never writes to the mailbox: a draft opens in Mail and the owner
   sends it; a document scanned on the iPhone is kept on the iPhone, in Files (On My iPhone ›
-  Matterbee), and sorted in like a file brought in with the paperclip.
+  Causabee), and sorted in like a file brought in with the paperclip.
 - **Build with `scripts/build.sh`**, not `swift run`: it signs both programs with the personal
   development certificate under fixed identifiers, so macOS asks once for the Keychain and not
-  again after every rebuild. Then start `.build/debug/Matterbee` and `.build/debug/matter-spike`.
-- **The password is in the Keychain**, as "Matterbee IMAP". Never in a file, never in `.env`.
+  again after every rebuild. Then start `.build/debug/Causabee` and `.build/debug/matter-spike`.
+- **The password is in the Keychain**, as "Causabee IMAP". Never in a file, never in `.env`.
   For Gmail it is an app password (myaccount.google.com/apppasswords; it needs 2-step
   verification). After a rebuild macOS may ask whether `matter-spike` may use it: say
   *Always Allow*.
@@ -184,7 +184,7 @@ swift run matter-spike fetch --classify --since 2026-09-01
   holen" at the bottom of the sidebar does the same: it lists what is new and what it would
   cost, and sends only on "Einordnen".
 - **Nothing is stored.** Mail is read into memory each time. The log points back at each mail
-  as `imap://imap.gmail.com/Matterbee;UIDVALIDITY=…/;UID=…`.
+  as `imap://imap.gmail.com/Causabee;UIDVALIDITY=…/;UID=…`.
 
 ## Matters (the data model)
 
@@ -232,28 +232,28 @@ swift run matter-spike rename reisestornierung "Reisen stornieren"
 
 ## The Mac app
 
-**Matterbee.app** is built with Xcode from `App/Matterbee.xcodeproj` — the same code as
-`Sources/Matterbee`, signed with the personal development team, icon in `App/Resources`:
+**Causabee.app** is built with Xcode from `App/Causabee.xcodeproj` — the same code as
+`Sources/Causabee`, signed with the personal development team, icon in `App/Resources`:
 
 ```sh
-xcodebuild -project App/Matterbee.xcodeproj -scheme MatterbeeApp -derivedDataPath .build-app -allowProvisioningUpdates build
-open .build-app/Build/Products/Debug/Matterbee.app
+xcodebuild -project App/Causabee.xcodeproj -scheme CausabeeApp -derivedDataPath .build-app -allowProvisioningUpdates build
+open .build-app/Build/Products/Debug/Causabee.app
 ```
 
-Its data lives in `~/Library/Application Support/Matterbee` — store, name list, record, mail
+Its data lives in `~/Library/Application Support/Causabee` — store, name list, record, mail
 texts, files — and `matter-spike` uses the same folder once a store is there (`--data` names
 another). The API keys are pasted in its settings (⌘,) and kept in the Keychain.
 
 **iCloud.** In the settings: *Off*, *Test* (made-up data, its own store in
-`Application Support/Matterbee-Test` and the container `iCloud.de.chille.matterbee.test`) or
+`Application Support/Causabee-Test` and the container `iCloud.de.chille.causabee.test`) or
 *On* (the store mirrored into the owner's private CloudKit database,
-`iCloud.de.chille.matterbee`). What syncs: matters, to-dos, dates, people, notes, links, digests,
+`iCloud.de.chille.causabee`). What syncs: matters, to-dos, dates, people, notes, links, digests,
 the assistant's history. What stays on the Mac: full mail texts, files, the name list, the keys.
 The command line opens the same store without iCloud; its changes go up when the app next starts.
 
 ```sh
-swift run Matterbee --store matters.store                     # the store import wrote
-swift run Matterbee --store matters.store --open hausverwaltung
+swift run Causabee --store matters.store                     # the store import wrote
+swift run Causabee --store matters.store --open hausverwaltung
 ```
 
 Two surfaces, as in the wireframes (C1–C4). The **assistant** lists every matter that has
@@ -282,7 +282,7 @@ done, it comes back and says "jetzt dran".
 
 **Links.** A Google Doc, a sheet, any page: "+ Link" in a matter (a link just copied in the
 browser is filled in), a drag from the browser onto the matter, or the task editor. A link can go
-with one task, and shows on it as a chip. Matterbee never opens a link itself — a private doc
+with one task, and shows on it as a chip. Causabee never opens a link itself — a private doc
 shows it only a login — so the kind comes from the address and the name is yours. The assistant
 hears the name and the kind, never the address: whoever has the address of a shared doc may open it.
 An address typed into the assistant is sent as `[Link 1]`, and "Link speichern?" keeps it.
@@ -329,7 +329,7 @@ sidebar makes a matter from nothing but a name; "Neue Sache: …" in the assista
 as a card, with the first to-dos beside it.
 
 **Drafts.** Asked for a message, the assistant writes it as a card to edit, and "In Mail
-öffnen" opens Mail with it — the address taken from that person's mail on this Mac. Matterbee
+öffnen" opens Mail with it — the address taken from that person's mail on this Mac. Causabee
 never sends; that button is the owner's. A name typed a letter off ("Geor") is read as the one
 person it almost is, on the device, and the thread says so.
 

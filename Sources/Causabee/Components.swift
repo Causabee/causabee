@@ -149,7 +149,7 @@ enum WindowMetrics {
 
 /// The window without the Mac's bar showing: an empty toolbar of its own makes the title bar 52 high,
 /// and AppKit itself then sets the three buttons in its middle, as far in from the left as from the
-/// top. Nothing of the toolbar is seen; Matterbee draws everything under it.
+/// top. Nothing of the toolbar is seen; Causabee draws everything under it.
 struct WindowChrome: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView { Setter() }
     func updateNSView(_ view: NSView, context: Context) {}
@@ -161,7 +161,7 @@ struct WindowChrome: NSViewRepresentable {
             window.titleVisibility = .hidden
             window.titlebarAppearsTransparent = true
             if window.toolbar == nil {
-                let toolbar = NSToolbar(identifier: "matterbee.window")
+                let toolbar = NSToolbar(identifier: "causabee.window")
                 window.toolbar = toolbar
             }
             window.toolbarStyle = .unified
@@ -169,7 +169,7 @@ struct WindowChrome: NSViewRepresentable {
     }
 }
 
-/// The Mac's sidebar material, under Matterbee's own sidebar.
+/// The Mac's sidebar material, under Causabee's own sidebar.
 struct SidebarMaterial: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()

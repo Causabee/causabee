@@ -117,11 +117,11 @@ final class PhoneMailCheck {
         let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
         door.alsoKnown = Set(entries.map(\.messageID))
         door.setAside = Self.setAside
-        // A Mac that sorted mail before shares what it sorted when the new Matterbee starts there.
+        // A Mac that sorted mail before shares what it sorted when the new Causabee starts there.
         // Until it has, every mail it answered would look new here — read again, and offered to
         // be sent again.
         if door.earlier.isEmpty, entries.contains(where: { $0.source.kind == .mail }) {
-            return (nil, "Your Mac has not shared what it sorted yet. Open Matterbee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again.")
+            return (nil, "Your Mac has not shared what it sorted yet. Open Causabee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again.")
         }
         return (door, nil)
     }
@@ -133,7 +133,7 @@ final class PhoneMailCheck {
         }
     }
 
-    /// Checks by itself when Matterbee opens or comes back to the front — not more than every two
+    /// Checks by itself when Causabee opens or comes back to the front — not more than every two
     /// minutes — and only says something when there is new mail. Reading is free; nothing is sent.
     func checkQuietly(context: ModelContext) {
         guard isQuiet, !checking, lastChecked.map({ Date().timeIntervalSince($0) > 120 }) ?? true else { return }
@@ -247,7 +247,7 @@ final class PhoneMailCheck {
             return
         }
         state = .sending("Sorting \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
-        // Paid for once: switching away from Matterbee meanwhile does not stop it halfway.
+        // Paid for once: switching away from Causabee meanwhile does not stop it halfway.
         let background = UIApplication.shared.beginBackgroundTask(withName: "Sorting mail")
         Task {
             defer { UIApplication.shared.endBackgroundTask(background) }
@@ -362,7 +362,7 @@ struct PhoneMailCheckView: View {
             }
             .buttonStyle(.plain)
             // The same words in the demo: its list says it is the demo, once opened.
-            Text("Checked when you opened Matterbee")
+            Text("Checked when you opened Causabee")
                 .font(.caption).foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)

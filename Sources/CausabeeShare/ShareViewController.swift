@@ -2,8 +2,8 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// Matterbee in the share sheet: a screenshot, a photo or a PDF shared from any app goes into the
-/// matter chosen here — or Matterbee decides — and waits until Matterbee opens, where it comes up
+/// Causabee in the share sheet: a screenshot, a photo or a PDF shared from any app goes into the
+/// matter chosen here — or Causabee decides — and waits until Causabee opens, where it comes up
 /// scanned in that matter's assistant. Nothing is read or sent here (Figma "iOS/ShareSheet").
 final class ShareViewController: UIViewController {
     override func viewDidLoad() {
@@ -40,7 +40,7 @@ final class ShareModel {
     var pieces: [Piece] = []
     var state: State = .loading
     let choices = ShareInbox.choices()
-    /// The matter chosen; none: Matterbee decides.
+    /// The matter chosen; none: Causabee decides.
     var chosen: String?
 
     init(context: NSExtensionContext?) { self.context = context }
@@ -51,7 +51,7 @@ final class ShareModel {
             for provider in providers {
                 if let piece = await Self.piece(from: provider) { pieces.append(piece) }
             }
-            state = pieces.isEmpty ? .failed("Matterbee takes pictures and PDFs.") : .choosing
+            state = pieces.isEmpty ? .failed("Causabee takes pictures and PDFs.") : .choosing
         }
     }
 
@@ -143,7 +143,7 @@ struct ShareView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("INTO").font(.caption).foregroundStyle(.secondary).kerning(0.5)
                         VStack(spacing: 0) {
-                            row(key: nil, title: "Matterbee decides", sub: "it suggests the matter when you sort it in", bee: true)
+                            row(key: nil, title: "Causabee decides", sub: "it suggests the matter when you sort it in", bee: true)
                             ForEach(model.choices) { choice in
                                 Divider().padding(.leading, 50)
                                 row(key: choice.key, title: choice.name,
@@ -152,7 +152,7 @@ struct ShareView: View {
                         }
                         .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
-                        Text(model.choices.isEmpty ? "Open Matterbee once, and your matters are here to choose."
+                        Text(model.choices.isEmpty ? "Open Causabee once, and your matters are here to choose."
                                                    : "Your open matters, the latest first.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
@@ -160,7 +160,7 @@ struct ShareView: View {
                 .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 24)
             }
             .background(Theme.canvas)
-            .navigationTitle("Matterbee")
+            .navigationTitle("Causabee")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { model.cancel() } }
@@ -188,7 +188,7 @@ struct ShareView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(summary).fontWeight(.medium)
-                Text("Scanned on this iPhone. Nothing is sent until you tap “Sort in” in Matterbee — about 4 cents.")
+                Text("Scanned on this iPhone. Nothing is sent until you tap “Sort in” in Causabee — about 4 cents.")
                     .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -226,8 +226,8 @@ struct ShareView: View {
     private func added(_ name: String) -> some View {
         VStack(spacing: 10) {
             BeeMark(size: 28, livesNowAndThen: false).tight().foregroundStyle(Theme.beeMark)
-            Text(name.isEmpty ? "In Matterbee" : "In “\(name)”").font(.headline).multilineTextAlignment(.center)
-            Text("Open Matterbee to see what it says and sort it in.").font(.subheadline).foregroundStyle(.secondary)
+            Text(name.isEmpty ? "In Causabee" : "In “\(name)”").font(.headline).multilineTextAlignment(.center)
+            Text("Open Causabee to see what it says and sort it in.").font(.subheadline).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .padding(24)

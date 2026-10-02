@@ -15,7 +15,7 @@ struct MirrorTests {
         #expect(!merge.pushed && !merge.pulled && merge.local == local && merge.remote == remote)
     }
 
-    @Test("Ticked off in Reminders: done in Matterbee, and Matterbee's wording stays")
+    @Test("Ticked off in Reminders: done in Causabee, and Causabee's wording stays")
     func tickedThere() {
         let start = Mirror.merge(local: local, remote: remote, stamp: nil).stamp
         let merge = Mirror.merge(local: local, remote: ["Hotel buchen", "2026-10-01", "", "done"], stamp: start)
@@ -23,7 +23,7 @@ struct MirrorTests {
         #expect(merge.local == ["Hotel in Lyon buchen", "2026-10-01", "", "done"])
     }
 
-    @Test("Moved in Matterbee: the reminder gets the new day, and keeps its own wording")
+    @Test("Moved in Causabee: the reminder gets the new day, and keeps its own wording")
     func movedHere() {
         let start = Mirror.merge(local: local, remote: remote, stamp: nil).stamp
         let merge = Mirror.merge(local: ["Hotel in Lyon buchen", "2026-10-03", "09:00", ""], remote: remote, stamp: start)

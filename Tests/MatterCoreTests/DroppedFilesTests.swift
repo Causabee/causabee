@@ -44,7 +44,7 @@ struct DroppedFilesTests {
         #expect(document.readAt != nil)
     }
 
-    @Test("One taken in before files were kept is added when Matterbee starts, and only once")
+    @Test("One taken in before files were kept is added when Causabee starts, and only once")
     func takenInBefore() throws {
         let file = try scan()
         let context = ModelContext(try MatterSchema.container(at: nil))
