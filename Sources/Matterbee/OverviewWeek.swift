@@ -43,31 +43,30 @@ struct OverviewWeek: View {
     private enum Item {
         case overdue([Todo])
         case thing(DayThing)
+        case nothing(String)
     }
 
-    @ViewBuilder
     private func dayGrid(_ day: String, today: String, isShown: Bool) -> some View {
         let things = Week.things(on: day, in: matters)
         let late = day == today ? overdue : []
-        if things.isEmpty && late.isEmpty {
-            nothing(after: day, isToday: day == today)
-        } else {
-            let items = (late.isEmpty ? [] : [Item.overdue(late)]) + things.map(Item.thing)
-            // As many columns as fit at 260 points; in a row, every tile as high as the highest.
-            let columns = max(1, Int((width + 8) / 268))
-            let rows = stride(from: 0, to: items.count, by: columns).map { Array(items[$0..<min($0 + columns, items.count)]) }
-            Grid(alignment: .topLeading, horizontalSpacing: 8, verticalSpacing: 8) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                    GridRow {
-                        ForEach(0..<columns, id: \.self) { index in
-                            if index < row.count {
-                                switch row[index] {
-                                case .overdue(let late): overdueTile(late, isShown: isShown)
-                                case .thing(let thing): tile(thing)
-                                }
-                            } else {
-                                Color.clear.frame(height: 0)
+        // A day without anything is one tile too, a column wide, saying what comes next.
+        let items = things.isEmpty && late.isEmpty ? [Item.nothing(day)]
+            : (late.isEmpty ? [] : [Item.overdue(late)]) + things.map(Item.thing)
+        // As many columns as fit at 260 points; in a row, every tile as high as the highest.
+        let columns = max(1, Int((width + 8) / 268))
+        let rows = stride(from: 0, to: items.count, by: columns).map { Array(items[$0..<min($0 + columns, items.count)]) }
+        return Grid(alignment: .topLeading, horizontalSpacing: 8, verticalSpacing: 8) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                GridRow {
+                    ForEach(0..<columns, id: \.self) { index in
+                        if index < row.count {
+                            switch row[index] {
+                            case .overdue(let late): overdueTile(late, isShown: isShown)
+                            case .thing(let thing): tile(thing)
+                            case .nothing(let day): nothing(after: day, isToday: day == today)
                             }
+                        } else {
+                            Color.clear.frame(height: 0)
                         }
                     }
                 }
@@ -175,22 +174,26 @@ struct OverviewWeek: View {
 
     /// A day without anything says so, and what comes next — a click is never a dead end.
     private func nothing(after day: String, isToday: Bool) -> some View {
-        HStack(spacing: 6) {
-            Text(isToday ? "Nothing today." : "Nothing on \(Self.weekdayWide.string(from: MatterStatus.date(of: day) ?? Date())).")
-                .foregroundStyle(.secondary)
-            if let next = Week.next(after: day, in: matters) {
-                Button { navigation.open(next.thing.matter, showing: next.thing.todo?.persistentModelID) } label: {
+        let next = Week.next(after: day, in: matters)
+        return Button {
+            if let next { navigation.open(next.thing.matter, showing: next.thing.todo?.persistentModelID) }
+        } label: {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(isToday ? "Nothing today." : "Nothing on \(Self.weekdayWide.string(from: MatterStatus.date(of: day) ?? Date())).")
+                if let next {
                     Text("Next: \(Self.heading(next.day)) — \((next.thing.time.map { "\($0) · " } ?? "") + next.thing.what) · \(next.thing.matter.name)")
-                        .foregroundStyle(.secondary).lineLimit(1)
+                        .font(.caption).lineLimit(2)
                 }
-                .buttonStyle(.plain)
             }
-            Spacer(minLength: 0)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.leading)
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(Theme.box, in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
         }
-        .font(.callout)
-        .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line))
+        .buttonStyle(.plain)
+        .disabled(next == nil)
     }
 
     /// "Fri, Oct 2"
