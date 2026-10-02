@@ -55,6 +55,9 @@ enum Theme {
     static let titleFont = Font.custom("Source Serif 4", size: 26, relativeTo: .largeTitle)
     /// A matter's name on its overview card: the same face, the size of a title (Figma "Title 1 Serif").
     static let cardTitleFont = Font.custom("Source Serif 4", size: 22, relativeTo: .title)
+    /// A matter's name on its one line in the overview: the cards' serif, smaller — so a matter
+    /// never looks like one of its tasks.
+    static let rowTitleFont = Font.custom("Source Serif 4", size: 17, relativeTo: .headline)
 
     /// The serif ships with the app; made known to it once, at start.
     static func registerFonts() {
@@ -122,6 +125,20 @@ enum Dates {
     static func short(_ day: String) -> String { parser.date(from: day).map(short) ?? day }
     static func short(_ date: Date) -> String {
         Calendar.current.isDate(date, equalTo: Date(), toGranularity: .year) ? english.string(from: date) : withYear.string(from: date)
+    }
+}
+
+/// The overview's first line, the same on the Mac and the iPhone: how many matters are going on,
+/// and the task overdue the longest by name — the one line that says where to start.
+enum OverviewSummary {
+    static func text(_ going: [Matter]) -> String {
+        var text = going.count == 1 ? "One matter is going on." : "\(going.count) matters are going on."
+        let overdue = going.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "", $0.text) < ($1.due ?? "", $1.text) }
+        if let first = overdue.first {
+            text += " Overdue since \(first.due.map(Dates.short) ?? ""): “\(first.text)”"
+            text += overdue.count == 1 ? "." : overdue.count == 2 ? ", and 1 more." : ", and \(overdue.count - 1) more."
+        }
+        return text
     }
 }
 

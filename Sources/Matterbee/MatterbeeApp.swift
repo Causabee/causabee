@@ -61,6 +61,9 @@ struct MatterbeeApp: App {
         if let folder = DesignRender.folder, case .success(let container) = opened {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { DesignRender.editor(container, to: folder) }
         }
+        if let folder = DesignRender.overviewFolder, case .success(let container) = opened {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { DesignRender.overview(container, to: folder) }
+        }
     }
 
     var body: some Scene {
@@ -158,6 +161,9 @@ final class Navigation {
         }
     }
     var pinned: Pinned?
+    /// A matter to pin to the overview's top while as many as fit are pinned already: which one
+    /// it replaces is asked.
+    var pinning: Matter?
     /// The sidebar folded away: the assistant's bar then starts right of the window's buttons.
     var sidebarHidden = false
     /// Reading: small actions and the AI's explanations put away. Kept for the next start.
@@ -456,6 +462,7 @@ struct RootView: View {
         MatterRow(matter: matter)
             .sidebarRow(selected: navigation.place == .matter(matter.persistentModelID)) { navigation.open(matter) }
             .contextMenu {
+                PinMenuItem(matter: matter, all: sorted)
                 Button("Rename …") { newName = matter.name; renaming = matter }
                 Menu("Merge with …") {
                     ForEach(sorted.filter { $0 !== matter }) { other in
@@ -473,8 +480,14 @@ struct RootView: View {
                 let overview = navigation.place == .assistant || navigation.place == nil
                 Text("Overview").fontWeight(.semibold)
                     .sidebarRow(selected: overview) { navigation.place = .assistant }
+                let pinned = Pins.pinned(sorted)
+                if !pinned.isEmpty {
+                    Section("Pinned") {
+                        ForEach(pinned) { matter in sidebarRow(matter, sorted) }
+                    }
+                }
                 Section("Matters") {
-                    ForEach(sorted.filter { !$0.isClosed }) { matter in sidebarRow(matter, sorted) }
+                    ForEach(sorted.filter { !$0.isClosed && !$0.isPinned }) { matter in sidebarRow(matter, sorted) }
                 }
                 let closed = sorted.filter(\.isClosed)
                 if !closed.isEmpty {
@@ -588,6 +601,7 @@ struct RootView: View {
         .sheet(isPresented: $showsSetup) {
             SetupAssistant { mailCheck.look(store: navigation.store, context: context) }
         }
+        .modifier(PinQuestion(matters: matters, navigation: navigation))
         .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
             Button("Merge") {
                 if let (from, into) = merging {

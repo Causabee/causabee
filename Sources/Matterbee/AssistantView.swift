@@ -260,7 +260,8 @@ struct IntakeNote: View {
     }
 }
 
-/// The overview: every matter with something going on, as cards, each a door into its status.
+/// The overview: the week across all matters, the pinned matters as cards, and every other matter
+/// going on as one line, each a door into its status (Figma "Overview with many matters", 3 + 4).
 /// Worked out on the device; nothing is sent.
 struct OverviewView: View {
     let matters: [Matter]
@@ -270,6 +271,8 @@ struct OverviewView: View {
     @FocusState private var searching: Bool
     /// The row the arrow keys or the mouse are on; Return opens it. The last row is "Start new".
     @State private var picked = 0
+    /// How wide the page is: how many pinned matters fit side by side.
+    @State private var width: CGFloat = 0
 
     private var ordered: [Matter] { activeMatters(matters) }
 
@@ -354,12 +357,27 @@ struct OverviewView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
-                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity)
-                Text(summary).font(.title3)
-                searchField
-                ForEach(ordered) { matter in
-                    MatterCard(matter: matter, open: { navigation.open(matter) }, openTodo: { navigation.open(matter, showing: $0) })
+                // The day, where things stand and the search: one block in the middle, as wide as a
+                // search needs — not the page — with room around it.
+                VStack(spacing: 10) {
+                    Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text(OverviewSummary.text(ordered)).font(.title3).multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                    searchField.padding(.top, 4)
+                }
+                .frame(maxWidth: 600)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 12).padding(.bottom, 18)
+                if !matters.isEmpty { OverviewWeek(matters: matters) }
+                let pinned = Pins.pinned(matters)
+                if !pinned.isEmpty { pinnedCards(pinned).padding(.top, 6) }
+                let rest = ordered.filter { !$0.isPinned }
+                if !rest.isEmpty {
+                    SectionHeader(title: pinned.isEmpty ? "Matters" : "Everything else",
+                                  detail: pinned.isEmpty ? "right-click one to pin it" : rest.count == 1 ? "1 matter" : "\(rest.count) matters")
+                        .padding(.top, 6)
+                    OverviewRows(matters: rest, all: matters)
                 }
                 // A closed matter is out of the overview, unless mail came for it after it was closed.
                 ForEach(matters.filter { $0.isClosed && !MatterStatus($0).mailsSinceClosed.isEmpty }) { matter in
@@ -376,25 +394,35 @@ struct OverviewView: View {
                     .onTapGesture { navigation.open(matter) }
                     .help("Open the matter")
                 }
-                let quiet = matters.filter { !$0.isClosed }.count - ordered.count
+                let quiet = matters.filter { !$0.isClosed && !$0.isPinned }.count - rest.count
                 if quiet > 0 {
                     Text("\(quiet) \(quiet == 1 ? "matter is" : "matters are") quiet: nothing open, no date.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
             .padding(24)
-            .frame(maxWidth: 760, alignment: .leading)
+            // The whole width, up to where lines would get too long to follow.
+            .frame(maxWidth: 1400, alignment: .leading)
             .frame(maxWidth: .infinity)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         }
         .navigationTitle("Overview")
     }
 
-    private var summary: String {
-        let open = ordered.count
-        let overdue = ordered.filter { !MatterStatus($0).overdue.isEmpty }.count
-        var text = open == 1 ? "One matter is going on." : "\(open) matters are going on."
-        if overdue > 0 { text += overdue == 1 ? " One has something overdue." : " \(overdue) have something overdue." }
-        return text
+    /// The pinned matters under the day, side by side — as many in a row as are pinned, up to
+    /// three, and fewer where the page is too narrow for them.
+    private func pinnedCards(_ pinned: [Matter]) -> some View {
+        let fit = width >= 1100 ? 3 : width >= 720 ? 2 : 1
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: max(1, min(pinned.count, fit)))
+        return VStack(alignment: .leading, spacing: 10) {
+            SectionHeader(title: "Pinned", detail: "stays on top")
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+                ForEach(pinned) { matter in
+                    MatterCard(matter: matter, open: { navigation.open(matter) }, openTodo: { navigation.open(matter, showing: $0) })
+                        .contextMenu { PinMenuItem(matter: matter, all: matters) }
+                }
+            }
+        }
     }
 }
 

@@ -61,7 +61,7 @@ struct OverviewScreen: View {
                     Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))).uppercased())
                         .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Text("Overview").font(Theme.phoneTitleFont)
-                    Text(summary).font(.body).fixedSize(horizontal: false, vertical: true)
+                    Text(OverviewSummary.text(ordered)).font(.body).fixedSize(horizontal: false, vertical: true)
                 }
                 // In the demo, three made-up mails come in: the whole round, nothing read or sent.
                 PhoneMailCheckView()
@@ -133,19 +133,6 @@ struct OverviewScreen: View {
         // Once, at the first start: what Matterbee is and what it needs.
         .sheet(isPresented: $showsWelcome) { WelcomeSheet() }
         .onAppear { if !introSeen, !store.isDemo { showsWelcome = true } }
-    }
-
-    /// How many are going on, and the task overdue the longest by name — the one line that says
-    /// where to start.
-    private var summary: String {
-        let open = ordered.count
-        var text = open == 1 ? "One matter is going on." : "\(open) matters are going on."
-        let overdue = ordered.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "", $0.text) < ($1.due ?? "", $1.text) }
-        if let first = overdue.first {
-            text += " Overdue since \(first.due.map(Dates.short) ?? ""): “\(first.text)”"
-            text += overdue.count == 1 ? "." : overdue.count == 2 ? ", and 1 more." : ", and \(overdue.count - 1) more."
-        }
-        return text
     }
 
     /// On top of the cards: a matter found by its name, a task or a mail.

@@ -80,4 +80,56 @@ enum DesignRender {
         }
         exit(0)
     }
+
+    /// `--demo --render-overview <folder>`: the overview drawn off screen, light and dark, as it is
+    /// and with "Care for Mum" pinned — to check it against Figma's "Overview with many matters".
+    static var overviewFolder: URL? {
+        let arguments = CommandLine.arguments
+        guard DemoData.isRequested, let at = arguments.firstIndex(of: "--render-overview"), at + 1 < arguments.count else { return nil }
+        return URL(fileURLWithPath: arguments[at + 1], isDirectory: true)
+    }
+
+    static func overview(_ container: ModelContainer, to folder: URL) {
+        let matters = (try? container.mainContext.fetch(FetchDescriptor<Matter>())) ?? []
+        let care = matters.first { $0.name.hasPrefix("Care for Mum") }
+        let flat = matters.first { $0.name.hasPrefix("Buying the flat") }
+        let fair = matters.first { $0.name.hasPrefix("Science fair") }
+        // Wide, with the pinned matters beside the week, light and dark; and a narrower window.
+        let shots: [(name: String, pinned: Int, size: CGSize, appearance: NSAppearance.Name)] = [
+            ("wide-pinned-light", 1, CGSize(width: 1400, height: 1000), .aqua),
+            ("wide-pinned-dark", 1, CGSize(width: 1400, height: 1000), .darkAqua),
+            ("wide-two-pinned-light", 2, CGSize(width: 1400, height: 1100), .aqua),
+            ("narrow-two-pinned-light", 2, CGSize(width: 900, height: 1500), .aqua),
+            ("wide-three-pinned-light", 3, CGSize(width: 1400, height: 1400), .aqua),
+            ("narrow-three-pinned-light", 3, CGSize(width: 900, height: 1900), .aqua),
+            ("narrow-plain-light", 0, CGSize(width: 900, height: 1200), .aqua),
+        ]
+        for shot in shots {
+            // In memory only: the demo store is not saved with the pins.
+            care?.pinnedAt = shot.pinned >= 1 ? Date(timeIntervalSinceNow: -60) : nil
+            flat?.pinnedAt = shot.pinned >= 2 ? Date(timeIntervalSinceNow: -30) : nil
+            fair?.pinnedAt = shot.pinned >= 3 ? Date() : nil
+            let view = OverviewView(matters: matters, search: .constant(""), start: { _ in })
+                .environment(Navigation())
+                .modelContainer(container)
+                .frame(width: shot.size.width, height: shot.size.height)
+                .background(Theme.canvas)
+            let host = NSHostingView(rootView: view)
+            host.appearance = NSAppearance(named: shot.appearance)
+            host.frame = NSRect(origin: .zero, size: shot.size)
+            let window = NSWindow(contentRect: host.frame, styleMask: .borderless, backing: .buffered, defer: false)
+            window.contentView = host
+            // The page measures its width, then lays out again for it.
+            host.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+            host.layoutSubtreeIfNeeded()
+            guard let picture = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
+            host.cacheDisplay(in: host.bounds, to: picture)
+            try? picture.representation(using: .png, properties: [:])?.write(to: folder.appendingPathComponent("overview-\(shot.name).png"))
+        }
+        care?.pinnedAt = nil
+        flat?.pinnedAt = nil
+        fair?.pinnedAt = nil
+        exit(0)
+    }
 }
