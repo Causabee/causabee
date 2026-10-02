@@ -82,6 +82,11 @@ struct MatterbeeApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowBackgroundDragBehavior(.enabled)
         .commands {
+            // One window of matters: ⌘N starts a matter, not a second window.
+            CommandGroup(replacing: .newItem) {
+                Button("New Matter …") { NotificationCenter.default.post(name: .newMatter, object: nil) }
+                    .keyboardShortcut("n", modifiers: .command)
+            }
             CommandGroup(after: .appSettings) {
                 Button("Set Up Matterbee …") { NotificationCenter.default.post(name: .showSetup, object: nil) }
                 Button(DemoData.isRequested ? "Leave the Demo" : "Try the Demo") { DemoData.restart(demo: !DemoData.isRequested) }
@@ -411,6 +416,9 @@ struct RootView: View {
     @State private var showsSetup = false
     @AppStorage(SetupAssistant.laterKey) private var setupLater = false
     @State private var newName = ""
+    /// File → New Matter …: its name asked for, then the matter opened.
+    @State private var startsMatter = false
+    @State private var newMatterName = ""
     /// The matter to fold in, and the one it goes into.
     @State private var merging: (Matter, Matter)?
     /// The sidebar's search: a matter found by its name, a task or a mail — on the Mac.
@@ -594,6 +602,7 @@ struct RootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .showIntro)) { _ in showsIntro = true }
         .onReceive(NotificationCenter.default.publisher(for: .showSetup)) { _ in showsSetup = true }
+        .onReceive(NotificationCenter.default.publisher(for: .newMatter)) { _ in newMatterName = ""; startsMatter = true }
         // After the introduction, the setup — when something Matterbee needs is still missing.
         .sheet(isPresented: $showsIntro, onDismiss: {
             if SetupState.isFresh || (!setupLater && !DemoData.isRequested && SetupAssistant.isMissingSomething) { showsSetup = true }
@@ -614,6 +623,16 @@ struct RootView: View {
             Button("Cancel", role: .cancel) { merging = nil }
         } message: {
             Text("All mails, tasks, appointments and people come along. The old name stays as an alias, so new mail still arrives. You cannot split it again later.")
+        }
+        .alert("New matter", isPresented: $startsMatter) {
+            TextField("Name", text: $newMatterName)
+            Button("Create") {
+                let name = newMatterName.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !name.isEmpty { start(name) }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Mail, files and tasks can be put into it afterwards.")
         }
         .alert("Rename matter", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
             TextField("Name", text: $newName)
@@ -757,4 +776,6 @@ extension Notification.Name {
     static let showIntro = Notification.Name("matterbee.showIntro")
     /// Matterbee → Set Up Matterbee …
     static let showSetup = Notification.Name("matterbee.showSetup")
+    /// File → New Matter …
+    static let newMatter = Notification.Name("matterbee.newMatter")
 }
