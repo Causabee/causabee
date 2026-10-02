@@ -22,7 +22,7 @@ The app and the disk image are signed with a Developer ID and notarized by Apple
 
 ## Privacy
 
-Your mail and files stay on your Mac. Before anything goes to the AI, names, addresses and numbers are replaced — and only when you click. Causabee has no server, no account and no analytics. [Privacy policy](https://causabee.github.io/causabee/privacy.html)
+Your mail and files stay on your Mac. Before anything goes to the AI, names, addresses and numbers are replaced — and only when you click. Causabee has no server, no account and no analytics. [Privacy policy](https://causabee.app/privacy.html)
 
 ## iCloud
 

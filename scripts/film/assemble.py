@@ -72,7 +72,7 @@ clip("s12", "s12-dates", RIGHT, 6, "Add a date to Calendar with one click. Chang
 clip("s13", "s13-files-people", RIGHT, 5, "Files, shared documents and everyone involved, each with their role.")
 clip("s14", "s14-ask", THREAD, 10, "Ask in your own words. The answer shows its sources, and a good suggestion becomes a task in one click.")
 clip("s15", "s15-overview-after", CARDS_AFTER, 7, "The next step is always clear. On the Mac, and on your iPhone.", start=1.5)
-card("s16", "Causabee", "Free and open source · for Mac and iPhone · causabee.github.io/causabee", 4, bg=yellow, ink="0x1c1c1c", soft="0x1c1c1c")
+card("s16", "Causabee", "Free and open source · for Mac and iPhone · causabee.app", 4, bg=yellow, ink="0x1c1c1c", soft="0x1c1c1c")
 
 order = ["s01", "s02", "s03", "s04", "s05", "s06", "s07a", "s07b", "s08", "s09", "s10", "s11", "s12", "s13", "s14", "s15", "s16"]
 (OUT / "list.txt").write_text("".join(f"file '{OUT / (n + '.mp4')}'\n" for n in order))

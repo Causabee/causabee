@@ -7,9 +7,9 @@ A Mac app that turns scattered mail, documents and screenshots into clear matter
 what comes next, who does what, and by when.</p>
 
 <p align="center">
-<a href="https://causabee.github.io/causabee/">Website</a> ·
+<a href="https://causabee.app/">Website</a> ·
 <a href="https://github.com/causabee/causabee/releases">Download the beta</a> ·
-<a href="https://causabee.github.io/causabee/privacy.html">Privacy</a>
+<a href="https://causabee.app/privacy.html">Privacy</a>
 </p>
 
 ![The Causabee overview: nine matters, each with its next step and what is overdue](site/assets/img/overview-1800.webp)
@@ -35,7 +35,7 @@ screenshot you meant to keep. Causabee puts the pieces together.
 - You pick Claude, OpenAI or Mistral for each job, with your own API key in the Keychain. Every
   answer shows what it cost.
 - No server, no account, no analytics. The whole policy is on the
-  [website](https://causabee.github.io/causabee/privacy.html).
+  [website](https://causabee.app/privacy.html).
 
 ## Try it
 
