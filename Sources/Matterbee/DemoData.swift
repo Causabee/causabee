@@ -34,7 +34,18 @@ enum DemoData {
     }
     #endif
 
+    /// Counts up whenever the demo's words or matters change: a demo store filled with an older
+    /// version is emptied and filled again — with today's dates too. Only ever the demo's own store.
+    static let contentVersion = 2
+    private static let seededKey = "demo.contentVersion"
+
     static func seed(_ context: ModelContext) {
+        if UserDefaults.standard.integer(forKey: seededKey) != contentVersion {
+            func empty<Model: PersistentModel>(_ model: Model.Type) { try? context.delete(model: model) }
+            for model in MatterSchema.models { empty(model) }
+            try? context.save()
+            UserDefaults.standard.set(contentVersion, forKey: seededKey)
+        }
         guard ((try? context.fetchCount(FetchDescriptor<Matter>())) ?? 0) == 0 else { return }
         context.insert(Profile(names: ["Mara Voss", "mara.voss@mail.example"]))
         var book: [String: Party] = [:]
@@ -351,24 +362,24 @@ enum DemoData {
             "Nice start. The text is too long: three short sentences under each picture. Ms. Okafor wants to see the new layout before printing.",
             files: [("Poster-draft-v2.png", "image/png", 1_420_000)])
 
-        c.todo("sign", "Sign the topic approval form", .me, from: form, quote: "Parents sign the form", done: -31)
-        c.todo("safety", "Return the signed safety form for the experiment", .me, due: -1, from: approved,
+        c.todo("sign", "Sign the topic approval", .me, from: form, quote: "Parents sign the form", done: -31)
+        c.todo("safety", "Return the safety form", .me, due: -1, from: approved,
                quote: "bring a safety form for the test", note: "Noa has it in her school bag.")
-        c.todo("pickup", "Pick up the filter sand and tubing at Nordlicht Hardware", .me, due: 2, from: store,
+        c.todo("pickup", "Pick up filter sand and tubing", .me, due: 2, from: store,
                quote: "ready at the store", again: [(materials, "have to be bought")])
-        c.todo("summary", "Send the written summary to Ms. Okafor", .me, due: 5, from: reminder,
+        c.todo("summary", "Send the summary to Ms. Okafor", .me, due: 5, from: reminder,
                quote: "send the summary to Ms. Okafor a few days early", again: [(briefing, "due on 7 October")])
         c.todo("layout", "Approve the poster layout", .other, due: 4, from: feedback, quote: "wants to see the new layout before printing")
-        c.todo("print", "Print the poster (A1) at the copy shop", .me, due: 11, from: reminder,
+        c.todo("print", "Print the poster", .me, due: 11, from: reminder,
                quote: "only go to print after she has approved the layout")
         c.waits("print", for: "layout")
-        c.todo("build", "Build the model together on Saturday", .we, due: 3, time: "14:00", from: flu, quote: "build at Mara's place")
-        c.todo("bottles", "Deniz brings the bottles and coffee filters", .other, due: 3, from: chat, quote: "Deniz brings the bottles")
-        c.todo("stand", "Buy a folding stand for the poster", .me, due: 12, from: office, quote: "one table, 1 metre wide",
+        c.todo("build", "Build the model on Saturday", .we, due: 3, time: "14:00", from: flu, quote: "build at Mara's place")
+        c.todo("bottles", "Deniz brings bottles and filters", .other, due: 3, from: chat, quote: "Deniz brings the bottles")
+        c.todo("stand", "Buy a poster stand", .me, due: 12, from: office, quote: "one table, 1 metre wide",
                note: "It has to fit a 1 m table.")
-        c.todo("tables", "The fair tables are 1 m wide; power sockets only at the walls", .unknown, from: office,
+        c.todo("tables", "Tables 1 m wide, sockets at the walls", .unknown, from: office,
                quote: "Power sockets are only at the walls", info: true)
-        c.todo("judges", "Judges ask every group three questions: idea, test, what went wrong", .unknown, from: briefing,
+        c.todo("judges", "Judges ask three questions", .unknown, from: briefing,
                quote: "Judges ask every group three questions", info: true)
 
         c.appointment("Build afternoon at our place", 3, "14:00", at: "Home", from: flu, quote: "build at Mara's place")
@@ -378,10 +389,10 @@ enum DemoData {
         c.deadline("Poster to the copy shop", 12, from: reminder, quote: "only go to print after she has approved")
 
         c.decision("Rainwater filter, not the solar oven",
-                   why: "The materials cost under 20 euros and it can be tested live in front of the judges. The solar oven needs sun on the day.",
+                   why: "Under €20, and it can be tested live.",
                    -34, from: [chat, approved])
         c.decision("Build at our place, not at Elif's",
-                   why: "The test needs a garden tap and a lot of muddy water, and Deniz can only join for the afternoon.", -4, from: [flu])
+                   why: "The test needs a garden tap.", -4, from: [flu])
 
         c.party("Ms. Okafor", "Teacher, class 9b", mentions: 5, &book)
         c.party("Elif Demir", "Parent of Deniz, in the group", mentions: 3, &book)
@@ -391,10 +402,10 @@ enum DemoData {
         c.link("https://docs.google.com/document/d/demo-group-notes/edit", "Group notes")
         c.link("https://docs.google.com/spreadsheets/d/demo-materials/edit", "Materials list", todo: "pickup")
 
-        c.matter.notes = "Noa presents the test, Deniz the idea, Ida the poster. Noa is nervous about speaking: practise once on Sunday."
-        c.summarise("Noa's group is building a rainwater filter for the science fair on 16 October. The topic is approved and the materials are ready to collect. What is open is the written summary and the poster, which can only be printed after Ms. Okafor has approved the layout.",
-                    next: "Send the written summary to Ms. Okafor",
-                    why: "It is due on 7 October, and she wants to read it a few days early.", todo: "summary")
+        c.matter.notes = "Noa presents the test. Practise once on Sunday."
+        c.summarise("A rainwater filter for the fair on 16 October. Open: the summary, and the poster once Ms. Okafor approves it.",
+                    next: "Send the summary to Ms. Okafor",
+                    why: "Due on 7 October; she wants it early.", todo: "summary")
 
         c.talking = {
             c.cite("T1", "summary"); c.cite("T2", "layout"); c.cite("T3", "print"); c.cite("T4", "safety")
@@ -442,22 +453,22 @@ enum DemoData {
 
         c.todo("flights", "Book the flights", .me, from: flights, quote: "Three seats booked", done: -35)
         c.todo("stay", "Book the apartment", .me, from: stay, quote: "booking confirmed", done: -30)
-        c.todo("arrival", "Tell Marta our arrival time", .me, due: -1, from: host, quote: "Marta asks when the family arrives",
+        c.todo("arrival", "Tell Marta when we arrive", .me, due: -1, from: host, quote: "Marta asks when the family arrives",
                again: [(again, "asks again for the arrival time")])
-        c.todo("id", "Ask for express processing of Lena's ID card", .me, due: 9, time: "10:20", from: city,
+        c.todo("id", "Ask for express ID card for Lena", .me, due: 9, time: "10:20", from: city,
                quote: "Express processing has to be asked for at the appointment",
                note: "Take the old card, a photo and the birth certificate.")
-        c.todo("museum", "Pay for the Oceanário tickets", .me, due: 5, from: museum, quote: "Please pay by 5 October")
-        c.todo("insurance", "Take out the travel insurance", .me, due: 10, from: insurance, quote: "The offer is valid until 12 October")
-        c.todo("day", "Choose the Sintra day: Tuesday or Thursday", .we, due: 7, from: friend, quote: "dinner on Tuesday 20 October")
-        c.todo("train", "Book the Sintra train tickets", .me, due: 12, from: friend, quote: "Sintra")
+        c.todo("museum", "Pay for the Oceanário", .me, due: 5, from: museum, quote: "Please pay by 5 October")
+        c.todo("insurance", "Get travel insurance", .me, due: 10, from: insurance, quote: "The offer is valid until 12 October")
+        c.todo("day", "Choose the Sintra day", .we, due: 7, from: friend, quote: "dinner on Tuesday 20 October")
+        c.todo("train", "Book the Sintra train", .me, due: 12, from: friend, quote: "Sintra")
         c.waits("train", for: "day")
-        c.todo("address", "Tomás sends the address and door code for the dinner", .other, due: 14, from: friend,
+        c.todo("address", "Tomás sends the dinner address", .other, due: 14, from: friend,
                quote: "He will send the address and the door code")
-        c.todo("checkin", "Check in online for the flights", .me, due: 16, from: flights, quote: "Out: Saturday 17 October")
-        c.todo("bag", "Hand luggage only; a checked bag costs 35 euros each way", .unknown, from: flights,
+        c.todo("checkin", "Check in online", .me, due: 16, from: flights, quote: "Out: Saturday 17 October")
+        c.todo("bag", "Hand luggage only", .unknown, from: flights,
                quote: "a checked bag costs 35 euros each way", info: true)
-        c.todo("keybox", "Check-in is from 15:00; the key box code comes the day before", .unknown, from: stay,
+        c.todo("keybox", "Key box code comes the day before", .unknown, from: stay,
                quote: "key box code comes the day before", info: true)
 
         c.appointment("Citizens' office: Lena's ID card", 9, "10:20", at: "Citizens' Office Kessel", from: city, quote: "Friday 9 October at 10:20")
@@ -470,9 +481,9 @@ enum DemoData {
         c.deadline("Insurance offer expires", 12, from: insurance, quote: "valid until 12 October")
 
         c.decision("Apartment in Alfama, not a hotel",
-                   why: "Two bedrooms and a kitchen for the price of one hotel room, and Lena gets her own bed.", -31, from: [stay])
+                   why: "Two bedrooms for the price of one hotel room.", -31, from: [stay])
         c.decision("Hand luggage only",
-                   why: "A checked bag is 35 euros each way. A week fits into three small bags.", -34, from: [flights])
+                   why: "A checked bag costs €35 each way.", -34, from: [flights])
 
         c.party("Aerolusa", "Airline", mentions: 2, &book)
         c.party("Marta Sousa", "Host of the apartment", mentions: 3, &book)
@@ -484,10 +495,10 @@ enum DemoData {
         c.link("https://docs.google.com/spreadsheets/d/demo-days/edit", "Day plan Lisbon")
         c.link("https://www.casa-do-largo.example/tram-tips", "Tram tips from Marta")
 
-        c.matter.notes = "Lena wants to see the aquarium and eat pastéis de nata. Leave Thursday afternoon free."
-        c.summarise("Flights and apartment are booked for 17 to 24 October. Two things need care: Lena's ID card has expired and must be renewed at the appointment on 9 October, and the outbound flight moved to 09:05, which the host has asked about twice.",
-                    next: "Tell Marta our arrival time",
-                    why: "She asked twice and travels on Friday, and the new flight time is known now.", todo: "arrival")
+        c.matter.notes = "Keep Thursday afternoon free."
+        c.summarise("Booked for 17 to 24 October. Lena needs a new ID card, and Marta still waits for our arrival time.",
+                    next: "Tell Marta when we arrive",
+                    why: "She has asked twice.", todo: "arrival")
 
         c.talking = {
             c.cite("T1", "arrival"); c.cite("T2", "id"); c.cite("T3", "museum"); c.cite("T4", "train"); c.cite("T5", "day")
@@ -542,22 +553,22 @@ enum DemoData {
         c.mail(-39, "Mara Voss <mara.voss@mail.example>", "Re: Who does what this week?",
             "Mara can take Monday and Tuesday this week and will ask Uncle Karl about Thursday.")
 
-        c.todo("apply", "Apply for a care level at Healthbridge", .me, from: social, quote: "apply for a care level", done: -29)
-        c.todo("rollator", "Get the rollator prescription from Dr. Brandt", .me, from: discharge, quote: "A prescription for the rollator is ready", done: -38)
-        c.todo("bathseat", "Collect the bath seat prescription at Dr. Brandt's", .me, due: -2, from: seat,
+        c.todo("apply", "Apply for a care level", .me, from: social, quote: "apply for a care level", done: -29)
+        c.todo("rollator", "Get the rollator prescription", .me, from: discharge, quote: "A prescription for the rollator is ready", done: -38)
+        c.todo("bathseat", "Get the bath seat prescription", .me, due: -2, from: seat,
                quote: "can be collected at the practice")
-        c.todo("read", "Read the Sunrise contract together with Nina", .we, due: 1, from: contract, quote: "The contract for the visits is attached")
-        c.todo("sign", "Sign the Sunrise contract and send it back", .me, due: 2, from: contract, quote: "signed contract is back by 2 October")
+        c.todo("read", "Read the Sunrise contract with Nina", .we, due: 1, from: contract, quote: "The contract for the visits is attached")
+        c.todo("sign", "Sign the Sunrise contract", .me, due: 2, from: contract, quote: "signed contract is back by 2 October")
         c.waits("sign", for: "read")
-        c.todo("papers", "Put together the documents for the visit: medication list, doctor's report, hospital letter", .me, due: 5, from: papers,
+        c.todo("papers", "Gather the papers for the visit", .me, due: 5, from: papers,
                quote: "have ready: the current medication list", again: [(visit, "A family member should be there")])
-        c.todo("physio", "Move Tuesday's physio on 6 October to the afternoon", .me, due: 3, from: physio,
+        c.todo("physio", "Move Tuesday's physio", .me, due: 3, from: physio,
                quote: "Tuesdays and Fridays at 11:00", note: "The visit on the 6th starts at 10:00 and may run long.")
-        c.todo("karl", "Ask Uncle Karl if he can cover Monday mornings", .other, due: 3, from: split, quote: "Uncle Karl could help on Monday mornings")
-        c.todo("plan", "Agree the weekly plan: who is with Mum when", .we, due: 1, from: rota, quote: "Who does what this week?")
-        c.todo("decision", "The insurer decides within 25 working days of the application", .unknown, from: received,
+        c.todo("karl", "Ask Karl about Monday mornings", .other, due: 3, from: split, quote: "Uncle Karl could help on Monday mornings")
+        c.todo("plan", "Agree who is with Mum when", .we, due: 1, from: rota, quote: "Who does what this week?")
+        c.todo("decision", "Decision within 25 working days", .unknown, from: received,
                quote: "The insurer decides within 25 working days", info: true)
-        c.todo("budget", "Home care visits are paid in part once a care level is granted", .unknown, from: offer,
+        c.todo("budget", "A care level pays part of home care", .unknown, from: offer,
                quote: "covered in part once a care level is granted", info: true)
 
         c.appointment("Physio", 1, "11:00", at: "Bergmann Physio", from: physio, quote: "starting Friday 2 October")
@@ -567,10 +578,10 @@ enum DemoData {
         c.deadline("Care level: decision expected", 14, from: received, quote: "decides within 25 working days")
 
         c.decision("Sunrise Home Care, not the other two services",
-                   why: "They come at 08:00, when Mum needs help in the shower, and they are the only one with a free place from October.",
+                   why: "They come at 08:00 and have a place from October.",
                    -20, from: [offer])
         c.decision("Split the week: Mara Monday, Tuesday, Thursday; Nina Wednesday and the weekend",
-                   why: "Nina lives ten minutes away. Mara works from home at the start of the week.", -9, from: [rota, split])
+                   why: "Nina lives close; Mara works from home early in the week.", -9, from: [rota, split])
 
         c.party("Dr. Anselm Brandt", "Family doctor", mentions: 3, &book)
         c.party("Nina Voss", "Sister, shares the care", mentions: 3, &book)
@@ -582,10 +593,10 @@ enum DemoData {
         c.link("https://docs.google.com/spreadsheets/d/demo-rota/edit", "Care rota (shared with Nina)")
         c.link("https://docs.google.com/document/d/demo-medication/edit", "Medication list")
 
-        c.matter.notes = "Mum wants to keep her own morning routine: ask Sunrise to come at 08:00, not before. The spare key is with Mrs. Adler next door."
-        c.summarise("Mum is recovering at home after a fall. The care level application is in and the assessment visit is on 6 October. Sunrise Home Care starts on 7 October, but only if the signed contract is back by 2 October.",
+        c.matter.notes = "Not before 08:00. Spare key: Mrs. Adler next door."
+        c.summarise("Mum is home again. Assessment on 6 October; Sunrise starts on 7 October if the contract is back by 2 October.",
                     next: "Read and sign the Sunrise contract",
-                    why: "It has to be back by 2 October for the first visit on 7 October.", todo: "sign")
+                    why: "It has to be back by 2 October.", todo: "sign")
 
         c.talking = {
             c.cite("T1", "papers"); c.cite("T2", "physio"); c.cite("T3", "sign"); c.cite("T4", "bathseat")
@@ -630,19 +641,19 @@ enum DemoData {
             "Contents and liability insurance for the flat, 19 euros a month. Cover can start on the day of handover.")
 
         c.todo("offer", "Make an offer", .me, from: offer, quote: "The sellers accept", done: -32)
-        c.todo("survey", "Book the building expert for a survey", .me, from: viewing, quote: "second viewing with a building expert", done: -18)
-        c.todo("slip", "Send the last salary slip to Northbank", .me, due: 1, from: commit, quote: "once the last salary slip is sent",
+        c.todo("survey", "Book a building survey", .me, from: viewing, quote: "second viewing with a building expert", done: -18)
+        c.todo("slip", "Send the salary slip to Northbank", .me, due: 1, from: commit, quote: "once the last salary slip is sent",
                again: [(bankMail, "three salary slips each")])
-        c.todo("read", "Read the purchase contract and write down questions", .me, due: 6, from: draft, quote: "read it and send questions")
-        c.todo("questions", "Send the questions on the contract to the notary", .me, due: 8, from: draft, quote: "send questions before the appointment")
+        c.todo("read", "Read the contract, note questions", .me, due: 6, from: draft, quote: "read it and send questions")
+        c.todo("questions", "Send questions to the notary", .me, due: 8, from: draft, quote: "send questions before the appointment")
         c.waits("questions", for: "read")
-        c.todo("bankDocs", "Get the tax notices of the last two years from the tax office portal", .me, due: -3, from: bankMail,
+        c.todo("bankDocs", "Get the last two tax notices", .me, due: -3, from: bankMail,
                quote: "the tax notices of the last two years")
-        c.todo("insurance", "Accept the building insurance offer", .me, due: 11, from: insure, quote: "Cover can start on the day of handover")
-        c.todo("sellers", "Sellers to confirm the handover date", .other, due: 9, from: offer, quote: "written financing commitment")
-        c.todo("price", "Agreed price 372,000 euros; bank pays 300,000; notary and tax about 8 percent on top", .unknown, from: offer,
+        c.todo("insurance", "Accept the building insurance", .me, due: 11, from: insure, quote: "Cover can start on the day of handover")
+        c.todo("sellers", "Sellers confirm the handover date", .other, due: 9, from: offer, quote: "written financing commitment")
+        c.todo("price", "Price €372,000, loan €300,000", .unknown, from: offer,
                quote: "accept 372,000 euros", info: true)
-        c.todo("windows", "Bedroom windows to be resealed within two years, about 900 euros", .unknown, from: expert,
+        c.todo("windows", "Windows need resealing (about €900)", .unknown, from: expert,
                quote: "resealed within two years", info: true)
 
         c.appointment("Signing at the notary", 12, "11:00", at: "Notary Dr. Wendt, Market Square 3", from: draft, quote: "Signing is on 12 October")
@@ -651,10 +662,10 @@ enum DemoData {
         c.deadline("Questions on the contract to the notary", 8, from: draft, quote: "before the appointment")
 
         c.decision("The flat at Linden Street, not the house in the suburbs",
-                   why: "Ten minutes to work by bike, no garden to keep up, and a healthy reserve fund. The house needed a new heating system.",
+                   why: "Close to work, and no new heating needed.",
                    -33, from: [viewing, manager])
         c.decision("Fixed interest for ten years",
-                   why: "The monthly payment stays the same, and the difference to five years is small.", -8, from: [commit])
+                   why: "The same monthly payment, for longer.", -8, from: [commit])
 
         c.party("Petra Holm", "Estate agent", mentions: 3, &book)
         c.party("Jonas Reiter", "Mortgage adviser, Northbank", mentions: 3, &book)
@@ -665,10 +676,10 @@ enum DemoData {
 
         c.link("https://docs.google.com/spreadsheets/d/demo-costs/edit", "Costs and monthly budget")
         c.link("https://docs.google.com/document/d/demo-contract-questions/edit", "Questions on the contract", todo: "read")
-        c.matter.notes = "Keep 20,000 euros free for the move and new furniture. Ask the sellers to leave the kitchen."
-        c.summarise("The sellers accepted 372,000 euros and the bank's commitment is ready once the last salary slip is sent. The contract is signed at the notary on 12 October; until then the draft must be read and questions sent by 8 October.",
-                    next: "Send the last salary slip to Northbank",
-                    why: "The sellers want the commitment within three weeks, and it is ready as soon as this slip arrives.", todo: "slip")
+        c.matter.notes = "Keep €20,000 free. Ask them to leave the kitchen."
+        c.summarise("Offer accepted at €372,000. Notary on 12 October; questions due by 8 October.",
+                    next: "Send the salary slip to Northbank",
+                    why: "The commitment is ready once it arrives.", todo: "slip")
         c.talking = {
             c.cite("T1", "slip"); c.cite("T2", "bankDocs"); c.cite("T3", "read"); c.cite("T4", "questions")
             c.note(-2, "📥 2 mails taken in · 2 new tasks · sorted by Claude Opus\n• Building insurance: offer for Linden Street 8\n• Draft of the purchase contract")
@@ -706,21 +717,21 @@ enum DemoData {
         let sam = c.mail(-3, "Sam Keller <sam.keller@mail.example>", "Guest list, first version",
             "Sam sent the first list: 74 names, 12 not sure. Sam's parents want to invite six more.")
 
-        c.todo("date", "Pay the 2,000 euro deposit for Gut Birkenhof", .we, due: 8, from: deposit, quote: "held until 10 October",
+        c.todo("date", "Pay the €2,000 deposit", .we, due: 8, from: deposit, quote: "held until 10 October",
                again: [(visit, "Deposit of 2,000 euros holds the date")])
-        c.todo("tasting", "Book the menu tasting with Lindenblatt", .me, due: 20, from: food, quote: "Tasting is possible in November")
+        c.todo("tasting", "Book the menu tasting", .me, due: 20, from: food, quote: "Tasting is possible in November")
         c.todo("photo", "Decide on the photographer", .we, due: 25, from: photo, quote: "Ravi is free on 12 June")
         c.todo("band", "Decide: live band or DJ", .we, due: 45, from: band, quote: "decision by end of November")
-        c.todo("docs", "Collect birth certificates and proof of residence for the registry office", .we, due: 14, from: registry,
+        c.todo("docs", "Get birth certificates", .we, due: 14, from: registry,
                quote: "birth certificates and proof of residence")
-        c.todo("prep", "Book the preparatory appointment at the registry office", .me, due: 10, from: registry, quote: "preparatory appointment")
+        c.todo("prep", "Book the registry appointment", .me, due: 10, from: registry, quote: "preparatory appointment")
         c.waits("docs", for: "prep")
-        c.todo("guests", "Sam to send the final guest list", .other, due: 12, from: sam, quote: "first list: 74 names, 12 not sure")
-        c.todo("save", "Send the save-the-date cards", .me, due: 18, from: sam, quote: "first list")
+        c.todo("guests", "Sam sends the guest list", .other, due: 12, from: sam, quote: "first list: 74 names, 12 not sure")
+        c.todo("save", "Send the save-the-dates", .me, due: 18, from: sam, quote: "first list")
         c.waits("save", for: "guests")
-        c.todo("tables", "Ceremony is in the garden; rain plan is the barn, decided on the day before at noon", .unknown, from: visit,
+        c.todo("tables", "Rain plan: the barn", .unknown, from: visit,
                quote: "rain plan in the barn", info: true)
-        c.todo("budget", "Budget: 24,000 euros in total, 9,000 already saved", .unknown, from: food, quote: "68 euros per person", info: true)
+        c.todo("budget", "Budget €24,000, €9,000 saved", .unknown, from: food, quote: "68 euros per person", info: true)
 
         c.appointment("Wedding day", 255, "14:00", at: "Gut Birkenhof", from: visit, quote: "12 June 2027")
         c.appointment("Civil ceremony", 254, "10:30", at: "Registry Office Kessel", from: registry, quote: "ceremony on 11 June")
@@ -728,7 +739,7 @@ enum DemoData {
         c.deadline("Band or DJ: decision", 45, from: band, quote: "by end of November")
 
         c.decision("Gut Birkenhof, not the town hall",
-                   why: "Garden ceremony, a rain plan in the barn, and the date we wanted was free.", -58, from: [visit])
+                   why: "A garden, a barn for rain, and our date.", -58, from: [visit])
         c.party("Anke Roth", "Venue manager, Gut Birkenhof", mentions: 2, &book)
         c.party("Lindenblatt Catering", "Caterer", mentions: 1, &book)
         c.party("Ravi Nair", "Photographer", mentions: 1, &book)
@@ -736,10 +747,10 @@ enum DemoData {
         c.party("Sam Keller", "Partner", mentions: 4, &book)
         c.link("https://docs.google.com/spreadsheets/d/demo-guests/edit", "Guest list")
         c.link("https://docs.google.com/spreadsheets/d/demo-wedding-budget/edit", "Budget")
-        c.matter.notes = "No speeches before the food. Sam's grandmother needs a seat near the door."
-        c.summarise("The venue is chosen and the date is held until 10 October, when the 2,000 euro deposit has to be paid. Caterer, photographer and music are still open; the guest list decides the rest.",
+        c.matter.notes = "No speeches before the food."
+        c.summarise("Gut Birkenhof is held until 10 October. Caterer, photographer and music still open.",
                     next: "Pay the deposit for Gut Birkenhof",
-                    why: "The date is released on 10 October if nothing arrives.", todo: "date")
+                    why: "Otherwise the date goes on 10 October.", todo: "date")
         c.talking = {
             c.cite("T1", "date"); c.cite("T2", "guests"); c.cite("T3", "save")
             c.note(-3, "📥 1 mail taken in · 2 new tasks · sorted by Claude Opus\n• Guest list, first version")
@@ -776,20 +787,20 @@ enum DemoData {
         let neighbour = c.mail(-1, "Ms. Adler <adler@mail.example>", "Parking for the van?",
             "Ms. Adler from Birch Road 10 says the van can use her drive on Wednesday morning if asked in time.")
 
-        c.todo("lease", "Sign the lease for Birch Road 12", .me, from: lease, quote: "Lease for Birch Road 12 signed", done: -50)
+        c.todo("lease", "Sign the lease", .me, from: lease, quote: "Lease for Birch Road 12 signed", done: -50)
         c.todo("notice", "Give notice for the old flat", .me, from: notice, quote: "The notice is confirmed", done: -45)
-        c.todo("internet", "Ask FiberNest to move the internet connection", .me, due: -2, from: net,
+        c.todo("internet", "Ask FiberNest to move the internet", .me, due: -2, from: net,
                quote: "if you ask four weeks before the move")
-        c.todo("movers", "Book Carry & Co for 21 October", .me, due: 6, from: movers, quote: "The offer holds until 7 October")
-        c.todo("paint", "Repaint the walls of the old flat white", .me, due: 24, from: hand, quote: "Walls must be repainted white")
-        c.todo("keys", "Collect all keys, including the cellar key, for the handover", .me, due: 30, from: hand, quote: "Bring all keys")
-        c.todo("forward", "Set up mail forwarding to the new address", .me, due: 15, from: net, quote: "new address")
-        c.todo("register", "Register the new address at the citizens' office", .me, due: 30, from: lease, quote: "The lease starts on 21 October")
+        c.todo("movers", "Book Carry & Co", .me, due: 6, from: movers, quote: "The offer holds until 7 October")
+        c.todo("paint", "Paint the old flat white", .me, due: 24, from: hand, quote: "Walls must be repainted white")
+        c.todo("keys", "Collect all keys for the handover", .me, due: 30, from: hand, quote: "Bring all keys")
+        c.todo("forward", "Set up mail forwarding", .me, due: 15, from: net, quote: "new address")
+        c.todo("register", "Register the new address", .me, due: 30, from: lease, quote: "The lease starts on 21 October")
         c.waits("register", for: "movers")
-        c.todo("power", "Send the meter reading and new address to Northlight", .me, due: 31, from: power, quote: "send the meter reading on 31 October")
-        c.todo("drive", "Ask Ms. Adler for the drive on Wednesday morning", .me, due: 14, from: neighbour, quote: "if asked in time")
-        c.todo("tech", "Be home when the internet technician comes", .other, due: 21, from: net, quote: "technician needs a day")
-        c.todo("boxes", "Boxes can be rented from Carry & Co", .unknown, from: movers, quote: "Boxes can be rented", info: true)
+        c.todo("power", "Send the meter reading", .me, due: 31, from: power, quote: "send the meter reading on 31 October")
+        c.todo("drive", "Ask Ms. Adler about Wednesday", .me, due: 14, from: neighbour, quote: "if asked in time")
+        c.todo("tech", "Be home for the technician", .other, due: 21, from: net, quote: "technician needs a day")
+        c.todo("boxes", "Boxes from Carry & Co", .unknown, from: movers, quote: "Boxes can be rented", info: true)
 
         c.appointment("Key handover, Birch Road 12", 21, "10:00", at: "Birch Road 12", from: lease, quote: "10:00 on that day")
         c.appointment("Moving day", 21, "12:00", at: "Old flat", from: movers, quote: "moving on 21 October")
@@ -797,7 +808,7 @@ enum DemoData {
         c.deadline("Carry & Co: offer holds until", 7, from: movers, quote: "until 7 October")
         c.deadline("Old flat: notice ends", 31, from: notice, quote: "31 October")
         c.decision("Professional movers, not friends with a van",
-                   why: "Four hours and 620 euros against a lost weekend and a borrowed van. The piano is too heavy for friends.",
+                   why: "€620, and the piano is too heavy for friends.",
                    -27, from: [movers])
         c.party("Ms. Almeida", "New landlord", mentions: 1, &book)
         c.party("Mr. Krüger", "Old landlord", mentions: 2, &book)
@@ -805,10 +816,10 @@ enum DemoData {
         c.party("FiberNest", "Internet provider", mentions: 1, &book)
         c.party("Northlight Energy", "Electricity", mentions: 1, &book)
         c.link("https://docs.google.com/document/d/demo-move-checklist/edit", "Move checklist")
-        c.matter.notes = "Label boxes by room. The piano goes in first."
-        c.summarise("The lease for Birch Road 12 is signed and the move is on 21 October. Still open: the movers' offer (until 7 October) and the internet move, which needed to be asked four weeks ahead and is already late.",
-                    next: "Ask FiberNest to move the internet connection",
-                    why: "The free move needs four weeks' notice, and the move is in three weeks.", todo: "internet")
+        c.matter.notes = "Label boxes by room."
+        c.summarise("Moving on 21 October. Open: the movers, and the internet, which is already late.",
+                    next: "Ask FiberNest to move the internet",
+                    why: "It needs four weeks; the move is in three.", todo: "internet")
         c.talking = {
             c.cite("T1", "internet"); c.cite("T2", "movers"); c.cite("T3", "paint")
             c.note(-1, "📥 2 mails taken in · 1 new task · sorted by Claude Opus\n• Parking for the van?\n• Reading of the meter on moving day")
@@ -844,34 +855,34 @@ enum DemoData {
         let ask = c.mail(-2, advisor, "Reminder: two things are missing",
             "Still missing: the home office days and the receipt for the new desk. Without them the deduction can not be claimed.")
 
-        c.todo("cert", "Download the tax certificate from the payroll portal", .me, from: employer, quote: "The certificate is in the employee portal", done: -20)
+        c.todo("cert", "Get the tax certificate", .me, from: employer, quote: "The certificate is in the employee portal", done: -20)
         c.todo("bank", "Send the bank statement to Jana", .me, due: 2, from: bank, quote: "the tax certificate for capital gains is attached")
-        c.todo("health", "Send the contribution statement to Jana", .me, due: 2, from: health, quote: "counts as a deduction")
-        c.todo("days", "Count the home office days in 2025 and send them to Jana", .me, due: 4, from: ask,
+        c.todo("health", "Send the health statement to Jana", .me, due: 2, from: health, quote: "counts as a deduction")
+        c.todo("days", "Count the home office days", .me, due: 4, from: ask,
                quote: "the home office days", again: [(start, "the costs of the home office")])
-        c.todo("desk", "Find the receipt for the new desk", .me, due: -1, from: ask, quote: "the receipt for the new desk",
+        c.todo("desk", "Find the desk receipt", .me, due: -1, from: ask, quote: "the receipt for the new desk",
                note: "Probably in the mail from March, from Werkstatt Möbel.")
-        c.todo("donate", "Send the donation receipt to Jana", .me, due: 3, from: donation, quote: "The receipt for 2025 is attached")
-        c.todo("sign", "Sign the return when Jana has prepared it", .me, due: 18, from: start, quote: "The deadline with the tax office is 31 October")
+        c.todo("donate", "Send the donation receipt", .me, due: 3, from: donation, quote: "The receipt for 2025 is attached")
+        c.todo("sign", "Sign the return", .me, due: 18, from: start, quote: "The deadline with the tax office is 31 October")
         c.todo("prepare", "Jana prepares the return", .other, due: 14, from: start, quote: "Please send")
         c.waits("sign", for: "prepare")
-        c.todo("deadline", "Deadline with the tax office is 31 October; late filing costs a fee", .unknown, from: start,
+        c.todo("deadline", "Due at the tax office on 31 October", .unknown, from: start,
                quote: "The deadline with the tax office is 31 October", info: true)
 
         c.appointment("Call with Jana to check the return", 16, "16:00", at: "Phone", from: start, quote: "Please send")
         c.deadline("Documents to Jana", 5, from: ask, quote: "Still missing")
         c.deadline("Tax return with the tax office", 31, from: start, quote: "31 October")
         c.decision("Use a tax advisor this year",
-                   why: "A move and a second income in 2025 made it too complicated. The advisor's fee costs less than the missed deductions last year.",
+                   why: "Too complicated this year; the fee pays for itself.",
                    -29, from: [start])
         c.party("Jana Falk", "Tax advisor", mentions: 2, &book)
         c.party("Brightwork Payroll", "Employer", mentions: 1, &book)
         c.party("Green Roofs Association", "Donations", mentions: 1, &book)
         c.link("https://docs.google.com/spreadsheets/d/demo-home-office/edit", "Home office days 2025", todo: "days")
-        c.matter.notes = "Mail everything as PDF. Jana does not open photos."
-        c.summarise("Most documents for the 2025 return are in. Missing are the home office days and the receipt for the desk, which Jana needs by 5 October to claim the deduction. The return itself is due on 31 October.",
-                    next: "Find the receipt for the new desk",
-                    why: "It is late, and without it the deduction can not be claimed.", todo: "desk")
+        c.matter.notes = "Send PDFs only."
+        c.summarise("Almost all in. Jana needs the home office days and the desk receipt by 5 October.",
+                    next: "Find the desk receipt",
+                    why: "Without it, no deduction.", todo: "desk")
         c.talking = {
             c.cite("T1", "desk"); c.cite("T2", "days"); c.cite("T3", "bank")
             c.note(-2, "📥 1 mail taken in · 2 new tasks · sorted by Claude Opus\n• Reminder: two things are missing")
@@ -908,22 +919,22 @@ enum DemoData {
         let pay = c.mail(-1, claims, "Please confirm your bank details",
             "For the payment, please confirm the account holder and the IBAN.")
 
-        c.todo("photos", "Send the photos of the damage and the parking lot", .me, from: report, quote: "Please send photos", done: -14)
-        c.todo("details", "Send the other driver's details to ClearRoad", .me, from: report, quote: "the other driver's details", done: -13)
-        c.todo("estimate", "Send the repair estimate to ClearRoad", .me, due: -2, from: report, quote: "a repair estimate",
+        c.todo("photos", "Send photos of the damage", .me, from: report, quote: "Please send photos", done: -14)
+        c.todo("details", "Send the other driver's details", .me, from: report, quote: "the other driver's details", done: -13)
+        c.todo("estimate", "Send the repair estimate", .me, due: -2, from: report, quote: "a repair estimate",
                again: [(estimate, "Rear bumper and the tail light")])
-        c.todo("iban", "Confirm the bank details for the payment", .me, due: 2, from: pay, quote: "confirm the account holder and the IBAN")
-        c.todo("rental", "Decide about the rental car during the repair", .me, due: 3, from: rental, quote: "A small car costs 39 euros a day")
-        c.todo("appt", "Make sure the car is at the garage on Thursday for the assessor", .me, due: 1, from: assess, quote: "Thursday 1 October at 14:00")
-        c.todo("repair", "Kessel Auto repairs the car after the assessor's visit", .other, due: 10, from: estimate, quote: "Three working days once the parts are here")
+        c.todo("iban", "Confirm your bank details", .me, due: 2, from: pay, quote: "confirm the account holder and the IBAN")
+        c.todo("rental", "Decide on a rental car", .me, due: 3, from: rental, quote: "A small car costs 39 euros a day")
+        c.todo("appt", "Car to the garage on Thursday", .me, due: 1, from: assess, quote: "Thursday 1 October at 14:00")
+        c.todo("repair", "Kessel Auto repairs it afterwards", .other, due: 10, from: estimate, quote: "Three working days once the parts are here")
         c.waits("repair", for: "appt")
-        c.todo("share", "The other driver's insurer pays the repair; you pay no excess", .unknown, from: other, quote: "His insurer is Nordic Mutual", info: true)
+        c.todo("share", "Their insurer pays, no excess", .unknown, from: other, quote: "His insurer is Nordic Mutual", info: true)
 
         c.appointment("Assessor at the garage", 1, "14:00", at: "Kessel Auto", from: assess, quote: "Thursday 1 October at 14:00")
         c.appointment("Pick up the repaired car", 12, "16:00", at: "Kessel Auto", from: estimate, quote: "Three working days")
         c.deadline("Documents to the insurer", 3, from: expert, quote: "inspects the car at the garage before repair")
         c.decision("Repair at Kessel Auto, not the cheaper garage",
-                   why: "They handle claims with the insurer directly, and their estimate is accepted without a second opinion.",
+                   why: "They deal with the insurer directly.",
                    -10, from: [estimate])
         c.party("Sabine Ott", "Claims handler, ClearRoad Insurance", mentions: 3, &book)
         c.party("Tobias Lindqvist", "Other driver", mentions: 1, &book)
@@ -931,10 +942,10 @@ enum DemoData {
         c.party("Kai Marek", "Assessor", mentions: 1, &book)
         c.party("Rent-a-Wheel", "Rental car", mentions: 1, &book)
         c.link("https://docs.google.com/document/d/demo-accident-notes/edit", "Notes of what happened")
-        c.matter.notes = "Claim number CR-40917. Photos are in the shared album called Accident."
-        c.summarise("The other driver has admitted fault and his insurer pays. The assessor comes on 1 October, then Kessel Auto repairs the car. The repair estimate has still not gone to ClearRoad.",
-                    next: "Send the repair estimate to ClearRoad",
-                    why: "The claim waits for it, and the assessor comes on Thursday.", todo: "estimate")
+        c.matter.notes = "Claim CR-40917."
+        c.summarise("Their insurer pays. The assessor comes first; the estimate still has to go to ClearRoad.",
+                    next: "Send the repair estimate",
+                    why: "The claim waits for it.", todo: "estimate")
         c.talking = {
             c.cite("T1", "estimate"); c.cite("T2", "appt"); c.cite("T3", "rental")
             c.note(-1, "📥 1 mail taken in · 1 new task · sorted by Claude Opus\n• Please confirm your bank details")
@@ -974,16 +985,16 @@ enum DemoData {
             "The drawings arrived. The decision on the shower move is expected by 14 October.")
 
         c.todo("quotes", "Compare the two quotes", .me, from: quote1, quote: "14,800 euros", done: -30)
-        c.todo("choose", "Confirm the order with Lenz Bau", .me, from: deposit, quote: "Thank you for choosing us", done: -8)
-        c.todo("deposit", "Pay the deposit of 4,440 euros (30 percent)", .me, due: 9, from: deposit, quote: "deposit of 30 percent by 9 October")
-        c.todo("permit", "Wait for the housing association's permission for the shower move", .other, due: 14, from: update,
+        c.todo("choose", "Confirm Lenz Bau", .me, from: deposit, quote: "Thank you for choosing us", done: -8)
+        c.todo("deposit", "Pay the €4,440 deposit", .me, due: 9, from: deposit, quote: "deposit of 30 percent by 9 October")
+        c.todo("permit", "Wait for the shower permission", .other, due: 14, from: update,
                quote: "expected by 14 October")
         c.todo("tiles", "Order the tiles at Tile Hall", .me, due: 2, from: tile, quote: "delivery time of five weeks")
-        c.todo("tilesLate", "Ask Oskar if a later tile delivery is a problem", .me, due: 4, from: tile, quote: "five weeks")
-        c.todo("fixtures", "Choose the taps and the shower head", .we, due: 10, from: quote1, quote: "tiles and fittings")
-        c.todo("bathroom", "Arrange a place to wash for four weeks", .me, due: 30, from: quote1, quote: "Four weeks")
+        c.todo("tilesLate", "Ask Oskar about late tiles", .me, due: 4, from: tile, quote: "five weeks")
+        c.todo("fixtures", "Choose taps and shower head", .we, due: 10, from: quote1, quote: "tiles and fittings")
+        c.todo("bathroom", "Find a place to wash", .me, due: 30, from: quote1, quote: "Four weeks")
         c.waits("deposit", for: "permit")
-        c.todo("drain", "The floor drain moves by 40 centimetres, plumbing 3,100 euros, in the quote", .unknown, from: plan,
+        c.todo("drain", "Drain moves 40 cm (€3,100)", .unknown, from: plan,
                quote: "The floor drain moves 40 centimetres", info: true)
 
         c.appointment("Start of the work", 32, "08:00", at: "Bathroom", from: deposit, quote: "Monday 2 November")
@@ -991,7 +1002,7 @@ enum DemoData {
         c.deadline("Deposit to Lenz Bau", 9, from: deposit, quote: "by 9 October")
         c.deadline("Permission expected", 14, from: update, quote: "14 October")
         c.decision("Lenz Bau, not Wolf Renovations",
-                   why: "Two thousand euros more, but Lenz can start in November and Wolf only in January. The better tiles are included.",
+                   why: "€2,000 more, but starting in November.",
                    -9, from: [quote1, quote2])
         c.party("Oskar Lenz", "Builder, Lenz Bau", mentions: 2, &book)
         c.party("Dieter Wolf", "Builder, second quote", mentions: 1, &book)
@@ -999,10 +1010,10 @@ enum DemoData {
         c.party("Housing Association North", "Landlord, permission", mentions: 2, &book)
         c.party("Tile Hall", "Tile shop", mentions: 1, &book)
         c.link("https://docs.google.com/spreadsheets/d/demo-bath-costs/edit", "Cost overview")
-        c.matter.notes = "Keep the receipts for the tax return. The old bath tub goes to the recycling centre."
-        c.summarise("Lenz Bau will start on 2 November if the housing association allows moving the shower, which is expected by 14 October. The deposit is due on 9 October and the tiles take five weeks to arrive.",
+        c.matter.notes = "Keep the receipts for taxes."
+        c.summarise("Lenz Bau starts on 2 November, if the shower may move. Tiles take five weeks.",
                     next: "Order the tiles at Tile Hall",
-                    why: "With a five-week delivery, every day of waiting pushes the start.", todo: "tiles")
+                    why: "Five weeks' delivery: every day counts.", todo: "tiles")
         c.talking = {
             c.cite("T1", "tiles"); c.cite("T2", "deposit"); c.cite("T3", "permit")
             c.note(-2, "📥 1 mail taken in · 1 new task · sorted by Claude Opus\n• Your request: still in review")

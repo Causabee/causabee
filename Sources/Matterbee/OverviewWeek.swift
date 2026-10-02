@@ -72,6 +72,8 @@ struct OverviewWeek: View {
                 }
             }
         }
+        // Rows as high as their tiles: the room kept for the fullest day stays empty under them.
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func cell(_ day: String, isToday: Bool, isChosen: Bool, count: Int, late: Int) -> some View {
