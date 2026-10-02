@@ -635,11 +635,11 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 @keyframes mt-caret {
   0%, 65.5% { opacity: 0; transform: none; }
   66%, 68% { opacity: 1; transform: none; animation-timing-function: steps(30, end); }
-  82% { opacity: 1; transform: translateX(calc(240 * var(--u))); animation-timing-function: steps(1, end); }
-  85% { opacity: 0; transform: translateX(calc(240 * var(--u))); animation-timing-function: steps(1, end); }
-  88% { opacity: 1; transform: translateX(calc(240 * var(--u))); animation-timing-function: steps(1, end); }
-  91% { opacity: 0; transform: translateX(calc(240 * var(--u))); animation-timing-function: steps(1, end); }
-  94%, 100% { opacity: 0; transform: translateX(calc(240 * var(--u))); }
+  82% { opacity: 1; transform: translateX(calc(232 * var(--u))); animation-timing-function: steps(1, end); }
+  85% { opacity: 0; transform: translateX(calc(232 * var(--u))); animation-timing-function: steps(1, end); }
+  88% { opacity: 1; transform: translateX(calc(232 * var(--u))); animation-timing-function: steps(1, end); }
+  91% { opacity: 0; transform: translateX(calc(232 * var(--u))); animation-timing-function: steps(1, end); }
+  94%, 100% { opacity: 0; transform: translateX(calc(232 * var(--u))); }
 }
 @keyframes mt-pointer {
   0% { opacity: 0; transform: translate(calc(320 * var(--u)), calc(260 * var(--u))); }
@@ -647,10 +647,10 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   6% { transform: none; }
   6.7%, 7.4% { transform: scale(0.88); }
   8%, 30% { transform: none; }
-  37% { transform: translateY(calc(205 * var(--u))); }
-  40%, 41% { transform: translateY(calc(205 * var(--u))) scale(0.88); }
-  43% { opacity: 1; transform: translateY(calc(205 * var(--u))); }
-  48%, 100% { opacity: 0; transform: translate(calc(14 * var(--u)), calc(215 * var(--u))); }
+  37% { transform: translateY(calc(165 * var(--u))); }
+  40%, 41% { transform: translateY(calc(165 * var(--u))) scale(0.88); }
+  43% { opacity: 1; transform: translateY(calc(165 * var(--u))); }
+  48%, 100% { opacity: 0; transform: translate(calc(14 * var(--u)), calc(175 * var(--u))); }
 }
 /* Under it, a line over each point fills while the picture shows it. */
 .cols--live .point { position: relative; padding-top: 22px; }
