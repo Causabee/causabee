@@ -13,7 +13,7 @@
 #
 # Needs, once: a "Developer ID Application" certificate in the Keychain, and the notary login saved as
 #   xcrun notarytool store-credentials "matterbee-notary" --apple-id <you> --team-id <team>
-# Other names: MATTERBEE_NOTARY_PROFILE, MATTERBEE_DEVELOPER_ID. It builds App/Matterbee.xcodeproj.
+# Other names: MATTERBEE_NOTARY_PROFILE, MATTERBEE_DEVELOPER_ID, MATTERBEE_RELEASE_DIR. It builds App/Matterbee.xcodeproj.
 #
 # A release syncs through the owner's iCloud, in CloudKit's Production environment: it is signed with
 # scripts/release.entitlements and carries scripts/release.provisionprofile, the Developer ID profile
@@ -51,7 +51,10 @@ if [[ -n $KIND ]]; then
 else
   TITLE="Matterbee $SHORT"; LABEL="Version $SHORT"; DMG_NAME="Matterbee-$SHORT.dmg"; PRE=()
 fi
-DMG=.build-app/release/$TAG/$DMG_NAME
+# Built outside the repo: where Documents syncs with iCloud Drive, the file provider marks a fresh
+# app with Finder information, which codesign refuses. Other place: MATTERBEE_RELEASE_DIR.
+OUT=${MATTERBEE_RELEASE_DIR:-$HOME/Library/Caches/matterbee-release}/$TAG
+DMG=$OUT/$DMG_NAME
 
 PROFILE=${MATTERBEE_NOTARY_PROFILE:-matterbee-notary}
 IDENTITY=${MATTERBEE_DEVELOPER_ID:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)}
@@ -74,7 +77,6 @@ if [[ -n $(git ls-remote --tags origin "refs/tags/$TAG") ]] || gh release view "
 fi
 $DRY || xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1 || fail "No notary login saved as '$PROFILE' (see the top of this script)."
 
-OUT=.build-app/release/$TAG
 APP=$OUT/Matterbee.app
 rm -rf "$OUT"; mkdir -p "$OUT"
 
