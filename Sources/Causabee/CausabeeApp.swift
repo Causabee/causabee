@@ -809,8 +809,12 @@ enum MenuOrder {
     static func keep() {
         place()
         NotificationCenter.default.addObserver(forName: NSMenu.didAddItemNotification, object: nil, queue: .main) { note in
-            guard (note.object as? NSMenu) === NSApp.mainMenu else { return }
-            MainActor.assumeIsolated { place() }
+            // Only which menu it was goes along to the main actor, not the menu itself.
+            let added = (note.object as? NSMenu).map(ObjectIdentifier.init)
+            MainActor.assumeIsolated {
+                guard let added, added == NSApp.mainMenu.map(ObjectIdentifier.init) else { return }
+                place()
+            }
         }
     }
 

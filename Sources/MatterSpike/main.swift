@@ -1339,7 +1339,7 @@ func editParty() throws {
 func readScreenshot() throws {
     guard let path = options.words.first else { fail("matter-spike screenshot <image>") }
     let owner = (try? openStore().fetch(FetchDescriptor<Profile>()).first?.names.first) ?? "Ich"
-    let look = try ScreenshotDoor(besides: options.store).look(at: URL(fileURLWithPath: path), owner: owner ?? "Ich")
+    let look = try ScreenshotDoor(besides: options.store).look(at: URL(fileURLWithPath: path), owner: owner)
     if options.show > 0 {
         // Where each line sits, pseudonymised: enough to see how the chat was taken apart
         // without reading it in the clear.
