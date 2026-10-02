@@ -8,9 +8,12 @@ Small things noticed while using the app, to pick up later. Newest first.
   widget's own setting, an `AppIntent` with the open matters to pick from). It shows the matter's
   name, its next step — what to do and by when — and the short why under it, as the matter page's
   "Next" says it. A tap opens that matter. Small: the next step only; medium: with the why and
-  what is overdue. iPhone first, the Mac's desktop widgets with the same code. Needs the matters
-  readable from the widget: the store in the App Group, or a small summary the app writes there
-  whenever a matter changes, refreshed with `WidgetCenter.reloadTimelines`. (2026-10-02)
+  what is overdue; large: with the matter's summary too. iPhone first, the Mac's desktop widgets
+  with the same code. Nothing new to work out: the overview's card says it all already — "Next, on
+  Oct 3: …" and "Overdue since …" from `NextStep` (MatterCore), and the summary in
+  `Matter.summary`. The widget only has to reach it: it runs apart from the app, so the app copies
+  those lines for each open matter into the App Group (as the share extension's inbox does) whenever
+  a matter changes, and calls `WidgetCenter.reloadTimelines`. (2026-10-02)
 
 ## Calendar and Reminders
 
