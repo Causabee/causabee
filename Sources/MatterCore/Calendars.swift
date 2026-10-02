@@ -96,8 +96,21 @@ public final class Calendars {
         }
     }
 
-    public static func findReminder(_ text: String, in reminders: [Reminder]) -> Reminder? {
-        reminders.first { Duplicates.alike($0.title, text) }
+    /// The reminder a task already is. In Matterbee's own list, or the one chosen for it, half the
+    /// words are enough; in the owner's other lists only nearly the same words: "Online-Antrag
+    /// durchführen" in "Anschlussfinanzierung" is not "Online Check-in bei easyJet durchführen".
+    public static func findReminder(_ text: String, in reminders: [Reminder], ownLists: Set<String> = [ownName]) -> Reminder? {
+        reminders.first { ownLists.contains($0.list) && Duplicates.alike($0.title, text) }
+            ?? reminders.first { !ownLists.contains($0.list) && Duplicates.same($0.title, text) }
+    }
+
+    /// The names of the lists Matterbee adds to: its own, and the one chosen in Settings.
+    public var ownLists: Set<String> {
+        var names: Set<String> = [Self.ownName]
+        if let id = UserDefaults.standard.string(forKey: Self.listKey), !id.isEmpty, let chosen = store.calendar(withIdentifier: id) {
+            names.insert(chosen.title)
+        }
+        return names
     }
 
     // MARK: Where new ones go

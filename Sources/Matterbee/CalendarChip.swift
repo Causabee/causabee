@@ -50,7 +50,9 @@ struct CalendarChip: View {
                         Button("Disconnect") { connect(nil) }.buttonStyle(.gold).font(.caption)
                     }
                 } else if let match = found() {
-                    Label("found in \(where_): \(match.title)", systemImage: "link").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    // Which list or calendar it is in, first: a connection to the wrong one is seen before it is made.
+                    Label("found in \(match.list.isEmpty ? where_ : match.list): \(match.title)", systemImage: "link")
+                        .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     Button("Connect") { connect(match.id) }.buttonStyle(.gold).font(.caption)
                         .help("It is there already: connect to it instead of adding a second one.")
                 } else {
@@ -103,13 +105,13 @@ struct CalendarChip: View {
         }
     }
 
-    private func found() -> (id: String, title: String)? {
+    private func found() -> (id: String, title: String, list: String)? {
         switch kind {
         case .event:
             guard let day, let event = calendars.findEvent(day: day, time: time, what: title) else { return nil }
-            return (event.calendarItemExternalIdentifier, event.title ?? "")
+            return (event.calendarItemExternalIdentifier, event.title ?? "", event.calendar?.title ?? "")
         case .reminder:
-            return Calendars.findReminder(title, in: reminders).map { ($0.id, $0.title) }
+            return Calendars.findReminder(title, in: reminders, ownLists: calendars.ownLists).map { ($0.id, $0.title, $0.list) }
         }
     }
 

@@ -17,6 +17,13 @@ public enum Duplicates {
         return Double(x.intersection(y).count) / Double(min(x.count, y.count)) >= 0.5
     }
 
+    /// Nearly the same words, few left over on either side: for things that are not the matter's own.
+    public static func same(_ a: String, _ b: String) -> Bool {
+        let x = words(a), y = words(b)
+        guard !x.isEmpty, !y.isEmpty else { return false }
+        return Double(x.intersection(y).count) / Double(x.union(y).count) >= 0.8
+    }
+
     /// The matter's to-do this one already is, open or done.
     public static func todo(_ text: String, in matter: Matter) -> Todo? {
         (matter.todos ?? []).first { alike($0.text, text) }
