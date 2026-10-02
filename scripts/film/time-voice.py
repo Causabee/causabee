@@ -11,7 +11,7 @@ import json, pathlib, re, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 src, name = sys.argv[1], sys.argv[2]
-WORDS = [4, 14, 6, 5, 22, 12, 2, 12, 6, 6, 8, 10, 5, 6, 9, 13, 13, 6]   # the script's 18 lines
+WORDS = [4, 14, 6, 5, 22, 12, 2, 12, 6, 6, 8, 10, 5, 6, 9, 13, 13, 5]   # the script's 18 lines
 PLANNED = [3, 5, 3, 3, 7, 5, 2, 4, 3, 3, 3, 4, 4, 4, 5, 5, 4, 4]   # 8–12 tightened: short lines, one object each
 LEAD, TAIL, PAD_IN, PAD_OUT = 0.5, 1.0, 0.2, 0.7
 
@@ -66,7 +66,11 @@ for idx, bt in enumerate(beats):
     ms = int((bt["start"] + LEAD) * 1000)
     fc.append(f"[0:a]atrim=start={a}:end={b},asetpts=PTS-STARTPTS,adelay={ms}|{ms}[l{bt['beat']}]"); mix.append(f"[l{bt['beat']}]")
 fc.append("".join(mix) + f"amix=inputs={len(beats)}:normalize=0,apad=whole_dur={total}[out]")
-subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-filter_complex", ";".join(fc), "-map", "[out]", "-c:a", "libmp3lame", "-q:a", "2", str(out)], check=True)
+# Mixed to WAV first: ffmpeg 9's MP3 encoder refuses the mix's frames when fed directly.
+wav = out.with_suffix(".wav")
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-filter_complex", ";".join(fc), "-map", "[out]", str(wav)], check=True)
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(wav), "-c:a", "libmp3lame", "-q:a", "2", str(out)], check=True)
+wav.unlink()
 (ROOT / "concept/film/timing.json").write_text(json.dumps({"voice": name, "total": total, "beats": beats}, indent=1))
 rows = "\n".join(f"| {b['beat']} | {b['start']:.1f} | {b['dur']:.1f} | {b['spoken']:.1f} | {b['voice_in']:.1f}–{b['voice_out']:.1f} |" for b in beats)
 (ROOT / "concept/film-timing.md").write_text(f"""# The film's timing, from the voice
