@@ -13,6 +13,7 @@
 #
 # Needs, once: a "Developer ID Application" certificate in the Keychain, and the notary login saved as
 #   xcrun notarytool store-credentials "causabee-notary" --apple-id <you> --team-id <team>
+# (a login saved as "matterbee-notary", from before the app was renamed, is used when there is no other)
 # Other names: CAUSABEE_NOTARY_PROFILE, CAUSABEE_DEVELOPER_ID, CAUSABEE_RELEASE_DIR. It builds App/Causabee.xcodeproj.
 #
 # A release syncs through the owner's iCloud, in CloudKit's Production environment: it is signed with
@@ -57,6 +58,9 @@ OUT=${CAUSABEE_RELEASE_DIR:-$HOME/Library/Caches/causabee-release}/$TAG
 DMG=$OUT/$DMG_NAME
 
 PROFILE=${CAUSABEE_NOTARY_PROFILE:-causabee-notary}
+if [[ -z ${CAUSABEE_NOTARY_PROFILE:-} ]] && ! xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1; then
+  PROFILE=matterbee-notary
+fi
 IDENTITY=${CAUSABEE_DEVELOPER_ID:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)}
 [[ -n $IDENTITY ]] || fail "No 'Developer ID Application' certificate in the Keychain."
 [[ -d App/Causabee.xcodeproj ]] || fail "No App/Causabee.xcodeproj on this Mac."
