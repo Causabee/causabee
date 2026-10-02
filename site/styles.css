@@ -579,7 +579,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* The overview: "Get new mail" — fetched, two new mails shown with what sorting them costs, sorted
    in with a click; Lisbon has one task more. 20 s, then again. */
-.live--hero { --img: image-set(url("assets/img/care-1440.webp") 1x, url("assets/img/care-2880.webp") 2x); }
+.live--hero { --img: image-set(url("assets/img/overview-1440.webp?v=2") 1x, url("assets/img/overview-2880.webp?v=2") 2x); }
 :where(.live--hero .live__stage) > * { animation: 20s ease-in-out infinite both; }
 .live--hero .hr-caret { animation: hr-caret 1.06s steps(1, end) infinite; }
 @keyframes hr-caret { 0% { opacity: 0; } 50% { opacity: 1; } }
