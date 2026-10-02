@@ -78,6 +78,9 @@ public struct OwnerNames: Sendable {
 
     /// `Jan Kramer`, `Kramer Jan`, `Jan` are the owner. A bare `Kramer` is the owner only
     /// when nobody else in the matter is called Kramer — in the mother's matter it is her.
+    /// `Jan Kramer` or `Kramer Jan`, not `Jan` alone.
+    func isFullName(_ name: String) -> Bool { full.contains(PartyNames.tokens(name).joined()) }
+
     func isOwner(_ name: String, others: Set<String>) -> Bool {
         let tokens = PartyNames.tokens(name)
         if full.contains(tokens.joined()) { return true }

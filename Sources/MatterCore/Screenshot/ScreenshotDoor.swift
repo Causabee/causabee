@@ -52,6 +52,8 @@ public struct ScreenshotDoor: Sendable {
         public var preview: String
         /// What could not be read as text, page by page, and how it was read instead.
         public var notes: [String]
+        /// The pages that could not be read at all: the only notes worth showing.
+        public var warnings: [String] { notes.filter { $0.contains("nothing readable") } }
         public var report: Spike.Report
         public var answered: [String: Judgement]
         /// This very image was read and answered before.

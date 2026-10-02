@@ -7,6 +7,7 @@ import SwiftUI
 struct PhoneThreadCard: View {
     let thread: MailThreads.Thread
     let matter: Matter
+    @Query private var profiles: [Profile]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -19,8 +20,9 @@ struct PhoneThreadCard: View {
                 }
             }
             VStack(alignment: .leading, spacing: 0) {
+                let me = Me(names: profiles.first?.names ?? [], withAccounts: true)
                 ForEach(thread.rows) { row in
-                    PhoneThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, matter: matter)
+                    PhoneThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from), matter: matter)
                         .findable(.model(row.entry.persistentModelID), row.entry.title, row.entry.from, row.entry.digest)
                 }
             }
@@ -35,11 +37,25 @@ struct PhoneThreadCard: View {
     }
 }
 
+/// Which way a mail went: in to the owner, or out from them.
+struct PhoneMailWay: View {
+    let sent: Bool
+
+    var body: some View {
+        Image(systemName: sent ? "arrow.up.right" : "arrow.down.left")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(sent ? Theme.gold : Color.secondary)
+            .accessibilityLabel(sent ? "Sent by you" : "Came in from")
+    }
+}
+
 /// One mail in a conversation, set in by how deep it answers, with the lines to the mail it answers
 /// on its left. To see the mail itself, it opens in Mail.
 struct PhoneThreadMailRow: View {
     let row: MailThreads.Row
     let started: Bool
+    /// The owner wrote it: it went out, the others came in.
+    let sent: Bool
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.openURL) private var openURL
@@ -61,7 +77,11 @@ struct PhoneThreadMailRow: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(Email.displayName(in: entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        if entry.source.kind == .mail { PhoneMailWay(sent: sent) }
+                        Text(sent ? "You" : Email.displayName(in: entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
+                    }
+                    .accessibilityElement(children: .combine)
                     if started { BeeChip(text: "started") }
                     Spacer(minLength: 4)
                     Text(entry.date.map(Dates.short) ?? "—").font(.caption.monospacedDigit()).foregroundStyle(.secondary)

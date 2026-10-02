@@ -538,6 +538,9 @@ enum DemoData {
             "The prescription for the bath seat can be collected at the practice. The medical supply store needs it before delivery.")
         let papers = c.mail(-1, fund, "Please have these documents ready for the visit",
             "For the visit on 6 October, have ready: the current medication list, the doctor's report and the hospital letter.")
+        // Mara's own answer, from the sent mail: last, so the mails above keep their numbers.
+        c.mail(-39, "Mara Voss <mara.voss@mail.example>", "Re: Who does what this week?",
+            "Mara can take Monday and Tuesday this week and will ask Uncle Karl about Thursday.")
 
         c.todo("apply", "Apply for a care level at Healthbridge", .me, from: social, quote: "apply for a care level", done: -29)
         c.todo("rollator", "Get the rollator prescription from Dr. Brandt", .me, from: discharge, quote: "A prescription for the rollator is ready", done: -38)

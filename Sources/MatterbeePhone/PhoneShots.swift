@@ -249,8 +249,14 @@ struct PhoneShotCard: View {
     private func preview(_ look: ScreenshotDoor.Look) -> some View {
         Text(look.heading).font(.headline).fixedSize(horizontal: false, vertical: true)
         Text(look.byline).font(.caption).foregroundStyle(.secondary)
-        Text(look.preview).font(.footnote).lineLimit(6).fixedSize(horizontal: false, vertical: true)
-        ForEach(look.notes, id: \.self) { Text($0).font(.caption2).foregroundStyle(.secondary) }
+        // A chat's lines say what it is. A file's first words, as text recognition read them, are
+        // mostly noise: what it brings shows once it is sorted in.
+        if look.kind == .chat {
+            Text(look.preview).font(.footnote).lineLimit(6).fixedSize(horizontal: false, vertical: true)
+        }
+        ForEach(look.warnings, id: \.self) {
+            Label($0, systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(Theme.warning)
+        }
     }
 
     /// What the answer found: what will go into the matter.

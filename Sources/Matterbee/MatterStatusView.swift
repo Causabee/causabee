@@ -1768,6 +1768,7 @@ struct SuggestionCard: View {
 struct ThreadCard: View {
     let thread: MailThreads.Thread
     let talk: (Entry) -> Void
+    @Query private var profiles: [Profile]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1780,8 +1781,9 @@ struct ThreadCard: View {
                 }
             }
             VStack(alignment: .leading, spacing: 0) {
+                let me = Me(names: profiles.first?.names ?? [], withAccounts: true)
                 ForEach(thread.rows) { row in
-                    ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1) { talk(row.entry) }
+                    ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from)) { talk(row.entry) }
                         .findable(.model(row.entry.persistentModelID), row.entry.title, row.entry.from, row.entry.digest)
                 }
             }
@@ -1800,9 +1802,24 @@ struct ThreadCard: View {
 
 /// One mail in a conversation, set in by how deep it answers, with the lines to the mail it
 /// answers drawn on its left.
+/// Which way a mail went: in to the owner, or out from them.
+struct MailWay: View {
+    let sent: Bool
+
+    var body: some View {
+        Image(systemName: sent ? "arrow.up.right" : "arrow.down.left")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(sent ? Theme.gold : Color.secondary)
+            .help(sent ? "You sent it" : "It came in")
+            .accessibilityLabel(sent ? "Sent by you" : "Came in from")
+    }
+}
+
 struct ThreadMailRow: View {
     let row: MailThreads.Row
     let started: Bool
+    /// The owner wrote it: it went out, the others came in.
+    let sent: Bool
     let talk: () -> Void
     @Environment(\.modelContext) private var context
     @State private var naming = false
@@ -1833,7 +1850,11 @@ struct ThreadMailRow: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(Email.displayName(in: entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        if entry.source.kind == .mail { MailWay(sent: sent) }
+                        Text(sent ? "You" : Email.displayName(in: entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
+                    }
+                    .accessibilityElement(children: .combine)
                     if started { BeeChip(text: "started") }
                     Text(entry.date.map(Dates.short) ?? "—").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                     Spacer(minLength: 8)

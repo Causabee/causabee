@@ -112,22 +112,16 @@ struct ShotView: View {
         if look.kind == .chat { readChat(look) } else { readFile(look) }
     }
 
-    /// A mail or a PDF: what it is, from whom or how many pages, what could not be read as text,
-    /// and how it starts.
+    /// A mail or a PDF: what it is, from whom or how many pages, and a page that could not be read.
     @ViewBuilder
     private func readFile(_ look: ScreenshotDoor.Look) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(look.heading).font(.headline).fixedSize(horizontal: false, vertical: true)
             Text(look.byline).font(.caption).foregroundStyle(.secondary)
-            ForEach(look.notes, id: \.self) { note in
-                Label(note, systemImage: note.contains("nothing readable") ? "exclamationmark.triangle" : "text.viewfinder")
-                    .font(.caption).foregroundStyle(note.contains("nothing readable") ? Theme.warning : .secondary)
-            }
-            DisclosureGroup(isExpanded: $showsChat) {
-                Text(look.preview).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
-            } label: {
-                Text("Start of the text").font(.caption.weight(.semibold))
+            // Its first words, as text recognition read them, are mostly noise: what it brings
+            // shows once it is sorted in. Only a page that could not be read is said.
+            ForEach(look.warnings, id: \.self) { note in
+                Label(note, systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(Theme.warning)
             }
             sentDisclosure(look)
         }
