@@ -2,6 +2,16 @@
 
 Small things noticed while using the app, to pick up later. Newest first.
 
+## Widgets
+
+- **A matter on the Home Screen.** A widget the owner sets up by choosing one matter (the
+  widget's own setting, an `AppIntent` with the open matters to pick from). It shows the matter's
+  name, its next step — what to do and by when — and the short why under it, as the matter page's
+  "Next" says it. A tap opens that matter. Small: the next step only; medium: with the why and
+  what is overdue. iPhone first, the Mac's desktop widgets with the same code. Needs the matters
+  readable from the widget: the store in the App Group, or a small summary the app writes there
+  whenever a matter changes, refreshed with `WidgetCenter.reloadTimelines`. (2026-10-02)
+
 ## Calendar and Reminders
 
 - **Find a connected event again when it moves.** An appointment was added to the "Matterbee"
