@@ -66,7 +66,9 @@ if [[ $BRANCH != main || -n $(git status --porcelain) || $(git rev-parse HEAD) !
   $DRY || fail "Releases are made from a clean main that matches origin/main (now: $BRANCH$([[ -n $(git status --porcelain) ]] && print ', with changes'))."
   print "  (dry run: not on a clean, pushed main — building what is here)"
 fi
-REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+# A dry run needs no GitHub CLI; the name of the repo then comes from the remote.
+$DRY || command -v gh >/dev/null || fail "No GitHub CLI: brew install gh, then gh auth login."
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || git remote get-url origin | sed -E 's#^.*github\.com[:/]##; s#\.git$##')
 if [[ -n $(git ls-remote --tags origin "refs/tags/$TAG") ]] || gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
   fail "$TAG exists already on $REPO."
 fi
