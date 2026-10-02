@@ -1,4 +1,4 @@
-/* Matterbee's website. The app's own look: white, near-black, the bee's yellow, Source Serif 4
+/* Causabee's website. The app's own look: white, near-black, the bee's yellow, Source Serif 4
    for headings and the Mac's own font for everything else. No scripts, nothing from elsewhere. */
 
 @font-face {
@@ -229,8 +229,9 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .ask-shot { width: 100%; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-shot); }
 .ask-shot img { width: 100%; height: auto; }
 @media (max-width: 899px) {
-  .split { flex-direction: column; align-items: stretch; gap: 40px; }
-  .split__text { gap: 14px; }
+  .split { flex-direction: column; align-items: center; gap: 40px; }
+  .split__text { gap: 14px; align-items: center; text-align: center; max-width: 700px; }
+  .split__text .note { text-align: left; }
   .ask-side { width: 100%; max-width: 444px; gap: 14px; }
   .ask-shot { border-radius: 20px; }
   .br-wide { display: none; }
@@ -330,7 +331,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   .phones__item { flex: 0 0 min(240px, 72%); scroll-snap-align: start; }
 }
 
-/* The bee at work, drawn from the icon's own shapes (see Sources/Matterbee/BeeLoader.swift, which
+/* The bee at work, drawn from the icon's own shapes (see Sources/Causabee/BeeLoader.swift, which
    runs the same beat in the app). In the hero, the icon sorts its stripes in once as the page opens;
    in the privacy section, the bee keeps working between "On your Mac" and "What the AI sees".
    With Reduce Motion both stand still. */
