@@ -13,7 +13,12 @@ struct PeopleSection: View {
 
     var body: some View {
         let memberships = MatterStatus(matter).memberships
-        if !memberships.isEmpty {
+        if memberships.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader(title: "People")
+                PhoneEmptyBox(text: "Who writes and who is named come in with mail and screenshots.")
+            }
+        } else {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "People", detail: "\(memberships.count) · to merge, hold a name")
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
@@ -226,9 +231,11 @@ struct LinksSection: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
-                Button("Link", systemImage: "plus") { adding = true }
-                    .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
-                    .tool()
+                if !all.isEmpty {
+                    Button("Link", systemImage: "plus") { adding = true }
+                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                        .tool()
+                }
             }
             if !all.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
@@ -242,8 +249,8 @@ struct LinksSection: View {
                 }
                 .phoneCard()
             } else if offered.isEmpty {
-                Text("None yet. A Google Doc, a sheet: add it with +.")
-                    .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                PhoneEmptyBox(text: "A Google Doc, a sheet — whatever belongs to this matter.",
+                              action: "Add Link", symbol: "link.badge.plus") { adding = true }
             }
             if !offered.isEmpty {
                 DisclosureGroup(isExpanded: $showsSuggestions) {

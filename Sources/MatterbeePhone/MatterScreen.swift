@@ -15,6 +15,9 @@ struct MatterScreen: View {
     @State private var showsDone = false
     @State private var showsPast = false
     @State private var editingNotes = false
+    /// A task the owner is writing with "Add Task": in the matter while its sheet is open, taken
+    /// out again if it is left without words.
+    @State private var newTodo: Todo?
     @State private var asksToClose = false
     @State private var splitting = false
     @State private var find = PageFind()
@@ -114,6 +117,7 @@ struct MatterScreen: View {
             }
         }
         .sheet(isPresented: $editingNotes) { NotesEditor(matter: matter) }
+        .sheet(item: $newTodo, onDismiss: dropEmptyTodos) { todo in PhoneTodoEditor(todo: todo, isNew: true) }
         .confirmationDialog(closeQuestion, isPresented: $asksToClose, titleVisibility: .visible) {
             if matter.openTodos.isEmpty {
                 Button("Close") { close(markingOpenDone: false) }
@@ -433,12 +437,17 @@ struct MatterScreen: View {
             // "Edit" in the heading, as "Add a document" beside Files: the note has the card's width.
             HStack {
                 SectionHeader(title: "Notes")
-                Button(text.isEmpty ? "Write" : "Edit") { editingNotes = true }
-                    .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
-                    .tool()
+                if !text.isEmpty {
+                    Button("Edit") { editingNotes = true }
+                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                        .tool()
+                }
             }
-            Text(text.isEmpty ? "Your own words on the matter — the assistant reads them too." : text)
-                .foregroundStyle(text.isEmpty ? .secondary : .primary)
+            if text.isEmpty {
+                PhoneEmptyBox(text: "What you know, what was agreed — the assistant reads it too.",
+                              action: "Write Note", symbol: "square.and.pencil") { editingNotes = true }
+            } else {
+            Text(text)
                 .fixedSize(horizontal: false, vertical: true)
                 .findable(.section("notes"), text)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -447,14 +456,46 @@ struct MatterScreen: View {
                 // A tap on the note opens it too.
                 .contentShape(Rectangle())
                 .onTapGesture { editingNotes = true }
+            }
         }
     }
 
     // MARK: Tasks
 
+    /// Any task at all, open or done — one being written with "Add Task" not yet among them.
+    private var hasTodos: Bool { (matter.todos ?? []).contains { $0 !== newTodo } }
+
+    /// "Add Task": an empty task of the owner's, opened in the editor.
+    private func addTodo() {
+        let todo = Todo(text: "", owner: .me, due: nil, source: Source(kind: .conversation, pointer: "you", date: Date()),
+                        origin: "you#" + UUID().uuidString)
+        context.insert(todo)
+        todo.matter = matter
+        newTodo = todo
+    }
+
+    /// A task closed without words was never there.
+    private func dropEmptyTodos() {
+        for todo in matter.todos ?? [] where todo.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            context.delete(todo)
+        }
+        try? context.save()
+    }
+
     private func todos(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Tasks", detail: "\(matter.openTodos.count) open · \(status.done.count) done")
+            HStack {
+                SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open · \(status.done.count) done" : nil)
+                if hasTodos {
+                    Button("Task", systemImage: "plus", action: addTodo)
+                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                        .tool()
+                }
+            }
+            if !hasTodos {
+                PhoneEmptyBox(text: "What is to do, and whose. Tasks in mail are found when it is sorted in.",
+                              action: "Add Task", symbol: "checklist", run: addTodo)
+            }
             let overdue = status.overdue.sorted { ($0.due ?? "") < ($1.due ?? "") }
             let late = Set(overdue.map(\.persistentModelID))
             if !overdue.isEmpty {
@@ -539,7 +580,12 @@ struct MatterScreen: View {
     private func dates(_ status: MatterStatus) -> some View {
         let upcoming = status.upcomingAppointments, past = status.pastAppointments
         let deadlines = status.deadlines
-        if !upcoming.isEmpty || !past.isEmpty || !deadlines.isEmpty {
+        if upcoming.isEmpty && past.isEmpty && deadlines.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader(title: "Appointments and deadlines")
+                PhoneEmptyBox(text: "Appointments and deadlines are found in mail when it is sorted in. A task can have a day too.")
+            }
+        } else {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "Appointments and deadlines", detail: "\(upcoming.count) coming · \(Self.deadlinesOpen(deadlines.filter { $0.day >= status.today }.count))")
                 CalendarAccessBanner { loadCalendars() }
@@ -592,6 +638,9 @@ struct MatterScreen: View {
         return VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "History", detail: Self.count(status.entries)
                           + (threads.count == status.entries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
+            if status.entries.isEmpty {
+                PhoneEmptyBox(text: "Mail sorted into this matter shows here, newest first. It comes from your mailbox, not by hand.")
+            }
             ForEach(visible) { thread in
                 PhoneThreadCard(thread: thread, matter: matter)
             }
@@ -824,6 +873,8 @@ struct NotesEditor: View {
 /// for, its links, and by when — a day, and a time if wanted.
 struct PhoneTodoEditor: View {
     let todo: Todo
+    /// A task just started with "Add Task": "New task", and nothing to add until it has words.
+    var isNew = false
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
@@ -891,11 +942,14 @@ struct PhoneTodoEditor: View {
                 }
             }
             .environment(\.locale, Locale(identifier: "en_US"))
-            .navigationTitle("Change task")
+            .navigationTitle(isNew ? "New task" : "Change task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Save", action: save) }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(isNew ? "Add" : "Save", action: save)
+                        .disabled(isNew && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
             }
             .onAppear(perform: load)
         }

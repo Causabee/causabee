@@ -46,6 +46,28 @@ extension ButtonStyle where Self == PhoneButtonStyle {
     static func phone(filled: Bool = false, wide: Bool) -> PhoneButtonStyle { PhoneButtonStyle(filled: filled, wide: wide) }
 }
 
+/// A section with nothing in it yet, as on the Mac: a grey box, what goes in it in the middle,
+/// and — where the owner can add it by hand — the button that does.
+struct PhoneEmptyBox: View {
+    let text: String
+    var action: String? = nil
+    var symbol = "plus"
+    var run: () -> Void = {}
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(text).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            if let action {
+                Button(action: run) { Label(action, systemImage: symbol) }.buttonStyle(.phoneFilled)
+            }
+        }
+        .padding(.horizontal, 20).padding(.vertical, action == nil ? 18 : 22)
+        .frame(maxWidth: .infinity)
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
 extension View {
     /// The grey box of "Next" and "Summary".
     func phoneBox() -> some View {
