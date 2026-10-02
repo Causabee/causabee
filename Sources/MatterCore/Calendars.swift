@@ -104,7 +104,8 @@ public final class Calendars {
 
     public static let calendarKey = "calendar.events", listKey = "calendar.reminders"
 
-    /// The calendar the owner chose, or "Matterbee", made in iCloud the first time it is needed.
+    /// The calendar the owner chose, or "Matterbee", made the first time it is needed — never one
+    /// of the owner's own lists: a task in "Anschlussfinanzierung" is lost there.
     public func targetCalendar(for type: EKEntityType) throws -> EKCalendar {
         let key = type == .event ? Self.calendarKey : Self.listKey
         let calendars = store.calendars(for: type).filter(\.allowsContentModifications)
@@ -112,23 +113,39 @@ public final class Calendars {
             return chosen
         }
         if let own = calendars.first(where: { $0.title == Self.ownName }) { return own }
-        let standard = type == .event ? store.defaultCalendarForNewEvents : store.defaultCalendarForNewReminders()
         // Only an account that holds this kind already can take a new list of it: a calendar-only
-        // account "does not support reminders". iCloud first, then where the standard one is.
+        // account "does not support reminders". iCloud first, then where the standard one is, then
+        // the others, each tried in turn.
+        let standard = type == .event ? store.defaultCalendarForNewEvents : store.defaultCalendarForNewReminders()
         let usable = store.sources.filter { !$0.calendars(for: type).isEmpty }
-        let source = usable.first { $0.sourceType == .calDAV && $0.title.lowercased().contains("icloud") }
-            ?? standard?.source ?? usable.first
-        let calendar = EKCalendar(for: type, eventStore: store)
-        calendar.title = Self.ownName
-        calendar.source = source
-        do {
-            try store.saveCalendar(calendar, commit: true)
-            return calendar
-        } catch {
-            // Not possible there: the owner's standard list or calendar, rather than nothing.
-            if let standard, standard.allowsContentModifications { return standard }
-            throw error
+        var order = usable.filter { $0.sourceType == .calDAV && $0.title.lowercased().contains("icloud") }
+        if let home = standard?.source, !order.contains(where: { $0.sourceIdentifier == home.sourceIdentifier }) { order.append(home) }
+        order += usable.filter { source in !order.contains { $0.sourceIdentifier == source.sourceIdentifier } }
+        var failure: Error?
+        for source in order {
+            let calendar = EKCalendar(for: type, eventStore: store)
+            calendar.title = Self.ownName
+            calendar.source = source
+            do {
+                try store.saveCalendar(calendar, commit: true)
+                return calendar
+            } catch {
+                failure = failure ?? error
+            }
         }
+        throw Failure.noOwnList(type == .event ? "Calendar" : "Reminders", reason: failure?.localizedDescription)
+    }
+
+    public enum Failure: LocalizedError {
+        case noOwnList(String, reason: String?)
+        public var errorDescription: String? {
+            switch self {
+            case .noOwnList(let app, let reason):
+                "Matterbee could not make its list “\(Self.ownName)” in \(app)\(reason.map { " (\($0))" } ?? ""). "
+                    + "Make a list called “\(Self.ownName)” there, or choose a list in Settings → Calendar and Reminders."
+            }
+        }
+        static let ownName = "Matterbee"
     }
 
     // MARK: Adding, on a click
