@@ -76,5 +76,5 @@ card("s16", "Matterbee", "Free and open source · for Mac and iPhone · ralfchil
 
 order = ["s01", "s02", "s03", "s04", "s05", "s06", "s07a", "s07b", "s08", "s09", "s10", "s11", "s12", "s13", "s14", "s15", "s16"]
 (OUT / "list.txt").write_text("".join(f"file '{OUT / (n + '.mp4')}'\n" for n in order))
-run(["-f", "concat", "-safe", "0", "-i", str(OUT / "list.txt"), "-c", "copy", str(ROOT / "docs/film/draft-mac.mp4")])
+run(["-f", "concat", "-safe", "0", "-i", str(OUT / "list.txt"), "-c", "copy", str(ROOT / "concept/film/draft-mac.mp4")])
 print("done")

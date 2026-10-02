@@ -49,11 +49,9 @@ Mail-Text/
 # Which certificate signs the builds: the owner's own, see scripts/build.sh
 scripts/signing.local
 
-# The film: the draft and every cut stay off the public repo; the storyboard and the letter may go.
-docs/film/*.mp4
-docs/film/*.mov
-docs/film/*.mp3
-docs/film/frames/
+# Concepts, plans, the film's working files and the story: kept on this Mac, not in the repo.
+# docs/ holds what the software needs.
+concept/
 scripts/film/web/film.html
 scripts/film/web/film-web*.html
 scripts/film/web/test.html

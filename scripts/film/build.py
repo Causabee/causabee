@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Builds the film: docs/film/timing.json → the page's timing variables → frames → MP4 with the voice.
+"""Builds the film: concept/film/timing.json → the page's timing variables → frames → MP4 with the voice.
 
     python3 scripts/film/build.py [seconds] [--captions] [--web]
 
-  seconds     only the first seconds, to docs/film/film-preview.mp4
-  --captions  the spoken line in a bar at the foot, to docs/film/film-captions.mp4
+  seconds     only the first seconds, to concept/film/film-preview.mp4
+  --captions  the spoken line in a bar at the foot, to concept/film/film-captions.mp4
   --web       no render: writes scripts/film/web/film-web.html, which plays by itself, without
               audio, scaled to its container and looping — for the website
 """
@@ -14,7 +14,7 @@ WEB = ROOT / "scripts/film/web"
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 captions, web, site = "--captions" in sys.argv, "--web" in sys.argv, "--site" in sys.argv
 web = web or site
-t = json.load(open(ROOT / "docs/film/timing.json"))
+t = json.load(open(ROOT / "concept/film/timing.json"))
 LEAD = 0.5
 vars_ = []
 for b in t["beats"]:
@@ -48,7 +48,7 @@ else new IntersectionObserver(([e]) => { if (e.isIntersecting && !shown) { shown
         # The voice, small enough for the web, and a speaker button in the lower right: off at first;
         # on, the voice is set to the film's clock (its animations' time) and kept within 0.15 s of it.
         (ROOT / "site/film").mkdir(exist_ok=True)
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(ROOT / f"docs/film/{t['voice']}-timed.mp3"), "-ac", "1", "-b:a", "64k", str(ROOT / "site/film/voice.mp3")], check=True)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(ROOT / f"concept/film/{t['voice']}-timed.mp3"), "-ac", "1", "-b:a", "64k", str(ROOT / "site/film/voice.mp3")], check=True)
         sound = """
 <style>
 .sound { position: fixed; right: 14px; bottom: 14px; width: 44px; height: 44px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; background: rgba(255,255,255,0.86); box-shadow: 0 2px 10px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06); color: #22211b; cursor: pointer; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); z-index: 10; }
@@ -103,7 +103,7 @@ frames = pathlib.Path("/tmp/film-clips/film-frames")
 subprocess.run(["rm", "-rf", str(frames)])
 subprocess.run(["swift", str(ROOT / "scripts/film/render.swift"), str(WEB / "film.html"), str(frames), str(seconds), "30"], check=True)
 name = "film-preview.mp4" if args else ("film-captions.mp4" if captions else "film.mp4")
-out = ROOT / "docs/film" / name
-subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", "30", "-i", str(frames / "f%05d.png"), "-i", str(ROOT / f"docs/film/{t['voice']}-timed.mp3"),
+out = ROOT / "concept/film" / name
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", "30", "-i", str(frames / "f%05d.png"), "-i", str(ROOT / f"concept/film/{t['voice']}-timed.mp3"),
                 "-vf", "scale=1080:1920:flags=lanczos,format=yuv420p", "-c:v", "libx264", "-crf", "18", "-c:a", "aac", "-b:a", "160k", "-t", str(seconds), str(out)], check=True)
 print("film", out, seconds, "s")

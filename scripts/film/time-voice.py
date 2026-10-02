@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Cuts an ElevenLabs reading of docs/film-voiceover.txt into its 18 lines and places each at its beat.
+"""Cuts an ElevenLabs reading of concept/film-voiceover.txt into its 18 lines and places each at its beat.
 
     python3 scripts/film/time-voice.py <voice.mp3> <name>
 
 Finds the pauses, matches the phrases to the script's 29 parts (the [short pause] marks split a
-line in two or three), and writes docs/film/<name>-timed.mp3, docs/film/timing.json and
-docs/film-timing.md. A beat lasts its planned length, or the line plus some air, whichever is longer.
+line in two or three), and writes concept/film/<name>-timed.mp3, concept/film/timing.json and
+concept/film-timing.md. A beat lasts its planned length, or the line plus some air, whichever is longer.
 """
 import json, pathlib, re, subprocess, sys
 
@@ -55,7 +55,7 @@ for k, ((a, b), p) in enumerate(zip(lines, PLANNED)):
     beats.append({"beat": k + 1, "start": round(t, 2), "dur": round(dur, 2), "voice_in": round(a, 2), "voice_out": round(b, 2), "spoken": round(spoken, 2)})
     t += dur
 total = round(t, 1)
-out = ROOT / f"docs/film/{name}-timed.mp3"
+out = ROOT / f"concept/film/{name}-timed.mp3"
 fc, mix = [], []
 length = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", src], capture_output=True, text=True).stdout)
 for idx, bt in enumerate(beats):
@@ -67,14 +67,14 @@ for idx, bt in enumerate(beats):
     fc.append(f"[0:a]atrim=start={a}:end={b},asetpts=PTS-STARTPTS,adelay={ms}|{ms}[l{bt['beat']}]"); mix.append(f"[l{bt['beat']}]")
 fc.append("".join(mix) + f"amix=inputs={len(beats)}:normalize=0,apad=whole_dur={total}[out]")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-filter_complex", ";".join(fc), "-map", "[out]", "-c:a", "libmp3lame", "-q:a", "2", str(out)], check=True)
-(ROOT / "docs/film/timing.json").write_text(json.dumps({"voice": name, "total": total, "beats": beats}, indent=1))
+(ROOT / "concept/film/timing.json").write_text(json.dumps({"voice": name, "total": total, "beats": beats}, indent=1))
 rows = "\n".join(f"| {b['beat']} | {b['start']:.1f} | {b['dur']:.1f} | {b['spoken']:.1f} | {b['voice_in']:.1f}–{b['voice_out']:.1f} |" for b in beats)
-(ROOT / "docs/film-timing.md").write_text(f"""# The film's timing, from the voice
+(ROOT / "concept/film-timing.md").write_text(f"""# The film's timing, from the voice
 
 Voice: {name}, {length:.1f} s as generated. The lines are cut apart and placed again: each line
 starts {LEAD} s into its beat, and a beat lasts its planned length or the line plus {LEAD + TAIL:.1f} s
-of air, whichever is longer. The re-timed track is docs/film/{name}-timed.mp3 ({total} s); the
-numbers are in docs/film/timing.json. Made by scripts/film/time-voice.py.
+of air, whichever is longer. The re-timed track is concept/film/{name}-timed.mp3 ({total} s); the
+numbers are in concept/film/timing.json. Made by scripts/film/time-voice.py.
 
 | Beat | Starts at (s) | Lasts (s) | Spoken (s) | In the original voice (s) |
 | --- | --- | --- | --- | --- |
