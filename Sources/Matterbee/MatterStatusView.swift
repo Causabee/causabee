@@ -1811,7 +1811,7 @@ struct MailWay: View {
             .font(.caption.weight(.semibold))
             .foregroundStyle(sent ? Theme.gold : Color.secondary)
             .help(sent ? "You sent it" : "It came in")
-            .accessibilityLabel(sent ? "Sent by you" : "Came in from")
+            .accessibilityLabel(sent ? "sent" : "came in")
     }
 }
 
@@ -1851,8 +1851,8 @@ struct ThreadMailRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        if entry.source.kind == .mail { MailWay(sent: sent) }
                         Text(sent ? "You" : Email.displayName(in: entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
+                        if entry.source.kind == .mail { MailWay(sent: sent) }
                     }
                     .accessibilityElement(children: .combine)
                     if started { BeeChip(text: "started") }
@@ -1865,6 +1865,7 @@ struct ThreadMailRow: View {
                 }
             }
             .padding(.vertical, 6)
+            .padding(.leading, depth > 0 ? 6 : 0)
         }
         .contentShape(Rectangle())
         // Asking about it is in the right click, as on every row: no button that comes and goes.

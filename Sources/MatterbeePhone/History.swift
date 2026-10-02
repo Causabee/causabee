@@ -45,7 +45,7 @@ struct PhoneMailWay: View {
         Image(systemName: sent ? "arrow.up.right" : "arrow.down.left")
             .font(.caption.weight(.semibold))
             .foregroundStyle(sent ? Theme.gold : Color.secondary)
-            .accessibilityLabel(sent ? "Sent by you" : "Came in from")
+            .accessibilityLabel(sent ? "sent" : "came in")
     }
 }
 
@@ -78,8 +78,8 @@ struct PhoneThreadMailRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        if entry.source.kind == .mail { PhoneMailWay(sent: sent) }
                         Text(sent ? "You" : Email.displayName(in: entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
+                        if entry.source.kind == .mail { PhoneMailWay(sent: sent) }
                     }
                     .accessibilityElement(children: .combine)
                     if started { BeeChip(text: "started") }
@@ -95,6 +95,7 @@ struct PhoneThreadMailRow: View {
                 }
             }
             .padding(.vertical, 6)
+            .padding(.leading, depth > 0 ? 6 : 0)
         }
         .contentShape(Rectangle())
         .contextMenu {
