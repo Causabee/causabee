@@ -695,6 +695,8 @@ struct MatterRow: View {
 
     var body: some View {
         let status = MatterStatus(matter)
+        HStack(spacing: 9) {
+        MatterIconTile(matter: matter, size: 26)
         VStack(alignment: .leading, spacing: 2) {
             Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
             if matter.isClosed {
@@ -716,6 +718,7 @@ struct MatterRow: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             }
+        }
         }
         .padding(.vertical, 2)
     }

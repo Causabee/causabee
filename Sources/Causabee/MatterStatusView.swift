@@ -66,6 +66,7 @@ struct MatterStatusView: View {
     @State private var find = PageFind()
     /// The page has gone up under the title bar: the bar turns to glass, with a line under it.
     @State private var scrolledUnder = false
+    @State private var choosingIcon = false
     /// The parts in the page have scrolled under the title bar, which shows them then.
     @State private var partsUnder = false
     @State private var partsEdge = CGFloat.infinity
@@ -865,6 +866,12 @@ struct MatterStatusView: View {
     private func titleBar(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
+                // The matter's icon: a click chooses another.
+                Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 30) }
+                    .buttonStyle(.plain)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 7 }
+                    .help("Choose another icon")
+                    .popover(isPresented: $choosingIcon, arrowEdge: .bottom) { MatterIconPicker(matter: matter) }
                 if renaming {
                     TextField("Name", text: $newName, selection: $nameSelection)
                         .font(Theme.titleFont)

@@ -62,7 +62,7 @@ struct PhoneMatterRows: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(matters.enumerated()), id: \.element.persistentModelID) { index, matter in
-                if index > 0 { Divider().padding(.leading, 14) }
+                if index > 0 { Divider().padding(.leading, 62) }
                 Button { navigation.open(matter) } label: {
                     PhoneMatterRow(matter: matter)
                         .padding(.horizontal, 14).padding(.vertical, 10)
@@ -84,6 +84,8 @@ struct PhoneMatterRow: View {
 
     var body: some View {
         let status = MatterStatus(matter)
+        HStack(spacing: 12) {
+        MatterIconTile(matter: matter, size: 36)
         VStack(alignment: .leading, spacing: 2) {
             Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
             HStack(spacing: 4) {
@@ -98,6 +100,7 @@ struct PhoneMatterRow: View {
                 }
             }
             .font(.caption).foregroundStyle(.secondary)
+        }
         }
     }
 }
@@ -120,6 +123,7 @@ struct MatterMenuItems: View {
             }
         }
         Button("Rename", systemImage: "pencil") { navigation.renaming = matter }
+        MatterIconMenu(matter: matter)
         Menu("Merge with", systemImage: "arrow.triangle.merge") {
             ForEach(all.filter { $0 !== matter }) { other in
                 Button(other.name + (other.isClosed ? " (closed)" : "")) { navigation.merging = (matter, other) }

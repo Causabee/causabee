@@ -111,7 +111,8 @@ struct OverviewWeek: View {
                 Circle().fill(Theme.bee).frame(width: 6, height: 6).padding(.top, 6)
                 VStack(alignment: .leading, spacing: 1) {
                     Text((thing.time.map { "\($0) · " } ?? "") + thing.what).lineLimit(2)
-                    Text(thing.matter.name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    Label(thing.matter.name, systemImage: thing.matter.shownIcon).labelStyle(SmallIconLabel())
+                        .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
                 .multilineTextAlignment(.leading)
                 Spacer(minLength: 0)
@@ -241,14 +242,17 @@ struct OverviewRows: View {
     /// what is overdue — as the sidebar's row says it.
     private func line(_ matter: Matter) -> some View {
         let status = MatterStatus(matter)
-        return VStack(alignment: .leading, spacing: 3) {
-            Text(matter.name).font(Theme.rowTitleFont).lineLimit(1)
-            HStack(spacing: 4) {
-                Text("\(matter.openTodos.count) open")
-                if let next = status.next { Text("· next \(Dates.short(next.day))") }
-                if !status.overdue.isEmpty { Text("· \(status.overdue.count) overdue").foregroundStyle(Theme.warning) }
+        return HStack(spacing: 10) {
+            MatterIconTile(matter: matter, size: 30)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(matter.name).font(Theme.rowTitleFont).lineLimit(1)
+                HStack(spacing: 4) {
+                    Text("\(matter.openTodos.count) open")
+                    if let next = status.next { Text("· next \(Dates.short(next.day))") }
+                    if !status.overdue.isEmpty { Text("· \(status.overdue.count) overdue").foregroundStyle(Theme.warning) }
+                }
+                .font(.caption).foregroundStyle(.secondary)
             }
-            .font(.caption).foregroundStyle(.secondary)
         }
     }
 }
@@ -270,6 +274,7 @@ struct PinMenuItem: View {
                 if Pins.pinned(all).count >= Pins.most { navigation.pinning = matter } else { matter.pinnedAt = Date(); try? context.save() }
             }
         }
+        MatterIconMenu(matter: matter)
     }
 }
 

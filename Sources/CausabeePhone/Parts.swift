@@ -130,7 +130,10 @@ struct PhoneMatterCard: View {
         let status = MatterStatus(matter)
         VStack(alignment: .leading, spacing: 8) {
             BeeChip(text: Self.line(mine: status.open(.me).count, ours: status.open(.we).count, waiting: status.open(.other).count))
-            Text(matter.name).font(Theme.phoneCardTitleFont).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                MatterIconTile(matter: matter, size: 38)
+                Text(matter.name).font(Theme.phoneCardTitleFont).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+            }
             if let next = status.next {
                 Text("Next, on \(Dates.short(next.day)): \(next.what)").font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
             }

@@ -33,6 +33,7 @@ struct MatterScreen: View {
     @State private var filter: RecordFilter = .all
     /// How much of the page is seen under the bar.
     @State private var pageHeight = CGFloat.zero
+    @State private var choosingIcon = false
     /// The parts in the page have scrolled under the bar, which shows them then.
     @State private var partsUnder = false
     @State private var topInset = CGFloat.zero
@@ -237,10 +238,23 @@ struct MatterScreen: View {
 
     private func header(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(matter.name).font(Theme.phoneTitleFont).fixedSize(horizontal: false, vertical: true)
-            Text(meta(status)).font(.subheadline).foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                // The matter's icon in front of its name, level with the first line: a tap chooses another.
+                Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 36) }
+                    .buttonStyle(.plain)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 7 }
+                    .accessibilityLabel("Icon").accessibilityHint("Chooses another icon")
+                // The count under the name, on the name's left edge — not under the icon.
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(matter.name).font(Theme.phoneTitleFont).fixedSize(horizontal: false, vertical: true)
+                    Text(meta(status)).font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
         }
         .padding(.top, 4)
+        .sheet(isPresented: $choosingIcon) {
+            MatterIconPicker(matter: matter).presentationDetents([.height(470)]).presentationDragIndicator(.visible)
+        }
     }
 
     private func meta(_ status: MatterStatus) -> String {

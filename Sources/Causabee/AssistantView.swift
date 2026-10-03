@@ -896,7 +896,10 @@ struct MatterCard: View {
         VStack(alignment: .leading, spacing: 8) {
             let mine = status.open(.me).count, ours = status.open(.we).count, waiting = status.open(.other).count
             BeeChip(text: line(mine: mine, ours: ours, waiting: waiting))
-            Text(matter.name).font(Theme.cardTitleFont).foregroundStyle(.primary)
+            HStack(spacing: 10) {
+                MatterIconTile(matter: matter, size: 34)
+                Text(matter.name).font(Theme.cardTitleFont).foregroundStyle(.primary)
+            }
             if let next = status.next {
                 Text("Next, on \(Dates.short(next.day)): \(next.what)").foregroundStyle(.secondary).lineLimit(2)
             }

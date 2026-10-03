@@ -1,4 +1,5 @@
 import MatterCore
+import SwiftData
 import SwiftUI
 #if canImport(AppKit)
 import AppKit
@@ -265,5 +266,125 @@ struct SendGlyph: View {
         }
         .frame(width: 34, height: 34)
         .contentShape(Circle())
+    }
+}
+
+/// A matter's icon on a small grey tile: in front of its name wherever matters are listed.
+struct MatterIconTile: View {
+    let matter: Matter
+    var size: CGFloat = 30
+
+    var body: some View {
+        Image(systemName: matter.shownIcon)
+            .font(.system(size: size * 0.5))
+            .foregroundStyle(matter.isClosed ? .secondary : .primary)
+            .frame(width: size, height: size)
+            .background(Theme.box, in: RoundedRectangle(cornerRadius: size * 0.27))
+            .accessibilityHidden(true)
+    }
+}
+
+/// "Icon", in a matter's menu: every icon by its name, the chosen one ticked, and back to the one
+/// Causabee suggests.
+struct MatterIconMenu: View {
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        Menu("Icon", systemImage: matter.shownIcon) {
+            ForEach(MatterIcons.all) { icon in
+                Button { choose(icon.symbol) } label: {
+                    Label(icon.label + (matter.shownIcon == icon.symbol ? "  ✓" : ""), systemImage: icon.symbol)
+                }
+            }
+            if matter.icon != nil {
+                Divider()
+                Button("Let Causabee choose", systemImage: "sparkles") { choose(nil) }
+            }
+        }
+    }
+
+    private func choose(_ symbol: String?) {
+        matter.icon = symbol
+        try? context.save()
+    }
+}
+
+/// The icons as a grid, as Reminders shows them: a click on a matter's tile on its page opens it.
+/// A popover on the Mac; on the iPhone a sheet, with a larger heading in the middle and more room.
+struct MatterIconPicker: View {
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+
+    #if os(iOS)
+    private let tile: CGFloat = 46, gap: CGFloat = 12, glyph: CGFloat = 22
+    #else
+    private let tile: CGFloat = 38, gap: CGFloat = 8, glyph: CGFloat = 19
+    #endif
+
+    var body: some View {
+        VStack(alignment: .center, spacing: 0) {
+            #if os(iOS)
+            Text("Icon for this matter").font(.title3.weight(.semibold)).padding(.top, 30).padding(.bottom, 24)
+            #else
+            Text("Icon for this matter").font(.headline).frame(maxWidth: .infinity, alignment: .leading).padding(.bottom, 14)
+            #endif
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(tile), spacing: gap), count: 6), spacing: gap) {
+                ForEach(MatterIcons.all) { icon in
+                    Button { choose(icon.symbol) } label: {
+                        Image(systemName: icon.symbol).font(.system(size: glyph))
+                            .frame(width: tile, height: tile)
+                            .background(Theme.box, in: RoundedRectangle(cornerRadius: tile * 0.25))
+                            .overlay {
+                                if matter.shownIcon == icon.symbol { RoundedRectangle(cornerRadius: tile * 0.25).stroke(Color.primary, lineWidth: 1.5) }
+                            }
+                            .contentShape(RoundedRectangle(cornerRadius: tile * 0.25))
+                    }
+                    .buttonStyle(.plain)
+                    .help(icon.label)
+                    .accessibilityLabel(icon.label)
+                }
+            }
+            Group {
+                if matter.icon != nil {
+                    Button("Let Causabee choose") { choose(nil) }
+                        .buttonStyle(.plain).foregroundStyle(Theme.gold)
+                } else {
+                    Text("Causabee chose this one from the name.").foregroundStyle(.secondary)
+                }
+            }
+            #if os(iOS)
+            .font(.subheadline).padding(.top, 24)
+            #else
+            .font(.caption).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
+            #endif
+            #if os(iOS)
+            Spacer(minLength: 0)
+            #endif
+        }
+        #if os(iOS)
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity)
+        #else
+        .padding(16)
+        #endif
+        .tint(.primary)
+    }
+
+    private func choose(_ symbol: String?) {
+        matter.icon = symbol
+        try? context.save()
+        dismiss()
+    }
+}
+
+/// A matter's icon small in front of its name, in a line of text: closer together than a label's own.
+struct SmallIconLabel: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 4) {
+            configuration.icon.imageScale(.small)
+            configuration.title
+        }
     }
 }

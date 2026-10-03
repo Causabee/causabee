@@ -53,6 +53,9 @@ public final class Matter {
     public var closedAt: Date?
     /// When the owner pinned it to the top of the overview; nil when it is not pinned.
     public var pinnedAt: Date?
+    /// The icon the owner chose for it, a system symbol's name; nil while Causabee suggests one
+    /// from the name.
+    public var icon: String?
     /// The phase the matter is in, from its template. Nil until templates exist.
     public var phase: String?
     /// Three or four lines on what it is about, where it stands and what comes next — written

@@ -125,7 +125,8 @@ struct PhoneWeek: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text((thing.time.map { "\($0) · " } ?? "") + thing.what)
                                 .font(.subheadline).foregroundStyle(.primary).multilineTextAlignment(.leading)
-                            Text(thing.matter.name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            Label(thing.matter.name, systemImage: thing.matter.shownIcon).labelStyle(SmallIconLabel())
+                                .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                         Spacer(minLength: 0)
                     }
