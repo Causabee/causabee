@@ -282,7 +282,8 @@ struct Conversation {
     func address(of party: Party) -> String? { CardActions.address(of: party) }
 
     func recipient(_ id: String?, in turn: Navigation.Turn) -> (name: String, address: String?)? {
-        CardActions.recipient(id, refs: turn.refs, in: context)
+        CardActions.recipient(id, refs: turn.refs, question: turn.question, mail: turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil },
+                              scope: turn.matter.flatMap { live($0, as: Matter.self) }, in: context)
     }
 
     /// A card the owner ticked: what it does is CardActions' — the same on the iPhone; the turn
@@ -295,7 +296,8 @@ struct Conversation {
         // A matter made by a card in this same answer is where its to-dos go.
         let made = navigation.turns[position].madeMatter.flatMap { live($0, as: Matter.self) }
         let scope = made ?? turn.matter.flatMap { live($0, as: Matter.self) } ?? cited
-        switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: answer.links, scope: scope, in: context) {
+        switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: answer.links, scope: scope,
+                                 question: turn.question, mail: turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil }, in: context) {
         case .nothing:
             return
         case .openMail(let url):

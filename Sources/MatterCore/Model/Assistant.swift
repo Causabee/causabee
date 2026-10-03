@@ -296,8 +296,23 @@ public enum AssistantAsk {
         let typed = ([question, inHand?.text, facts.ownerText].compactMap { $0 } + earlier.map(\.question)).joined(separator: "\n")
         // The rules alone — shapes, not guesses — can read the whole of it: a policy number in a
         // note, "Frau Behrend" in a to-do. They do not take "Fragen" for a name.
-        let entities = EntityDetector().entities(in: typed, field: .body)
-            + EntityDetector(runsTagger: false).entities(in: user, field: .body)
+        // The tagger takes the word before a name for part of it — "Schreibe Georg" as one person. When
+        // the end of what it found is a name the mapping knows and the whole is not, the name is the end.
+        let people = Set(pseudonymizer.entries.filter { $0.kind == .person }.map { $0.original.lowercased() })
+        let tagged = EntityDetector().entities(in: typed, field: .body).map { entity -> Entity in
+            guard entity.kind == .person, !people.contains(entity.text.lowercased()) else { return entity }
+            var words = entity.text.split(separator: " ")
+            while words.count > 1 {
+                words.removeFirst()
+                let rest = words.joined(separator: " ")
+                guard people.contains(rest.lowercased()) else { continue }
+                let cut = entity.text.utf16.count - rest.utf16.count
+                return Entity(kind: entity.kind, text: rest, field: entity.field, start: entity.start + cut,
+                              length: entity.length - cut, source: entity.source)
+            }
+            return entity
+        }
+        let entities = tagged + EntityDetector(runsTagger: false).entities(in: user, field: .body)
         pseudonymizer.learn(entities, vocabulary: Vocabulary([user]))
         let newNames = pseudonymizer.entries.count - before
         if newNames > 0 { try save?(pseudonymizer.entries) }

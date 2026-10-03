@@ -47,7 +47,8 @@ public struct Pseudonymizer: Sendable {
 
         /// 2: in placeholder mode, people who share only a first or a last name no longer share a tag.
         /// 3: a role in front of a name — `Hausmeister Brenner` — is a title, not a first name.
-        public static let current = 3
+        /// 4: an ordinary word the tagger took for a name, or for the start of one, is no entry.
+        public static let current = 4
 
         public init() {}
 
@@ -69,6 +70,14 @@ public struct Pseudonymizer: Sendable {
                 placeholder = Pseudonymizer.rolesAsTitles(placeholder)
                 let after = Set(placeholder.map { $0.original + "\u{0}" + $0.standIn })
                 changed += before.filter { !after.contains($0.original + "\u{0}" + $0.standIn) }.count
+            }
+            if version < 4 {
+                // What the owner typed to the assistant taught words that are no names: "Schreibe Georg"
+                // as one person, "Alle" as another. They are forgotten; the name beside them has its own entry.
+                let before = placeholder.count
+                placeholder = Pseudonymizer.withoutMisreadWords(placeholder)
+                standin = Pseudonymizer.withoutMisreadWords(standin)
+                changed += before - placeholder.count
             }
             version = Self.current
             return changed
@@ -208,6 +217,22 @@ public struct Pseudonymizer: Sendable {
     static func isListed(_ word: String) -> Bool {
         let key = key(word)
         return commonWords.contains(key) || greetings.contains(key) || calendarWords.contains(key) || honorifics.contains(key)
+    }
+
+    /// The entries without those a name or a place was never in: only words on the lists, or one of
+    /// them in front of a name — and without the parts made of such an entry.
+    static func withoutMisreadWords(_ entries: [Entry]) -> [Entry] {
+        var dropped = Set<String>()
+        for entry in entries where entry.kind == .person || entry.kind == .place {
+            let tokens = words(entry.original)
+            guard let first = tokens.first else { continue }
+            func ordinary(_ token: String) -> Bool {
+                let key = key(token)
+                return !honorifics.contains(key) && !particles.contains(key) && isListed(token)
+            }
+            if tokens.allSatisfy(ordinary) || (tokens.count > 1 && ordinary(first)) { dropped.insert(entry.original) }
+        }
+        return entries.filter { !dropped.contains($0.original) && !($0.partOf.map(dropped.contains) ?? false) }
     }
 
     struct Skipped: Error { var reason: String }
@@ -947,6 +972,8 @@ public struct Pseudonymizer: Sendable {
         "meine", "ihnen", "ihren", "ihrer", "uns", "das", "die", "der", "ein", "eine", "von", "bei",
         "on", "als", "am", "im", "um", "für", "bis", "nach", "zum", "zur", "vom", "ab", "seit", "info", "mobil", "handy", "telefon", "fon", "kurz", "kurze",
         "gute", "namen", "post", "sitz", "haus", "privat", "wenn", "ihre", "ihr", "antwort",
+        // What the owner types to the assistant in front of a name, or at the start of a sentence.
+        "schreibe", "schreib", "antworte", "frage", "erinnere", "alle", "alles", "sachen", "write", "tell", "ask", "reply", "remind",
     ]
 }
 

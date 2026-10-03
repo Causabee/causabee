@@ -267,16 +267,37 @@ enum CardActions {
     /// The address a party last wrote from.
     static func address(of party: Party) -> String? { addresses(of: party).first?.address }
 
-    static func recipient(_ id: String?, refs: [String: FactRef], in context: ModelContext) -> (name: String, address: String?)? {
-        guard let id, let ref = refs[id], let party = live(ref, as: Party.self, in: context) else { return nil }
-        return (party.name, address(of: party))
+    /// Who a draft goes to. The party the card names; without one, the one person of the matter the
+    /// owner named in the question — "Schreibe Georg …" — and failing that, whoever wrote the mail in hand.
+    static func recipient(_ id: String?, refs: [String: FactRef], question: String = "", mail: String? = nil,
+                          scope: Matter? = nil, in context: ModelContext) -> (name: String, address: String?)? {
+        if let id, let ref = refs[id], let party = live(ref, as: Party.self, in: context) {
+            return (party.name, address(of: party))
+        }
+        guard let scope else { return nil }
+        func words(_ text: String) -> Set<String> {
+            Set(text.lowercased().split { !$0.isLetter }.filter { $0.count > 2 }.map(String.init))
+        }
+        let particles: Set<String> = ["von", "van", "der", "den", "del", "ten", "ter", "und", "the", "and", "gmbh"]
+        let asked = words(question)
+        let named = scope.parties.filter { party in
+            !asked.isDisjoint(with: words(([party.name] + party.spellings).joined(separator: " ")).subtracting(particles))
+        }
+        if named.count == 1, let party = named.first { return (party.name, address(of: party)) }
+        if let mail, let entry = (scope.entries ?? []).first(where: { $0.title == mail }) {
+            let address = Email.address(in: entry.from)
+            guard address.contains("@") else { return nil }
+            return (Email.displayName(in: entry.from) ?? address, address)
+        }
+        return nil
     }
 
     /// A card the owner ticked, with its text as the owner left it. Only now does anything change
     /// in the store. `scope` is the matter the answer is about: one made by a card of the same
     /// answer, the one it was asked in, or the one its facts come from.
     static func apply(_ card: AssistantPrompt.Reply.Card, text: String, subject: String?, refs: [String: FactRef],
-                      links: [String: String]?, scope: Matter?, in context: ModelContext) -> Outcome {
+                      links: [String: String]?, scope: Matter?, question: String = "", mail: String? = nil,
+                      in context: ModelContext) -> Outcome {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let source = Source(kind: .conversation, pointer: "assistant", date: Date(), quote: card.reason)
         func model<T: PersistentModel>(_ id: String?, as type: T.Type) -> T? {
@@ -340,7 +361,7 @@ enum CardActions {
             undo = .texts(before)
         case .draftMessage:
             // The one door out: Mail opens with the draft in it, and the owner sends it — or not.
-            let to = recipient(card.party, refs: refs, in: context)?.address ?? ""
+            let to = recipient(card.party, refs: refs, question: question, mail: mail, scope: scope, in: context)?.address ?? ""
             var parts = URLComponents()
             parts.scheme = "mailto"
             parts.path = to

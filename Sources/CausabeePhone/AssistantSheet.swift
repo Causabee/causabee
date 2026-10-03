@@ -526,7 +526,10 @@ struct PhoneActionCard: View {
     private var dismissed: Bool { turn.dismissedCards.contains(index) }
     private var undo: CardActions.Undo? { navigation.undos[turn.id]?[index] }
     private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink].contains(card.kind) }
-    private var recipient: (name: String, address: String?)? { CardActions.recipient(card.party, refs: turn.refs, in: context) }
+    private var mailInHand: String? { turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil } }
+    private var recipient: (name: String, address: String?)? {
+        CardActions.recipient(card.party, refs: turn.refs, question: turn.question, mail: mailInHand, scope: scope, in: context)
+    }
 
     var body: some View {
         Group {
@@ -708,7 +711,8 @@ struct PhoneActionCard: View {
     }
 
     private func take() {
-        switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: turn.answer?.links, scope: scope, in: context) {
+        switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: turn.answer?.links, scope: scope,
+                                 question: turn.question, mail: mailInHand, in: context) {
         case .nothing:
             return
         case .openMail(let url):
