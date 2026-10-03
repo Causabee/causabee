@@ -25,6 +25,8 @@ struct MatterScreen: View {
     @FocusState private var findFocused: Bool
     @State private var newMatterName = ""
     @State private var marked: PersistentIdentifier?
+    /// Every conversation shown, not only the newest: a source pointed at an older mail.
+    @State private var showsAllHistory = false
     @Query private var allMatters: [Matter]
     @Query private var profiles: [Profile]
     @Environment(PhoneStore.self) private var store
@@ -147,10 +149,16 @@ struct MatterScreen: View {
         guard let id else { return }
         navigation.showing = nil
         if status(of: id)?.isDone == true { showsDone = true }
+        // A source of an answer can be anything on the page: what is folded away is unfolded for it.
+        let today = MatterStatus(matter).today
+        if (matter.appointments ?? []).contains(where: { $0.persistentModelID == id && $0.day < today })
+            || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == id && $0.day < today }) { showsPast = true }
+        if (matter.entries ?? []).contains(where: { $0.persistentModelID == id }) { showsAllHistory = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation { scroller.scrollTo(id, anchor: .center) }
             marked = id
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { withAnimation { marked = nil } }
+            find.shown = id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { withAnimation { marked = nil; if find.shown == id { find.shown = nil } } }
         }
     }
 
@@ -633,7 +641,7 @@ struct MatterScreen: View {
     private func history(_ status: MatterStatus) -> some View {
         let threads = MailThreads.build(status.entries)
         var shown = 0
-        let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 }
+        let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || showsAllHistory }
         let hidden = threads.count - visible.count
         return VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "History", detail: Self.count(status.entries)

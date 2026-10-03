@@ -58,7 +58,7 @@ struct AssistantSheet: View {
                 ScrollView {
                     // Laid out whole, not lazily: rows measured only as they came into view made the
                     // thread jump while scrolling. A matter's thread is short enough.
-                    VStack(alignment: .leading, spacing: 22) {
+                    VStack(alignment: .leading, spacing: 20) {
                         let turns = shown
                         if turns.isEmpty {
                             Text(matter == nil ? "Nothing asked yet." : "Nothing asked about this matter yet.")
@@ -68,6 +68,7 @@ struct AssistantSheet: View {
                             if index == 0 || !Calendar.current.isDate(turns[index - 1].turn.date, inSameDayAs: item.turn.date) {
                                 Text(item.turn.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
                                     .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                                    .padding(.top, index == 0 ? 16 : 24)
                             }
                             PhoneTurnView(record: item.record, turn: item.turn, matter: item.record.matter)
                                 .id(item.turn.id)
@@ -77,8 +78,7 @@ struct AssistantSheet: View {
                             PhoneShotCard(shot: shot).id(shot.id)
                         }
                         if let asking {
-                            PendingTurn(question: asking.question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
-                                        step: step, sentAt: sentAt)
+                            PendingTurn(question: asking.question, step: step, sentAt: sentAt)
                                 .id("asking")
                         }
                         if let failure {
@@ -340,21 +340,17 @@ extension AssistantSheet {
 /// The question just sent, while the answer is on its way: the bee at work.
 struct PendingTurn: View {
     let question: String
-    let scope: String
     let step: AssistantAsk.Step
     let sentAt: Date?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(scope).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                Text(question)
-                    .padding(.horizontal, 14).padding(.vertical, 10)
-                    .background(Theme.honey, in: RoundedRectangle(cornerRadius: 18))
-                    .foregroundStyle(.black)
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.leading, 40)
+        VStack(alignment: .leading, spacing: 16) {
+            Text(question)
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(Theme.honey, in: RoundedRectangle(cornerRadius: 18))
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.leading, 40)
             AskSteps(step: step, sentAt: sentAt, size: 12)
         }
     }
@@ -367,6 +363,10 @@ struct PhoneTurnView: View {
     let matter: Matter?
     /// Just copied: the button says so for a moment.
     @State private var copied = false
+    /// The answer's sources, unfolded: one list for the whole answer.
+    @State private var showsSources = false
+    @Environment(Navigation.self) private var navigation
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         if let note = turn.note {
@@ -374,7 +374,7 @@ struct PhoneTurnView: View {
         } else if turn.hasShot {
             Label("A screenshot, brought in on the Mac", systemImage: "photo").font(.footnote).foregroundStyle(.secondary)
         } else {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 16) {
                 question
                 switch turn.state {
                 case .answered(let answer): answered(answer)
@@ -391,50 +391,67 @@ struct PhoneTurnView: View {
     }
 
     private var question: some View {
-        VStack(alignment: .trailing, spacing: 4) {
-            Text(turn.inHand.map { "\(turn.scope) · \($0.kind): \($0.text)" } ?? turn.scope)
-                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-            Text(turn.question)
-                .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(Theme.honey, in: RoundedRectangle(cornerRadius: 18))
-                .foregroundStyle(.black)
-                .textSelection(.enabled)
-        }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .padding(.leading, 40)
+        Text(turn.question)
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Theme.honey, in: RoundedRectangle(cornerRadius: 18))
+            .foregroundStyle(.black)
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.leading, 40)
     }
 
-    @ViewBuilder
     private func answered(_ answer: AssistantAsk.Answer) -> some View {
-        ForEach(Array(answer.reply.lines.enumerated()), id: \.offset) { _, line in
-            VStack(alignment: .leading, spacing: 4) {
+        // What the answer and its cards rest on, each once, in the order it is cited.
+        let cites = (answer.reply.lines.flatMap(\.cites) + answer.reply.cards.flatMap(\.cites))
+            .reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+        return VStack(alignment: .leading, spacing: 12) {
+            ForEach(Array(answer.reply.lines.enumerated()), id: \.offset) { _, line in
                 Text(line.text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                if !line.cites.isEmpty {
-                    SourcesLine(cites: line.cites, refs: turn.refs, matter: matter)
+            }
+            // What the facts do not say is part of the answer, said like the rest of it — not a notice.
+            if let missing = answer.reply.notInFacts {
+                Text(missing).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(Array(answer.reply.cards.enumerated()), id: \.offset) { index, card in
+                PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
+            }
+            // One line under the answer: copy it, what it rests on — and what it cost.
+            HStack(spacing: 6) {
+                Button {
+                    UIPasteboard.general.string = answer.plainText
+                    copied = true
+                    Task { try? await Task.sleep(for: .seconds(1.5)); copied = false }
+                } label: {
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.footnote).foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32).contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(copied ? "Copied" : "Copy the answer")
+                if !cites.isEmpty {
+                    Button { withAnimation(.snappy) { showsSources.toggle() } } label: {
+                        HStack(spacing: 4) {
+                            Text("Sources (\(cites.count))")
+                            Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).rotationEffect(.degrees(showsSources ? 90 : 0))
+                        }
+                        .font(.footnote).foregroundStyle(.secondary)
+                        .frame(minHeight: 32).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer(minLength: 8)
+                Text("$\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
+                    .accessibilityLabel("\(answer.modelLabel), $\(String(format: "%.3f", answer.cost))")
+            }
+            .padding(.leading, -8)
+            .padding(.vertical, -6)
+            if showsSources, !cites.isEmpty {
+                // A tap closes the assistant and shows that very mail, task or date in its matter.
+                SourceList(cites: cites, refs: turn.refs) { ref in
+                    if let target = CardActions.matter(of: ref, in: context) { navigation.open(target, showing: CardActions.row(of: ref)) }
+                }
+                .padding(.top, 4)
             }
         }
-        // What the facts do not say is part of the answer, said like the rest of it — not a notice.
-        if let missing = answer.reply.notInFacts {
-            Text(missing).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-        }
-        ForEach(Array(answer.reply.cards.enumerated()), id: \.offset) { index, card in
-            PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
-        }
-        HStack(spacing: 10) {
-            Button {
-                UIPasteboard.general.string = answer.plainText
-                copied = true
-                Task { try? await Task.sleep(for: .seconds(1.5)); copied = false }
-            } label: {
-                Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.footnote).foregroundStyle(.secondary)
-                    .frame(width: 32, height: 32).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(copied ? "Copied" : "Copy the answer")
-            Text("\(answer.modelLabel) · $\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
-        }
-        .padding(.leading, -8)
     }
 
     /// What came in with "Get new mail" on the Mac.
@@ -449,49 +466,9 @@ struct PhoneTurnView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
+        // Nothing to decide here, only to read: white, as a card taken in — grey is what waits.
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
-    }
-}
-
-/// "Sources · 2 ›": what a line was read from, unfolded with a tap. A task named there is found
-/// by its id where this store knows it — a thread asked on the Mac names the Mac's own.
-struct SourcesLine: View {
-    let cites: [String]
-    let refs: [String: FactRef]
-    let matter: Matter?
-    @Environment(\.modelContext) private var context
-    @State private var open = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Button { withAnimation(.snappy) { open.toggle() } } label: {
-                HStack(spacing: 4) {
-                    Text("Sources · \(cites.count)")
-                    Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).rotationEffect(.degrees(open ? 90 : 0))
-                }
-                .font(.caption).foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            if open {
-                ForEach(cites, id: \.self) { cite in
-                    Text("• " + label(cite)).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
-
-    private func label(_ cite: String) -> String {
-        // The Mac's chip words, when this store knows the fact; a thread asked on another device
-        // names that device's facts.
-        if let ref = refs[cite], CardActions.matter(of: ref, in: context) != nil { return CardActions.label(ref, in: context) }
-        switch cite.first {
-        case "T": return "a task of the matter"
-        case "M": return "a mail of the matter"
-        case "D": return "a date of the matter"
-        case "P": return "a person of the matter"
-        default: return cite
-        }
     }
 }
 
@@ -553,12 +530,22 @@ struct PhoneActionCard: View {
             } else if quiet {
                 taken
             } else if dismissed, !done {
-                HStack {
-                    Text("Suggestion dismissed: \(title.lowercased())").font(.caption).foregroundStyle(.secondary)
-                    Button("show again") { navigation.mark(record, card: index, dismissed: false, context: context) }
-                        .font(.caption).foregroundStyle(Theme.gold)
-                    Spacer()
+                // Put aside, not gone: a small white card — nothing waits in it — that says what was
+                // suggested, and brings it back.
+                HStack(alignment: .center, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("You dismissed this suggestion").font(.caption2)
+                        Text(card.text.isEmpty ? title : card.text).font(.footnote)
+                            .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                    Button("Show again") { navigation.mark(record, card: index, dismissed: false, context: context) }
+                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain).fixedSize()
                 }
+                .padding(.horizontal, 12).padding(.vertical, 10)
+                .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
             } else {
                 full
             }
@@ -589,7 +576,6 @@ struct PhoneActionCard: View {
                     .disabled(done)
             }
             Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if !card.cites.isEmpty { SourcesLine(cites: card.cites, refs: turn.refs, matter: matter) }
             if card.kind == .sameParty, !done {
                 Text("Later you can only turn merging off for new mail; you cannot split it again.")
                     .font(.caption2).foregroundStyle(.secondary)
@@ -633,7 +619,7 @@ struct PhoneActionCard: View {
         }
         .opacity(showsContent ? 1 : 0)
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
+        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.card).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
         .transition(.opacity)
         .contentShape(RoundedRectangle(cornerRadius: 12))
@@ -699,7 +685,7 @@ struct PhoneActionCard: View {
         }
         .opacity(showsContent ? 1 : 0)
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
+        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.card).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
         .transition(.opacity)
         .contentShape(RoundedRectangle(cornerRadius: 12))

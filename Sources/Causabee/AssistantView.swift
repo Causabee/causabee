@@ -85,7 +85,7 @@ struct AssistantColumn: View {
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 12) {
                         if shown.isEmpty {
                             Text(openMatter != nil
                                  ? "No talk about this matter yet. Ask something — or click “talk” on a line on the right."
@@ -97,7 +97,7 @@ struct AssistantColumn: View {
                             // The day, where it changes: one thread since the first question.
                             if index == 0 || !Calendar.current.isDate(shown[index - 1].date, inSameDayAs: turn.date) {
                                 Text(turn.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
-                                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 6)
+                                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, index == 0 ? 16 : 24)
                             }
                             if let note = turn.note {
                                 IntakeNote(text: note).id(turn.id)
@@ -297,7 +297,9 @@ struct IntakeNote: View {
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .quietBox(radius: 8)
+        // Nothing to decide here, only to read: white, as a card taken in — grey is what waits.
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line))
         .padding(.top, 6)
     }
 }
@@ -480,23 +482,21 @@ struct TurnView: View {
     /// Asks the same question once more — for the newest question, while nothing else is on its way.
     var again: (() -> Void)? = nil
     @State private var showsSent = false
+    /// The answer's sources, unfolded: one list for the whole answer.
+    @State private var showsSources = false
     /// Just copied: the button says so for a moment.
     @State private var copied = false
     @Environment(\.reading) private var reading
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(turn.inHand.map { "\(turn.scope) · \($0.kind): \($0.text)" } ?? turn.scope)
-                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                Text(turn.question)
-                    .padding(.horizontal, 14).padding(.vertical, 9)
-                    .background(Theme.honey, in: RoundedRectangle(cornerRadius: 16))
-                    .foregroundStyle(.black)
-                    .textSelection(.enabled)
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.leading, 80)
+            Text(turn.question)
+                .padding(.horizontal, 14).padding(.vertical, 9)
+                .background(Theme.honey, in: RoundedRectangle(cornerRadius: 16))
+                .foregroundStyle(.black)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.leading, 80)
             ForEach(turn.readAs, id: \.self) { note in
                 Label(note, systemImage: "character.cursor.ibeam").font(.caption2).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -526,12 +526,12 @@ struct TurnView: View {
 
     @ViewBuilder
     private func answered(_ answer: AssistantAsk.Answer) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        // What the answer and its cards rest on, each once, in the order it is cited.
+        let cites = (answer.reply.lines.flatMap(\.cites) + answer.reply.cards.flatMap(\.cites))
+            .reduce(into: [String]()) { if turn.refs[$1] != nil, !$0.contains($1) { $0.append($1) } }
+        VStack(alignment: .leading, spacing: 12) {
             ForEach(Array(answer.reply.lines.enumerated()), id: \.offset) { _, line in
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(line.text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                    CiteChips(cites: line.cites, refs: turn.refs, open: open, label: label).explanation()
-                }
+                Text(line.text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
             }
             // What the facts do not say is part of the answer, said like the rest of it — not a notice.
             if let missing = answer.reply.notInFacts {
@@ -546,6 +546,7 @@ struct TurnView: View {
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
             }
+            // One line under the answer: copy it, ask again, what it rests on — and what it cost.
             HStack(spacing: 14) {
                 Button {
                     NSPasteboard.general.clearContents()
@@ -565,79 +566,46 @@ struct TurnView: View {
                     .help("Try again: asks the same question once more, for another answer")
                     .accessibilityLabel("Try again")
                 }
+                if !cites.isEmpty {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.15)) { showsSources.toggle() }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("Sources (\(cites.count))")
+                            Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
+                                .rotationEffect(.degrees(showsSources ? 90 : 0))
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .help(showsSources ? "Hide the sources" : "What this rests on: mails, tasks, dates")
+                }
+                Spacer(minLength: 8)
+                // Only what it cost; who answered and what was sent are behind it.
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) { showsSent.toggle() }
+                } label: {
+                    Text(String(format: "$%.3f", answer.cost)).font(.caption2).contentShape(Rectangle())
+                }
+                .help(showsSent ? "Hide what was sent" : "\(answer.modelLabel) — shows what was sent, pseudonymised")
             }
             .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
             .tool()
-            DisclosureGroup(isExpanded: $showsSent) {
-                ScrollView {
-                    Text(answer.sent).font(.caption.monospaced()).textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(maxHeight: 260)
-                .padding(8)
-                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            } label: {
-                // Only who answered and what it cost; what was sent is inside.
-                Text("\(answer.modelLabel) · \(String(format: "$%.3f", answer.cost))")
-                    .font(.caption2).foregroundStyle(.secondary)
+            if showsSources, !cites.isEmpty {
+                SourceList(cites: cites, refs: turn.refs, open: open).padding(.top, 4).explanation()
             }
-            .explanation()
-        }
-    }
-}
-
-/// The facts a line rests on, each a door into its matter.
-struct CiteChips: View {
-    let cites: [String]
-    let refs: [String: FactRef]
-    let open: (FactRef) -> Void
-    let label: (FactRef) -> String
-    /// Folded away by default: what an answer rests on is one click away, not a wall of chips.
-    @State private var shown = false
-
-    var body: some View {
-        let known = cites.filter { refs[$0] != nil }
-        if !known.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                Button {
-                    withAnimation(.easeOut(duration: 0.15)) { shown.toggle() }
-                } label: {
-                    HStack(spacing: 3) {
-                        Text("Sources · \(known.count)")
-                        Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
-                            .rotationEffect(.degrees(shown ? 90 : 0))
+            if showsSent {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(answer.modelLabel).font(.caption2).foregroundStyle(.secondary)
+                    ScrollView {
+                        Text(answer.sent).font(.caption.monospaced()).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .font(.caption).foregroundStyle(.secondary).contentShape(Rectangle())
+                    .frame(maxHeight: 260)
+                    .padding(8)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
                 }
-                .buttonStyle(.plain)
-                .help(shown ? "Hide the sources" : "What this rests on: mails, tasks, dates")
-                if shown { chips(known) }
+                .explanation()
             }
-        }
-    }
-
-    private func chips(_ known: [String]) -> some View {
-        FlowRow(spacing: 4) {
-            ForEach(known, id: \.self) { cite in
-                Button(refs[cite].map(label) ?? cite) { if let ref = refs[cite] { open(ref) } }
-                    .buttonStyle(.plain)
-                    .font(.caption2)
-                    .lineLimit(1)
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.12), in: Capsule())
-                    .help(label(for: cite))
-            }
-        }
-    }
-
-    private func label(for cite: String) -> String {
-        switch cite.first {
-        case "E": "Mail — opens the matter"
-        case "T": "Task — opens the matter"
-        case "A": "Appointment — opens the matter"
-        case "D": "Deadline — opens the matter"
-        case "P": "People — opens the matter"
-        default: "opens the matter"
         }
     }
 }
@@ -700,11 +668,21 @@ struct ActionCard: View {
             } else if quiet {
                 taken
             } else if dismissed, !done {
-            HStack {
-                Text("Suggestion dismissed: \(title.lowercased())").font(.caption).foregroundStyle(.secondary)
-                Button("show again") { setDismissed(false) }.buttonStyle(.gold).font(.caption)
-                Spacer()
+            // Put aside, not gone: a small white card — nothing waits in it — that says what was
+            // suggested, and brings it back.
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("You dismissed this suggestion").font(.caption2)
+                    Text(card.text.isEmpty ? title : card.text).font(.caption)
+                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }
+                .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Button("Show again") { setDismissed(false) }.buttonStyle(.gold).font(.caption).fixedSize()
             }
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
         } else {
             VStack(alignment: .leading, spacing: 10) {
                 Text(title).font(.caption.weight(.semibold)).foregroundStyle(.primary)
@@ -724,7 +702,6 @@ struct ActionCard: View {
                         .help("Change it before taking it in, if it is not quite right")
                 }
                 Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                CiteChips(cites: card.cites, refs: refs, open: open, label: label)
                 if card.kind == .sameParty, !done {
                     Text("Later you can only turn merging off for new mail; you cannot split it again.")
                         .font(.caption2).foregroundStyle(.secondary)
@@ -782,7 +759,7 @@ struct ActionCard: View {
         }
         .opacity(showsContent ? 1 : 0)
         .padding(.horizontal, 10).padding(.vertical, 8)
-        .background { RoundedRectangle(cornerRadius: 10).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
+        .background { RoundedRectangle(cornerRadius: 10).fill(Theme.card).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
         .contentShape(RoundedRectangle(cornerRadius: 10))
         .onTapGesture(perform: openTaken)
@@ -836,7 +813,7 @@ struct ActionCard: View {
         }
         .opacity(showsContent ? 1 : 0)
         .padding(.horizontal, 10).padding(.vertical, 8)
-        .background { RoundedRectangle(cornerRadius: 10).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
+        .background { RoundedRectangle(cornerRadius: 10).fill(Theme.card).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
         .contentShape(RoundedRectangle(cornerRadius: 10))
         .onTapGesture { apply(text, subject) }

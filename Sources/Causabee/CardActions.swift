@@ -1,6 +1,7 @@
 import Foundation
 import MatterCore
 import SwiftData
+import SwiftUI
 
 /// What a card the owner ticks does to the store, and how to take it back — the same on the Mac and
 /// the iPhone: both apps take this file in. What each app does around it — keeping the turn, opening
@@ -76,6 +77,74 @@ enum CardActions {
         case .appointment: return "Appointment " + (live(ref, as: Appointment.self, in: context).map { Dates.short($0.day) } ?? "")
         case .deadline: return "Deadline " + (live(ref, as: Deadline.self, in: context).map { Dates.short($0.day) } ?? "")
         case .party: return live(ref, as: Party.self, in: context)?.name ?? "merged"
+        }
+    }
+
+    /// A source in the list under an answer: what it is, its whole name, and its day.
+    struct SourceLine {
+        var symbol: String
+        var title: String
+        var detail: String
+        /// Still there, in a matter: the row is a door to it.
+        var isThere = true
+    }
+
+    static func source(_ ref: FactRef, in context: ModelContext) -> SourceLine {
+        switch ref {
+        case .matter:
+            guard let matter = live(ref, as: Matter.self, in: context) else { return gone("folder", "A matter that is no longer there") }
+            return SourceLine(symbol: "folder", title: matter.name, detail: "Matter")
+        case .entry:
+            guard let entry = live(ref, as: Entry.self, in: context) else { return gone("envelope", "A mail that is no longer there") }
+            let symbol = switch entry.source.kind {
+            case .mail: "envelope"
+            case .screenshot, .photo: "photo"
+            case .document: "doc"
+            case .spokenNote: "waveform"
+            case .phoneCall: "phone"
+            case .conversation: "bubble.left"
+            }
+            let who = Email.displayName(in: entry.from) ?? Email.address(in: entry.from)
+            let title = entry.title.isEmpty ? "(no subject)" : entry.title
+            return SourceLine(symbol: symbol, title: who.isEmpty ? title : "\(who) — \(title)", detail: entry.date.map(Dates.short) ?? "")
+        case .todo:
+            guard let todo = live(ref, as: Todo.self, in: context) else { return gone("circle", "A task that is no longer there") }
+            let detail = todo.isDone ? "done" + (todo.doneAt.map { " " + Dates.short($0) } ?? "") : todo.due.map { "due " + Dates.short($0) } ?? "Task"
+            return SourceLine(symbol: todo.isDone ? "checkmark.circle" : "circle", title: todo.text, detail: detail)
+        case .appointment:
+            guard let appointment = live(ref, as: Appointment.self, in: context) else { return gone("calendar", "An appointment that is no longer there") }
+            return SourceLine(symbol: "calendar", title: appointment.what, detail: Dates.short(appointment.day) + (appointment.time.map { ", " + $0 } ?? ""))
+        case .deadline:
+            guard let deadline = live(ref, as: Deadline.self, in: context) else { return gone("calendar.badge.clock", "A deadline that is no longer there") }
+            return SourceLine(symbol: "calendar.badge.clock", title: deadline.what, detail: "Deadline " + Dates.short(deadline.day))
+        case .party:
+            guard let party = live(ref, as: Party.self, in: context) else { return gone("person", "A person merged into another") }
+            return SourceLine(symbol: "person", title: party.name, detail: "Person")
+        }
+    }
+
+    /// A source this store does not know — a thread asked on another device names that device's
+    /// facts: what kind it is, by the letter of its id.
+    static func source(named cite: String) -> SourceLine {
+        switch cite.first {
+        case "E", "M": gone("envelope", "A mail of the matter")
+        case "T": gone("circle", "A task of the matter")
+        case "A": gone("calendar", "An appointment of the matter")
+        case "D": gone("calendar.badge.clock", "A deadline of the matter")
+        case "P": gone("person", "A person of the matter")
+        default: gone("doc", cite)
+        }
+    }
+
+    private static func gone(_ symbol: String, _ title: String) -> SourceLine {
+        SourceLine(symbol: symbol, title: title, detail: "", isThere: false)
+    }
+
+    /// What a source's row jumps to in its matter: the fact itself — a matter has no row of its own.
+    static func row(of ref: FactRef) -> PersistentIdentifier? {
+        switch ref {
+        case .matter: nil
+        case .entry(let id), .todo(let id), .appointment(let id), .deadline(let id), .party(let id): id
         }
     }
 
@@ -258,5 +327,68 @@ enum CardActions {
         }
         try? context.save()
         return true
+    }
+}
+
+/// What an answer rests on, as one list under it: each source with what it is, its whole name and
+/// its day — and a door to that very mail, task or date in its matter.
+struct SourceList: View {
+    let cites: [String]
+    let refs: [String: FactRef]
+    let open: (FactRef) -> Void
+    @Environment(\.modelContext) private var context
+
+    #if os(iOS)
+    private static let radius: CGFloat = 12
+    #else
+    private static let radius: CGFloat = 10
+    #endif
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(cites.enumerated()), id: \.offset) { index, cite in
+                if index > 0 { Rectangle().fill(Theme.line).frame(height: 1) }
+                let ref = refs[cite]
+                let line = ref.map { CardActions.source($0, in: context) } ?? CardActions.source(named: cite)
+                SourceRow(line: line, open: ref.flatMap { ref in line.isThere ? { open(ref) } : nil })
+            }
+        }
+        .background(Theme.card)
+        .clipShape(RoundedRectangle(cornerRadius: Self.radius))
+        .overlay(RoundedRectangle(cornerRadius: Self.radius).stroke(Theme.line))
+    }
+}
+
+private struct SourceRow: View {
+    let line: CardActions.SourceLine
+    let open: (() -> Void)?
+    @State private var hovering = false
+
+    var body: some View {
+        #if os(iOS)
+        let title = Font.subheadline, symbol = Font.body, gap: CGFloat = 10, across: CGFloat = 12, down: CGFloat = 10
+        #else
+        let title = Font.callout, symbol = Font.callout, gap: CGFloat = 8, across: CGFloat = 10, down: CGFloat = 6
+        #endif
+        Button { open?() } label: {
+            HStack(alignment: .center, spacing: gap) {
+                Image(systemName: line.symbol).font(symbol).foregroundStyle(.secondary).frame(width: 20)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(line.title).font(title).foregroundStyle(open == nil ? .secondary : .primary)
+                        .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                    if !line.detail.isEmpty { Text(line.detail).font(.caption2).foregroundStyle(.secondary) }
+                }
+                Spacer(minLength: 8)
+                if open != nil { Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(.secondary) }
+            }
+            .padding(.horizontal, across).padding(.vertical, down)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(hovering && open != nil ? Theme.box : .clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(open == nil)
+        .onHover { hovering = $0 }
+        .accessibilityHint(open == nil ? "" : "Shows it in its matter")
     }
 }

@@ -266,7 +266,8 @@ struct Conversation {
 
     /// A cited fact is a door into the status of the matter it belongs to.
     func open(_ ref: FactRef) {
-        if let matter = matter(of: ref) { navigation.open(matter) }
+        // Into its matter, at the very mail, task or date: scrolled to and marked for a moment.
+        if let matter = matter(of: ref) { navigation.open(matter, showing: CardActions.row(of: ref)) }
     }
 
     /// A fact by its id, if it is still there (CardActions, shared with the iPhone).

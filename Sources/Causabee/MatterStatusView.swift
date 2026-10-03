@@ -52,6 +52,8 @@ struct MatterStatusView: View {
     @Query private var profiles: [Profile]
     /// The to-do "überfällig" pointed at, marked for a moment when the matter opens.
     @State private var marked: PersistentIdentifier?
+    /// Every conversation shown, not only the newest: a source pointed at an older mail.
+    @State private var showsAllHistory = false
     /// ⌘F on this page.
     @State private var find = PageFind()
     /// The page has gone up under the title bar: the bar turns to glass, with a line under it.
@@ -94,7 +96,7 @@ struct MatterStatusView: View {
                 }
                 .onChange(of: find.query) { find.index = 0 }
                 .onChange(of: find.current) { if let at = find.current { withAnimation { scroller.scrollTo(at, anchor: .center) } } }
-                .onChange(of: matter.persistentModelID) { find.query = "" }
+                .onChange(of: matter.persistentModelID) { find.query = ""; showsAllHistory = false }
                 // `--demo --shot`: the part of the page the introduction's picture shows.
                 .onAppear {
                     if let section = IntroShot.current?.section {
@@ -704,8 +706,16 @@ struct MatterStatusView: View {
         guard let todo else { return }
         navigation.showing = nil
         marked = todo
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { withAnimation { scroller.scrollTo(todo, anchor: .center) } }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { withAnimation { if marked == todo { marked = nil } } }
+        find.shown = todo
+        // What is folded away — done, past, an old conversation — is unfolded for it.
+        if (matter.todos ?? []).contains(where: { $0.persistentModelID == todo && $0.isDone }) { showsDone = true }
+        if matter.infos.contains(where: { $0.persistentModelID == todo }) { showsInfos = true }
+        let today = MatterStatus(matter).today
+        if (matter.appointments ?? []).contains(where: { $0.persistentModelID == todo && $0.day < today })
+            || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == todo && $0.day < today }) { showsPast = true }
+        if (matter.entries ?? []).contains(where: { $0.persistentModelID == todo }) { showsAllHistory = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { withAnimation { scroller.scrollTo(todo, anchor: .center) } }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { withAnimation { if marked == todo { marked = nil }; if find.shown == todo { find.shown = nil } } }
     }
 
     private var closeQuestion: String {
@@ -1112,7 +1122,7 @@ struct MatterStatusView: View {
         let threads = MailThreads.build(status.entries)
         // The newest conversations, until about 60 mails are shown.
         var shown = 0
-        let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || find.isActive }
+        let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || find.isActive || showsAllHistory }
         let hidden = threads.count - visible.count
         return VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "History", detail: Self.count(status.entries)

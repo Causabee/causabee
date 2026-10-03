@@ -11,6 +11,8 @@ final class PageFind {
     /// The rows that have the words, top to bottom, as the page reports them.
     var matches: [PageFind.ID] = []
     var index = 0
+    /// A row jumped to — from an answer's sources, from an overdue line: marked for a moment.
+    var shown: PersistentIdentifier?
 
     enum ID: Hashable, Sendable {
         case model(PersistentIdentifier)
@@ -49,8 +51,9 @@ private struct Findable: ViewModifier {
     func body(content: Content) -> some View {
         let hit = find.has(texts)
         let current = hit && find.current == id
+        let shown = find.shown.map { id == .model($0) } ?? false
         content
-            .background(hit ? Theme.mark.opacity(current ? 1 : 0.45) : .clear, in: RoundedRectangle(cornerRadius: 6))
+            .background(shown ? Theme.mark : hit ? Theme.mark.opacity(current ? 1 : 0.45) : .clear, in: RoundedRectangle(cornerRadius: 6))
             .overlay { if current { RoundedRectangle(cornerRadius: 6).stroke(Theme.gold, lineWidth: 1.5) } }
             .preference(key: PageFindMatches.self, value: hit ? [id] : [])
             .modifier(ScrollTarget(id: id))
