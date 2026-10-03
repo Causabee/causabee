@@ -19,22 +19,55 @@ struct Conversation {
         // "Geor" is Georg when Georg is the only one near it: read on the device, and said.
         let names = scope.flatMap { $0.parties.map(\.name) }
         let (question, readAs) = NameHints.correct(typed, knowing: names)
+        var turn = Navigation.Turn(question: question, scope: pinnedMatter.map { "about \($0.name)" } ?? "about all matters",
+                                   inHand: navigation.pinned, seen: "", refs: [:], matter: pinnedMatter?.persistentModelID)
+        turn.readAs = readAs.map { "read “\($0.typed)” as “\($0.known)”" }
+        navigation.turns.append(turn)
+        send(turn.id, about: scope)
+    }
+
+    /// The same question once more, in its place in the thread: one that failed or was stopped, or
+    /// the newest answer for another one. The facts are read anew, as they are now.
+    func again(_ turn: Navigation.Turn, all matters: [Matter]) {
+        guard let position = navigation.turns.firstIndex(where: { $0.id == turn.id }), !navigation.turns[position].isAsking else { return }
+        navigation.turns[position].state = .asking
+        navigation.turns[position].applied = []
+        navigation.turns[position].dismissedCards = []
+        navigation.turns[position].undos = [:]
+        navigation.turns[position].madeMatter = nil
+        let matter = turn.matter.flatMap { live($0, as: Matter.self) }
+        send(turn.id, about: matter.map { [$0] } ?? activeMatters(matters))
+    }
+
+    /// Stops a question on its way. Nothing comes back for it; it can be asked again.
+    func stop(_ id: UUID) {
+        navigation.asks[id]?.cancel()
+        navigation.asks[id] = nil
+        guard let position = navigation.turns.firstIndex(where: { $0.id == id }), navigation.turns[position].isAsking else { return }
+        navigation.turns[position].state = .failed(AssistantAsk.stopped)
+    }
+
+    /// Sends the turn's question with the facts of `scope`, saying each step into the turn.
+    private func send(_ id: UUID, about scope: [Matter]) {
+        guard let position = navigation.turns.firstIndex(where: { $0.id == id }) else { return }
+        let turn = navigation.turns[position]
         let today = MatterStatus.day(Date())
-        let pinned = navigation.pinned
+        let pinned = turn.inHand
         let store = navigation.store
         let facts = FactSheet.facts(for: scope, today: today, focus: pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text },
                                     keptText: { MailText.load($0.messageID, besides: store)?.body })
         let inHand = pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : (kind: $0.kind, text: $0.text) }
-        // Only this matter's talk: what was said about another matter is not needed here, and
-        // would go out with this question.
-        let earlier: [(question: String, answer: String)] = navigation.turns.compactMap { turn in
-            guard turn.matter == pinnedMatter?.persistentModelID, case .answered(let answer) = turn.state else { return nil }
-            return (turn.question, answer.reply.lines.map(\.text).joined(separator: " "))
+        // Only this matter's talk, and only what came before: what was said about another matter
+        // is not needed here, and would go out with this question.
+        let earlier: [(question: String, answer: String)] = navigation.turns[..<position].compactMap { before in
+            guard before.matter == turn.matter, case .answered(let answer) = before.state else { return nil }
+            return (before.question, answer.reply.lines.map(\.text).joined(separator: " "))
         }
-        navigation.turns.append(.init(question: question, scope: pinnedMatter.map { "about \($0.name)" } ?? "about all matters", inHand: pinned,
-                                      seen: facts.seen, refs: facts.refs, matter: pinnedMatter?.persistentModelID))
-        navigation.turns[navigation.turns.count - 1].readAs = readAs.map { "read “\($0.typed)” as “\($0.known)”" }
-        let id = navigation.turns.last!.id
+        navigation.turns[position].seen = facts.seen
+        navigation.turns[position].refs = facts.refs
+        navigation.turns[position].step = .disguising
+        navigation.turns[position].sentAt = nil
+        let question = turn.question
         let model = ModelChoice.assistant
         guard let claude = ModelChoice.client(for: model) else {
             setState(of: id, .failed(ModelChoice.missingKey(model)))
@@ -43,14 +76,22 @@ struct Conversation {
         let mapping = navigation.mapping
         let owner = self.owner
         let navigation = self.navigation
-        Task {
+        // The steps are said away from the window, and read here.
+        let (steps, said) = AsyncStream.makeStream(of: AssistantAsk.Step.self)
+        Task { for await step in steps { Conversation.set(id, step, in: navigation) } }
+        navigation.asks[id] = Task {
+            defer { said.finish() }
             do {
                 let answer = try await AssistantAsk.ask(question: question, inHand: inHand, earlier: earlier, facts: facts,
-                                                        owner: owner, today: today, mapping: mapping, claude: claude, model: model)
+                                                        owner: owner, today: today, mapping: mapping, claude: claude, model: model) { said.yield($0) }
+                // Stopped while the answer was coming: it is not put into the thread.
+                guard !Task.isCancelled else { return }
                 Conversation.set(id, .answered(answer), in: navigation)
             } catch {
+                guard !Task.isCancelled else { return }
                 Conversation.set(id, .failed("\(error)"), in: navigation)
             }
+            navigation.asks[id] = nil
         }
     }
 
@@ -212,6 +253,13 @@ struct Conversation {
         navigation.turns[index].state = state
     }
 
+    /// The step a question on its way has reached; a turn stopped meanwhile stays as it is.
+    static func set(_ id: UUID, _ step: AssistantAsk.Step, in navigation: Navigation) {
+        guard let index = navigation.turns.firstIndex(where: { $0.id == id }), navigation.turns[index].isAsking else { return }
+        navigation.turns[index].step = step
+        if step == .waiting { navigation.turns[index].sentAt = Date() }
+    }
+
     func setState(of id: UUID, _ state: Navigation.Turn.State) { Self.set(id, state, in: navigation) }
 
     // MARK: Doors
@@ -293,6 +341,8 @@ struct Composer: View {
     let unpin: () -> Void
     /// Opens a panel to choose a screenshot.
     var attach: (() -> Void)? = nil
+    /// Set while an answer is on its way: one question at a time, and the send button stops it.
+    var stop: (() -> Void)? = nil
     let send: () -> Void
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
@@ -336,20 +386,22 @@ struct Composer: View {
                     .onKeyPress(.return, phases: .down) { press in
                         if press.modifiers.contains(.shift) || press.modifiers.contains(.option) {
                             draft += "\n"
-                        } else {
+                        } else if stop == nil {
                             send()
                         }
+                        // While an answer is on its way, what is typed waits in the field.
                         return .handled
                     }
-                Button(action: send) {
-                    // The bee's yellow with a black arrow, like the other yellow pills.
-                    Image(systemName: "arrow.up.circle.fill").resizable().frame(width: 26, height: 26)
+                Button(action: stop ?? send) {
+                    // The bee's yellow with a black arrow, like the other yellow pills — and a
+                    // black square while an answer is on its way.
+                    Image(systemName: stop == nil ? "arrow.up.circle.fill" : "stop.circle.fill").resizable().frame(width: 26, height: 26)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(Color.black, Theme.bee)
                 }
                 .buttonStyle(.plain)
-                .keyboardShortcut(.return, modifiers: .command)
-                .help("Send (↩) · new line with ⇧↩")
+                .keyboardShortcut(stop == nil ? KeyboardShortcut(.return, modifiers: .command) : KeyboardShortcut(".", modifiers: .command))
+                .help(stop == nil ? "Send (↩) · new line with ⇧↩" : "Stop (⌘.)")
             }
             .padding(.leading, 16)
             .padding(.trailing, 10)

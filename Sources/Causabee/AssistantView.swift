@@ -56,6 +56,12 @@ struct AssistantColumn: View {
         return openMatter
     }
 
+    /// The question of this thread whose answer is on its way: one at a time, and the send button stops it.
+    private var asking: Navigation.Turn? { shown.last(where: \.isAsking) }
+
+    /// The newest question here: the one that can be asked again.
+    private var newestQuestion: UUID? { shown.last { $0.note == nil && $0.shot == nil }?.id }
+
     private var answeredCount: Int {
         navigation.turns.filter { if case .asking = $0.state { false } else { true } }.count
     }
@@ -79,7 +85,7 @@ struct AssistantColumn: View {
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 20) {
                         if shown.isEmpty {
                             Text(openMatter != nil
                                  ? "No talk about this matter yet. Ask something — or click “talk” on a line on the right."
@@ -111,7 +117,9 @@ struct AssistantColumn: View {
                                              guard let at = navigation.turns.firstIndex(where: { $0.id == turn.id }) else { return }
                                              if dismissed { navigation.turns[at].dismissedCards.insert(index) } else { navigation.turns[at].dismissedCards.remove(index) }
                                          },
-                                         recipient: { conversation.recipient($0, in: turn) }).id(turn.id)
+                                         recipient: { conversation.recipient($0, in: turn) },
+                                         again: turn.id == newestQuestion && asking == nil ? { conversation.again(turn, all: matters) } : nil)
+                                    .id(turn.id)
                             }
                         }
                         Color.clear.frame(height: 1).id(Self.bottom)
@@ -189,6 +197,7 @@ struct AssistantColumn: View {
                      placeholder: scope.map { "Ask about \($0.name)" } ?? "Say anything",
                      unpin: { navigation.pinned = nil },
                      attach: chooseScreenshot,
+                     stop: asking.map { turn in { conversation.stop(turn.id) } },
                      send: send)
             }
         }
@@ -245,6 +254,8 @@ struct AssistantColumn: View {
     }
 
     private func send() {
+        // One question at a time: what is typed meanwhile waits in the field.
+        guard asking == nil, !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         let question = draft
         draft = ""
         let scope = scopeMatter
@@ -466,11 +477,15 @@ struct TurnView: View {
     let undo: (Int) -> Void
     var dismiss: (Int, Bool) -> Void = { _, _ in }
     var recipient: (String?) -> (name: String, address: String?)? = { _ in nil }
+    /// Asks the same question once more — for the newest question, while nothing else is on its way.
+    var again: (() -> Void)? = nil
     @State private var showsSent = false
+    /// Just copied: the button says so for a moment.
+    @State private var copied = false
     @Environment(\.reading) private var reading
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .trailing, spacing: 4) {
                 Text(turn.inHand.map { "\(turn.scope) · \($0.kind): \($0.text)" } ?? turn.scope)
                     .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
@@ -489,12 +504,19 @@ struct TurnView: View {
 
             switch turn.state {
             case .asking:
-                HStack(spacing: 8) {
-                    BeeLoader(size: 10)
-                    Text("Sending, pseudonymised …").font(.caption).foregroundStyle(.secondary)
-                }
+                AskSteps(step: turn.step ?? .disguising, sentAt: turn.sentAt)
             case .failed(let message):
-                Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.warning).textSelection(.enabled)
+                // Stopped by the owner is no failure: said quietly.
+                if AssistantAsk.wasStopped(message) {
+                    Text(message).font(.callout).foregroundStyle(.secondary)
+                } else {
+                    Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.warning).textSelection(.enabled)
+                }
+                if let again {
+                    Button(action: again) { Label("Try again", systemImage: "arrow.clockwise") }
+                        .buttonStyle(.gold).font(.callout)
+                        .help("Asks the same question once more")
+                }
             case .answered(let answer):
                 answered(answer)
             }
@@ -504,9 +526,9 @@ struct TurnView: View {
 
     @ViewBuilder
     private func answered(_ answer: AssistantAsk.Answer) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 16) {
             ForEach(Array(answer.reply.lines.enumerated()), id: \.offset) { _, line in
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(line.text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                     CiteChips(cites: line.cites, refs: turn.refs, open: open, label: label).explanation()
                 }
@@ -524,6 +546,28 @@ struct TurnView: View {
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
             }
+            HStack(spacing: 14) {
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(answer.plainText, forType: .string)
+                    copied = true
+                    Task { try? await Task.sleep(for: .seconds(1.5)); copied = false }
+                } label: {
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc").frame(width: 16, height: 16).contentShape(Rectangle())
+                }
+                .help(copied ? "Copied" : "Copy the answer")
+                .accessibilityLabel("Copy the answer")
+                // Another answer would take the place of this one: not once a card of it is taken in.
+                if let again, turn.applied.isEmpty {
+                    Button(action: again) {
+                        Image(systemName: "arrow.clockwise").frame(width: 16, height: 16).contentShape(Rectangle())
+                    }
+                    .help("Try again: asks the same question once more, for another answer")
+                    .accessibilityLabel("Try again")
+                }
+            }
+            .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
+            .tool()
             DisclosureGroup(isExpanded: $showsSent) {
                 ScrollView {
                     Text(answer.sent).font(.caption.monospaced()).textSelection(.enabled)

@@ -23,6 +23,11 @@ struct AssistantSheet: View {
     @FocusState private var typing: Bool
     /// The question on its way, until its answer is in the thread.
     @State private var asking: (question: String, date: Date)?
+    /// What asking is doing now, and since when the question is out.
+    @State private var step = AssistantAsk.Step.disguising
+    @State private var sentAt: Date?
+    /// The task that asks: Stop cancels it.
+    @State private var ask: Task<Void, Never>?
     @State private var failure: String?
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
@@ -53,7 +58,7 @@ struct AssistantSheet: View {
                 ScrollView {
                     // Laid out whole, not lazily: rows measured only as they came into view made the
                     // thread jump while scrolling. A matter's thread is short enough.
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 22) {
                         let turns = shown
                         if turns.isEmpty {
                             Text(matter == nil ? "Nothing asked yet." : "Nothing asked about this matter yet.")
@@ -72,12 +77,19 @@ struct AssistantSheet: View {
                             PhoneShotCard(shot: shot).id(shot.id)
                         }
                         if let asking {
-                            PendingTurn(question: asking.question, scope: matter.map { "about \($0.name)" } ?? "about all matters")
+                            PendingTurn(question: asking.question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
+                                        step: step, sentAt: sentAt)
                                 .id("asking")
                         }
                         if let failure {
-                            Label(failure, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.warning)
-                                .fixedSize(horizontal: false, vertical: true).id("failure")
+                            // The question is back in the field: sending it is trying again.
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label(failure, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.warning)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Button(action: send) { Label("Try again", systemImage: "arrow.clockwise") }
+                                    .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain)
+                            }
+                            .id("failure")
                         }
                         Color.clear.frame(height: 1).id(Self.bottom)
                     }
@@ -192,29 +204,26 @@ struct AssistantSheet: View {
                 AttachButton(matter: matter)
                 TextField(matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
-                    .submitLabel(.send)
-                    // A field of several lines takes the keyboard's send key as a new line, and
-                    // never calls onSubmit: the line typed at the end is the send.
-                    .onChange(of: draft) { old, new in
-                        guard new.hasSuffix("\n"), !old.hasSuffix("\n") else { return }
-                        draft = String(new.dropLast())
+                    // The keyboard's Return starts a new line; the button sends. With a keyboard
+                    // of keys, Return sends and Shift-Return starts a new line, as on the Mac.
+                    .onKeyPress(.return, phases: .down) { press in
+                        if press.modifiers.contains(.shift) || press.modifiers.contains(.option) { return .ignored }
                         send()
+                        return .handled
                     }
                     .focused($typing)
                     .id(fieldKey)
                     // One line sits in the middle of the send button; more lines grow upwards.
                     .frame(minHeight: 34)
-                Button(action: send) {
-                    // A black arrow on the bee's yellow, as every yellow thing has black on it.
-                    Image(systemName: "arrow.up.circle.fill").resizable().frame(width: 34, height: 34)
+                Button { if asking == nil { send() } else { stop() } } label: {
+                    // A black arrow on the bee's yellow, as every yellow thing has black on it —
+                    // and a black square while an answer is on its way: one question at a time.
+                    Image(systemName: asking == nil ? "arrow.up.circle.fill" : "stop.circle.fill").resizable().frame(width: 34, height: 34)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.black, Theme.bee)
                 }
                 .buttonStyle(.plain)
-                // One question at a time: while an answer is on its way, it rests.
-                .disabled(asking != nil)
-                .opacity(asking != nil ? 0.4 : 1)
-                .accessibilityLabel("Send")
+                .accessibilityLabel(asking == nil ? "Send" : "Stop")
             }
             .padding(.leading, 7).padding(.trailing, 7).padding(.vertical, 7)
             .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))
@@ -272,14 +281,27 @@ extension AssistantSheet {
         DispatchQueue.main.async { typing = true }
         let date = Date()
         asking = (question, date)
+        step = .disguising
+        sentAt = nil
         let owner = profiles.first?.names.first
         let matter = self.matter
         let context = self.context
+        // The steps are said away from the screen, and read here.
+        let (steps, said) = AsyncStream.makeStream(of: AssistantAsk.Step.self)
         Task {
+            for await next in steps where asking?.date == date {
+                step = next
+                if next == .waiting { sentAt = Date() }
+            }
+        }
+        ask = Task {
+            defer { said.finish() }
             do {
                 let answer = try await AssistantAsk.ask(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner,
                                                         today: today, mapping: names.mapping, others: names.others,
-                                                        claude: claude, model: model)
+                                                        claude: claude, model: model) { said.yield($0) }
+                // Stopped while the answer was coming: it is not put into the thread.
+                guard !Task.isCancelled else { return }
                 var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
                                            inHand: pinned, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
                 turn.date = date
@@ -292,11 +314,25 @@ extension AssistantSheet {
                 record.matter = matter
                 try context.save()
             } catch {
+                guard !Task.isCancelled else { return }
                 failure = "\(error)"
                 draft = question
                 fieldKey += 1
             }
             asking = nil
+        }
+    }
+
+    /// Stops the question on its way. Nothing comes back for it, and it is in the field again, to
+    /// change or to send once more — unless something else was typed meanwhile.
+    private func stop() {
+        guard let asking else { return }
+        ask?.cancel()
+        ask = nil
+        self.asking = nil
+        if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            draft = asking.question
+            fieldKey += 1
         }
     }
 }
@@ -305,6 +341,8 @@ extension AssistantSheet {
 struct PendingTurn: View {
     let question: String
     let scope: String
+    let step: AssistantAsk.Step
+    let sentAt: Date?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -317,10 +355,7 @@ struct PendingTurn: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.leading, 40)
-            HStack(spacing: 8) {
-                BeeLoader(size: 12)
-                Text("Sending, pseudonymised …").font(.caption).foregroundStyle(.secondary)
-            }
+            AskSteps(step: step, sentAt: sentAt, size: 12)
         }
     }
 }
@@ -330,6 +365,8 @@ struct PhoneTurnView: View {
     let record: ThreadTurn
     let turn: Navigation.Turn
     let matter: Matter?
+    /// Just copied: the button says so for a moment.
+    @State private var copied = false
 
     var body: some View {
         if let note = turn.note {
@@ -337,12 +374,17 @@ struct PhoneTurnView: View {
         } else if turn.hasShot {
             Label("A screenshot, brought in on the Mac", systemImage: "photo").font(.footnote).foregroundStyle(.secondary)
         } else {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 18) {
                 question
                 switch turn.state {
                 case .answered(let answer): answered(answer)
                 case .failed(let message):
-                    Label(message, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.warning)
+                    // Stopped by the owner is no failure: said quietly.
+                    if AssistantAsk.wasStopped(message) {
+                        Text(message).font(.footnote).foregroundStyle(.secondary)
+                    } else {
+                        Label(message, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.warning)
+                    }
                 }
             }
         }
@@ -379,7 +421,20 @@ struct PhoneTurnView: View {
         ForEach(Array(answer.reply.cards.enumerated()), id: \.offset) { index, card in
             PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
         }
-        Text("\(answer.modelLabel) · $\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
+        HStack(spacing: 10) {
+            Button {
+                UIPasteboard.general.string = answer.plainText
+                copied = true
+                Task { try? await Task.sleep(for: .seconds(1.5)); copied = false }
+            } label: {
+                Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.footnote).foregroundStyle(.secondary)
+                    .frame(width: 32, height: 32).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(copied ? "Copied" : "Copy the answer")
+            Text("\(answer.modelLabel) · $\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
+        }
+        .padding(.leading, -8)
     }
 
     /// What came in with "Get new mail" on the Mac.

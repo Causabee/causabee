@@ -47,6 +47,7 @@
 		AA0000000000000000000045 /* Exceptions for "Causabee" folder in "CausabeePhone" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				AskSteps.swift,
 				BeeLoader.swift,
 				CalendarChip.swift,
 				CardActions.swift,
@@ -76,10 +77,36 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA0000000000000000000003 /* Causabee */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA0000000000000000000045 /* Exceptions for "Causabee" folder in "CausabeePhone" target */, AA000000000000000000005B /* Exceptions for "Causabee" folder in "CausabeeShare" target */, ); name = Causabee; path = ../Sources/Causabee; sourceTree = "<group>"; };
-		AA0000000000000000000044 /* CausabeePhone */ = {isa = PBXFileSystemSynchronizedRootGroup; name = CausabeePhone; path = ../Sources/CausabeePhone; sourceTree = "<group>"; };
-		AA0000000000000000000051 /* CausabeeShare */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000000000000000000005A /* Exceptions for "CausabeeShare" folder in "CausabeePhone" target */, ); name = CausabeeShare; path = ../Sources/CausabeeShare; sourceTree = "<group>"; };
-		AA000000000000000000000C /* Resources */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Resources; sourceTree = "<group>"; };
+		AA0000000000000000000003 /* Causabee */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA0000000000000000000045 /* Exceptions for "Causabee" folder in "CausabeePhone" target */,
+				AA000000000000000000005B /* Exceptions for "Causabee" folder in "CausabeeShare" target */,
+			);
+			name = Causabee;
+			path = ../Sources/Causabee;
+			sourceTree = "<group>";
+		};
+		AA000000000000000000000C /* Resources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000044 /* CausabeePhone */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			name = CausabeePhone;
+			path = ../Sources/CausabeePhone;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000051 /* CausabeeShare */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA000000000000000000005A /* Exceptions for "CausabeeShare" folder in "CausabeePhone" target */,
+			);
+			name = CausabeeShare;
+			path = ../Sources/CausabeeShare;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -173,8 +200,8 @@
 				AA000000000000000000005D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				AA0000000000000000000044 /* CausabeePhone */,
 				AA000000000000000000000C /* Resources */,
+				AA0000000000000000000044 /* CausabeePhone */,
 			);
 			name = CausabeePhone;
 			packageProductDependencies = (
@@ -357,7 +384,10 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you click — so nothing is there twice.";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MARKETING_VERSION = 0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee;
 				PRODUCT_NAME = Causabee;
@@ -382,7 +412,10 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you click — so nothing is there twice.";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MARKETING_VERSION = 0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee;
 				PRODUCT_NAME = Causabee;
@@ -402,16 +435,19 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "CausabeePhone-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
-				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Causabee scans a letter that came on paper, to keep it in your mail with its matter.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee;
 				PRODUCT_NAME = Causabee;
@@ -435,16 +471,19 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "CausabeePhone-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
-				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Causabee scans a letter that came on paper, to keep it in your mail with its matter.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee;
 				PRODUCT_NAME = Causabee;
@@ -468,7 +507,11 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				MARKETING_VERSION = 0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee.share;
 				PRODUCT_NAME = CausabeeShare;
@@ -493,7 +536,11 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				MARKETING_VERSION = 0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee.share;
 				PRODUCT_NAME = CausabeeShare;

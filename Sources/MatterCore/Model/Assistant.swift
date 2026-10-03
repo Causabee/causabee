@@ -199,7 +199,30 @@ public enum AssistantAsk {
             guard let servedBy else { return Claude.Model.opus.label }
             return Claude.Model.serving(servedBy)?.label ?? servedBy
         }
+
+        /// The answer as words to copy: its lines, and what the facts do not say.
+        public var plainText: String {
+            (reply.lines.map(\.text) + [reply.notInFacts].compactMap { $0 }).joined(separator: "\n")
+        }
     }
+
+    /// What asking is doing, in the order it does it: the thread says each step while the answer
+    /// is on its way.
+    public enum Step: Int, Sendable, Comparable, CaseIterable {
+        /// On the device: the names swapped for their stand-ins.
+        case disguising
+        /// Sent, and the model is writing.
+        case waiting
+        /// On the device again: the stand-ins swapped back for the names.
+        case restoring
+
+        public static func < (a: Step, b: Step) -> Bool { a.rawValue < b.rawValue }
+    }
+
+    /// What a turn says when the owner stopped it before the answer came. A turn the app was
+    /// closed on says "Stopped: …" too: both are quiet, not a failure.
+    public static let stopped = "Stopped."
+    public static func wasStopped(_ message: String) -> Bool { message.hasPrefix("Stopped") }
 
     /// The request, disguised, and the disguise that made it — everything but the sending.
     public struct Prepared: Sendable {
@@ -285,25 +308,31 @@ public enum AssistantAsk {
 
     public static func ask(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
                            facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
-                           model: Claude.Model = .opus) async throws -> Answer {
+                           model: Claude.Model = .opus, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
+        step?(.disguising)
         let prepared = try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today, mapping: url)
-        return try await send(prepared, claude: claude, model: model)
+        return try await send(prepared, claude: claude, model: model, step: step)
     }
 
     /// Asks with a list of names in hand — the iPhone's way: it uses the Mac's list and keeps
     /// nothing it learned for the question.
     public static func ask(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
                            facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
-                           claude: Claude, model: Claude.Model = .opus) async throws -> Answer {
+                           claude: Claude, model: Claude.Model = .opus, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
+        step?(.disguising)
         let prepared = try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today,
                                    mapping: mapping, others: others, save: nil)
-        return try await send(prepared, claude: claude, model: model)
+        return try await send(prepared, claude: claude, model: model, step: step)
     }
 
-    static func send(_ prepared: Prepared, claude: Claude, model: Claude.Model) async throws -> Answer {
+    static func send(_ prepared: Prepared, claude: Claude, model: Claude.Model, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
         let (sent, pseudonymizer, newNames) = (prepared.sent, prepared.pseudonymizer, prepared.newNames)
         let body = Claude.body(model: model, system: AssistantPrompt.system, user: sent, schema: AssistantPrompt.schema, effort: "medium")
+        // Stopped while the names were being disguised: nothing goes out.
+        try Task.checkCancellation()
+        step?(.waiting)
         let answer = try await claude.send(body, model: model)
+        step?(.restoring)
         var reply = try JSONDecoder().decode(AssistantPrompt.Reply.self, from: answer.json)
 
         let restorer = pseudonymizer.restorer

@@ -101,6 +101,36 @@ struct AssistantTests {
         }
     }
 
+    @Test("A question stopped before it goes out says its first step only, and sends nothing")
+    func stoppedBeforeSending() async throws {
+        let (_, matter) = try store()
+        let facts = FactSheet.facts(for: [matter], today: "2026-09-28")
+        let (steps, said) = AsyncStream.makeStream(of: AssistantAsk.Step.self)
+        // Not started until this test waits for it: by then it is stopped.
+        let asking = Task {
+            defer { said.finish() }
+            return try await AssistantAsk.ask(question: "Was ist offen?", inHand: nil, earlier: [], facts: facts, owner: nil,
+                                              today: "2026-09-28", mapping: Pseudonymizer.Mapping(), others: [],
+                                              claude: Claude(key: "no-key"), model: .opus) { said.yield($0) }
+        }
+        asking.cancel()
+        let result = await asking.result
+        #expect(throws: CancellationError.self) { try result.get() }
+        var seen: [AssistantAsk.Step] = []
+        for await step in steps { seen.append(step) }
+        #expect(seen == [.disguising])
+    }
+
+    @Test("An answer copied is its lines and what the facts do not say, one under the other")
+    func copied() throws {
+        let reply = AssistantPrompt.Reply(lines: [.init(text: "Die Vollmacht ist offen.", cites: ["T1"]), .init(text: "Bis Freitag.", cites: [])],
+                                          cards: [], notInFacts: "Ob er geantwortet hat, steht nicht da.")
+        let answer = AssistantAsk.Answer(reply: reply, sent: "", cost: 0, seconds: 0, newNames: 0)
+        #expect(answer.plainText == "Die Vollmacht ist offen.\nBis Freitag.\nOb er geantwortet hat, steht nicht da.")
+        #expect(AssistantAsk.wasStopped(AssistantAsk.stopped))
+        #expect(!AssistantAsk.wasStopped("http 529"))
+    }
+
     @Test("With a person in hand, only the mail that mentions them is shown")
     func focused() throws {
         let (context, matter) = try store()

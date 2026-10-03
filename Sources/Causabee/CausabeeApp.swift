@@ -220,7 +220,19 @@ final class Navigation {
         var undos: [Int: Undo] = [:]
         /// Cards the owner dismissed, by position: kept, so they stay dismissed after a restart.
         var dismissedCards: Set<Int> = []
+        /// While asking: what it is doing now, and since when the question is out. Not kept.
+        var step: AssistantAsk.Step?
+        var sentAt: Date?
+
+        /// A question — not a file, not a note — whose answer is on its way.
+        var isAsking: Bool {
+            if case .asking = state { return shot == nil && note == nil }
+            return false
+        }
     }
+
+    /// The questions on their way, each with the task that asks: Stop cancels it.
+    @ObservationIgnored var asks: [UUID: Task<Void, Never>] = [:]
 
     /// A screenshot in the thread, from reading it to taking what it says into a matter.
     struct Shot {

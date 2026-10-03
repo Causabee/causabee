@@ -2,6 +2,24 @@
 
 Small things noticed while using the app, to pick up later. Newest first.
 
+## Before the App Store
+
+- **The assistant as a proper chat, second round** (AssistantView.swift, Conversation.swift,
+  AssistantSheet.swift). The first round is in: the thread is followed at the bottom with
+  "↓ New answer", the steps of asking are said as they go (AskSteps.swift), Stop / Try again /
+  Copy, one question at a time, and on the iPhone Return starts a new line. The views stay our
+  own: no open-source chat kit for SwiftUI runs on the Mac, and ours are lines with sources and
+  cards. Still to do: Markdown in the answers (Foundation's `AttributedString(markdown:)` first;
+  a renderer — Textual — only if that is not enough), streaming the answer, editing a question,
+  a new conversation, search. On the iPhone an answer cannot be asked for again yet, and a
+  question stopped there goes back into the field instead of staying in the thread. (2026-10-03)
+- **Sharing a matter with the family.** The family that cares for Mum together: each with their
+  own matter and mail, private, and one shared board beside it — tasks and who does them, dates,
+  notes, files someone shares; claim a task ("I'll do it"), tick it off, see what changed. Mail,
+  the assistant and the names behind the disguises are never shared. SwiftData syncs only the
+  private database, so the board is its own CloudKit zone shared with `CKShare`. First step
+  without any sync: "Send the status" as a message. (2026-10-02)
+
 ## Overview
 
 - **More out of the overview when there are many matters.** Now the overview is one long column
@@ -40,6 +58,18 @@ Small things noticed while using the app, to pick up later. Newest first.
   explanations for what already works); privacy in one line ("names are disguised before anything
   is sent"); the demo as the first thing to try, not a side button. Draw it in Figma first.
   (2026-10-02)
+
+## The app icon
+
+- **A badge with the mails waiting to be reviewed.** The number on Causabee's icon — in the Dock on
+  the Mac, on the Home Screen on the iPhone — is the "3 new mails · Review" the overview already
+  shows: mail under the label, read but not yet sorted in (`look.pending` in MailCheck.swift and
+  PhoneMailCheck.swift). It goes when the mails are sorted in or the label has nothing new, and
+  shows nothing in the demo. Mac: `NSApp.dockTile.badgeLabel`. iPhone: `setBadgeCount` on
+  `UNUserNotificationCenter`, which needs the owner to allow badges once. So the number is right
+  while the app is closed, the mailbox is looked at now and then in the background
+  (`BGAppRefreshTask` on the iPhone; a timer while the Mac app runs): reading the label is free,
+  nothing is sent. (2026-10-02)
 
 ## Widgets
 
