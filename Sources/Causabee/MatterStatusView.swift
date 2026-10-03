@@ -887,14 +887,19 @@ struct MatterStatusView: View {
                     }
                 }
             }
-            HStack(spacing: 6) {
-                Text(Self.count(matter.entries ?? []))
-                if let first = status.firstDate { Text("· since \(Dates.short(first))") }
+            // Once the parts in the page have gone under this bar, they stay at hand here — in the place
+            // of the count, so the bar keeps its height and the page under it does not jump.
+            let showsParts = partsUnder && !find.isActive && !renaming
+            ZStack(alignment: .leading) {
+                HStack(spacing: 6) {
+                    Text(Self.count(matter.entries ?? []))
+                    if let first = status.firstDate { Text("· since \(Dates.short(first))") }
+                }
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .opacity(showsParts ? 0 : 1)
+                parts(status).opacity(showsParts ? 1 : 0).allowsHitTesting(showsParts).accessibilityHidden(!showsParts)
             }
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            // Once the parts in the page have gone under this bar, they stay at hand here.
-            if partsUnder, !find.isActive, !renaming { parts(status).padding(.top, 4) }
         }
         .padding(.horizontal, 24)
         .padding(.top, 20)
@@ -904,8 +909,7 @@ struct MatterStatusView: View {
         // At the top it is the page itself; once the page scrolls under it, glass and a line.
         .background(scrolledUnder ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
         .overlay(alignment: .bottom) { if scrolledUnder { Divider() } }
-        // The bar's lower edge as it is without the parts: with them it is taller, and would hide them again.
-        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { if !partsUnder { barEdge = $0 } }
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { barEdge = $0 }
         .onChange(of: partsEdge < barEdge) { _, under in
             withAnimation(.easeOut(duration: 0.15)) { partsUnder = under && scrolledUnder }
         }
