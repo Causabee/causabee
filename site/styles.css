@@ -412,7 +412,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* The assistant: the question goes out, the bee is on it, the answers come with their sources,
    and the suggested task is added — the card closes into its small quiet box. 20 s, then again. */
-.live--ask { --img: url("assets/img/assistant.webp?v=3"); --T: 20s; }
+.live--ask { --img: url("assets/img/assistant.webp?v=4"); --T: 20s; }
 :where(.live--ask .live__stage) > * { animation: var(--T) ease-in-out infinite both; }
 .live--ask .ask-q { animation-name: ask-q; }
 .live--ask .ask-work { animation-name: ask-work; }
@@ -420,7 +420,8 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .live--ask .ask-a2 { animation-name: ask-a2; }
 .live--ask .ask-a3 { animation-name: ask-a3; }
 .live--ask .ask-card { animation-name: ask-card; }
-.live--ask .ask-box { animation-name: ask-box; border-radius: calc(12.5 * var(--u)); background: #f5f5f4; }
+.live--ask .ask-foot { animation-name: ask-foot; }
+.live--ask .ask-box { animation-name: ask-box; border-radius: calc(12.5 * var(--u)); background: #f5f5f5; }
 .live--ask .ask-taken { animation-name: ask-taken; display: flex; align-items: center; gap: calc(10 * var(--u)); }
 .ask-taken > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(1.25 * var(--u)); }
 .ask-taken > span { flex-shrink: 0; }
@@ -435,13 +436,20 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 @keyframes ask-a3 { 0%, 26% { opacity: 0; transform: translateY(calc(8 * var(--u))); } 28.5%, 87.5% { opacity: 1; transform: none; } 91%, 100% { opacity: 0; } }
 /* The card: in, then its content goes (0.14 s) while the grey box under it stays. */
 @keyframes ask-card { 0%, 29.5% { opacity: 0; transform: translateY(calc(10 * var(--u))); } 32%, 49% { opacity: 1; transform: none; } 49.7%, 100% { opacity: 0; } }
-/* The box: there under the card from its arrival, closes to its quiet size with the spring, then frames itself with a line. */
+/* The box: there under the card from its arrival, closes to its quiet size with the spring, then turns white and frames itself with a line — what is taken in no longer waits. */
 @keyframes ask-box {
   0%, 31.9% { opacity: 0; height: calc(var(--h) * var(--u)); }
   32%, 49.7% { opacity: 1; height: calc(var(--h) * var(--u)); box-shadow: none; }
   51.2% { height: calc(var(--h2) * var(--u) - 1.5 * var(--u)); }
-  51.6%, 87.5% { opacity: 1; height: calc(var(--h2) * var(--u)); box-shadow: inset 0 0 0 calc(1.25 * var(--u)) #e3e3e0; }
-  91%, 100% { opacity: 0; height: calc(var(--h2) * var(--u)); }
+  51.6%, 87.5% { opacity: 1; height: calc(var(--h2) * var(--u)); background: #fff; box-shadow: inset 0 0 0 calc(1.25 * var(--u)) #e3e3e0; }
+  91%, 100% { opacity: 0; height: calc(var(--h2) * var(--u)); background: #fff; }
+}
+/* The line under the answer — copy, sources, what it cost: in with the card, and up with the box as it closes. */
+@keyframes ask-foot {
+  0%, 29.5% { opacity: 0; transform: translateY(calc(10 * var(--u))); }
+  32%, 49.7% { opacity: 1; transform: none; }
+  51.6%, 87.5% { opacity: 1; transform: translateY(calc(var(--up) * var(--u) * -1)); }
+  91%, 100% { opacity: 0; transform: translateY(calc(var(--up) * var(--u) * -1)); }
 }
 @keyframes ask-taken { 0%, 51.6% { opacity: 0; } 52.4%, 87.5% { opacity: 1; } 91%, 100% { opacity: 0; } }
 @keyframes ask-press { 0%, 48% { opacity: 0; } 48.2%, 49.3% { opacity: 1; } 49.6%, 100% { opacity: 0; } }
