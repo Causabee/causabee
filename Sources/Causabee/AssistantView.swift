@@ -35,6 +35,9 @@ struct AssistantColumn: View {
     @State private var draft = ""
     /// Scrolled up from the newest: a round button above the composer brings the thread down again.
     @State private var scrolledUp = false
+    /// An answer that arrived while the thread was scrolled up: the thread stays where it is being
+    /// read, and the button says so — "New answer" — and goes to where the answer begins.
+    @State private var newAnswer: UUID?
     @FocusState private var focused: Bool
 
     private var conversation: Conversation {
@@ -135,32 +138,42 @@ struct AssistantColumn: View {
                     geometry.visibleRect.maxY < geometry.contentSize.height - 60
                 } action: { _, up in
                     withAnimation(.easeOut(duration: 0.15)) { scrolledUp = up }
+                    // Down at the newest again: the answer has been reached.
+                    if !up { newAnswer = nil }
                 }
                 .overlay(alignment: .bottom) {
                     if scrolledUp {
                         Button {
-                            withAnimation { scroller.scrollTo(Self.bottom, anchor: .bottom); scrolledUp = false }
+                            withAnimation {
+                                if let newAnswer { scroller.scrollTo(newAnswer, anchor: .top) } else { scroller.scrollTo(Self.bottom, anchor: .bottom) }
+                                newAnswer = nil
+                            }
                         } label: {
-                            Image(systemName: "chevron.down")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 32, height: 32)
-                                .background(.regularMaterial, in: Circle())
-                                .overlay(Circle().stroke(Theme.line))
+                            ToNewestLabel(newAnswer: newAnswer != nil)
                         }
                         .buttonStyle(.plain)
-                        .help("To the newest")
+                        .help(newAnswer != nil ? "To the new answer" : "To the newest")
                         .padding(.bottom, 10)
                         .transition(.opacity)
                     }
                 }
                 .onAppear { if let last = shown.last { scroller.scrollTo(last.id, anchor: .top) } }
-                .onChange(of: navigation.place) { if let last = shown.last { scroller.scrollTo(last.id, anchor: .top) } }
-                .onChange(of: navigation.turns.count) {
-                    if let last = navigation.turns.last { withAnimation { scroller.scrollTo(last.id, anchor: .top) } }
+                .onChange(of: navigation.place) { newAnswer = nil; if let last = shown.last { scroller.scrollTo(last.id, anchor: .top) } }
+                .onChange(of: shown.count) { old, new in
+                    guard new > old, let last = shown.last else { return }
+                    // A question just asked is followed down, wherever the thread was; anything
+                    // else that comes in — new mail, a file — leaves a reader where they are.
+                    if case .asking = last.state, last.note == nil, last.shot == nil {
+                        newAnswer = nil
+                        withAnimation { scroller.scrollTo(Self.bottom, anchor: .bottom) }
+                    } else if !scrolledUp {
+                        withAnimation { scroller.scrollTo(last.id, anchor: .top) }
+                    }
                 }
-                .onChange(of: answeredCount) {
-                    if let last = navigation.turns.last { withAnimation { scroller.scrollTo(last.id, anchor: .top) } }
+                .onChange(of: answeredCount) { old, new in
+                    guard new > old, let last = shown.last(where: { if case .asking = $0.state { false } else { $0.note == nil && $0.shot == nil } }) else { return }
+                    // The answer from where it begins — unless the thread is being read further up.
+                    if scrolledUp { newAnswer = last.id } else { withAnimation { scroller.scrollTo(last.id, anchor: .top) } }
                 }
             }
             let scope = scopeMatter
@@ -236,6 +249,24 @@ struct AssistantColumn: View {
         draft = ""
         let scope = scopeMatter
         conversation.ask(question, about: scope.map { [$0] } ?? activeMatters(matters), pinnedMatter: scope)
+    }
+}
+
+/// The button over the thread's lower edge: an arrow down to the newest, and "New answer" beside
+/// it when one arrived while the thread was scrolled up.
+struct ToNewestLabel: View {
+    let newAnswer: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: newAnswer ? "arrow.down" : "chevron.down").font(.body.weight(.semibold))
+            if newAnswer { Text("New answer").font(.callout.weight(.medium)) }
+        }
+        .foregroundStyle(newAnswer ? .primary : .secondary)
+        .padding(.horizontal, newAnswer ? 14 : 0)
+        .frame(minWidth: 32, minHeight: 32)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Theme.line))
     }
 }
 

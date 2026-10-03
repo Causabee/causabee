@@ -26,6 +26,11 @@ struct AssistantSheet: View {
     @State private var failure: String?
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
+    /// Scrolled up from the newest: a button over the thread's lower edge brings it down again.
+    @State private var scrolledUp = false
+    /// An answer that arrived while the thread was scrolled up: the thread stays where it is being
+    /// read, and the button says "New answer" and goes to where the answer begins.
+    @State private var newAnswer: UUID?
 
     /// What a question here would take along: worked out only when the footer is opened.
     private var seen: String {
@@ -37,6 +42,8 @@ struct AssistantSheet: View {
             .filter { matter == nil || $0.matter?.persistentModelID == matter?.persistentModelID }
             .compactMap { record in navigation.turn(record).map { (record, $0) } }
     }
+
+    private static let bottom = "thread-bottom"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -72,6 +79,7 @@ struct AssistantSheet: View {
                             Label(failure, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.warning)
                                 .fixedSize(horizontal: false, vertical: true).id("failure")
                         }
+                        Color.clear.frame(height: 1).id(Self.bottom)
                     }
                     .padding(16)
                     .containerRelativeFrame(.horizontal)
@@ -79,9 +87,51 @@ struct AssistantSheet: View {
                 .defaultScrollAnchor(.bottom)
                 // The keyboard goes when the thread is scrolled or tapped, to see all of it.
                 .dismissesKeyboard()
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.visibleRect.maxY < geometry.contentSize.height - 60
+                } action: { _, up in
+                    withAnimation(.easeOut(duration: 0.15)) { scrolledUp = up }
+                    // Down at the newest again: the answer has been reached.
+                    if !up { newAnswer = nil }
+                }
+                .overlay(alignment: .bottom) {
+                    if scrolledUp {
+                        Button {
+                            withAnimation {
+                                if let newAnswer { scroller.scrollTo(newAnswer, anchor: .top) } else { scroller.scrollTo(Self.bottom, anchor: .bottom) }
+                                newAnswer = nil
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: newAnswer != nil ? "arrow.down" : "chevron.down").font(.body.weight(.semibold))
+                                if newAnswer != nil { Text("New answer").font(.subheadline.weight(.medium)) }
+                            }
+                            .foregroundStyle(newAnswer != nil ? .primary : .secondary)
+                            .padding(.horizontal, newAnswer != nil ? 16 : 0)
+                            .frame(minWidth: 40, minHeight: 40)
+                            .background(.regularMaterial, in: Capsule())
+                            .overlay(Capsule().stroke(Theme.line))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(newAnswer != nil ? "To the new answer" : "To the newest")
+                        .padding(.bottom, 10)
+                        .transition(.opacity)
+                    }
+                }
                 .onAppear { if let last = shown.last { scroller.scrollTo(last.turn.id, anchor: .bottom) } }
                 .onChange(of: PhoneShots.shared.shots.count) { if let last = PhoneShots.shared.shots.last { withAnimation { scroller.scrollTo(last.id, anchor: .bottom) } } }
-                .onChange(of: asking?.date) { withAnimation { scroller.scrollTo(asking == nil ? shown.last?.turn.id as AnyHashable? : "asking", anchor: .bottom) } }
+                // A question just asked is followed down, wherever the thread was.
+                .onChange(of: asking?.date) {
+                    guard asking != nil else { return }
+                    newAnswer = nil
+                    withAnimation { scroller.scrollTo("asking", anchor: .bottom) }
+                }
+                // The answer — or a turn the Mac added — from where it begins, unless the thread is
+                // being read further up: then it stays, and the button says there is a new answer.
+                .onChange(of: shown.count) { old, new in
+                    guard new > old, let last = shown.last else { return }
+                    if scrolledUp { newAnswer = last.turn.id } else { withAnimation { scroller.scrollTo(last.turn.id, anchor: .top) } }
+                }
                 // A question that could not go out says why, where it can be seen.
                 .onChange(of: failure) { if failure != nil { withAnimation { scroller.scrollTo("failure", anchor: .bottom) } } }
             }
