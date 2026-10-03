@@ -105,7 +105,7 @@ struct MatterScreen: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height - $0.contentInsets.top - $0.contentInsets.bottom } action: { pageHeight = $1 }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentInsets.top } action: { topInset = $1 }
             // Another part chosen from the pinned tabs: it is shown from its start, not from where the last one was read.
             .onChange(of: part) { if partsUnder { scroller.scrollTo("parts", anchor: .top) } }
