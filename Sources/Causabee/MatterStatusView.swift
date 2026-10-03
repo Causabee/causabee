@@ -69,6 +69,8 @@ struct MatterStatusView: View {
     /// The parts in the page have scrolled under the title bar, which shows them then.
     @State private var partsUnder = false
     @State private var partsEdge = CGFloat.infinity
+    /// How much of the page is seen under the title bar.
+    @State private var pageHeight = CGFloat.zero
     @State private var barEdge = CGFloat.zero
     @Environment(\.reading) private var reading
 
@@ -96,15 +98,20 @@ struct MatterStatusView: View {
                             parts(status).id("parts")
                                 // Its lower edge, to know when it has gone under the title bar.
                                 .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { partsEdge = $0 }
-                            switch part {
-                            case .todo:
-                                todos(status).id("tasks")
-                                dates(status)
-                            case .record:
-                                record(status)
-                            case .people:
-                                parties(status)
+                            // At least as tall as the page shows: a short part does not pull the
+                            // page down, and the parts stay where they were clicked.
+                            VStack(alignment: .leading, spacing: 22) {
+                                switch part {
+                                case .todo:
+                                    todos(status).id("tasks")
+                                    dates(status)
+                                case .record:
+                                    record(status)
+                                case .people:
+                                    parties(status)
+                                }
                             }
+                            .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 74), alignment: .topLeading)
                         }
                     }
                     .padding(24)
@@ -113,6 +120,7 @@ struct MatterStatusView: View {
                 }
                 // The name and the search stay on top while the page scrolls under them.
                 .safeAreaInset(edge: .top, spacing: 0) { titleBar(status) }
+                .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height - $0.contentInsets.top - $0.contentInsets.bottom } action: { pageHeight = $1 }
                 .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 1 } action: { _, under in
                     withAnimation(.easeOut(duration: 0.15)) { scrolledUnder = under }
                 }
@@ -1207,17 +1215,23 @@ struct MatterStatusView: View {
     @ViewBuilder
     private func record(_ status: MatterStatus) -> some View {
         HStack(spacing: 10) {
-            Picker("Show", selection: $filter) {
-                Text("All").tag(RecordFilter.all)
-                Text("Mail · \(status.entries.count)").tag(RecordFilter.mail)
-                Text("Files · \(shownDocuments.count)").tag(RecordFilter.files)
-                Text("Links · \(keptLinks.count)").tag(RecordFilter.links)
+            // Which kind of it: a slim menu, not a second row of tabs under the parts.
+            Menu {
+                Picker("Show", selection: $filter) {
+                    Text("All · \(status.entries.count + shownDocuments.count + keptLinks.count)").tag(RecordFilter.all)
+                    Text("Mail · \(status.entries.count)").tag(RecordFilter.mail)
+                    Text("Files · \(shownDocuments.count)").tag(RecordFilter.files)
+                    Text("Links · \(keptLinks.count)").tag(RecordFilter.links)
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            } label: {
+                Text(filter == .all ? "Everything" : filter.rawValue.capitalized).font(.callout)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            .menuStyle(.borderlessButton)
             .fixedSize()
-            .controlSize(.small)
-            .tint(Theme.card)
+            .tint(.secondary)
+            .help("Show everything, or only the mail, the files or the links")
             if let party = personParty, filter == .all {
                 Button { person = nil } label: { Label(party.name, systemImage: "xmark.circle.fill") }
                     .buttonStyle(.bordered).controlSize(.small)

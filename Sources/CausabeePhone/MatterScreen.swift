@@ -31,6 +31,8 @@ struct MatterScreen: View {
     enum RecordFilter: String { case all, mail, files, links }
     @State private var part: Part = .todo
     @State private var filter: RecordFilter = .all
+    /// How much of the page is seen under the bar.
+    @State private var pageHeight = CGFloat.zero
     /// One person's part of the record: chosen in "People".
     @State private var person: PersistentIdentifier?
     /// Every conversation shown, not only the newest: a source pointed at an older mail.
@@ -65,15 +67,20 @@ struct MatterScreen: View {
                         history(status)
                     } else {
                         parts(status)
-                        switch part {
-                        case .todo:
-                            todos(status)
-                            dates(status)
-                        case .record:
-                            record(status)
-                        case .people:
-                            PeopleSection(matter: matter) { party in person = party.persistentModelID; filter = .all; part = .record }
+                        // At least as tall as the page shows: a short part does not pull the page
+                        // down, and the parts stay where they were tapped.
+                        VStack(alignment: .leading, spacing: 20) {
+                            switch part {
+                            case .todo:
+                                todos(status)
+                                dates(status)
+                            case .record:
+                                record(status)
+                            case .people:
+                                PeopleSection(matter: matter) { party in person = party.persistentModelID; filter = .all; part = .record }
+                            }
                         }
+                        .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 140), alignment: .topLeading)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -90,6 +97,7 @@ struct MatterScreen: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height - $0.contentInsets.top - $0.contentInsets.bottom } action: { pageHeight = $1 }
             .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
             // Asked to show a task while the page is open already — from a card in the assistant.
             .onChange(of: navigation.showing) { if navigation.showing != nil { show(navigation.showing, with: scroller) } }
@@ -702,19 +710,34 @@ struct MatterScreen: View {
     /// Everything that came in or was added — mail, files, links — as one list, or one kind of it.
     @ViewBuilder
     private func record(_ status: MatterStatus) -> some View {
-        Picker("Show", selection: $filter) {
-            Text("All").tag(RecordFilter.all)
-            Text("Mail").tag(RecordFilter.mail)
-            Text("Files").tag(RecordFilter.files)
-            Text("Links").tag(RecordFilter.links)
+        HStack(spacing: 10) {
+            // Which kind of it: a slim menu, not a second row of tabs under the parts.
+            Menu {
+                Picker("Show", selection: $filter) {
+                    Text("Everything").tag(RecordFilter.all)
+                    Text("Mail").tag(RecordFilter.mail)
+                    Text("Files").tag(RecordFilter.files)
+                    Text("Links").tag(RecordFilter.links)
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(filter == .all ? "Everything" : filter.rawValue.capitalized)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption2)
+                }
+                .font(.subheadline)
+                .padding(.vertical, 4).contentShape(Rectangle())
+            }
+            // Grey, not the gold a menu takes from the app.
+            .tint(Color.secondary)
+            .accessibilityLabel("Show")
+            if let party = personParty, filter == .all {
+                Button { person = nil } label: { Label(party.name, systemImage: "xmark.circle.fill") }
+                    .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small).tint(.primary)
+                    .accessibilityHint("Shows everyone's again")
+            }
+            Spacer(minLength: 0)
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        if let party = personParty, filter == .all {
-            Button { person = nil } label: { Label(party.name, systemImage: "xmark.circle.fill") }
-                .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small).tint(.primary)
-                .accessibilityHint("Shows everyone's again")
-        }
+        .padding(.horizontal, 4)
         switch filter {
         case .all: recordList(status)
         case .mail: history(status)
