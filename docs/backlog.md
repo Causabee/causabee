@@ -109,3 +109,8 @@ Small things noticed while using the app, to pick up later. Newest first.
   until the next section's title pushes it away. A `LazyVStack(pinnedViews: .sectionHeaders)`
   with each section's `SectionHeader` as the pinned header, on the same glass as the bar.
   (2026-09-30)
+
+- **Copy a link.** A link in a matter can be copied, to paste it wherever it is needed: "Copy
+  link" in the row's ⋯ menu on the Mac and the iPhone, and on a long press on the iPhone; the
+  button says "Copied" for a moment. A tap on the name still opens it. To decide: whether a plain
+  tap should copy instead of open. (2026-10-03)
