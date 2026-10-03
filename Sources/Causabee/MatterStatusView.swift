@@ -111,7 +111,10 @@ struct MatterStatusView: View {
                                     parties(status)
                                 }
                             }
-                            .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 74), alignment: .topLeading)
+                            // As tall as the page shows, so its top can stand right under the title bar
+                            // with the parts above it out of sight — and the ones in the bar stay.
+                            .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 24), alignment: .topLeading)
+                            .id("part")
                         }
                     }
                     .padding(24)
@@ -121,6 +124,8 @@ struct MatterStatusView: View {
                 // The name and the search stay on top while the page scrolls under them.
                 .safeAreaInset(edge: .top, spacing: 0) { titleBar(status) }
                 .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height - $0.contentInsets.top - $0.contentInsets.bottom } action: { pageHeight = $1 }
+                // Another part chosen in the title bar: it is shown from its start, not from where the last one was read.
+                .onChange(of: part) { if partsUnder { scroller.scrollTo("part", anchor: .top) } }
                 .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 1 } action: { _, under in
                     withAnimation(.easeOut(duration: 0.15)) { scrolledUnder = under }
                 }

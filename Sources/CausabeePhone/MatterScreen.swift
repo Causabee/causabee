@@ -33,6 +33,9 @@ struct MatterScreen: View {
     @State private var filter: RecordFilter = .all
     /// How much of the page is seen under the bar.
     @State private var pageHeight = CGFloat.zero
+    /// The parts in the page have scrolled under the bar, which shows them then.
+    @State private var partsUnder = false
+    @State private var topInset = CGFloat.zero
     /// One person's part of the record: chosen in "People".
     @State private var person: PersistentIdentifier?
     /// Every conversation shown, not only the newest: a source pointed at an older mail.
@@ -67,6 +70,11 @@ struct MatterScreen: View {
                         history(status)
                     } else {
                         parts(status)
+                            .id("parts")
+                            // Gone up under the bar: then they stay at hand, pinned under it.
+                            .onGeometryChange(for: Bool.self) { $0.frame(in: .global).minY < topInset } action: { under in
+                                withAnimation(.easeOut(duration: 0.15)) { partsUnder = under }
+                            }
                         // At least as tall as the page shows: a short part does not pull the page
                         // down, and the parts stay where they were tapped.
                         VStack(alignment: .leading, spacing: 20) {
@@ -98,6 +106,19 @@ struct MatterScreen: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height - $0.contentInsets.top - $0.contentInsets.bottom } action: { pageHeight = $1 }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentInsets.top } action: { topInset = $1 }
+            // Another part chosen from the pinned tabs: it is shown from its start, not from where the last one was read.
+            .onChange(of: part) { if partsUnder { scroller.scrollTo("parts", anchor: .top) } }
+            // Over the page, not in it: the page keeps its place when they come and go.
+            .overlay(alignment: .top) {
+                if partsUnder, !find.isActive {
+                    parts(status)
+                        .padding(.horizontal, 16).padding(.top, 6).padding(.bottom, 10)
+                        .background(.bar, ignoresSafeAreaEdges: .top)
+                        .overlay(alignment: .bottom) { Divider() }
+                        .transition(.opacity)
+                }
+            }
             .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
             // Asked to show a task while the page is open already — from a card in the assistant.
             .onChange(of: navigation.showing) { if navigation.showing != nil { show(navigation.showing, with: scroller) } }
