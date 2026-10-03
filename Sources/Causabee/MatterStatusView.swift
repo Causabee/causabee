@@ -66,6 +66,10 @@ struct MatterStatusView: View {
     @State private var find = PageFind()
     /// The page has gone up under the title bar: the bar turns to glass, with a line under it.
     @State private var scrolledUnder = false
+    /// The parts in the page have scrolled under the title bar, which shows them then.
+    @State private var partsUnder = false
+    @State private var partsEdge = CGFloat.infinity
+    @State private var barEdge = CGFloat.zero
     @Environment(\.reading) private var reading
 
     var body: some View {
@@ -90,6 +94,8 @@ struct MatterStatusView: View {
                             history(status)
                         } else {
                             parts(status).id("parts")
+                                // Its lower edge, to know when it has gone under the title bar.
+                                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { partsEdge = $0 }
                             switch part {
                             case .todo:
                                 todos(status).id("tasks")
@@ -887,8 +893,8 @@ struct MatterStatusView: View {
             }
             .font(.callout)
             .foregroundStyle(.secondary)
-            // Once the page has scrolled, the parts stay at hand here.
-            if scrolledUnder, !find.isActive, !renaming { parts(status).padding(.top, 4) }
+            // Once the parts in the page have gone under this bar, they stay at hand here.
+            if partsUnder, !find.isActive, !renaming { parts(status).padding(.top, 4) }
         }
         .padding(.horizontal, 24)
         .padding(.top, 20)
@@ -898,6 +904,12 @@ struct MatterStatusView: View {
         // At the top it is the page itself; once the page scrolls under it, glass and a line.
         .background(scrolledUnder ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
         .overlay(alignment: .bottom) { if scrolledUnder { Divider() } }
+        // The bar's lower edge as it is without the parts: with them it is taller, and would hide them again.
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { if !partsUnder { barEdge = $0 } }
+        .onChange(of: partsEdge < barEdge) { _, under in
+            withAnimation(.easeOut(duration: 0.15)) { partsUnder = under && scrolledUnder }
+        }
+        .onChange(of: scrolledUnder) { _, under in if !under { partsUnder = false } }
     }
 
     // MARK: To-dos
