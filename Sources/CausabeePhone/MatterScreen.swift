@@ -158,6 +158,7 @@ struct MatterScreen: View {
             withAnimation { scroller.scrollTo(id, anchor: .center) }
             marked = id
             find.shown = id
+            Haptics.landed()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { withAnimation { marked = nil; if find.shown == id { find.shown = nil } } }
         }
     }
@@ -576,6 +577,7 @@ struct MatterScreen: View {
 
     private func toggle(_ todo: Todo) {
         todo.isDone.toggle()
+        if todo.isDone { Haptics.success() } else { Haptics.tap() }
         todo.doneAt = todo.isDone ? Date() : nil
         // Done by the owner's tap, not by a mail: there is no mail to point at.
         if !todo.isDone { todo.doneSource = nil }

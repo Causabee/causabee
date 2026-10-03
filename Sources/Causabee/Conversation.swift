@@ -65,6 +65,7 @@ struct Conversation {
         }
         navigation.turns[position].seen = facts.seen
         navigation.turns[position].refs = facts.refs
+        navigation.turns[position].keys = CardActions.keys(of: facts.refs, in: context)
         navigation.turns[position].step = .disguising
         navigation.turns[position].sentAt = nil
         let question = turn.question

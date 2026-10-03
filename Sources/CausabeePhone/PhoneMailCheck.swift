@@ -273,8 +273,10 @@ final class PhoneMailCheck {
                 // Each mail with the matter it went into: a wrong one is moved from here.
                 let all = try context.fetch(FetchDescriptor<Matter>())
                 let mails = IntakeSummary.mails(judgements) { key in all.first { $0.answers(to: key) }?.name }
+                Haptics.success()
                 state = .done(text, IntakeSummary.items(judgements), mails)
             } catch {
+                Haptics.failure()
                 state = .failed("\(error)")
             }
         }

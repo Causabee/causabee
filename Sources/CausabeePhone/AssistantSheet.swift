@@ -244,6 +244,7 @@ extension AssistantSheet {
     private func send() {
         let typed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !typed.isEmpty, asking == nil else { return }
+        Haptics.tap()
         let scope = matter.map { [$0] } ?? activeMatters(matters)
         let (question, readAs) = NameHints.correct(typed, knowing: scope.flatMap { $0.parties.map(\.name) })
         let today = MatterStatus.day(Date())
@@ -260,6 +261,7 @@ extension AssistantSheet {
         // The model chosen in Settings, as on the Mac, with the key its service takes.
         let model = ModelChoice.assistant
         guard let claude = ModelChoice.client(for: model) else {
+            Haptics.failure()
             failure = ModelChoice.missingKey(model)
             return
         }
@@ -303,6 +305,7 @@ extension AssistantSheet {
                 var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
                                            inHand: pinned, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
                 turn.date = date
+                turn.keys = CardActions.keys(of: facts.refs, in: context)
                 turn.readAs = readAs.map { "read “\($0.typed)” as “\($0.known)”" }
                 turn.state = .answered(answer)
                 let encoder = JSONEncoder()
@@ -311,8 +314,10 @@ extension AssistantSheet {
                 context.insert(record)
                 record.matter = matter
                 try context.save()
+                Haptics.success()
             } catch {
                 guard !Task.isCancelled else { return }
+                Haptics.failure()
                 failure = "\(error)"
                 draft = question
                 fieldKey += 1
@@ -325,6 +330,7 @@ extension AssistantSheet {
     /// change or to send once more — unless something else was typed meanwhile.
     private func stop() {
         guard let asking else { return }
+        Haptics.stop()
         ask?.cancel()
         ask = nil
         self.asking = nil
@@ -417,6 +423,7 @@ struct PhoneTurnView: View {
             HStack(spacing: 6) {
                 Button {
                     UIPasteboard.general.string = answer.plainText
+                    Haptics.tap()
                     copied = true
                     Task { try? await Task.sleep(for: .seconds(1.5)); copied = false }
                 } label: {
@@ -587,7 +594,7 @@ struct PhoneActionCard: View {
                     Spacer()
                     if undo != nil { Button("Undo", action: takeBack).buttonStyle(.phone) }
                 } else {
-                    Button("Dismiss") { withAnimation { navigation.mark(record, card: index, dismissed: true, context: context) } }
+                    Button("Dismiss") { Haptics.tap(); withAnimation { navigation.mark(record, card: index, dismissed: true, context: context) } }
                         .buttonStyle(.phone(wide: true))
                     Button(verb) { take() }.buttonStyle(.phone(filled: true, wide: true))
                 }
@@ -705,6 +712,7 @@ struct PhoneActionCard: View {
         case .nothing:
             return
         case .openMail(let url):
+            Haptics.tap()
             openURL(url)
             // Opened again from the small box: it stays small. Edited and opened: it folds.
             if editingDraft { step { editingDraft = false } }
@@ -712,11 +720,13 @@ struct PhoneActionCard: View {
             navigation.mark(record, card: index, applied: true, text: text.trimmingCharacters(in: .whitespacesAndNewlines),
                             subject: subject, context: context)
         case .madeMatter(let made, let undo):
+            Haptics.success()
             navigation.madeMatter[turn.id] = made.persistentModelID
             navigation.undos[turn.id, default: [:]][index] = undo
             navigation.mark(record, card: index, applied: true, context: context)
             navigation.open(made)
         case .taken(let undo):
+            Haptics.success()
             navigation.undos[turn.id, default: [:]][index] = undo
             navigation.mark(record, card: index, applied: true, context: context)
         }
@@ -724,6 +734,7 @@ struct PhoneActionCard: View {
 
     private func takeBack() {
         guard let undo, CardActions.undo(undo, in: context) else { return }
+        Haptics.tap()
         if case .madeMatter = undo { navigation.madeMatter[turn.id] = nil }
         navigation.undos[turn.id]?[index] = nil
         navigation.mark(record, card: index, applied: false, context: context)

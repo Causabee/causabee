@@ -89,6 +89,8 @@ final class Navigation {
         var inHand: Pinned?
         var seen: String
         var refs: [String: FactRef]
+        /// The same facts in words every device has: the ids in `refs` are the asking store's own.
+        var keys: [String: String] = [:]
         var matter: PersistentIdentifier?
         var state: State = .failed("")
         var applied: Set<Int> = []
@@ -119,7 +121,11 @@ final class Navigation {
 
     func turn(_ record: ThreadTurn) -> Turn? {
         if let known = read[record.id], known.payload == record.payload { return known.turn }
-        let turn = try? JSONDecoder().decode(Turn.self, from: record.payload)
+        var turn = try? JSONDecoder().decode(Turn.self, from: record.payload)
+        // Asked on the Mac, its facts have the Mac's ids: found here by their keys.
+        if let asked = turn, let context = record.modelContext {
+            turn?.refs = CardActions.local(asked.refs, keys: asked.keys, matter: record.matter, in: context)
+        }
         read[record.id] = (record.payload, turn)
         return turn
     }
@@ -159,7 +165,7 @@ final class Navigation {
 
 extension Navigation.Turn: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, date, question, scope, inHand, seen, refs, matter, answer, failed, applied, readAs, dismissedCards, note, shotFile
+        case id, date, question, scope, inHand, seen, refs, keys, matter, answer, failed, applied, readAs, dismissedCards, note, shotFile
     }
 
     init(from decoder: any Decoder) throws {
@@ -171,6 +177,7 @@ extension Navigation.Turn: Codable {
                   matter: (try? c.decodeIfPresent(PersistentIdentifier.self, forKey: .matter)) ?? nil)
         id = try c.decode(UUID.self, forKey: .id)
         date = try c.decode(Date.self, forKey: .date)
+        keys = ((try? c.decodeIfPresent([String: String].self, forKey: .keys)) ?? nil) ?? [:]
         applied = try c.decodeIfPresent(Set<Int>.self, forKey: .applied) ?? []
         readAs = try c.decodeIfPresent([String].self, forKey: .readAs) ?? []
         dismissedCards = try c.decodeIfPresent(Set<Int>.self, forKey: .dismissedCards) ?? []
@@ -193,6 +200,7 @@ extension Navigation.Turn: Codable {
         try c.encodeIfPresent(inHand, forKey: .inHand)
         try c.encode(seen, forKey: .seen)
         try c.encode(refs, forKey: .refs)
+        if !keys.isEmpty { try c.encode(keys, forKey: .keys) }
         if !dismissedCards.isEmpty { try c.encode(dismissedCards, forKey: .dismissedCards) }
         try c.encodeIfPresent(note, forKey: .note)
         try c.encodeIfPresent(matter, forKey: .matter)

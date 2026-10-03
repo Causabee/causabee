@@ -92,10 +92,10 @@ enum CardActions {
     static func source(_ ref: FactRef, in context: ModelContext) -> SourceLine {
         switch ref {
         case .matter:
-            guard let matter = live(ref, as: Matter.self, in: context) else { return gone("folder", "A matter that is no longer there") }
+            guard let matter = live(ref, as: Matter.self, in: context) else { return gone("folder", "A matter", "not found on this \(device)") }
             return SourceLine(symbol: "folder", title: matter.name, detail: "Matter")
         case .entry:
-            guard let entry = live(ref, as: Entry.self, in: context) else { return gone("envelope", "A mail that is no longer there") }
+            guard let entry = live(ref, as: Entry.self, in: context) else { return gone("envelope", "A mail of the matter", "not found on this \(device)") }
             let symbol = switch entry.source.kind {
             case .mail: "envelope"
             case .screenshot, .photo: "photo"
@@ -108,17 +108,17 @@ enum CardActions {
             let title = entry.title.isEmpty ? "(no subject)" : entry.title
             return SourceLine(symbol: symbol, title: who.isEmpty ? title : "\(who) — \(title)", detail: entry.date.map(Dates.short) ?? "")
         case .todo:
-            guard let todo = live(ref, as: Todo.self, in: context) else { return gone("circle", "A task that is no longer there") }
+            guard let todo = live(ref, as: Todo.self, in: context) else { return gone("circle", "A task of the matter", "not found on this \(device)") }
             let detail = todo.isDone ? "done" + (todo.doneAt.map { " " + Dates.short($0) } ?? "") : todo.due.map { "due " + Dates.short($0) } ?? "Task"
             return SourceLine(symbol: todo.isDone ? "checkmark.circle" : "circle", title: todo.text, detail: detail)
         case .appointment:
-            guard let appointment = live(ref, as: Appointment.self, in: context) else { return gone("calendar", "An appointment that is no longer there") }
+            guard let appointment = live(ref, as: Appointment.self, in: context) else { return gone("calendar", "An appointment of the matter", "not found on this \(device)") }
             return SourceLine(symbol: "calendar", title: appointment.what, detail: Dates.short(appointment.day) + (appointment.time.map { ", " + $0 } ?? ""))
         case .deadline:
-            guard let deadline = live(ref, as: Deadline.self, in: context) else { return gone("calendar.badge.clock", "A deadline that is no longer there") }
+            guard let deadline = live(ref, as: Deadline.self, in: context) else { return gone("calendar.badge.clock", "A deadline of the matter", "not found on this \(device)") }
             return SourceLine(symbol: "calendar.badge.clock", title: deadline.what, detail: "Deadline " + Dates.short(deadline.day))
         case .party:
-            guard let party = live(ref, as: Party.self, in: context) else { return gone("person", "A person merged into another") }
+            guard let party = live(ref, as: Party.self, in: context) else { return gone("person", "A person of the matter", "not found on this \(device)") }
             return SourceLine(symbol: "person", title: party.name, detail: "Person")
         }
     }
@@ -136,8 +136,83 @@ enum CardActions {
         }
     }
 
-    private static func gone(_ symbol: String, _ title: String) -> SourceLine {
-        SourceLine(symbol: symbol, title: title, detail: "", isThere: false)
+    /// Not in this store: deleted or merged since — or asked on another device before the thread
+    /// kept what finds it here.
+    private static func gone(_ symbol: String, _ title: String, _ detail: String = "") -> SourceLine {
+        SourceLine(symbol: symbol, title: title, detail: detail, isThere: false)
+    }
+
+    #if os(iOS)
+    private static let device = "iPhone"
+    #else
+    private static let device = "Mac"
+    #endif
+
+    // MARK: The same fact on another device
+
+    /// A fact in words that are the same on every device. Its id is this store's own: the Mac's
+    /// store and the iPhone's give the same mail different ids, so a thread asked on one keeps
+    /// these beside the ids, and the other finds its own copy by them.
+    static func key(_ ref: FactRef, in context: ModelContext) -> String? {
+        let s = "\u{1F}"
+        switch ref {
+        case .matter: return live(ref, as: Matter.self, in: context).map { "M" + s + $0.name }
+        case .entry:
+            guard let entry = live(ref, as: Entry.self, in: context) else { return nil }
+            if !entry.messageID.isEmpty { return "E" + s + entry.messageID }
+            return "E" + s + entry.title + s + String(Int(entry.date?.timeIntervalSince1970 ?? 0))
+        case .todo: return live(ref, as: Todo.self, in: context).map { "T" + s + $0.text }
+        case .appointment: return live(ref, as: Appointment.self, in: context).map { "A" + s + $0.day + s + $0.what }
+        case .deadline: return live(ref, as: Deadline.self, in: context).map { "D" + s + $0.day + s + $0.what }
+        case .party: return live(ref, as: Party.self, in: context).map { "P" + s + $0.name }
+        }
+    }
+
+    static func keys(of refs: [String: FactRef], in context: ModelContext) -> [String: String] {
+        refs.compactMapValues { key($0, in: context) }
+    }
+
+    /// The refs of a turn as this store knows them: one whose id is another device's is looked up
+    /// by its key — in the turn's matter, or in every matter for a question about all of them.
+    static func local(_ refs: [String: FactRef], keys: [String: String], matter: Matter?, in context: ModelContext) -> [String: FactRef] {
+        guard !keys.isEmpty else { return refs }
+        var result = refs
+        var matters: [Matter]?
+        for (cite, ref) in refs where self.matter(of: ref, in: context) == nil {
+            guard let key = keys[cite] else { continue }
+            if matters == nil { matters = matter.map { [$0] } ?? ((try? context.fetch(FetchDescriptor<Matter>())) ?? []) }
+            if let found = find(key, in: matters ?? [], context: context) { result[cite] = found }
+        }
+        return result
+    }
+
+    private static func find(_ key: String, in matters: [Matter], context: ModelContext) -> FactRef? {
+        let parts = key.split(separator: "\u{1F}", omittingEmptySubsequences: false).map(String.init)
+        guard parts.count >= 2 else { return nil }
+        for matter in matters {
+            switch parts[0] {
+            case "M":
+                if matter.name == parts[1] { return .matter(matter.persistentModelID) }
+            case "E":
+                let entries = matter.entries ?? []
+                let found = parts.count == 2
+                    ? entries.first { $0.messageID == parts[1] }
+                    : entries.first { $0.title == parts[1] && String(Int($0.date?.timeIntervalSince1970 ?? 0)) == parts[2] }
+                if let found { return .entry(found.persistentModelID) }
+            case "T":
+                if let found = (matter.todos ?? []).first(where: { $0.text == parts[1] }) { return .todo(found.persistentModelID) }
+            case "A":
+                guard parts.count == 3 else { return nil }
+                if let found = (matter.appointments ?? []).first(where: { $0.day == parts[1] && $0.what == parts[2] }) { return .appointment(found.persistentModelID) }
+            case "D":
+                guard parts.count == 3 else { return nil }
+                if let found = (matter.deadlines ?? []).first(where: { $0.day == parts[1] && $0.what == parts[2] }) { return .deadline(found.persistentModelID) }
+            case "P":
+                if let found = matter.parties.first(where: { $0.name == parts[1] }) { return .party(found.persistentModelID) }
+            default: return nil
+            }
+        }
+        return nil
     }
 
     /// What a source's row jumps to in its matter: the fact itself — a matter has no row of its own.

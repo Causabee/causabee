@@ -204,6 +204,8 @@ final class Navigation {
         var inHand: Pinned?
         var seen: String
         var refs: [String: FactRef]
+        /// The same facts in words every device has: the ids in `refs` are the asking store's own.
+        var keys: [String: String] = [:]
         var matter: PersistentIdentifier?
         var state: State = .asking
         /// Cards the owner ticked, by position.
@@ -291,6 +293,10 @@ final class Navigation {
             if let turn = Self.turn(of: record) { loaded.append(turn) }
         }
         turns = loaded
+        // Turns kept before their facts had keys got them while being read: written now, so the
+        // owner's other devices find those facts too. A turn that reads as it was is not written.
+        loading = false
+        saveThread()
     }
 
     /// A record's turn, with the matter it belongs to taken from the record: the id in the payload
@@ -299,6 +305,13 @@ final class Navigation {
     private static func turn(of record: ThreadTurn) -> Turn? {
         guard var turn = try? JSONDecoder().decode(Turn.self, from: record.payload) else { return nil }
         if let matter = record.matter { turn.matter = matter.persistentModelID }
+        if let context = record.modelContext, !turn.refs.isEmpty {
+            // Asked on the iPhone, its facts have the iPhone's ids: found here by their keys.
+            turn.refs = CardActions.local(turn.refs, keys: turn.keys, matter: record.matter, in: context)
+            // A turn kept before there were keys gets them where its facts are known — here — so
+            // the other devices find them too, the next time the thread is written.
+            if turn.keys.isEmpty { turn.keys = CardActions.keys(of: turn.refs, in: context) }
+        }
         return turn
     }
 
@@ -715,7 +728,7 @@ struct MatterRow: View {
 /// screenshot not taken in yet, come back saying so.
 extension Navigation.Turn: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, date, question, scope, inHand, seen, refs, matter, answer, failed, applied, readAs, dismissedCards, note
+        case id, date, question, scope, inHand, seen, refs, keys, matter, answer, failed, applied, readAs, dismissedCards, note
         case shotFile, shotCopied, shotTaken, shotTakenInto, shotDismissed, shotDocument
     }
 
@@ -727,6 +740,7 @@ extension Navigation.Turn: Codable {
                   matter: try c.decodeIfPresent(PersistentIdentifier.self, forKey: .matter))
         id = try c.decode(UUID.self, forKey: .id)
         date = try c.decode(Date.self, forKey: .date)
+        keys = try c.decodeIfPresent([String: String].self, forKey: .keys) ?? [:]
         applied = try c.decodeIfPresent(Set<Int>.self, forKey: .applied) ?? []
         readAs = try c.decodeIfPresent([String].self, forKey: .readAs) ?? []
         dismissedCards = try c.decodeIfPresent(Set<Int>.self, forKey: .dismissedCards) ?? []
@@ -759,6 +773,7 @@ extension Navigation.Turn: Codable {
         try c.encodeIfPresent(inHand, forKey: .inHand)
         try c.encode(seen, forKey: .seen)
         try c.encode(refs, forKey: .refs)
+        if !keys.isEmpty { try c.encode(keys, forKey: .keys) }
         if !dismissedCards.isEmpty { try c.encode(dismissedCards, forKey: .dismissedCards) }
         try c.encodeIfPresent(note, forKey: .note)
         try c.encodeIfPresent(matter, forKey: .matter)
