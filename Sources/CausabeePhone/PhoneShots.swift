@@ -336,9 +336,12 @@ struct AttachButton: View {
             Button("Screenshot or photo …") { picksPhoto = true }
             Button("File …") { picksFile = true }
         } label: {
-            Image(systemName: "paperclip").font(.body.weight(.medium)).foregroundStyle(.primary)
+            // A plus, as on the Mac (Figma "Composer"): quiet, so the send button is the one loud thing.
+            Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary)
                 .frame(width: 34, height: 34)
         }
+        // A menu's label takes the app's gold; the plus stays grey.
+        .tint(Color.secondary)
         .accessibilityLabel("Bring in a screenshot or a file")
         .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
         .onChange(of: photo) {

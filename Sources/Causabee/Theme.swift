@@ -248,3 +248,22 @@ extension View {
             .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.line))
     }
 }
+
+/// The face of the send button in the assistant's field, on the Mac and the iPhone: a black arrow
+/// on the bee's yellow, in a light line — or a black square, to stop an answer on its way.
+struct SendGlyph: View {
+    let stops: Bool
+
+    var body: some View {
+        ZStack {
+            Circle().fill(Theme.bee)
+            if stops {
+                RoundedRectangle(cornerRadius: 2).fill(.black).frame(width: 11, height: 11)
+            } else {
+                Image(systemName: "arrow.up").font(.system(size: 16, weight: .regular)).foregroundStyle(.black)
+            }
+        }
+        .frame(width: 34, height: 34)
+        .contentShape(Circle())
+    }
+}

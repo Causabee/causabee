@@ -369,10 +369,13 @@ struct Composer: View {
                 .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
             }
             // The send button sits in the pill's round end: as far from the right as from the top
-            // and bottom, and the corner's radius is half its height — 10 + 26 / 2.
-            HStack(alignment: .bottom) {
+            // and bottom, and the corner's radius is that and half the button — 7 + 34 / 2 (Figma
+            // "Composer"). A plus on the left brings something in.
+            HStack(alignment: .bottom, spacing: 6) {
                 if let attach {
-                    Button(action: attach) { Image(systemName: "paperclip").font(.title3).frame(height: 26) }
+                    Button(action: attach) {
+                        Image(systemName: "plus").font(.system(size: 15)).frame(width: 34, height: 34).contentShape(Rectangle())
+                    }
                         .buttonStyle(.plain)
                         .foregroundStyle(.secondary)
                         .help("Attach a screenshot, a mail (.eml) or a PDF — or drag it here, or paste it (⌘V). It is scanned on the Mac.")
@@ -381,7 +384,8 @@ struct Composer: View {
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     // One line sits in the middle of the send button; more lines grow upwards.
-                    .frame(minHeight: 26)
+                    .frame(minHeight: 34)
+                    .padding(.leading, attach == nil ? 9 : 0)
                     .focused(focused)
                     // Return sends; Shift-Return starts a new line, as in Messages.
                     .onKeyPress(.return, phases: .down) { press in
@@ -394,20 +398,16 @@ struct Composer: View {
                         return .handled
                     }
                 Button(action: stop ?? send) {
-                    // The bee's yellow with a black arrow, like the other yellow pills — and a
-                    // black square while an answer is on its way.
-                    Image(systemName: stop == nil ? "arrow.up.circle.fill" : "stop.circle.fill").resizable().frame(width: 26, height: 26)
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(Color.black, Theme.bee)
+                    // The bee's yellow with a black arrow, drawn light, like the other yellow pills —
+                    // and a black square while an answer is on its way.
+                    SendGlyph(stops: stop != nil)
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(stop == nil ? KeyboardShortcut(.return, modifiers: .command) : KeyboardShortcut(".", modifiers: .command))
                 .help(stop == nil ? "Send (↩) · new line with ⇧↩" : "Stop (⌘.)")
             }
-            .padding(.leading, 16)
-            .padding(.trailing, 10)
-            .padding(.vertical, 10)
-            .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 23))
+            .padding(7)
+            .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))
             // "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(showsMore
                 ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen()) · goes pseudonymised, like the mails • [less](causabee://footer)"

@@ -216,11 +216,9 @@ struct AssistantSheet: View {
                     // One line sits in the middle of the send button; more lines grow upwards.
                     .frame(minHeight: 34)
                 Button { if asking == nil { send() } else { stop() } } label: {
-                    // A black arrow on the bee's yellow, as every yellow thing has black on it —
-                    // and a black square while an answer is on its way: one question at a time.
-                    Image(systemName: asking == nil ? "arrow.up.circle.fill" : "stop.circle.fill").resizable().frame(width: 34, height: 34)
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.black, Theme.bee)
+                    // A black arrow on the bee's yellow, drawn light, as every yellow thing has black
+                    // on it — and a black square while an answer is on its way: one question at a time.
+                    SendGlyph(stops: asking != nil)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(asking == nil ? "Send" : "Stop")
