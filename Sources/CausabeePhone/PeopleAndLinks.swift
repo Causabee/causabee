@@ -108,6 +108,7 @@ struct PhonePartyRow: View {
                     Text(share.isMost ? share.text + " · the most" : share.text).font(.caption)
                         .foregroundStyle(share.isMost ? Theme.gold : .secondary)
                 }
+                MailAddressLine(addresses: CardActions.addresses(of: party))
                 let also = party.otherSpellings
                 if !also.isEmpty {
                     Text("also written: " + also.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2)
@@ -138,6 +139,7 @@ struct PhonePartyRow: View {
 
     @ViewBuilder
     private var items: some View {
+        MailAddressItems(addresses: CardActions.addresses(of: party))
         AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
         Button("Edit", systemImage: "pencil") { editing = true }
         Menu("Merge with", systemImage: "arrow.triangle.merge") {

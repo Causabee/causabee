@@ -1111,6 +1111,7 @@ struct MatterStatusView: View {
                             .help("Shows what \(party.name) wrote, in the record")
                             .draggable(party.name)
                             .contextMenu {
+                                MailAddressItems(addresses: CardActions.addresses(of: party))
                                 Menu("Merge with …") {
                                     ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
                                         Button(other.name) { merging = (party, other) }
@@ -1175,6 +1176,8 @@ struct MatterStatusView: View {
         .pickerStyle(.segmented)
         .labelsHidden()
         .fixedSize()
+        // The chosen part in white, as on the iPhone — not in the black the app's buttons have.
+        .tint(Theme.card)
     }
 
     /// Whether this person wrote it: by any way their name is written.
@@ -1198,6 +1201,7 @@ struct MatterStatusView: View {
             .labelsHidden()
             .fixedSize()
             .controlSize(.small)
+            .tint(Theme.card)
             if let party = personParty, filter == .all {
                 Button { person = nil } label: { Label(party.name, systemImage: "xmark.circle.fill") }
                     .buttonStyle(.bordered).controlSize(.small)
@@ -1964,6 +1968,7 @@ struct PartyRow: View {
     @State private var role = ""
 
     var body: some View {
+        let addresses = CardActions.addresses(of: party)
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "person.crop.circle").font(.title2).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 3) {
@@ -1976,6 +1981,7 @@ struct PartyRow: View {
                     Text(share.isMost ? share.text + " · the most" : share.text).font(.caption)
                         .foregroundStyle(share.isMost ? Theme.gold : .secondary)
                 }
+                MailAddressLine(addresses: addresses)
                 let also = party.otherSpellings
                 if !also.isEmpty {
                     Text("also written: " + also.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2)
@@ -1988,6 +1994,7 @@ struct PartyRow: View {
             Spacer(minLength: 8)
             HStack(spacing: 4) {
             MoreMenu {
+                MailAddressItems(addresses: addresses)
                 Button("Ask Causabee", action: talk)
                 Button("Edit name and role …") {
                     name = party.name

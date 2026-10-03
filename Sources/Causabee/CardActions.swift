@@ -223,19 +223,49 @@ enum CardActions {
         }
     }
 
-    /// A party's address, from the mail in the store: the sender line of a mail they wrote. It is
-    /// never sent anywhere; it only fills the "To" of a draft the owner opens.
-    static func address(of party: Party) -> String? {
+    /// An address a party wrote from, and when they last did.
+    struct MailAddress: Identifiable {
+        let address: String
+        let last: Date?
+        let count: Int
+        var id: String { address }
+        /// "2 mails, last Oct 2" — what tells one address from the person's other.
+        var note: String {
+            let mails = count == 1 ? "1 mail" : "\(count) mails"
+            return last.map { "\(mails), last \(Dates.short($0))" } ?? mails
+        }
+        /// Mail opens with a new message to it; the owner writes and sends it.
+        var url: URL? {
+            var parts = URLComponents()
+            parts.scheme = "mailto"
+            parts.path = address
+            return parts.url
+        }
+    }
+
+    /// Every address a party wrote from, the one they last used first: from the sender lines of the
+    /// mail in the store. They are never sent anywhere; they only fill the "To" of a mail the owner opens.
+    static func addresses(of party: Party) -> [MailAddress] {
         let keys = Set(([party.name] + party.spellings).map(PartyNames.key))
+        var found: [String: (last: Date?, count: Int)] = [:]
+        var seen = Set<String>()
         for matter in party.matters {
             for entry in matter.entries ?? [] {
                 guard let name = Email.displayName(in: entry.from), keys.contains(PartyNames.key(name)) else { continue }
-                let address = Email.address(in: entry.from)
-                if address.contains("@") { return address }
+                let address = Email.address(in: entry.from).lowercased()
+                // A mail filed in two matters counts once.
+                guard address.contains("@"), seen.insert(entry.messageID.isEmpty ? "\(address) \(String(describing: entry.date))" : entry.messageID).inserted else { continue }
+                let before = found[address]
+                let last = [before?.last, entry.date].compactMap { $0 }.max()
+                found[address] = (last, (before?.count ?? 0) + 1)
             }
         }
-        return nil
+        return found.map { MailAddress(address: $0.key, last: $0.value.last, count: $0.value.count) }
+            .sorted { ($0.last ?? .distantPast, $0.count, $1.address) > ($1.last ?? .distantPast, $1.count, $0.address) }
     }
+
+    /// The address a party last wrote from.
+    static func address(of party: Party) -> String? { addresses(of: party).first?.address }
 
     static func recipient(_ id: String?, refs: [String: FactRef], in context: ModelContext) -> (name: String, address: String?)? {
         guard let id, let ref = refs[id], let party = live(ref, as: Party.self, in: context) else { return nil }
@@ -465,5 +495,59 @@ private struct SourceRow: View {
         .disabled(open == nil)
         .onHover { hovering = $0 }
         .accessibilityHint(open == nil ? "" : "Shows it in its matter")
+    }
+}
+
+/// A person's address under their name: the one they last wrote from, and how many others there are.
+struct MailAddressLine: View {
+    let addresses: [CardActions.MailAddress]
+
+    var body: some View {
+        if let first = addresses.first {
+            Text(addresses.count > 1 ? "\(first.address) · last used of \(addresses.count)" : first.address)
+                .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                .textSelection(.enabled)
+        }
+    }
+}
+
+/// "Write mail" and "Copy address" in a person's menu. With several addresses each is offered, the
+/// one last written from first, with when it was last used.
+struct MailAddressItems: View {
+    let addresses: [CardActions.MailAddress]
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        if let first = addresses.first {
+            if addresses.count == 1 {
+                Button("Write mail", systemImage: "envelope") { write(first) }
+                Button("Copy address", systemImage: "doc.on.doc") { copy(first) }
+            } else {
+                Menu("Write mail", systemImage: "envelope") {
+                    ForEach(addresses) { item in
+                        Button { write(item) } label: { Text(item.address); Text(item.note) }
+                    }
+                }
+                Menu("Copy address", systemImage: "doc.on.doc") {
+                    ForEach(addresses) { item in
+                        Button { copy(item) } label: { Text(item.address); Text(item.note) }
+                    }
+                }
+            }
+            Divider()
+        }
+    }
+
+    private func write(_ item: CardActions.MailAddress) {
+        if let url = item.url { openURL(url) }
+    }
+
+    private func copy(_ item: CardActions.MailAddress) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(item.address, forType: .string)
+        #else
+        UIPasteboard.general.string = item.address
+        #endif
     }
 }
