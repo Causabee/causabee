@@ -114,3 +114,10 @@ Small things noticed while using the app, to pick up later. Newest first.
   link" in the row's ⋯ menu on the Mac and the iPhone, and on a long press on the iPhone; the
   button says "Copied" for a moment. A tap on the name still opens it. To decide: whether a plain
   tap should copy instead of open. (2026-10-03)
+
+- **Read a link for the assistant.** In a link's ⋯ menu: "Read for the assistant". Causabee
+  fetches what the link points to and keeps its text with the matter, so the assistant takes it
+  into account in its answers — and can name it as a source. The row then shows a small sign
+  that it is read (and when); the menu offers "Read again" and "Stop using it". To decide: what
+  is kept (the whole text or a digest), how a link behind a login is read (a Google Doc), and
+  that the text goes out pseudonymised like everything else. (2026-10-03)
