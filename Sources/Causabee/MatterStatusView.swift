@@ -54,6 +54,14 @@ struct MatterStatusView: View {
     @State private var marked: PersistentIdentifier?
     /// Every conversation shown, not only the newest: a source pointed at an older mail.
     @State private var showsAllHistory = false
+    /// The page under what stands on top: what is to do, the record, or the people.
+    enum Part: String { case todo, record, people }
+    /// The record, whole or one kind of it.
+    enum RecordFilter: String { case all, mail, files, links }
+    @State private var part: Part = .todo
+    @State private var filter: RecordFilter = .all
+    /// One person's part of the record: chosen in "People".
+    @State private var person: PersistentIdentifier?
     /// ⌘F on this page.
     @State private var find = PageFind()
     /// The page has gone up under the title bar: the bar turns to glass, with a line under it.
@@ -72,12 +80,26 @@ struct MatterStatusView: View {
                         if !matter.isClosed { nextStep(status, facts) }
                         summary(facts)
                         notes.id("notes")
-                        todos(status).id("tasks")
-                        dates(status)
-                        files.id("files")
-                        links.id("links")
-                        parties(status)
-                        history(status)
+                        if find.isActive {
+                            // Searching looks into every part, so everything is on the page.
+                            todos(status).id("tasks")
+                            dates(status)
+                            files.id("files")
+                            links.id("links")
+                            parties(status)
+                            history(status)
+                        } else {
+                            parts(status).id("parts")
+                            switch part {
+                            case .todo:
+                                todos(status).id("tasks")
+                                dates(status)
+                            case .record:
+                                record(status)
+                            case .people:
+                                parties(status)
+                            }
+                        }
                     }
                     .padding(24)
                     .frame(maxWidth: 820, alignment: .leading)
@@ -96,7 +118,7 @@ struct MatterStatusView: View {
                 }
                 .onChange(of: find.query) { find.index = 0 }
                 .onChange(of: find.current) { if let at = find.current { withAnimation { scroller.scrollTo(at, anchor: .center) } } }
-                .onChange(of: matter.persistentModelID) { find.query = ""; showsAllHistory = false }
+                .onChange(of: matter.persistentModelID) { find.query = ""; showsAllHistory = false; person = nil; filter = .all }
                 // `--demo --shot`: the part of the page the introduction's picture shows.
                 .onAppear {
                     if let section = IntroShot.current?.section {
@@ -117,6 +139,12 @@ struct MatterStatusView: View {
                 .onReceive(NotificationCenter.default.publisher(for: .matterAction)) { note in
                     guard let action = (note.object as? String).flatMap(MatterAction.init) else { return }
                     let section = switch action { case .newTask: "tasks"; case .writeNote: "notes"; case .addFile: "files"; case .addLink: "links" }
+                    switch action {
+                    case .newTask: part = .todo
+                    case .addFile: part = .record; filter = .files
+                    case .addLink: part = .record; filter = .links
+                    case .writeNote: break
+                    }
                     withAnimation { scroller.scrollTo(section, anchor: .top) }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         switch action {
@@ -707,6 +735,16 @@ struct MatterStatusView: View {
         navigation.showing = nil
         marked = todo
         find.shown = todo
+        // The part of the page it is in, with nothing filtered away.
+        if (matter.todos ?? []).contains(where: { $0.persistentModelID == todo })
+            || (matter.appointments ?? []).contains(where: { $0.persistentModelID == todo })
+            || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == todo }) {
+            part = .todo
+        } else if matter.parties.contains(where: { $0.persistentModelID == todo }) {
+            part = .people
+        } else {
+            part = .record; filter = .all; person = nil
+        }
         // What is folded away — done, past, an old conversation — is unfolded for it.
         if (matter.todos ?? []).contains(where: { $0.persistentModelID == todo && $0.isDone }) { showsDone = true }
         if matter.infos.contains(where: { $0.persistentModelID == todo }) { showsInfos = true }
@@ -849,6 +887,8 @@ struct MatterStatusView: View {
             }
             .font(.callout)
             .foregroundStyle(.secondary)
+            // Once the page has scrolled, the parts stay at hand here.
+            if scrolledUnder, !find.isActive, !renaming { parts(status).padding(.top, 4) }
         }
         .padding(.horizontal, 24)
         .padding(.top, 20)
@@ -1066,6 +1106,9 @@ struct MatterStatusView: View {
                                 talk(party.name, "Person")
                             }
                             .findable(.model(party.persistentModelID), party.name, membership.role)
+                            .contentShape(Rectangle())
+                            .onTapGesture { person = party.persistentModelID; filter = .all; part = .record }
+                            .help("Shows what \(party.name) wrote, in the record")
                             .draggable(party.name)
                             .contextMenu {
                                 Menu("Merge with …") {
@@ -1114,6 +1157,143 @@ struct MatterStatusView: View {
         PartyBook.confirmSame(party, as: other, in: matter, context: context, origin: origin)
         try? context.save()
         merging = nil
+    }
+
+    // MARK: Parts
+
+    private var shownDocuments: [MatterCore.Document] { (matter.documents ?? []).filter { !$0.isHidden && !$0.isSmallImage } }
+    private var keptLinks: [WebLink] { (matter.links ?? []).filter(\.isKept) }
+    private var personParty: Party? { person.flatMap { id in matter.parties.first { $0.persistentModelID == id } } }
+
+    /// What is to do, the record, the people: the system's own segmented control.
+    private func parts(_ status: MatterStatus) -> some View {
+        Picker("Part of the matter", selection: $part) {
+            Text("To do · \(matter.openTodos.count)").tag(Part.todo)
+            Text("Record · \(status.entries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
+            Text("People · \(status.memberships.count)").tag(Part.people)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
+    }
+
+    /// Whether this person wrote it: by any way their name is written.
+    private func wrote(_ party: Party, _ from: String?) -> Bool {
+        guard let from else { return false }
+        let keys = Set(([party.name] + party.spellings).map(PartyNames.key))
+        return keys.contains(PartyNames.key(Email.displayName(in: from) ?? Email.address(in: from)))
+    }
+
+    /// Everything that came in or was added — mail, files, links — as one list, or one kind of it.
+    @ViewBuilder
+    private func record(_ status: MatterStatus) -> some View {
+        HStack(spacing: 10) {
+            Picker("Show", selection: $filter) {
+                Text("All").tag(RecordFilter.all)
+                Text("Mail · \(status.entries.count)").tag(RecordFilter.mail)
+                Text("Files · \(shownDocuments.count)").tag(RecordFilter.files)
+                Text("Links · \(keptLinks.count)").tag(RecordFilter.links)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
+            .controlSize(.small)
+            if let party = personParty, filter == .all {
+                Button { person = nil } label: { Label(party.name, systemImage: "xmark.circle.fill") }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    .help("Only what \(party.name) wrote is shown. Click to show everyone's again.")
+            }
+            Spacer()
+        }
+        switch filter {
+        case .all: recordList(status)
+        case .mail: history(status)
+        case .files: files.id("files")
+        case .links: links.id("links")
+        }
+    }
+
+    /// One thing of the record, and the day it is sorted by.
+    private enum RecordItem: Identifiable {
+        case thread(MailThreads.Thread)
+        case document(MatterCore.Document)
+        case link(WebLink)
+
+        var id: String {
+            switch self {
+            case .thread(let thread): "thread-\(thread.id)"
+            case .document(let document): "file-\(document.persistentModelID.hashValue)"
+            case .link(let link): "link-\(link.persistentModelID.hashValue)"
+            }
+        }
+        var date: Date {
+            switch self {
+            case .thread(let thread): thread.last ?? thread.first ?? .distantPast
+            case .document(let document): document.source.date ?? .distantPast
+            case .link(let link): link.createdAt
+            }
+        }
+    }
+
+    private static let month: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "LLLL yyyy"
+        return formatter
+    }()
+
+    /// Mail, files and links together, newest first, month by month.
+    @ViewBuilder
+    private func recordList(_ status: MatterStatus) -> some View {
+        let party = personParty
+        let threads = MailThreads.build(status.entries).filter { thread in
+            party.map { party in thread.rows.contains { wrote(party, $0.entry.from) } } ?? true
+        }
+        let documents = shownDocuments.filter { document in
+            party.map { party in
+                wrote(party, (matter.entries ?? []).first { $0.messageID == document.messageID }?.from)
+            } ?? true
+        }
+        let links = party == nil ? keptLinks : []
+        let all = (threads.map(RecordItem.thread) + documents.map(RecordItem.document) + links.map(RecordItem.link)).sorted { $0.date > $1.date }
+        let visible = showsAllHistory ? all : Array(all.prefix(60))
+        let months = Dictionary(grouping: visible) { Calendar.current.dateComponents([.year, .month], from: $0.date) }
+            .sorted { ($0.key.year ?? 0, $0.key.month ?? 0) > ($1.key.year ?? 0, $1.key.month ?? 0) }
+        if all.isEmpty {
+            EmptyBox(text: party == nil ? "Mail sorted into this matter, its files and links show here, newest first."
+                                        : "Nothing in this matter was written by \(party?.name ?? "them").")
+        }
+        ForEach(months, id: \.key) { _, items in
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader(title: items.first.map { $0.date == .distantPast ? "Without a day" : Self.month.string(from: $0.date) } ?? "",
+                              detail: items.count == 1 ? "1 entry" : "\(items.count) entries")
+                ForEach(items) { item in
+                    switch item {
+                    case .thread(let thread):
+                        ThreadCard(thread: thread) { entry in talk(entry.title, "Mail") }
+                    case .document(let document):
+                        Card {
+                            DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
+                                        open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
+                                        read: { fetch(document, then: { conversation.bring($0, document: document) }) },
+                                        hide: { setHidden(document, !document.isHidden) },
+                                        nameIt: { nameFromContent(document) },
+                                        talk: { talk(document.shownName, "File") })
+                                .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+                        }
+                    case .link(let link):
+                        Card {
+                            LinkRow(link: link, todos: matter.openTodos) { remove(link) }
+                                .findable(.model(link.persistentModelID), link.shownName, link.address)
+                        }
+                    }
+                }
+            }
+        }
+        if all.count > visible.count {
+            Button("… and \(all.count - visible.count) older — show them") { showsAllHistory = true }
+                .buttonStyle(.gold).font(.caption).padding(.horizontal, 4)
+        }
     }
 
     // MARK: History

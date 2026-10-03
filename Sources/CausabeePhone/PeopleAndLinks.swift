@@ -6,6 +6,8 @@ import SwiftUI
 /// two names are likely one, and each changed, merged, talked about or taken out of the matter.
 struct PeopleSection: View {
     let matter: Matter
+    /// A tap on a person: their part of the record.
+    var choose: ((Party) -> Void)? = nil
     @Environment(\.modelContext) private var context
     @State private var merging: (Party, Party)?
 
@@ -42,6 +44,8 @@ struct PeopleSection: View {
                                               try? context.save()
                                           },
                                           merge: { other in merging = (party, other) })
+                                .contentShape(Rectangle())
+                                .onTapGesture { choose?(party) }
                         }
                     }
                 }

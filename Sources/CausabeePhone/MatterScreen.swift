@@ -25,6 +25,14 @@ struct MatterScreen: View {
     @FocusState private var findFocused: Bool
     @State private var newMatterName = ""
     @State private var marked: PersistentIdentifier?
+    /// The page under what stands on top: what is to do, the record, or the people.
+    enum Part: String { case todo, record, people }
+    /// The record, whole or one kind of it.
+    enum RecordFilter: String { case all, mail, files, links }
+    @State private var part: Part = .todo
+    @State private var filter: RecordFilter = .all
+    /// One person's part of the record: chosen in "People".
+    @State private var person: PersistentIdentifier?
     /// Every conversation shown, not only the newest: a source pointed at an older mail.
     @State private var showsAllHistory = false
     @Query private var allMatters: [Matter]
@@ -47,20 +55,41 @@ struct MatterScreen: View {
                     if matter.isClosed { closedBanner(status) } else { nextStep(status, scroller) }
                     summary
                     notes
-                    todos(status)
-                    dates(status)
-                    FilesSection(matter: matter)
-                    LinksSection(matter: matter)
-                    PeopleSection(matter: matter)
-                    history(status)
+                    if find.isActive {
+                        // Searching looks into every part, so everything is on the page.
+                        todos(status)
+                        dates(status)
+                        FilesSection(matter: matter)
+                        LinksSection(matter: matter)
+                        PeopleSection(matter: matter)
+                        history(status)
+                    } else {
+                        parts(status)
+                        switch part {
+                        case .todo:
+                            todos(status)
+                            dates(status)
+                        case .record:
+                            record(status)
+                        case .people:
+                            PeopleSection(matter: matter) { party in person = party.persistentModelID; filter = .all; part = .record }
+                        }
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 90)
                 // Exactly the screen's width: nothing on the page — a long address, a word without
                 // a break — can make it wider and let it slide sideways.
                 .containerRelativeFrame(.horizontal)
+                // A tap on the page puts the keyboard away. Behind the page, not over it: a tap
+                // gesture over the scroll view takes the taps from the system's segmented control.
+                .background {
+                    Color.clear.contentShape(Rectangle()).onTapGesture {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                }
             }
-            .dismissesKeyboard()
+            .scrollDismissesKeyboard(.interactively)
             .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
             // Asked to show a task while the page is open already — from a card in the assistant.
             .onChange(of: navigation.showing) { if navigation.showing != nil { show(navigation.showing, with: scroller) } }
@@ -149,6 +178,16 @@ struct MatterScreen: View {
         guard let id else { return }
         navigation.showing = nil
         if status(of: id)?.isDone == true { showsDone = true }
+        // The part of the page it is in, with nothing filtered away.
+        if (matter.todos ?? []).contains(where: { $0.persistentModelID == id })
+            || (matter.appointments ?? []).contains(where: { $0.persistentModelID == id })
+            || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == id }) {
+            part = .todo
+        } else if matter.parties.contains(where: { $0.persistentModelID == id }) {
+            part = .people
+        } else {
+            part = .record; filter = .all; person = nil
+        }
         // A source of an answer can be anything on the page: what is folded away is unfolded for it.
         let today = MatterStatus(matter).today
         if (matter.appointments ?? []).contains(where: { $0.persistentModelID == id && $0.day < today })
@@ -635,6 +674,131 @@ struct MatterScreen: View {
     }
 
     // MARK: People
+
+    // MARK: Parts
+
+    private var shownDocuments: [MatterCore.Document] { (matter.documents ?? []).filter { !$0.isHidden && !$0.isSmallImage } }
+    private var keptLinks: [WebLink] { (matter.links ?? []).filter(\.isKept) }
+    private var personParty: Party? { person.flatMap { id in matter.parties.first { $0.persistentModelID == id } } }
+
+    /// What is to do, the record, the people: the system's own segmented control.
+    private func parts(_ status: MatterStatus) -> some View {
+        Picker("Part of the matter", selection: $part) {
+            Text("To do · \(matter.openTodos.count)").tag(Part.todo)
+            Text("Record · \(status.entries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
+            Text("People · \(status.memberships.count)").tag(Part.people)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+    }
+
+    /// Whether this person wrote it: by any way their name is written.
+    private func wrote(_ party: Party, _ from: String?) -> Bool {
+        guard let from else { return false }
+        let keys = Set(([party.name] + party.spellings).map(PartyNames.key))
+        return keys.contains(PartyNames.key(Email.displayName(in: from) ?? Email.address(in: from)))
+    }
+
+    /// Everything that came in or was added — mail, files, links — as one list, or one kind of it.
+    @ViewBuilder
+    private func record(_ status: MatterStatus) -> some View {
+        Picker("Show", selection: $filter) {
+            Text("All").tag(RecordFilter.all)
+            Text("Mail").tag(RecordFilter.mail)
+            Text("Files").tag(RecordFilter.files)
+            Text("Links").tag(RecordFilter.links)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        if let party = personParty, filter == .all {
+            Button { person = nil } label: { Label(party.name, systemImage: "xmark.circle.fill") }
+                .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small).tint(.primary)
+                .accessibilityHint("Shows everyone's again")
+        }
+        switch filter {
+        case .all: recordList(status)
+        case .mail: history(status)
+        case .files: FilesSection(matter: matter)
+        case .links: LinksSection(matter: matter)
+        }
+    }
+
+    /// One thing of the record, and the day it is sorted by.
+    private enum RecordItem: Identifiable {
+        case thread(MailThreads.Thread)
+        case document(MatterCore.Document)
+        case link(WebLink)
+
+        var id: String {
+            switch self {
+            case .thread(let thread): "thread-\(thread.id)"
+            case .document(let document): "file-\(document.persistentModelID.hashValue)"
+            case .link(let link): "link-\(link.persistentModelID.hashValue)"
+            }
+        }
+        var date: Date {
+            switch self {
+            case .thread(let thread): thread.last ?? thread.first ?? .distantPast
+            case .document(let document): document.source.date ?? .distantPast
+            case .link(let link): link.createdAt
+            }
+        }
+    }
+
+    private static let month: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "LLLL yyyy"
+        return formatter
+    }()
+
+    /// Mail, files and links together, newest first, month by month.
+    @ViewBuilder
+    private func recordList(_ status: MatterStatus) -> some View {
+        let party = personParty
+        let threads = MailThreads.build(status.entries).filter { thread in
+            party.map { party in thread.rows.contains { wrote(party, $0.entry.from) } } ?? true
+        }
+        let documents = shownDocuments.filter { document in
+            party.map { party in
+                wrote(party, (matter.entries ?? []).first { $0.messageID == document.messageID }?.from)
+            } ?? true
+        }
+        let links = party == nil ? keptLinks : []
+        let all = (threads.map(RecordItem.thread) + documents.map(RecordItem.document) + links.map(RecordItem.link)).sorted { $0.date > $1.date }
+        let visible = showsAllHistory ? all : Array(all.prefix(60))
+        let months = Dictionary(grouping: visible) { Calendar.current.dateComponents([.year, .month], from: $0.date) }
+            .sorted { ($0.key.year ?? 0, $0.key.month ?? 0) > ($1.key.year ?? 0, $1.key.month ?? 0) }
+        if all.isEmpty {
+            PhoneEmptyBox(text: party == nil ? "Mail sorted into this matter, its files and links show here, newest first."
+                                             : "Nothing in this matter was written by \(party?.name ?? "them").")
+        }
+        ForEach(months, id: \.key) { _, items in
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader(title: items.first.map { $0.date == .distantPast ? "Without a day" : Self.month.string(from: $0.date) } ?? "",
+                              detail: items.count == 1 ? "1 entry" : "\(items.count) entries")
+                ForEach(items) { item in
+                    switch item {
+                    case .thread(let thread):
+                        PhoneThreadCard(thread: thread, matter: matter)
+                    case .document(let document):
+                        FilesSection(matter: matter, only: document)
+                    case .link(let link):
+                        PhoneLinkRow(link: link, todos: matter.openTodos) {
+                            withAnimation { context.delete(link) }
+                            try? context.save()
+                        }
+                        .findable(.model(link.persistentModelID), link.shownName, link.address)
+                        .phoneCard()
+                    }
+                }
+            }
+        }
+        if all.count > visible.count {
+            Button("… and \(all.count - visible.count) older — show them") { showsAllHistory = true }
+                .font(.caption).foregroundStyle(Theme.gold).padding(.horizontal, 4)
+        }
+    }
 
     // MARK: History
 

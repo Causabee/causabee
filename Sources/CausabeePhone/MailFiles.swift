@@ -44,6 +44,8 @@ enum MailFiles {
 /// A logo in a signature is not a file anyone attached, and is left out, as on the Mac.
 struct FilesSection: View {
     let matter: Matter
+    /// Only this file, as a card of its own: an entry in the record's one list.
+    var only: MatterCore.Document? = nil
     @Environment(\.modelContext) private var context
     @Environment(Navigation.self) private var navigation
     @Query private var profiles: [Profile]
@@ -68,6 +70,9 @@ struct FilesSection: View {
             (!document.isHidden || showsHidden) && (!document.isSmallImage || showsSmallImages || document.isHidden)
         }
         VStack(alignment: .leading, spacing: 10) {
+            if let only {
+                row(only).findable(.model(only.persistentModelID), only.shownName, only.name).phoneCard()
+            } else {
             HStack {
                 SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
                               + (hidden.isEmpty ? "" : " · \(hidden.count) hidden")
@@ -101,6 +106,7 @@ struct FilesSection: View {
                     }
                 }
                 .font(.caption).foregroundStyle(Theme.gold).padding(.horizontal, 4)
+            }
             }
         }
         .quickLookPreview($preview)
