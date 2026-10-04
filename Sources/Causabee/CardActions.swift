@@ -22,6 +22,8 @@ enum CardActions {
         /// A link a card kept, to take out again.
         case removeLink(PersistentIdentifier)
         /// A contact a card added or completed: its membership when the card made it, and how it was reached before.
+        /// A date, a detail or a matter's note a card added, to take out again.
+        case added(PersistentIdentifier)
         case contact(PersistentIdentifier, matter: PersistentIdentifier, joined: Bool, address: String?, phone: String?)
         /// What a to-do waited for before.
         case waits(PersistentIdentifier, PersistentIdentifier?)
@@ -392,7 +394,16 @@ enum CardActions {
                 deadline.day = day
             } else { return .nothing }
         case .addNote:
-            guard let todo = model(card.todo, as: Todo.self), !text.isEmpty else { return .nothing }
+            guard !text.isEmpty else { return .nothing }
+            // With no to-do it is one of the matter's own notes.
+            guard let todo = model(card.todo, as: Todo.self) else {
+                guard let matter = scope else { return .nothing }
+                let note = MatterNote(text: text)
+                context.insert(note)
+                note.matter = matter
+                try? context.save()
+                return .taken(.added(note.persistentModelID))
+            }
             undo = .note(todo.persistentModelID, todo.note)
             todo.note = [todo.note, text].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: "\n")
         case .addLink:
@@ -405,6 +416,25 @@ enum CardActions {
             link.todo = todo
             try? context.save()
             undo = .removeLink(link.persistentModelID)
+        case .newAppointment:
+            guard let matter = scope, !text.isEmpty, let day = card.due else { return .nothing }
+            let item = Appointment(what: text, day: day, time: card.time, place: nil, source: source)
+            context.insert(item)
+            item.matter = matter
+            try? context.save()
+            undo = .added(item.persistentModelID)
+        case .newDeadline:
+            guard let matter = scope, !text.isEmpty, let day = card.due else { return .nothing }
+            let item = Deadline(what: text, day: day, source: source)
+            context.insert(item)
+            item.matter = matter
+            try? context.save()
+            undo = .added(item.persistentModelID)
+        case .addDetail:
+            guard let matter = scope, let label = card.subject,
+                  let detail = matter.addDetail(label: label, value: text, of: model(card.party, as: Party.self), in: context) else { return .nothing }
+            try? context.save()
+            undo = .added(detail.persistentModelID)
         case .addContact:
             guard let matter = scope, !text.isEmpty else { return .nothing }
             // A party the facts know is completed as it is; anyone else is added, by the name given.
@@ -458,6 +488,11 @@ enum CardActions {
             live(id, as: Todo.self, in: context)?.note = note
         case .removeLink(let id):
             if let link = live(id, as: WebLink.self, in: context) { context.delete(link) }
+        case .added(let id):
+            if let item = live(id, as: Appointment.self, in: context) { context.delete(item) }
+            else if let item = live(id, as: Deadline.self, in: context) { context.delete(item) }
+            else if let item = live(id, as: MatterDetail.self, in: context) { context.delete(item) }
+            else if let item = live(id, as: MatterNote.self, in: context) { context.delete(item) }
         case .contact(let id, let matter, let joined, let address, let phone):
             guard let party = live(id, as: Party.self, in: context) else { return false }
             party.address = address

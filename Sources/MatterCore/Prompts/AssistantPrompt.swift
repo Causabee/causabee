@@ -43,8 +43,16 @@ public enum AssistantPrompt {
     exactly as they appear in the facts, `text` what they should be.
     - `change_owner`: a to-do is someone else's than the list says. `todo` is its id, `owner` the \
     right one.
-    - `add_note`: the owner wants something written down with a to-do — a list, a detail, what \
-    was agreed. `todo` is its id, `text` the note, in the owner's words.
+    - `add_note`: the owner wants something written down — a list, what was agreed, something to \
+    remember. `text` is the note, in the owner's words. `todo` is the id of the to-do it belongs \
+    with, or null: then it is kept in the matter's notes.
+    - `new_appointment`: a meeting, call or visit at a set day that is not among the dates yet. \
+    `text` is what it is, `due` the day, `time` the time (HH:MM) or null.
+    - `new_deadline`: a day by which something has to be done or handed in, not among the dates \
+    yet. `text` is what, `due` the day.
+    - `add_detail`: a short fact to keep at hand — a membership number, a file number, a ward and \
+    room, a customer number. `subject` is its label ("Versichertennummer"), `text` the value \
+    exactly as written, placeholder or not; `party` the id of the party it belongs to, or null.
     - `waits_for`: one to-do can only be done after another — the proof after the answer it \
     needs. `todo` is the id of the one that waits, `into` the id of the one it waits for. A to-do \
     that already waits says so in the facts ("can only be done after T3").
@@ -72,7 +80,11 @@ public enum AssistantPrompt {
     tone of the mail with that party, from the facts only, signed with the owner's name. It is \
     opened in the owner's mail program; the owner sends it, never you. When the owner asks for a \
     message, this card is the answer, and the lines only say what it contains.
-    Suggest a card only when the facts or the owner's words carry it. None is fine.
+    Suggest a card only when the facts or the owner's words carry it. None is fine. But when the \
+    owner writes or dictates something to keep — "note that …", "appointment on …", "the number \
+    is …", "add …" — or a text they pasted holds tasks, dates, people or numbers, offer a card for \
+    each thing worth keeping: several cards of several kinds in one answer are right. The owner \
+    ticks what they want.
 
     When the owner corrects something — who a person is, how a name is written, whose a to-do \
     is — the owner is right: they know their own matters, and the facts were read by a model. Do \
@@ -106,7 +118,7 @@ public enum AssistantPrompt {
         return object([
             "lines": ["type": "array", "items": object(["text": string, "cites": ["type": "array", "items": string]])],
             "cards": ["type": "array", "items": object([
-                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact"]],
+                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact", "new_appointment", "new_deadline", "add_detail"]],
                 "todo": optional,
                 "party": optional,
                 "into": optional,
@@ -134,6 +146,7 @@ public enum AssistantPrompt {
                 case markDone = "mark_done", newTodo = "new_todo", sameParty = "same_party", renameParty = "rename_party"
                 case changeRole = "change_role", addNote = "add_note", draftMessage = "draft_message", changeDate = "change_date"
                 case newMatter = "new_matter", waitsFor = "waits_for", addLink = "add_link", addContact = "add_contact"
+                case newAppointment = "new_appointment", newDeadline = "new_deadline", addDetail = "add_detail"
                 case correctText = "correct_text", changeOwner = "change_owner"
             }
             public var kind: Kind

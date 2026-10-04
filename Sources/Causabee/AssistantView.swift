@@ -716,7 +716,7 @@ struct ActionCard: View {
         _quiet = State(initialValue: done)
     }
 
-    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink, .addContact].contains(card.kind) }
+    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
 
     var body: some View {
         Group {
@@ -839,12 +839,15 @@ struct ActionCard: View {
         case .sameParty: return "Merged into one person"
         case .renameParty: return "Name changed"
         case .changeRole: return "Role changed · " + name(card.party)
-        case .addNote: return "Note added · " + name(card.todo)
+        case .addNote: return card.todo == nil ? "Note added" : "Note added · " + name(card.todo)
         case .changeDate: return "Date changed"
         case .newMatter: return "Matter started"
         case .waitsFor: return "Now waits for " + name(card.into)
         case .addLink: return "Link saved"
         case .addContact: return "Contact saved"
+        case .newAppointment: return "Appointment added"
+        case .newDeadline: return "Deadline added"
+        case .addDetail: return "Detail saved"
         case .correctText: return "Text corrected"
         case .changeOwner: return "Now " + whose.lowercased()
         case .draftMessage: return "Opened in Mail"
@@ -896,6 +899,8 @@ struct ActionCard: View {
         case .waitsFor: "Link"
         case .addLink: "Save link"
         case .addContact: "Save contact"
+        case .newAppointment, .newDeadline: "Add"
+        case .addDetail: "Save detail"
         case .renameParty, .changeRole, .correctText, .changeOwner: "Change"
         }
     }
@@ -907,13 +912,16 @@ struct ActionCard: View {
         case .sameParty: return "Same person?"
         case .renameParty: return "Change name?"
         case .changeRole: return "Change role?"
-        case .addNote: return "Note for the task?"
+        case .addNote: return card.todo == nil ? "Note for the matter?" : "Note for the task?"
         case .draftMessage: return "Draft"
         case .changeDate: return "Change date?"
         case .newMatter: return "New matter?"
         case .waitsFor: return "Waits for another task?"
         case .addLink: return "Save link? · Name:"
         case .addContact: return "Contact? · Name:"
+        case .newAppointment: return "New appointment? · " + (card.due.map(Dates.short) ?? "?") + (card.time.map { " at \($0)" } ?? "")
+        case .newDeadline: return "New deadline? · by " + (card.due.map(Dates.short) ?? "?")
+        case .addDetail: return "Detail? · " + (card.subject ?? "")
         case .correctText: return "Replace in the text?"
         case .changeOwner: return "Whose task? → " + whose
         }
@@ -927,7 +935,7 @@ struct ActionCard: View {
         case .sameParty: return "\(name(card.party))  →  \(name(card.into))"
         case .renameParty: return "\(name(card.party))  is called:"
         case .changeRole: return "\(name(card.party))  is here:"
-        case .addNote: return name(card.todo)
+        case .addNote: return card.todo == nil ? nil : name(card.todo)
         case .draftMessage:
             guard let recipient else { return "To: (fill in in Mail)" }
             return "To: \(recipient.name)" + (recipient.address.map { " <\($0)>" } ?? " — address not known, fill it in in Mail")
@@ -935,6 +943,8 @@ struct ActionCard: View {
         case .newMatter: return nil
         case .waitsFor: return "\(name(card.todo))  →  only after: \(name(card.into))"
         case .addLink: return card.todo == nil ? "to the matter" : "to: \(name(card.todo))"
+        case .newAppointment, .newDeadline: return nil
+        case .addDetail: return card.party == nil ? "its value is never among the facts sent" : "of \(name(card.party)) · its value is never among the facts sent"
         case .addContact: return [card.subject, card.from, card.time].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: " · ")
         case .changeDate:
             let when = (card.due.map(Dates.short) ?? "?") + (card.time.map { " at \($0)" } ?? "")
