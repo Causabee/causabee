@@ -367,6 +367,8 @@ struct PhoneTurnView: View {
     let matter: Matter?
     /// Just copied: the button says so for a moment.
     @State private var copied = false
+    /// Kept as a note of its matter: the button says so, and does not keep it twice.
+    @State private var savedNote = false
     /// The answer's sources, unfolded: one list for the whole answer.
     @State private var showsSources = false
     @Environment(Navigation.self) private var navigation
@@ -432,6 +434,20 @@ struct PhoneTurnView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(copied ? "Copied" : "Copy the answer")
+                // An answer about one matter can be kept with it, as a note.
+                if let matter {
+                    Button {
+                        NotesPart.keep(answer.plainText, in: matter, context: context)
+                        Haptics.success()
+                        savedNote = true
+                    } label: {
+                        Image(systemName: savedNote ? "checkmark" : "note.text.badge.plus").font(.footnote).foregroundStyle(.secondary)
+                            .frame(width: 32, height: 32).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(savedNote)
+                    .accessibilityLabel(savedNote ? "Saved as note" : "Save as note")
+                }
                 if !cites.isEmpty {
                     Button { withAnimation(.snappy) { showsSources.toggle() } } label: {
                         HStack(spacing: 4) {

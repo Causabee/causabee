@@ -420,11 +420,14 @@ public final class Document {
 public final class MatterNote {
     public var text: String = ""
     public var createdAt: Date = Date()
+    /// An answer of the assistant's the owner kept, not the owner's own words.
+    public var fromAssistant: Bool = false
     public var matter: Matter?
 
-    public init(text: String, createdAt: Date = Date()) {
+    public init(text: String, createdAt: Date = Date(), fromAssistant: Bool = false) {
         self.text = text
         self.createdAt = createdAt
+        self.fromAssistant = fromAssistant
     }
 }
 
@@ -445,7 +448,7 @@ extension Matter {
         var lines: [String] = []
         if let earlierNote { lines.append(earlierNote) }
         for note in sortedNotes.reversed() where !note.text.isEmpty {
-            lines.append("\(MatterStatus.day(note.createdAt)): \(note.text)")
+            lines.append("\(MatterStatus.day(note.createdAt))\(note.fromAssistant ? " (an answer of yours the owner kept)" : ""): \(note.text)")
         }
         return lines.isEmpty ? nil : lines.joined(separator: "\n")
     }

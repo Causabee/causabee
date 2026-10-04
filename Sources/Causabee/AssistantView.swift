@@ -486,6 +486,9 @@ struct TurnView: View {
     @State private var showsSources = false
     /// Just copied: the button says so for a moment.
     @State private var copied = false
+    /// Kept as a note of its matter: the button says so, and does not keep it twice.
+    @State private var savedNote = false
+    @Environment(\.modelContext) private var context
     @Environment(\.reading) private var reading
 
     var body: some View {
@@ -558,6 +561,18 @@ struct TurnView: View {
                 }
                 .help(copied ? "Copied" : "Copy the answer")
                 .accessibilityLabel("Copy the answer")
+                // An answer about one matter can be kept with it, as a note.
+                if let kept = turn.matter.flatMap({ context.model(for: $0) as? Matter }) {
+                    Button {
+                        NotesPart.keep(answer.plainText, in: kept, context: context)
+                        savedNote = true
+                    } label: {
+                        Image(systemName: savedNote ? "checkmark" : "note.text.badge.plus").frame(width: 16, height: 16).contentShape(Rectangle())
+                    }
+                    .disabled(savedNote)
+                    .help(savedNote ? "Saved in the notes of \(kept.name)" : "Save as a note in \(kept.name)")
+                    .accessibilityLabel("Save as note")
+                }
                 // Another answer would take the place of this one: not once a card of it is taken in.
                 if let again, turn.applied.isEmpty {
                     Button(action: again) {

@@ -199,7 +199,7 @@ struct NotesPart: View {
                 .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.bottom, 4)
 
             ForEach(matter.sortedNotes) { note in
-                block(Self.label(note.createdAt), note.text, isEditing: editing == note.persistentModelID,
+                block(Self.label(note.createdAt) + (note.fromAssistant ? " · from the assistant" : ""), note.text, isEditing: editing == note.persistentModelID,
                       edit: { edited = note.text; editing = note.persistentModelID; editingEarlier = false },
                       save: { text in if text.isEmpty { context.delete(note) } else { note.text = text } },
                       delete: { context.delete(note) })
@@ -273,6 +273,14 @@ struct NotesPart: View {
         note.matter = matter
         try? context.save()
         withAnimation { draft = "" }
+    }
+
+    /// An answer of the assistant's, kept as a note of the matter it was about.
+    static func keep(_ answer: String, in matter: Matter, context: ModelContext) {
+        let note = MatterNote(text: answer, fromAssistant: true)
+        context.insert(note)
+        note.matter = matter
+        try? context.save()
     }
 
     /// "Today, 14:05", "Yesterday", or the day.
