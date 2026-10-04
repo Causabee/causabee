@@ -35,16 +35,20 @@ enum DemoData {
     #endif
 
     /// Counts up whenever the demo's words or matters change: a demo store filled with an older
-    /// version is emptied and filled again — with today's dates too. Only ever the demo's own store.
-    static let contentVersion = 2
-    private static let seededKey = "demo.contentVersion"
+    /// version is emptied and filled again — with today's dates too. Two things are overdue in it, in
+    /// the care matter and the trip: enough to show what overdue looks like, not a page of it. Only ever the demo's own store.
+    static let contentVersion = 3
+    private static let seededKey = "demo.filled"
 
     static func seed(_ context: ModelContext) {
-        if UserDefaults.standard.integer(forKey: seededKey) != contentVersion {
+        // Filled again on a new day too: its dates are counted from the day it was filled, and a demo
+        // left for a week would open with everything overdue.
+        let stamp = "\(contentVersion) \(MatterStatus.day(Date()))"
+        if UserDefaults.standard.string(forKey: seededKey) != stamp {
             func empty<Model: PersistentModel>(_ model: Model.Type) { try? context.delete(model: model) }
             for model in MatterSchema.models { empty(model) }
             try? context.save()
-            UserDefaults.standard.set(contentVersion, forKey: seededKey)
+            UserDefaults.standard.set(stamp, forKey: seededKey)
         }
         guard ((try? context.fetchCount(FetchDescriptor<Matter>())) ?? 0) == 0 else { return }
         context.insert(Profile(names: ["Mara Voss", "mara.voss@mail.example"]))
@@ -363,7 +367,7 @@ enum DemoData {
             files: [("Poster-draft-v2.png", "image/png", 1_420_000)])
 
         c.todo("sign", "Sign the topic approval", .me, from: form, quote: "Parents sign the form", done: -31)
-        c.todo("safety", "Return the safety form", .me, due: -1, from: approved,
+        c.todo("safety", "Return the safety form", .me, due: 1, from: approved,
                quote: "bring a safety form for the test", note: "Noa has it in her school bag.")
         c.todo("pickup", "Pick up filter sand and tubing", .me, due: 2, from: store,
                quote: "ready at the store", again: [(materials, "have to be bought")])
@@ -647,7 +651,7 @@ enum DemoData {
         c.todo("read", "Read the contract, note questions", .me, due: 6, from: draft, quote: "read it and send questions")
         c.todo("questions", "Send questions to the notary", .me, due: 8, from: draft, quote: "send questions before the appointment")
         c.waits("questions", for: "read")
-        c.todo("bankDocs", "Get the last two tax notices", .me, due: -3, from: bankMail,
+        c.todo("bankDocs", "Get the last two tax notices", .me, due: 2, from: bankMail,
                quote: "the tax notices of the last two years")
         c.todo("insurance", "Accept the building insurance", .me, due: 11, from: insure, quote: "Cover can start on the day of handover")
         c.todo("sellers", "Sellers confirm the handover date", .other, due: 9, from: offer, quote: "written financing commitment")
@@ -789,7 +793,7 @@ enum DemoData {
 
         c.todo("lease", "Sign the lease", .me, from: lease, quote: "Lease for Birch Road 12 signed", done: -50)
         c.todo("notice", "Give notice for the old flat", .me, from: notice, quote: "The notice is confirmed", done: -45)
-        c.todo("internet", "Ask FiberNest to move the internet", .me, due: -2, from: net,
+        c.todo("internet", "Ask FiberNest to move the internet", .me, due: 3, from: net,
                quote: "if you ask four weeks before the move")
         c.todo("movers", "Book Carry & Co", .me, due: 6, from: movers, quote: "The offer holds until 7 October")
         c.todo("paint", "Paint the old flat white", .me, due: 24, from: hand, quote: "Walls must be repainted white")
@@ -860,7 +864,7 @@ enum DemoData {
         c.todo("health", "Send the health statement to Jana", .me, due: 2, from: health, quote: "counts as a deduction")
         c.todo("days", "Count the home office days", .me, due: 4, from: ask,
                quote: "the home office days", again: [(start, "the costs of the home office")])
-        c.todo("desk", "Find the desk receipt", .me, due: -1, from: ask, quote: "the receipt for the new desk",
+        c.todo("desk", "Find the desk receipt", .me, due: 2, from: ask, quote: "the receipt for the new desk",
                note: "Probably in the mail from March, from Werkstatt Möbel.")
         c.todo("donate", "Send the donation receipt", .me, due: 3, from: donation, quote: "The receipt for 2025 is attached")
         c.todo("sign", "Sign the return", .me, due: 18, from: start, quote: "The deadline with the tax office is 31 October")
@@ -921,7 +925,7 @@ enum DemoData {
 
         c.todo("photos", "Send photos of the damage", .me, from: report, quote: "Please send photos", done: -14)
         c.todo("details", "Send the other driver's details", .me, from: report, quote: "the other driver's details", done: -13)
-        c.todo("estimate", "Send the repair estimate", .me, due: -2, from: report, quote: "a repair estimate",
+        c.todo("estimate", "Send the repair estimate", .me, due: 1, from: report, quote: "a repair estimate",
                again: [(estimate, "Rear bumper and the tail light")])
         c.todo("iban", "Confirm your bank details", .me, due: 2, from: pay, quote: "confirm the account holder and the IBAN")
         c.todo("rental", "Decide on a rental car", .me, due: 3, from: rental, quote: "A small car costs 39 euros a day")

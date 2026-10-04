@@ -403,8 +403,12 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .live .done { color: #53524a; }
 .live .gold { color: var(--gold); }
 .live .ink-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: calc(7.5 * var(--u)); background: #22211b; color: #fff; }
-/* The pointer: the tip of the arrow is its spot. */
-.live .pointer { width: calc(21 * var(--u)); height: auto; left: calc((var(--x) - 1.6) * var(--u)); top: calc((var(--y) - 1.6) * var(--u)); overflow: visible; }
+/* What clicks: a yellow disc, its middle on the spot (--x, --y). It comes, bumps the thing — the
+   keyframes press it small for a moment — and goes. No arrow: several of them on one page were restless. */
+.live .pointer { width: calc(26 * var(--u)); height: calc(26 * var(--u)); left: calc((var(--x) - 13) * var(--u)); top: calc((var(--y) - 13) * var(--u));
+  border-radius: 50%; background: rgba(255, 208, 0, 0.6); box-shadow: 0 0 0 calc(1.5 * var(--u)) rgba(255, 255, 255, 0.85), 0 calc(2 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, 0.18); }
+.live .pointer path { display: none; }
+.live--hero .pointer, .live--matter .pointer { width: calc(34 * var(--u)); height: calc(34 * var(--u)); left: calc((var(--x) - 17) * var(--u)); top: calc((var(--y) - 17) * var(--u)); }
 .live .work { display: flex; align-items: center; gap: calc(7.5 * var(--u)); }
 .live .work .bee-work { width: calc(26 * var(--u)); }
 
@@ -412,7 +416,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* The assistant: the question goes out, the bee is on it, the answers come with their sources,
    and the suggested task is added — the card closes into its small quiet box. 20 s, then again. */
-.live--ask { --img: url("assets/img/assistant.webp?v=5"); --T: 20s; }
+.live--ask { --img: url("assets/img/assistant.webp?v=6"); --T: 20s; }
 :where(.live--ask .live__stage) > * { animation: var(--T) ease-in-out infinite both; }
 .live--ask .ask-q { animation-name: ask-q; }
 .live--ask .ask-work { animation-name: ask-work; }
@@ -457,7 +461,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   0%, 38% { opacity: 0; transform: translate(calc(70 * var(--u)), calc(60 * var(--u))); }
   40% { opacity: 1; transform: translate(calc(70 * var(--u)), calc(60 * var(--u))); }
   47.5% { opacity: 1; transform: none; animation-timing-function: ease-in-out; }
-  48.2%, 49.2% { transform: scale(0.9); }
+  48.2%, 49.2% { transform: scale(0.7); }
   49.6%, 54% { opacity: 1; transform: none; }
   57%, 100% { opacity: 0; transform: none; }
 }
@@ -482,7 +486,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .tile__img.live .cover { animation-name: cover; }
 
 /* Tasks: the one for both of you is ticked off, and the one that waited on it has its turn. */
-.live--tasks { --img: url("assets/img/tasks.webp?v=5"); }
+.live--tasks { --img: url("assets/img/tasks.webp?v=6"); }
 .live--tasks .tk-box { animation-name: tk-box; }
 .live--tasks .tk-t1 { animation-name: tk-box; }
 .live--tasks .tk-t3, .live--tasks .tk-h3 { animation-name: tk-next; }
@@ -493,13 +497,13 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   0%, 8% { opacity: 0; transform: translate(calc(330 * var(--u)), calc(150 * var(--u))); }
   11% { opacity: 1; transform: translate(calc(330 * var(--u)), calc(150 * var(--u))); }
   25% { transform: none; }
-  27%, 28% { transform: scale(0.88); }
+  27%, 28% { transform: scale(0.7); }
   30% { opacity: 1; transform: none; }
   34%, 100% { opacity: 0; transform: translate(calc(14 * var(--u)), calc(8 * var(--u))); }
 }
 
 /* Calendar: connected with a click, every date offers "Add to Calendar" — one is added. */
-.live--cal { --img: url("assets/img/calendar.webp?v=5"); }
+.live--cal { --img: url("assets/img/calendar.webp?v=6"); }
 .live--cal .cl-banner { animation-name: cl-banner; }
 .live--cal .cl-l0, .live--cal .cl-l1, .live--cal .cl-l2, .live--cal .cl-l3 { animation-name: cl-move; }
 .live--cal .cl-chip, .live--cal .cl-tail { animation-name: cl-chip; }
@@ -514,17 +518,17 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 @keyframes cl-pointer {
   0%, 6% { opacity: 0; transform: translate(calc(150 * var(--u)), calc(-40 * var(--u))); }
   9% { opacity: 1; transform: translate(calc(150 * var(--u)), calc(-40 * var(--u))); }
-  17% { transform: translate(calc(130 * var(--u)), calc(-115 * var(--u))); }
-  19.5%, 20.5% { transform: translate(calc(130 * var(--u)), calc(-115 * var(--u))) scale(0.88); }
-  22%, 28% { transform: translate(calc(130 * var(--u)), calc(-115 * var(--u))); }
+  17% { transform: translate(calc(130 * var(--u)), calc(-131 * var(--u))); }
+  19.5%, 20.5% { transform: translate(calc(130 * var(--u)), calc(-131 * var(--u))) scale(0.7); }
+  22%, 28% { transform: translate(calc(130 * var(--u)), calc(-131 * var(--u))); }
   39% { transform: none; }
-  41.5%, 42.2% { transform: scale(0.88); }
+  41.5%, 42.2% { transform: scale(0.7); }
   44% { opacity: 1; transform: none; }
   48%, 100% { opacity: 0; transform: translate(calc(14 * var(--u)), calc(10 * var(--u))); }
 }
 
 /* Files: a file comes in with its mail — the list opens for it at the top, lightly marked. */
-.live--files { --img: url("assets/img/files.webp?v=5"); }
+.live--files { --img: url("assets/img/files.webp?v=6"); }
 .live--files .fl-row { animation-name: fl-row; }
 .live--files .fl-mark { animation-name: fl-mark; border-radius: calc(4 * var(--u)); background: #ecebe6; mix-blend-mode: multiply; }
 .live--files .fl-rest { animation-name: fl-rest; }
@@ -535,7 +539,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 @keyframes fl-count { 0%, 26% { opacity: 1; } 27%, 100% { opacity: 0; } }
 
 /* Sources: each "from the mail of …" opens that mail; the pointer goes from one to the next. */
-.live--src { --img: url("assets/img/sources.webp?v=5"); }
+.live--src { --img: url("assets/img/sources.webp?v=6"); }
 .live--src .sr-pointer { animation-name: sr-pointer; }
 .live--src .sr-d1 { animation-name: sr-d1; }
 .live--src .sr-d2 { animation-name: sr-d2; }
@@ -550,10 +554,10 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   0%, 4% { opacity: 0; transform: translate(calc(240 * var(--u)), calc(60 * var(--u))); }
   7% { opacity: 1; transform: translate(calc(240 * var(--u)), calc(60 * var(--u))); }
   14%, 34% { transform: none; }
-  40%, 60% { transform: translate(calc(-50 * var(--u)), calc(138 * var(--u))); }
-  66%, 84% { transform: translate(calc(17 * var(--u)), calc(205 * var(--u))); }
+  40%, 60% { transform: translate(calc(-41 * var(--u)), calc(137 * var(--u))); }
+  66%, 84% { transform: translate(calc(25 * var(--u)), calc(204 * var(--u))); }
   88% { opacity: 1; }
-  92%, 100% { opacity: 0; transform: translate(calc(30 * var(--u)), calc(215 * var(--u))); }
+  92%, 100% { opacity: 0; transform: translate(calc(38 * var(--u)), calc(214 * var(--u))); }
 }
 /* A press dims the link to 0.6, as the app's gold links do. */
 @keyframes sr-d1 { 0%, 25% { opacity: 0; } 25.5%, 27% { opacity: 0.4; } 28%, 100% { opacity: 0; } }
@@ -588,7 +592,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* The overview: "Get new mail" — fetched, two new mails shown with what sorting them costs, sorted
    in with a click; Lisbon has one task more. 20 s, then again. */
-.live--hero { --img: image-set(url("assets/img/overview-1440.webp?v=5") 1x, url("assets/img/overview-2880.webp?v=5") 2x); }
+.live--hero { --img: image-set(url("assets/img/overview-1440.webp?v=6") 1x, url("assets/img/overview-2880.webp?v=6") 2x); }
 :where(.live--hero .live__stage) > * { animation: 20s ease-in-out infinite both; }
 .live--hero .hr-caret { animation: hr-caret 1.06s steps(1, end) infinite; }
 @keyframes hr-caret { 0% { opacity: 0; } 50% { opacity: 1; } }
@@ -609,10 +613,10 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   0%, 14% { opacity: 0; transform: translate(calc(560 * var(--u)), calc(-300 * var(--u))); }
   16% { opacity: 1; transform: translate(calc(560 * var(--u)), calc(-300 * var(--u))); }
   22% { transform: translate(calc(190 * var(--u)), 0); }
-  24.6%, 25.3% { transform: translate(calc(190 * var(--u)), 0) scale(0.88); }
+  24.6%, 25.3% { transform: translate(calc(190 * var(--u)), 0) scale(0.7); }
   26.2%, 28% { transform: translate(calc(190 * var(--u)), 0); }
   33% { transform: translate(calc(52 * var(--u)), calc(3 * var(--u))); }
-  36.6%, 37.4% { transform: translate(calc(52 * var(--u)), calc(3 * var(--u))) scale(0.88); }
+  36.6%, 37.4% { transform: translate(calc(52 * var(--u)), calc(3 * var(--u))) scale(0.7); }
   38.3% { opacity: 1; transform: translate(calc(52 * var(--u)), calc(3 * var(--u))); }
   42%, 100% { opacity: 0; transform: translate(calc(66 * var(--u)), calc(14 * var(--u))); }
 }
@@ -622,44 +626,33 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* The matter page: the next step asked for again, the summary brought up to date, a note written —
    each with what the app shows meanwhile. The three points under it follow along. 15 s. */
-.live--matter { --img: image-set(url("assets/img/matter-1440.webp?v=5") 1x, url("assets/img/matter-2880.webp?v=5") 2x); }
+.live--matter { --img: image-set(url("assets/img/matter-1440.webp?v=6") 1x, url("assets/img/matter-2880.webp?v=6") 2x); }
 :where(.live--matter .live__stage) > * { animation: 15s ease-in-out infinite both; }
 .live--matter .mt-step { animation-name: mt-step; }
 .live--matter .mt-ask { animation-name: mt-ask; }
 .live--matter .mt-sum { animation-name: mt-sum; }
 .live--matter .mt-upd { animation-name: mt-upd; }
-.live--matter .mt-note { animation-name: mt-note; transform-origin: right center; }
-.live--matter .mt-caret { animation-name: mt-caret; background: #1d1d1f; border-radius: calc(1 * var(--u)); }
+.live--matter .mt-tab { animation-name: mt-tab; border-radius: calc(8 * var(--u)); background: rgba(255, 208, 0, 0.16); box-shadow: inset 0 0 0 calc(2 * var(--u)) var(--honey); }
 .live--matter .mt-pointer { animation-name: mt-pointer; }
 @keyframes mt-ask { 0%, 7.3% { opacity: 0; } 8.6%, 19.6% { opacity: 1; } 21%, 100% { opacity: 0; } }
 @keyframes mt-step { 0%, 17.5% { opacity: 0; } 19.5%, 21.5% { opacity: 1; } 24.5%, 100% { opacity: 0; } }
 @keyframes mt-upd { 0%, 41.2% { opacity: 0; } 42.5%, 55% { opacity: 1; } 56.4%, 100% { opacity: 0; } }
 @keyframes mt-sum { 0%, 52% { opacity: 0; } 54%, 56% { opacity: 1; } 59%, 100% { opacity: 0; } }
-@keyframes mt-note {
-  0%, 68% { transform: none; opacity: 1; animation-timing-function: steps(30, end); }
-  82%, 95% { transform: scaleX(0); opacity: 1; }
-  95.1% { transform: none; opacity: 0; }
-  98%, 100% { transform: none; opacity: 1; }
-}
-@keyframes mt-caret {
-  0%, 65.5% { opacity: 0; transform: none; }
-  66%, 68% { opacity: 1; transform: none; animation-timing-function: steps(30, end); }
-  82% { opacity: 1; transform: translateX(calc(232 * var(--u))); animation-timing-function: steps(1, end); }
-  85% { opacity: 0; transform: translateX(calc(232 * var(--u))); animation-timing-function: steps(1, end); }
-  88% { opacity: 1; transform: translateX(calc(232 * var(--u))); animation-timing-function: steps(1, end); }
-  91% { opacity: 0; transform: translateX(calc(232 * var(--u))); animation-timing-function: steps(1, end); }
-  94%, 100% { opacity: 0; transform: translateX(calc(232 * var(--u))); }
-}
+/* The notes have a tab of their own: the disc goes there, and the tab is marked. */
+@keyframes mt-tab { 0%, 74.5% { opacity: 0; } 76%, 94% { opacity: 1; } 97%, 100% { opacity: 0; } }
 @keyframes mt-pointer {
   0% { opacity: 0; transform: translate(calc(320 * var(--u)), calc(260 * var(--u))); }
   2% { opacity: 1; transform: translate(calc(320 * var(--u)), calc(260 * var(--u))); }
   6% { transform: none; }
-  6.7%, 7.4% { transform: scale(0.88); }
+  6.7%, 7.4% { transform: scale(0.7); }
   8%, 30% { transform: none; }
-  37% { transform: translateY(calc(165 * var(--u))); }
-  40%, 41% { transform: translateY(calc(165 * var(--u))) scale(0.88); }
-  43% { opacity: 1; transform: translateY(calc(165 * var(--u))); }
-  48%, 100% { opacity: 0; transform: translate(calc(14 * var(--u)), calc(175 * var(--u))); }
+  37% { transform: translateY(calc(160 * var(--u))); }
+  40%, 41% { transform: translateY(calc(160 * var(--u))) scale(0.7); }
+  43%, 62% { opacity: 1; transform: translateY(calc(160 * var(--u))); }
+  72% { transform: translate(calc(335 * var(--u)), calc(236 * var(--u))); }
+  74%, 75% { transform: translate(calc(335 * var(--u)), calc(236 * var(--u))) scale(0.7); }
+  77%, 84% { opacity: 1; transform: translate(calc(335 * var(--u)), calc(236 * var(--u))); }
+  89%, 100% { opacity: 0; transform: translate(calc(349 * var(--u)), calc(246 * var(--u))); }
 }
 /* Under it, a line over each point fills while the picture shows it. */
 .cols--live .point { position: relative; padding-top: 22px; }
@@ -682,8 +675,3 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   .cols--live .point { padding-top: 0; }
   .cols--live .point::before, .cols--live .point::after { display: none; }
 }
-
-/* The pictures were taken again for 0.5 Beta 9 — tabs on the matter page, an icon for each matter,
-   the microphone — and the moving parts laid over them are still measured on the old ones. Until
-   they are measured again, each picture stands still: right, and not half a step beside itself. */
-.live__stage { display: none; }
