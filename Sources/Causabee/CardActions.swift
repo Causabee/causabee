@@ -21,6 +21,8 @@ enum CardActions {
         case madeMatter(PersistentIdentifier)
         /// A link a card kept, to take out again.
         case removeLink(PersistentIdentifier)
+        /// A contact a card added or completed: its membership when the card made it, and how it was reached before.
+        case contact(PersistentIdentifier, matter: PersistentIdentifier, joined: Bool, address: String?, phone: String?)
         /// What a to-do waited for before.
         case waits(PersistentIdentifier, PersistentIdentifier?)
         /// A merge folds one party into another and the first is gone; its rule can be switched
@@ -403,6 +405,15 @@ enum CardActions {
             link.todo = todo
             try? context.save()
             undo = .removeLink(link.persistentModelID)
+        case .addContact:
+            guard let matter = scope, !text.isEmpty else { return .nothing }
+            // A party the facts know is completed as it is; anyone else is added, by the name given.
+            let known = model(card.party, as: Party.self) ?? matter.parties.first { $0.name.caseInsensitiveCompare(text) == .orderedSame }
+            let joined = known.map { matter.membership(of: $0) == nil } ?? true
+            let before = (known?.address, known?.phone)
+            guard let party = matter.addContact(name: known?.name ?? text, role: card.subject ?? "", address: card.from ?? "", phone: card.time ?? "", in: context) else { return .nothing }
+            try? context.save()
+            undo = .contact(party.persistentModelID, matter: matter.persistentModelID, joined: joined, address: before.0, phone: before.1)
         case .waitsFor:
             guard let todo = model(card.todo, as: Todo.self), let other = model(card.into, as: Todo.self) else { return .nothing }
             let before = todo.waitsFor?.persistentModelID
@@ -447,6 +458,15 @@ enum CardActions {
             live(id, as: Todo.self, in: context)?.note = note
         case .removeLink(let id):
             if let link = live(id, as: WebLink.self, in: context) { context.delete(link) }
+        case .contact(let id, let matter, let joined, let address, let phone):
+            guard let party = live(id, as: Party.self, in: context) else { return false }
+            party.address = address
+            party.phone = phone
+            // Out of the matter again when the card brought it in; gone when it is in no other.
+            if joined, let matter = live(matter, as: Matter.self, in: context), let membership = matter.membership(of: party) {
+                context.delete(membership)
+                if (party.memberships ?? []).allSatisfy({ $0 === membership }) { context.delete(party) }
+            }
         case .waits(let id, let before):
             live(id, as: Todo.self, in: context)?.waitsFor = before.flatMap { live($0, as: Todo.self, in: context) }
         case .roles(let id, let roles):

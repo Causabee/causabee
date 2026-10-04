@@ -53,6 +53,13 @@ public enum AssistantPrompt {
     `text` a short name for it from the owner's words or the facts ("Umzug Liste"), `todo` the id \
     of the to-do it goes with, or null for the matter. A web address is never a note: it is this \
     card, not `add_note`.
+    - `add_contact`: the owner wants someone kept as a contact of the matter, or gives a mail \
+    address or a phone number for one — "add the insurer, reha@…", "her number is …". `text` is \
+    the name, exactly as the owner or the facts write it; `subject` what they are here (insurer, \
+    doctor, office) or null; `from` the mail address exactly as written, placeholder or not, or \
+    null; `time` the phone number exactly as written, or null. It needs no id: a party already in \
+    the facts is completed by its name, anyone else is added. Never answer that a contact cannot \
+    be added or completed — this card does it.
     - `new_matter`: the owner describes something that is not one of the matters yet and wants to \
     keep it — "Neue Sache: …", "ich muss mich um … kümmern". `text` is its name as the owner would \
     write it on a list, at most five words. When the owner also says what there is to do, add a \
@@ -99,7 +106,7 @@ public enum AssistantPrompt {
         return object([
             "lines": ["type": "array", "items": object(["text": string, "cites": ["type": "array", "items": string]])],
             "cards": ["type": "array", "items": object([
-                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "change_date", "new_matter", "waits_for", "add_link"]],
+                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact"]],
                 "todo": optional,
                 "party": optional,
                 "into": optional,
@@ -126,7 +133,7 @@ public enum AssistantPrompt {
             public enum Kind: String, Codable, Sendable {
                 case markDone = "mark_done", newTodo = "new_todo", sameParty = "same_party", renameParty = "rename_party"
                 case changeRole = "change_role", addNote = "add_note", draftMessage = "draft_message", changeDate = "change_date"
-                case newMatter = "new_matter", waitsFor = "waits_for", addLink = "add_link"
+                case newMatter = "new_matter", waitsFor = "waits_for", addLink = "add_link", addContact = "add_contact"
                 case correctText = "correct_text", changeOwner = "change_owner"
             }
             public var kind: Kind

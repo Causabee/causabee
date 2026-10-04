@@ -566,7 +566,7 @@ struct PhoneActionCard: View {
     private var done: Bool { turn.applied.contains(index) }
     private var dismissed: Bool { turn.dismissedCards.contains(index) }
     private var undo: CardActions.Undo? { navigation.undos[turn.id]?[index] }
-    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink].contains(card.kind) }
+    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink, .addContact].contains(card.kind) }
     private var mailInHand: String? { turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil } }
     private var recipient: (name: String, address: String?)? {
         CardActions.recipient(card.party, refs: turn.refs, question: turn.question, mail: mailInHand, scope: scope, in: context)
@@ -699,6 +699,7 @@ struct PhoneActionCard: View {
         case .newMatter: return "Matter started"
         case .waitsFor: return "Now waits for " + name(card.into)
         case .addLink: return "Link saved"
+        case .addContact: return "Contact saved"
         case .correctText: return "Text corrected"
         case .changeOwner: return "Now " + whose.lowercased()
         case .draftMessage: return "Opened in Mail"
@@ -801,6 +802,7 @@ struct PhoneActionCard: View {
         case .newMatter: "Create"
         case .waitsFor: "Link"
         case .addLink: "Save link"
+        case .addContact: "Save contact"
         case .renameParty, .changeRole, .correctText, .changeOwner: "Change"
         }
     }
@@ -818,6 +820,7 @@ struct PhoneActionCard: View {
         case .newMatter: return "New matter?"
         case .waitsFor: return "Waits for another task?"
         case .addLink: return "Save link? · Name:"
+        case .addContact: return "Contact? · Name:"
         case .correctText: return "Replace in the text?"
         case .changeOwner: return "Whose task? → " + whose
         }
@@ -839,6 +842,7 @@ struct PhoneActionCard: View {
         case .newMatter: return nil
         case .waitsFor: return "\(name(card.todo))  →  only after: \(name(card.into))"
         case .addLink: return card.todo == nil ? "to the matter" : "to: \(name(card.todo))"
+        case .addContact: return [card.subject, card.from, card.time].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: " · ")
         case .changeDate:
             let when = (card.due.map(Dates.short) ?? "?") + (card.time.map { " at \($0)" } ?? "")
             return "\(name(card.todo))  →  \(when)"

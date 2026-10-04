@@ -384,6 +384,8 @@ public enum AssistantAsk {
             card.text = real(card.text)
             card.from = card.from.map(real)
             card.subject = card.subject.map(real)
+            // A phone number in a contact card; a time of day has nothing to restore.
+            card.time = card.time.map(real)
             card.reason = real(card.reason)
             return card
         }
