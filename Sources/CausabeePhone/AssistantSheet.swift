@@ -202,6 +202,8 @@ struct AssistantSheet: View {
             }
             // As on the Mac: the send button sits in the pill's round end, as far from the right as
             // from the top and bottom, and the corner's radius is that and half the button — 7 + 34 / 2.
+            // `--demo --shot listening`: the picture of the field while it listens.
+            Color.clear.frame(height: 0).onAppear { if PhoneShot.isListening { voice.stageListening() } }
             if voice.asksModel { SpeechModelCard(voice: voice) }
             if let problem = voice.problem {
                 Text(problem).font(.caption).foregroundStyle(Theme.warning).padding(.horizontal, 8)

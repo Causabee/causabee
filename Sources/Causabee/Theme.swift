@@ -431,6 +431,14 @@ final class VoiceInput {
         }
     }
 
+    /// `--demo --shot listening`: the field as it listens, for the website's picture.
+    func stageListening() {
+        let wave: [Float] = [0.2, 0.5, 0.8, 0.35, 0.95, 0.6, 0.25, 0.7, 1, 0.45, 0.85, 0.3, 0.55, 0.9, 0.4, 0.75, 0.2, 0.5, 0.88, 0.35,
+                             0.65, 0.97, 0.45, 0.25, 0.6, 0.8, 0.3, 0.5, 0.7, 0.4, 0.9, 0.55]
+        recorder.stage(levels: wave, secondsAgo: 7)
+        phase = .listening
+    }
+
     /// Ends the recording and has it written down.
     func finish() {
         guard phase == .listening else { return }

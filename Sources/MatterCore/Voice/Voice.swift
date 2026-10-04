@@ -159,6 +159,14 @@ public final class VoiceRecorder {
 
     public init() {}
 
+    /// The recording as it looks while someone speaks, without a microphone: for a picture taken in
+    /// the simulator, which has none. Nothing is recorded.
+    public func stage(levels: [Float], secondsAgo: TimeInterval) {
+        self.levels = levels
+        startedAt = Date().addingTimeInterval(-secondsAgo)
+        isRecording = true
+    }
+
     public func start() async throws {
         #if os(macOS)
         guard await AVCaptureDevice.requestAccess(for: .audio) else { throw VoiceError.noMicrophone }

@@ -23,6 +23,13 @@ struct RootView: View {
                 }
         }
         .tint(Theme.gold)
+        // `--demo --shot listening`: the care matter open, the assistant over it.
+        .task {
+            guard PhoneShot.isListening, let care = matters.first(where: { $0.name.hasPrefix("Care for Mum") }) else { return }
+            navigation.path = [care.persistentModelID]
+            try? await Task.sleep(for: .seconds(1.2))
+            navigation.showsAssistant = true
+        }
         .sheet(isPresented: $navigation.showsAssistant) {
             AssistantSheet(matter: navigation.path.last.flatMap { id in matters.first { $0.persistentModelID == id } })
                 .presentationDragIndicator(.visible)
@@ -215,4 +222,14 @@ struct OverviewScreen: View {
         }
         .phoneBox()
     }
+}
+
+/// Started as `--demo --shot listening`, the app shows the assistant while it listens: for the
+/// website's picture, taken in the simulator, which has no microphone.
+enum PhoneShot {
+    static let isListening: Bool = {
+        let arguments = CommandLine.arguments
+        guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot"), at + 1 < arguments.count else { return false }
+        return arguments[at + 1] == "listening"
+    }()
 }
