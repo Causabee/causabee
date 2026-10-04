@@ -344,6 +344,10 @@ public final class Rule {
 @Model
 public final class Profile {
     public var names: [String] = []
+    /// Which model sorts the mail and which answers, as the owner chose on any device: the others
+    /// take it over. Nil until chosen; then each device's own choice, or Opus, stands.
+    public var mailModel: String?
+    public var assistantModel: String?
 
     public init(names: [String]) {
         self.names = names

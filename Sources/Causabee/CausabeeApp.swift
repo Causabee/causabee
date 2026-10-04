@@ -72,7 +72,7 @@ struct CausabeeApp: App {
         WindowGroup("Causabee") {
             switch opened {
             case .success(let container):
-                RootView().modelContainer(container).frame(minWidth: 960, minHeight: 640)
+                RootView().modifier(ModelChoiceSync()).modelContainer(container).frame(minWidth: 960, minHeight: 640)
             case .failure(let error):
                 ContentUnavailableView("The store cannot be opened",
                                        systemImage: "externaldrive.badge.exclamationmark",

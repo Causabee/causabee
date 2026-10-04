@@ -21,7 +21,7 @@ struct CausabeePhoneApp: App {
         WindowGroup {
             switch store.opened {
             case .success(let container):
-                RootView()
+                RootView().modifier(ModelChoiceSync())
                     .modelContainer(container)
                     .environment(store)
                     // Another store is another app: nothing of the last one's screens is kept.

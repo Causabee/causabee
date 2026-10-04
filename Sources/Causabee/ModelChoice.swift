@@ -1,8 +1,10 @@
 import MatterCore
+import SwiftData
 import SwiftUI
 
 /// Which model does which job, as the owner chose in the settings (⌘,, or Settings on the iPhone).
-/// Opus unless changed. Shared by both apps; each device keeps its own choice.
+/// Opus unless changed. Shared by both apps, and the choice is too: it travels with the owner's
+/// profile through iCloud, so a newly installed app starts with the model chosen elsewhere.
 enum ModelChoice {
     static let mailKey = "model.mail", assistantKey = "model.assistant", strictKey = "model.strict"
 
@@ -120,5 +122,39 @@ struct KeyField: View {
             if let error { Text(error).font(.caption).foregroundStyle(Theme.warning) }
         }
         .onAppear { stored = APIKeys.get(name) != nil }
+    }
+}
+
+/// Keeps the model choice the same on every device. What is chosen here goes into the synced
+/// profile; what was chosen on another device comes from it. A device that never chose — a new
+/// install — takes the profile's and does not overwrite it with Opus.
+struct ModelChoiceSync: ViewModifier {
+    @Query private var profiles: [Profile]
+    @Environment(\.modelContext) private var context
+    @AppStorage(ModelChoice.mailKey) private var mail = ""
+    @AppStorage(ModelChoice.assistantKey) private var assistant = ""
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear(perform: takeOver)
+            .onChange(of: profiles.first?.mailModel) { takeOver() }
+            .onChange(of: profiles.first?.assistantModel) { takeOver() }
+            .onChange(of: profiles.count) { takeOver() }
+            .onChange(of: mail) { pass(on: mail, to: \.mailModel) }
+            .onChange(of: assistant) { pass(on: assistant, to: \.assistantModel) }
+    }
+
+    /// The profile's choice becomes this device's; where the profile has none yet, this device's
+    /// own choice — if it ever made one — becomes the profile's.
+    private func takeOver() {
+        guard !DemoData.isRequested, let profile = profiles.first else { return }
+        if let chosen = profile.mailModel { if mail != chosen { mail = chosen } } else { pass(on: mail, to: \.mailModel) }
+        if let chosen = profile.assistantModel { if assistant != chosen { assistant = chosen } } else { pass(on: assistant, to: \.assistantModel) }
+    }
+
+    private func pass(on id: String, to field: ReferenceWritableKeyPath<Profile, String?>) {
+        guard !DemoData.isRequested, !id.isEmpty, let profile = profiles.first, profile[keyPath: field] != id else { return }
+        profile[keyPath: field] = id
+        try? context.save()
     }
 }
