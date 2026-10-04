@@ -87,6 +87,21 @@ struct AssistantColumn: View {
     private static let bottom = "thread-bottom"
 
     var body: some View {
+        column
+            // Put away with a click: the page beside it gets the whole window.
+            .overlay(alignment: .topTrailing) {
+                Button { withAnimation(.snappy(duration: 0.25)) { navigation.closeAssistant() } } label: {
+                    Image(systemName: "xmark").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                        .frame(width: 26, height: 26).background(.regularMaterial, in: Circle()).contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 14).padding(.trailing, 14)
+                .help("Close the assistant")
+                .accessibilityLabel("Close the assistant")
+            }
+    }
+
+    private var column: some View {
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
                 ScrollView {
@@ -414,6 +429,22 @@ struct OverviewView: View {
                     Text(OverviewSummary.text(ordered)).font(.title3).multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                     searchField.padding(.top, 4)
+                    // The assistant about every matter, beside the overview.
+                    if !navigation.assistantOnOverview {
+                        Button { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } } label: {
+                            HStack(spacing: 7) {
+                                BeeMark(size: 15)
+                                Text("Ask Causabee").font(.callout.weight(.medium))
+                            }
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 14).padding(.vertical, 7)
+                            .background(Theme.bee, in: Capsule())
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Ask about all your matters")
+                        .padding(.top, 2)
+                    }
                 }
                 .frame(maxWidth: 600)
                 .frame(maxWidth: .infinity)

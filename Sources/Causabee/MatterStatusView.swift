@@ -859,6 +859,16 @@ struct MatterStatusView: View {
                     Spacer()
                 }
                 if !renaming {
+                    // The assistant's column was put away: its bee brings it back.
+                    if navigation.assistantHidden {
+                        Button { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } } label: {
+                            BeeMark(size: 15).foregroundStyle(.black)
+                                .frame(width: 28, height: 28).background(Theme.bee, in: Circle()).contentShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Ask Causabee about this matter")
+                        .accessibilityLabel("Ask Causabee")
+                    }
                     PageFindField(find: find)
                     if !matter.isClosed {
                         Button("Close") { asksToClose = true }

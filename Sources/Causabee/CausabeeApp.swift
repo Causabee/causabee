@@ -172,6 +172,23 @@ final class Navigation {
     /// A matter to pin to the overview's top while as many as fit are pinned already: which one
     /// it replaces is asked.
     var pinning: Matter?
+    /// The assistant beside the overview: asked for with its button there, about all matters.
+    var assistantOnOverview = false
+    /// The assistant's column put away while a matter is open; remembered.
+    var assistantHidden = UserDefaults.standard.bool(forKey: "assistant.hidden") {
+        didSet { UserDefaults.standard.set(assistantHidden, forKey: "assistant.hidden") }
+    }
+
+    /// Puts the assistant's column away, where the owner is.
+    func closeAssistant() {
+        if case .matter = place { assistantHidden = true } else { assistantOnOverview = false }
+    }
+
+    /// Brings the assistant's column back, where the owner is.
+    func openAssistant() {
+        if case .matter = place { assistantHidden = false } else { assistantOnOverview = true }
+        focusRequest += 1
+    }
     /// The sidebar folded away: the assistant's bar then starts right of the window's buttons.
     var sidebarHidden = false
     /// Reading: small actions and the AI's explanations put away. Kept for the next start.
@@ -427,6 +444,8 @@ final class Navigation {
     /// Puts an item in hand without leaving where the owner is: typing in a matter stays there.
     func pin(_ text: String, kind: String, in matter: Matter) {
         pinned = Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: kind, text: text)
+        // Something in hand is for the assistant: it comes back if it was put away.
+        assistantHidden = false
     }
 }
 
@@ -467,9 +486,11 @@ struct RootView: View {
         return active + quiet + closed
     }
 
-    /// Always with a matter open; on the overview only while a dropped file waits to be taken in.
+    /// With a matter open, unless the owner put it away; on the overview when asked for with its
+    /// button, or while a dropped file waits to be taken in.
     private var showsAssistant: Bool {
-        if case .matter = navigation.place { return true }
+        if case .matter = navigation.place { return !navigation.assistantHidden }
+        if navigation.assistantOnOverview { return true }
         return navigation.turns.contains { turn in
             guard turn.matter == nil, let shot = turn.shot else { return false }
             switch shot.stage {

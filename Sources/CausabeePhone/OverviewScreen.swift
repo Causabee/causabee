@@ -114,6 +114,10 @@ struct OverviewScreen: View {
         // Pulled down: new mail is read — free — and waits for "Sort in"; in the demo, its three.
         .refreshable { PhoneMailCheck.shared.look(context: context) }
         .background(Theme.canvas)
+        // The assistant about every matter, as on a matter's page.
+        .overlay(alignment: .bottomTrailing) {
+            if search.isEmpty { AssistantButton { navigation.showsAssistant = true } }
+        }
         // No assistant here, as on the Mac: it opens from a matter, about that matter.
         // The ⋯ in the bar, drawn by the system as in a matter: a glass of our own on it, and the
         // bar hidden here and shown there, broke the swipe back from a matter (iOS 27).
