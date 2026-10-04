@@ -580,15 +580,20 @@ struct ListeningBar: View {
             .keyboardShortcut(.cancelAction)
             .help("Throw the recording away (esc)")
             .accessibilityLabel("Cancel")
-            HStack(alignment: .center, spacing: 3) {
-                ForEach(Array(voice.recorder.levels.enumerated()), id: \.offset) { _, level in
-                    Capsule().fill(Color.primary).frame(width: 2.5, height: 4 + CGFloat(level) * 20)
+            // The bars lie over the room there is, the newest at the right: however many there are,
+            // they never make the field wider.
+            Color.clear
+                .frame(maxWidth: .infinity, minHeight: 34, maxHeight: 34)
+                .overlay(alignment: .trailing) {
+                    HStack(alignment: .center, spacing: 3) {
+                        ForEach(Array(voice.recorder.levels.enumerated()), id: \.offset) { _, level in
+                            Capsule().fill(Color.primary).frame(width: 2.5, height: 4 + CGFloat(level) * 20)
+                        }
+                    }
+                    .fixedSize()
                 }
-            }
-            .frame(maxWidth: .infinity, minHeight: 34, alignment: .trailing)
-            .clipped()
-            .animation(.linear(duration: 0.07), value: voice.recorder.levels.count)
-            .accessibilityHidden(true)
+                .clipped()
+                .accessibilityHidden(true)
             TimelineView(.periodic(from: .now, by: 0.5)) { context in
                 let seconds = Int(context.date.timeIntervalSince(voice.recorder.startedAt ?? context.date))
                 Text(String(format: "%d:%02d", seconds / 60, seconds % 60))
@@ -635,7 +640,13 @@ struct SpeechModelCard: View {
                 HStack {
                     Spacer()
                     Button("Not now") { withAnimation(.snappy) { voice.asksModel = false } }
-                    Button("Load") { Task { await Transcriber.shared.download() } }.buttonStyle(.borderedProminent)
+                    // Black with white words, as the cards' "Add": the system's prominent button takes
+                    // its words from the tint, which is black here too.
+                    Button { Task { await Transcriber.shared.download() } } label: {
+                        Text("Load").foregroundStyle(Theme.card).padding(.horizontal, 12).padding(.vertical, 5)
+                            .background(Color.primary, in: RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
