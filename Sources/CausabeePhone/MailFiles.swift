@@ -148,7 +148,7 @@ struct FilesSection: View {
                             Text(document.shownName).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(2)
                             // With a name of its own, the file's name is still there to see, small.
                             Text(document.isOwnFile
-                                 ? (document.source.fileURL != nil ? "on this iPhone, in Files › Causabee" : "added on \(document.source.addedOn) · only there")
+                                 ? (document.source.fileURL != nil ? "on this iPhone, in Files › Causabee" : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder" : "added on \(document.source.addedOn) · only there")
                                  : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
                                     ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
                                     .compactMap { $0 }.joined(separator: " · "))
@@ -159,7 +159,7 @@ struct FilesSection: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(document.isOwnFile && document.source.fileURL == nil)
+                .disabled(document.isOwnFile && document.source.fileURL == nil && MatterFolders.kept(document) == nil)
                 if state[id]?.hasPrefix("Getting") == true { ProgressView() }
                 if let read = document.readAt {
                     Label("scanned \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
@@ -195,7 +195,7 @@ struct FilesSection: View {
 
     @ViewBuilder
     private func items(_ document: MatterCore.Document) -> some View {
-        if !document.isOwnFile || document.source.fileURL != nil { Button("Open", systemImage: "eye") { open(document) } }
+        if !document.isOwnFile || document.source.fileURL != nil || MatterFolders.kept(document) != nil { Button("Open", systemImage: "eye") { open(document) } }
         if document.isReadable, !document.isOwnFile, document.readAt == nil { Button("Scan", systemImage: "text.viewfinder") { read(document) } }
         AskCausabeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
         Button("Rename", systemImage: "pencil") { newName = document.shownName; renaming = document }
@@ -214,6 +214,14 @@ struct FilesSection: View {
         let id = document.persistentModelID
         // One added on this iPhone is the file itself, here.
         if document.isOwnFile, let file = document.source.fileURL { use(file); return }
+        // In its matter's folder in iCloud Drive: from there, whichever device put it in — no mail needed.
+        if let kept = MatterFolders.kept(document) {
+            state[id] = "Getting the file from iCloud Drive …"
+            Task {
+                do { let url = try await MatterFolders.fetched(kept); state[id] = nil; use(url) } catch { state[id] = plainWords(error) }
+            }
+            return
+        }
         if MailFiles.account(for: document) == nil, !document.isOwnFile { addsAccount = true; return }
         state[id] = "Getting the file from the mail …"
         Task {

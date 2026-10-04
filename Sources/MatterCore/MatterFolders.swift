@@ -9,7 +9,7 @@ public enum MatterFolders {
     /// iCloud Drive as Finder shows it; nil when it is not switched on for this Mac.
     public static var drive: URL? {
         #if os(iOS)
-        // The iPhone keeps no matter folders: the files stay where the Mac put them.
+        // The iPhone has no way to iCloud Drive but through a folder picked in Files: `picked`.
         return nil
         #else
         let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs", isDirectory: true)
@@ -23,7 +23,61 @@ public enum MatterFolders {
     public static var chosen: URL? {
         UserDefaults.standard.string(forKey: rootKey).flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
     }
-    public static var root: URL? { rootForTests ?? chosen ?? drive?.appendingPathComponent("Causabee", isDirectory: true) }
+    /// The folder picked in Files on the iPhone — iCloud Drive's "Causabee", the Mac's own — and
+    /// held open by the app for as long as it runs.
+    public static var picked: URL?
+    public static var root: URL? { rootForTests ?? chosen ?? picked ?? drive?.appendingPathComponent("Causabee", isDirectory: true) }
+
+    /// In iCloud Drive a file that is not on this device yet is there under its name, without its
+    /// content, or — on older systems — as ".name.icloud".
+    static func isThere(_ url: URL) -> Bool {
+        let files = FileManager.default
+        return files.fileExists(atPath: url.path)
+            || files.fileExists(atPath: url.deletingLastPathComponent().appendingPathComponent("." + url.lastPathComponent + ".icloud").path)
+    }
+
+    /// A file of the matter in its folder, whichever device put it there. Nil when there is no
+    /// folder, or the file is not in it. Makes nothing.
+    public static func kept(_ document: Document) -> URL? {
+        guard let root, let matter = document.matter else { return nil }
+        let folder = root.appendingPathComponent(matter.folderName ?? safe(matter.name), isDirectory: true)
+        let url = place(for: document, in: folder)
+        return isThere(url) ? url : nil
+    }
+
+    /// Puts a file brought in on this device into its matter's folder, under the name every
+    /// device looks for it by — so the Mac opens what the iPhone photographed, and the other way.
+    @discardableResult
+    public static func keep(_ file: URL, as document: Document) -> URL? {
+        guard let matter = document.matter, let folder = folder(for: matter) else { return nil }
+        let target = place(for: document, in: folder)
+        if isThere(target) { return target }
+        var failure: NSError?
+        var done = false
+        NSFileCoordinator().coordinate(writingItemAt: target, options: .forReplacing, error: &failure) { url in
+            done = (try? FileManager.default.copyItem(at: file, to: url)) != nil
+        }
+        return done ? target : nil
+    }
+
+    /// The file itself, ready to be opened: fetched from iCloud when only its name is here yet,
+    /// and handed over as a copy of this device's own.
+    public nonisolated static func fetched(_ url: URL) async throws -> URL {
+        try await Task.detached {
+            try? FileManager.default.startDownloadingUbiquitousItem(at: url)
+            let folder = FileManager.default.temporaryDirectory.appendingPathComponent("causabee-open-" + UUID().uuidString.prefix(8), isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let copy = folder.appendingPathComponent(url.lastPathComponent)
+            var failure: NSError?
+            var thrown: Error?
+            // Reading through the coordinator waits for the download.
+            NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &failure) { source in
+                do { try FileManager.default.copyItem(at: source, to: copy) } catch { thrown = error }
+            }
+            if let error = failure ?? thrown { throw error }
+            return copy
+        }.value
+    }
     /// A folder of its own for a test, never the owner's iCloud Drive.
     static var rootForTests: URL?
 

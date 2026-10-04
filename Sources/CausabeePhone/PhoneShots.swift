@@ -172,6 +172,8 @@ final class PhoneShots {
             for document in taken?.documents ?? [] where document.messageID == judgement.emailID {
                 if document.title == nil, look.kind == .chat { document.title = look.heading }
                 document.readAt = document.readAt ?? Date()
+                // Into the matter's folder in iCloud Drive, when one was picked: the Mac opens it from there.
+                if document.isOwnFile { MatterFolders.keep(look.file, as: document) }
             }
             // Its words kept on this iPhone with it, as a mail's text is: for the assistant, later.
             if let email = look.report.outcomes.first?.email { MailText.save(email, besides: store) }

@@ -678,7 +678,14 @@ struct MatterStatusView: View {
     private func fetch(_ document: MatterCore.Document, then use: @escaping @MainActor (URL) -> Void) {
         // A file the owner dropped in — a scanned letter — is the file itself, on this Mac.
         if document.isOwnFile {
-            if let file = document.source.fileURL { use(file) } else {
+            if let file = document.source.fileURL { use(file) } else if let kept = MatterFolders.kept(document) {
+                // Brought in on the iPhone, and put into the matter's folder in iCloud Drive there.
+                let id = document.persistentModelID
+                fetching[id] = "Getting the file from the matter's folder …"
+                Task {
+                    do { let url = try await MatterFolders.fetched(kept); fetching[id] = nil; use(url) } catch { fetching[id] = plainWords(error) }
+                }
+            } else {
                 fetching[document.persistentModelID] = document.source.addedOn == "your Mac"
                     ? "The file is not on this Mac: \(document.source.pointer)"
                     : "Added on your iPhone: the file is only there. What it said is here."
@@ -2073,6 +2080,7 @@ struct PartyRow: View {
             HStack(spacing: 4) {
             MoreMenu {
                 MailAddressItems(addresses: addresses)
+                ContactItems(party: party)
                 Button("Ask Causabee", action: talk)
                 Button("Edit name and role …") {
                     name = party.name
@@ -2441,6 +2449,7 @@ struct LinkRow: View {
             }
             Spacer(minLength: 8)
             MoreMenu {
+                LinkItems(link: link)
                 Button("Edit name, address, task …") { editing = true }
                 Button("Remove link", role: .destructive, action: remove)
                     .help("Take the link out of the matter. The document itself stays where it is.")

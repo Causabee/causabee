@@ -151,6 +151,7 @@ struct PhonePartyRow: View {
     @ViewBuilder
     private var items: some View {
         MailAddressItems(addresses: CardActions.addresses(of: party))
+        ContactItems(party: party)
         AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
         Button("Edit", systemImage: "pencil") { editing = true }
         Menu("Merge with", systemImage: "arrow.triangle.merge") {
@@ -428,6 +429,7 @@ struct PhoneLinkRow: View {
 
     @ViewBuilder
     private var items: some View {
+        LinkItems(link: link)
         Button("Edit", systemImage: "pencil") { editing = true }
         Divider()
         Button("Remove", systemImage: "trash", role: .destructive, action: remove)

@@ -240,6 +240,7 @@ struct NotesPart: View {
                     Menu {
                         Button("Edit", systemImage: "pencil", action: edit)
                         Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
+                        ShareLink(item: text) { Label("Share", systemImage: "square.and.arrow.up") }
                         Divider()
                         Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { delete(); try? context.save() } }
                     } label: {
@@ -272,6 +273,7 @@ struct NotesPart: View {
         .contextMenu {
             Button("Edit", systemImage: "pencil", action: edit)
             Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
+            ShareLink(item: text) { Label("Share", systemImage: "square.and.arrow.up") }
             Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { delete(); try? context.save() } }
         }
     }
@@ -315,7 +317,7 @@ struct NotesPart: View {
         return result
     }
 
-    private static func copy(_ text: String) {
+    static func copy(_ text: String) {
         #if os(macOS)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
@@ -483,6 +485,7 @@ struct DetailEditor: View {
 /// "Details", on top of a matter's record: what to have at hand on the phone with them. A tap
 /// copies one; it is put right or deleted from its menu.
 struct DetailsSection: View {
+    @Environment(\.modelContext) private var context
     let matter: Matter
     /// Shown even while there is none yet — when the record shows only the details.
     var showsEmpty = false
@@ -545,7 +548,13 @@ struct DetailsSection: View {
         .accessibilityLabel("\(detail.label): \(detail.value)").accessibilityHint("Copies it")
         .contextMenu {
             Button("Copy", systemImage: "doc.on.doc") { copy(detail) }
+            Button("Copy with its label", systemImage: "doc.on.doc") { NotesPart.copy("\(detail.label): \(detail.value)") }
+            ShareLink(item: "\(detail.label): \(detail.value)") { Label("Share", systemImage: "square.and.arrow.up") }
+            // What one does with a number: say it to whom it belongs to.
+            if let party = detail.party { ContactItems(party: party) }
             Button("Edit", systemImage: "pencil") { editing = detail }
+            Divider()
+            Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { context.delete(detail); try? context.save() } }
         }
     }
 
@@ -582,6 +591,35 @@ struct ContactActions: View {
             }
             .buttonStyle(.bordered).controlSize(.small).tint(.primary)
             .padding(.top, 4)
+        }
+    }
+}
+
+/// In a contact's menu, after its mail addresses: what a phone number is for.
+struct ContactItems: View {
+    let party: Party
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        if let phone = party.phone, !phone.isEmpty {
+            if let url = URL(string: "tel:" + phone.filter { $0.isNumber || $0 == "+" }) {
+                Button("Call \(party.name)", systemImage: "phone") { openURL(url) }
+            }
+            Button("Copy phone number", systemImage: "doc.on.doc") { NotesPart.copy(phone) }
+        }
+    }
+}
+
+/// In a link's menu: open it, copy its address, pass it on.
+struct LinkItems: View {
+    let link: WebLink
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        if let url = link.url {
+            Button("Open", systemImage: "safari") { openURL(url) }
+            Button("Copy address", systemImage: "doc.on.doc") { NotesPart.copy(link.address) }
+            ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
         }
     }
 }

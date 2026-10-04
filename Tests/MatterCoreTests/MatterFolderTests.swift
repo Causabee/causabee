@@ -43,4 +43,30 @@ struct MatterFolderTests {
         #expect(moved.lastPathComponent == "Reise nach Lyon")
         #expect(!FileManager.default.fileExists(atPath: folder.path) && FileManager.default.fileExists(atPath: moved.path))
     }
+
+    @Test("A file brought in on one device is put into the matter's folder and found there by the other")
+    func shared() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("folders-\(UUID())", isDirectory: true)
+        MatterFolders.rootForTests = root
+        defer { MatterFolders.rootForTests = nil; try? FileManager.default.removeItem(at: root) }
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "reha", name: "Reha Mama")
+        context.insert(matter)
+        let day = ISO8601DateFormatter().date(from: "2026-10-04T10:00:00Z")!
+        // As the other device sees it: a path that is not on this one.
+        let source = Source(kind: .document, pointer: "/var/mobile/Containers/Data/Application/X/Documents/Brief.png", messageID: "screenshot:ab", date: day)
+        let letter = Document(name: "Brief.png", contentType: "image/png", byteCount: 5, source: source)
+        context.insert(letter)
+        letter.matter = matter
+        #expect(MatterFolders.kept(letter) == nil)
+
+        let photo = FileManager.default.temporaryDirectory.appendingPathComponent("photo-\(UUID()).png")
+        try Data("photo".utf8).write(to: photo)
+        defer { try? FileManager.default.removeItem(at: photo) }
+        let target = try #require(MatterFolders.keep(photo, as: letter))
+        #expect(target.path.hasSuffix("Reha Mama/2026-10-04 Brief.png"))
+        #expect(MatterFolders.kept(letter) == target)
+        let opened = try await MatterFolders.fetched(target)
+        #expect(try Data(contentsOf: opened) == Data("photo".utf8))
+    }
 }

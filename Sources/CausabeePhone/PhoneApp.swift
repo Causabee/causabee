@@ -15,6 +15,7 @@ struct CausabeePhoneApp: App {
     init() {
         Theme.registerFonts()
         PhoneCloudStatus.shared.watch()
+        PhoneFolder.restore()
     }
 
     var body: some Scene {
