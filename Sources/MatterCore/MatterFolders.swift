@@ -40,9 +40,14 @@ public enum MatterFolders {
     /// folder, or the file is not in it. Makes nothing.
     public static func kept(_ document: Document) -> URL? {
         guard let root, let matter = document.matter else { return nil }
-        let folder = root.appendingPathComponent(matter.folderName ?? safe(matter.name), isDirectory: true)
-        let url = place(for: document, in: folder)
-        return isThere(url) ? url : nil
+        // The folder picked may be iCloud Drive itself, one above "Causabee": looked for there too.
+        for base in [root, root.appendingPathComponent("Causabee", isDirectory: true)] {
+            for name in Set([matter.folderName, safe(matter.name)].compactMap { $0 }) {
+                let url = place(for: document, in: base.appendingPathComponent(name, isDirectory: true))
+                if isThere(url) { return url }
+            }
+        }
+        return nil
     }
 
     /// Puts a file brought in on this device into its matter's folder, under the name every

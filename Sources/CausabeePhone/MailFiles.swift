@@ -157,7 +157,8 @@ struct FilesSection: View {
                             Text(document.shownName).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(2)
                             // With a name of its own, the file's name is still there to see, small.
                             Text(document.isOwnFile
-                                 ? (document.source.fileURL != nil ? "on this iPhone, in Files › Causabee" : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder" : "added on \(document.source.addedOn) · only there")
+                                 ? (document.source.fileURL != nil ? "on this iPhone, in Files › Causabee" : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder" : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, choose your Causabee folder in Settings › Files"
+                                    : "added on \(document.source.addedOn) · not in the matter's folder yet")
                                  : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
                                     ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
                                     .compactMap { $0 }.joined(separator: " · "))
