@@ -853,10 +853,10 @@ struct MatterCommands: Commands {
 
     var body: some Commands {
         CommandMenu("Matter") {
-            item("New Task …", .newTask).keyboardShortcut("t", modifiers: [.command, .shift])
-            item("Write Note", .writeNote)
-            item("Add File …", .addFile)
-            item("Add Link …", .addLink)
+            // The same six, in the same words and order, as the plus in the matter's title bar.
+            ForEach(MatterAction.allCases, id: \.self) { action in
+                if action == .newTask { item(action.title, action).keyboardShortcut("t", modifiers: [.command, .shift]) } else { item(action.title, action) }
+            }
         }
     }
 
@@ -867,8 +867,29 @@ struct MatterCommands: Commands {
 }
 
 /// An action of the Matter menu, for the matter that is open.
-enum MatterAction: String {
-    case newTask, writeNote, addFile, addLink
+enum MatterAction: String, CaseIterable {
+    case newTask, writeNote, addFile, addContact, addDetail, addLink
+
+    var title: String {
+        switch self {
+        case .newTask: "New Task …"
+        case .writeNote: "Add Note …"
+        case .addFile: "Add File …"
+        case .addContact: "Add Contact …"
+        case .addDetail: "Add Detail …"
+        case .addLink: "Add Link …"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .newTask: "checklist"
+        case .writeNote: "note.text"
+        case .addFile: "doc"
+        case .addContact: "person.badge.plus"
+        case .addDetail: "info.circle"
+        case .addLink: "link"
+        }
+    }
 }
 
 extension FocusedValues {
@@ -904,7 +925,7 @@ enum MenuOrder {
 }
 
 extension Notification.Name {
-    /// Matter → New Task …, Write Note, Add File …, Add Link …: the action as its raw value.
+    /// Matter → New Task …, Add Note …, Add File … and the others, and the title bar's plus: the action as its raw value.
     static let matterAction = Notification.Name("causabee.matterAction")
     /// iCloud brought changes in: the assistant's thread may have new or changed turns.
     static let threadMayHaveChanged = Notification.Name("causabee.threadMayHaveChanged")

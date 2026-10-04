@@ -167,11 +167,16 @@ struct MatterStatusView: View {
                 // The Matter menu: the section scrolled to, then what adds to it opened.
                 .onReceive(NotificationCenter.default.publisher(for: .matterAction)) { note in
                     guard let action = (note.object as? String).flatMap(MatterAction.init) else { return }
-                    let section = switch action { case .newTask: "tasks"; case .writeNote: "notes"; case .addFile: "files"; case .addLink: "links" }
+                    let section = switch action {
+                    case .newTask: "tasks"; case .writeNote: "notes"; case .addFile: "files"; case .addLink: "links"
+                    case .addContact: "people"; case .addDetail: "details"
+                    }
                     switch action {
                     case .newTask: part = .todo
                     case .addFile: part = .record; filter = .files
                     case .addLink: part = .record; filter = .links
+                    case .addDetail: part = .record; filter = .details
+                    case .addContact: part = .people
                     case .writeNote: part = .notes
                     }
                     withAnimation { scroller.scrollTo(section, anchor: .top) }
@@ -181,6 +186,8 @@ struct MatterStatusView: View {
                         case .writeNote: writingNote = true
                         case .addFile: addingFile = true
                         case .addLink: addingLink = true
+                        case .addContact: addingContact = true
+                        case .addDetail: addingDetail = true
                         }
                     }
                 }
@@ -879,20 +886,22 @@ struct MatterStatusView: View {
                         .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 7 }
                         .help("Ask Causabee about this matter")
                         .accessibilityLabel("Ask Causabee")
+                        // Room between the bee and the plus: the bee is a disc, the plus a bare sign.
+                        .padding(.trailing, 6)
                     }
                     // One plus for everything the owner brings to the matter.
                     Menu {
-                        Button("File …", systemImage: "doc") { part = .record; filter = .files; addingFile = true }
-                        Button("Contact", systemImage: "person.badge.plus") { part = .people; addingContact = true }
-                        Button("Detail", systemImage: "info.circle") { part = .record; filter = .details; addingDetail = true }
-                        Button("Link", systemImage: "link") { part = .record; filter = .links; addingLink = true }
-                        Button("Note", systemImage: "note.text") { part = .notes; writingNote = true }
-                        Button("Task", systemImage: "checklist") { part = .todo; addTodo() }
+                        // The Matter menu's six, in its words and order, and by its way in.
+                        ForEach(MatterAction.allCases, id: \.self) { action in
+                            Button(action.title, systemImage: action.symbol) {
+                                NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
+                            }
+                        }
                     } label: {
                         Image(systemName: "plus").frame(width: 22, height: 22)
                     }
                     .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-                    .help("Add to this matter: a file, a contact, a detail, a link, a note, a task")
+                    .help("Add to this matter: a task, a note, a file, a contact, a detail, a link")
                     .accessibilityLabel("Add to this matter")
                     .tool()
                     PageFindField(find: find)
