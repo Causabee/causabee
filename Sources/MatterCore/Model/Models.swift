@@ -401,6 +401,11 @@ public final class Document {
     /// Dropped in by the owner — a scanned letter, a PDF, a screenshot — rather than attached to a
     /// mail: the file itself, at its source's path on this Mac.
     public var isOwnFile: Bool { [.screenshot, .document].contains(source.kind) }
+    /// What a file the owner brought in says, in two or three sentences: read when it was sorted in.
+    public var says: String? {
+        guard isOwnFile else { return nil }
+        return (matter?.entries ?? []).first { $0.messageID == messageID }?.digest.flatMap { $0.isEmpty ? nil : $0 }
+    }
 
     /// A logo in a signature, a spacer: an image small enough to be nothing anyone attached. A file
     /// the owner dropped in is never one.

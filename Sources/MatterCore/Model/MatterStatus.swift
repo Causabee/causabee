@@ -57,6 +57,13 @@ public struct MatterStatus {
 
     public var entries: [Entry] { (matter.entries ?? []).sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) } }
 
+    /// Mail is mail, and a file is a file: what the owner brought in — a scan, a photo, a PDF — is
+    /// one of the matter's files, with what it says on it, and is not listed among the mail as well.
+    public var mailEntries: [Entry] {
+        let files = Set((matter.documents ?? []).filter(\.isOwnFile).map(\.messageID))
+        return entries.filter { !files.contains($0.messageID) }
+    }
+
     public var firstDate: Date? { (matter.entries ?? []).compactMap(\.date).min() }
     public var lastDate: Date? { (matter.entries ?? []).compactMap(\.date).max() }
 

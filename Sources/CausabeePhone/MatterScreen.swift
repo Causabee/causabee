@@ -749,7 +749,7 @@ struct MatterScreen: View {
     private func parts(_ status: MatterStatus) -> some View {
         Picker("Part of the matter", selection: $part) {
             Text("To do · \(matter.openTodos.count)").tag(Part.todo)
-            Text("Record · \(status.entries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
+            Text("Record · \(status.mailEntries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
             Text("People · \(status.memberships.count)").tag(Part.people)
             Text("Notes · \(matter.noteCount)").tag(Part.notes)
         }
@@ -841,7 +841,7 @@ struct MatterScreen: View {
     @ViewBuilder
     private func recordList(_ status: MatterStatus) -> some View {
         let party = personParty
-        let threads = MailThreads.build(status.entries).filter { thread in
+        let threads = MailThreads.build(status.mailEntries).filter { thread in
             party.map { party in thread.rows.contains { wrote(party, $0.entry.from) } } ?? true
         }
         let documents = shownDocuments.filter { document in
@@ -901,14 +901,14 @@ struct MatterScreen: View {
     /// The mail, as the Mac shows it: conversation by conversation, the newest first, each reply
     /// under the mail it answers — until about 60 mails are shown.
     private func history(_ status: MatterStatus) -> some View {
-        let threads = MailThreads.build(status.entries)
+        let threads = MailThreads.build(status.mailEntries)
         var shown = 0
         let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || showsAllHistory }
         let hidden = threads.count - visible.count
         return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "History", detail: Self.count(status.entries)
-                          + (threads.count == status.entries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
-            if status.entries.isEmpty {
+            SectionHeader(title: "History", detail: Self.count(status.mailEntries)
+                          + (threads.count == status.mailEntries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
+            if status.mailEntries.isEmpty {
                 PhoneEmptyBox(text: "Mail sorted into this matter shows here, newest first. It comes from your mailbox, not by hand.")
             }
             ForEach(visible) { thread in

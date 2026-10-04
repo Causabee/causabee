@@ -1224,7 +1224,7 @@ struct MatterStatusView: View {
     private func parts(_ status: MatterStatus) -> some View {
         Picker("Part of the matter", selection: $part) {
             Text("To do · \(matter.openTodos.count)").tag(Part.todo)
-            Text("Record · \(status.entries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
+            Text("Record · \(status.mailEntries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
             Text("People · \(status.memberships.count)").tag(Part.people)
             Text("Notes · \(matter.noteCount)").tag(Part.notes)
         }
@@ -1249,8 +1249,8 @@ struct MatterStatusView: View {
             // Which kind of it: a slim menu, not a second row of tabs under the parts.
             Menu {
                 Picker("Show", selection: $filter) {
-                    Text("All · \(status.entries.count + shownDocuments.count + keptLinks.count)").tag(RecordFilter.all)
-                    Text("Mail · \(status.entries.count)").tag(RecordFilter.mail)
+                    Text("All · \(status.mailEntries.count + shownDocuments.count + keptLinks.count)").tag(RecordFilter.all)
+                    Text("Mail · \(status.mailEntries.count)").tag(RecordFilter.mail)
                     Text("Files · \(shownDocuments.count)").tag(RecordFilter.files)
                     Text("Details · \((matter.details ?? []).count)").tag(RecordFilter.details)
                     Text("Links · \(keptLinks.count)").tag(RecordFilter.links)
@@ -1329,7 +1329,7 @@ struct MatterStatusView: View {
     @ViewBuilder
     private func recordList(_ status: MatterStatus) -> some View {
         let party = personParty
-        let threads = MailThreads.build(status.entries).filter { thread in
+        let threads = MailThreads.build(status.mailEntries).filter { thread in
             party.map { party in thread.rows.contains { wrote(party, $0.entry.from) } } ?? true
         }
         let documents = shownDocuments.filter { document in
@@ -1385,15 +1385,15 @@ struct MatterStatusView: View {
     // MARK: History
 
     private func history(_ status: MatterStatus) -> some View {
-        let threads = MailThreads.build(status.entries)
+        let threads = MailThreads.build(status.mailEntries)
         // The newest conversations, until about 60 mails are shown.
         var shown = 0
         let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || find.isActive || showsAllHistory }
         let hidden = threads.count - visible.count
         return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "History", detail: Self.count(status.entries)
-                          + (threads.count == status.entries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
-            if status.entries.isEmpty {
+            SectionHeader(title: "History", detail: Self.count(status.mailEntries)
+                          + (threads.count == status.mailEntries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
+            if status.mailEntries.isEmpty {
                 EmptyBox(text: "Mail sorted into this matter shows here, newest first. It comes from your mailbox, not by hand.")
             }
             ForEach(visible) { thread in
@@ -2343,6 +2343,9 @@ struct DocumentRow: View {
                       ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
                     .compactMap { $0 }.joined(separator: " · "))
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                if let says = document.says {
+                    Text(says).font(.callout).foregroundStyle(.secondary).lineLimit(3).fixedSize(horizontal: false, vertical: true).padding(.top, 2)
+                }
                 if document.title == nil, isPDF, DocumentTitle.looksMachineMade(document.name), state == nil {
                     Button("Name it from its content", action: nameIt)
                         .buttonStyle(.gold).font(.caption)

@@ -162,6 +162,9 @@ struct FilesSection: View {
                                     ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
                                     .compactMap { $0 }.joined(separator: " · "))
                                 .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                            if let says = document.says {
+                                Text(says).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.leading).lineLimit(4).padding(.top, 2)
+                            }
                         }
                         Spacer(minLength: 0)
                     }
