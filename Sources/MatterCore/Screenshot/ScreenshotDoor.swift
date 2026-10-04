@@ -67,6 +67,17 @@ public struct ScreenshotDoor: Sendable {
         "screenshot:" + SHA256.hash(data: data).prefix(8).map { String(format: "%02x", $0) }.joined()
     }
 
+    /// A chat is a phone's screen, tall and narrow, and its lines are bubbles: short, to one side. A
+    /// photographed letter or a scanned page is neither — its lines run across the page — and read
+    /// as a chat, its letterhead became the chat's name.
+    static func looksLikeChat(_ lines: [ScreenText.Line], size: CGSize) -> Bool {
+        guard size.width > 0, size.height / size.width >= 1.7 else { return false }
+        let words = lines.filter { $0.text.count > 3 }
+        guard !words.isEmpty else { return true }
+        let wide = words.filter { $0.box.width > 0.78 }
+        return Double(wide.count) / Double(words.count) < 0.3
+    }
+
     /// A screenshot that is no chat, as text: its lines from the top, without the status bar, and
     /// its first line of some length as the heading. Nil when there are no words in it at all.
     public static func pictureText(_ lines: [ScreenText.Line]) -> (heading: String, body: String)? {
@@ -105,15 +116,18 @@ public struct ScreenshotDoor: Sendable {
                           subject: name, from: "Dokument", to: [owner], cc: [], date: date, body: text, attachments: [])
         default:
             kind = .chat
-            let (lines, _) = try ScreenText.lines(in: file)
+            let (lines, size) = try ScreenText.lines(in: file)
             transcript = ChatReader.read(lines)
-            if transcript.messages.isEmpty, let text = Self.pictureText(lines) {
+            let phoneShaped = size.width > 0 && size.height / size.width >= 1.7
+            if !Self.looksLikeChat(lines, size: size) || transcript.messages.isEmpty, let text = Self.pictureText(lines) {
                 // Not a chat — a note, a portal page, a letter on screen: its words as they stand,
                 // under an id of their own, so an earlier reading as an empty chat is not reused.
                 picture = text
                 transcript = ChatTranscript(title: nil, subtitle: nil, messages: [], leftOut: [], notes: [])
-                email = Email(source: file, id: Self.id(of: data) + "-text", headers: ["subject": ["Screenshot: \(text.heading)"]],
-                              subject: "Screenshot: \(text.heading)", from: "Screenshot", to: [owner], cc: [], date: date,
+                // A phone's screen is a screenshot; anything else — a photographed letter, a scan — a document.
+                let subject = phoneShaped ? "Screenshot: \(text.heading)" : text.heading
+                email = Email(source: file, id: Self.id(of: data) + "-text", headers: ["subject": [subject]],
+                              subject: subject, from: phoneShaped ? "Screenshot" : "Dokument", to: [owner], cc: [], date: date,
                               body: text.body, attachments: [])
             } else {
                 let title = transcript.title ?? "ohne Namen"

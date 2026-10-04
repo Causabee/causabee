@@ -1306,10 +1306,11 @@ struct MatterStatusView: View {
                 ForEach(items) { item in
                     switch item {
                     case .thread(let thread):
-                        // Its files right under it, close: one thing.
+                        // Its files right under it, close: one thing. A scan or a picture the owner
+                        // brought in is its entry already — "Open" is on it — and is not listed again.
                         VStack(alignment: .leading, spacing: 4) {
                             ThreadCard(thread: thread) { entry in talk(entry.title, "Mail") }
-                            ForEach(attached[thread.id] ?? []) { document in fileCard(document) }
+                            ForEach((attached[thread.id] ?? []).filter { !$0.isOwnFile }) { document in fileCard(document) }
                         }
                     case .document(let document):
                         fileCard(document)
