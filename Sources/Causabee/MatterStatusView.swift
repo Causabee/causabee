@@ -1220,6 +1220,19 @@ struct MatterStatusView: View {
         }
     }
 
+    /// One file of the record, as a card.
+    private func fileCard(_ document: MatterCore.Document) -> some View {
+        Card {
+            DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
+                        open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
+                        read: { fetch(document, then: { conversation.bring($0, document: document) }) },
+                        hide: { setHidden(document, !document.isHidden) },
+                        nameIt: { nameFromContent(document) },
+                        talk: { talk(document.shownName, "File") })
+                .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+        }
+    }
+
     /// One thing of the record, and the day it is sorted by.
     private enum RecordItem: Identifiable {
         case thread(MailThreads.Thread)
@@ -1262,7 +1275,13 @@ struct MatterStatusView: View {
             } ?? true
         }
         let links = party == nil ? keptLinks : []
-        let all = (threads.map(RecordItem.thread) + documents.map(RecordItem.document) + links.map(RecordItem.link)).sorted { $0.date > $1.date }
+        // A file that came with a mail — or the scan a file was read into — is one thing with it:
+        // the file stands right under its mail, not as an entry of its own.
+        let mailIDs = Dictionary(threads.flatMap { thread in thread.rows.map { ($0.entry.messageID, thread.id) } }.filter { !$0.0.isEmpty },
+                                 uniquingKeysWith: { first, _ in first })
+        let attached = Dictionary(grouping: documents.filter { mailIDs[$0.messageID] != nil }) { mailIDs[$0.messageID] ?? "" }
+        let loose = documents.filter { mailIDs[$0.messageID] == nil }
+        let all = (threads.map(RecordItem.thread) + loose.map(RecordItem.document) + links.map(RecordItem.link)).sorted { $0.date > $1.date }
         let visible = showsAllHistory ? all : Array(all.prefix(60))
         let months = Dictionary(grouping: visible) { Calendar.current.dateComponents([.year, .month], from: $0.date) }
             .sorted { ($0.key.year ?? 0, $0.key.month ?? 0) > ($1.key.year ?? 0, $1.key.month ?? 0) }
@@ -1277,17 +1296,13 @@ struct MatterStatusView: View {
                 ForEach(items) { item in
                     switch item {
                     case .thread(let thread):
-                        ThreadCard(thread: thread) { entry in talk(entry.title, "Mail") }
-                    case .document(let document):
-                        Card {
-                            DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
-                                        open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
-                                        read: { fetch(document, then: { conversation.bring($0, document: document) }) },
-                                        hide: { setHidden(document, !document.isHidden) },
-                                        nameIt: { nameFromContent(document) },
-                                        talk: { talk(document.shownName, "File") })
-                                .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+                        // Its files right under it, close: one thing.
+                        VStack(alignment: .leading, spacing: 4) {
+                            ThreadCard(thread: thread) { entry in talk(entry.title, "Mail") }
+                            ForEach(attached[thread.id] ?? []) { document in fileCard(document) }
                         }
+                    case .document(let document):
+                        fileCard(document)
                     case .link(let link):
                         Card {
                             LinkRow(link: link, todos: matter.openTodos) { remove(link) }
