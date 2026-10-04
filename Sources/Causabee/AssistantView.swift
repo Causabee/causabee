@@ -637,9 +637,10 @@ struct TurnView: View {
                 Button {
                     withAnimation(.easeOut(duration: 0.15)) { showsSent.toggle() }
                 } label: {
-                    Text(String(format: "$%.3f", answer.cost)).font(.caption2).contentShape(Rectangle())
+                    // What the disguise found in the question — so it is seen that it looked — and what it cost.
+                    Text((answer.disguiseLine.map { $0 + " · " } ?? "") + String(format: "$%.3f", answer.cost)).font(.caption2).contentShape(Rectangle())
                 }
-                .help(showsSent ? "Hide what was sent" : "\(answer.modelLabel) — shows what was sent, pseudonymised")
+                .help(showsSent ? "Hide what was sent" : (answer.disguiseSentence.map { $0 + " " } ?? "") + "\(answer.modelLabel) — shows what was sent, pseudonymised")
             }
             .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
             .tool()
@@ -649,6 +650,9 @@ struct TurnView: View {
             if showsSent {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(answer.modelLabel).font(.caption2).foregroundStyle(.secondary)
+                    if let sentence = answer.disguiseSentence {
+                        Text(sentence).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
                     ScrollView {
                         Text(answer.sent).font(.caption.monospaced()).textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)

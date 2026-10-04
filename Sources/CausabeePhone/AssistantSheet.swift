@@ -473,8 +473,10 @@ struct PhoneTurnView: View {
                     .buttonStyle(.plain)
                 }
                 Spacer(minLength: 8)
-                Text("$\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
-                    .accessibilityLabel("\(answer.modelLabel), $\(String(format: "%.3f", answer.cost))")
+                // What the disguise found in the question — so it is seen that it looked — and what it cost.
+                Text((answer.disguiseLine.map { $0 + " · " } ?? "") + "$\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .accessibilityLabel("\(answer.disguiseSentence ?? "") \(answer.modelLabel), $\(String(format: "%.3f", answer.cost))")
             }
             .padding(.leading, -8)
             .padding(.vertical, -6)

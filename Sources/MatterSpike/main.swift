@@ -1198,6 +1198,7 @@ func ask() async throws {
         print("")
         row("characters", "\(prepared.sent.count)")
         row("new names", "\(prepared.newNames)  (not saved: dry run)")
+        row("disguised", "\(prepared.disguisedInQuestion) in the question, \(prepared.disguised) in all")
         let leaks = prepared.leaks(prepared.pseudonymizer.entries)
         row("originals left in", leaks.isEmpty ? "none" : "\(leaks.count): " + leaks.prefix(20).joined(separator: ", "))
         print("")

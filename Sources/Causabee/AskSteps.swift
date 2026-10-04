@@ -43,7 +43,7 @@ struct AskSteps: View {
     private func words(_ one: AssistantAsk.Step, done: Bool) -> String {
         let model = ModelChoice.assistant.label
         switch one {
-        case .disguising: return done ? "Names disguised on this \(Self.device)" : "Disguising the names on this \(Self.device) …"
+        case .disguising: return done ? "Names and numbers disguised on this \(Self.device)" : "Disguising names and numbers on this \(Self.device) …"
         case .waiting: return done ? "\(model) has answered" : "Sent pseudonymised — \(model) is answering …"
         case .restoring: return "Putting the names back …"
         }

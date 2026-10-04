@@ -193,6 +193,24 @@ public enum AssistantAsk {
         public var links: [String: String]?
         /// Which model wrote it, as the API named it. Nil in answers from before there was a choice.
         public var servedBy: String?
+        /// How many things were disguised in what the owner typed — names, places, companies, addresses,
+        /// numbers — and in everything that went out, the matter's facts with it. Nil in answers from
+        /// before this was counted.
+        public var disguisedInQuestion: Int?
+        public var disguised: Int?
+
+        /// What the line under an answer says of it: that the question was looked at, and what was found.
+        public var disguiseLine: String? {
+            guard let count = disguisedInQuestion else { return nil }
+            return count == 0 ? "Nothing to disguise" : count == 1 ? "1 item disguised" : "\(count) items disguised"
+        }
+
+        /// The same in a sentence, with what went out besides the question.
+        public var disguiseSentence: String? {
+            guard let count = disguisedInQuestion, let all = disguised else { return nil }
+            let asked = count == 0 ? "Your question had nothing to disguise." : count == 1 ? "1 item in your question was disguised." : "\(count) items in your question were disguised."
+            return asked + " With the matter's facts, \(all) went out disguised — names, places, companies, addresses, numbers."
+        }
 
         /// The name a person reads: "Mistral Large 3".
         public var modelLabel: String {
@@ -231,6 +249,9 @@ public enum AssistantAsk {
         public var newNames: Int
         /// Web addresses kept on the device, by the stand-in sent instead.
         public var links: [String: String] = [:]
+        /// How many things were disguised in the owner's question, and in the whole request.
+        public var disguisedInQuestion = 0
+        public var disguised = 0
 
         /// Originals from the mapping that are still in what would be sent. Should be none.
         public func leaks(_ entries: [Pseudonymizer.Entry]) -> [String] {
@@ -317,8 +338,10 @@ public enum AssistantAsk {
         let newNames = pseudonymizer.entries.count - before
         if newNames > 0 { try save?(pseudonymizer.entries) }
 
-        return Prepared(sent: pseudonymizer.disguiser.apply(user).text, pseudonymizer: pseudonymizer, newNames: newNames,
-                        links: links.byStandIn)
+        let disguiser = pseudonymizer.disguiser
+        let whole = disguiser.apply(user)
+        return Prepared(sent: whole.text, pseudonymizer: pseudonymizer, newNames: newNames, links: links.byStandIn,
+                        disguisedInQuestion: disguiser.apply(question).count, disguised: whole.count)
     }
 
     public static func ask(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
@@ -363,7 +386,8 @@ public enum AssistantAsk {
         }
         reply.notInFacts = reply.notInFacts.map(real)
         return Answer(reply: reply, sent: sent, cost: answer.cost, seconds: answer.seconds, newNames: newNames,
-                      links: prepared.links.isEmpty ? nil : prepared.links, servedBy: answer.servedBy)
+                      links: prepared.links.isEmpty ? nil : prepared.links, servedBy: answer.servedBy,
+                      disguisedInQuestion: prepared.disguisedInQuestion, disguised: prepared.disguised)
     }
 }
 
