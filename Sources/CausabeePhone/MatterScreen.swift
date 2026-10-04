@@ -28,12 +28,15 @@ struct MatterScreen: View {
     /// The page under what stands on top: what is to do, the record, or the people.
     enum Part: String { case todo, record, people, notes }
     /// The record, whole or one kind of it.
-    enum RecordFilter: String { case all, mail, files, links }
+    enum RecordFilter: String { case all, mail, files, details, links }
     @State private var part: Part = .todo
     @State private var filter: RecordFilter = .all
     /// How much of the page is seen under the bar.
     @State private var pageHeight = CGFloat.zero
     @State private var choosingIcon = false
+    @State private var addingContact = false
+    @State private var addingDetail = false
+    @State private var addingLink = false
     /// The parts in the page have scrolled under the bar, which shows them then.
     @State private var partsUnder = false
     @State private var topInset = CGFloat.zero
@@ -152,8 +155,31 @@ struct MatterScreen: View {
         .safeAreaInset(edge: .top) { if finding { findBar } }
         .background(Theme.canvas)
         .overlay(alignment: .bottomTrailing) {
-            // Not over the keyboard while finding.
-            if !finding { AssistantButton { navigation.showsAssistant = true } }
+            // Not over the keyboard while finding. The bee asks; the plus over it adds.
+            if !finding {
+                VStack(alignment: .trailing, spacing: 12) {
+                    MatterPlusButton(matter: matter,
+                                     contact: { addingContact = true },
+                                     detail: { addingDetail = true },
+                                     link: { addingLink = true },
+                                     note: { part = .notes; writingNote = true },
+                                     task: { part = .todo; addTodo() })
+                        .tool()
+                    AssistantButton { navigation.showsAssistant = true }
+                }
+            }
+        }
+        .sheet(isPresented: $addingContact, onDismiss: { part = .people }) { ContactEditor(matter: matter) }
+        .sheet(isPresented: $addingDetail, onDismiss: { part = .record; filter = .details }) { DetailEditor(matter: matter) }
+        .sheet(isPresented: $addingLink, onDismiss: { part = .record; filter = .links }) {
+            PhoneLinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
+                guard !(matter.links ?? []).contains(where: { $0.address == address && $0.todo === todo }) else { return }
+                let link = WebLink(address: address, title: title)
+                context.insert(link)
+                link.matter = matter
+                link.todo = todo
+                try? context.save()
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -748,6 +774,7 @@ struct MatterScreen: View {
                     Text("Everything").tag(RecordFilter.all)
                     Text("Mail").tag(RecordFilter.mail)
                     Text("Files").tag(RecordFilter.files)
+                    Text("Details").tag(RecordFilter.details)
                     Text("Links").tag(RecordFilter.links)
                 }
             } label: {
@@ -770,9 +797,13 @@ struct MatterScreen: View {
         }
         .padding(.horizontal, 4)
         switch filter {
-        case .all: recordList(status)
+        case .all:
+            // What to have at hand, on top of what came in.
+            if personParty == nil { DetailsSection(matter: matter) }
+            recordList(status)
         case .mail: history(status)
         case .files: FilesSection(matter: matter)
+        case .details: DetailsSection(matter: matter, showsEmpty: true)
         case .links: LinksSection(matter: matter)
         }
     }
@@ -1094,6 +1125,7 @@ struct PhoneTodoEditor: View {
             Form {
                 Section {
                     TextField("What to do", text: $text, axis: .vertical).lineLimit(2...5)
+                        .accessibilityIdentifier("task.text")
                     TextField("Note — a list, a detail, what was agreed", text: $note, axis: .vertical).lineLimit(2...8)
                 }
                 Section {

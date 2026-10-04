@@ -370,3 +370,64 @@ struct AttachButton: View {
         PhoneShots.shared.bring(file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first)
     }
 }
+
+/// The black plus over the bee, on a matter: one place to add whatever the owner has in hand — a
+/// photo or scan, a file, a contact, a detail, a link, a note, a task.
+struct MatterPlusButton: View {
+    let matter: Matter
+    let contact: () -> Void
+    let detail: () -> Void
+    let link: () -> Void
+    let note: () -> Void
+    let task: () -> Void
+    @Environment(\.modelContext) private var context
+    @Query private var profiles: [Profile]
+    @State private var picksPhoto = false
+    @State private var picksFile = false
+    @State private var photo: PhotosPickerItem?
+
+    var body: some View {
+        Menu {
+            Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
+            Button("File", systemImage: "doc") { picksFile = true }
+            Divider()
+            Button("Contact", systemImage: "person.badge.plus", action: contact).accessibilityIdentifier("plus.contact")
+            Button("Detail", systemImage: "info.circle", action: detail).accessibilityIdentifier("plus.detail")
+            Button("Link", systemImage: "link", action: link).accessibilityIdentifier("plus.link")
+            Button("Note", systemImage: "note.text", action: note).accessibilityIdentifier("plus.note")
+            Button("Task", systemImage: "checklist", action: task).accessibilityIdentifier("plus.task")
+        } label: {
+            Image(systemName: "plus").font(.system(size: 20, weight: .medium)).foregroundStyle(Theme.onInk)
+                .frame(width: 48, height: 48)
+                .background(Theme.ink, in: Circle())
+                .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+        }
+        .accessibilityLabel("Add to this matter")
+        .accessibilityIdentifier("matter.plus")
+        .padding(.trailing, 22)
+        .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
+        .onChange(of: photo) {
+            guard let photo else { return }
+            self.photo = nil
+            Task {
+                guard let data = try? await photo.loadTransferable(type: Data.self) else { return }
+                let type = photo.supportedContentTypes.first { ["png", "jpeg", "heic"].contains($0.preferredFilenameExtension ?? "") }
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+                let name = "Screenshot \(formatter.string(from: Date())).\(type?.preferredFilenameExtension ?? "png")"
+                if let file = PhoneShots.shared.keep(data, named: name) { bring(file) }
+            }
+        }
+        .fileImporter(isPresented: $picksFile, allowedContentTypes: [.pdf, .image, UTType(filenameExtension: "eml") ?? .data]) { result in
+            guard case .success(let url) = result else { return }
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            if let data = try? Data(contentsOf: url), let file = PhoneShots.shared.keep(data, named: url.lastPathComponent) { bring(file) }
+        }
+    }
+
+    private func bring(_ file: URL) {
+        PhoneShots.shared.bring(file, matter: matter.persistentModelID, context: context, owner: profiles.first?.names.first)
+    }
+}

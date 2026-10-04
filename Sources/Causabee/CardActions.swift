@@ -231,6 +231,7 @@ enum CardActions {
         var id: String { address }
         /// "2 mails, last Oct 2" — what tells one address from the person's other.
         var note: String {
+            if count == 0 { return "added by you" }
             let mails = count == 1 ? "1 mail" : "\(count) mails"
             return last.map { "\(mails), last \(Dates.short($0))" } ?? mails
         }
@@ -260,8 +261,11 @@ enum CardActions {
                 found[address] = (last, (before?.count ?? 0) + 1)
             }
         }
-        return found.map { MailAddress(address: $0.key, last: $0.value.last, count: $0.value.count) }
+        let wrote = found.map { MailAddress(address: $0.key, last: $0.value.last, count: $0.value.count) }
             .sorted { ($0.last ?? .distantPast, $0.count, $1.address) > ($1.last ?? .distantPast, $1.count, $0.address) }
+        // The address the owner put in by hand comes first: it is the one they mean.
+        guard let typed = party.address?.lowercased(), typed.contains("@") else { return wrote }
+        return [wrote.first { $0.address == typed } ?? MailAddress(address: typed, last: nil, count: 0)] + wrote.filter { $0.address != typed }
     }
 
     /// The address a party last wrote from.

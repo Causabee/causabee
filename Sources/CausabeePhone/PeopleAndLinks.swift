@@ -10,6 +10,7 @@ struct PeopleSection: View {
     var choose: ((Party) -> Void)? = nil
     @Environment(\.modelContext) private var context
     @State private var merging: (Party, Party)?
+    @State private var adding = false
 
     private var origin: String { "you, in \(matter.name), \(Dates.short(Date()))" }
 
@@ -18,11 +19,19 @@ struct PeopleSection: View {
         if memberships.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "People")
-                PhoneEmptyBox(text: "Who writes and who is named come in with mail and screenshots.")
+                PhoneEmptyBox(text: "Who writes and who is named come in with mail and screenshots — or add a contact yourself.",
+                              action: "Add Contact", symbol: "person.badge.plus") { adding = true }
             }
+            .sheet(isPresented: $adding) { ContactEditor(matter: matter) }
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "People", detail: "\(memberships.count) · to merge, hold a name")
+                HStack {
+                    SectionHeader(title: "People", detail: "\(memberships.count) · to merge, hold a name")
+                    Button("Contact", systemImage: "plus") { adding = true }
+                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                        .accessibilityIdentifier("contact.add")
+                        .tool()
+                }
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
@@ -51,6 +60,7 @@ struct PeopleSection: View {
                 }
                 .phoneCard()
             }
+            .sheet(isPresented: $adding) { ContactEditor(matter: matter) }
             .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } }),
                                 titleVisibility: .visible) {
                 Button("Merge") { if let (party, other) = merging { confirmSame(party, as: other) } }
@@ -109,6 +119,7 @@ struct PhonePartyRow: View {
                         .foregroundStyle(share.isMost ? Theme.gold : .secondary)
                 }
                 MailAddressLine(addresses: CardActions.addresses(of: party))
+                ContactActions(party: party)
                 let also = party.otherSpellings
                 if !also.isEmpty {
                     Text("also written: " + also.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2)
@@ -162,6 +173,8 @@ struct PartyEditor: View {
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var role = ""
+    @State private var address = ""
+    @State private var phone = ""
 
     var body: some View {
         NavigationStack {
@@ -173,6 +186,10 @@ struct PartyEditor: View {
                     Text("The old name stays as a spelling, so new mail still finds the person.")
                 }
                 Section {
+                    TextField("Mail", text: $address).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    TextField("Phone", text: $phone).keyboardType(.phonePad)
+                }
+                Section {
                     Button("Remove from this matter", role: .destructive) { dismiss(); remove() }
                 } footer: {
                     Text("Only from this matter. A later mail naming them will not put them back.")
@@ -182,9 +199,18 @@ struct PartyEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Save") { save(name, role); dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        save(name, role)
+                        let mail = address.trimmingCharacters(in: .whitespacesAndNewlines), number = phone.trimmingCharacters(in: .whitespacesAndNewlines)
+                        party.address = mail.isEmpty ? nil : mail
+                        party.phone = number.isEmpty ? nil : number
+                        try? party.modelContext?.save()
+                        dismiss()
+                    }
+                }
             }
-            .onAppear { name = party.name; role = membership.role ?? "" }
+            .onAppear { name = party.name; role = membership.role ?? ""; address = party.address ?? ""; phone = party.phone ?? "" }
         }
     }
 }

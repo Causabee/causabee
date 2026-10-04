@@ -85,6 +85,8 @@ public final class Matter {
     @Relationship(deleteRule: .cascade, inverse: \WebLink.matter) public var links: [WebLink]? = []
     /// The owner's thoughts on it, each a small block with its day.
     @Relationship(deleteRule: .cascade, inverse: \MatterNote.matter) public var noteBlocks: [MatterNote]? = []
+    /// Short labelled facts to keep at hand: a membership number, a file number, a ward and room.
+    @Relationship(deleteRule: .cascade, inverse: \MatterDetail.matter) public var details: [MatterDetail]? = []
     /// The assistant's turns about this matter. A matter that goes leaves them in the thread.
     @Relationship(deleteRule: .nullify, inverse: \ThreadTurn.matter) public var turns: [ThreadTurn]? = []
 
@@ -249,6 +251,13 @@ public final class Party {
     /// The same, folded for looking up: no title, no brackets, no case, no spaces, `ü` as `ue`.
     public var keys: [String] = []
     @Relationship(deleteRule: .cascade, inverse: \Membership.party) public var memberships: [Membership]? = []
+    /// How to reach them, as the owner put it in by hand: a mail address, a phone number. Nil when
+    /// only mail is known of them — then the address they last wrote from stands in.
+    public var address: String?
+    public var phone: String?
+    /// When the owner added them by hand; nil for those who came in with mail.
+    public var addedAt: Date?
+    @Relationship(deleteRule: .nullify, inverse: \MatterDetail.party) public var details: [MatterDetail]? = []
 
     public init(name: String) {
         self.name = name
@@ -411,6 +420,76 @@ public final class Document {
     public var isReadable: Bool {
         contentType == "application/pdf" || name.lowercased().hasSuffix(".pdf")
             || (contentType.hasPrefix("image/") && !isSmallImage)
+    }
+}
+
+/// A fact to keep at hand in a matter — "Versichertennummer: A 123 456 789" — put in by the owner.
+/// A label and a value, and whose it is where that is known. Its value never goes to the assistant:
+/// a number is as identifying as a name, and no rule can be sure to find every one. Only that there
+/// is such a detail, by its label.
+@Model
+public final class MatterDetail {
+    public var label: String = ""
+    public var value: String = ""
+    public var createdAt: Date = Date()
+    public var matter: Matter?
+    public var party: Party?
+
+    public init(label: String, value: String, createdAt: Date = Date()) {
+        self.label = label
+        self.value = value
+        self.createdAt = createdAt
+    }
+}
+
+extension Matter {
+    /// The details, the newest first.
+    public var sortedDetails: [MatterDetail] { (details ?? []).sorted { $0.createdAt > $1.createdAt } }
+
+    /// A contact put in by hand: the person or company of that name already in the matter, or one
+    /// known elsewhere by the same full name or the same address, or a new one — with the role, and
+    /// how to reach them. Nil when there is no name.
+    @discardableResult
+    public func addContact(name: String, role: String, address: String, phone: String, in context: ModelContext) -> Party? {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return nil }
+        let address = address.trimmingCharacters(in: .whitespacesAndNewlines), phone = phone.trimmingCharacters(in: .whitespacesAndNewlines)
+        let role = role.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = PartyBook.lookupKey(name, in: self)
+        let everyone = (try? context.fetch(FetchDescriptor<Party>())) ?? []
+        let party = parties.first { $0.keys.contains(key) || PartyNames.key($0.name) == PartyNames.key(name) }
+            ?? everyone.first { $0.keys.contains(key) || (!address.isEmpty && $0.address?.lowercased() == address.lowercased()) }
+            ?? {
+                let made = Party(name: PartyNames.core(name).isEmpty ? name : PartyNames.core(name))
+                made.keys = [key]
+                made.spellings = [name]
+                made.addedAt = Date()
+                context.insert(made)
+                return made
+            }()
+        if !address.isEmpty { party.address = address }
+        if !phone.isEmpty { party.phone = phone }
+        let membership = self.membership(of: party) ?? {
+            let made = Membership()
+            context.insert(made)
+            made.party = party
+            made.matter = self
+            return made
+        }()
+        if !role.isEmpty, membership.roles.last != role { membership.roles.append(role) }
+        return party
+    }
+
+    /// A detail put in by hand. Nil when the label or the value is empty.
+    @discardableResult
+    public func addDetail(label: String, value: String, of party: Party? = nil, in context: ModelContext) -> MatterDetail? {
+        let label = label.trimmingCharacters(in: .whitespacesAndNewlines), value = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty, !value.isEmpty else { return nil }
+        let detail = MatterDetail(label: label, value: value)
+        context.insert(detail)
+        detail.matter = self
+        detail.party = party
+        return detail
     }
 }
 
@@ -620,7 +699,7 @@ public enum MatterSchema {
     public static let models: [any PersistentModel.Type] = [
         Matter.self, Entry.self, Todo.self, Appointment.self, Deadline.self, Party.self, Membership.self,
         Decision.self, Rule.self, Profile.self, Document.self, WebLink.self, ThreadTurn.self, NameList.self,
-        SortedMail.self, MatterNote.self,
+        SortedMail.self, MatterNote.self, MatterDetail.self,
     ]
 
     /// A store on disk, or in memory when `url` is nil.

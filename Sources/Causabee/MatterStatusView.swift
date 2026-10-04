@@ -56,7 +56,7 @@ struct MatterStatusView: View {
     /// The page under what stands on top: what is to do, the record, or the people.
     enum Part: String { case todo, record, people, notes }
     /// The record, whole or one kind of it.
-    enum RecordFilter: String { case all, mail, files, links }
+    enum RecordFilter: String { case all, mail, files, details, links }
     // `--demo --shot lisbon-files`: the picture of the files is of the record's files.
     @State private var part: Part = IntroShot.current == .lisbonFiles ? .record : .todo
     @State private var filter: RecordFilter = IntroShot.current == .lisbonFiles ? .files : .all
@@ -67,6 +67,8 @@ struct MatterStatusView: View {
     /// The page has gone up under the title bar: the bar turns to glass, with a line under it.
     @State private var scrolledUnder = false
     @State private var choosingIcon = false
+    @State private var addingContact = false
+    @State private var addingDetail = false
     /// The parts in the page have scrolled under the title bar, which shows them then.
     @State private var partsUnder = false
     @State private var partsEdge = CGFloat.infinity
@@ -184,6 +186,8 @@ struct MatterStatusView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
                 .onChange(of: navigation.showing) { show(navigation.showing, with: scroller) }
+                .sheet(isPresented: $addingContact) { ContactEditor(matter: matter) }
+                .sheet(isPresented: $addingDetail) { DetailEditor(matter: matter) }
             }
         }
         .environment(find)
@@ -876,6 +880,21 @@ struct MatterStatusView: View {
                         .help("Ask Causabee about this matter")
                         .accessibilityLabel("Ask Causabee")
                     }
+                    // One plus for everything the owner brings to the matter.
+                    Menu {
+                        Button("File …", systemImage: "doc") { part = .record; filter = .files; addingFile = true }
+                        Button("Contact", systemImage: "person.badge.plus") { part = .people; addingContact = true }
+                        Button("Detail", systemImage: "info.circle") { part = .record; filter = .details; addingDetail = true }
+                        Button("Link", systemImage: "link") { part = .record; filter = .links; addingLink = true }
+                        Button("Note", systemImage: "note.text") { part = .notes; writingNote = true }
+                        Button("Task", systemImage: "checklist") { part = .todo; addTodo() }
+                    } label: {
+                        Image(systemName: "plus").frame(width: 22, height: 22)
+                    }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                    .help("Add to this matter: a file, a contact, a detail, a link, a note, a task")
+                    .accessibilityLabel("Add to this matter")
+                    .tool()
                     PageFindField(find: find)
                     if !matter.isClosed {
                         Button("Close") { asksToClose = true }
@@ -1090,11 +1109,17 @@ struct MatterStatusView: View {
         if memberships.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "People")
-                EmptyBox(text: "Who writes and who is named come in with mail and screenshots.")
+                EmptyBox(text: "Who writes and who is named come in with mail and screenshots — or add a contact yourself.",
+                         action: "Add Contact", symbol: "person.badge.plus") { addingContact = true }
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "People", detail: "\(memberships.count) · to merge, drag one name onto another")
+                HStack {
+                    SectionHeader(title: "People", detail: "\(memberships.count) · to merge, drag one name onto another")
+                    Button { addingContact = true } label: { Label("Contact", systemImage: "plus") }
+                        .buttonStyle(.gold).font(.caption)
+                        .tool()
+                }
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
@@ -1211,6 +1236,7 @@ struct MatterStatusView: View {
                     Text("All · \(status.entries.count + shownDocuments.count + keptLinks.count)").tag(RecordFilter.all)
                     Text("Mail · \(status.entries.count)").tag(RecordFilter.mail)
                     Text("Files · \(shownDocuments.count)").tag(RecordFilter.files)
+                    Text("Details · \((matter.details ?? []).count)").tag(RecordFilter.details)
                     Text("Links · \(keptLinks.count)").tag(RecordFilter.links)
                 }
                 .pickerStyle(.inline)
@@ -1230,9 +1256,13 @@ struct MatterStatusView: View {
             Spacer()
         }
         switch filter {
-        case .all: recordList(status)
+        case .all:
+            // What to have at hand, on top of what came in.
+            if personParty == nil { DetailsSection(matter: matter).id("details") }
+            recordList(status)
         case .mail: history(status)
         case .files: files.id("files")
+        case .details: DetailsSection(matter: matter, showsEmpty: true).id("details")
         case .links: links.id("links")
         }
     }
@@ -2002,6 +2032,8 @@ struct PartyRow: View {
     @State private var editing = false
     @State private var name = ""
     @State private var role = ""
+    @State private var address = ""
+    @State private var phone = ""
 
     var body: some View {
         let addresses = CardActions.addresses(of: party)
@@ -2018,6 +2050,7 @@ struct PartyRow: View {
                         .foregroundStyle(share.isMost ? Theme.gold : .secondary)
                 }
                 MailAddressLine(addresses: addresses)
+                ContactActions(party: party)
                 let also = party.otherSpellings
                 if !also.isEmpty {
                     Text("also written: " + also.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2)
@@ -2035,6 +2068,8 @@ struct PartyRow: View {
                 Button("Edit name and role …") {
                     name = party.name
                     role = membership.role ?? ""
+                    address = party.address ?? ""
+                    phone = party.phone ?? ""
                     editing = true
                 }
                 if let remove {
@@ -2046,6 +2081,8 @@ struct PartyRow: View {
                         Text("Change person").font(.headline)
                         TextField("Name", text: $name).textFieldStyle(.roundedBorder).frame(width: 300)
                         TextField("Role in \(matter.name)", text: $role).textFieldStyle(.roundedBorder).frame(width: 300)
+                        TextField("Mail", text: $address).textFieldStyle(.roundedBorder).frame(width: 300)
+                        TextField("Phone", text: $phone).textFieldStyle(.roundedBorder).frame(width: 300)
                         Text("The old name stays as a spelling, so new mail still finds the person.")
                             .font(.caption).foregroundStyle(.secondary).frame(width: 300, alignment: .leading)
                         HStack {
@@ -2055,7 +2092,15 @@ struct PartyRow: View {
                             }
                             Spacer()
                             Button("Cancel") { editing = false }
-                            Button("Save") { save(name, role); editing = false }.keyboardShortcut(.defaultAction)
+                            Button("Save") {
+                                save(name, role)
+                                let mail = address.trimmingCharacters(in: .whitespacesAndNewlines), number = phone.trimmingCharacters(in: .whitespacesAndNewlines)
+                                party.address = mail.isEmpty ? nil : mail
+                                party.phone = number.isEmpty ? nil : number
+                                try? party.modelContext?.save()
+                                editing = false
+                            }
+                            .keyboardShortcut(.defaultAction)
                         }
                     }
                     .padding(16)

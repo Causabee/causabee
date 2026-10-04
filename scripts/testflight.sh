@@ -26,6 +26,16 @@ cat > "$OUT/export.plist" <<'EOF'
 </dict></plist>
 EOF
 
+# What the owner does at the table must work before anything is uploaded: the regression tests, in
+# the simulator, on the demo's matters. Skipped only with CAUSABEE_SKIP_TESTS=1.
+if [[ -z ${CAUSABEE_SKIP_TESTS:-} ]]; then
+  step "Running the regression tests in the simulator"
+  SIM=${CAUSABEE_TEST_SIMULATOR:-iPhone 18 Pro}
+  xcodebuild test -project App/Causabee.xcodeproj -scheme CausabeePhoneUITests -destination "platform=iOS Simulator,name=$SIM" \
+    -derivedDataPath .build-app/uitests > "$OUT/tests.log" 2>&1 \
+    || { grep -E "error:|failed" "$OUT/tests.log" | tail -12; fail "The regression tests failed: nothing was uploaded. The whole log: $OUT/tests.log" }
+fi
+
 step "Archiving Causabee $VERSION ($BUILD) for the iPhone"
 xcodebuild archive -project App/Causabee.xcodeproj -scheme CausabeePhone -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$OUT/CausabeePhone.xcarchive" -allowProvisioningUpdates \

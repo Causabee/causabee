@@ -192,11 +192,12 @@ struct NotesPart: View {
                     .lineLimit(1...8)
                     .frame(minHeight: 34)
                     .focused($focused)
+                    .accessibilityIdentifier("note.field")
                     #if os(macOS)
                     .onSubmit(add)
                     #endif
                 if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Button("Add", action: add).filledButton().padding(.bottom, 4)
+                    Button("Add", action: add).filledButton().padding(.bottom, 4).accessibilityIdentifier("note.add")
                 }
                 MicButton(voice: voice, text: $draft, selection: $cursor)
               }
@@ -321,5 +322,266 @@ struct NotesPart: View {
         #else
         UIPasteboard.general.string = text
         #endif
+    }
+}
+
+// MARK: The vault — contacts and details put in by hand
+
+/// "New contact": a person or a company the owner adds — an insurer, a doctor, an office — with a
+/// role and how to reach them.
+struct ContactEditor: View {
+    let matter: Matter
+    var added: (Party) -> Void = { _ in }
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var name = ""
+    @State private var role = ""
+    @State private var address = ""
+    @State private var phone = ""
+
+    private var canAdd: Bool { !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    var body: some View {
+        #if os(iOS)
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Name", text: $name).accessibilityIdentifier("contact.name")
+                    TextField("Role — insurer, doctor, office", text: $role)
+                }
+                Section {
+                    TextField("Mail", text: $address).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .accessibilityIdentifier("contact.mail")
+                    TextField("Phone", text: $phone).keyboardType(.phonePad)
+                } footer: {
+                    Text("A contact you add stays in this matter. If mail from the same address comes in later, it is the same contact.")
+                }
+            }
+            .navigationTitle("New contact")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Add", action: add).disabled(!canAdd) }
+            }
+        }
+        #else
+        VStack(alignment: .leading, spacing: 10) {
+            Text("New contact").font(.headline)
+            TextField("Name", text: $name).textFieldStyle(.roundedBorder)
+            TextField("Role — insurer, doctor, office", text: $role).textFieldStyle(.roundedBorder)
+            TextField("Mail", text: $address).textFieldStyle(.roundedBorder)
+            TextField("Phone", text: $phone).textFieldStyle(.roundedBorder)
+            Text("A contact you add stays in this matter. If mail from the same address comes in later, it is the same contact.")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }.quietButton().keyboardShortcut(.cancelAction)
+                Button("Add", action: add).filledButton().keyboardShortcut(.defaultAction).disabled(!canAdd)
+            }
+        }
+        .padding(18)
+        .frame(width: 340)
+        #endif
+    }
+
+    private func add() {
+        guard let party = matter.addContact(name: name, role: role, address: address, phone: phone, in: context) else { return }
+        try? context.save()
+        added(party)
+        dismiss()
+    }
+}
+
+/// "New detail", or one put right: what it is, its value, and whose it is.
+struct DetailEditor: View {
+    let matter: Matter
+    var detail: MatterDetail? = nil
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var label = ""
+    @State private var value = ""
+    @State private var party: PersistentIdentifier?
+
+    private var canSave: Bool {
+        !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var whose: some View {
+        Picker("Of", selection: $party) {
+            Text("no one").tag(PersistentIdentifier?.none)
+            ForEach(matter.parties.sorted { $0.name < $1.name }) { Text($0.name).tag(Optional($0.persistentModelID)) }
+        }
+    }
+
+    var body: some View {
+        Group {
+            #if os(iOS)
+            NavigationStack {
+                Form {
+                    Section {
+                        TextField("What — Versichertennummer, file number", text: $label).accessibilityIdentifier("detail.label")
+                        TextField("Value", text: $value).autocorrectionDisabled().accessibilityIdentifier("detail.value")
+                        if !matter.parties.isEmpty { whose }
+                    } footer: {
+                        Text("Kept on your devices. The assistant learns that it is here, never the value.")
+                    }
+                    if detail != nil {
+                        Section { Button("Delete", role: .destructive, action: delete) }
+                    }
+                }
+                .navigationTitle(detail == nil ? "New detail" : "Detail")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) { Button(detail == nil ? "Add" : "Save", action: save).disabled(!canSave) }
+                }
+            }
+            #else
+            VStack(alignment: .leading, spacing: 10) {
+                Text(detail == nil ? "New detail" : "Detail").font(.headline)
+                TextField("What — Versichertennummer, file number", text: $label).textFieldStyle(.roundedBorder)
+                TextField("Value", text: $value).textFieldStyle(.roundedBorder)
+                if !matter.parties.isEmpty { whose }
+                Text("Kept on your devices. The assistant learns that it is here, never the value.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    if detail != nil { Button("Delete", role: .destructive, action: delete) }
+                    Spacer()
+                    Button("Cancel") { dismiss() }.quietButton().keyboardShortcut(.cancelAction)
+                    Button(detail == nil ? "Add" : "Save", action: save).filledButton().keyboardShortcut(.defaultAction).disabled(!canSave)
+                }
+            }
+            .padding(18)
+            .frame(width: 340)
+            #endif
+        }
+        .onAppear {
+            guard let detail else { return }
+            label = detail.label; value = detail.value; party = detail.party?.persistentModelID
+        }
+    }
+
+    private func save() {
+        let whose = party.flatMap { id in matter.parties.first { $0.persistentModelID == id } }
+        if let detail {
+            detail.label = label.trimmingCharacters(in: .whitespacesAndNewlines)
+            detail.value = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            detail.party = whose
+        } else {
+            matter.addDetail(label: label, value: value, of: whose, in: context)
+        }
+        try? context.save()
+        dismiss()
+    }
+
+    private func delete() {
+        if let detail { context.delete(detail); try? context.save() }
+        dismiss()
+    }
+}
+
+/// "Details", on top of a matter's record: what to have at hand on the phone with them. A tap
+/// copies one; it is put right or deleted from its menu.
+struct DetailsSection: View {
+    let matter: Matter
+    /// Shown even while there is none yet — when the record shows only the details.
+    var showsEmpty = false
+    @State private var adding = false
+    @State private var editing: MatterDetail?
+    @State private var copied: PersistentIdentifier?
+
+    #if os(iOS)
+    private let radius: CGFloat = 12
+    #else
+    private let radius: CGFloat = 10
+    #endif
+
+    var body: some View {
+        let details = matter.sortedDetails
+        if !details.isEmpty || showsEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    SectionHeader(title: "Details", detail: details.isEmpty ? nil : "\(details.count)")
+                    Button("Detail", systemImage: "plus") { adding = true }
+                        .buttonStyle(.plain).font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                        .accessibilityIdentifier("detail.add")
+                }
+                if details.isEmpty {
+                    Text("A membership number, a file number, a ward and room: what you need on the phone with them.")
+                        .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Theme.box, in: RoundedRectangle(cornerRadius: radius))
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(details.enumerated()), id: \.element.persistentModelID) { index, detail in
+                            if index > 0 { Divider().padding(.leading, 14) }
+                            row(detail)
+                        }
+                    }
+                    .background(Theme.card, in: RoundedRectangle(cornerRadius: radius))
+                    .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.line))
+                }
+            }
+            .sheet(isPresented: $adding) { DetailEditor(matter: matter) }
+            .sheet(item: $editing) { DetailEditor(matter: matter, detail: $0) }
+        }
+    }
+
+    private func row(_ detail: MatterDetail) -> some View {
+        Button { copy(detail) } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(detail.label + (detail.party.map { " · \($0.name)" } ?? "")).font(.caption).foregroundStyle(.secondary)
+                    Text(detail.value).fontWeight(.medium).foregroundStyle(.primary).multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: copied == detail.persistentModelID ? "checkmark" : "doc.on.doc").foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 11)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .findable(.model(detail.persistentModelID), detail.label, detail.value)
+        .accessibilityLabel("\(detail.label): \(detail.value)").accessibilityHint("Copies it")
+        .contextMenu {
+            Button("Copy", systemImage: "doc.on.doc") { copy(detail) }
+            Button("Edit", systemImage: "pencil") { editing = detail }
+        }
+    }
+
+    private func copy(_ detail: MatterDetail) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(detail.value, forType: .string)
+        #else
+        UIPasteboard.general.string = detail.value
+        #endif
+        copied = detail.persistentModelID
+        Task { try? await Task.sleep(for: .seconds(1.5)); if copied == detail.persistentModelID { copied = nil } }
+    }
+}
+
+/// Under a contact's name: the phone number, and "Write mail" and "Call" right on it.
+struct ContactActions: View {
+    let party: Party
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        let address = party.address ?? CardActions.addresses(of: party).first?.address
+        if let phone = party.phone, !phone.isEmpty {
+            Text(phone).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+        }
+        if party.addedAt != nil || party.phone != nil {
+            HStack(spacing: 8) {
+                if let address, let url = URL(string: "mailto:" + address) {
+                    Button { openURL(url) } label: { Label("Write mail", systemImage: "envelope") }
+                }
+                if let phone = party.phone, let url = URL(string: "tel:" + phone.filter { $0.isNumber || $0 == "+" }) {
+                    Button { openURL(url) } label: { Label("Call", systemImage: "phone") }
+                }
+            }
+            .buttonStyle(.bordered).controlSize(.small).tint(.primary)
+            .padding(.top, 4)
+        }
     }
 }

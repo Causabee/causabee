@@ -21,6 +21,13 @@
 			remoteGlobalIDString = AA0000000000000000000052;
 			remoteInfo = CausabeeShare;
 		};
+		AA000000000000000000007A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA000000000000000000000A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000047;
+			remoteInfo = CausabeePhone;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -41,6 +48,7 @@
 		AA0000000000000000000002 /* Causabee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Causabee.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000043 /* Causabee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Causabee.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000050 /* CausabeeShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CausabeeShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000071 /* CausabeePhoneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CausabeePhoneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -107,6 +115,12 @@
 			path = ../Sources/CausabeeShare;
 			sourceTree = "<group>";
 		};
+		AA0000000000000000000070 /* CausabeePhoneUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			name = CausabeePhoneUITests;
+			path = ../Tests/CausabeePhoneUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -134,6 +148,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000074 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -144,6 +165,7 @@
 				AA0000000000000000000044 /* CausabeePhone */,
 				AA0000000000000000000051 /* CausabeeShare */,
 				AA000000000000000000000C /* Resources */,
+				AA0000000000000000000070 /* CausabeePhoneUITests */,
 				AA0000000000000000000006 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -154,6 +176,7 @@
 				AA0000000000000000000002 /* Causabee.app */,
 				AA0000000000000000000043 /* Causabee.app */,
 				AA0000000000000000000050 /* CausabeeShare.appex */,
+				AA0000000000000000000071 /* CausabeePhoneUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -234,6 +257,26 @@
 			productReference = AA0000000000000000000050 /* CausabeeShare.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		AA0000000000000000000072 /* CausabeePhoneUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000076 /* Build configuration list for PBXNativeTarget "CausabeePhoneUITests" */;
+			buildPhases = (
+				AA0000000000000000000073 /* Sources */,
+				AA0000000000000000000074 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA0000000000000000000079 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA0000000000000000000070 /* CausabeePhoneUITests */,
+			);
+			name = CausabeePhoneUITests;
+			productName = CausabeePhoneUITests;
+			productReference = AA0000000000000000000071 /* CausabeePhoneUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -252,6 +295,10 @@
 					};
 					AA0000000000000000000052 = {
 						CreatedOnToolsVersion = 27.0;
+					};
+					AA0000000000000000000072 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = AA0000000000000000000047;
 					};
 				};
 			};
@@ -275,6 +322,7 @@
 				AA0000000000000000000007 /* CausabeeApp */,
 				AA0000000000000000000047 /* CausabeePhone */,
 				AA0000000000000000000052 /* CausabeeShare */,
+				AA0000000000000000000072 /* CausabeePhoneUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -325,6 +373,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000073 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -332,6 +387,11 @@
 			isa = PBXTargetDependency;
 			target = AA0000000000000000000052 /* CausabeeShare */;
 			targetProxy = AA000000000000000000005E /* PBXContainerItemProxy */;
+		};
+		AA0000000000000000000079 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000000000000000000047 /* CausabeePhone */;
+			targetProxy = AA000000000000000000007A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -557,6 +617,38 @@
 			};
 			name = Release;
 		};
+		AA0000000000000000000077 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 2F7QR8NL2D;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = CausabeePhone;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000078 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 2F7QR8NL2D;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.chille.causabee.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = CausabeePhone;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -592,6 +684,15 @@
 			buildConfigurations = (
 				AA000000000000000000005F /* Debug */,
 				AA0000000000000000000060 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA0000000000000000000076 /* Build configuration list for PBXNativeTarget "CausabeePhoneUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000077 /* Debug */,
+				AA0000000000000000000078 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

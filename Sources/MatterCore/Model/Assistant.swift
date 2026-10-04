@@ -68,6 +68,9 @@ public enum FactSheet {
                 ownerText.append(notes)
             }
             ownerText += (matter.todos ?? []).compactMap(\.note)
+            // Of the details only that they are kept, by their label: never a value.
+            let labels = matter.sortedDetails.map { $0.label + ($0.party.map { " (\($0.name))" } ?? "") }
+            if !labels.isEmpty { lines.append("Details the owner keeps here, values not shown: " + labels.joined(separator: "; ")) }
             ownerText += (matter.links ?? []).filter(\.isKept).map(\.title).filter { !$0.isEmpty }
             let open = [Todo.Owner.me, .we, .other, .unknown].flatMap(status.open)
             lines.append(open.isEmpty ? "No open to-dos." : "Open to-dos:")
