@@ -32,7 +32,12 @@ struct AssistantColumn: View {
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
     @Query private var profiles: [Profile]
+    #if DEBUG
+    /// For looking at the field with words in it, in a screenshot: `CAUSABEE_DRAFT`.
+    @State private var draft = ProcessInfo.processInfo.environment["CAUSABEE_DRAFT"] ?? ""
+    #else
     @State private var draft = ""
+    #endif
     /// Scrolled up from the newest: a round button above the composer brings the thread down again.
     @State private var scrolledUp = false
     /// An answer that arrived while the thread was scrolled up: the thread stays where it is being

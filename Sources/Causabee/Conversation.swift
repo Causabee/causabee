@@ -352,6 +352,7 @@ struct Composer: View {
     @State private var showsMore = false
     @State private var voice = VoiceInput()
     @State private var cursor: TextSelection?
+    @State private var fieldHeight: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -395,9 +396,6 @@ struct Composer: View {
                 TextField(voice.phase == .writing ? "Writing it down …" : placeholder, text: $draft, selection: $cursor, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
-                    // One line sits in the middle of the send button; more lines grow upwards.
-                    .frame(minHeight: 34)
-                    .padding(.leading, attach == nil ? 9 : 0)
                     .focused(focused)
                     // Return sends; Shift-Return starts a new line, as in Messages.
                     .onKeyPress(.return, phases: .down) { press in
@@ -409,6 +407,13 @@ struct Composer: View {
                         // While an answer is on its way, what is typed waits in the field.
                         return .handled
                     }
+                    // With two lines or more the Mac's field keeps an empty line under its words, and
+                    // they sat too high in the pill: most of that line is let hang out below.
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { fieldHeight = $0 }
+                    .padding(.bottom, fieldHeight > 40 ? -12 : 0)
+                    // One line sits in the middle of the send button; more lines grow upwards.
+                    .frame(minHeight: 34)
+                    .padding(.leading, attach == nil ? 9 : 0)
                 MicButton(voice: voice, text: $draft, selection: $cursor)
                 Button(action: stop ?? send) {
                     // The bee's yellow with a black arrow, drawn light, like the other yellow pills —
