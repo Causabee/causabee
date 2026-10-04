@@ -333,7 +333,7 @@ struct LinksSection: View {
                 searching = (found == 0 ? "No new important links found." : "\(found) \(found == 1 ? "link" : "links") suggested.")
                     + (missing > 0 ? " \(missing) \(missing == 1 ? "mail is" : "mails are") no longer in the mailbox." : "")
             } catch {
-                searching = "\(error)"
+                searching = plainWords(error)
             }
         }
     }

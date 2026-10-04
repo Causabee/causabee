@@ -433,7 +433,7 @@ struct MatterScreen: View {
                 matter.nextStepAt = Date()
                 try? context.save()
             } catch {
-                stepError = "\(error)"
+                stepError = plainWords(error)
             }
             askingStep = false
         }
@@ -456,7 +456,7 @@ struct MatterScreen: View {
                 matter.summaryAt = Date()
                 try? context.save()
             } catch {
-                summaryError = "\(error)"
+                summaryError = plainWords(error)
             }
             writingSummary = false
         }

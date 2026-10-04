@@ -90,7 +90,7 @@ struct Conversation {
                 Conversation.set(id, .answered(answer), in: navigation)
             } catch {
                 guard !Task.isCancelled else { return }
-                Conversation.set(id, .failed("\(error)"), in: navigation)
+                Conversation.set(id, .failed(plainWords(error)), in: navigation)
             }
             navigation.asks[id] = nil
         }
@@ -143,7 +143,7 @@ struct Conversation {
         let navigation = self.navigation
         Task {
             let stage = await Task.detached { () -> Navigation.Shot.Stage in
-                do { return .read(try door.look(at: file, owner: owner)) } catch { return .failed("\(error)") }
+                do { return .read(try door.look(at: file, owner: owner)) } catch { return .failed(plainWords(error)) }
             }.value
             Conversation.set(shot: id, stage, in: navigation)
         }
@@ -166,7 +166,7 @@ struct Conversation {
                 let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters)
                 Conversation.set(shot: id, .answered(look, judgement), in: navigation)
             } catch {
-                Conversation.set(shot: id, .failed("\(error)"), in: navigation)
+                Conversation.set(shot: id, .failed(plainWords(error)), in: navigation)
             }
         }
     }
@@ -240,7 +240,7 @@ struct Conversation {
                 try? context.save()
             }
         } catch {
-            Self.set(shot: id, .failed("\(error)"), in: navigation)
+            Self.set(shot: id, .failed(plainWords(error)), in: navigation)
         }
     }
 

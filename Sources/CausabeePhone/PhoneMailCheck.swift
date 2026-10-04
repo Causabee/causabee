@@ -188,7 +188,7 @@ final class PhoneMailCheck {
                 state = look.pending == 0 ? .nothingNew(known: look.intake.alreadyKnown) : .ready(look, door)
             } catch {
                 guard !Task.isCancelled else { return }
-                state = .failed("\(error)")
+                state = .failed(plainWords(error))
             }
         }
     }
@@ -277,7 +277,7 @@ final class PhoneMailCheck {
                 state = .done(text, IntakeSummary.items(judgements), mails)
             } catch {
                 Haptics.failure()
-                state = .failed("\(error)")
+                state = .failed(plainWords(error))
             }
         }
     }

@@ -83,7 +83,7 @@ final class PhoneShots {
         Task {
             // Text recognition takes a moment: away from the screen.
             let stage = await Task.detached { () -> Stage in
-                do { return .read(try door.look(at: file, owner: owner)) } catch { return .failed("\(error)") }
+                do { return .read(try door.look(at: file, owner: owner)) } catch { return .failed(plainWords(error)) }
             }.value
             set(id, stage)
         }
@@ -105,7 +105,7 @@ final class PhoneShots {
                 let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters)
                 set(id, .answered(look, judgement))
             } catch {
-                set(id, .failed("\(error)"))
+                set(id, .failed(plainWords(error)))
             }
         }
     }
@@ -162,7 +162,7 @@ final class PhoneShots {
             if !DemoData.isRequested { PhoneNames.publish(in: context) }
             set(id, .taken(taken?.name ?? judgement.matter ?? "", taken?.persistentModelID))
         } catch {
-            set(id, .failed("\(error)"))
+            set(id, .failed(plainWords(error)))
         }
     }
 

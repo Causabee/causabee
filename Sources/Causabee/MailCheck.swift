@@ -128,7 +128,7 @@ final class MailCheck {
                 lastChecked = Date()
                 state = look.pending == 0 ? .nothingNew(known: look.intake.alreadyKnown) : .ready(look, door)
             } catch {
-                state = .failed("\(error)")
+                state = .failed(plainWords(error))
             }
         }
     }
@@ -168,7 +168,7 @@ final class MailCheck {
                 let mails = IntakeSummary.mails(judgements) { key in all.first { $0.answers(to: key) }?.name }
                 state = .done(text, IntakeSummary.items(judgements), mails)
             } catch {
-                state = .failed("\(error)")
+                state = .failed(plainWords(error))
             }
         }
     }

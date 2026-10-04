@@ -202,6 +202,20 @@ public struct Claude: Sendable {
         key(named: model.keyName)
     }
 
+    /// The request, sent. A connection that drops on the way — the phone changing from Wi-Fi to the
+    /// mobile network, a server closing a kept connection — is tried again, twice, before it is an error.
+    static func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        var attempt = 0
+        while true {
+            attempt += 1
+            do {
+                return try await URLSession.shared.data(for: request)
+            } catch let error as URLError where [.networkConnectionLost, .cannotConnectToHost, .dnsLookupFailed, .secureConnectionFailed].contains(error.code) && attempt < 3 {
+                try await Task.sleep(for: .seconds(Double(attempt)))
+            }
+        }
+    }
+
     public func send(_ body: [String: Any], model: Model) async throws -> Answer {
         if model.isMistral { return try await sendMistral(body, model: model) }
         if model.isOpenAI { return try await sendOpenAI(body, model: model) }
@@ -220,7 +234,7 @@ public struct Claude: Sendable {
         var attempt = 0
         while true {
             attempt += 1
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await Self.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             if status == 200 { return try Self.answer(from: data, seconds: Date().timeIntervalSince(started)) }
 
@@ -265,7 +279,7 @@ public struct Claude: Sendable {
         var attempt = 0
         while true {
             attempt += 1
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await Self.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             if status == 200 {
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -313,7 +327,7 @@ public struct Claude: Sendable {
         var attempt = 0
         while true {
             attempt += 1
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await Self.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             if status == 200 {
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
@@ -364,4 +378,23 @@ public struct Claude: Sendable {
                       cacheWriteTokens: usage["cache_creation_input_tokens"] as? Int ?? 0,
                       cacheReadTokens: usage["cache_read_input_tokens"] as? Int ?? 0)
     }
+}
+
+/// An error in words a person reads — "The connection was lost." — not the system's own dump of it.
+public func plainWords(_ error: Error) -> String {
+    if let error = error as? URLError {
+        switch error.code {
+        case .notConnectedToInternet, .dataNotAllowed: return "No connection to the internet. Nothing was sent."
+        case .networkConnectionLost: return "The connection was lost on the way. Try again."
+        case .timedOut: return "No answer came in time. Try again."
+        case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed: return "The service could not be reached. Try again in a moment."
+        case .secureConnectionFailed: return "No secure connection could be made. Try again."
+        case .cancelled: return "Stopped."
+        default: return error.localizedDescription
+        }
+    }
+    if error is CancellationError { return "Stopped." }
+    let words = "\(error)"
+    // The system's own errors print their whole record; what they say for people is shorter.
+    return words.hasPrefix("Error Domain=") ? error.localizedDescription : words
 }

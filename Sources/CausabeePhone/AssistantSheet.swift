@@ -331,7 +331,7 @@ extension AssistantSheet {
             } catch {
                 guard !Task.isCancelled else { return }
                 Haptics.failure()
-                failure = "\(error)"
+                failure = plainWords(error)
                 draft = question
                 fieldKey += 1
             }

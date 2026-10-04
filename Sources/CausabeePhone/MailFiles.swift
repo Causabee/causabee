@@ -222,7 +222,7 @@ struct FilesSection: View {
                 state[id] = nil
                 use(url)
             } catch {
-                state[id] = "\(error)"
+                state[id] = plainWords(error)
             }
         }
     }
@@ -328,7 +328,7 @@ struct MailAccountSheet: View {
             password = ""
             dismiss()
         } catch {
-            failure = "\(error)"
+            failure = plainWords(error)
         }
     }
 }

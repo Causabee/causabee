@@ -267,7 +267,7 @@ struct MatterStatusView: View {
                 matter.summaryAt = Date()
                 try? context.save()
             } catch {
-                summaryError = "\(error)"
+                summaryError = plainWords(error)
             }
             writingSummary = false
         }
@@ -378,7 +378,7 @@ struct MatterStatusView: View {
                 matter.nextStepAt = Date()
                 try? context.save()
             } catch {
-                stepError = "\(error)"
+                stepError = plainWords(error)
             }
             askingStep = false
         }
@@ -602,7 +602,7 @@ struct MatterStatusView: View {
                 searchingLinks = (found == 0 ? "No new important links found." : "\(found) \(found == 1 ? "link" : "links") suggested.")
                     + (missing > 0 ? " \(missing) \(missing == 1 ? "mail is" : "mails are") no longer in the mailbox." : "")
             } catch {
-                searchingLinks = "\(error)"
+                searchingLinks = plainWords(error)
             }
         }
     }
@@ -698,7 +698,7 @@ struct MatterStatusView: View {
                 fetching[id] = nil
                 use(url)
             } catch {
-                fetching[id] = "\(error)"
+                fetching[id] = plainWords(error)
             }
         }
     }

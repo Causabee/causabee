@@ -113,7 +113,7 @@ struct KeyField: View {
             HStack {
                 SecureField("Paste a new key", text: $pasted).textFieldStyle(.roundedBorder)
                 Button("Save") {
-                    do { try APIKeys.save(pasted, as: name); pasted = ""; error = nil } catch { self.error = "\(error)" }
+                    do { try APIKeys.save(pasted, as: name); pasted = ""; error = nil } catch { self.error = plainWords(error) }
                     stored = APIKeys.get(name) != nil
                 }
                 .disabled(pasted.trimmingCharacters(in: .whitespaces).isEmpty)
