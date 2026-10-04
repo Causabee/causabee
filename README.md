@@ -29,7 +29,7 @@ screenshot you meant to keep. Causabee puts the pieces together.
 
 ## Private by design
 
-- Your mail and files stay on your Mac.
+- Your mail stays on your Mac. A matter's files stay on your devices and, when you choose a folder, in your own iCloud Drive.
 - Before any text goes to an AI, names, addresses and numbers are replaced on the Mac — and only
   when you click. If the disguise can't be built, nothing is sent.
 - You pick Claude, OpenAI or Mistral for each job, with your own API key in the Keychain. Every
@@ -248,7 +248,7 @@ another). The API keys are pasted in its settings (⌘,) and kept in the Keychai
 `Application Support/Causabee-Test` and the container `iCloud.de.chille.causabee.test`) or
 *On* (the store mirrored into the owner's private CloudKit database,
 `iCloud.de.chille.causabee`). What syncs: matters, to-dos, dates, people, notes, links, digests,
-the assistant's history. What stays on the Mac: full mail texts, files, the name list, the keys.
+the assistant's history. What stays on the Mac: full mail texts, the name list, the keys. Files stay on the device they came to — or go into the matter's folder in iCloud Drive (or a folder you choose), where your Mac and your iPhone both open them.
 The command line opens the same store without iCloud; its changes go up when the app next starts.
 
 ```sh
