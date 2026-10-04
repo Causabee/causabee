@@ -98,6 +98,13 @@ step "Signing with $IDENTITY"
 # which lets any Mac use iCloud.
 [[ -f scripts/release.provisionprofile ]] || fail "No scripts/release.provisionprofile (see the top of this script)."
 cp scripts/release.provisionprofile "$APP/Contents/embedded.provisionprofile"
+# What is inside first — a library the build put into Frameworks carries only the build's own
+# signature, and Apple's notary takes nothing that is not signed with the Developer ID and timestamped.
+if [[ -d "$APP/Contents/Frameworks" ]]; then
+  for inner in "$APP"/Contents/Frameworks/*(N); do
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" "$inner"
+  done
+fi
 codesign --force --options runtime --timestamp --entitlements scripts/release.entitlements --sign "$IDENTITY" "$APP"
 codesign --verify --deep --strict "$APP" || fail "The signature does not verify."
 codesign -d --entitlements - --xml "$APP" 2>/dev/null | grep -q "<string>Production</string>" \
