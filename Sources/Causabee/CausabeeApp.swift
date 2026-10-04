@@ -50,12 +50,31 @@ struct CausabeeApp: App {
         opened = Result {
             let container = try MatterSchema.container(at: url, cloudKit: cloud.container)
             if cloud == .test { MainActor.assumeIsolated { CloudSync.seedTest(container.mainContext) } }
+            #if DEBUG
+            // `--tick-test-task <seconds>`: after that long, one open task of a "Test:" matter is ticked —
+            // a change made here, for watching it arrive in another Causabee on the same test container.
+            if let flag = CommandLine.arguments.firstIndex(of: "--tick-test-task"), flag + 1 < CommandLine.arguments.count,
+               let seconds = Double(CommandLine.arguments[flag + 1]) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+                    let context = container.mainContext
+                    let todos = (try? context.fetch(FetchDescriptor<Todo>())) ?? []
+                    if let todo = todos.first(where: { !$0.isDone && ($0.matter?.name.hasPrefix("Test:") ?? false) }) {
+                        todo.isDone = true
+                        try? context.save()
+                        fputs("Ticked: \(todo.text)\n", stderr)
+                    } else {
+                        fputs("Ticked: nothing open in a Test matter\n", stderr)
+                    }
+                }
+            }
+            #endif
             if DemoData.isRequested { MainActor.assumeIsolated { Calendars.shared.isSealed = true; DemoData.seed(container.mainContext) } }
             // Files taken in before they were kept as files of their matter.
             MainActor.assumeIsolated { _ = try? MatterImport.addDroppedFiles(to: container.mainContext) }
             // This Mac's list of names, for the iPhone to ask with: now, and whenever Causabee
             // goes to the background or quits — by then new mail may have taught it new names.
             MainActor.assumeIsolated { NameListPublisher.start(container.mainContext) }
+            MainActor.assumeIsolated { StoredChanges.shared.watch(container.mainContext) }
             return container
         }
         CloudSync.shared.watch()
@@ -565,7 +584,7 @@ struct RootView: View {
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
-        let _ = CloudSync.shared.lastImport
+        let _ = StoredChanges.shared.count
         let sorted = sidebarOrder()
         // The whole window is Causabee's: nothing of the Mac's bar is seen. Its three buttons sit in
         // the middle of a 52-point top line (WindowChrome), the sidebar's button right of them.
@@ -718,7 +737,7 @@ struct MatterRow: View {
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
-        let _ = CloudSync.shared.lastImport
+        let _ = StoredChanges.shared.count
         let status = MatterStatus(matter)
         HStack(spacing: 9) {
         MatterIconTile(matter: matter, size: 26)

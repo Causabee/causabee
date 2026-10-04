@@ -13,7 +13,7 @@ struct PhoneWeek: View {
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
-        let _ = PhoneCloudStatus.shared.lastImport
+        let _ = StoredChanges.shared.count
         let days = Week.days()
         let today = days[0]
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today

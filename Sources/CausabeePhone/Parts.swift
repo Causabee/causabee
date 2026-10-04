@@ -104,7 +104,7 @@ struct PhoneMatterCard: View {
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
-        let _ = PhoneCloudStatus.shared.lastImport
+        let _ = StoredChanges.shared.count
         let status = MatterStatus(matter)
         VStack(alignment: .leading, spacing: 8) {
             BeeChip(text: Self.line(mine: status.open(.me).count, ours: status.open(.we).count, waiting: status.open(.other).count))

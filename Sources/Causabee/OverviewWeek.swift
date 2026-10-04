@@ -15,7 +15,7 @@ struct OverviewWeek: View {
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
-        let _ = CloudSync.shared.lastImport
+        let _ = StoredChanges.shared.count
         let days = Week.days()
         let today = days[0]
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today
@@ -222,7 +222,7 @@ struct OverviewRows: View {
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
-        let _ = CloudSync.shared.lastImport
+        let _ = StoredChanges.shared.count
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: 8, alignment: .top)], alignment: .leading, spacing: 8) {
             ForEach(matters) { matter in
                 Button { navigation.open(matter) } label: {

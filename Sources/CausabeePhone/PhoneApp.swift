@@ -60,6 +60,7 @@ final class PhoneStore {
             // The demo's made-up dates never go into the owner's calendars.
             Calendars.shared.isSealed = DemoData.isRequested
             if DemoData.isRequested { DemoData.seed(container.mainContext) }
+            StoredChanges.shared.watch(container.mainContext)
             return container
         })
     }

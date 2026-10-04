@@ -1,3 +1,4 @@
+import CoreData
 import MatterCore
 import SwiftData
 import SwiftUI
@@ -156,5 +157,49 @@ struct ModelChoiceSync: ViewModifier {
         guard !DemoData.isRequested, !id.isEmpty, let profile = profiles.first, profile[keyPath: field] != id else { return }
         profile[keyPath: field] = id
         try? context.save()
+    }
+}
+
+/// Counts up whenever the store was written to — here, or by iCloud bringing in what another device
+/// changed. The pages read it, so they are drawn again with what is true now. iCloud says "imported"
+/// before the app's own context has taken the change in, so the count goes up when the store itself
+/// reports a write, and again a moment later.
+@MainActor
+@Observable
+final class StoredChanges {
+    static let shared = StoredChanges()
+    private(set) var count = 0
+    /// The app's context, for the debug build's report of what it sees.
+    @ObservationIgnored var context: ModelContext?
+    @ObservationIgnored private var watching = false
+    @ObservationIgnored private var pending = false
+
+    func watch(_ context: ModelContext) {
+        self.context = context
+        guard !watching else { return }
+        watching = true
+        NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { StoredChanges.shared.changed() }
+        }
+    }
+
+    /// One write is many notices: they are gathered, and the pages redrawn a few times after — tested
+    /// with two Causabees on the test container, the context had another device's tick about four
+    /// seconds after the store reported the write, not at once.
+    private func changed() {
+        guard !pending else { return }
+        pending = true
+        for delay in [0.5, 2, 4, 8, 15] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                if delay == 2 { self.pending = false }
+                self.count += 1
+                #if DEBUG
+                if CommandLine.arguments.contains("--report-changes"), let context = self.context {
+                    let todos = (try? context.fetch(FetchDescriptor<Todo>())) ?? []
+                    fputs("StoredChanges \(self.count): \(todos.filter(\.isDone).count) of \(todos.count) tasks done\n", stderr)
+                }
+                #endif
+            }
+        }
     }
 }
