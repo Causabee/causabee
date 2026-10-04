@@ -862,10 +862,12 @@ struct MatterStatusView: View {
                     // The assistant's column was put away: its bee brings it back.
                     if navigation.assistantHidden {
                         Button { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } } label: {
-                            BeeMark(size: 15).foregroundStyle(.black)
-                                .frame(width: 28, height: 28).background(Theme.bee, in: Circle()).contentShape(Circle())
+                            BeeMark(size: 11).foregroundStyle(.black)
+                                .frame(width: 24, height: 24).background(Theme.bee, in: Circle()).contentShape(Circle())
                         }
                         .buttonStyle(.plain)
+                        // On the line of the magnifier and "Close": the row is set by its words' baseline.
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 7 }
                         .help("Ask Causabee about this matter")
                         .accessibilityLabel("Ask Causabee")
                     }
