@@ -72,10 +72,14 @@ struct MatterScreen: View {
                     } else {
                         parts(status)
                             .id("parts")
+                            // Under the bar the pinned ones stand for them: these do not show through it.
+                            .opacity(partsUnder ? 0 : 1)
                             // Gone up under the bar: then they stay at hand, pinned under it.
                             .onGeometryChange(for: Bool.self) { $0.frame(in: .global).minY < topInset } action: { under in
                                 withAnimation(.easeOut(duration: 0.15)) { partsUnder = under }
                             }
+                        // Where a part begins: a part chosen from the pinned tabs is shown from here.
+                        Color.clear.frame(height: 0).id("part")
                         // At least as tall as the page shows: a short part does not pull the page
                         // down, and the parts stay where they were tapped.
                         VStack(alignment: .leading, spacing: 20) {
@@ -91,7 +95,7 @@ struct MatterScreen: View {
                                 notesPart
                             }
                         }
-                        .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 140), alignment: .topLeading)
+                        .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 120), alignment: .topLeading)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -111,7 +115,10 @@ struct MatterScreen: View {
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentInsets.top } action: { topInset = $1 }
             // Another part chosen from the pinned tabs: it is shown from its start, not from where the last one was read.
-            .onChange(of: part) { if partsUnder { scroller.scrollTo("parts", anchor: .top) } }
+            .onChange(of: part) {
+                // Right under the pinned tabs, which stay: the part's start at their lower edge.
+                if partsUnder { scroller.scrollTo("part", anchor: UnitPoint(x: 0.5, y: 44 / max(pageHeight, 200))) }
+            }
             // Over the page, not in it: the page keeps its place when they come and go.
             .overlay(alignment: .top) {
                 if partsUnder, !find.isActive {

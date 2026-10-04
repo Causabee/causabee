@@ -96,6 +96,8 @@ struct MatterStatusView: View {
                             history(status)
                         } else {
                             parts(status).id("parts")
+                                // Under the title bar the bar has them: these do not show through its glass.
+                                .opacity(partsUnder ? 0 : 1)
                                 // Its lower edge, to know when it has gone under the title bar.
                                 .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { partsEdge = $0 }
                             // At least as tall as the page shows: a short part does not pull the
