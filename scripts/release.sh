@@ -146,7 +146,13 @@ disk_image
 step "Notarizing the disk image"
 notarize "$DMG" "the disk image"
 xcrun stapler staple -q "$DMG"
-spctl -a -t open --context context:primary-signature -vv "$DMG" 2>&1 | grep -q "Notarized Developer ID" || fail "Gatekeeper does not see the disk image as notarized."
+# Gatekeeper may need a moment to see a ticket just stapled: asked again a few times before giving up.
+seen=false
+for _ in {1..6}; do
+  if spctl -a -t open --context context:primary-signature -vv "$DMG" 2>&1 | grep -q "Notarized Developer ID"; then seen=true; break; fi
+  sleep 5
+done
+$seen || fail "Gatekeeper does not see the disk image as notarized."
 SHA=$(shasum -a 256 "$DMG" | cut -d' ' -f1)
 
 { sed -e "s|{{FILE}}|$DMG_NAME|g" -e "s|{{ZIP}}|$DMG_NAME|g" "${NOTES:-scripts/release-notes.md}"; print "\nSHA-256 of the disk image: \`$SHA\`"; } > "$OUT/notes.md"
