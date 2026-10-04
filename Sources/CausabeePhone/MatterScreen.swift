@@ -294,7 +294,7 @@ struct MatterScreen: View {
     }
 
     private func meta(_ status: MatterStatus) -> String {
-        let mails = (matter.entries ?? []).count
+        let mails = status.mailEntries.count
         var parts = ["\(mails) \(mails == 1 ? "mail" : "mails")"]
         if let first = status.firstDate { parts.append("since \(Dates.short(first))") }
         return parts.joined(separator: " · ")

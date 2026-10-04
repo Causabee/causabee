@@ -156,15 +156,17 @@ struct FilesSection: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(document.shownName).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(2)
                             // With a name of its own, the file's name is still there to see, small.
-                            Text(document.isOwnFile
+                            // "scanned" in the same line, not beside the name: the name and what it says keep the row's width.
+                            (Text(document.isOwnFile
                                  ? (document.source.fileURL != nil ? "on this iPhone, in Files › Causabee" : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder" : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
                                     : "added on \(document.source.addedOn) · not in the matter's folder yet")
                                  : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
                                     ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
                                     .compactMap { $0 }.joined(separator: " · "))
+                             + Text(document.readAt.map { " · scanned \(Dates.short($0))" } ?? "").foregroundStyle(Theme.done))
                                 .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                             if let says = document.says {
-                                Text(says).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.leading).lineLimit(4).padding(.top, 2)
+                                Text(says).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.leading).lineLimit(3).padding(.top, 2)
                             }
                         }
                         Spacer(minLength: 0)
@@ -174,10 +176,6 @@ struct FilesSection: View {
                 .buttonStyle(.plain)
                 .disabled(document.isOwnFile && document.source.fileURL == nil && MatterFolders.kept(document) == nil)
                 if state[id]?.hasPrefix("Getting") == true { ProgressView() }
-                if let read = document.readAt {
-                    Label("scanned \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
-                        .labelStyle(.titleOnly)
-                }
                 // A tap on the row opens the file; scanning and the rest are in ⋯.
                 Menu { items(document) } label: {
                     Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
