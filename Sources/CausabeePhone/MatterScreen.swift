@@ -80,8 +80,6 @@ struct MatterScreen: View {
                             .onGeometryChange(for: Bool.self) { $0.frame(in: .global).minY < topInset } action: { under in
                                 withAnimation(.easeOut(duration: 0.15)) { partsUnder = under }
                             }
-                        // Where a part begins: a part chosen from the pinned tabs is shown from here.
-                        Color.clear.frame(height: 0).id("part")
                         // At least as tall as the page shows: a short part does not pull the page
                         // down, and the parts stay where they were tapped.
                         VStack(alignment: .leading, spacing: 20) {
@@ -98,6 +96,8 @@ struct MatterScreen: View {
                             }
                         }
                         .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 120), alignment: .topLeading)
+                        // Where a part begins: a part chosen from the pinned tabs is shown from here.
+                        .id("part")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -551,11 +551,17 @@ struct MatterScreen: View {
                         origin: "you#" + UUID().uuidString)
         context.insert(todo)
         todo.matter = matter
+        // Saved before its sheet opens: a model's identity changes with its first save, and a sheet
+        // whose item changes identity is closed and opened again — which dropped the empty task
+        // under the editor, so what was typed into it was lost.
+        try? context.save()
         newTodo = todo
     }
 
     /// A task closed without words was never there.
     private func dropEmptyTodos() {
+        // Only once the sheet is really gone: never under an editor that is open.
+        guard newTodo == nil else { return }
         for todo in matter.todos ?? [] where todo.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             context.delete(todo)
         }
