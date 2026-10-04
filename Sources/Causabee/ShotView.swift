@@ -104,13 +104,20 @@ struct ShotView: View {
         switch shot.file.pathExtension.lowercased() {
         case "eml", "emlx": "Mail"
         case "pdf": "Document"
-        default: "Screenshot"
+        default:
+            // A phone's screen is a screenshot; a photographed letter or a scan is a picture of a page.
+            switch shot.stage {
+            case .read(let look), .sending(let look), .answered(let look, _): look.byline.hasPrefix("Photo") ? "Photo or scan" : "Screenshot"
+            default: "Picture"
+            }
         }
     }
 
     @ViewBuilder
     private func read(_ look: ScreenshotDoor.Look) -> some View {
-        if look.kind == .chat { readChat(look) } else { readFile(look) }
+        // A photographed letter or a screen of text is a picture, but no chat: it has no messages to
+        // count, and is shown as a file is.
+        if look.kind == .chat, !look.transcript.messages.isEmpty { readChat(look) } else { readFile(look) }
     }
 
     /// A mail or a PDF: what it is, from whom or how many pages, and a page that could not be read.

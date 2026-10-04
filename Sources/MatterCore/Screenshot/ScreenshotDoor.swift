@@ -102,6 +102,7 @@ public struct ScreenshotDoor: Sendable {
         var transcript = ChatTranscript(title: nil, subtitle: nil, messages: [], leftOut: [], notes: [])
         var notes: [String] = []
         var picture: (heading: String, body: String)?
+        var phoneShaped = false
         let email: Email
         switch file.pathExtension.lowercased() {
         case "eml", "emlx":
@@ -118,7 +119,7 @@ public struct ScreenshotDoor: Sendable {
             kind = .chat
             let (lines, size) = try ScreenText.lines(in: file)
             transcript = ChatReader.read(lines)
-            let phoneShaped = size.width > 0 && size.height / size.width >= 1.7
+            phoneShaped = size.width > 0 && size.height / size.width >= 1.7
             if !Self.looksLikeChat(lines, size: size) || transcript.messages.isEmpty, let text = Self.pictureText(lines) {
                 // Not a chat — a note, a portal page, a letter on screen: its words as they stand,
                 // under an id of their own, so an earlier reading as an empty chat is not reused.
@@ -148,7 +149,7 @@ public struct ScreenshotDoor: Sendable {
         let when = email.date.map { MatterStatus.day($0) } ?? ""
         let pages = max(notes.count, email.body.components(separatedBy: "— Seite ").count - 1)
         let byline = switch kind {
-        case .chat: picture != nil ? "Screenshot · text" : (transcript.subtitle ?? "Chat")
+        case .chat: picture != nil ? (phoneShaped ? "Screenshot · text" : "Photo · text read on this device") : (transcript.subtitle ?? "Chat")
         case .mail: [Email.displayName(in: email.from) ?? email.fromAddress, when].filter { !$0.isEmpty }.joined(separator: " · ")
         case .document: pages == 1 ? "PDF · 1 page" : "PDF · \(pages) pages"
         }
