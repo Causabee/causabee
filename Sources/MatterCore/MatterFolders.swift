@@ -28,12 +28,26 @@ public enum MatterFolders {
     public static var picked: URL?
     public static var root: URL? { rootForTests ?? chosen ?? picked ?? drive?.appendingPathComponent("Causabee", isDirectory: true) }
 
-    /// In iCloud Drive a file that is not on this device yet is there under its name, without its
-    /// content, or — on older systems — as ".name.icloud".
+    /// What a folder holds, by name — asked of the folder itself, not of each path: in iCloud Drive
+    /// on the iPhone a file that was never opened here is not at its path yet, but the folder lists
+    /// it, under its name or — on older systems — as ".name.icloud". Names are compared composed, as
+    /// one device may write "ä" as one sign and the other as two. Remembered for a few seconds.
+    private static var listings: [String: (at: Date, names: [String: String])] = [:]
+    public static func names(in folder: URL) -> [String: String] {
+        if let known = listings[folder.path], Date().timeIntervalSince(known.at) < 5 { return known.names }
+        var names: [String: String] = [:]
+        for raw in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] {
+            var name = raw
+            if name.hasPrefix("."), name.hasSuffix(".icloud") { name = String(name.dropFirst().dropLast(".icloud".count)) }
+            names[name.precomposedStringWithCanonicalMapping] = raw
+        }
+        listings[folder.path] = (Date(), names)
+        return names
+    }
+
     static func isThere(_ url: URL) -> Bool {
-        let files = FileManager.default
-        return files.fileExists(atPath: url.path)
-            || files.fileExists(atPath: url.deletingLastPathComponent().appendingPathComponent("." + url.lastPathComponent + ".icloud").path)
+        names(in: url.deletingLastPathComponent())[url.lastPathComponent.precomposedStringWithCanonicalMapping] != nil
+            || FileManager.default.fileExists(atPath: url.path)
     }
 
     /// A file of the matter in its folder, whichever device put it there. Nil when there is no
@@ -42,9 +56,15 @@ public enum MatterFolders {
         guard let root, let matter = document.matter else { return nil }
         // The folder picked may be iCloud Drive itself, one above "Causabee": looked for there too.
         for base in [root, root.appendingPathComponent("Causabee", isDirectory: true)] {
+            let folders = names(in: base)
             for name in Set([matter.folderName, safe(matter.name)].compactMap { $0 }) {
-                let url = place(for: document, in: base.appendingPathComponent(name, isDirectory: true))
-                if isThere(url) { return url }
+                // The folder under the name it really has there, however its letters are composed.
+                guard let real = folders[name.precomposedStringWithCanonicalMapping] else { continue }
+                let folder = base.appendingPathComponent(real, isDirectory: true)
+                let wanted = place(for: document, in: folder).lastPathComponent.precomposedStringWithCanonicalMapping
+                guard let file = names(in: folder)[wanted] else { continue }
+                // A placeholder stands for the file of the name without its dot and ".icloud".
+                return folder.appendingPathComponent(file.hasPrefix(".") && file.hasSuffix(".icloud") ? String(file.dropFirst().dropLast(".icloud".count)) : file)
             }
         }
         return nil
@@ -57,11 +77,13 @@ public enum MatterFolders {
         guard let matter = document.matter, let folder = folder(for: matter) else { return nil }
         let target = place(for: document, in: folder)
         if isThere(target) { return target }
+        listings.removeAll()
         var failure: NSError?
         var done = false
         NSFileCoordinator().coordinate(writingItemAt: target, options: .forReplacing, error: &failure) { url in
             done = (try? FileManager.default.copyItem(at: file, to: url)) != nil
         }
+        listings.removeAll()
         return done ? target : nil
     }
 

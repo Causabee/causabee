@@ -52,6 +52,15 @@ struct FolderSetting: View {
                 }
             if name != nil { Button("Use none", role: .destructive) { PhoneFolder.forget(); name = nil } }
             if let failure { Text(failure).font(.footnote).foregroundStyle(Theme.warning) }
+            // Seen at once whether it is the right folder: the matters' folders in it, counted.
+            if let root = MatterFolders.picked, name != nil {
+                let inside = MatterFolders.names(in: root).keys.filter { !$0.hasPrefix(".") }
+                let nested = inside.contains("Causabee")
+                Text(inside.isEmpty ? "Nothing can be seen in this folder — it is empty, or iCloud Drive has not loaded it yet. Open it once in the Files app."
+                     : nested ? "This is the folder above “Causabee”: its matters' folders are found inside it."
+                     : "\(inside.count) \(inside.count == 1 ? "folder or file" : "folders and files") in it, such as “\(inside.sorted().first ?? "")”.")
+                    .font(.footnote).foregroundStyle(inside.isEmpty ? Theme.warning : Color.secondary)
+            }
             Text("Choose iCloud Drive › Causabee — the folder your Mac keeps a folder per matter in. Then a letter photographed here opens on the Mac, and the Mac's files open here. The files are in your own iCloud Drive; Causabee has no server.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
