@@ -58,8 +58,8 @@ struct MatterStatusView: View {
     /// The record, whole or one kind of it.
     enum RecordFilter: String { case all, mail, files, details, links }
     // `--demo --shot lisbon-files`: the picture of the files is of the record's files.
-    @State private var part: Part = IntroShot.current == .lisbonFiles ? .record : .todo
-    @State private var filter: RecordFilter = IntroShot.current == .lisbonFiles ? .files : .all
+    @State private var part: Part = [.lisbonFiles, .careDetails].contains(IntroShot.current) ? .record : [.carePeople, .careContact].contains(IntroShot.current) ? .people : .todo
+    @State private var filter: RecordFilter = IntroShot.current == .lisbonFiles ? .files : IntroShot.current == .careDetails ? .details : .all
     /// One person's part of the record: chosen in "People".
     @State private var person: PersistentIdentifier?
     /// ⌘F on this page.
@@ -67,7 +67,7 @@ struct MatterStatusView: View {
     /// The page has gone up under the title bar: the bar turns to glass, with a line under it.
     @State private var scrolledUnder = false
     @State private var choosingIcon = false
-    @State private var addingContact = false
+    @State private var addingContact = IntroShot.current == .careContact
     @State private var addingDetail = false
     /// The parts in the page have scrolled under the title bar, which shows them then.
     @State private var partsUnder = false

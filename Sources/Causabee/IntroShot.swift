@@ -15,6 +15,11 @@ enum IntroShot: String {
     case care
     /// Not in the introduction: a task's popover open, for checking its design.
     case lisbonEdit = "lisbon-edit"
+    /// Not in the introduction either: the vault — a contact added by hand in People, the details
+    /// on top of the Record, and the contact's editor — for checking them on the Mac.
+    case carePeople = "care-people"
+    case careDetails = "care-details"
+    case careContact = "care-contact"
 
     nonisolated static let current: IntroShot? = {
         let arguments = CommandLine.arguments
@@ -30,7 +35,7 @@ enum IntroShot: String {
         switch self {
         case .overview: nil
         case .lisbon, .lisbonTasks, .lisbonFiles, .lisbonEdit: "Lisbon"
-        case .care: "Care for Mum"
+        case .care, .carePeople, .careDetails, .careContact: "Care for Mum"
         }
     }
 
@@ -57,6 +62,11 @@ enum IntroShot: String {
         // is its own and gone after it.
         if self == .overview { matters.first { $0.name.hasPrefix("Care for Mum") }?.pinnedAt = Date() }
         guard let name = matter, let open = matters.first(where: { $0.name.hasPrefix(name) }) else { return }
+        if [.carePeople, .careDetails, .careContact].contains(self), let context = open.modelContext {
+            let hkk = open.addContact(name: "HKK", role: "Insurer", address: "reha@hkk.example", phone: "0421 3655 0", in: context)
+            open.addDetail(label: "Versichertennummer", value: "A 123 456 789", of: hkk, in: context)
+            open.addDetail(label: "Ward and room", value: "3B, room 214", in: context)
+        }
         let shown = todo.flatMap { start in (open.todos ?? []).first { $0.text.hasPrefix(start) }?.persistentModelID }
         navigation.open(open, showing: shown)
     }
