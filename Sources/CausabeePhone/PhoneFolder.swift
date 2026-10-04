@@ -11,7 +11,10 @@ enum PhoneFolder {
 
     /// At the start: the folder picked before, opened again for this run.
     static func restore() {
-        guard !DemoData.isRequested, let data = UserDefaults.standard.data(forKey: key) else { return }
+        guard !DemoData.isRequested else { return }
+        // Causabee's own folder in iCloud Drive needs no picking; one picked earlier stays as the way in without it.
+        Task { await MatterFolders.useContainer() }
+        guard let data = UserDefaults.standard.data(forKey: key) else { return }
         var stale = false
         guard let url = try? URL(resolvingBookmarkData: data, bookmarkDataIsStale: &stale), url.startAccessingSecurityScopedResource() else { return }
         MatterFolders.picked = url
@@ -43,6 +46,10 @@ struct FolderSetting: View {
     var body: some View {
         if DemoData.isRequested {
             Text("In the demo, files stay in the demo.").font(.footnote).foregroundStyle(.secondary)
+        } else if MatterFolders.container != nil {
+            LabeledContent("Folder", value: "iCloud Drive › Causabee")
+            Text("Causabee's own folder in your iCloud Drive, with a folder per matter — the same on your Mac and here. A letter photographed here opens on the Mac, and the Mac's files open here. Causabee has no server.")
+                .font(.footnote).foregroundStyle(.secondary)
         } else {
             LabeledContent("Folder", value: name ?? "None")
             Button(name == nil ? "Choose a folder …" : "Choose another …") { picks = true }
@@ -61,7 +68,7 @@ struct FolderSetting: View {
                      : "\(inside.count) \(inside.count == 1 ? "folder or file" : "folders and files") in it, such as “\(inside.sorted().first ?? "")”.")
                     .font(.footnote).foregroundStyle(inside.isEmpty ? Theme.warning : Color.secondary)
             }
-            Text("Choose iCloud Drive › Causabee — the folder your Mac keeps a folder per matter in. Then a letter photographed here opens on the Mac, and the Mac's files open here. The files are in your own iCloud Drive; Causabee has no server.")
+            Text("iCloud Drive is off for Causabee on this iPhone, so its own folder is not found. Switch it on in the iPhone's Settings › your name › iCloud › Drive — or choose a folder here. Then a letter photographed here opens on the Mac, and the Mac's files open here. The files are in your own iCloud Drive; Causabee has no server.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }

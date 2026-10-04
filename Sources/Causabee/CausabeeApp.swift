@@ -27,6 +27,12 @@ struct CausabeeApp: App {
                 exit(1)
             }
         }
+        // `--files-folder`: where Causabee's own folder in iCloud Drive is on this Mac — looked up, nothing moved.
+        if CommandLine.arguments.contains("--files-folder") {
+            let base = FileManager.default.url(forUbiquityContainerIdentifier: MatterFolders.containerID)
+            print(base.map { "✓ \($0.appendingPathComponent("Documents").path)" } ?? "✗ No folder of Causabee's own: iCloud Drive is off, or this build may not use it.")
+            exit(base == nil ? 1 : 0)
+        }
         // Once, moving the owner's matters from Development to Production: a copy iCloud has not seen.
         if let flag = CommandLine.arguments.firstIndex(of: "--fresh-cloud-copy"), flag + 2 < CommandLine.arguments.count {
             let from = URL(fileURLWithPath: CommandLine.arguments[flag + 1]), to = URL(fileURLWithPath: CommandLine.arguments[flag + 2])
@@ -47,6 +53,8 @@ struct CausabeeApp: App {
         FromMatterbee.store(at: url)
         storeURL = url
         let cloud = CloudSync.mode
+        // Causabee's own folder in iCloud Drive, for the matters' files — not for the demo or the test container.
+        if !DemoData.isRequested, cloud != .test { Task { @MainActor in await MatterFolders.useContainer() } }
         opened = Result {
             let container = try MatterSchema.container(at: url, cloudKit: cloud.container)
             if cloud == .test { MainActor.assumeIsolated { CloudSync.seedTest(container.mainContext) } }

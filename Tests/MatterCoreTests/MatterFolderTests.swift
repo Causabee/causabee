@@ -69,4 +69,26 @@ struct MatterFolderTests {
         let opened = try await MatterFolders.fetched(target)
         #expect(try Data(contentsOf: opened) == Data("photo".utf8))
     }
+
+    @Test("The earlier folder's matters come along into Causabee's own; nothing there is overwritten, and the empty old folder goes")
+    func broughtAlong() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent("move-\(UUID())", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let old = base.appendingPathComponent("old"), new = base.appendingPathComponent("new")
+        for folder in ["old/Reha Mama", "old/Steuer", "new/Reha Mama"] {
+            try FileManager.default.createDirectory(at: base.appendingPathComponent(folder), withIntermediateDirectories: true)
+        }
+        try Data("mac".utf8).write(to: old.appendingPathComponent("Reha Mama/Brief.pdf"))
+        try Data("old".utf8).write(to: old.appendingPathComponent("Reha Mama/Foto.png"))
+        try Data("phone".utf8).write(to: new.appendingPathComponent("Reha Mama/Foto.png"))
+        try Data("tax".utf8).write(to: old.appendingPathComponent("Steuer/Bescheid.pdf"))
+
+        MatterFolders.bringAlong(from: old, to: new)
+        #expect(try Data(contentsOf: new.appendingPathComponent("Reha Mama/Brief.pdf")) == Data("mac".utf8))
+        #expect(try Data(contentsOf: new.appendingPathComponent("Reha Mama/Foto.png")) == Data("phone".utf8))
+        #expect(try Data(contentsOf: new.appendingPathComponent("Steuer/Bescheid.pdf")) == Data("tax".utf8))
+        // The one file that could not move without overwriting is still where it was.
+        #expect(try Data(contentsOf: old.appendingPathComponent("Reha Mama/Foto.png")) == Data("old".utf8))
+        #expect(!FileManager.default.fileExists(atPath: old.appendingPathComponent("Steuer").path))
+    }
 }

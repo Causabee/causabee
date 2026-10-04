@@ -440,6 +440,7 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Causabee-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";
@@ -469,6 +470,7 @@
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Causabee-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";

@@ -26,7 +26,52 @@ public enum MatterFolders {
     /// The folder picked in Files on the iPhone — iCloud Drive's "Causabee", the Mac's own — and
     /// held open by the app for as long as it runs.
     public static var picked: URL?
-    public static var root: URL? { rootForTests ?? chosen ?? picked ?? drive?.appendingPathComponent("Causabee", isDirectory: true) }
+    /// Causabee's own folder in iCloud Drive — "Causabee", with the app's icon — which the Mac and
+    /// the iPhone both find without being shown: nil while iCloud Drive is off, or not looked up yet.
+    public static var container: URL?
+    public nonisolated static let containerID = "iCloud.de.chille.causabee"
+    public static var root: URL? { rootForTests ?? chosen ?? container ?? picked ?? drive?.appendingPathComponent("Causabee", isDirectory: true) }
+
+    /// At the start, once: finds Causabee's own folder — asked off the main thread, as Apple says to
+    /// — and on the Mac brings along what the earlier folder, iCloud Drive › Causabee, holds.
+    public static func useContainer() async {
+        let found = await Task.detached { () -> URL? in
+            guard let base = FileManager.default.url(forUbiquityContainerIdentifier: containerID) else { return nil }
+            let documents = base.appendingPathComponent("Documents", isDirectory: true)
+            try? FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
+            return documents
+        }.value
+        guard let found else { return }
+        #if os(macOS)
+        if chosen == nil, let old = drive?.appendingPathComponent("Causabee", isDirectory: true) {
+            await Task.detached { bringAlong(from: old, to: found) }.value
+        }
+        #endif
+        container = found
+        listings.removeAll()
+    }
+
+    /// Everything of the earlier folder into the new one: a matter's folder as a whole when the new
+    /// one has none of its name, else its files one by one. Nothing is overwritten, and the earlier
+    /// folder goes only once it is empty.
+    nonisolated static func bringAlong(from old: URL, to new: URL) {
+        let files = FileManager.default
+        var isFolder: ObjCBool = false
+        guard files.fileExists(atPath: old.path, isDirectory: &isFolder), isFolder.boolValue,
+              old.standardizedFileURL != new.standardizedFileURL else { return }
+        for name in (try? files.contentsOfDirectory(atPath: old.path)) ?? [] where name != ".DS_Store" {
+            let from = old.appendingPathComponent(name), to = new.appendingPathComponent(name)
+            if !files.fileExists(atPath: to.path) { try? files.moveItem(at: from, to: to); continue }
+            var inner: ObjCBool = false
+            guard files.fileExists(atPath: from.path, isDirectory: &inner), inner.boolValue else { continue }
+            for file in (try? files.contentsOfDirectory(atPath: from.path)) ?? [] where file != ".DS_Store" {
+                let target = to.appendingPathComponent(file)
+                if !files.fileExists(atPath: target.path) { try? files.moveItem(at: from.appendingPathComponent(file), to: target) }
+            }
+            if ((try? files.contentsOfDirectory(atPath: from.path)) ?? []).allSatisfy({ $0 == ".DS_Store" }) { try? files.removeItem(at: from) }
+        }
+        if ((try? files.contentsOfDirectory(atPath: old.path)) ?? []).allSatisfy({ $0 == ".DS_Store" }) { try? files.removeItem(at: old) }
+    }
 
     /// What a folder holds, by name — asked of the folder itself, not of each path: in iCloud Drive
     /// on the iPhone a file that was never opened here is not at its path yet, but the folder lists
