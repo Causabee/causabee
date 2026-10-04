@@ -175,8 +175,8 @@ final class Navigation {
     /// The assistant beside the overview: asked for with its button there, about all matters.
     var assistantOnOverview = false
     /// The assistant's column put away while a matter is open; remembered.
-    var assistantHidden = UserDefaults.standard.bool(forKey: "assistant.hidden") {
-        didSet { UserDefaults.standard.set(assistantHidden, forKey: "assistant.hidden") }
+    var assistantHidden = IntroShot.current == nil && UserDefaults.standard.bool(forKey: "assistant.hidden") {
+        didSet { if IntroShot.current == nil { UserDefaults.standard.set(assistantHidden, forKey: "assistant.hidden") } }
     }
 
     /// Puts the assistant's column away, where the owner is.

@@ -57,8 +57,9 @@ struct MatterStatusView: View {
     enum Part: String { case todo, record, people, notes }
     /// The record, whole or one kind of it.
     enum RecordFilter: String { case all, mail, files, links }
-    @State private var part: Part = .todo
-    @State private var filter: RecordFilter = .all
+    // `--demo --shot lisbon-files`: the picture of the files is of the record's files.
+    @State private var part: Part = IntroShot.current == .lisbonFiles ? .record : .todo
+    @State private var filter: RecordFilter = IntroShot.current == .lisbonFiles ? .files : .all
     /// One person's part of the record: chosen in "People".
     @State private var person: PersistentIdentifier?
     /// ⌘F on this page.
