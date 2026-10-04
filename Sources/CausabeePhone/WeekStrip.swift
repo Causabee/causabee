@@ -118,9 +118,10 @@ struct PhoneWeek: View {
     }
 
     private func list(_ things: [DayThing]) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(things.enumerated()), id: \.offset) { index, thing in
-                if index > 0 { Divider().padding(.leading, 30) }
+        // Grey and without a line, each a tile of its own, as on the Mac: a task of the day, quieter
+        // than the matters' white cards.
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(things.enumerated()), id: \.offset) { _, thing in
                 Button { navigation.open(thing.matter, showing: thing.todo?.persistentModelID) } label: {
                     HStack(alignment: .top, spacing: 10) {
                         Circle().fill(Theme.bee).frame(width: 6, height: 6).padding(.top, 7)
@@ -133,12 +134,13 @@ struct PhoneWeek: View {
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 14).padding(.vertical, 10)
-                    .contentShape(Rectangle())
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+                    .contentShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .phoneCard()
     }
 
     /// A day without anything says so, and what comes next — a tap is never a dead end.
