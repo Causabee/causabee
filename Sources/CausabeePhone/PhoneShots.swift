@@ -32,6 +32,17 @@ final class PhoneShots {
         var document: PersistentIdentifier?
         var stage: Stage = .reading
         let date = Date()
+        /// How far it is, as a number: the thread follows its card down as it grows.
+        var step: Int {
+            switch stage {
+            case .reading: 0
+            case .read: 1
+            case .sending: 2
+            case .answered: 3
+            case .taken: 4
+            case .failed: 5
+            }
+        }
     }
 
     var shots: [Shot] = []
@@ -94,6 +105,12 @@ final class PhoneShots {
         guard let shot = shots.first(where: { $0.id == id }), case .read(let look) = shot.stage else { return }
         var door = ScreenshotDoor(besides: store, model: ModelChoice.mail)
         door.strict = ModelChoice.strict
+        // The demo sends nothing and has no key: its answer is made up, a task from the file's own words.
+        if DemoData.isRequested, var judgement = look.report.outcomes.first?.judgement {
+            judgement.todos = [.init(text: "Answer “\(look.heading)”", owner: .me, due: nil, sourceQuote: look.heading)]
+            set(id, .answered(look, judgement))
+            return
+        }
         guard let claude = ModelChoice.client(for: door.model) else {
             set(id, .failed(ModelChoice.missingKey(door.model)))
             return
@@ -148,6 +165,8 @@ final class PhoneShots {
                     if membership.roles.isEmpty { membership.roles = ["in the chat"] }
                 }
             }
+            // Who wrote and the numbers it is filed under, as far as the owner left them ticked.
+            taken?.take(look.offers(own: owner).keeping { !skipped.contains($0) }, in: context)
             if let document = shot.document.flatMap({ context.model(for: $0) as? MatterCore.Document }) { document.readAt = Date() }
             // A picture brought in here is a file of the matter now: named by what it is, read.
             for document in taken?.documents ?? [] where document.messageID == judgement.emailID {
@@ -220,7 +239,7 @@ struct PhoneShotCard: View {
                 HStack(spacing: 8) { BeeLoader(size: 15); Text("Sorting it in …").font(.subheadline).foregroundStyle(.secondary) }
             case .answered(let look, let judgement):
                 Text(look.heading).font(.headline).fixedSize(horizontal: false, vertical: true)
-                found(judgement)
+                found(judgement, look.offers(own: profiles.first?.names ?? []))
                 destination(judgement)
                 HStack(spacing: 10) {
                     Button("Not needed") { shots.remove(shot.id) }.buttonStyle(.phone)
@@ -261,12 +280,13 @@ struct PhoneShotCard: View {
 
     /// What the answer found: what will go into the matter.
     @ViewBuilder
-    private func found(_ judgement: Judgement) -> some View {
+    private func found(_ judgement: Judgement, _ offers: VaultOffers) -> some View {
         // Each with a tick, as on the Mac: untick what is not wanted. The file and its words are
         // kept with the matter either way.
         let lines: [(id: String, text: String)] = judgement.todos.enumerated().map { ("t\($0.offset)", $0.element.text) }
             + judgement.appointments.enumerated().map { ("a\($0.offset)", "\(Dates.short($0.element.date))\($0.element.time.map { " \($0)" } ?? "") \($0.element.what)") }
             + judgement.deadlines.enumerated().map { ("d\($0.offset)", "by \(Dates.short($0.element.date)) \($0.element.what)") }
+            + offers.lines
         if lines.isEmpty {
             Text("Nothing to do or to note in it — it is kept with the matter, with its words.").font(.subheadline).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -381,6 +401,7 @@ struct MatterPlusButton: View {
     let note: () -> Void
     let task: () -> Void
     @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
     @Query private var profiles: [Profile]
     @State private var picksPhoto = false
     @State private var picksFile = false
@@ -405,6 +426,12 @@ struct MatterPlusButton: View {
         .accessibilityLabel("Add to this matter")
         .accessibilityIdentifier("matter.plus")
         .padding(.trailing, 22)
+        // `--demo --shot letter`: a letter as the camera would bring it, for the regression test.
+        .task {
+            guard LetterShot.isRequested, !LetterShot.brought, let file = LetterShot.file() else { return }
+            LetterShot.brought = true
+            bring(file)
+        }
         .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
         .onChange(of: photo) {
             guard let photo else { return }
@@ -427,7 +454,47 @@ struct MatterPlusButton: View {
         }
     }
 
+    /// Into the assistant, where it is read and offers what it found: without it the photo was
+    /// taken and nothing was seen to happen.
     private func bring(_ file: URL) {
         PhoneShots.shared.bring(file, matter: matter.persistentModelID, context: context, owner: profiles.first?.names.first)
+        navigation.showsAssistant = true
+    }
+}
+
+/// Started as `--demo --shot letter`, a matter is handed a made-up insurer's letter as a picture:
+/// read by the same text recognition as a photographed one, so the test sees what the owner would.
+@MainActor
+enum LetterShot {
+    static var brought = false
+    static var isRequested: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot"), at + 1 < arguments.count else { return false }
+        return arguments[at + 1] == "letter"
+    }
+
+    static let words = """
+        hkk Krankenkasse
+        Martinistraße 26, 28195 Bremen
+        Telefon 0421 3655 0
+        reha@hkk.de
+
+        Versichertennummer: A123456789
+
+        Sehr geehrte Frau Muster,
+        bitte senden Sie uns den Befundbericht
+        bis zum 20.10.2026.
+        """
+
+    static func file() -> URL? {
+        let size = CGSize(width: 1240, height: 1754)
+        let image = UIGraphicsImageRenderer(size: size).image { canvas in
+            UIColor.white.setFill()
+            canvas.fill(CGRect(origin: .zero, size: size))
+            (words as NSString).draw(in: CGRect(x: 120, y: 140, width: 1000, height: 1400),
+                                     withAttributes: [.font: UIFont.systemFont(ofSize: 44), .foregroundColor: UIColor.black])
+        }
+        guard let data = image.pngData() else { return nil }
+        return PhoneShots.shared.keep(data, named: "Letter from the insurer.png")
     }
 }

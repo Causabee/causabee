@@ -17,6 +17,7 @@ struct ShotView: View {
     let open: (PersistentIdentifier) -> Void
     /// Reads the file again, after a dismissal: what was answered is in the record, and free.
     var bringBack: (() -> Void)? = nil
+    @Query private var profiles: [Profile]
     @State private var showsChat = true
     @State private var showsSent = false
     @State private var choice: PersistentIdentifier?
@@ -61,7 +62,7 @@ struct ShotView: View {
                 progress("Sending, pseudonymised …")
             case .answered(let look, let judgement):
                 read(look)
-                answered(judgement)
+                answered(judgement, look.offers(own: profiles.first?.names ?? []))
             case .taken(let name, let id):
                 HStack {
                     Label("Taken into “\(name)”", systemImage: "checkmark").foregroundStyle(Theme.done)
@@ -187,7 +188,7 @@ struct ShotView: View {
     // MARK: What it means
 
     @ViewBuilder
-    private func answered(_ judgement: Judgement) -> some View {
+    private func answered(_ judgement: Judgement, _ offers: VaultOffers) -> some View {
         // Taken in before: the matter it is in. Dropped while a matter was open: that one — the
         // owner put it there. Otherwise the one the model named, if it exists.
         let known = matters.first { ($0.entries ?? []).contains { $0.messageID == judgement.emailID } }
@@ -229,6 +230,10 @@ struct ShotView: View {
                          already: target.flatMap { Duplicates.deadline(on: item.date, item.what, in: $0) }.map(\.what))
                 }
             }
+            if !offers.isEmpty {
+                Text("Contact and details · \(offers.lines.count) — found on this Mac, not sent").font(.caption.weight(.semibold))
+                ForEach(offers.lines, id: \.id) { line in pick(line.id, line.text, already: nil) }
+            }
             if let digest = judgement.digest, !digest.isEmpty {
                 Text("What it says").font(.caption.weight(.semibold))
                 Text(digest).font(.callout).fixedSize(horizontal: false, vertical: true)
@@ -248,7 +253,7 @@ struct ShotView: View {
             }
             buttons(primary: "Take in") {
                 let all = Set(judgement.todos.indices.map { "t\($0)" } + judgement.appointments.indices.map { "a\($0)" }
-                              + judgement.deadlines.indices.map { "d\($0)" })
+                              + judgement.deadlines.indices.map { "d\($0)" } + offers.lines.map(\.id))
                 take(target, newName, all.subtracting(skipped))
             }
         }

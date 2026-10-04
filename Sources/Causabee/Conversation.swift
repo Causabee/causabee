@@ -212,6 +212,8 @@ struct Conversation {
             }
             // Its words kept on this Mac with it — a mail's, a chat's, a screen's, a PDF's — for the assistant.
             if let email = look.report.outcomes.first?.email { MailText.save(email, besides: navigation.store) }
+            // Who wrote and the numbers it is filed under, as far as the owner left them ticked.
+            taken?.take(look.offers(own: owner).keeping { keep?.contains($0) ?? true }, in: context)
             if let taken { try? context.save(); FolderSaver.shared.save([taken]) }
             // The people in a chat are its parties, whatever the model thought of the chat: read on
             // the device from who spoke and who the header names, the owner left out. Taking the

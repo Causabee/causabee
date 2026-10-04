@@ -162,7 +162,7 @@ public struct EntityDetector: Sendable {
         // Vorgang-Nr., Aktenzeichen, USt-IdNr. The number is what is replaced; the label stays,
         // so the model still knows what kind of number it was.
         .init(kind: .reference,
-              expression: #"(?i:\b(?:versicherungs|kunden|vorgangs?|vertrags|mitglieds|rechnungs|policen|referenz|buchungs|auftrags|schadens?|fall|patienten|akten|steuer|ust[\-. ]?id|mandanten|bestell|antrags)[\- ]?(?:nummer|nr\.?|zeichen)|\baz\.|\bust[\-. ]?id[\-. ]?nr\.?)\s*[:#.]?\s*((?:[A-Z0-9][A-Z0-9./\-]*)(?:\s[A-Z0-9][A-Z0-9./\-]*(?![a-zäöüß]))*)(?<=[A-Z0-9])"#,
+              expression: #"(?i:\b(?:versicherten|versicherungs|kunden|vorgangs?|vertrags|mitglieds|rechnungs|policen|referenz|buchungs|auftrags|schadens?|fall|patienten|akten|steuer|ust[\-. ]?id|mandanten|bestell|antrags)[\- ]?(?:nummer|nr\.?|zeichen)|\baz\.|\bust[\-. ]?id[\-. ]?nr\.?)\s*[:#.]?\s*((?:[A-Z0-9][A-Z0-9./\-]*)(?:\s[A-Z0-9][A-Z0-9./\-]*(?![a-zäöüß]))*)(?<=[A-Z0-9])"#,
               minimumDigits: 4, group: 1),
         // A code that is plainly an identifier with no label: letters in front of eight digits or
         // more — X8200001234567 — or ten digits and more in a row. No date or amount looks so.

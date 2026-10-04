@@ -132,7 +132,17 @@ struct AssistantSheet: View {
                         .transition(.opacity)
                     }
                 }
-                .onAppear { if let last = shown.last { scroller.scrollTo(last.turn.id, anchor: .bottom) } }
+                .onAppear {
+                    // A file just brought in is what the sheet was opened for: down to its card.
+                    let shots = PhoneShots.shared.shots.filter { matter == nil || $0.matter == nil || $0.matter == matter?.persistentModelID }
+                    if let shot = shots.last, Date().timeIntervalSince(shot.date) < 10 {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { withAnimation { scroller.scrollTo(shot.id, anchor: .bottom) } }
+                    } else if let last = shown.last { scroller.scrollTo(last.turn.id, anchor: .bottom) }
+                }
+                .onChange(of: PhoneShots.shared.shots.last?.step) {
+                    guard let last = PhoneShots.shared.shots.last else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { withAnimation { scroller.scrollTo(last.id, anchor: .bottom) } }
+                }
                 .onChange(of: PhoneShots.shared.shots.count) { if let last = PhoneShots.shared.shots.last { withAnimation { scroller.scrollTo(last.id, anchor: .bottom) } } }
                 // A question just asked is followed down, wherever the thread was.
                 .onChange(of: asking?.date) {

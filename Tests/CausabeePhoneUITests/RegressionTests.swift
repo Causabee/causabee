@@ -12,12 +12,28 @@ final class RegressionTests: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["--demo"]
+        // The letter test is handed a letter as the camera would bring it.
+        app.launchArguments = name.contains("Letter") ? ["--demo", "--shot", "letter"] : ["--demo"]
         app.launch()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
         matter.tap()
+        if name.contains("Letter") { return }
         XCTAssertTrue(app.buttons["matter.plus"].waitForExistence(timeout: 10), "The matter's page did not open.")
+    }
+
+    /// A photo brought in on a matter opens the assistant, is read, and offers what it found: its
+    /// task, who wrote, and the number it is filed under. Taken in, the contact is in People.
+    func testALetterOffersItsTaskContactAndDetail() {
+        let sort = app.buttons["Sort in"]
+        XCTAssertTrue(sort.waitForExistence(timeout: 30), "The letter was not read, or the assistant did not open with it.")
+        sort.tap()
+        shows("Contact: HKK", "The letter's sender was not offered as a contact.")
+        shows("reha@hkk.de", "The contact was offered without its address.")
+        shows("Versichertennummer: A123456789", "The membership number was not offered as a detail.")
+        shows("Answer", "The letter's task was not offered.")
+        app.buttons["Take in"].tap()
+        shows("Taken into", "The letter was not taken into the matter.")
     }
 
     private func tab(_ name: String) {

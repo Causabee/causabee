@@ -124,6 +124,15 @@ public struct Judgement: Codable, Sendable {
         public var id: String? = nil
         enum CodingKeys: String, CodingKey { case text, owner, due, id, sourceQuote = "source_quote", sameAs = "same_as" }
 
+        public init(text: String, owner: Owner, due: String? = nil, sourceQuote: String, sameAs: String? = nil, id: String? = nil) {
+            self.text = text
+            self.owner = owner
+            self.due = due
+            self.sourceQuote = sourceQuote
+            self.sameAs = sameAs
+            self.id = id
+        }
+
         public func encode(to encoder: any Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(text, forKey: .text)
