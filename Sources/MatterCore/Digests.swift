@@ -15,6 +15,11 @@ public enum MailText {
         return folder(besides: store).appendingPathComponent(name + ".txt")
     }
 
+    /// The kept words of one mail or file, gone: the assistant reads them no more.
+    public static func forget(_ messageID: String, besides store: URL) {
+        try? FileManager.default.removeItem(at: url(for: messageID, besides: store))
+    }
+
     public static func save(_ email: Email, besides store: URL) {
         guard !email.id.isEmpty else { return }
         var lines = ["From: \(email.from)"]

@@ -56,6 +56,7 @@ struct FilesSection: View {
     @State private var showsHidden = false
     @State private var showsSmallImages = false
     @State private var renaming: MatterCore.Document?
+    @State private var deleting: MatterCore.Document?
     @State private var newName = ""
 
     var body: some View {
@@ -112,6 +113,14 @@ struct FilesSection: View {
         .quickLookPreview($preview)
         .sheet(isPresented: $addsAccount) { MailAccountSheet() }
         .sheet(isPresented: $addsScan) { ScanSheet(matter: matter) }
+        .confirmationDialog(deleting.map { "Delete “\($0.shownName)”?" } ?? "", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+                            titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let document = deleting { withAnimation { _ = matter.forget(document, besides: PhoneCloud.storeLocation(), in: context); try? context.save() } }
+                deleting = nil
+            }
+            Button("Cancel", role: .cancel) { deleting = nil }
+        } message: { Text(deleting.map(Self.deleteWords) ?? "") }
         .alert("Rename file", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
             TextField("Name", text: $newName)
             Button("Save") {
@@ -193,6 +202,15 @@ struct FilesSection: View {
         .contextMenu { items(document) }
     }
 
+    /// What goes with it, said before it goes.
+    static func deleteWords(_ document: MatterCore.Document) -> String {
+        guard let matter = document.matter else { return "" }
+        let found = matter.brought(by: document)
+        let tasks = found.todos.count, dates = found.appointments.count + found.deadlines.count
+        let parts = [tasks == 0 ? nil : tasks == 1 ? "1 task" : "\(tasks) tasks", dates == 0 ? nil : dates == 1 ? "1 date" : "\(dates) dates"].compactMap { $0 }
+        return "Causabee forgets what it read in it" + (parts.isEmpty ? "" : ", and " + parts.joined(separator: " and ") + " only it brought") + ". The file itself stays where it is."
+    }
+
     @ViewBuilder
     private func items(_ document: MatterCore.Document) -> some View {
         if !document.isOwnFile || document.source.fileURL != nil || MatterFolders.kept(document) != nil { Button("Open", systemImage: "eye") { open(document) } }
@@ -206,6 +224,11 @@ struct FilesSection: View {
         Button(document.isHidden ? "Show again" : "Hide", systemImage: document.isHidden ? "eye" : "eye.slash") {
             withAnimation { document.isHidden.toggle() }
             try? context.save()
+        }
+        // One the owner brought in can go for good — an outdated letter; a mail's file would come back with its mail.
+        if document.isOwnFile {
+            Divider()
+            Button("Delete …", systemImage: "trash", role: .destructive) { deleting = document }
         }
     }
 

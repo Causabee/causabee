@@ -52,7 +52,9 @@ public enum AssistantPrompt {
     yet. `text` is what, `due` the day.
     - `add_detail`: a short fact to keep at hand — a membership number, a file number, a ward and \
     room, a customer number. `subject` is its label ("Versichertennummer"), `text` the value \
-    exactly as written, placeholder or not; `party` the id of the party it belongs to, or null.
+    exactly as written, placeholder or not; `party` the id of the party it belongs to, or null. \
+    When the owner says "detail", or gives a fact about a person or the matter rather than \
+    something to do — a date of birth, a number, an address — it is this card, never `add_note`.
     - `waits_for`: one to-do can only be done after another — the proof after the answer it \
     needs. `todo` is the id of the one that waits, `into` the id of the one it waits for. A to-do \
     that already waits says so in the facts ("can only be done after T3").

@@ -44,6 +44,28 @@ struct DroppedFilesTests {
         #expect(document.readAt != nil)
     }
 
+    @Test("Deleted, the letter is gone with what only it brought; what the owner added stays")
+    func forgotten() throws {
+        let file = try scan()
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        var judgement = try letter(at: file)
+        judgement.todos = [.init(text: "Schadensmeldung ausfüllen", owner: .me, due: "2026-10-10", sourceQuote: "Bitte füllen Sie aus")]
+        _ = try MatterImport.apply([judgement], to: context)
+        let matter = try #require(try context.fetch(FetchDescriptor<Matter>()).first)
+        matter.addDetail(label: "Schadennummer", value: "S-4711", in: context)
+        try context.save()
+        let document = try #require(matter.documents?.first)
+        #expect(matter.brought(by: document).todos.map(\.text) == ["Schadensmeldung ausfüllen"])
+
+        #expect(matter.forget(document, besides: nil, in: context))
+        try context.save()
+        #expect((matter.documents ?? []).isEmpty)
+        #expect((matter.entries ?? []).isEmpty)
+        #expect((matter.todos ?? []).isEmpty)
+        #expect(matter.sortedDetails.map(\.value) == ["S-4711"])
+        #expect(FileManager.default.fileExists(atPath: file.path))
+    }
+
     @Test("One taken in before files were kept is added when Causabee starts, and only once")
     func takenInBefore() throws {
         let file = try scan()

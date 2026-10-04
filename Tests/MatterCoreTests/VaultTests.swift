@@ -111,4 +111,11 @@ struct VaultOffersTests {
         #expect(matter.sortedDetails.map(\.value).sorted() == ["A123456789", "RH 4711/26"])
         #expect(matter.sortedDetails.allSatisfy { $0.party?.name == "HKK" })
     }
+
+    @Test("A date of birth is disguised by the word before it; a deadline's date is not")
+    func birth() {
+        let found = EntityDetector().ruleMatches(in: "Geburtsdatum Ulrike Chille, 11.11.1951. Bitte bis 20.10.2026 antworten.", field: .body)
+        #expect(found.contains { $0.kind == .reference && $0.text == "11.11.1951" })
+        #expect(!found.contains { $0.text.contains("20.10.2026") })
+    }
 }

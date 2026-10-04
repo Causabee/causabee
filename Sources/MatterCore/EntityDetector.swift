@@ -164,6 +164,11 @@ public struct EntityDetector: Sendable {
         .init(kind: .reference,
               expression: #"(?i:\b(?:versicherten|versicherungs|kunden|vorgangs?|vertrags|mitglieds|rechnungs|policen|referenz|buchungs|auftrags|schadens?|fall|patienten|akten|steuer|ust[\-. ]?id|mandanten|bestell|antrags)[\- ]?(?:nummer|nr\.?|zeichen)|\baz\.|\bust[\-. ]?id[\-. ]?nr\.?)\s*[:#.]?\s*((?:[A-Z0-9][A-Z0-9./\-]*)(?:\s[A-Z0-9][A-Z0-9./\-]*(?![a-zäöüß]))*)(?<=[A-Z0-9])"#,
               minimumDigits: 4, group: 1),
+        // A date of birth, found by the word before it — with a name in between, or not: "Geburtsdatum
+        // Ulrike Chille, 11.11.1951", "geb. 3.4.62". No other date is disguised: a deadline has to be read.
+        .init(kind: .reference,
+              expression: #"(?i:\b(?:geburtsdatum|geburtstag|geboren(?:\s+am)?|geb\.|date\s+of\s+birth|born(?:\s+on)?|dob))[^\d\n]{0,40}?(\d{1,2}\.\s?\d{1,2}\.\s?(?:\d{4}|\d{2})|\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{2,4})"#,
+              minimumDigits: 4, group: 1),
         // A code that is plainly an identifier with no label: letters in front of eight digits or
         // more — X8200001234567 — or ten digits and more in a row. No date or amount looks so.
         .init(kind: .reference, expression: #"\b[A-Z]{1,3}\d{8,}\b|\b\d{10,}\b"#),

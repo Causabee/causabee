@@ -303,6 +303,37 @@ extension Matter {
         try context.save()
     }
 
+    /// What a file the owner brought in — a scan, a photo, a PDF — brought with it alone: the tasks
+    /// and dates read out of it and out of nothing else.
+    public func brought(by document: Document) -> (todos: [Todo], appointments: [Appointment], deadlines: [Deadline]) {
+        let id = document.messageID
+        let only: ([Source]) -> Bool = { !$0.isEmpty && $0.allSatisfy { $0.messageID == id } }
+        return ((todos ?? []).filter { only($0.sources) || ($0.sources.isEmpty && $0.origin.hasPrefix(id + "#")) },
+                (appointments ?? []).filter { only($0.sources) }, (deadlines ?? []).filter { only($0.sources) })
+    }
+
+    /// A file the owner brought in is deleted, with what Causabee knew from it: its entry in the
+    /// record, its kept words, and the tasks, dates, decisions and links only it brought — one that
+    /// replaced it brings its own. A task a mail said too stays. Mail's files are not deleted: the
+    /// mail is still there, and would bring them again. The file itself is left where it lies.
+    /// False for a file that came with a mail.
+    @discardableResult
+    public func forget(_ document: Document, besides store: URL?, in context: ModelContext) -> Bool {
+        guard document.isOwnFile, document.matter === self else { return false }
+        let id = document.messageID
+        let only: ([Source]) -> Bool = { !$0.isEmpty && $0.allSatisfy { $0.messageID == id } }
+        let found = brought(by: document)
+        for item in found.todos { context.delete(item) }
+        for item in found.appointments { context.delete(item) }
+        for item in found.deadlines { context.delete(item) }
+        for item in decisions ?? [] where only(item.sources) { context.delete(item) }
+        for item in links ?? [] where item.messageID == id { context.delete(item) }
+        for entry in entries ?? [] where entry.messageID == id { context.delete(entry) }
+        for other in documents ?? [] where other.messageID == id { context.delete(other) }
+        if let store { MailText.forget(id, besides: store) }
+        return true
+    }
+
     /// Everything of `other` becomes this matter's, and `other` is gone. Its names are kept as
     /// aliases: the model will go on filing mail under `reisestornierungmutter`, and that mail
     /// has to arrive here.

@@ -2326,6 +2326,8 @@ struct DocumentRow: View {
     let talk: () -> Void
     @Environment(\.modelContext) private var context
     @State private var renaming = false
+    @State private var deleting = false
+    @Environment(Navigation.self) private var navigation
     @State private var newName = ""
 
     private var isPDF: Bool { document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf") }
@@ -2357,6 +2359,10 @@ struct DocumentRow: View {
             }
             MoreMenu { moreItems }
                 .popover(isPresented: $renaming, arrowEdge: .bottom) { renameField }
+                .confirmationDialog("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
+                    Button("Delete", role: .destructive, action: forget)
+                    Button("Cancel", role: .cancel) {}
+                } message: { Text(Self.deleteWords(document)) }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
@@ -2385,6 +2391,22 @@ struct DocumentRow: View {
         }
         Divider()
         Button(document.isHidden ? "Show again" : "Hide", action: hide)
+        // One the owner brought in can go for good — an outdated letter; a mail's file would come back with its mail.
+        if document.isOwnFile { Button("Delete …", role: .destructive) { deleting = true } }
+    }
+
+    /// What goes with it, said before it goes.
+    static func deleteWords(_ document: MatterCore.Document) -> String {
+        guard let matter = document.matter else { return "" }
+        let found = matter.brought(by: document)
+        let tasks = found.todos.count, dates = found.appointments.count + found.deadlines.count
+        let parts = [tasks == 0 ? nil : tasks == 1 ? "1 task" : "\(tasks) tasks", dates == 0 ? nil : dates == 1 ? "1 date" : "\(dates) dates"].compactMap { $0 }
+        return "Causabee forgets what it read in it" + (parts.isEmpty ? "" : ", and " + parts.joined(separator: " and ") + " only it brought") + ". The file itself stays where it is."
+    }
+
+    private func forget() {
+        guard let matter = document.matter else { return }
+        withAnimation { _ = matter.forget(document, besides: navigation.store, in: context); try? context.save() }
     }
 
     private var renameField: some View {
