@@ -196,7 +196,7 @@ struct NotesPart: View {
                     .onSubmit(add)
                     #endif
                 if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Button("Add", action: add).buttonStyle(.borderedProminent).controlSize(.small).padding(.bottom, 6)
+                    Button("Add", action: add).buttonStyle(.ink).padding(.bottom, 4)
                 }
                 MicButton(voice: voice, text: $draft, selection: $cursor)
               }
@@ -258,7 +258,7 @@ struct NotesPart: View {
                         withAnimation { save(edited.trimmingCharacters(in: .whitespacesAndNewlines)); try? context.save() }
                         editing = nil; editingEarlier = false
                     }
-                    .buttonStyle(.borderedProminent).controlSize(.small)
+                    .buttonStyle(.ink)
                 }
             } else {
                 Text(Self.linked(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)

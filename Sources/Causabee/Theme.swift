@@ -656,3 +656,23 @@ struct SpeechModelCard: View {
         .onChange(of: state) { if state == .ready { Task { try? await Task.sleep(for: .seconds(1.5)); withAnimation(.snappy) { voice.asksModel = false } } } }
     }
 }
+
+/// A black button with white words — "Add", "Save", "Load". The system's prominent button takes its
+/// words from the tint, and the tint here is black too: black on black.
+struct InkButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.callout.weight(.medium))
+            .foregroundStyle(Theme.card)
+            .padding(.horizontal, 12).padding(.vertical, 5)
+            .background(Color.primary.opacity(configuration.isPressed ? 0.7 : 1), in: RoundedRectangle(cornerRadius: 7))
+            .opacity(isEnabled ? 1 : 0.4)
+            .contentShape(RoundedRectangle(cornerRadius: 7))
+    }
+}
+
+extension ButtonStyle where Self == InkButtonStyle {
+    static var ink: InkButtonStyle { InkButtonStyle() }
+}
