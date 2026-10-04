@@ -351,6 +351,7 @@ struct Composer: View {
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
     @State private var voice = VoiceInput()
+    @State private var cursor: TextSelection?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -391,7 +392,7 @@ struct Composer: View {
                         .foregroundStyle(.secondary)
                         .help("Attach a screenshot, a mail (.eml) or a PDF — or drag it here, or paste it (⌘V). It is scanned on the Mac.")
                 }
-                TextField(voice.phase == .writing ? "Writing it down …" : placeholder, text: $draft, axis: .vertical)
+                TextField(voice.phase == .writing ? "Writing it down …" : placeholder, text: $draft, selection: $cursor, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     // One line sits in the middle of the send button; more lines grow upwards.
@@ -408,7 +409,7 @@ struct Composer: View {
                         // While an answer is on its way, what is typed waits in the field.
                         return .handled
                     }
-                MicButton(voice: voice, text: $draft)
+                MicButton(voice: voice, text: $draft, selection: $cursor)
                 Button(action: stop ?? send) {
                     // The bee's yellow with a black arrow, drawn light, like the other yellow pills —
                     // and a black square while an answer is on its way.
@@ -432,5 +433,6 @@ struct Composer: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.bar)
+        .modifier(SpeakKey(voice: voice) { voice.start(text: $draft, selection: $cursor) })
     }
 }

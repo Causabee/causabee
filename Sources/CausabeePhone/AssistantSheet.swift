@@ -32,6 +32,7 @@ struct AssistantSheet: View {
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
     @State private var voice = VoiceInput()
+    @State private var cursor: TextSelection?
     /// Scrolled up from the newest: a button over the thread's lower edge brings it down again.
     @State private var scrolledUp = false
     /// An answer that arrived while the thread was scrolled up: the thread stays where it is being
@@ -210,7 +211,7 @@ struct AssistantSheet: View {
                 ListeningBar(voice: voice)
               } else {
                 AttachButton(matter: matter)
-                TextField(voice.phase == .writing ? "Writing it down …" : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, axis: .vertical)
+                TextField(voice.phase == .writing ? "Writing it down …" : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, selection: $cursor, axis: .vertical)
                     .lineLimit(1...5)
                     // The keyboard's Return starts a new line; the button sends. With a keyboard
                     // of keys, Return sends and Shift-Return starts a new line, as on the Mac.
@@ -223,7 +224,7 @@ struct AssistantSheet: View {
                     .id(fieldKey)
                     // One line sits in the middle of the send button; more lines grow upwards.
                     .frame(minHeight: 34)
-                MicButton(voice: voice, text: $draft)
+                MicButton(voice: voice, text: $draft, selection: $cursor)
                 Button { if asking == nil { send() } else { stop() } } label: {
                     // A black arrow on the bee's yellow, drawn light, as every yellow thing has black
                     // on it — and a black square while an answer is on its way: one question at a time.

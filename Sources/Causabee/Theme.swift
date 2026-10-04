@@ -468,20 +468,83 @@ final class VoiceInput {
         #endif
     }
 
-    /// Words spoken, put after what the field holds already.
-    static func add(_ words: String, to text: inout String) {
-        let before = text.trimmingCharacters(in: .whitespaces)
-        text = before.isEmpty ? words : before + " " + words
+    /// Words spoken, put where the cursor is — in place of what is selected — or, without a cursor,
+    /// after what the field holds already. A space is put between them and their neighbours.
+    static func add(_ words: String, to text: inout String, at selection: inout TextSelection?) {
+        if case .selection(let range)? = selection?.indices,
+           range.lowerBound >= text.startIndex, range.upperBound <= text.endIndex {
+            let before = text[..<range.lowerBound], after = text[range.upperBound...]
+            let lead = before.isEmpty || before.last?.isWhitespace == true ? "" : " "
+            let trail = after.isEmpty || after.first?.isWhitespace == true ? "" : " "
+            let put = lead + words + trail
+            let offset = text.distance(from: text.startIndex, to: range.lowerBound) + put.count
+            text.replaceSubrange(range, with: put)
+            let end = text.index(text.startIndex, offsetBy: min(offset, text.count))
+            selection = TextSelection(insertionPoint: end)
+        } else {
+            let before = text.trimmingCharacters(in: .whitespaces)
+            text = before.isEmpty ? words : before + " " + words
+            selection = TextSelection(insertionPoint: text.endIndex)
+        }
+    }
+
+    /// Starts listening for a field: the words go to its cursor.
+    func start(text: Binding<String>, selection: Binding<TextSelection?>) {
+        start { words in VoiceInput.add(words, to: &text.wrappedValue, at: &selection.wrappedValue) }
     }
 }
+
+#if os(macOS)
+/// ⌥ Space speaks into the assistant's field. Held, it listens for as long as it is held; pressed
+/// shortly, it listens until it is pressed again, or until the tick.
+struct SpeakKey: ViewModifier {
+    let voice: VoiceInput
+    let start: () -> Void
+    @State private var monitor: Any?
+    @State private var pressedAt: Date?
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                guard monitor == nil else { return }
+                monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { event in
+                    guard event.keyCode == 49 else { return event }
+                    let option = event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .option
+                    if event.type == .keyDown {
+                        guard option else { return event }
+                        if event.isARepeat { return nil }
+                        MainActor.assumeIsolated {
+                            if voice.phase == .listening { voice.finish(); pressedAt = nil } else if voice.phase == .idle { pressedAt = Date(); start() }
+                        }
+                        return nil
+                    }
+                    // Let go after holding: that was the whole of it. A short press keeps listening.
+                    let ours = MainActor.assumeIsolated { () -> Bool in
+                        guard let pressed = pressedAt else { return false }
+                        pressedAt = nil
+                        if Date().timeIntervalSince(pressed) > 0.5, voice.phase == .listening { voice.finish() }
+                        return true
+                    }
+                    return ours ? nil : event
+                }
+            }
+            .onDisappear {
+                if let monitor { NSEvent.removeMonitor(monitor) }
+                monitor = nil
+            }
+    }
+}
+#endif
 
 /// The microphone in a field. A click listens; while the words are written down it waits.
 struct MicButton: View {
     let voice: VoiceInput
     @Binding var text: String
+    /// Where the cursor is in the field: the words go there.
+    @Binding var selection: TextSelection?
 
     var body: some View {
-        Button { voice.start { VoiceInput.add($0, to: &text) } } label: {
+        Button { voice.start(text: $text, selection: $selection) } label: {
             Group {
                 if voice.phase == .writing {
                     ProgressView().controlSize(.small)
@@ -498,7 +561,7 @@ struct MicButton: View {
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
         .disabled(voice.phase != .idle)
-        .help("Speak: it is written down on this device, and you send it")
+        .help("Speak (⌥ Space): it is written down on this device, and you send it")
         .accessibilityLabel("Speak")
     }
 }

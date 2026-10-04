@@ -173,6 +173,7 @@ struct NotesPart: View {
     @State private var edited = ""
     @FocusState private var focused: Bool
     @State private var voice = VoiceInput()
+    @State private var cursor: TextSelection?
 
     #if os(iOS)
     private let radius: CGFloat = 12, inset: CGFloat = 16
@@ -186,7 +187,7 @@ struct NotesPart: View {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
               } else {
-                TextField(voice.phase == .writing ? "Writing it down …" : "A thought, what was agreed, what to remember …", text: $draft, axis: .vertical)
+                TextField(voice.phase == .writing ? "Writing it down …" : "A thought, what was agreed, what to remember …", text: $draft, selection: $cursor, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     .frame(minHeight: 34)
@@ -197,7 +198,7 @@ struct NotesPart: View {
                 if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Button("Add", action: add).buttonStyle(.borderedProminent).controlSize(.small).padding(.bottom, 6)
                 }
-                MicButton(voice: voice, text: $draft)
+                MicButton(voice: voice, text: $draft, selection: $cursor)
               }
             }
             .padding(.leading, inset).padding(.trailing, 6).padding(.vertical, 5)
