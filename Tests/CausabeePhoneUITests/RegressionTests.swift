@@ -63,7 +63,10 @@ final class RegressionTests: XCTestCase {
     }
 
     func testAContactAddedByHand() {
-        let name = "HKK \(stamp)"
+        // In letters: a name that differs only in digits is the same contact, and would be found, not made.
+        // The same holds for the address: one address is one contact.
+        let letters = String(stamp.compactMap { $0.wholeNumberValue.map { Character(UnicodeScalar(UInt8(97 + $0))) } })
+        let name = "Kasse " + letters, address = letters + "@hkk.de"
         plus("contact")
         let nameField = field("contact.name")
         XCTAssertTrue(nameField.waitForExistence(timeout: 5), "The contact's editor did not open.")
@@ -71,10 +74,10 @@ final class RegressionTests: XCTestCase {
         nameField.typeText(name)
         let mail = field("contact.mail")
         mail.tap()
-        mail.typeText("reha@hkk.de")
+        mail.typeText(address)
         app.buttons["Add"].firstMatch.tap()
         shows(name, "The contact was added and is not under People.")
-        shows("reha@hkk.de", "The contact's address is not shown.")
+        shows(address, "The contact's address is not shown.")
     }
 
     func testADetailAdded() {
