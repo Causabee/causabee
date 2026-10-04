@@ -27,14 +27,11 @@ struct OverviewWeek: View {
             }
             SectionHeader(title: day == today ? "Today · " + Self.heading(day) : Self.heading(day),
                           detail: things.isEmpty ? "nothing" : things.count == 1 ? "1 thing" : "\(things.count) things")
-            // As high as the fullest day of the week, from the top: going through the days, what
-            // is under them stays where it is. Every day is laid out unseen; the chosen one shows.
-            ZStack(alignment: .topLeading) {
-                ForEach(days, id: \.self) { each in
-                    dayGrid(each, today: today, isShown: false).hidden().accessibilityHidden(true)
-                }
-                dayGrid(day, today: today, isShown: true)
-            }
+            // As high as the chosen day needs: an empty today leaves no hole over the matters. Going
+            // to a fuller day, what is under it moves down, and up again, gently.
+            dayGrid(day, today: today, isShown: true)
+                .id(day)
+                .transition(.opacity)
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     }
@@ -78,7 +75,7 @@ struct OverviewWeek: View {
 
     private func cell(_ day: String, isToday: Bool, isChosen: Bool, count: Int, late: Int) -> some View {
         let date = MatterStatus.date(of: day) ?? Date()
-        return Button { chosen = day } label: {
+        return Button { withAnimation(.smooth(duration: 0.3)) { chosen = day } } label: {
             VStack(spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(Self.weekday.string(from: date).uppercased()).font(.caption.weight(.semibold))

@@ -20,11 +20,10 @@ struct MatterStatusView: View {
     @State private var showsSmallImages = false
     @State private var showsHidden = false
     /// Writing the notes, and what is written so far — its own text, so the cursor stays put.
-    @State private var editingNotes = false
+    @State private var writingNote = false
     /// The new mails of a closed matter, being made a matter of their own: the name the owner gives it.
     @State private var splitting = false
     @State private var newMatterName = ""
-    @State private var notesDraft = ""
     @State private var askingStep = false
     @State private var addingLink = false
     /// A task the owner is writing with "+ Task": in the matter while its popover is open, taken
@@ -55,7 +54,7 @@ struct MatterStatusView: View {
     /// Every conversation shown, not only the newest: a source pointed at an older mail.
     @State private var showsAllHistory = false
     /// The page under what stands on top: what is to do, the record, or the people.
-    enum Part: String { case todo, record, people }
+    enum Part: String { case todo, record, people, notes }
     /// The record, whole or one kind of it.
     enum RecordFilter: String { case all, mail, files, links }
     @State private var part: Part = .todo
@@ -86,7 +85,6 @@ struct MatterStatusView: View {
                         closedBanner(status)
                         if !matter.isClosed { nextStep(status, facts) }
                         summary(facts)
-                        notes.id("notes")
                         if find.isActive {
                             // Searching looks into every part, so everything is on the page.
                             todos(status).id("tasks")
@@ -94,6 +92,7 @@ struct MatterStatusView: View {
                             files.id("files")
                             links.id("links")
                             parties(status)
+                            notesPart.id("notes")
                             history(status)
                         } else {
                             parts(status).id("parts")
@@ -110,6 +109,8 @@ struct MatterStatusView: View {
                                     record(status)
                                 case .people:
                                     parties(status)
+                                case .notes:
+                                    notesPart.id("notes")
                                 }
                             }
                             // As tall as the page shows, so its top can stand right under the title bar
@@ -164,13 +165,13 @@ struct MatterStatusView: View {
                     case .newTask: part = .todo
                     case .addFile: part = .record; filter = .files
                     case .addLink: part = .record; filter = .links
-                    case .writeNote: break
+                    case .writeNote: part = .notes
                     }
                     withAnimation { scroller.scrollTo(section, anchor: .top) }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         switch action {
                         case .newTask: addTodo()
-                        case .writeNote: notesDraft = matter.notes ?? ""; editingNotes = true
+                        case .writeNote: writingNote = true
                         case .addFile: addingFile = true
                         case .addLink: addingLink = true
                         }
@@ -382,53 +383,11 @@ struct MatterStatusView: View {
 
     // MARK: Notes
 
-    /// The owner's own words on the matter, written and read here, and read by the assistant too.
-    @ViewBuilder
-    private var notes: some View {
-        let text = matter.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    /// The owner's own words on the matter: small dated blocks, read by the assistant too.
+    private var notesPart: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // "Edit" in the heading: the note has the card's width.
-            HStack {
-                SectionHeader(title: "Notes")
-                if !editingNotes, !text.isEmpty {
-                    Button("Edit") { notesDraft = matter.notes ?? ""; editingNotes = true }
-                        .buttonStyle(.gold).font(.caption)
-                        .tool()
-                }
-            }
-            if editingNotes {
-                TextEditor(text: $notesDraft)
-                    .font(.body)
-                    .frame(minHeight: 110, maxHeight: 320)
-                    .padding(6)
-                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.line))
-                HStack {
-                    Text("The assistant reads the notes too — names in them are pseudonymised on the Mac first.")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Cancel") { editingNotes = false }
-                    Button("Save") {
-                        let written = notesDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                        matter.notes = written.isEmpty ? nil : written
-                        try? context.save()
-                        editingNotes = false
-                    }
-                    .keyboardShortcut(.defaultAction)
-                }
-            } else if text.isEmpty {
-                EmptyBox(text: "What you know, what was agreed — the assistant reads it too.",
-                         action: "Write Note", symbol: "square.and.pencil") { notesDraft = ""; editingNotes = true }
-            } else {
-                Text(Linked.text(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
-                    .findable(.section("notes"), text)
-                    .padding(14)
-                    // A double-click on the note opens it too; one click still selects its words.
-                    .onTapGesture(count: 2) { notesDraft = matter.notes ?? ""; editingNotes = true }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
-            }
+            SectionHeader(title: "Notes")
+            NotesPart(matter: matter, writing: $writingNote)
         }
     }
 
@@ -1209,6 +1168,7 @@ struct MatterStatusView: View {
             Text("To do · \(matter.openTodos.count)").tag(Part.todo)
             Text("Record · \(status.entries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
             Text("People · \(status.memberships.count)").tag(Part.people)
+            Text("Notes · \(matter.noteCount)").tag(Part.notes)
         }
         .pickerStyle(.segmented)
         .labelsHidden()

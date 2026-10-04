@@ -14,7 +14,7 @@ struct MatterScreen: View {
     @Environment(\.modelContext) private var context
     @State private var showsDone = false
     @State private var showsPast = false
-    @State private var editingNotes = false
+    @State private var writingNote = false
     /// A task the owner is writing with "Add Task": in the matter while its sheet is open, taken
     /// out again if it is left without words.
     @State private var newTodo: Todo?
@@ -26,7 +26,7 @@ struct MatterScreen: View {
     @State private var newMatterName = ""
     @State private var marked: PersistentIdentifier?
     /// The page under what stands on top: what is to do, the record, or the people.
-    enum Part: String { case todo, record, people }
+    enum Part: String { case todo, record, people, notes }
     /// The record, whole or one kind of it.
     enum RecordFilter: String { case all, mail, files, links }
     @State private var part: Part = .todo
@@ -60,7 +60,6 @@ struct MatterScreen: View {
                     header(status)
                     if matter.isClosed { closedBanner(status) } else { nextStep(status, scroller) }
                     summary
-                    notes
                     if find.isActive {
                         // Searching looks into every part, so everything is on the page.
                         todos(status)
@@ -68,6 +67,7 @@ struct MatterScreen: View {
                         FilesSection(matter: matter)
                         LinksSection(matter: matter)
                         PeopleSection(matter: matter)
+                        notesPart
                         history(status)
                     } else {
                         parts(status)
@@ -87,6 +87,8 @@ struct MatterScreen: View {
                                 record(status)
                             case .people:
                                 PeopleSection(matter: matter) { party in person = party.persistentModelID; filter = .all; part = .record }
+                            case .notes:
+                                notesPart
                             }
                         }
                         .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 140), alignment: .topLeading)
@@ -177,7 +179,6 @@ struct MatterScreen: View {
                 .accessibilityLabel("More")
             }
         }
-        .sheet(isPresented: $editingNotes) { NotesEditor(matter: matter) }
         .sheet(item: $newTodo, onDismiss: dropEmptyTodos) { todo in PhoneTodoEditor(todo: todo, isNew: true) }
         .confirmationDialog(closeQuestion, isPresented: $asksToClose, titleVisibility: .visible) {
             if matter.openTodos.isEmpty {
@@ -522,32 +523,11 @@ struct MatterScreen: View {
         .background(text.isEmpty ? Color.clear : Theme.box, in: RoundedRectangle(cornerRadius: 12))
     }
 
-    private var notes: some View {
-        let text = matter.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return VStack(alignment: .leading, spacing: 8) {
-            // "Edit" in the heading, as "Add a document" beside Files: the note has the card's width.
-            HStack {
-                SectionHeader(title: "Notes")
-                if !text.isEmpty {
-                    Button("Edit") { editingNotes = true }
-                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
-                        .tool()
-                }
-            }
-            if text.isEmpty {
-                PhoneEmptyBox(text: "What you know, what was agreed — the assistant reads it too.",
-                              action: "Write Note", symbol: "square.and.pencil") { editingNotes = true }
-            } else {
-            Text(text)
-                .fixedSize(horizontal: false, vertical: true)
-                .findable(.section("notes"), text)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .phoneCard()
-                // A tap on the note opens it too.
-                .contentShape(Rectangle())
-                .onTapGesture { editingNotes = true }
-            }
+    /// The owner's own words on the matter: small dated blocks, read by the assistant too.
+    private var notesPart: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionHeader(title: "Notes")
+            NotesPart(matter: matter, writing: $writingNote)
         }
     }
 
@@ -730,6 +710,7 @@ struct MatterScreen: View {
             Text("To do · \(matter.openTodos.count)").tag(Part.todo)
             Text("Record · \(status.entries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
             Text("People · \(status.memberships.count)").tag(Part.people)
+            Text("Notes · \(matter.noteCount)").tag(Part.notes)
         }
         .pickerStyle(.segmented)
         .labelsHidden()
@@ -1058,46 +1039,6 @@ struct PhoneTodoRow: View {
         if todo.isDone { return Theme.done }
         if let due = todo.due, due < today { return Theme.warning }
         return .secondary
-    }
-}
-
-/// The owner's notes, written on the iPhone: they sync to the Mac.
-struct NotesEditor: View {
-    let matter: Matter
-    @Environment(\.modelContext) private var context
-    @Environment(\.dismiss) private var dismiss
-    @State private var draft = ""
-    @FocusState private var focused: Bool
-
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 8) {
-                TextEditor(text: $draft)
-                    .focused($focused)
-                    .scrollContentBackground(.hidden)
-                    .padding(8)
-                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
-                Text("The assistant reads the notes too — names in them are pseudonymised on the Mac first.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            .padding(16)
-            .background(Theme.canvas)
-            .navigationTitle("Notes")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        let written = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                        matter.notes = written.isEmpty ? nil : written
-                        try? context.save()
-                        dismiss()
-                    }
-                }
-            }
-        }
-        .onAppear { draft = matter.notes ?? ""; focused = true }
     }
 }
 

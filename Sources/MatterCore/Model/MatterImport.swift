@@ -339,6 +339,7 @@ extension Matter {
             }
         }
         // The owner's own words come along too, under the name they were written for.
+        for note in other.noteBlocks ?? [] { note.matter = self }
         if let theirs = other.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !theirs.isEmpty {
             let mine = notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             notes = mine.isEmpty ? theirs : mine + "\n\nFrom “\(other.name)”:\n" + theirs

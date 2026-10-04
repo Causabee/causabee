@@ -83,6 +83,8 @@ public final class Matter {
     @Relationship(deleteRule: .cascade, inverse: \Membership.matter) public var memberships: [Membership]? = []
     @Relationship(deleteRule: .cascade, inverse: \Document.matter) public var documents: [Document]? = []
     @Relationship(deleteRule: .cascade, inverse: \WebLink.matter) public var links: [WebLink]? = []
+    /// The owner's thoughts on it, each a small block with its day.
+    @Relationship(deleteRule: .cascade, inverse: \MatterNote.matter) public var noteBlocks: [MatterNote]? = []
     /// The assistant's turns about this matter. A matter that goes leaves them in the thread.
     @Relationship(deleteRule: .nullify, inverse: \ThreadTurn.matter) public var turns: [ThreadTurn]? = []
 
@@ -408,6 +410,43 @@ public final class Document {
     }
 }
 
+/// One thought of the owner's on a matter — what was agreed, what to remember — written down
+/// when it came, and dated. Many short ones, not one long text. The assistant reads them too.
+@Model
+public final class MatterNote {
+    public var text: String = ""
+    public var createdAt: Date = Date()
+    public var matter: Matter?
+
+    public init(text: String, createdAt: Date = Date()) {
+        self.text = text
+        self.createdAt = createdAt
+    }
+}
+
+extension Matter {
+    /// The note blocks, the newest first.
+    public var sortedNotes: [MatterNote] { (noteBlocks ?? []).sorted { $0.createdAt > $1.createdAt } }
+
+    /// The one note a matter had before notes were blocks; it stays, as the oldest of them.
+    public var earlierNote: String? {
+        let text = notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return text.isEmpty ? nil : text
+    }
+
+    public var noteCount: Int { (noteBlocks ?? []).count + (earlierNote == nil ? 0 : 1) }
+
+    /// Every note as the assistant reads it: the oldest first, each block with its day.
+    public var notesText: String? {
+        var lines: [String] = []
+        if let earlierNote { lines.append(earlierNote) }
+        for note in sortedNotes.reversed() where !note.text.isEmpty {
+            lines.append("\(MatterStatus.day(note.createdAt)): \(note.text)")
+        }
+        return lines.isEmpty ? nil : lines.joined(separator: "\n")
+    }
+}
+
 /// A link the owner put into a matter — a Google Doc, a sheet, a page — and, if they want, with
 /// one of its to-dos. Only the address is kept; the page is never opened by the app, since a
 /// private doc shows a stranger only its login. The assistant is told the name, never the address:
@@ -574,7 +613,7 @@ public enum MatterSchema {
     public static let models: [any PersistentModel.Type] = [
         Matter.self, Entry.self, Todo.self, Appointment.self, Deadline.self, Party.self, Membership.self,
         Decision.self, Rule.self, Profile.self, Document.self, WebLink.self, ThreadTurn.self, NameList.self,
-        SortedMail.self,
+        SortedMail.self, MatterNote.self,
     ]
 
     /// A store on disk, or in memory when `url` is nil.

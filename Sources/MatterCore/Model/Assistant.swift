@@ -63,7 +63,7 @@ public enum FactSheet {
             var lines: [String] = []
             let names = ([matter.key] + matter.aliases).filter { $0 != matter.name }
             lines.append("<matter id=\"\(id("M", .matter(matter.persistentModelID)))\" name=\"\(matter.name)\"\(names.isEmpty ? "" : " also=\"\(names.joined(separator: ", "))\"")>")
-            if let notes = matter.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let notes = matter.notesText {
                 lines.append("The owner's notes on this matter:\n\(notes)")
                 ownerText.append(notes)
             }
@@ -168,7 +168,7 @@ public enum FactSheet {
         if dates > 0 { seen.append("\(dates) appointments and deadlines") }
         // What the matter is written in: its own words, not the labels above them.
         let words = matters.flatMap { matter in
-            [matter.notes ?? ""] + (matter.todos ?? []).map(\.text) + (matter.entries ?? []).prefix(40).flatMap { [$0.title, $0.digest ?? ""] }
+            [matter.notesText ?? ""] + (matter.todos ?? []).map(\.text) + (matter.entries ?? []).prefix(40).flatMap { [$0.title, $0.digest ?? ""] }
         }
         return Facts(text: blocks.joined(separator: "\n\n"), refs: refs, seen: seen.joined(separator: ", "),
                      ownerText: ownerText.joined(separator: "\n"), language: AssistantAsk.language(of: words))

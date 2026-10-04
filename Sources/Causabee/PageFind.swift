@@ -1,5 +1,11 @@
+import MatterCore
 import SwiftData
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#else
+import UIKit
+#endif
 
 /// Find on a matter's page, as ⌘F finds in a browser: every row that has the words is marked,
 /// the current one strongly, and ↩ / ⇧↩ go from one to the next. The Mac and the iPhone alike,
@@ -153,3 +159,149 @@ struct PageFindField: View {
     }
 }
 #endif
+
+/// "Notes", a part of a matter's page: thoughts written down as they come, each a small block with
+/// its day, the newest on top. The field on top takes the next one.
+struct NotesPart: View {
+    let matter: Matter
+    /// Set from outside — "Write Note" in the menu — to put the cursor into the field.
+    @Binding var writing: Bool
+    @Environment(\.modelContext) private var context
+    @State private var draft = ""
+    @State private var editing: PersistentIdentifier?
+    @State private var editingEarlier = false
+    @State private var edited = ""
+    @FocusState private var focused: Bool
+
+    #if os(iOS)
+    private let radius: CGFloat = 12, inset: CGFloat = 16
+    #else
+    private let radius: CGFloat = 10, inset: CGFloat = 14
+    #endif
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .bottom, spacing: 8) {
+                TextField("A thought, what was agreed, what to remember …", text: $draft, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(1...8)
+                    .focused($focused)
+                    #if os(macOS)
+                    .onSubmit(add)
+                    #endif
+                if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Button("Add", action: add).buttonStyle(.borderedProminent).controlSize(.small)
+                }
+            }
+            .padding(.horizontal, inset).padding(.vertical, 12)
+            .background(Theme.box, in: RoundedRectangle(cornerRadius: radius))
+            Text("The assistant reads your notes too — names in them are pseudonymised first.")
+                .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.bottom, 4)
+
+            ForEach(matter.sortedNotes) { note in
+                block(Self.label(note.createdAt), note.text, isEditing: editing == note.persistentModelID,
+                      edit: { edited = note.text; editing = note.persistentModelID; editingEarlier = false },
+                      save: { text in if text.isEmpty { context.delete(note) } else { note.text = text } },
+                      delete: { context.delete(note) })
+                    .findable(.model(note.persistentModelID), note.text)
+            }
+            if let earlier = matter.earlierNote {
+                block("Earlier", earlier, isEditing: editingEarlier,
+                      edit: { edited = earlier; editingEarlier = true; editing = nil },
+                      save: { text in matter.notes = text.isEmpty ? nil : text },
+                      delete: { matter.notes = nil })
+                    .findable(.section("notes"), earlier)
+            }
+        }
+        .onChange(of: writing) { if writing { focused = true; writing = false } }
+        .onAppear { if writing { focused = true; writing = false } }
+    }
+
+    /// One note: its day, its words, and what can be done with it. Being put right, it is a field.
+    @ViewBuilder
+    private func block(_ day: String, _ text: String, isEditing: Bool, edit: @escaping () -> Void,
+                       save: @escaping (String) -> Void, delete: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(day).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                if !isEditing {
+                    Menu {
+                        Button("Edit", systemImage: "pencil", action: edit)
+                        Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
+                        Divider()
+                        Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { delete(); try? context.save() } }
+                    } label: {
+                        Image(systemName: "ellipsis").frame(width: 28, height: 18).contentShape(Rectangle())
+                    }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                    .tint(Color.secondary)
+                    .accessibilityLabel("More")
+                }
+            }
+            if isEditing {
+                TextField("Note", text: $edited, axis: .vertical).textFieldStyle(.plain).lineLimit(1...20)
+                HStack {
+                    Spacer()
+                    Button("Cancel") { editing = nil; editingEarlier = false }.controlSize(.small)
+                    Button("Save") {
+                        withAnimation { save(edited.trimmingCharacters(in: .whitespacesAndNewlines)); try? context.save() }
+                        editing = nil; editingEarlier = false
+                    }
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+                }
+            } else {
+                Text(Self.linked(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(.horizontal, inset).padding(.vertical, 12)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: radius))
+        .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.line))
+        .contextMenu {
+            Button("Edit", systemImage: "pencil", action: edit)
+            Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
+            Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { delete(); try? context.save() } }
+        }
+    }
+
+    private func add() {
+        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        let note = MatterNote(text: text)
+        context.insert(note)
+        note.matter = matter
+        try? context.save()
+        withAnimation { draft = "" }
+    }
+
+    /// "Today, 14:05", "Yesterday", or the day.
+    static func label(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) { return "Today, " + date.formatted(date: .omitted, time: .shortened) }
+        if calendar.isDateInYesterday(date) { return "Yesterday" }
+        return Dates.short(date)
+    }
+
+    /// Web addresses in a note can be clicked.
+    private static func linked(_ text: String) -> AttributedString {
+        var result = AttributedString(text)
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else { return result }
+        for match in detector.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+            guard let url = match.url, let range = Range(match.range, in: text),
+                  let lower = AttributedString.Index(range.lowerBound, within: result),
+                  let upper = AttributedString.Index(range.upperBound, within: result) else { continue }
+            result[lower..<upper].link = url
+        }
+        return result
+    }
+
+    private static func copy(_ text: String) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #else
+        UIPasteboard.general.string = text
+        #endif
+    }
+}
