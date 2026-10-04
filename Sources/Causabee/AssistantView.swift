@@ -419,6 +419,8 @@ struct OverviewView: View {
     }
 
     var body: some View {
+        // What came from another device shows at once: an arriving change redraws this.
+        let _ = CloudSync.shared.lastImport
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 // The day, where things stand and the search: one block in the middle, as wide as a
@@ -943,6 +945,8 @@ struct MatterCard: View {
     @State private var hovering = false
 
     var body: some View {
+        // What came from another device shows at once: an arriving change redraws this.
+        let _ = CloudSync.shared.lastImport
         let status = MatterStatus(matter)
         VStack(alignment: .leading, spacing: 8) {
             let mine = status.open(.me).count, ours = status.open(.we).count, waiting = status.open(.other).count

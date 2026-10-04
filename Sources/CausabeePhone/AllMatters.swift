@@ -83,6 +83,8 @@ struct PhoneMatterRow: View {
     let matter: Matter
 
     var body: some View {
+        // What came from another device shows at once: an arriving change redraws this.
+        let _ = PhoneCloudStatus.shared.lastImport
         let status = MatterStatus(matter)
         HStack(spacing: 12) {
         MatterIconTile(matter: matter, size: 36)

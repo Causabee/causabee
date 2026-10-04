@@ -564,6 +564,8 @@ struct RootView: View {
     }
 
     var body: some View {
+        // What came from another device shows at once: an arriving change redraws this.
+        let _ = CloudSync.shared.lastImport
         let sorted = sidebarOrder()
         // The whole window is Causabee's: nothing of the Mac's bar is seen. Its three buttons sit in
         // the middle of a 52-point top line (WindowChrome), the sidebar's button right of them.
@@ -715,6 +717,8 @@ struct MatterRow: View {
     let matter: Matter
 
     var body: some View {
+        // What came from another device shows at once: an arriving change redraws this.
+        let _ = CloudSync.shared.lastImport
         let status = MatterStatus(matter)
         HStack(spacing: 9) {
         MatterIconTile(matter: matter, size: 26)

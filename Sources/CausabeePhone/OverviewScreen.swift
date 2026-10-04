@@ -62,6 +62,8 @@ struct OverviewScreen: View {
     private var ordered: [Matter] { activeMatters(matters) }
 
     var body: some View {
+        // What came from another device shows at once: an arriving change redraws this.
+        let _ = PhoneCloudStatus.shared.lastImport
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {

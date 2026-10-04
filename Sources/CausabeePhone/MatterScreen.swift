@@ -53,6 +53,8 @@ struct MatterScreen: View {
     @State private var calendarTick = 0
 
     var body: some View {
+        // What came from another device shows at once: an arriving change redraws this.
+        let _ = PhoneCloudStatus.shared.lastImport
         let status = MatterStatus(matter)
         ScrollViewReader { scroller in
             ScrollView {

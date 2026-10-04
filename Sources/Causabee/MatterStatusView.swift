@@ -76,6 +76,8 @@ struct MatterStatusView: View {
     @Environment(\.reading) private var reading
 
     var body: some View {
+        // What came from another device shows at once: an arriving change redraws the page.
+        let _ = CloudSync.shared.lastImport
         let status = MatterStatus(matter)
         // Read once per drawing, for both cost estimates: the last 40 mails of the matter.
         let facts = summaryFacts

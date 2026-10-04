@@ -12,6 +12,8 @@ struct PhoneWeek: View {
     @State private var showsOverdue = false
 
     var body: some View {
+        // What came from another device shows at once: an arriving change redraws this.
+        let _ = PhoneCloudStatus.shared.lastImport
         let days = Week.days()
         let today = days[0]
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today
