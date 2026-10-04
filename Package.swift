@@ -10,8 +10,12 @@ let package = Package(
         .executable(name: "Causabee", targets: ["Causabee"]),
         .executable(name: "matter-bench", targets: ["MatterBench"]),
     ],
+    dependencies: [
+        // Speech written down on the device — Whisper, as in Utterclip and Utterstar.
+        .package(url: "https://github.com/argmaxinc/WhisperKit", exact: "0.18.0"),
+    ],
     targets: [
-        .target(name: "MatterCore"),
+        .target(name: "MatterCore", dependencies: [.product(name: "WhisperKit", package: "WhisperKit")]),
         .executableTarget(name: "MatterSpike", dependencies: ["MatterCore"]),
         // The Mac app. A SwiftPM target for now, run with `swift run Causabee`; it becomes an
         // app bundle when it needs one (a signed build, the share extension, Reminders access).

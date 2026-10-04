@@ -350,6 +350,7 @@ struct Composer: View {
     let send: () -> Void
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
+    @State private var voice = VoiceInput()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -374,7 +375,14 @@ struct Composer: View {
             // The send button sits in the pill's round end: as far from the right as from the top
             // and bottom, and the corner's radius is that and half the button — 7 + 34 / 2 (Figma
             // "Composer"). A plus on the left brings something in.
+            if voice.asksModel { SpeechModelCard(voice: voice) }
+            if let problem = voice.problem {
+                Text(problem).font(.caption).foregroundStyle(Theme.warning).padding(.horizontal, 8)
+            }
             HStack(alignment: .bottom, spacing: 6) {
+              if voice.phase == .listening {
+                ListeningBar(voice: voice)
+              } else {
                 if let attach {
                     Button(action: attach) {
                         Image(systemName: "plus").font(.system(size: 15)).frame(width: 34, height: 34).contentShape(Rectangle())
@@ -383,7 +391,7 @@ struct Composer: View {
                         .foregroundStyle(.secondary)
                         .help("Attach a screenshot, a mail (.eml) or a PDF — or drag it here, or paste it (⌘V). It is scanned on the Mac.")
                 }
-                TextField(placeholder, text: $draft, axis: .vertical)
+                TextField(voice.phase == .writing ? "Writing it down …" : placeholder, text: $draft, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     // One line sits in the middle of the send button; more lines grow upwards.
@@ -400,6 +408,7 @@ struct Composer: View {
                         // While an answer is on its way, what is typed waits in the field.
                         return .handled
                     }
+                MicButton(voice: voice, text: $draft)
                 Button(action: stop ?? send) {
                     // The bee's yellow with a black arrow, drawn light, like the other yellow pills —
                     // and a black square while an answer is on its way.
@@ -408,6 +417,7 @@ struct Composer: View {
                 .buttonStyle(.plain)
                 .keyboardShortcut(stop == nil ? KeyboardShortcut(.return, modifiers: .command) : KeyboardShortcut(".", modifiers: .command))
                 .help(stop == nil ? "Send (↩) · new line with ⇧↩" : "Stop (⌘.)")
+              }
             }
             .padding(7)
             .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))

@@ -388,3 +388,197 @@ struct SmallIconLabel: LabelStyle {
         }
     }
 }
+
+// MARK: Voice
+
+/// Speaking into a field: the microphone listens, the words are written down on the device, and
+/// they land in the field — never sent by themselves.
+@Observable
+@MainActor
+final class VoiceInput {
+    enum Phase { case idle, listening, writing }
+    private(set) var phase = Phase.idle
+    /// The speech model is not on the device: the card that offers to load it is shown.
+    var asksModel = false
+    /// What went wrong, said under the field for a moment.
+    var problem: String?
+    let recorder = VoiceRecorder()
+    private var deliver: ((String) -> Void)?
+
+    /// Starts listening; `deliver` gets the words. Without the model, the card to load it comes first.
+    func start(deliver: @escaping (String) -> Void) {
+        guard phase == .idle else { return }
+        problem = nil
+        switch Transcriber.shared.state {
+        case .missing, .downloading, .failed:
+            withAnimation(.snappy) { asksModel = true }
+            return
+        case .cold, .warming, .ready:
+            break
+        }
+        self.deliver = deliver
+        // The model into memory while the owner speaks.
+        Task { await Transcriber.shared.warmUp() }
+        Task {
+            do {
+                recorder.ended = { [weak self] in self?.finish() }
+                try await recorder.start()
+                withAnimation(.snappy) { phase = .listening }
+                feel()
+            } catch {
+                say(error.localizedDescription)
+            }
+        }
+    }
+
+    /// Ends the recording and has it written down.
+    func finish() {
+        guard phase == .listening else { return }
+        guard let recording = recorder.stop() else {
+            withAnimation(.snappy) { phase = .idle }
+            say(VoiceError.heardNothing.localizedDescription)
+            return
+        }
+        withAnimation(.snappy) { phase = .writing }
+        Task {
+            do {
+                let words = try await Transcriber.shared.words(in: recording)
+                if words.isEmpty { say(VoiceError.heardNothing.localizedDescription) } else { deliver?(words); feel() }
+            } catch {
+                say(error.localizedDescription)
+            }
+            withAnimation(.snappy) { phase = .idle }
+        }
+    }
+
+    /// Throws the recording away.
+    func cancel() {
+        recorder.cancel()
+        withAnimation(.snappy) { phase = .idle }
+    }
+
+    private func say(_ text: String) {
+        problem = text
+        Task { try? await Task.sleep(for: .seconds(4)); if problem == text { problem = nil } }
+    }
+
+    private func feel() {
+        #if os(iOS)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
+    }
+
+    /// Words spoken, put after what the field holds already.
+    static func add(_ words: String, to text: inout String) {
+        let before = text.trimmingCharacters(in: .whitespaces)
+        text = before.isEmpty ? words : before + " " + words
+    }
+}
+
+/// The microphone in a field. A click listens; while the words are written down it waits.
+struct MicButton: View {
+    let voice: VoiceInput
+    @Binding var text: String
+
+    var body: some View {
+        Button { voice.start { VoiceInput.add($0, to: &text) } } label: {
+            Group {
+                if voice.phase == .writing {
+                    ProgressView().controlSize(.small)
+                } else {
+                    #if os(iOS)
+                    Image(systemName: "mic").font(.system(size: 19))
+                    #else
+                    Image(systemName: "mic").font(.system(size: 15))
+                    #endif
+                }
+            }
+            .frame(width: 34, height: 34).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .disabled(voice.phase != .idle)
+        .help("Speak: it is written down on this device, and you send it")
+        .accessibilityLabel("Speak")
+    }
+}
+
+/// The field while it listens: a cross that throws the recording away, how loud it is, how long,
+/// and a tick that ends it.
+struct ListeningBar: View {
+    let voice: VoiceInput
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Button { voice.cancel() } label: {
+                Image(systemName: "xmark").font(.system(size: 13)).frame(width: 34, height: 34).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).foregroundStyle(.secondary)
+            .keyboardShortcut(.cancelAction)
+            .help("Throw the recording away (esc)")
+            .accessibilityLabel("Cancel")
+            HStack(alignment: .center, spacing: 3) {
+                ForEach(Array(voice.recorder.levels.enumerated()), id: \.offset) { _, level in
+                    Capsule().fill(Color.primary).frame(width: 2.5, height: 4 + CGFloat(level) * 20)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 34, alignment: .trailing)
+            .clipped()
+            .animation(.linear(duration: 0.07), value: voice.recorder.levels.count)
+            .accessibilityHidden(true)
+            TimelineView(.periodic(from: .now, by: 0.5)) { context in
+                let seconds = Int(context.date.timeIntervalSince(voice.recorder.startedAt ?? context.date))
+                Text(String(format: "%d:%02d", seconds / 60, seconds % 60))
+                    .monospacedDigit().foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+            Button { voice.finish() } label: {
+                Image(systemName: "checkmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.card)
+                    .frame(width: 34, height: 34).background(Color.primary, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut(.defaultAction)
+            .help("Done: write it down (↩)")
+            .accessibilityLabel("Done")
+        }
+    }
+}
+
+/// Asked the first time the microphone is used: the speech model is loaded once. Grey — it waits
+/// for a decision — and then says how far the loading is.
+struct SpeechModelCard: View {
+    let voice: VoiceInput
+
+    var body: some View {
+        let state = Transcriber.shared.state
+        VStack(alignment: .leading, spacing: 8) {
+            #if os(iOS)
+            Text("Speech is written down on this iPhone").font(.headline)
+            #else
+            Text("Speech is written down on this Mac").font(.body.weight(.semibold))
+            #endif
+            Text("For that Causabee loads a speech model once: \(Transcriber.megabytes) MB, best on Wi-Fi. After that it works without a connection, and no sound is sent anywhere.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            switch state {
+            case .downloading(let done):
+                ProgressView(value: done).tint(.primary)
+                Text("\(Int(done * Double(Transcriber.megabytes))) of \(Transcriber.megabytes) MB").font(.caption).foregroundStyle(.secondary)
+            case .warming, .cold:
+                HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Getting it ready …").font(.caption).foregroundStyle(.secondary) }
+            case .ready:
+                Text("Ready. Click the microphone and speak.").font(.caption).foregroundStyle(.secondary)
+            case .missing, .failed:
+                if case .failed(let why) = state { Text(why).font(.caption).foregroundStyle(Theme.warning) }
+                HStack {
+                    Spacer()
+                    Button("Not now") { withAnimation(.snappy) { voice.asksModel = false } }
+                    Button("Load") { Task { await Transcriber.shared.download() } }.buttonStyle(.borderedProminent)
+                }
+            }
+        }
+        .padding(14)
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .tint(.primary)
+        .onChange(of: state) { if state == .ready { Task { try? await Task.sleep(for: .seconds(1.5)); withAnimation(.snappy) { voice.asksModel = false } } } }
+    }
+}

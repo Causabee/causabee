@@ -172,6 +172,7 @@ struct NotesPart: View {
     @State private var editingEarlier = false
     @State private var edited = ""
     @FocusState private var focused: Bool
+    @State private var voice = VoiceInput()
 
     #if os(iOS)
     private let radius: CGFloat = 12, inset: CGFloat = 16
@@ -182,19 +183,27 @@ struct NotesPart: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .bottom, spacing: 8) {
-                TextField("A thought, what was agreed, what to remember …", text: $draft, axis: .vertical)
+              if voice.phase == .listening {
+                ListeningBar(voice: voice)
+              } else {
+                TextField(voice.phase == .writing ? "Writing it down …" : "A thought, what was agreed, what to remember …", text: $draft, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
+                    .frame(minHeight: 34)
                     .focused($focused)
                     #if os(macOS)
                     .onSubmit(add)
                     #endif
                 if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Button("Add", action: add).buttonStyle(.borderedProminent).controlSize(.small)
+                    Button("Add", action: add).buttonStyle(.borderedProminent).controlSize(.small).padding(.bottom, 6)
                 }
+                MicButton(voice: voice, text: $draft)
+              }
             }
-            .padding(.horizontal, inset).padding(.vertical, 12)
+            .padding(.leading, inset).padding(.trailing, 6).padding(.vertical, 5)
             .background(Theme.box, in: RoundedRectangle(cornerRadius: radius))
+            if voice.asksModel { SpeechModelCard(voice: voice) }
+            if let problem = voice.problem { Text(problem).font(.caption).foregroundStyle(Theme.warning).padding(.horizontal, 4) }
             Text("The assistant reads your notes too — names in them are pseudonymised first.")
                 .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.bottom, 4)
 

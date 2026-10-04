@@ -383,6 +383,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Causabee writes down what you say to the assistant or into a note. That happens on this device; no sound is sent anywhere.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you click — so nothing is there twice.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -411,6 +412,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Causabee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you click — so nothing is there twice.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Causabee writes down what you say to the assistant or into a note. That happens on this device; no sound is sent anywhere.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you click — so nothing is there twice.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -439,6 +441,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Causabee scans a letter that came on paper, to keep it in your mail with its matter.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Causabee writes down what you say to the assistant or into a note. That happens on this device; no sound is sent anywhere.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -475,6 +478,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Causabee shows which of a matter's appointments are already in your calendars, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Causabee scans a letter that came on paper, to keep it in your mail with its matter.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Causabee writes down what you say to the assistant or into a note. That happens on this device; no sound is sent anywhere.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Causabee shows which of a matter's tasks are already in your reminders, and adds new ones when you tap — so nothing is there twice.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

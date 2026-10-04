@@ -31,6 +31,7 @@ struct AssistantSheet: View {
     @State private var failure: String?
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
+    @State private var voice = VoiceInput()
     /// Scrolled up from the newest: a button over the thread's lower edge brings it down again.
     @State private var scrolledUp = false
     /// An answer that arrived while the thread was scrolled up: the thread stays where it is being
@@ -200,9 +201,16 @@ struct AssistantSheet: View {
             }
             // As on the Mac: the send button sits in the pill's round end, as far from the right as
             // from the top and bottom, and the corner's radius is that and half the button — 7 + 34 / 2.
+            if voice.asksModel { SpeechModelCard(voice: voice) }
+            if let problem = voice.problem {
+                Text(problem).font(.caption).foregroundStyle(Theme.warning).padding(.horizontal, 8)
+            }
             HStack(alignment: .bottom, spacing: 6) {
+              if voice.phase == .listening {
+                ListeningBar(voice: voice)
+              } else {
                 AttachButton(matter: matter)
-                TextField(matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, axis: .vertical)
+                TextField(voice.phase == .writing ? "Writing it down …" : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
                     // The keyboard's Return starts a new line; the button sends. With a keyboard
                     // of keys, Return sends and Shift-Return starts a new line, as on the Mac.
@@ -215,6 +223,7 @@ struct AssistantSheet: View {
                     .id(fieldKey)
                     // One line sits in the middle of the send button; more lines grow upwards.
                     .frame(minHeight: 34)
+                MicButton(voice: voice, text: $draft)
                 Button { if asking == nil { send() } else { stop() } } label: {
                     // A black arrow on the bee's yellow, drawn light, as every yellow thing has black
                     // on it — and a black square while an answer is on its way: one question at a time.
@@ -222,6 +231,7 @@ struct AssistantSheet: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(asking == nil ? "Send" : "Stop")
+              }
             }
             .padding(.leading, 7).padding(.trailing, 7).padding(.vertical, 7)
             .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))
