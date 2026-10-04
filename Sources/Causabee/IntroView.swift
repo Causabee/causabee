@@ -91,7 +91,7 @@ struct IntroView: View {
                             .help("Starts Causabee again with nine made-up matters, kept apart from your own. The sidebar has the way back.")
                     }
                     Button(index == Self.pages.count - 1 ? "Get started" : "Next") { next() }
-                        .buttonStyle(.borderedProminent).tint(Theme.ink)
+                        .filledButton()
                         .keyboardShortcut(.defaultAction)
                 }
                 .controlSize(.large)

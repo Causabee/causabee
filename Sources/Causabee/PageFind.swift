@@ -196,7 +196,7 @@ struct NotesPart: View {
                     .onSubmit(add)
                     #endif
                 if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Button("Add", action: add).buttonStyle(.ink).padding(.bottom, 4)
+                    Button("Add", action: add).filledButton().padding(.bottom, 4)
                 }
                 MicButton(voice: voice, text: $draft, selection: $cursor)
               }
@@ -253,12 +253,12 @@ struct NotesPart: View {
                 TextField("Note", text: $edited, axis: .vertical).textFieldStyle(.plain).lineLimit(1...20)
                 HStack {
                     Spacer()
-                    Button("Cancel") { editing = nil; editingEarlier = false }.controlSize(.small)
+                    Button("Cancel") { editing = nil; editingEarlier = false }.quietButton()
                     Button("Save") {
                         withAnimation { save(edited.trimmingCharacters(in: .whitespacesAndNewlines)); try? context.save() }
                         editing = nil; editingEarlier = false
                     }
-                    .buttonStyle(.ink)
+                    .filledButton()
                 }
             } else {
                 Text(Self.linked(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)

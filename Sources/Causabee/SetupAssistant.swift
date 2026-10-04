@@ -200,12 +200,12 @@ struct SetupAssistant: View {
                 Button("Close") { dismiss() }
                 // The test reads no mail: its account is only in memory, and its matters are the demo's.
                 Button(SetupState.isFresh ? "Finish test" : "Get new mail") { dismiss(); if !SetupState.isFresh { getMail() } }
-                    .buttonStyle(.borderedProminent).tint(Theme.ink)
+                    .filledButton()
                     .disabled(SetupAssistant.isMissingSomething)
                     .keyboardShortcut(.defaultAction)
             } else {
                 Button(step == .calendar && !isDone(.calendar) ? "Skip" : "Next") { step = Step(rawValue: step.rawValue + 1) ?? .ready }
-                    .buttonStyle(.borderedProminent).tint(Theme.ink)
+                    .filledButton()
                     .keyboardShortcut(.defaultAction)
             }
         }

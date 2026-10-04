@@ -639,14 +639,8 @@ struct SpeechModelCard: View {
                 if case .failed(let why) = state { Text(why).font(.caption).foregroundStyle(Theme.warning) }
                 HStack {
                     Spacer()
-                    Button("Not now") { withAnimation(.snappy) { voice.asksModel = false } }
-                    // Black with white words, as the cards' "Add": the system's prominent button takes
-                    // its words from the tint, which is black here too.
-                    Button { Task { await Transcriber.shared.download() } } label: {
-                        Text("Load").foregroundStyle(Theme.card).padding(.horizontal, 12).padding(.vertical, 5)
-                            .background(Color.primary, in: RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
+                    Button("Not now") { withAnimation(.snappy) { voice.asksModel = false } }.quietButton()
+                    Button("Load") { Task { await Transcriber.shared.download() } }.filledButton()
                 }
             }
         }
@@ -657,19 +651,91 @@ struct SpeechModelCard: View {
     }
 }
 
-/// A black button with white words — "Add", "Save", "Load". The system's prominent button takes its
-/// words from the tint, and the tint here is black too: black on black.
+/// The filled button of a place — "Add", "Save": near-black, white words. Drawn by us: the
+/// system's prominent button takes its words from the tint, which is black here too, and greys
+/// out whenever the window is not in front. Shared by the Mac and the iPhone.
 struct InkButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.callout.weight(.medium))
-            .foregroundStyle(Theme.card)
-            .padding(.horizontal, 12).padding(.vertical, 5)
-            .background(Color.primary.opacity(configuration.isPressed ? 0.7 : 1), in: RoundedRectangle(cornerRadius: 7))
-            .opacity(isEnabled ? 1 : 0.4)
-            .contentShape(RoundedRectangle(cornerRadius: 7))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .foregroundStyle(isEnabled ? Theme.onInk : Color.secondary)
+            .background(isEnabled ? AnyShapeStyle(Theme.ink.opacity(configuration.isPressed ? 0.75 : 1))
+                                  : AnyShapeStyle(Color.secondary.opacity(0.12)),
+                        in: RoundedRectangle(cornerRadius: 6))
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+
+// MARK: Buttons
+//
+// The buttons there are — use these, do not make another:
+//   .filledButton()   the one thing to do here: black, white words ("Add", "Save", "Load")
+//   .quietButton()    what stands beside it ("Cancel", "Not now")
+//   .buttonStyle(.gold)   a link in a line of text ("Edit", "Show again")
+//   .buttonStyle(.plain)  an icon, or a whole row that is a button
+// Never `.borderedProminent`: its words take the tint, which is black here — black on black.
+// Each is the platform's own behind one name, so a view both apps share looks right on both.
+
+extension View {
+    /// The filled button: black with white words. On the iPhone a capsule, on the Mac a small rounded one.
+    @ViewBuilder func filledButton() -> some View {
+        #if os(iOS)
+        buttonStyle(PhoneButtonStyle(filled: true))
+        #else
+        buttonStyle(InkButtonStyle())
+        #endif
+    }
+
+    /// The grey button beside the filled one.
+    @ViewBuilder func quietButton() -> some View {
+        #if os(iOS)
+        buttonStyle(PhoneButtonStyle())
+        #else
+        buttonStyle(QuietButtonStyle())
+        #endif
+    }
+}
+
+#if os(iOS)
+/// The filled button and the grey one beside it: "Write message", "Done", "Show".
+struct PhoneButtonStyle: ButtonStyle {
+    var filled = false
+    var wide = false
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.medium))
+            .padding(.horizontal, 16).padding(.vertical, 8)
+            .frame(maxWidth: wide ? .infinity : nil)
+            .foregroundStyle(filled ? Theme.onInk : isEnabled ? Color.primary : Color.secondary)
+            .background(filled ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(Color.secondary.opacity(0.12)), in: Capsule())
+            .opacity(configuration.isPressed ? 0.7 : isEnabled ? 1 : 0.6)
+            .contentShape(Capsule())
+    }
+}
+
+extension ButtonStyle where Self == PhoneButtonStyle {
+    static var phone: PhoneButtonStyle { PhoneButtonStyle() }
+    static var phoneFilled: PhoneButtonStyle { PhoneButtonStyle(filled: true) }
+    static func phone(filled: Bool = false, wide: Bool) -> PhoneButtonStyle { PhoneButtonStyle(filled: filled, wide: wide) }
+}
+#endif
+
+/// The Mac's grey button, drawn by us as the black one is, so the two sit on one line at one height.
+struct QuietButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .foregroundStyle(isEnabled ? Color.primary : Color.secondary)
+            .background(Color.secondary.opacity(configuration.isPressed ? 0.2 : 0.12), in: RoundedRectangle(cornerRadius: 6))
+            .contentShape(RoundedRectangle(cornerRadius: 6))
     }
 }
 

@@ -22,30 +22,6 @@ extension View {
     }
 }
 
-/// The filled button and the grey one beside it: "Write message", "Done", "Show".
-struct PhoneButtonStyle: ButtonStyle {
-    var filled = false
-    var wide = false
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.body.weight(.medium))
-            .padding(.horizontal, 16).padding(.vertical, 8)
-            .frame(maxWidth: wide ? .infinity : nil)
-            .foregroundStyle(filled ? Theme.onInk : isEnabled ? Color.primary : Color.secondary)
-            .background(filled ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(Color.secondary.opacity(0.12)), in: Capsule())
-            .opacity(configuration.isPressed ? 0.7 : isEnabled ? 1 : 0.6)
-            .contentShape(Capsule())
-    }
-}
-
-extension ButtonStyle where Self == PhoneButtonStyle {
-    static var phone: PhoneButtonStyle { PhoneButtonStyle() }
-    static var phoneFilled: PhoneButtonStyle { PhoneButtonStyle(filled: true) }
-    static func phone(filled: Bool = false, wide: Bool) -> PhoneButtonStyle { PhoneButtonStyle(filled: filled, wide: wide) }
-}
-
 /// A section with nothing in it yet, as on the Mac: a grey box, what goes in it in the middle,
 /// and — where the owner can add it by hand — the button that does.
 struct PhoneEmptyBox: View {

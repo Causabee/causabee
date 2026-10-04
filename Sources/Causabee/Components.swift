@@ -14,22 +14,7 @@ extension View {
     /// is grey with grey words — a faded black one could not be read. Drawn by us rather than
     /// by AppKit, which greys a prominent button out whenever the window is not in front and
     /// left the white words on light grey.
-    func inkButton() -> some View { buttonStyle(InkButtonStyle()) }
-}
-
-private struct InkButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .foregroundStyle(isEnabled ? Theme.onInk : Color.secondary)
-            .background(isEnabled ? AnyShapeStyle(Theme.ink.opacity(configuration.isPressed ? 0.75 : 1))
-                                  : AnyShapeStyle(Color.secondary.opacity(0.12)),
-                        in: RoundedRectangle(cornerRadius: 6))
-            .contentShape(RoundedRectangle(cornerRadius: 6))
-    }
+    func inkButton() -> some View { filledButton() }
 }
 
 extension View {
