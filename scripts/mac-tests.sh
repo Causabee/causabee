@@ -26,7 +26,8 @@ if automationmodetool 2>/dev/null | grep -q "requires user authentication"; then
   exit 0
 fi
 
-if pgrep -f "Causabee.app/Contents/MacOS/Causabee" >/dev/null; then
+# By the program itself, not by the words of a command line: a shell that only names the path is not Causabee.
+if ps -axo comm= | grep -q "Causabee.app/Contents/MacOS/Causabee$"; then
   print -u2 "✗ Causabee is open. Quit it first: the tests start and quit an app under its identifier."
   exit 1
 fi
