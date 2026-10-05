@@ -760,3 +760,19 @@ struct QuietButtonStyle: ButtonStyle {
 extension ButtonStyle where Self == InkButtonStyle {
     static var ink: InkButtonStyle { InkButtonStyle() }
 }
+
+/// What this build is called, as its release says it — "Beta 0.5 (19)": in Settings on the iPhone
+/// and in the Mac's About panel. The release scripts hand the stage and the number in
+/// (CAUSABEE_STAGE, CAUSABEE_NUMBER); a build from Xcode has neither.
+enum AppRelease {
+    private static func info(_ key: String) -> String? {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String, !value.isEmpty else { return nil }
+        return value
+    }
+
+    /// "Beta 0.5", or "0.5" once it is no beta.
+    static var name: String { [info("CausabeeStage"), info("CFBundleShortVersionString")].compactMap { $0 }.joined(separator: " ") }
+    /// "19": the beta's number on the Mac, the build's on the iPhone.
+    static var number: String? { info("CausabeeNumber") }
+    static var label: String { "\(name) (\(number ?? "development build"))" }
+}

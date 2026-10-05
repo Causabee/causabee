@@ -41,6 +41,9 @@ struct MatterStatusView: View {
     @State private var summaryError: String?
     @State private var showsPast = false
     @State private var merging: (Party, Party)?
+    /// This matter and the one it is to go into, from the bar's ⋯.
+    @State private var mergingMatter: (Matter, Matter)?
+    @Query(sort: \Matter.name) private var allMatters: [Matter]
     @State private var asksToClose = false
     /// Renaming, and the name so far — its own text, so the cursor stays put.
     @State private var renaming = false
@@ -207,6 +210,20 @@ struct MatterStatusView: View {
             Button("Cancel", role: .cancel) { merging = nil }
         } message: {
             Text("This also counts for the next mail. You can undo it in the rules.")
+        }
+        .confirmationDialog(mergingMatter.map { "Merge “\($0.0.name)” into “\($0.1.name)”?" } ?? "",
+                            isPresented: Binding(get: { mergingMatter != nil }, set: { if !$0 { mergingMatter = nil } })) {
+            Button("Merge") {
+                if let (from, into) = mergingMatter {
+                    into.absorb(from, in: context)
+                    try? context.save()
+                    navigation.open(into)
+                }
+                mergingMatter = nil
+            }
+            Button("Cancel", role: .cancel) { mergingMatter = nil }
+        } message: {
+            Text("All mails, tasks, appointments and people come along. The old name stays as an alias, so new mail still arrives. You cannot split it again later.")
         }
         .confirmationDialog(closeQuestion, isPresented: $asksToClose) {
             if matter.openTodos.isEmpty {
@@ -917,19 +934,30 @@ struct MatterStatusView: View {
                         .accessibilityLabel("Add to this matter")
                         .tool()
                         PageFindField(find: find)
-                        // What is seldom needed sits behind the dots, not in the bar.
-                        if !matter.isClosed {
-                            Menu {
-                                Button("Close Matter…", systemImage: "archivebox") { asksToClose = true }
-                            } label: {
-                                Image(systemName: "ellipsis").frame(width: 30, height: 30).contentShape(Circle())
+                        // What is seldom needed sits behind the dots, not in the bar: what the sidebar's
+                        // menu has for the matter, as the iPhone's ⋯ has it, and closing it.
+                        Menu {
+                            PinMenuItem(matter: matter, all: allMatters)
+                            Button("Rename …", action: startRenaming)
+                            Menu("Merge with …") {
+                                ForEach(allMatters.filter { $0 !== matter }) { other in
+                                    Button(other.name + (other.isClosed ? " (closed)" : "")) { mergingMatter = (matter, other) }
+                                }
                             }
-                            .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
-                            .onGlass(Circle())
-                            .help("More: close the matter. Nothing is deleted.")
-                            .accessibilityLabel("More")
-                            .tool()
+                            Divider()
+                            if matter.isClosed {
+                                Button("Open Again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
+                            } else {
+                                Button("Close Matter…", systemImage: "archivebox") { asksToClose = true }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis").frame(width: 30, height: 30).contentShape(Circle())
                         }
+                        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+                        .onGlass(Circle())
+                        .help("More: pin, rename, merge with another matter, close")
+                        .accessibilityLabel("More")
+                        .tool()
                     }
                     // On the line of the name: the row is set by its words' baseline.
                     .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 5 }
@@ -1567,13 +1595,15 @@ struct TodoRow: View {
         }
         .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting) {
             Button("Delete", role: .destructive) {
+                // The reminder it is connected with goes too: a task that is gone reminds of nothing.
+                Calendars.shared.removeReminder(todo.reminderID)
                 withAnimation { context.delete(todo) }
                 try? context.save()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(todo.reminderID == nil ? "It goes from this matter. This cannot be undone. Something only good to know can go to Info instead."
-                 : "It goes from this matter; the reminder stays in Reminders. This cannot be undone.")
+                 : "It goes from this matter, and its reminder from Reminders. This cannot be undone.")
         }
     }
 
@@ -1954,6 +1984,8 @@ struct DateRow: View {
         .contextMenu { moreItems }
         .confirmationDialog("Delete “\(item.what)”?", isPresented: $deleting) {
             Button("Delete", role: .destructive) {
+                // The entry in Calendar it is connected with goes too.
+                Calendars.shared.removeEvent(item.calendarID)
                 if let appointment = item.appointment { context.delete(appointment) }
                 if let deadline = item.deadline { context.delete(deadline) }
                 save()
@@ -1961,7 +1993,7 @@ struct DateRow: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(item.calendarID == nil ? "It goes from this matter. This cannot be undone."
-                 : "It goes from this matter; the entry in Calendar stays. This cannot be undone.")
+                 : "It goes from this matter, and its entry from Calendar. This cannot be undone.")
         }
     }
 

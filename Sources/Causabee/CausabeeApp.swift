@@ -117,6 +117,14 @@ struct CausabeeApp: App {
                     .keyboardShortcut("n", modifiers: .command)
             }
             MatterCommands()
+            // The About panel names the release as it went out: "Version Beta 0.5 (19)".
+            CommandGroup(replacing: .appInfo) {
+                Button("About Causabee") {
+                    NSApp.orderFrontStandardAboutPanel(options: [.applicationVersion: AppRelease.name,
+                                                                 .version: AppRelease.number ?? "development build"])
+                    NSApp.activate()
+                }
+            }
             CommandGroup(after: .appSettings) {
                 Button("Set Up Causabee …") { NotificationCenter.default.post(name: .showSetup, object: nil) }
                 Button(DemoData.isRequested ? "Leave the Demo" : "Try the Demo") { DemoData.restart(demo: !DemoData.isRequested) }

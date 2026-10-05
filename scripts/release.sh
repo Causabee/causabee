@@ -86,9 +86,11 @@ rm -rf "$OUT"; mkdir -p "$OUT"
 
 step "Building $TITLE (Release)"
 BUILD=$(date +%Y%m%d%H%M)
+# What the About panel says: "Version Beta 0.5 (19)" — the stage and the beta's number, handed to the build.
 xcodebuild archive -project App/Causabee.xcodeproj -scheme CausabeeApp -configuration Release \
   -archivePath "$OUT/Causabee.xcarchive" -allowProvisioningUpdates \
-  MARKETING_VERSION="$SHORT" CURRENT_PROJECT_VERSION="$BUILD" > "$OUT/build.log" 2>&1 \
+  MARKETING_VERSION="$SHORT" CURRENT_PROJECT_VERSION="$BUILD" \
+  CAUSABEE_STAGE="${WORD:-}" CAUSABEE_NUMBER="${NUMBER:-$BUILD}" > "$OUT/build.log" 2>&1 \
   || { tail -25 "$OUT/build.log"; fail "The build failed; all of it is in $OUT/build.log."; }
 ditto "$OUT/Causabee.xcarchive/Products/Applications/Causabee.app" "$APP"
 [[ $(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP/Contents/Info.plist") == "$SHORT" ]] || fail "The app does not say version $SHORT."

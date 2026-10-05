@@ -99,6 +99,9 @@ struct SettingsSheet: View {
                     Text("All of them get only pseudonymised text: Claude (Anthropic, USA), Mistral (Paris) or OpenAI (USA). In the test, Mistral Large 3 sorted almost as well as Opus; for tasks, Opus was better in about one mail out of three.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
+
+                // Which Causabee this is, to say when something is reported.
+                Section { LabeledContent("Causabee", value: AppRelease.label) }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)

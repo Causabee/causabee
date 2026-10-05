@@ -1012,13 +1012,15 @@ struct PhoneTodoRow: View {
         .sheet(isPresented: $editing) { PhoneTodoEditor(todo: todo) }
         .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
+                // The reminder it is connected with goes too: a task that is gone reminds of nothing.
+                Calendars.shared.removeReminder(todo.reminderID)
                 withAnimation { context.delete(todo) }
                 try? context.save()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(todo.reminderID == nil ? "It goes from this matter. This cannot be undone. Something only good to know can go to Info instead."
-                 : "It goes from this matter; the reminder stays in Reminders. This cannot be undone.")
+                 : "It goes from this matter, and its reminder from Reminders. This cannot be undone.")
         }
     }
 
@@ -1316,6 +1318,8 @@ struct PhoneDateRow: View {
         .sheet(isPresented: $editing) { PhoneDateEditor(item: item) }
         .confirmationDialog("Delete “\(item.what)”?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
+                // The entry in Calendar it is connected with goes too.
+                Calendars.shared.removeEvent(item.calendarID)
                 if let appointment = item.appointment { context.delete(appointment) }
                 if let deadline = item.deadline { context.delete(deadline) }
                 try? context.save()
@@ -1323,7 +1327,7 @@ struct PhoneDateRow: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(item.calendarID == nil ? "It goes from this matter. This cannot be undone."
-                 : "It goes from this matter; the entry in Calendar stays. This cannot be undone.")
+                 : "It goes from this matter, and its entry from Calendar. This cannot be undone.")
         }
     }
 

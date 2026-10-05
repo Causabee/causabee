@@ -4,6 +4,7 @@
 #
 #   scripts/testflight.sh 0.5 2      # version 0.5, build 2 — the build number must be new for that version
 #
+# Settings says which it is: "Beta 0.5 (2)". Once it is no beta: CAUSABEE_STAGE= scripts/testflight.sh …
 # Needs Xcode signed in to the Apple account of the team. Other place for the archive: CAUSABEE_RELEASE_DIR.
 set -e -u -o pipefail
 cd "$(dirname "$0")/.."
@@ -39,7 +40,8 @@ fi
 step "Archiving Causabee $VERSION ($BUILD) for the iPhone"
 xcodebuild archive -project App/Causabee.xcodeproj -scheme CausabeePhone -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$OUT/CausabeePhone.xcarchive" -allowProvisioningUpdates \
-  MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" > "$OUT/archive.log" 2>&1 \
+  MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
+  CAUSABEE_STAGE="${CAUSABEE_STAGE-Beta}" CAUSABEE_NUMBER="$BUILD" > "$OUT/archive.log" 2>&1 \
   || { tail -20 "$OUT/archive.log"; fail "The archive failed. The whole log: $OUT/archive.log" }
 
 step "Uploading to App Store Connect"

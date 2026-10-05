@@ -194,4 +194,20 @@ public final class Calendars {
         try store.save(reminder, commit: true)
         return reminder.calendarItemExternalIdentifier
     }
+
+    /// A task that is deleted takes its reminder with it. Says whether there was one to take: one
+    /// the owner removed in Reminders already, or the demo's, is none.
+    @discardableResult
+    public func removeReminder(_ id: String?) -> Bool {
+        guard let reminder = reminder(id) else { return false }
+        return (try? store.remove(reminder, commit: true)) != nil
+    }
+
+    /// An appointment or a deadline that is deleted takes its entry in Calendar with it — of one
+    /// that repeats, only this one.
+    @discardableResult
+    public func removeEvent(_ id: String?) -> Bool {
+        guard let event = event(id) else { return false }
+        return (try? store.remove(event, span: .thisEvent, commit: true)) != nil
+    }
 }
