@@ -78,11 +78,6 @@ struct FilesSection: View {
                 SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
                               + (hidden.isEmpty ? "" : " · \(hidden.count) hidden")
                               + (small.isEmpty ? "" : " · \(small.count) small \(small.count == 1 ? "image" : "images")"))
-                if !all.isEmpty {
-                    Button("Add a document", systemImage: "plus") { addsScan = true }
-                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
-                        .tool()
-                }
             }
             if all.isEmpty {
                 PhoneEmptyBox(text: "A letter, a scan, a PDF. Files in mail come by themselves.",

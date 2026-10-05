@@ -326,6 +326,8 @@ enum CardActions {
             guard let matter = scope, !text.isEmpty else { return .nothing }
             let todo = Todo(text: text, owner: Todo.Owner(rawValue: card.owner) ?? .me, due: card.due, source: source,
                             origin: "assistant#" + text.lowercased())
+            // A time of day counts only with its day, and only as HH:MM.
+            if card.due != nil, let time = card.time, time.wholeMatch(of: /\d{2}:\d{2}/) != nil { todo.dueTime = time }
             context.insert(todo)
             todo.matter = matter
             try? context.save()

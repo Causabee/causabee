@@ -510,9 +510,12 @@ struct DetailsSection: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     SectionHeader(title: "Details", detail: details.isEmpty ? nil : "\(details.count)")
+                    // On the iPhone the round plus adds a detail; the Mac has its own here.
+                    #if os(macOS)
                     Button("Detail", systemImage: "plus") { adding = true }
                         .buttonStyle(.plain).font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
                         .accessibilityIdentifier("detail.add")
+                    #endif
                 }
                 if details.isEmpty {
                     Text("A membership number, a file number, a ward and room: what you need on the phone with them.")

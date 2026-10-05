@@ -834,7 +834,7 @@ struct ActionCard: View {
 
     private var takenKind: String {
         switch card.kind {
-        case .newTodo: return "Task added · " + whose + (card.due.map { " · by \(Dates.short($0))" } ?? "")
+        case .newTodo: return "Task added · " + whose + (card.due.map { " · by \(Dates.short($0))" + (card.time.map { " at \($0)" } ?? "") } ?? "")
         case .markDone: return "Marked done"
         case .sameParty: return "Merged into one person"
         case .renameParty: return "Name changed"
@@ -908,7 +908,7 @@ struct ActionCard: View {
     private var title: String {
         switch card.kind {
         case .markDone: return "Done?"
-        case .newTodo: return "New task? · " + whose + (card.due.map { " · by \(Dates.short($0))" } ?? "")
+        case .newTodo: return "New task? · " + whose + (card.due.map { " · by \(Dates.short($0))" + (card.time.map { " at \($0)" } ?? "") } ?? "")
         case .sameParty: return "Same person?"
         case .renameParty: return "Change name?"
         case .changeRole: return "Change role?"

@@ -32,7 +32,9 @@ public enum AssistantPrompt {
     - `mark_done`: an open to-do the facts show is done. `todo` is its id.
     - `new_todo`: something to do that is not on the list yet. `text` is the to-do. `owner` is \
     `me` (the owner's own), `we` (the owner's together with others), or `other` (someone else's \
-    that the owner waits for).
+    that the owner waits for). `due` is the day it is to be done by, or null; `time` the time of \
+    that day (HH:MM) when one is given — "ab 25. Okt. 15:10 Uhr" is due that day at 15:10 — or \
+    null. The day and the time go there, not into `text`.
     - `same_party`: two parties are one person or company. `party` is the id to fold in, `into` \
     the id it becomes.
     - `rename_party`: a party's name is wrong. `party` is its id, `text` the right name, written \

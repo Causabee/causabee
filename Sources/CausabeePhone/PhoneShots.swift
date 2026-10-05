@@ -394,7 +394,7 @@ struct AttachButton: View {
 }
 
 /// The black plus over the bee, on a matter: one place to add whatever the owner has in hand — a
-/// photo or scan, a file, a contact, a detail, a link, a note, a task.
+/// photo, a file, a scan, a contact, a detail, a link, a note, a task.
 struct MatterPlusButton: View {
     let matter: Matter
     let contact: () -> Void
@@ -407,12 +407,15 @@ struct MatterPlusButton: View {
     @Query private var profiles: [Profile]
     @State private var picksPhoto = false
     @State private var picksFile = false
+    @State private var scans = false
     @State private var photo: PhotosPickerItem?
 
     var body: some View {
         Menu {
             Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
             Button("File", systemImage: "doc") { picksFile = true }
+            // A letter on the table: scanned with the camera, named and kept among the matter's files.
+            Button("Scan a document", systemImage: "doc.viewfinder") { scans = true }.accessibilityIdentifier("plus.scan")
             Divider()
             Button("Contact", systemImage: "person.badge.plus", action: contact).accessibilityIdentifier("plus.contact")
             Button("Detail", systemImage: "info.circle", action: detail).accessibilityIdentifier("plus.detail")
@@ -434,6 +437,7 @@ struct MatterPlusButton: View {
             LetterShot.brought = true
             bring(file)
         }
+        .sheet(isPresented: $scans) { ScanSheet(matter: matter) }
         .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
         .onChange(of: photo) {
             guard let photo else { return }
