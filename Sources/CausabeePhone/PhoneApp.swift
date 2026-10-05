@@ -134,6 +134,8 @@ final class PhoneCloudStatus {
                 if let error { PhoneCloudStatus.shared.lastError = error } else if type != .setup { PhoneCloudStatus.shared.lastError = nil }
             }
         }
+        // The demo has no iCloud, and CausabeeDemo is not signed for the container: asking would stop it.
+        guard PhoneCloud.container != nil else { account = "the demo stays on this iPhone"; return }
         Task {
             let status = try? await CKContainer(identifier: PhoneCloud.ownContainer).accountStatus()
             account = switch status {

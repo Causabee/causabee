@@ -16,9 +16,12 @@ enum DemoData {
     nonisolated static let chosenKey = "demo.chosen"
 
     /// `--fresh-setup` runs on the demo too: the setup's test never touches the owner's store.
+    /// A copy of the app under an identifier ending in `.demo` — CausabeeDemo, beside the owner's
+    /// own Causabee — is the demo however it is started.
     nonisolated static var isRequested: Bool {
         CommandLine.arguments.contains("--demo") || CommandLine.arguments.contains("--fresh-setup")
             || UserDefaults.standard.bool(forKey: chosenKey)
+            || Bundle.main.bundleIdentifier?.hasSuffix(".demo") == true
     }
 
     /// Into the demo, or back to the owner's own matters. A store is opened once, when Causabee

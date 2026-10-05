@@ -79,10 +79,9 @@ struct MatterScreen: View {
                             .id("parts")
                             // Under the bar the pinned ones stand for them: these do not show through it.
                             .opacity(partsUnder ? 0 : 1)
-                            // Gone up under the bar: then they stay at hand, pinned under it.
-                            .onGeometryChange(for: Bool.self) { $0.frame(in: .global).minY < topInset } action: { under in
-                                withAnimation(.easeOut(duration: 0.15)) { partsUnder = under }
-                            }
+                            // Gone up to where the pinned ones stand, 6 points under the bar: then those
+                            // take their place at once, on the same spot, so nothing jumps.
+                            .onGeometryChange(for: Bool.self) { $0.frame(in: .global).minY < topInset + 6 } action: { partsUnder = $0 }
                         // At least as tall as the page shows: a short part does not pull the page
                         // down, and the parts stay where they were tapped.
                         VStack(alignment: .leading, spacing: 20) {
@@ -126,12 +125,19 @@ struct MatterScreen: View {
             }
             // Over the page, not in it: the page keeps its place when they come and go.
             .overlay(alignment: .top) {
-                if partsUnder, !find.isActive {
+                if !find.isActive {
+                    // The tabs change places without a fade; only the bar behind them comes in softly.
                     parts(status)
+                        .opacity(partsUnder ? 1 : 0)
                         .padding(.horizontal, 16).padding(.top, 6).padding(.bottom, 10)
-                        .background(.bar, ignoresSafeAreaEdges: .top)
-                        .overlay(alignment: .bottom) { Divider() }
-                        .transition(.opacity)
+                        .background {
+                            Rectangle().fill(.bar).ignoresSafeArea(edges: .top)
+                                .overlay(alignment: .bottom) { Divider() }
+                                .opacity(partsUnder ? 1 : 0)
+                                .animation(.easeOut(duration: 0.15), value: partsUnder)
+                        }
+                        .allowsHitTesting(partsUnder)
+                        .accessibilityHidden(!partsUnder)
                 }
             }
             .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
