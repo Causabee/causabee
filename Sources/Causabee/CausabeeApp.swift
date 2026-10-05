@@ -429,6 +429,7 @@ final class Navigation {
 
     func open(_ matter: Matter, showing todo: PersistentIdentifier? = nil) {
         showing = todo
+        RecentMatters.note(matter)
         place = .matter(matter.persistentModelID)
     }
 

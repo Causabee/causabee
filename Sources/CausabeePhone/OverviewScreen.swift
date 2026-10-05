@@ -54,6 +54,8 @@ struct OverviewScreen: View {
     @Environment(Navigation.self) private var navigation
     @Environment(PhoneStore.self) private var store
     @State private var search = ""
+    /// The cursor is in "Find or start a matter".
+    @FocusState private var searching: Bool
     @Environment(\.modelContext) private var context
     @State private var editsAccount = false
     @AppStorage(WelcomeSheet.seenKey) private var introSeen = false
@@ -157,6 +159,7 @@ struct OverviewScreen: View {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                 TextField("Find or start a matter", text: $search)
                     .font(.body)
+                    .focused($searching)
                     .submitLabel(.go)
                     .onSubmit {
                         let hits = MatterSearch.find(query, in: matters)
@@ -172,6 +175,31 @@ struct OverviewScreen: View {
             .padding(.horizontal, 16).padding(.vertical, 12)
             .background(Theme.card, in: Capsule())
             .overlay(Capsule().stroke(Theme.line))
+            // Tapped and nothing typed yet: the matters opened last, to go straight back to. The first
+            // letter typed puts what is found in their place.
+            let recent = searching && query.isEmpty ? RecentMatters.list(in: matters) : []
+            if !recent.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("RECENT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 4)
+                    ForEach(Array(recent.enumerated()), id: \.element.persistentModelID) { index, matter in
+                        if index > 0 { Divider().padding(.leading, 14) }
+                        Button { searching = false; navigation.open(matter) } label: {
+                            Label {
+                                Text(matter.name + (matter.isClosed ? " · closed" : "")).foregroundStyle(.primary).lineLimit(1)
+                            } icon: {
+                                Image(systemName: "clock.arrow.circlepath").foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("recent.matter")
+                    }
+                }
+                .phoneCard()
+            }
             if !query.isEmpty {
                 let hits = MatterSearch.find(query, in: matters)
                 VStack(alignment: .leading, spacing: 0) {

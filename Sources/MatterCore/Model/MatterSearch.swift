@@ -13,6 +13,11 @@ public enum MatterSearch {
         public let matter: Matter
         /// Why it came up, when not by its name: "Aufgabe: Lieferung Dachrinne nachfassen".
         public let because: String?
+
+        public init(matter: Matter, because: String? = nil) {
+            self.matter = matter
+            self.because = because
+        }
     }
 
     public static func find(_ query: String, in matters: [Matter], limit: Int = 6) -> [Hit] {

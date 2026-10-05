@@ -81,23 +81,25 @@ struct OverviewWeek: View {
             VStack(spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(Self.weekday.string(from: date).uppercased()).font(.caption.weight(.semibold))
-                        .foregroundStyle(isChosen ? Theme.onInk : .secondary)
+                        .foregroundStyle(.secondary)
                     Text(Self.dayOfMonth.string(from: date)).font(.title3.weight(.semibold))
-                        .foregroundStyle(isChosen ? Theme.onInk : .primary)
+                        .foregroundStyle(.primary)
                 }
                 // How many things, as every day says it; on today an orange dot while anything is
                 // overdue — how many is said once, on the day's first tile.
                 HStack(spacing: 4) {
                     if late > 0 { Circle().fill(Theme.warning).frame(width: 6, height: 6) }
                     Text(count == 0 ? "—" : count == 1 ? "1 thing" : "\(count) things")
-                        .foregroundStyle(isChosen ? Theme.onInk.opacity(0.8) : .secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .font(.caption)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 7)
-            .background(isChosen ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(Theme.card), in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(isToday && !isChosen ? Theme.ink : Theme.line, lineWidth: isToday && !isChosen ? 1.5 : 1))
+            // Light, as on the iPhone: no boxes around the days — the chosen one on the grey of a box,
+            // and today, while another day is chosen, in a hairline.
+            .background(isChosen ? AnyShapeStyle(Theme.box) : AnyShapeStyle(.clear), in: RoundedRectangle(cornerRadius: 10))
+            .overlay { if isToday && !isChosen { RoundedRectangle(cornerRadius: 10).stroke(Theme.line) } }
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)

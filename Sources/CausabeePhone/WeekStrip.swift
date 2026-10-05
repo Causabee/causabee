@@ -94,9 +94,9 @@ struct PhoneWeek: View {
         return Button { chosen = day } label: {
             VStack(spacing: 3) {
                 Text(Self.weekday.string(from: date).uppercased()).font(.caption2.weight(.medium))
-                    .foregroundStyle(isChosen ? Theme.onInk : .secondary)
+                    .foregroundStyle(.secondary)
                 Text(Self.dayOfMonth.string(from: date)).font(.body.weight(.medium))
-                    .foregroundStyle(isChosen ? Theme.onInk : .primary)
+                    .foregroundStyle(.primary)
                 // A dot a thing, three at most; the orange one first, for what is overdue.
                 HStack(spacing: 3) {
                     if late { Circle().fill(Theme.warning).frame(width: 5, height: 5) }
@@ -108,8 +108,10 @@ struct PhoneWeek: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            .background(isChosen ? AnyShapeStyle(Theme.ink) : AnyShapeStyle(Theme.card), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(isToday && !isChosen ? Theme.ink : Theme.line, lineWidth: isToday && !isChosen ? 1.5 : 1))
+            // Light, as Figma's "iPhone · Overview" draws it: no boxes around the days — the chosen one
+            // on the grey of a box, and today, while another day is chosen, in a hairline.
+            .background(isChosen ? AnyShapeStyle(Theme.box) : AnyShapeStyle(.clear), in: RoundedRectangle(cornerRadius: 12))
+            .overlay { if isToday && !isChosen { RoundedRectangle(cornerRadius: 12).stroke(Theme.line) } }
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)

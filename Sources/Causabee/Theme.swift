@@ -782,3 +782,26 @@ struct ThreadPlace: Equatable {
     var up: Bool
     var height: CGFloat
 }
+
+/// The matters opened last on this device, the newest first: offered under "Find or start a matter"
+/// before anything is typed. Kept by their keys, apart for the demo; one that is gone is left out.
+enum RecentMatters {
+    static let most = 5
+    /// As DemoData asks it — which the share sheet, built from this file too, does not know.
+    private static var isDemo: Bool {
+        CommandLine.arguments.contains("--demo") || UserDefaults.standard.bool(forKey: "demo.chosen")
+            || Bundle.main.bundleIdentifier?.hasSuffix(".demo") == true
+    }
+    private static var key: String { isDemo ? "matters.recent.demo" : "matters.recent" }
+    private static var keys: [String] { UserDefaults.standard.stringArray(forKey: key) ?? [] }
+
+    static func note(_ matter: Matter) {
+        var keys = keys.filter { $0 != matter.key }
+        keys.insert(matter.key, at: 0)
+        UserDefaults.standard.set(Array(keys.prefix(most)), forKey: key)
+    }
+
+    static func list(in matters: [Matter]) -> [Matter] {
+        keys.compactMap { key in matters.first { $0.key == key } }
+    }
+}

@@ -41,6 +41,7 @@ final class Navigation {
     func open(_ matter: Matter, showing todo: PersistentIdentifier? = nil) {
         showing = todo
         showsAssistant = false
+        RecentMatters.note(matter)
         if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }
     }
 

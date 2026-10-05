@@ -373,6 +373,8 @@ struct OverviewView: View {
     let start: (String) -> Void
     @Environment(Navigation.self) private var navigation
     @FocusState private var searching: Bool
+    /// The matters opened last are shown under the field: after a click on it or ↓, with nothing typed.
+    @State private var showsRecent = false
     /// The row the arrow keys or the mouse are on; Return opens it. The last row is "Start new".
     @State private var picked = 0
     /// How wide the page is: how many pinned matters fit side by side.
@@ -384,7 +386,10 @@ struct OverviewView: View {
     @ViewBuilder
     private var searchField: some View {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        let hits = MatterSearch.find(query, in: matters)
+        // Nothing typed, and the field clicked or ↓ pressed: the matters opened last, to go straight
+        // back to. The first letter typed puts what is found in their place.
+        let hits = query.isEmpty ? (showsRecent && searching ? RecentMatters.list(in: matters).map { MatterSearch.Hit(matter: $0) } : [])
+                                 : MatterSearch.find(query, in: matters)
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
@@ -392,18 +397,23 @@ struct OverviewView: View {
                     .textFieldStyle(.plain).font(.title3)
                     .focused($searching)
                     .onSubmit {
-                        if hits.indices.contains(picked) { search = ""; navigation.open(hits[picked].matter) } else if !query.isEmpty { start(query) }
+                        if hits.indices.contains(picked) { search = ""; showsRecent = false; navigation.open(hits[picked].matter) } else if !query.isEmpty { start(query) }
                     }
                     .onKeyPress(.downArrow) {
-                        guard !query.isEmpty else { return .ignored }
+                        // With nothing typed, ↓ brings the last ones; then it walks them.
+                        guard !query.isEmpty else {
+                            if showsRecent { picked = min(picked + 1, max(hits.count - 1, 0)) } else { showsRecent = true; picked = 0 }
+                            return .handled
+                        }
                         picked = min(picked + 1, hits.count); return .handled
                     }
                     .onKeyPress(.upArrow) {
-                        guard !query.isEmpty else { return .ignored }
+                        guard !query.isEmpty || showsRecent else { return .ignored }
                         picked = max(picked - 1, 0); return .handled
                     }
                     .onChange(of: search) { picked = 0 }
-                    .onExitCommand { search = "" }
+                    .onChange(of: searching) { if !searching { showsRecent = false } }
+                    .onExitCommand { search = ""; showsRecent = false }
                 if !search.isEmpty {
                     Button { search = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }.buttonStyle(.plain)
                 }
@@ -413,11 +423,16 @@ struct OverviewView: View {
             .overlay(Capsule().stroke(searching ? Theme.strongLine : Theme.line, lineWidth: searching ? 1.5 : 1))
             // Anywhere on the field puts the cursor in it, not only on its words.
             .contentShape(Capsule())
-            .onTapGesture { searching = true }
-            if !query.isEmpty {
+            .onTapGesture { searching = true; showsRecent = true }
+            // A click on the words themselves is the field's own: it is seen here beside it.
+            .simultaneousGesture(TapGesture().onEnded { showsRecent = true })
+            if !query.isEmpty || !hits.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
+                    if query.isEmpty {
+                        Text("RECENT").font(.caption2.weight(.semibold)).foregroundStyle(.secondary).padding(.horizontal, 6).padding(.top, 2)
+                    }
                     ForEach(Array(hits.enumerated()), id: \.offset) { index, hit in
-                        Button { search = ""; navigation.open(hit.matter) } label: {
+                        Button { search = ""; showsRecent = false; navigation.open(hit.matter) } label: {
                             HStack(alignment: .firstTextBaseline) {
                                 Image(systemName: index == picked ? "return" : "folder").font(.caption).foregroundStyle(.secondary).frame(width: 18)
                                 VStack(alignment: .leading, spacing: 1) {
@@ -432,6 +447,7 @@ struct OverviewView: View {
                         .buttonStyle(.plain)
                         .onHover { if $0 { picked = index } }
                     }
+                    if !query.isEmpty {
                     Button { start(query) } label: {
                         HStack {
                             Image(systemName: picked == hits.count ? "return" : "plus.circle").font(.caption).frame(width: 18)
@@ -444,6 +460,7 @@ struct OverviewView: View {
                     .buttonStyle(.plain)
                     .onHover { if $0 { picked = hits.count } }
                     .help("Made on the Mac, nothing is sent.")
+                    }
                 }
                 .padding(.horizontal, 6).padding(.vertical, 6)
                 .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
