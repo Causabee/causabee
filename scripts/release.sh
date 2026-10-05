@@ -81,6 +81,12 @@ if [[ -n $(git ls-remote --tags origin "refs/tags/$TAG") ]] || gh release view "
 fi
 $DRY || xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1 || fail "No notary login saved as '$PROFILE' (see the top of this script)."
 
+# What the owner does at the desk must work before anything is built: the unit tests, and the Mac app
+# clicked through on the demo's matters. Skipped only with CAUSABEE_SKIP_TESTS=1.
+if [[ -z ${CAUSABEE_SKIP_TESTS:-} ]]; then
+  scripts/mac-tests.sh || fail "The regression tests failed: nothing was built or published."
+fi
+
 APP=$OUT/Causabee.app
 rm -rf "$OUT"; mkdir -p "$OUT"
 

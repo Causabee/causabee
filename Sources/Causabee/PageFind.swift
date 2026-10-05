@@ -374,9 +374,9 @@ struct ContactEditor: View {
         #else
         VStack(alignment: .leading, spacing: 10) {
             Text("New contact").font(.headline)
-            TextField("Name", text: $name).textFieldStyle(.roundedBorder)
+            TextField("Name", text: $name).textFieldStyle(.roundedBorder).accessibilityIdentifier("contact.name")
             TextField("Role — insurer, doctor, office", text: $role).textFieldStyle(.roundedBorder)
-            TextField("Mail", text: $address).textFieldStyle(.roundedBorder)
+            TextField("Mail", text: $address).textFieldStyle(.roundedBorder).accessibilityIdentifier("contact.mail")
             TextField("Phone", text: $phone).textFieldStyle(.roundedBorder)
             Text("A contact you add stays in this matter. If mail from the same address comes in later, it is the same contact.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -446,8 +446,8 @@ struct DetailEditor: View {
             #else
             VStack(alignment: .leading, spacing: 10) {
                 Text(detail == nil ? "New detail" : "Detail").font(.headline)
-                TextField("What — Versichertennummer, file number", text: $label).textFieldStyle(.roundedBorder)
-                TextField("Value", text: $value).textFieldStyle(.roundedBorder)
+                TextField("What — Versichertennummer, file number", text: $label).textFieldStyle(.roundedBorder).accessibilityIdentifier("detail.label")
+                TextField("Value", text: $value).textFieldStyle(.roundedBorder).accessibilityIdentifier("detail.value")
                 if !matter.parties.isEmpty { whose }
                 Text("Kept on your devices. The assistant learns that it is here, never the value.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)

@@ -44,6 +44,8 @@ struct MatterStatusView: View {
     /// This matter and the one it is to go into, from the bar's ⋯.
     @State private var mergingMatter: (Matter, Matter)?
     @Query(sort: \Matter.name) private var allMatters: [Matter]
+    /// Why the matter could not be written out, said once.
+    @State private var exportFailure: String?
     @State private var asksToClose = false
     /// Renaming, and the name so far — its own text, so the cursor stays put.
     @State private var renaming = false
@@ -225,6 +227,9 @@ struct MatterStatusView: View {
         } message: {
             Text("All mails, tasks, appointments and people come along. The old name stays as an alias, so new mail still arrives. You cannot split it again later.")
         }
+        .alert("The matter could not be exported", isPresented: Binding(get: { exportFailure != nil }, set: { if !$0 { exportFailure = nil } })) {
+            Button("OK") { exportFailure = nil }
+        } message: { Text(exportFailure ?? "") }
         .confirmationDialog(closeQuestion, isPresented: $asksToClose) {
             if matter.openTodos.isEmpty {
                 Button("Close") { close(markingOpenDone: false) }
@@ -638,6 +643,18 @@ struct MatterStatusView: View {
     }
 
     /// "+ Task": an empty task of the owner's, opened in the editor.
+    /// The matter as one RTF document in its folder — iCloud Drive › Causabee › the matter — shown in
+    /// Finder. The demo's goes to a temporary folder, never among the owner's files.
+    private func export() {
+        do {
+            try? context.save()
+            let file = try MatterExport.write(matter, into: DemoData.isRequested ? nil : MatterFolders.folder(for: matter))
+            FolderSaver.reveal(file)
+        } catch {
+            exportFailure = error.localizedDescription
+        }
+    }
+
     private func addTodo() {
         let todo = Todo(text: "", owner: .me, due: nil, source: Source(kind: .conversation, pointer: "you", date: Date()),
                         origin: "you#" + UUID().uuidString)
@@ -932,6 +949,7 @@ struct MatterStatusView: View {
                         .onGlass(Capsule())
                         .help("Add to this matter: a task, a note, a file, a contact, a detail, a link")
                         .accessibilityLabel("Add to this matter")
+                        .accessibilityIdentifier("matter.plus")
                         .tool()
                         PageFindField(find: find)
                         // What is seldom needed sits behind the dots, not in the bar: what the sidebar's
@@ -944,6 +962,8 @@ struct MatterStatusView: View {
                                     Button(other.name + (other.isClosed ? " (closed)" : "")) { mergingMatter = (matter, other) }
                                 }
                             }
+                            // Everything the matter holds, as one document: what is gathered here can leave at any time.
+                            Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
                             Divider()
                             if matter.isClosed {
                                 Button("Open Again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
@@ -955,8 +975,9 @@ struct MatterStatusView: View {
                         }
                         .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
                         .onGlass(Circle())
-                        .help("More: pin, rename, merge with another matter, close")
+                        .help("More: pin, rename, merge with another matter, export, close")
                         .accessibilityLabel("More")
+                        .accessibilityIdentifier("matter.more")
                         .tool()
                     }
                     // On the line of the name: the row is set by its words' baseline.
@@ -1693,7 +1714,7 @@ struct TodoEditor: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(isNew ? "New task" : "Change task").font(.headline)
             VStack(spacing: 8) {
-                box(TextField("What to do", text: $text, axis: .vertical).lineLimit(1...5), field: .text)
+                box(TextField("What to do", text: $text, axis: .vertical).lineLimit(1...5).accessibilityIdentifier("task.text"), field: .text)
                 box(TextField("Note — a list, a detail, what was agreed", text: $note, axis: .vertical).lineLimit(2...8), field: .note)
             }
             VStack(alignment: .leading, spacing: 6) {

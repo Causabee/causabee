@@ -1,5 +1,6 @@
 import EventKit
 import MatterCore
+import QuickLook
 import SwiftData
 import SwiftUI
 
@@ -39,6 +40,9 @@ struct MatterScreen: View {
     @State private var addingLink = false
     /// The parts in the page have scrolled under the bar, which shows them then.
     @State private var partsUnder = false
+    /// The matter written out as a document, and why it could not be.
+    @State private var exported: URL?
+    @State private var exportFailure: String?
     @State private var topInset = CGFloat.zero
     /// One person's part of the record: chosen in "People".
     @State private var person: PersistentIdentifier?
@@ -202,6 +206,8 @@ struct MatterScreen: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
+                    // Everything the matter holds, as one document: what is gathered here can leave at any time.
+                    Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
                     Divider()
                     if matter.isClosed {
                         Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
@@ -213,6 +219,11 @@ struct MatterScreen: View {
                 .accessibilityLabel("More")
             }
         }
+        // The exported document, shown: its share button sends it on.
+        .quickLookPreview($exported)
+        .alert("The matter could not be exported", isPresented: Binding(get: { exportFailure != nil }, set: { if !$0 { exportFailure = nil } })) {
+            Button("OK") { exportFailure = nil }
+        } message: { Text(exportFailure ?? "") }
         .sheet(item: $newTodo, onDismiss: dropEmptyTodos) { todo in PhoneTodoEditor(todo: todo, isNew: true) }
         .confirmationDialog(closeQuestion, isPresented: $asksToClose, titleVisibility: .visible) {
             if matter.openTodos.isEmpty {
@@ -591,6 +602,17 @@ struct MatterScreen: View {
             context.delete(todo)
         }
         try? context.save()
+    }
+
+    /// The matter as one RTF document in its folder — iCloud Drive › Causabee › the matter — and shown.
+    /// The demo's goes to a temporary folder, never among the owner's files.
+    private func export() {
+        do {
+            try? context.save()
+            exported = try MatterExport.write(matter, into: DemoData.isRequested ? nil : MatterFolders.folder(for: matter))
+        } catch {
+            exportFailure = error.localizedDescription
+        }
     }
 
     private func todos(_ status: MatterStatus) -> some View {

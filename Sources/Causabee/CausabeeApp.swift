@@ -210,9 +210,13 @@ final class Navigation {
     /// The assistant beside the overview: asked for with its button there, about all matters.
     var assistantOnOverview = false
     /// The assistant's column put away while a matter is open; remembered.
-    var assistantHidden = IntroShot.current == nil && UserDefaults.standard.bool(forKey: "assistant.hidden") {
-        didSet { if IntroShot.current == nil { UserDefaults.standard.set(assistantHidden, forKey: "assistant.hidden") } }
+    var assistantHidden = Navigation.remembers && UserDefaults.standard.bool(forKey: "assistant.hidden") {
+        didSet { if Navigation.remembers { UserDefaults.standard.set(assistantHidden, forKey: "assistant.hidden") } }
     }
+    /// Whether what the owner chose — the assistant put away, reading — is read and kept: not for the
+    /// introduction's pictures, and not for the regression tests (CAUSABEE_UI_TEST), which see
+    /// everything and leave the owner's choices as they were.
+    static let remembers = IntroShot.current == nil && ProcessInfo.processInfo.environment["CAUSABEE_UI_TEST"] == nil
 
     /// Puts the assistant's column away, where the owner is.
     func closeAssistant() {
@@ -228,8 +232,8 @@ final class Navigation {
     var sidebarHidden = false
     /// Reading: small actions and the AI's explanations put away. Kept for the next start.
     /// The introduction's pictures show everything, whatever the owner chose.
-    var reading = IntroShot.current == nil && UserDefaults.standard.bool(forKey: "ui.reading") {
-        didSet { UserDefaults.standard.set(reading, forKey: "ui.reading") }
+    var reading = Navigation.remembers && UserDefaults.standard.bool(forKey: "ui.reading") {
+        didSet { if Navigation.remembers { UserDefaults.standard.set(reading, forKey: "ui.reading") } }
     }
     /// Counts up to put the cursor in the assistant's field.
     var focusRequest = 0
