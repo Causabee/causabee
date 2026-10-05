@@ -125,19 +125,12 @@ struct MatterScreen: View {
             }
             // Over the page, not in it: the page keeps its place when they come and go.
             .overlay(alignment: .top) {
-                if !find.isActive {
-                    // The tabs change places without a fade; only the bar behind them comes in softly.
+                if partsUnder, !find.isActive {
+                    // The tabs change places without a fade: there is one set of them at a time.
                     parts(status)
-                        .opacity(partsUnder ? 1 : 0)
                         .padding(.horizontal, 16).padding(.top, 6).padding(.bottom, 10)
-                        .background {
-                            Rectangle().fill(.bar).ignoresSafeArea(edges: .top)
-                                .overlay(alignment: .bottom) { Divider() }
-                                .opacity(partsUnder ? 1 : 0)
-                                .animation(.easeOut(duration: 0.15), value: partsUnder)
-                        }
-                        .allowsHitTesting(partsUnder)
-                        .accessibilityHidden(!partsUnder)
+                        .background(.bar, ignoresSafeAreaEdges: .top)
+                        .overlay(alignment: .bottom) { Divider() }
                 }
             }
             .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
