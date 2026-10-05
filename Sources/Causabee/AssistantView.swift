@@ -85,6 +85,27 @@ struct AssistantColumn: View {
     }
 
     private static let bottom = "thread-bottom"
+    /// How the thread moves when it moves by itself: slowly enough to follow, not a jump.
+    private static let glide = Animation.easeInOut(duration: 0.3)
+
+    /// Down to the newest, so that its last line is readable — after the thread is laid out with
+    /// what is new: asked for in the same moment, its lower edge is still the old one.
+    private func toBottom(_ scroller: ScrollViewProxy) {
+        DispatchQueue.main.async { withAnimation(Self.glide) { scroller.scrollTo(Self.bottom, anchor: .bottom) } }
+    }
+
+    /// How far a file brought in is, as a number: its card grows with it.
+    private static func step(_ shot: Navigation.Shot) -> Int {
+        switch shot.stage {
+        case .reading: 0
+        case .read: 1
+        case .sending: 2
+        case .answered: 3
+        case .taken: 4
+        case .failed: 5
+        case .dismissed: 6
+        }
+    }
 
     var body: some View {
         column
@@ -120,7 +141,7 @@ struct AssistantColumn: View {
                                     .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, index == 0 ? 16 : 24)
                             }
                             if let note = turn.note {
-                                IntakeNote(text: note).id(turn.id)
+                                IntakeNote(text: note).id(turn.id).transition(.opacity)
                             } else if let shot = turn.shot {
                                 ShotView(turn: turn, shot: shot, matters: matters,
                                          classify: { conversation.classify(shot: turn.id, owner: profiles.first?.names ?? []) },
@@ -128,7 +149,7 @@ struct AssistantColumn: View {
                                          dismiss: { Conversation.set(shot: turn.id, .dismissed, in: navigation) },
                                          open: { id in if let matter = matters.first(where: { $0.persistentModelID == id }) { navigation.open(matter) } },
                                          bringBack: { conversation.bring(shot.file) })
-                                    .id(turn.id)
+                                    .id(turn.id).transition(.opacity)
                             } else {
                                 TurnView(turn: turn, open: conversation.open, label: conversation.label,
                                          apply: { conversation.apply($0, text: $1, subject: $2, in: turn) },
@@ -139,7 +160,7 @@ struct AssistantColumn: View {
                                          },
                                          recipient: { conversation.recipient($0, in: turn) },
                                          again: turn.id == newestQuestion && asking == nil ? { conversation.again(turn, all: matters) } : nil)
-                                    .id(turn.id)
+                                    .id(turn.id).transition(.opacity)
                             }
                         }
                         Color.clear.frame(height: 1).id(Self.bottom)
@@ -162,17 +183,26 @@ struct AssistantColumn: View {
                     }
                 }
                 // What is seen, not where the view starts: the glass bar on top shifts the offset.
-                .onScrollGeometryChange(for: Bool.self) { geometry in
-                    geometry.visibleRect.maxY < geometry.contentSize.height - 60
-                } action: { _, up in
-                    withAnimation(.easeOut(duration: 0.15)) { scrolledUp = up }
+                // Read together, so that what was true before a change decides: the field growing by a
+                // line, a chip coming over it, the window made lower — a thread that was at its newest
+                // stays there, and one being read further up stays where it is read.
+                .onScrollGeometryChange(for: ThreadPlace.self) { geometry in
+                    ThreadPlace(up: geometry.visibleRect.maxY < geometry.contentSize.height - 60, height: geometry.containerSize.height)
+                } action: { old, new in
+                    if new.height != old.height, !old.up {
+                        scroller.scrollTo(Self.bottom, anchor: .bottom)
+                        return
+                    }
+                    withAnimation(.easeOut(duration: 0.15)) { scrolledUp = new.up }
                     // Down at the newest again: the answer has been reached.
-                    if !up { newAnswer = nil }
+                    if !new.up { newAnswer = nil }
                 }
+                // What comes into the thread fades in, and what is under it moves, not jumps.
+                .animation(Self.glide, value: shown.map(\.id))
                 .overlay(alignment: .bottom) {
                     if scrolledUp {
                         Button {
-                            withAnimation {
+                            withAnimation(Self.glide) {
                                 if let newAnswer { scroller.scrollTo(newAnswer, anchor: .top) } else { scroller.scrollTo(Self.bottom, anchor: .bottom) }
                                 newAnswer = nil
                             }
@@ -193,15 +223,20 @@ struct AssistantColumn: View {
                     // else that comes in — new mail, a file — leaves a reader where they are.
                     if case .asking = last.state, last.note == nil, last.shot == nil {
                         newAnswer = nil
-                        withAnimation { scroller.scrollTo(Self.bottom, anchor: .bottom) }
+                        toBottom(scroller)
                     } else if !scrolledUp {
-                        withAnimation { scroller.scrollTo(last.id, anchor: .top) }
+                        // A file brought in is followed down, as its card grows while it is read.
+                        if last.shot != nil { toBottom(scroller) } else { withAnimation(Self.glide) { scroller.scrollTo(last.id, anchor: .top) } }
                     }
                 }
+                // A file's card that grew — read, sent, answered: followed, if the thread is at it.
+                .onChange(of: shown.last?.shot.map(Self.step)) { if !scrolledUp, shown.last?.shot != nil { toBottom(scroller) } }
                 .onChange(of: answeredCount) { old, new in
                     guard new > old, let last = shown.last(where: { if case .asking = $0.state { false } else { $0.note == nil && $0.shot == nil } }) else { return }
                     // The answer from where it begins — unless the thread is being read further up.
-                    if scrolledUp { newAnswer = last.id } else { withAnimation { scroller.scrollTo(last.id, anchor: .top) } }
+                    // All of it when it fits — the thread ends at its last line — and from its beginning
+                    // when it is longer than the window shows.
+                    if scrolledUp { newAnswer = last.id } else { DispatchQueue.main.async { withAnimation(Self.glide) { scroller.scrollTo(last.id, anchor: .top) } } }
                 }
             }
             let scope = scopeMatter

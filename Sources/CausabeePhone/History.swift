@@ -50,7 +50,7 @@ struct PhoneMailWay: View {
 }
 
 /// One mail in a conversation, set in by how deep it answers, with the lines to the mail it answers
-/// on its left. To see the mail itself, it opens in Mail.
+/// on its left. To see the mail itself, it opens in Mail — from the menu a long press brings.
 struct PhoneThreadMailRow: View {
     let row: MailThreads.Row
     let started: Bool
@@ -85,23 +85,24 @@ struct PhoneThreadMailRow: View {
                     if started { BeeChip(text: "started") }
                     Spacer(minLength: 4)
                     Text(entry.date.map(Dates.short) ?? "—").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    // As a file's row has it: everything the mail can do, behind its dots.
+                    Menu { items(entry) } label: {
+                        Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
+                    }
+                    .tint(.secondary)
+                    .accessibilityLabel("More")
+                    // While reading, a long press still has everything.
+                    .tool()
                 }
                 if let digest = entry.digest, !digest.isEmpty {
                     Text(digest).font(.subheadline).foregroundStyle(.secondary).lineLimit(3).fixedSize(horizontal: false, vertical: true)
-                }
-                if let url = entry.mailURL {
-                    Button(label(entry.source.kind)) { openURL(url) }
-                        .font(.caption).foregroundStyle(Theme.gold)
                 }
             }
             .padding(.vertical, 6)
             .padding(.leading, depth > 0 ? 6 : 0)
         }
         .contentShape(Rectangle())
-        .contextMenu {
-            AskCausabeeButton { navigation.talk(entry.title, kind: "Mail", in: matter) }
-            PhoneMoveMail(entry: entry) { newName = Matter.suggestedName(for: [entry]); naming = true }
-        }
+        .contextMenu { items(entry) }
         .alert("Move to a new matter", isPresented: $naming) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}
@@ -113,6 +114,17 @@ struct PhoneThreadMailRow: View {
         } message: {
             Text("The mail goes, with the tasks, dates and files only it brought.")
         }
+    }
+
+    /// What the dots and a long press both bring.
+    @ViewBuilder
+    private func items(_ entry: Entry) -> some View {
+        // To see the mail itself: first in its menu, as "Open" is for a file.
+        if let url = entry.mailURL {
+            Button(label(entry.source.kind), systemImage: entry.source.kind == .mail ? "envelope" : "arrow.up.forward.app") { openURL(url) }
+        }
+        AskCausabeeButton { navigation.talk(entry.title, kind: "Mail", in: matter) }
+        PhoneMoveMail(entry: entry) { newName = Matter.suggestedName(for: [entry]); naming = true }
     }
 
     /// A letter scanned and taken in is no mail: the button says what it opens.

@@ -2287,6 +2287,20 @@ struct ThreadMailRow: View {
         }
     }
 
+    /// What the dots and the right click both bring.
+    @ViewBuilder
+    private var items: some View {
+        // To see the mail itself: first in its menu, as "Open" is for a file.
+        // A letter scanned or a mail dropped in is a file on this Mac; a mail from the label is in Mail.
+        if let url = row.entry.source.fileURL ?? row.entry.mailURL {
+            Button(Self.openLabel(row.entry.source.kind), systemImage: row.entry.source.kind == .mail ? "envelope" : "arrow.up.forward.app") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+        Button("Ask Causabee", action: talk)
+        MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
+    }
+
     var body: some View {
         let depth = min(row.depth, Self.deepest)
         let entry = row.entry
@@ -2306,7 +2320,8 @@ struct ThreadMailRow: View {
                     if started { BeeChip(text: "started") }
                     Text(entry.date.map(Dates.short) ?? "—").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                     Spacer(minLength: 8)
-                    SourceLink(source: entry.source, label: Self.openLabel(entry.source.kind))
+                    // As every row has it: what the mail can do, behind its dots — opening it first.
+                    MoreMenu { items }
                 }
                 if let digest = entry.digest, !digest.isEmpty {
                     Text(digest).font(.callout).foregroundStyle(.secondary).lineLimit(3).fixedSize(horizontal: false, vertical: true)
@@ -2316,13 +2331,8 @@ struct ThreadMailRow: View {
             .padding(.leading, depth > 0 ? 6 : 0)
         }
         .contentShape(Rectangle())
-        // Asking about it is in the right click, as on every row: no button that comes and goes.
-        .contextMenu {
-            Button("Ask Causabee", action: talk)
-            MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
-            Divider()
-            if let url = row.entry.mailURL { Button("Open in Mail") { NSWorkspace.shared.open(url) } }
-        }
+        // The same in the right click, as on every row: no button that comes and goes.
+        .contextMenu { items }
         .alert("Move to a new matter", isPresented: $naming) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}

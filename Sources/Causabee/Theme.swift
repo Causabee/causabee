@@ -776,3 +776,9 @@ enum AppRelease {
     static var number: String? { info("CausabeeNumber") }
     static var label: String { "\(name) (\(number ?? "development build"))" }
 }
+
+/// Where the assistant's thread is: scrolled up from its newest or not, and how much of it shows.
+struct ThreadPlace: Equatable {
+    var up: Bool
+    var height: CGFloat
+}
