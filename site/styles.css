@@ -416,7 +416,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* The assistant: the question goes out, the bee is on it, the answers come with their sources,
    and the suggested task is added — the card closes into its small quiet box. 20 s, then again. */
-.live--ask { --img: url("assets/img/assistant.webp?v=6"); --T: 20s; }
+.live--ask { --img: url("assets/img/assistant.webp?v=7"); --T: 20s; }
 :where(.live--ask .live__stage) > * { animation: var(--T) ease-in-out infinite both; }
 .live--ask .ask-q { animation-name: ask-q; }
 .live--ask .ask-work { animation-name: ask-work; }
@@ -486,7 +486,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .tile__img.live .cover { animation-name: cover; }
 
 /* Tasks: the one for both of you is ticked off, and the one that waited on it has its turn. */
-.live--tasks { --img: url("assets/img/tasks.webp?v=6"); }
+.live--tasks { --img: url("assets/img/tasks.webp?v=7"); }
 .live--tasks .tk-box { animation-name: tk-box; }
 .live--tasks .tk-t1 { animation-name: tk-box; }
 .live--tasks .tk-t3, .live--tasks .tk-h3 { animation-name: tk-next; }
@@ -503,7 +503,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 }
 
 /* Calendar: connected with a click, every date offers "Add to Calendar" — one is added. */
-.live--cal { --img: url("assets/img/calendar.webp?v=6"); }
+.live--cal { --img: url("assets/img/calendar.webp?v=7"); }
 .live--cal .cl-banner { animation-name: cl-banner; }
 .live--cal .cl-l0, .live--cal .cl-l1, .live--cal .cl-l2, .live--cal .cl-l3 { animation-name: cl-move; }
 .live--cal .cl-chip, .live--cal .cl-tail { animation-name: cl-chip; }
@@ -528,7 +528,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 }
 
 /* Files: a file comes in with its mail — the list opens for it at the top, lightly marked. */
-.live--files { --img: url("assets/img/files.webp?v=6"); }
+.live--files { --img: url("assets/img/files.webp?v=7"); }
 .live--files .fl-row { animation-name: fl-row; }
 .live--files .fl-mark { animation-name: fl-mark; border-radius: calc(4 * var(--u)); background: #ecebe6; mix-blend-mode: multiply; }
 .live--files .fl-rest { animation-name: fl-rest; }
@@ -539,7 +539,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 @keyframes fl-count { 0%, 26% { opacity: 1; } 27%, 100% { opacity: 0; } }
 
 /* Sources: each "from the mail of …" opens that mail; the pointer goes from one to the next. */
-.live--src { --img: url("assets/img/sources.webp?v=6"); }
+.live--src { --img: url("assets/img/sources.webp?v=7"); }
 .live--src .sr-pointer { animation-name: sr-pointer; }
 .live--src .sr-d1 { animation-name: sr-d1; }
 .live--src .sr-d2 { animation-name: sr-d2; }
@@ -592,7 +592,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* The overview: "Get new mail" — fetched, two new mails shown with what sorting them costs, sorted
    in with a click; Lisbon has one task more. 20 s, then again. */
-.live--hero { --img: image-set(url("assets/img/overview-1440.webp?v=6") 1x, url("assets/img/overview-2880.webp?v=6") 2x); }
+.live--hero { --img: image-set(url("assets/img/overview-1440.webp?v=7") 1x, url("assets/img/overview-2880.webp?v=7") 2x); }
 :where(.live--hero .live__stage) > * { animation: 20s ease-in-out infinite both; }
 .live--hero .hr-caret { animation: hr-caret 1.06s steps(1, end) infinite; }
 @keyframes hr-caret { 0% { opacity: 0; } 50% { opacity: 1; } }
@@ -626,7 +626,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 
 /* The matter page: the next step asked for again, the summary brought up to date, a note written —
    each with what the app shows meanwhile. The three points under it follow along. 15 s. */
-.live--matter { --img: image-set(url("assets/img/matter-1440.webp?v=6") 1x, url("assets/img/matter-2880.webp?v=6") 2x); }
+.live--matter { --img: image-set(url("assets/img/matter-1440.webp?v=7") 1x, url("assets/img/matter-2880.webp?v=7") 2x); }
 :where(.live--matter .live__stage) > * { animation: 15s ease-in-out infinite both; }
 .live--matter .mt-step { animation-name: mt-step; }
 .live--matter .mt-ask { animation-name: mt-ask; }
