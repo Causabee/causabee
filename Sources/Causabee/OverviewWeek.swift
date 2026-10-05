@@ -21,11 +21,14 @@ struct OverviewWeek: View {
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today
         let things = Week.things(on: day, in: matters)
         VStack(alignment: .leading, spacing: 10) {
+            // As Figma's "Mac · Overview" has them: at most 72 wide each, and from the left.
             HStack(spacing: 6) {
                 ForEach(days, id: \.self) { each in
                     cell(each, isToday: each == today, isChosen: each == day,
                          count: Week.things(on: each, in: matters).count, late: each == today ? overdue.count : 0)
+                        .frame(maxWidth: 72)
                 }
+                Spacer(minLength: 0)
             }
             SectionHeader(title: day == today ? "Today · " + Self.heading(day) : Self.heading(day),
                           detail: things.isEmpty ? "nothing" : things.count == 1 ? "1 thing" : "\(things.count) things")

@@ -388,7 +388,7 @@ struct OverviewView: View {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
         // Nothing typed, and the field clicked or ↓ pressed: the matters opened last, to go straight
         // back to. The first letter typed puts what is found in their place.
-        let hits = query.isEmpty ? (showsRecent && searching ? RecentMatters.list(in: matters).map { MatterSearch.Hit(matter: $0) } : [])
+        let hits = query.isEmpty ? (showsRecent && searching ? RecentMatters.list(in: matters, fillingFrom: ordered).map { MatterSearch.Hit(matter: $0) } : [])
                                  : MatterSearch.find(query, in: matters)
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
@@ -396,6 +396,7 @@ struct OverviewView: View {
                 TextField("Find or start a matter", text: $search)
                     .textFieldStyle(.plain).font(.title3)
                     .focused($searching)
+                    .accessibilityIdentifier("overview.search")
                     .onSubmit {
                         if hits.indices.contains(picked) { search = ""; showsRecent = false; navigation.open(hits[picked].matter) } else if !query.isEmpty { start(query) }
                     }
@@ -424,8 +425,14 @@ struct OverviewView: View {
             // Anywhere on the field puts the cursor in it, not only on its words.
             .contentShape(Capsule())
             .onTapGesture { searching = true; showsRecent = true }
-            // A click on the words themselves is the field's own: it is seen here beside it.
-            .simultaneousGesture(TapGesture().onEnded { showsRecent = true })
+            // A click on the words themselves is the field's own, and says nothing of it: until the
+            // last ones are shown, the click is taken here, over the field — it puts the cursor in and
+            // brings them. After that the field has its clicks again.
+            .overlay {
+                if !showsRecent, query.isEmpty {
+                    Color.clear.contentShape(Capsule()).onTapGesture { searching = true; showsRecent = true }
+                }
+            }
             if !query.isEmpty || !hits.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
                     if query.isEmpty {

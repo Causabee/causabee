@@ -801,7 +801,11 @@ enum RecentMatters {
         UserDefaults.standard.set(Array(keys.prefix(most)), forKey: key)
     }
 
-    static func list(in matters: [Matter]) -> [Matter] {
-        keys.compactMap { key in matters.first { $0.key == key } }
+    /// Those opened last; while there are fewer than three — a device that has not opened much yet —
+    /// filled up to three from `others`, the matters with the newest in them.
+    static func list(in matters: [Matter], fillingFrom others: [Matter] = []) -> [Matter] {
+        var list = keys.compactMap { key in matters.first { $0.key == key } }
+        for matter in others where list.count < 3 && !list.contains(where: { $0 === matter }) { list.append(matter) }
+        return list
     }
 }

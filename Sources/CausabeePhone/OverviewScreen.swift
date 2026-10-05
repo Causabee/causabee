@@ -177,7 +177,7 @@ struct OverviewScreen: View {
             .overlay(Capsule().stroke(Theme.line))
             // Tapped and nothing typed yet: the matters opened last, to go straight back to. The first
             // letter typed puts what is found in their place.
-            let recent = searching && query.isEmpty ? RecentMatters.list(in: matters) : []
+            let recent = searching && query.isEmpty ? RecentMatters.list(in: matters, fillingFrom: activeMatters(matters)) : []
             if !recent.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("RECENT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)

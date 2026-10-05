@@ -8,8 +8,37 @@ import SwiftData
 /// on both, the Calendar or Reminders side wins — the owner acted there most recently. What was
 /// already different when they were connected — a task worded one way here, another there —
 /// stays as it is on each side. Nothing that is not connected is touched.
+///
+/// What both sides were is remembered on each device for itself (`Stamps`), not with the task in
+/// iCloud: Reminders and Calendar reach each device on their own, at their own pace, and a memory
+/// written by the iPhone — "the reminder is done" — met a Mac whose Reminders did not have that yet.
+/// The Mac then took the reminder for changed back, and put its old state into the task.
 @MainActor
 public enum Mirror {
+    /// What each connected thing looked like on both sides when this device last had them in step.
+    @MainActor
+    public final class Stamps {
+        public static let device = Stamps(defaults: .standard)
+        private let defaults: UserDefaults?
+        private var held: [String: String]
+        private static let key = "mirror.stamps"
+
+        /// With no defaults, kept only as long as it lives: for a test.
+        public init(defaults: UserDefaults?) {
+            self.defaults = defaults
+            held = defaults?.dictionary(forKey: Self.key) as? [String: String] ?? [:]
+        }
+
+        subscript(id: String) -> String? {
+            get { held[id] }
+            set {
+                guard held[id] != newValue else { return }
+                held[id] = newValue
+                defaults?.set(held, forKey: Self.key)
+            }
+        }
+    }
+
     static let fieldSeparator = "\u{1F}", sideSeparator = "\u{1E}"
 
     /// The fields of both sides after a sync, and which way anything went.
@@ -57,7 +86,7 @@ public enum Mirror {
     }
 
     /// Everything connected, both ways. Saves the store when something came in.
-    public static func reconcile(_ context: ModelContext, calendars: Calendars = .shared) -> Result {
+    public static func reconcile(_ context: ModelContext, calendars: Calendars = .shared, stamps: Stamps = .device) -> Result {
         var result = Result()
         if calendars.canReadReminders {
             for todo in (try? context.fetch(FetchDescriptor<Todo>())) ?? [] {
@@ -65,9 +94,22 @@ public enum Mirror {
                 let parts = reminder.dueDateComponents
                 let due = parts.flatMap { Calendar.current.date(from: $0) }.map { MatterStatus.day($0) } ?? ""
                 let dueTime = (parts?.hour).map { String(format: "%02d:%02d", $0, parts?.minute ?? 0) } ?? ""
+                // Seen here for the first time and done on one side only: a reminder is connected while
+                // its task is open, so one of them was ticked since — and then both are done. Without
+                // this, a task ticked before this device had looked once left its reminder open for good.
+                if stamps["reminder:" + id] == nil, todo.isDone != reminder.isCompleted {
+                    if todo.isDone {
+                        reminder.isCompleted = true
+                        if (try? calendars.store.save(reminder, commit: true)) != nil { result.pushed += 1 }
+                    } else {
+                        todo.isDone = true
+                        todo.doneAt = reminder.completionDate ?? Date()
+                        result.pulled += 1
+                    }
+                }
                 let merge = Self.merge(local: [todo.text, todo.due ?? "", todo.dueTime ?? "", todo.isDone ? "done" : ""],
                                        remote: [reminder.title ?? "", due, dueTime, reminder.isCompleted ? "done" : ""],
-                                       stamp: todo.reminderStamp)
+                                       stamp: stamps["reminder:" + id])
                 if merge.pulled {
                     let l = merge.local
                     if !l[0].isEmpty { todo.text = l[0] }
@@ -88,17 +130,19 @@ public enum Mirror {
                     reminder.dueDateComponents = r[1].isEmpty ? nil : Calendars.start(day: r[1], time: r[2].isEmpty ? nil : r[2]).map { date in
                         Calendar.current.dateComponents(r[2].isEmpty ? [.year, .month, .day] : [.year, .month, .day, .hour, .minute], from: date)
                     }
-                    guard (try? calendars.store.save(reminder, commit: false)) != nil else { continue }
+                    // In step only once Reminders has it: remembered over a failed write, the old
+                    // state there would count as the owner's newer one next time.
+                    guard (try? calendars.store.save(reminder, commit: true)) != nil else { continue }
                     result.pushed += 1
                 }
-                if todo.reminderStamp != merge.stamp { todo.reminderStamp = merge.stamp }
+                stamps["reminder:" + id] = merge.stamp
             }
         }
         if calendars.canReadEvents {
             for appointment in (try? context.fetch(FetchDescriptor<Appointment>())) ?? [] {
                 guard let id = appointment.calendarID, let event = calendars.event(id) else { continue }
                 let merge = Self.merge(local: [appointment.what, appointment.day, appointment.time ?? "", appointment.place ?? ""],
-                                       remote: fields(of: event), stamp: appointment.calendarStamp)
+                                       remote: fields(of: event), stamp: stamps["event:" + id])
                 if merge.pulled {
                     let l = merge.local
                     appointment.what = l[0]; appointment.day = l[1]
@@ -109,16 +153,16 @@ public enum Mirror {
                 // old Calendar value for the owner's newer one next time, and put it back.
                 let written = !merge.pushed || write(merge.remote, to: event, calendars: calendars)
                 if merge.pushed, written { result.pushed += 1 }
-                if written, appointment.calendarStamp != merge.stamp { appointment.calendarStamp = merge.stamp }
+                if written { stamps["event:" + id] = merge.stamp }
             }
             for deadline in (try? context.fetch(FetchDescriptor<Deadline>())) ?? [] {
                 guard let id = deadline.calendarID, let event = calendars.event(id) else { continue }
                 let theirs = fields(of: event)
-                let merge = Self.merge(local: [deadline.what, deadline.day], remote: [theirs[0], theirs[1]], stamp: deadline.calendarStamp)
+                let merge = Self.merge(local: [deadline.what, deadline.day], remote: [theirs[0], theirs[1]], stamp: stamps["event:" + id])
                 if merge.pulled { deadline.what = merge.local[0]; deadline.day = merge.local[1]; result.pulled += 1 }
                 let written = !merge.pushed || writeDeadline(what: merge.remote[0], day: merge.remote[1], to: event, calendars: calendars)
                 if merge.pushed, written { result.pushed += 1 }
-                if written, deadline.calendarStamp != merge.stamp { deadline.calendarStamp = merge.stamp }
+                if written { stamps["event:" + id] = merge.stamp }
             }
         }
         if result.pushed > 0 { try? calendars.store.commit() }

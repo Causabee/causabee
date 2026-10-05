@@ -173,4 +173,20 @@ final class RegressionTests: XCTestCase {
         press("Cancel")
         XCTAssertTrue(app.staticTexts[matter].firstMatch.exists, "After “Cancel”, the matter is gone.")
     }
+
+    /// A click on "Find or start a matter" offers the matters opened last, before anything is typed —
+    /// and the first letters typed put what is found in their place.
+    func testTheFieldOffersTheLastMatters() {
+        // The matter is open, so it is the last one opened: back on the overview, the field offers it.
+        app.staticTexts["Overview"].firstMatch.click()
+        let search = element("overview.search")
+        XCTAssertTrue(search.waitForExistence(timeout: 8), "The overview has no field to find a matter.")
+        search.click()
+        shows("RECENT", "A click on the field did not bring the matters opened last.")
+        let offered = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Care for Mum")).firstMatch
+        XCTAssertTrue(offered.waitForExistence(timeout: 5), "The matter just opened is not among the last ones.")
+        app.typeText("tax")
+        let found = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Tax return 2025")).firstMatch
+        XCTAssertTrue(found.waitForExistence(timeout: 5), "Typing did not put what is found in their place.")
+    }
 }
