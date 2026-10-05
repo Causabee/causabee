@@ -18,7 +18,14 @@ struct Conversation {
         guard !typed.isEmpty else { return }
         // "Geor" is Georg when Georg is the only one near it: read on the device, and said.
         let names = scope.flatMap { $0.parties.map(\.name) }
-        let (question, readAs) = NameHints.correct(typed, knowing: names)
+        var (question, readAs) = NameHints.correct(typed, knowing: names)
+        // "Task" or "Note" picked from the plus: what was typed is that, and says so in the thread.
+        let add = navigation.pinned.flatMap { AssistantAdd(rawValue: $0.kind) }
+        if let add {
+            question = add.question(typed)
+            readAs = []
+            navigation.pinned = nil
+        }
         var turn = Navigation.Turn(question: question, scope: pinnedMatter.map { "about \($0.name)" } ?? "about all matters",
                                    inHand: navigation.pinned, seen: "", refs: [:], matter: pinnedMatter?.persistentModelID)
         turn.readAs = readAs.map { "read “\($0.typed)” as “\($0.known)”" }
@@ -70,7 +77,16 @@ struct Conversation {
         navigation.turns[position].sentAt = nil
         let question = turn.question
         let model = ModelChoice.assistant
-        guard let claude = ModelChoice.client(for: model) else {
+        let client = ModelChoice.client(for: model)
+        // Picked from the plus: a note is kept as typed, and so is a task when there is no key to ask
+        // for its day with — or in the regression tests, which ask nobody. Taken in at once.
+        let adding = AssistantAdd.of(question)
+        if let adding, !adding.add.asksAssistant || client == nil || !Navigation.remembers {
+            setState(of: id, .answered(adding.add.asTyped(adding.words)))
+            take(0, of: id)
+            return
+        }
+        guard let claude = client else {
             setState(of: id, .failed(ModelChoice.missingKey(model)))
             return
         }
@@ -87,7 +103,14 @@ struct Conversation {
                                                         owner: owner, today: today, mapping: mapping, claude: claude, model: model) { said.yield($0) }
                 // Stopped while the answer was coming: it is not put into the thread.
                 guard !Task.isCancelled else { return }
-                Conversation.set(id, .answered(answer), in: navigation)
+                if let adding {
+                    // The card for what was picked is taken in without a click: the owner said so already.
+                    let settled = adding.add.settled(answer, words: adding.words)
+                    Conversation.set(id, .answered(settled.answer), in: navigation)
+                    take(settled.card, of: id)
+                } else {
+                    Conversation.set(id, .answered(answer), in: navigation)
+                }
             } catch {
                 guard !Task.isCancelled else { return }
                 Conversation.set(id, .failed(plainWords(error)), in: navigation)
@@ -322,6 +345,13 @@ struct Conversation {
         }
     }
 
+    /// Takes a card of an answer in as it stands, without a click.
+    private func take(_ index: Int, of id: UUID) {
+        guard let turn = navigation.turns.first(where: { $0.id == id }), case .answered(let answer) = turn.state,
+              answer.reply.cards.indices.contains(index) else { return }
+        apply(index, text: answer.reply.cards[index].text, in: turn)
+    }
+
     /// Puts back what a ticked card changed.
     func undo(_ index: Int, in turn: Navigation.Turn) {
         guard let position = navigation.turns.firstIndex(where: { $0.id == turn.id }),
@@ -347,6 +377,9 @@ struct Composer: View {
     let unpin: () -> Void
     /// Opens a panel to choose a screenshot.
     var attach: (() -> Void)? = nil
+    /// Inside a matter, the plus is a menu of everything that can be added to it: a task or a note,
+    /// said to the assistant before it is typed, and what has an editor of its own on the page.
+    var add: ((AssistantAdd) -> Void)? = nil
     /// Set while an answer is on its way: one question at a time, and the send button stops it.
     var stop: (() -> Void)? = nil
     let send: () -> Void
@@ -362,7 +395,7 @@ struct Composer: View {
                 // What is in hand, on a pale honey: the pin and its kind in gold, the words as any
                 // words. Calm, so the send button stays the one yellow thing (Figma "bg/bee-soft").
                 HStack(spacing: 8) {
-                    Image(systemName: "pin.fill").font(.caption).foregroundStyle(Theme.gold)
+                    Image(systemName: AssistantAdd(rawValue: pinned.kind) == nil ? "pin.fill" : "plus").font(.caption).foregroundStyle(Theme.gold)
                     VStack(alignment: .leading, spacing: 1) {
                         // The matter is in the field's placeholder below; the chip says only what it is.
                         Text(pinned.kind.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(Theme.gold)
@@ -387,7 +420,28 @@ struct Composer: View {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
               } else {
-                if let attach {
+                if let attach, let add {
+                    Menu {
+                        Button("Task", systemImage: "checklist") { add(.task) }
+                        Button("Note", systemImage: "note.text") { add(.note) }
+                        Divider()
+                        // The page's own editors, by the Matter menu's way in.
+                        ForEach([MatterAction.addLink, .addDetail, .addContact, .addFile], id: \.self) { action in
+                            Button(action.title, systemImage: action.symbol) {
+                                NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
+                            }
+                        }
+                        Divider()
+                        Button("Screenshot, Mail or PDF to Read …", systemImage: "doc.viewfinder", action: attach)
+                    } label: {
+                        Image(systemName: "plus").font(.system(size: 15)).frame(width: 34, height: 34).contentShape(Rectangle())
+                    }
+                    .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+                    .foregroundStyle(.secondary)
+                    .help("Add to this matter: a task, a note, a link, a detail, a contact, a file — or something for Causabee to read")
+                    .accessibilityLabel("Add to this matter")
+                    .accessibilityIdentifier("assistant.plus")
+                } else if let attach {
                     Button(action: attach) {
                         Image(systemName: "plus").font(.system(size: 15)).frame(width: 34, height: 34).contentShape(Rectangle())
                     }
@@ -399,6 +453,7 @@ struct Composer: View {
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     .focused(focused)
+                    .accessibilityIdentifier("assistant.field")
                     // Return sends; Shift-Return starts a new line, as in Messages.
                     .onKeyPress(.return, phases: .down) { press in
                         if press.modifiers.contains(.shift) || press.modifiers.contains(.option) {

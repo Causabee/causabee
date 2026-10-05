@@ -197,7 +197,7 @@ struct AssistantSheet: View {
                 // What is in hand, on a pale honey: the pin and its kind in gold, the words as any
                 // words — as on the Mac. Calm, so the send button stays the one yellow thing.
                 HStack(spacing: 8) {
-                    Image(systemName: "pin.fill").font(.caption).foregroundStyle(Theme.gold)
+                    Image(systemName: AssistantAdd(rawValue: pinned.kind) == nil ? "pin.fill" : "plus").font(.caption).foregroundStyle(Theme.gold)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(pinned.kind.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(Theme.gold)
                         Text(pinned.text).lineLimit(2).foregroundStyle(.primary)
@@ -222,7 +222,7 @@ struct AssistantSheet: View {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
               } else {
-                AttachButton(matter: matter)
+                AttachButton(matter: matter) { typing = true }
                 TextField(voice.phase == .writing ? "Writing it down …" : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, selection: $cursor, axis: .vertical)
                     .lineLimit(1...5)
                     // The keyboard's Return starts a new line; the button sends. With a keyboard
@@ -234,6 +234,7 @@ struct AssistantSheet: View {
                     }
                     .focused($typing)
                     .id(fieldKey)
+                    .accessibilityIdentifier("assistant.field")
                     // One line sits in the middle of the send button; more lines grow upwards.
                     .frame(minHeight: 34)
                 MicButton(voice: voice, text: $draft, selection: $cursor)
@@ -269,8 +270,15 @@ extension AssistantSheet {
         guard !typed.isEmpty, asking == nil else { return }
         Haptics.tap()
         let scope = matter.map { [$0] } ?? activeMatters(matters)
-        let (question, readAs) = NameHints.correct(typed, knowing: scope.flatMap { $0.parties.map(\.name) })
+        var (question, readAs) = NameHints.correct(typed, knowing: scope.flatMap { $0.parties.map(\.name) })
         let today = MatterStatus.day(Date())
+        // "Task" or "Note" picked from the plus: what was typed is that, and says so in the thread.
+        let add = navigation.pinned.flatMap { AssistantAdd(rawValue: $0.kind) }
+        if let add {
+            question = add.question(typed)
+            readAs = []
+            navigation.pinned = nil
+        }
         let pinned = navigation.pinned
         let place = PhoneCloud.storeLocation()
         let facts = FactSheet.facts(for: scope, today: today, focus: pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text },
@@ -283,7 +291,22 @@ extension AssistantSheet {
         }
         // The model chosen in Settings, as on the Mac, with the key its service takes.
         let model = ModelChoice.assistant
-        guard let claude = ModelChoice.client(for: model) else {
+        let client = ModelChoice.client(for: model)
+        // A note is kept as typed, and so is a task when there is no key to ask for its day with:
+        // nothing is sent, and it is in the matter at once.
+        if let add, !add.asksAssistant || client == nil {
+            failure = nil
+            draft = ""
+            fieldKey += 1
+            let answer = add.asTyped(typed)
+            var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
+                                       inHand: nil, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
+            turn.keys = CardActions.keys(of: facts.refs, in: context)
+            turn.state = .answered(answer)
+            keep(turn, taking: 0)
+            return
+        }
+        guard let claude = client else {
             Haptics.failure()
             failure = ModelChoice.missingKey(model)
             return
@@ -330,14 +353,15 @@ extension AssistantSheet {
                 turn.date = date
                 turn.keys = CardActions.keys(of: facts.refs, in: context)
                 turn.readAs = readAs.map { "read “\($0.typed)” as “\($0.known)”" }
-                turn.state = .answered(answer)
-                let encoder = JSONEncoder()
-                encoder.outputFormatting = .sortedKeys
-                let record = ThreadTurn(id: turn.id, date: date, payload: try encoder.encode(turn))
-                context.insert(record)
-                record.matter = matter
-                try context.save()
-                Haptics.success()
+                if let add {
+                    // The card for what was picked is taken in without a tap: the owner said so already.
+                    let settled = add.settled(answer, words: typed)
+                    turn.state = .answered(settled.answer)
+                    keep(turn, taking: settled.card)
+                } else {
+                    turn.state = .answered(answer)
+                    keep(turn, taking: nil)
+                }
             } catch {
                 guard !Task.isCancelled else { return }
                 Haptics.failure()
@@ -346,6 +370,26 @@ extension AssistantSheet {
                 fieldKey += 1
             }
             asking = nil
+        }
+    }
+
+    /// Puts an answered turn into the thread — and, for what was picked from the plus, takes its card
+    /// in as it stands.
+    private func keep(_ turn: Navigation.Turn, taking card: Int?) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        guard let payload = try? encoder.encode(turn) else { return }
+        let record = ThreadTurn(id: turn.id, date: turn.date, payload: payload)
+        context.insert(record)
+        record.matter = matter
+        try? context.save()
+        Haptics.success()
+        guard let index = card, let answer = turn.answer, answer.reply.cards.indices.contains(index) else { return }
+        let made = answer.reply.cards[index]
+        if case .taken(let undo) = CardActions.apply(made, text: made.text, subject: nil, refs: turn.refs, links: answer.links, scope: matter,
+                                                     question: turn.question, mail: nil, in: context) {
+            navigation.undos[turn.id, default: [:]][index] = undo
+            navigation.mark(record, card: index, applied: true, context: context)
         }
     }
 

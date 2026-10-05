@@ -38,6 +38,7 @@ struct MatterScreen: View {
     @State private var addingContact = false
     @State private var addingDetail = false
     @State private var addingLink = false
+    @State private var addingScan = false
     /// The parts in the page have scrolled under the bar, which shows them then.
     @State private var partsUnder = false
     /// The matter written out as a document, and why it could not be.
@@ -158,20 +159,28 @@ struct MatterScreen: View {
         .safeAreaInset(edge: .top) { if finding { findBar } }
         .background(Theme.canvas)
         .overlay(alignment: .bottomTrailing) {
-            // Not over the keyboard while finding. The bee asks; the plus over it adds.
+            // Not over the keyboard while finding. The bee asks, and adds: the plus is beside its field.
             if !finding {
                 VStack(alignment: .trailing, spacing: 12) {
-                    MatterPlusButton(matter: matter,
-                                     contact: { addingContact = true },
-                                     detail: { addingDetail = true },
-                                     link: { addingLink = true },
-                                     note: { part = .notes; writingNote = true },
-                                     task: { part = .todo; addTodo() })
-                        .tool()
+                    LetterShotBringer(matter: matter)
                     AssistantButton { navigation.showsAssistant = true }
                 }
             }
         }
+        // Picked from the assistant's plus: once its sheet has gone, the editor comes.
+        .onChange(of: navigation.adding) {
+            guard let adding = navigation.adding else { return }
+            navigation.adding = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                switch adding {
+                case .contact: addingContact = true
+                case .detail: addingDetail = true
+                case .link: addingLink = true
+                case .scan: addingScan = true
+                }
+            }
+        }
+        .sheet(isPresented: $addingScan, onDismiss: { part = .record; filter = .files }) { ScanSheet(matter: matter) }
         .sheet(isPresented: $addingContact, onDismiss: { part = .people }) { ContactEditor(matter: matter) }
         .sheet(isPresented: $addingDetail, onDismiss: { part = .record; filter = .details }) { DetailEditor(matter: matter) }
         .sheet(isPresented: $addingLink, onDismiss: { part = .record; filter = .links }) {

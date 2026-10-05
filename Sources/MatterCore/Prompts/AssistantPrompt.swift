@@ -34,7 +34,9 @@ public enum AssistantPrompt {
     `me` (the owner's own), `we` (the owner's together with others), or `other` (someone else's \
     that the owner waits for). `due` is the day it is to be done by, or null; `time` the time of \
     that day (HH:MM) when one is given — "ab 25. Okt. 15:10 Uhr" is due that day at 15:10 — or \
-    null. The day and the time go there, not into `text`.
+    null. The day and the time go there, not into `text`. A question that begins with `New task:` \
+    is one the owner chose to add: answer with exactly one `new_todo` for it — its words kept as \
+    written, only the day and the time taken out of them — and one short line at most.
     - `same_party`: two parties are one person or company. `party` is the id to fold in, `into` \
     the id it becomes.
     - `rename_party`: a party's name is wrong. `party` is its id, `text` the right name, written \

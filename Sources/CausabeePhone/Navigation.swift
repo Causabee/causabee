@@ -20,6 +20,10 @@ final class Navigation {
     var pinned: Pinned?
     /// Words to put in the assistant's field, for the owner to send or change.
     var prefill: String?
+    /// Picked from the assistant's plus, and with an editor of its own on the matter's page: the
+    /// assistant steps aside and the page opens it.
+    enum Adding { case contact, detail, link, scan }
+    var adding: Adding?
 
     /// Puts an item in hand and opens the assistant over its matter, as the Mac's pin does.
     func talk(_ text: String, kind: String, in matter: Matter, prefill: String? = nil) {

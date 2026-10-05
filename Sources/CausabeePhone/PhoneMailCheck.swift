@@ -162,9 +162,11 @@ final class PhoneMailCheck {
         state = .done(text, items, mails)
     }
 
-    /// Sort in the ticked ones; the others are set aside, so they are not offered again.
+    /// Sort in the ticked ones; the others are set aside, so they are not offered again. With none
+    /// ticked, all are left out, and nothing is sent.
     func sortIn(_ chosen: Set<String>, of look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
         Self.setAside.formUnion(Set(look.newIDs).subtracting(chosen))
+        guard !chosen.isEmpty else { state = .nothingNew(known: look.intake.alreadyKnown); return }
         classify(look.only(chosen), with: door, context: context, owner: owner)
     }
 
@@ -536,14 +538,15 @@ struct PhoneMailReview: View {
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
-            Text(chosen.isEmpty ? "Tick the mails to sort in."
+            Text(chosen.isEmpty ? "None ticked: “Leave out” puts \(look.pending == 1 ? "it" : "them") aside, and \(look.pending == 1 ? "it is" : "they are") not offered again. “Later” keeps \(look.pending == 1 ? "it" : "them") for the next time."
                  : String(format: "Sorting in %d %@ costs about $%.2f. Sent pseudonymised to %@.", chosen.count, chosen.count == 1 ? "mail" : "mails",
                           look.only(chosen).estimate, door.model.label))
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 Button("Later", action: later).buttonStyle(.phone)
-                Button(chosen.count == look.pending ? "Sort in" : "Sort in \(chosen.count)") { sortIn(chosen) }
-                    .buttonStyle(.phoneFilled).disabled(chosen.isEmpty)
+                // With none ticked the button leaves them out — "Later" alone would only bring them back.
+                Button(chosen.isEmpty ? "Leave out" : chosen.count == look.pending ? "Sort in" : "Sort in \(chosen.count)") { sortIn(chosen) }
+                    .buttonStyle(.phoneFilled)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

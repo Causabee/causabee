@@ -217,6 +217,11 @@ struct AssistantColumn: View {
                      placeholder: scope.map { "Ask about \($0.name)" } ?? "Say anything",
                      unpin: { navigation.pinned = nil },
                      attach: chooseScreenshot,
+                     // Said before it is typed: the chip over the field, and the cursor in the field.
+                     add: scope.map { matter in { add in
+                         navigation.pinned = Navigation.Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
+                         focused = true
+                     } },
                      stop: asking.map { turn in { conversation.stop(turn.id) } },
                      send: send)
             }

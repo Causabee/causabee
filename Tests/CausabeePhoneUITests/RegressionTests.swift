@@ -19,7 +19,7 @@ final class RegressionTests: XCTestCase {
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
         matter.tap()
         if name.contains("Letter") { return }
-        XCTAssertTrue(app.buttons["matter.plus"].waitForExistence(timeout: 10), "The matter's page did not open.")
+        XCTAssertTrue(app.buttons["Ask Causabee"].waitForExistence(timeout: 10), "The matter's page did not open.")
     }
 
     /// A photo brought in on a matter opens the assistant, is read, and offers what it found: its
@@ -42,8 +42,12 @@ final class RegressionTests: XCTestCase {
         segment.tap()
     }
 
+    /// What is added goes in by the assistant: its bee, then the plus beside its field.
     private func plus(_ item: String) {
-        app.buttons["matter.plus"].tap()
+        app.buttons["Ask Causabee"].firstMatch.tap()
+        let add = app.buttons["assistant.plus"].firstMatch
+        XCTAssertTrue(add.waitForExistence(timeout: 8), "The assistant has no plus.")
+        add.tap()
         let entry = app.buttons["plus." + item]
         XCTAssertTrue(entry.waitForExistence(timeout: 5), "The plus has no \(item).")
         entry.tap()
@@ -67,15 +71,20 @@ final class RegressionTests: XCTestCase {
 
     func testATaskAddedStays() {
         let words = "Call the pharmacy \(stamp)"
+        // "Task", said to the assistant before it is typed: sent, it is a task at once.
         plus("task")
-        let text = field("task.text")
-        XCTAssertTrue(text.waitForExistence(timeout: 5), "The new task's editor did not open.")
+        let text = field("assistant.field")
+        XCTAssertTrue(text.waitForExistence(timeout: 5), "The assistant's field is not there.")
         text.tap()
         text.typeText(words)
-        // Long enough for anything that redraws the page under the editor to have done so.
-        sleep(6)
-        app.buttons["Add"].firstMatch.tap()
-        shows(words, "The task was typed and added, and is not in the list.")
+        app.buttons["Send"].firstMatch.tap()
+        // Its card in the thread is one thing to the screen reader: the words and "Task added".
+        let card = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Task added")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 8), "“Task” was picked and sent, and the thread does not say it was added.")
+        // And it is in the matter's list, under the assistant's sheet.
+        app.buttons["Close"].firstMatch.tap()
+        let row = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", words)).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8), "The task was added and is not in the list.")
     }
 
     func testAContactAddedByHand() {

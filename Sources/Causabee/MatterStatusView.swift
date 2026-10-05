@@ -916,7 +916,7 @@ struct MatterStatusView: View {
                     Spacer()
                 }
                 if !renaming {
-                    // What the bar can do, on glass as a toolbar's: the bee, the plus, the search, the rest.
+                    // What the bar can do, on glass as a toolbar's: the bee, the search, the rest.
                     HStack(spacing: 8) {
                         // The assistant's column was put away: its bee brings it back.
                         if navigation.assistantHidden {
@@ -929,28 +929,7 @@ struct MatterStatusView: View {
                             .help("Ask Causabee about this matter")
                             .accessibilityLabel("Ask Causabee")
                         }
-                        // One plus for everything the owner brings to the matter.
-                        Menu {
-                            // The Matter menu's six, in its words and order, and by its way in.
-                            ForEach(MatterAction.allCases, id: \.self) { action in
-                                Button(action.title, systemImage: action.symbol) {
-                                    NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
-                                }
-                            }
-                        } label: {
-                            // The arrow says there is a choice under it, as on the system's own.
-                            HStack(spacing: 4) {
-                                Image(systemName: "plus")
-                                Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold))
-                            }
-                            .padding(.horizontal, 10).frame(height: 30).contentShape(Capsule())
-                        }
-                        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
-                        .onGlass(Capsule())
-                        .help("Add to this matter: a task, a note, a file, a contact, a detail, a link")
-                        .accessibilityLabel("Add to this matter")
-                        .accessibilityIdentifier("matter.plus")
-                        .tool()
+                        // What is added goes in by the assistant's plus, beside its field: there is none here.
                         PageFindField(find: find)
                         // What is seldom needed sits behind the dots, not in the bar: what the sidebar's
                         // menu has for the matter, as the iPhone's ⋯ has it, and closing it.

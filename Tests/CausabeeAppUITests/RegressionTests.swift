@@ -29,8 +29,8 @@ final class RegressionTests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 30), "The demo's sidebar did not come up.")
         row.click()
         // The first start fills the demo's store while the window is already up: a click may come too early.
-        if !element("matter.plus").waitForExistence(timeout: 10) { row.click() }
-        XCTAssertTrue(element("matter.plus").waitForExistence(timeout: 20), "The matter's page did not open.")
+        if !element("matter.more").waitForExistence(timeout: 10) { row.click() }
+        XCTAssertTrue(element("matter.more").waitForExistence(timeout: 20), "The matter's page did not open.")
     }
 
     override func tearDown() {
@@ -90,25 +90,32 @@ final class RegressionTests: XCTestCase {
         shows("Tasks", "Back on To do, the tasks are not shown.")
     }
 
+    /// "Task", said to the assistant before it is typed: sent, it is a task at once, and in the list.
     func testATaskAddedStays() {
         let words = "Call the pharmacy \(stamp)"
-        choose("New Task …", from: "matter.plus")
-        type(words, into: "task.text", "The new task's editor did not open.")
-        press("Add")
-        shows(words, "The task was typed and added, and is not in the list.")
+        choose("Task", from: "assistant.plus")
+        type(words, into: "assistant.field", "The assistant's field is not there.")
+        app.typeKey(.return, modifierFlags: [])
+        shows("Task added", "“Task” was picked and sent, and the thread does not say it was added.")
+        let row = app.staticTexts.matching(NSPredicate(format: "value == %@ OR label == %@", words, words)).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8), "The task was added and is not in the list.")
     }
 
+    /// The same for a note: kept word for word, with nothing asked.
     func testANoteAdded() {
         let words = "Mum prefers mornings \(stamp)"
-        choose("Add Note …", from: "matter.plus")
-        type(words, into: "note.field", "The notes have no field.")
-        element("note.add").click()
-        shows(words, "The note was added and is not among the notes.")
+        choose("Note", from: "assistant.plus")
+        type(words, into: "assistant.field", "The assistant's field is not there.")
+        app.typeKey(.return, modifierFlags: [])
+        shows("Note added", "“Note” was picked and sent, and the thread does not say it was added.")
+        tab("Notes")
+        let note = app.staticTexts.matching(NSPredicate(format: "value == %@ OR label == %@", words, words)).firstMatch
+        XCTAssertTrue(note.waitForExistence(timeout: 8), "The note was added and is not among the notes.")
     }
 
     func testADetailAdded() {
         let value = "A 123 \(stamp)"
-        choose("Add Detail …", from: "matter.plus")
+        choose("Add Detail …", from: "assistant.plus")
         type("Versichertennummer", into: "detail.label", "The detail's editor did not open.")
         type(value, into: "detail.value", "The detail's editor has no value field.")
         press("Add")
@@ -121,7 +128,7 @@ final class RegressionTests: XCTestCase {
         // In letters: a name that differs only in digits is the same contact, and would be found, not made.
         let letters = String(stamp.compactMap { $0.wholeNumberValue.map { Character(UnicodeScalar(UInt8(97 + $0))) } })
         let name = "Kasse " + letters
-        choose("Add Contact …", from: "matter.plus")
+        choose("Add Contact …", from: "assistant.plus")
         type(name, into: "contact.name", "The contact's editor did not open.")
         type(letters + "@hkk.de", into: "contact.mail", "The contact's editor has no address field.")
         press("Add")
