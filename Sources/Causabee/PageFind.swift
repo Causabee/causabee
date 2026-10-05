@@ -103,13 +103,16 @@ struct PageFindField: View {
 
     var body: some View {
         HStack(spacing: open ? 6 : 0) {
-            Button(action: start) { Image(systemName: "magnifyingglass") }
-                .buttonStyle(.rowIcon)
+            Button(action: start) {
+                Image(systemName: "magnifyingglass").foregroundStyle(open ? .secondary : .primary)
+                    .frame(width: 30, height: 30).contentShape(Circle())
+            }
+                .buttonStyle(.plain)
                 .help("Find in this matter (⌘F)")
             TextField("Find in matter", text: $find.query)
                 .textFieldStyle(.plain)
                 .focused($focused)
-                .frame(width: open ? 150 : 0)
+                .frame(width: open ? 170 : 0)
                 .opacity(shown ? 1 : 0)
                 .disabled(!open)
                 .onKeyPress(.return, phases: .down) { press in
@@ -131,10 +134,12 @@ struct PageFindField: View {
                 .opacity(shown ? 1 : 0)
                 .disabled(!open)
         }
-        .padding(.trailing, open ? 6 : 0)
-        .frame(height: 24)
-        .background(Color.secondary.opacity(open ? 0.1 : 0), in: RoundedRectangle(cornerRadius: 6))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(.trailing, open ? 10 : 0)
+        .frame(height: 30)
+        .clipShape(Capsule())
+        // A disc of glass that opens into a field of it, with the ring a field has while it is typed in.
+        .onGlass(Capsule())
+        .overlay { if open, focused { Capsule().strokeBorder(Color.accentColor.opacity(0.6), lineWidth: 3) } }
         .onChange(of: focused) { if !focused, !find.isActive, open { close() } }
         .onAppear { if find.isActive { open = true; shown = true } }
         .background {

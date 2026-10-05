@@ -882,41 +882,57 @@ struct MatterStatusView: View {
                     Spacer()
                 }
                 if !renaming {
-                    // The assistant's column was put away: its bee brings it back.
-                    if navigation.assistantHidden {
-                        Button { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } } label: {
-                            BeeMark(size: 11).foregroundStyle(.black)
-                                .frame(width: 24, height: 24).background(Theme.bee, in: Circle()).contentShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        // On the line of the magnifier and "Close": the row is set by its words' baseline.
-                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 7 }
-                        .help("Ask Causabee about this matter")
-                        .accessibilityLabel("Ask Causabee")
-                        // Room between the bee and the plus: the bee is a disc, the plus a bare sign.
-                        .padding(.trailing, 6)
-                    }
-                    // One plus for everything the owner brings to the matter.
-                    Menu {
-                        // The Matter menu's six, in its words and order, and by its way in.
-                        ForEach(MatterAction.allCases, id: \.self) { action in
-                            Button(action.title, systemImage: action.symbol) {
-                                NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
+                    // What the bar can do, on glass as a toolbar's: the bee, the plus, the search, the rest.
+                    HStack(spacing: 8) {
+                        // The assistant's column was put away: its bee brings it back.
+                        if navigation.assistantHidden {
+                            Button { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } } label: {
+                                BeeMark(size: 13).foregroundStyle(.black)
+                                    .frame(width: 30, height: 30).contentShape(Circle())
                             }
+                            .buttonStyle(.plain)
+                            .onGlass(Circle(), tint: Theme.bee)
+                            .help("Ask Causabee about this matter")
+                            .accessibilityLabel("Ask Causabee")
                         }
-                    } label: {
-                        Image(systemName: "plus").frame(width: 22, height: 22)
-                    }
-                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-                    .help("Add to this matter: a task, a note, a file, a contact, a detail, a link")
-                    .accessibilityLabel("Add to this matter")
-                    .tool()
-                    PageFindField(find: find)
-                    if !matter.isClosed {
-                        Button("Close") { asksToClose = true }
-                            .help("Take it out of the list and the assistant. Nothing is deleted.")
+                        // One plus for everything the owner brings to the matter.
+                        Menu {
+                            // The Matter menu's six, in its words and order, and by its way in.
+                            ForEach(MatterAction.allCases, id: \.self) { action in
+                                Button(action.title, systemImage: action.symbol) {
+                                    NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
+                                }
+                            }
+                        } label: {
+                            // The arrow says there is a choice under it, as on the system's own.
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus")
+                                Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold))
+                            }
+                            .padding(.horizontal, 10).frame(height: 30).contentShape(Capsule())
+                        }
+                        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+                        .onGlass(Capsule())
+                        .help("Add to this matter: a task, a note, a file, a contact, a detail, a link")
+                        .accessibilityLabel("Add to this matter")
+                        .tool()
+                        PageFindField(find: find)
+                        // What is seldom needed sits behind the dots, not in the bar.
+                        if !matter.isClosed {
+                            Menu {
+                                Button("Close Matter…", systemImage: "archivebox") { asksToClose = true }
+                            } label: {
+                                Image(systemName: "ellipsis").frame(width: 30, height: 30).contentShape(Circle())
+                            }
+                            .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+                            .onGlass(Circle())
+                            .help("More: close the matter. Nothing is deleted.")
+                            .accessibilityLabel("More")
                             .tool()
+                        }
                     }
+                    // On the line of the name: the row is set by its words' baseline.
+                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 5 }
                 }
             }
             // Once the parts in the page have gone under this bar, they stay at hand here — in the place

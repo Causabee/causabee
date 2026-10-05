@@ -596,14 +596,7 @@ struct MatterScreen: View {
 
     private func todos(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open · \(status.done.count) done" : nil)
-                if hasTodos {
-                    Button("Task", systemImage: "plus", action: addTodo)
-                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
-                        .tool()
-                }
-            }
+            SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open · \(status.done.count) done" : nil)
             if !hasTodos {
                 PhoneEmptyBox(text: "What is to do, and whose. Tasks in mail are found when it is sorted in.",
                               action: "Add Task", symbol: "checklist", run: addTodo)

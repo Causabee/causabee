@@ -25,13 +25,7 @@ struct PeopleSection: View {
             .sheet(isPresented: $adding) { ContactEditor(matter: matter) }
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    SectionHeader(title: "People", detail: "\(memberships.count) · to merge, hold a name")
-                    Button("Contact", systemImage: "plus") { adding = true }
-                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
-                        .accessibilityIdentifier("contact.add")
-                        .tool()
-                }
+                SectionHeader(title: "People", detail: "\(memberships.count) · to merge, hold a name")
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
@@ -60,7 +54,6 @@ struct PeopleSection: View {
                 }
                 .phoneCard()
             }
-            .sheet(isPresented: $adding) { ContactEditor(matter: matter) }
             .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } }),
                                 titleVisibility: .visible) {
                 Button("Merge") { if let (party, other) = merging { confirmSame(party, as: other) } }
@@ -262,14 +255,7 @@ struct LinksSection: View {
         let all = (matter.links ?? []).filter(\.isKept).sorted(by: newestFirst)
         let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
-                if !all.isEmpty {
-                    Button("Link", systemImage: "plus") { adding = true }
-                        .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
-                        .tool()
-                }
-            }
+            SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
             if !all.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(all.enumerated()), id: \.element.persistentModelID) { index, link in

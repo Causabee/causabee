@@ -208,6 +208,16 @@ extension EnvironmentValues {
 }
 
 extension View {
+    /// A control on glass, as the system's own toolbars have them; a thin material before glass came.
+    @ViewBuilder func onGlass<S: Shape>(_ shape: S, tint: Color? = nil) -> some View {
+        if #available(macOS 26, iOS 26, *) {
+            glassEffect(.regular.tint(tint).interactive(), in: shape)
+        } else {
+            background(tint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.thinMaterial), in: shape)
+                .overlay(shape.stroke(Color.primary.opacity(0.08), lineWidth: 0.5))
+        }
+    }
+
     /// A small action — a link, a ⋯, a pin, a button that asks the AI — gone while reading.
     func tool() -> some View { modifier(PutAwayWhileReading()) }
     /// What the AI says about why, what it cost, where it looked — gone while reading.
