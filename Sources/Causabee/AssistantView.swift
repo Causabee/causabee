@@ -77,6 +77,12 @@ struct AssistantColumn: View {
         return navigation.turns.filter { $0.matter == open.persistentModelID }
     }
 
+    /// How many of the newest turns are laid out: a long thread, all of it at once, kept the column
+    /// from coming up for seconds. The older ones are a click away, on top.
+    @State private var showsNewest = AssistantColumn.page
+    private static let page = 30
+    private var laidOut: [Navigation.Turn] { Array(shown.suffix(showsNewest)) }
+
     /// The bar on top of the thread: frosted glass that stays put; the thread scrolls under it
     /// and shows through only blurred.
     /// No title and no bar: only the room the window's buttons need on top.
@@ -134,9 +140,15 @@ struct AssistantColumn: View {
                                 .font(.callout).foregroundStyle(.secondary)
                                 .padding(.top, 20)
                         }
-                        ForEach(Array(shown.enumerated()), id: \.element.id) { index, turn in
+                        let turns = laidOut
+                        if turns.count < shown.count {
+                            Button("Show earlier · \(shown.count - turns.count) more") { showsNewest += Self.page }
+                                .buttonStyle(.gold).font(.caption)
+                                .frame(maxWidth: .infinity).padding(.top, 16)
+                        }
+                        ForEach(Array(turns.enumerated()), id: \.element.id) { index, turn in
                             // The day, where it changes: one thread since the first question.
-                            if index == 0 || !Calendar.current.isDate(shown[index - 1].date, inSameDayAs: turn.date) {
+                            if index == 0 || !Calendar.current.isDate(turns[index - 1].date, inSameDayAs: turn.date) {
                                 Text(turn.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
                                     .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, index == 0 ? 16 : 24)
                             }
@@ -216,7 +228,7 @@ struct AssistantColumn: View {
                     }
                 }
                 .onAppear { if let last = shown.last { scroller.scrollTo(last.id, anchor: .top) } }
-                .onChange(of: navigation.place) { newAnswer = nil; if let last = shown.last { scroller.scrollTo(last.id, anchor: .top) } }
+                .onChange(of: navigation.place) { newAnswer = nil; showsNewest = Self.page; if let last = shown.last { scroller.scrollTo(last.id, anchor: .top) } }
                 .onChange(of: shown.count) { old, new in
                     guard new > old, let last = shown.last else { return }
                     // A question just asked is followed down, wherever the thread was; anything

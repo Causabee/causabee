@@ -783,15 +783,90 @@ struct ThreadPlace: Equatable {
     var height: CGFloat
 }
 
-/// Auto: what Causabee can do by itself, it does — new mail is sorted in as soon as it is found,
-/// and the owner sees what came of it instead of being asked first. Chosen on each device, off
-/// until the owner turns it on: sorting sends the mail, pseudonymised, and costs what it costs.
+/// Auto: the two steps that only wait for a yes are done by themselves — new mail and files are
+/// loaded, and read by the AI, as soon as they are there. The third stays the owner's: what of it
+/// is taken in, and into which matter. Chosen on each device, off until the owner turns it on:
+/// reading sends the mail, pseudonymised, and costs what it costs.
 enum AutoMode {
     static let key = "mail.auto"
     static var isOn: Bool { UserDefaults.standard.bool(forKey: key) }
     /// Whose tasks are whose, read where a view is not at hand to say it.
     @MainActor static func owner(in context: ModelContext) -> [String] {
         ((try? context.fetch(FetchDescriptor<Profile>())) ?? []).first?.names ?? []
+    }
+}
+
+/// Mail that was read and found no matter, or that the owner left out: put aside on this device.
+enum UnplacedAside {
+    static let key = "unplaced.setAside"
+    static func add(_ ids: some Sequence<String>) {
+        var all = Set((try? JSONDecoder().decode([String].self, from: Data((UserDefaults.standard.string(forKey: key) ?? "[]").utf8))) ?? [])
+        all.formUnion(ids)
+        UserDefaults.standard.set(String(decoding: (try? JSONEncoder().encode(all.sorted())) ?? Data("[]".utf8), as: UTF8.self), forKey: key)
+    }
+}
+
+/// What a round of mail offers, mail by mail, before anything is in a matter: a tick for taking it
+/// in, the matter it would go into — changed here when it is the wrong one — and what it brings.
+struct MailOffers: View {
+    let offers: [IntakeSummary.Offer]
+    @Binding var chosen: Set<String>
+    /// Mails the owner sends elsewhere than suggested, by the mail's id.
+    @Binding var moved: [String: PersistentIdentifier]
+    /// The Mac's sidebar is narrow: its words are small.
+    var small = false
+    @Query private var matters: [Matter]
+
+    var body: some View {
+        let open = matters.filter { !$0.isClosed }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        VStack(alignment: .leading, spacing: small ? 8 : 12) {
+            ForEach(offers) { offer in
+                let on = chosen.contains(offer.id)
+                let target = moved[offer.id].flatMap { id in matters.first { $0.persistentModelID == id } }
+                HStack(alignment: .firstTextBaseline, spacing: small ? 8 : 10) {
+                    Button {
+                        if on { chosen.remove(offer.id) } else { chosen.insert(offer.id) }
+                    } label: {
+                        Image(systemName: on ? "checkmark.circle.fill" : "circle").font(small ? .caption : .title3)
+                            .foregroundStyle(on ? Theme.gold : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(on ? "Take in" : "Leave out")
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(offer.subject).font(small ? .caption : .subheadline)
+                            .strikethrough(!on).foregroundStyle(on ? .primary : .secondary)
+                            .lineLimit(2).multilineTextAlignment(.leading)
+                        if on {
+                            HStack(spacing: 6) {
+                                Text("→ " + (target?.name ?? offer.matter.map { offer.isNew ? "New matter: \($0)" : $0 } ?? "No matter found"))
+                                    .foregroundStyle(.secondary).lineLimit(1)
+                                Spacer(minLength: 4)
+                                Menu("Change") {
+                                    ForEach(open) { matter in
+                                        Button(matter.name) { moved[offer.id] = matter.persistentModelID }
+                                    }
+                                    if target != nil {
+                                        Divider()
+                                        Button("As suggested") { moved[offer.id] = nil }
+                                    }
+                                }
+                                #if os(macOS)
+                                .menuStyle(.borderlessButton).menuIndicator(.hidden)
+                                #endif
+                                .fixedSize()
+                                .foregroundStyle(Theme.gold).tint(Theme.gold)
+                            }
+                            .font(small ? .caption : .footnote)
+                            ForEach(offer.items, id: \.self) { item in
+                                Label(item.text, systemImage: item.symbol).font(small ? .caption : .footnote)
+                                    .foregroundStyle(.secondary).lineLimit(2)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

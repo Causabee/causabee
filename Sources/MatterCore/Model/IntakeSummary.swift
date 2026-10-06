@@ -27,6 +27,30 @@ public enum IntakeSummary {
         }
     }
 
+    /// One mail of a round as it was read, before any of it is taken in: where it would go, and
+    /// what it would bring. The owner decides on these — which to take in, and into which matter.
+    public struct Offer: Sendable, Identifiable {
+        /// The mail's id, as its judgement has it.
+        public let id: String
+        public let subject: String
+        /// The matter it would go into; nil when none was found.
+        public let matter: String?
+        /// That matter does not exist yet: taking the mail in makes it.
+        public let isNew: Bool
+        public let items: [Item]
+    }
+
+    /// What the round's answers offer, one for each mail that is not a newsletter. `name` gives an
+    /// existing matter's name for a key, or nil when there is none yet.
+    public static func offers(_ judgements: [Judgement], name: (String) -> String?) -> [Offer] {
+        judgements.filter { !$0.isBulk }.map { judgement in
+            let known = judgement.matter.flatMap(name)
+            let made = judgement.matter.map { judgement.matterTitle ?? ($0.prefix(1).uppercased() + $0.dropFirst()) }
+            return Offer(id: judgement.emailID, subject: judgement.subject.isEmpty ? "(no subject)" : judgement.subject,
+                         matter: known ?? made, isNew: known == nil && made != nil, items: items([judgement]))
+        }
+    }
+
     /// The mails sorted into a matter, each with that matter's name — the first few.
     public static func mails(_ judgements: [Judgement], name: (String) -> String?, limit: Int = 6) -> [Mail] {
         Array(judgements.compactMap { judgement -> Mail? in

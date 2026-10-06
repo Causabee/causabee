@@ -41,9 +41,9 @@ struct SettingsSheet: View {
                     if mail.hasPrefix("mistral") || mail.hasPrefix("gpt-") {
                         Toggle("Fewer, real tasks", isOn: $strict)
                     }
-                    Toggle("Auto: sort in by itself", isOn: $auto)
-                    Text(auto ? "New mail is sorted in as soon as it is found, and you see what came of it. It is sent pseudonymised, without asking first."
-                              : "New mail waits until you tap “Sort in”.")
+                    Toggle("Auto: read mail and files at once", isOn: $auto)
+                    Text(auto ? "New mail and files are read by the AI as soon as they are there — sent pseudonymised, without asking first. What is taken in, and into which matter, you still decide."
+                              : "New mail and files wait until you tap “Sort in”. What is taken in, and into which matter, you decide after.")
                         .font(.footnote).foregroundStyle(.secondary)
                     Text(String(format: "About %.2f cents per mail. A mail is sorted only once — here or on your Mac: what a model sorted in stays that way. Screenshots and files are sorted in on the Mac.",
                                 (Claude.Model.choices.first { $0.id == mail } ?? .opus).perMail * 100))

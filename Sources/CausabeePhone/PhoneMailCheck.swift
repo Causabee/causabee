@@ -54,8 +54,19 @@ final class PhoneMailCheck {
         /// The demo's three, found by the check that runs by itself.
         case demoNew
         case sending(String)
+        /// Read by the AI, and offered: what of it is taken in, and where, is the owner's to say.
+        case answered(Answered)
         case done(String, [IntakeSummary.Item] = [], [IntakeSummary.Mail] = [])
         case failed(String)
+    }
+
+    /// A round as it came back from the AI, with what it cost — not in any matter yet.
+    struct Answered {
+        var judgements: [Judgement]
+        var cost: Double
+        var failed: Int
+        let look: DailyDoor.Look
+        let door: DailyDoor
     }
 
     var state: State = .idle
@@ -68,6 +79,7 @@ final class PhoneMailCheck {
         case .ready, .demoReady: "ready"
         case .newMail, .demoNew: "new"
         case .sending: "sending"
+        case .answered: "answered"
         case .done: "done"
         case .failed: "failed"
         }
@@ -143,7 +155,7 @@ final class PhoneMailCheck {
             if AutoMode.isOn { sortInDemo(context: context) } else { state = .demoNew }
             return
         }
-        // Auto turned on while new mail waited: it is sorted in now.
+        // Auto turned on while new mail waited: it is read now.
         if AutoMode.isOn, case .newMail(let look, let door) = state {
             classify(look, with: door, context: context, owner: AutoMode.owner(in: context))
             return
@@ -156,7 +168,7 @@ final class PhoneMailCheck {
                   let look = try? await door.look(password: password) else { return }
             lastChecked = Date()
             guard isQuiet else { return }
-            // Auto: sorted in at once, and what came of it shown.
+            // Auto: read at once, and offered to be taken in.
             if look.pending > 0, AutoMode.isOn { classify(look, with: door, context: context, owner: AutoMode.owner(in: context)) }
             else if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
         }
@@ -179,6 +191,8 @@ final class PhoneMailCheck {
 
     func look(context: ModelContext) {
         guard !isBusy else { return }
+        // A round that was read waits for its answer first.
+        if case .answered = state { return }
         if DemoData.isRequested { lookInDemo(context: context); return }
         let (found, why) = door(context: context)
         guard let door = found else { state = .failed(why ?? "Mail cannot be read."); return }
@@ -252,44 +266,69 @@ final class PhoneMailCheck {
         state = .idle
     }
 
+    /// Sends what is new, pseudonymised, and keeps what came back as an offer: nothing is in a
+    /// matter until the owner takes it in.
     func classify(_ look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
         guard let claude = ModelChoice.client(for: door.model) else {
             state = .failed(ModelChoice.missingKey(door.model))
             return
         }
-        state = .sending("Sorting \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
+        state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
         // Paid for once: switching away from Causabee meanwhile does not stop it halfway.
-        let background = UIApplication.shared.beginBackgroundTask(withName: "Sorting mail")
+        let background = UIApplication.shared.beginBackgroundTask(withName: "Reading mail")
         Task {
             defer { UIApplication.shared.endBackgroundTask(background) }
             do {
                 let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context))
-                let imported = try MatterImport.apply(judgements, to: context, owner: owner)
-                // Into the record the other devices read, and the names it learned into the store.
-                try SortedMails.record(judgements, device: PhoneNames.device, in: context)
-                PhoneNames.publish(in: context)
-                let matters = try context.fetch(FetchDescriptor<Matter>())
-                Self.logIntake(judgements, matters: matters, model: door.model.label, in: context)
-                // Their important links, offered in their matters.
-                let links = look.report.outcomes.reduce(0) { $0 + MailLinks.suggest($1.email, in: context) }
-                try? context.save()
-                let keys = Set(judgements.compactMap(\.matter))
-                let names = matters.filter { matter in keys.contains { matter.answers(to: $0) } }.map(\.name)
-                // Short: what came of it, and what it cost; what it brought, line by line, under it.
-                let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
-                var text = IntakeSummary.line(mails: imported.mails, matters: names, tasks: imported.todosNew,
-                                              dates: imported.appointments + imported.deadlines, unplaced: unplaced, cost: summary.cost)
-                if !summary.failed.isEmpty { text += " · \(summary.failed.count) failed" }
-                _ = links
-                // Each mail with the matter it went into: a wrong one is moved from here.
-                let all = try context.fetch(FetchDescriptor<Matter>())
-                let mails = IntakeSummary.mails(judgements) { key in all.first { $0.answers(to: key) }?.name }
-                Haptics.success()
-                state = .done(text, IntakeSummary.items(judgements), mails)
+                let answered = Answered(judgements: judgements, cost: summary.cost, failed: summary.failed.count, look: look, door: door)
+                // Only newsletters: nothing to decide on.
+                if judgements.allSatisfy(\.isBulk) { take(answered, chosen: [], moved: [:], context: context, owner: owner) }
+                else { Haptics.success(); state = .answered(answered) }
             } catch {
                 Haptics.failure()
                 state = .failed(plainWords(error))
             }
+        }
+    }
+
+    /// Takes in what the owner left ticked, each into the matter suggested or the one chosen for it;
+    /// what was unticked is put aside. All of it is recorded as read, so none is sent again.
+    func take(_ answered: Answered, chosen: Set<String>, moved: [String: PersistentIdentifier], context: ModelContext, owner: [String]) {
+        let look = answered.look, door = answered.door
+        do {
+            let all = try context.fetch(FetchDescriptor<Matter>())
+            let judgements = answered.judgements.filter { $0.isBulk || chosen.contains($0.emailID) }.map { judgement -> Judgement in
+                guard let id = moved[judgement.emailID], let matter = all.first(where: { $0.persistentModelID == id }) else { return judgement }
+                var judgement = judgement
+                judgement.matter = matter.key
+                judgement.matterTitle = nil
+                return judgement
+            }
+            UnplacedAside.add(answered.judgements.filter { !$0.isBulk && !chosen.contains($0.emailID) }.map(\.emailID))
+            let imported = try MatterImport.apply(judgements, to: context, owner: owner)
+            // Into the record the other devices read, and the names it learned into the store.
+            try SortedMails.record(answered.judgements, device: PhoneNames.device, in: context)
+            PhoneNames.publish(in: context)
+            let matters = try context.fetch(FetchDescriptor<Matter>())
+            Self.logIntake(judgements, matters: matters, model: door.model.label, in: context)
+            // Their important links, offered in their matters.
+            let takenIDs = Set(judgements.map(\.emailID))
+            for outcome in look.report.outcomes where takenIDs.contains(outcome.judgement.emailID) { _ = MailLinks.suggest(outcome.email, in: context) }
+            try? context.save()
+            let keys = Set(judgements.compactMap(\.matter))
+            let names = matters.filter { matter in keys.contains { matter.answers(to: $0) } }.map(\.name)
+            // Short: what came of it, and what it cost; what it brought, line by line, under it.
+            let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
+            var text = IntakeSummary.line(mails: imported.mails, matters: names, tasks: imported.todosNew,
+                                          dates: imported.appointments + imported.deadlines, unplaced: unplaced, cost: answered.cost)
+            if answered.failed > 0 { text += " · \(answered.failed) failed" }
+            // Each mail with the matter it went into: a wrong one is moved from here.
+            let mails = IntakeSummary.mails(judgements) { key in matters.first { $0.answers(to: key) }?.name }
+            Haptics.success()
+            state = .done(text, IntakeSummary.items(judgements), mails)
+        } catch {
+            Haptics.failure()
+            state = .failed(plainWords(error))
         }
     }
 
@@ -422,6 +461,10 @@ struct PhoneMailCheckView: View {
                 } sortIn: { chosen in
                     check.sortIn(chosen, of: look, with: door, context: context, owner: profiles.first?.names ?? [])
                 }
+            case .answered(let answered):
+                PhoneMailVerdict(answered: answered) { chosen, moved in
+                    check.take(answered, chosen: chosen, moved: moved, context: context, owner: profiles.first?.names ?? [])
+                }
             case .demoReady:
                 PhoneDemoMailReview(later: { check.state = .demoNew }) { chosen in check.sortInDemo(context: context, only: chosen) }
             case .done(let text, let items, let mails):
@@ -459,7 +502,7 @@ struct PhoneMailCheckView: View {
         .buttonStyle(.phone)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
-        .accessibilityHint(AutoMode.isOn ? "Reads new mail with the label and sorts it in at once: Auto is on."
+        .accessibilityHint(AutoMode.isOn ? "Auto is on: new mail with the label is read by the AI at once. You decide what is taken in."
                                          : "Reads only new mail with the label. Nothing is sent until you tap Sort in.")
     }
 
@@ -568,6 +611,39 @@ struct PhoneMailReview: View {
         guard let date = email.date else { return who }
         let time = Calendar.current.isDateInToday(date) ? date.formatted(.dateTime.hour().minute()) : Dates.short(date)
         return who + " · " + time
+    }
+}
+
+/// The round as the AI read it, before any of it is in a matter: each mail with a tick, the matter
+/// it would go into, and what it brings. "Take in" does what is ticked; the rest is put aside.
+struct PhoneMailVerdict: View {
+    let answered: PhoneMailCheck.Answered
+    let take: (Set<String>, [String: PersistentIdentifier]) -> Void
+    @Query private var matters: [Matter]
+    @State private var chosen: Set<String>
+    @State private var moved: [String: PersistentIdentifier] = [:]
+
+    init(answered: PhoneMailCheck.Answered, take: @escaping (Set<String>, [String: PersistentIdentifier]) -> Void) {
+        self.answered = answered
+        self.take = take
+        _chosen = State(initialValue: Set(answered.judgements.filter { !$0.isBulk }.map(\.emailID)))
+    }
+
+    var body: some View {
+        let offers = IntakeSummary.offers(answered.judgements) { key in matters.first { $0.answers(to: key) }?.name }
+        let bulk = answered.judgements.count - offers.count
+        VStack(alignment: .leading, spacing: 10) {
+            Text("\(offers.count) \(offers.count == 1 ? "mail" : "mails") read").font(.headline)
+            MailOffers(offers: offers, chosen: $chosen, moved: $moved)
+            Text(String(format: "Read for $%.3f. Nothing is in a matter yet: what is ticked is taken in, the rest is put aside.", answered.cost)
+                 + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
+                .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved) }
+                .buttonStyle(.phoneFilled)
+                .accessibilityIdentifier("mail.takeIn")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .phoneBox()
     }
 }
 

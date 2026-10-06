@@ -673,7 +673,7 @@ struct RootView: View {
             }
             .padding(.leading, WindowMetrics.sidebarButtonX).padding(.top, WindowMetrics.sidebarButtonTop - 2).ignoresSafeArea()
         }
-        // Auto turned on: what is new is looked for, and sorted in, at once.
+        // Auto turned on: what is new is looked for, and read, at once.
         .onChange(of: auto) { if auto { mailCheck.checkQuietly(store: navigation.store, context: context) } }
         .background(WindowChrome())
         .environment(navigation)

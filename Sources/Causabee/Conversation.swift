@@ -169,6 +169,8 @@ struct Conversation {
                 do { return .read(try door.look(at: file, owner: owner)) } catch { return .failed(plainWords(error)) }
             }.value
             Conversation.set(shot: id, stage, in: navigation)
+            // Auto: it is sent at once, without "Sort in"; what of it is taken in stays to be said.
+            if AutoMode.isOn, case .read = stage { classify(shot: id, owner: AutoMode.owner(in: context)) }
         }
     }
 

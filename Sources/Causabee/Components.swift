@@ -97,8 +97,9 @@ private struct QuickLabel: ViewModifier {
     }
 }
 
-/// Beside the glasses: Auto on and off — new mail sorted in by itself, or only when the owner says
-/// so. Theirs to choose, and plain to see which it is.
+/// Beside the glasses: Auto on and off — new mail and files read by the AI as soon as they are
+/// there, or only when the owner says so; what is taken in stays theirs either way. Theirs to
+/// choose, and plain to see which it is.
 struct AutoButton: View {
     @AppStorage(AutoMode.key) private var auto = false
 
@@ -114,7 +115,7 @@ struct AutoButton: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .quickLabel(auto ? "Turn Auto Off: new mail waits for “Sort in”" : "Turn Auto On: new mail is sorted in by itself")
+        .quickLabel(auto ? "Turn Auto Off: mail and files wait for “Sort in”" : "Turn Auto On: mail and files are read at once; you decide what is taken in")
         .accessibilityLabel("Auto")
         .accessibilityValue(auto ? "On" : "Off")
         .accessibilityIdentifier("window.auto")
