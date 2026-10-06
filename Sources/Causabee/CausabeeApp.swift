@@ -683,6 +683,8 @@ struct RootView: View {
         .lineSpacing(2)
         // A turn asked on the iPhone, or on the other Mac, arrives while Causabee is open.
         .onReceive(NotificationCenter.default.publisher(for: .threadMayHaveChanged)) { _ in navigation.refresh() }
+        // Mail the iPhone or the other Mac sorted meanwhile is not asked about here any more.
+        .onChange(of: StoredChanges.shared.count) { mailCheck.settleElsewhere(context: context) }
         .onAppear {
             navigation.attach(context)
             // `--demo --shot`: set up as one of the introduction's pictures.

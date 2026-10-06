@@ -116,6 +116,29 @@ final class MailCheck {
         return door
     }
 
+    /// What another device sorted meanwhile is no longer asked about here: the mails it took in or
+    /// put aside go from the line that says "new mails", from the list to tick, and from what was
+    /// read and waits to be taken in. With none left, the prompt is gone.
+    func settleElsewhere(context: ModelContext) {
+        let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
+        let known = Set(SortedMails.answered(in: context).keys).union(entries.map(\.messageID))
+        switch state {
+        case .newMail(let look, let door):
+            let left = Set(look.newIDs.filter { !known.contains($0) })
+            if left.isEmpty { state = .idle } else if left.count < look.newIDs.count { state = .newMail(look.only(left), door) }
+        case .ready(let look, let door):
+            let left = Set(look.newIDs.filter { !known.contains($0) })
+            if left.isEmpty { state = .idle } else if left.count < look.newIDs.count { state = .ready(look.only(left), door) }
+        case .answered(var answered):
+            let left = answered.judgements.filter { !known.contains($0.emailID) }
+            if left.allSatisfy(\.isBulk) { state = .idle } else if left.count < answered.judgements.count {
+                answered.judgements = left
+                state = .answered(answered)
+            }
+        default: break
+        }
+    }
+
     /// A mail of the round moved by the owner: its line says where it is now.
     func moved(_ messageID: String, to name: String) {
         guard case .done(let text, let items, var mails) = state, let at = mails.firstIndex(where: { $0.messageID == messageID }) else { return }

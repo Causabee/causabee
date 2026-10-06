@@ -844,7 +844,8 @@ struct MailOffers: View {
                                 Text("→ " + (target?.name ?? offer.matter.map { offer.isNew ? "New matter: \($0)" : $0 } ?? "No matter found"))
                                     .foregroundStyle(.secondary).lineLimit(1)
                                 Spacer(minLength: 4)
-                                Menu("Change") {
+                                // Nothing to change where none was found: there it is chosen.
+                                Menu(target == nil && offer.matter == nil ? "Choose" : "Change") {
                                     ForEach(open) { matter in
                                         Button(matter.name) { moved[offer.id] = matter.persistentModelID }
                                     }
