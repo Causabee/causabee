@@ -269,13 +269,17 @@ extension Matter {
 
     /// These mails into another matter, one that is there already: the model filed them here, and
     /// the owner knows better. What only they brought goes along — tasks, dates and decisions read
-    /// out of them alone, their files and links; a task another mail said too stays. The people
-    /// they name are in both matters.
+    /// out of them alone, their files and links; a task another mail said too stays — as long as
+    /// that other mail is still here: moved one mail at a time, the last one takes it along. The
+    /// people they name are in both matters.
     public func move(_ moved: [Entry], into new: Matter, turnsSince: Date? = nil, in context: ModelContext) throws {
         guard new !== self else { return }
         let ids = Set(moved.map(\.messageID))
+        // What stays behind: the other mails, and the files brought in by hand.
+        let staying = Set((entries ?? []).filter { !ids.contains($0.messageID) }.map(\.messageID))
+            .union((documents ?? []).filter { !ids.contains($0.messageID) }.map(\.messageID))
         let onlyTheirs: ([Source]) -> Bool = { sources in
-            !sources.isEmpty && sources.allSatisfy { ids.contains($0.messageID ?? "") }
+            sources.contains { ids.contains($0.messageID ?? "") } && !sources.contains { staying.contains($0.messageID ?? "") }
         }
         for entry in moved where entry.matter === self { entry.matter = new }
         for todo in todos ?? [] where onlyTheirs(todo.sources)

@@ -128,7 +128,10 @@ public struct DailyDoor: Sendable {
 
     /// Sends what `look` found new, and returns the new answers. Every earlier answer is kept and
     /// written back with them.
+    /// `placed`: the matter each earlier mail is in now. A mail the owner moved counts as that
+    /// matter's, so the replies in its thread follow it there.
     public func classify(_ look: Look, claude: Claude, owner: [String], matters: [(key: String, about: String)] = [],
+                         placed: [String: String] = [:],
                          progress: @Sendable (Int, Int, String) -> Void = { _, _, _ in }) async throws -> (judgements: [Judgement], summary: Extractor.Summary) {
         var outcomes = look.report.outcomes
         var summary = Extractor.Summary()
@@ -136,8 +139,10 @@ public struct DailyDoor: Sendable {
             var extractor = Extractor(model: model, claude: claude, cache: cache)
             extractor.strict = strict
             extractor.storeMatters = matters
+            var known = look.answered
+            for (id, key) in placed where known[id] != nil && known[id]?.matter != key { known[id]?.matter = key }
             summary = try await extractor
-                .run(&outcomes, pseudonymizer: pseudonymizer, owner: owner, known: look.answered) { step, total, outcome in
+                .run(&outcomes, pseudonymizer: pseudonymizer, owner: owner, known: known) { step, total, outcome in
                     progress(step, total, outcome.judgement.subject)
                 }
             var mapping = Pseudonymizer.Mapping()

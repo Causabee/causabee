@@ -29,4 +29,14 @@ struct IntakeOfferTests {
         #expect(offers[2].matter == "Sperrmuell" && offers[2].isNew)
         #expect(offers[3].matter == nil && !offers[3].isNew)
     }
+
+    @Test("What a mail brings is taken or left, one by one")
+    func leavingOut() throws {
+        var mail = try judgement("a", matter: "wohnung")
+        mail.todos = [.init(text: "Sign the draft", owner: .me, due: nil, sourceQuote: ""), .init(text: "Call the notary", owner: .me, due: nil, sourceQuote: "")]
+        #expect(IntakeSummary.found(in: mail).map(\.key) == ["t0", "t1"])
+        let kept = IntakeSummary.leaving(out: ["t0"], of: mail)
+        #expect(kept.todos.map(\.text) == ["Call the notary"])
+        #expect(IntakeSummary.leaving(out: [], of: mail).todos.count == 2)
+    }
 }

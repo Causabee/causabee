@@ -167,7 +167,7 @@ struct MatterImportTests {
             context.insert(e)
             return (e, source)
         }
-        let (wrong, wrongSource) = entry("w@x"), (_, otherSource) = entry("o@x")
+        let (wrong, wrongSource) = entry("w@x"), (other, otherSource) = entry("o@x")
         let alone = Todo(text: "Prepare for the interview", owner: .me, due: nil, source: wrongSource, origin: "w@x#interview")
         let shared = Todo(text: "Send the portfolio", owner: .me, due: nil, source: wrongSource, origin: "w@x#portfolio")
         shared.sources.append(otherSource)
@@ -185,6 +185,9 @@ struct MatterImportTests {
         #expect((shine.entries ?? []).count == 1)
         try superhuman.move([wrong], into: superhuman, in: context)  // into itself: nothing happens
         #expect(wrong.matter === superhuman)
+        // The other mail moved after it: nothing that said the task is left behind, so it goes along.
+        try shine.move([other], into: superhuman, in: context)
+        #expect(shared.matter === superhuman)
     }
 
     @Test("Merging keeps the owner's notes of both matters")

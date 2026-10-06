@@ -12,6 +12,16 @@ public enum Unplaced {
         }
     }
 
+    /// Where each mail is now, by its id: the matter the owner left it in or moved it to. A reply
+    /// in its thread is sorted by this, not by where the mail was put first.
+    public static func placed(in context: ModelContext) -> [String: String] {
+        var placed: [String: String] = [:]
+        for entry in (try? context.fetch(FetchDescriptor<Entry>())) ?? [] where !entry.messageID.isEmpty {
+            if let matter = entry.matter { placed[entry.messageID] = matter.key }
+        }
+        return placed
+    }
+
     /// The last month's mail with no matter, not in the store, not set aside — sorted on this
     /// device or on another.
     public static func find(log: URL, context: ModelContext, setAside: Set<String>, days: Int = 30) -> [Judgement] {

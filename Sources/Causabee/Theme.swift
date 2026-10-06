@@ -813,6 +813,8 @@ struct MailOffers: View {
     @Binding var chosen: Set<String>
     /// Mails the owner sends elsewhere than suggested, by the mail's id.
     @Binding var moved: [String: PersistentIdentifier]
+    /// The tasks and dates the owner leaves out, by the mail's id and their key in it.
+    @Binding var skipped: [String: Set<String>]
     /// The Mac's sidebar is narrow: its words are small.
     var small = false
     @Query private var matters: [Matter]
@@ -858,9 +860,27 @@ struct MailOffers: View {
                                 .foregroundStyle(Theme.gold).tint(Theme.gold)
                             }
                             .font(small ? .caption : .footnote)
-                            ForEach(offer.items, id: \.self) { item in
-                                Label(item.text, systemImage: item.symbol).font(small ? .caption : .footnote)
-                                    .foregroundStyle(.secondary).lineLimit(2)
+                            // What it brings, each to take or to leave: the mail comes in either way.
+                            ForEach(offer.items) { item in
+                                let takes = !(skipped[offer.id] ?? []).contains(item.key)
+                                Button {
+                                    if takes { skipped[offer.id, default: []].insert(item.key) } else { skipped[offer.id]?.remove(item.key) }
+                                } label: {
+                                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                        Image(systemName: takes ? "checkmark.square.fill" : "square")
+                                            .foregroundStyle(takes ? Theme.gold : .secondary)
+                                        Label(item.text, systemImage: item.symbol)
+                                            .strikethrough(!takes).foregroundStyle(takes ? .primary : .secondary)
+                                            .lineLimit(3).multilineTextAlignment(.leading)
+                                        Spacer(minLength: 0)
+                                    }
+                                    .font(small ? .caption : .footnote)
+                                    .padding(.vertical, small ? 1 : 3)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(item.text)
+                                .accessibilityAddTraits(takes ? .isSelected : [])
                             }
                         }
                     }

@@ -279,7 +279,7 @@ final class PhoneMailCheck {
         Task {
             defer { UIApplication.shared.endBackgroundTask(background) }
             do {
-                let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context))
+                let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), placed: Unplaced.placed(in: context))
                 let answered = Answered(judgements: judgements, cost: summary.cost, failed: summary.failed.count, look: look, door: door)
                 // Only newsletters: nothing to decide on.
                 if judgements.allSatisfy(\.isBulk) { take(answered, chosen: [], moved: [:], context: context, owner: owner) }
@@ -292,14 +292,16 @@ final class PhoneMailCheck {
     }
 
     /// Takes in what the owner left ticked, each into the matter suggested or the one chosen for it;
-    /// what was unticked is put aside. All of it is recorded as read, so none is sent again.
-    func take(_ answered: Answered, chosen: Set<String>, moved: [String: PersistentIdentifier], context: ModelContext, owner: [String]) {
+    /// with the tasks and dates left ticked in it; a mail that was unticked is put aside. All of it
+    /// is recorded as read, so none is sent again.
+    func take(_ answered: Answered, chosen: Set<String>, moved: [String: PersistentIdentifier], skipped: [String: Set<String>] = [:], context: ModelContext, owner: [String]) {
         let look = answered.look, door = answered.door
         do {
             let all = try context.fetch(FetchDescriptor<Matter>())
             let judgements = answered.judgements.filter { $0.isBulk || chosen.contains($0.emailID) }.map { judgement -> Judgement in
+                // Only the tasks and dates the owner left ticked.
+                var judgement = IntakeSummary.leaving(out: skipped[judgement.emailID] ?? [], of: judgement)
                 guard let id = moved[judgement.emailID], let matter = all.first(where: { $0.persistentModelID == id }) else { return judgement }
-                var judgement = judgement
                 judgement.matter = matter.key
                 judgement.matterTitle = nil
                 return judgement
@@ -462,8 +464,8 @@ struct PhoneMailCheckView: View {
                     check.sortIn(chosen, of: look, with: door, context: context, owner: profiles.first?.names ?? [])
                 }
             case .answered(let answered):
-                PhoneMailVerdict(answered: answered) { chosen, moved in
-                    check.take(answered, chosen: chosen, moved: moved, context: context, owner: profiles.first?.names ?? [])
+                PhoneMailVerdict(answered: answered) { chosen, moved, skipped in
+                    check.take(answered, chosen: chosen, moved: moved, skipped: skipped, context: context, owner: profiles.first?.names ?? [])
                 }
             case .demoReady:
                 PhoneDemoMailReview(later: { check.state = .demoNew }) { chosen in check.sortInDemo(context: context, only: chosen) }
@@ -618,12 +620,13 @@ struct PhoneMailReview: View {
 /// it would go into, and what it brings. "Take in" does what is ticked; the rest is put aside.
 struct PhoneMailVerdict: View {
     let answered: PhoneMailCheck.Answered
-    let take: (Set<String>, [String: PersistentIdentifier]) -> Void
+    let take: (Set<String>, [String: PersistentIdentifier], [String: Set<String>]) -> Void
     @Query private var matters: [Matter]
     @State private var chosen: Set<String>
     @State private var moved: [String: PersistentIdentifier] = [:]
+    @State private var skipped: [String: Set<String>] = [:]
 
-    init(answered: PhoneMailCheck.Answered, take: @escaping (Set<String>, [String: PersistentIdentifier]) -> Void) {
+    init(answered: PhoneMailCheck.Answered, take: @escaping (Set<String>, [String: PersistentIdentifier], [String: Set<String>]) -> Void) {
         self.answered = answered
         self.take = take
         _chosen = State(initialValue: Set(answered.judgements.filter { !$0.isBulk }.map(\.emailID)))
@@ -634,11 +637,11 @@ struct PhoneMailVerdict: View {
         let bulk = answered.judgements.count - offers.count
         VStack(alignment: .leading, spacing: 10) {
             Text("\(offers.count) \(offers.count == 1 ? "mail" : "mails") read").font(.headline)
-            MailOffers(offers: offers, chosen: $chosen, moved: $moved)
-            Text(String(format: "Read for $%.3f. Nothing is in a matter yet: what is ticked is taken in, the rest is put aside.", answered.cost)
+            MailOffers(offers: offers, chosen: $chosen, moved: $moved, skipped: $skipped)
+            Text(String(format: "Read for $%.3f. Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside.", answered.cost)
                  + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved) }
+            Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, skipped) }
                 .buttonStyle(.phoneFilled)
                 .accessibilityIdentifier("mail.takeIn")
         }
