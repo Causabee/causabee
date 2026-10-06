@@ -3,6 +3,46 @@ import MatterCore
 import SwiftData
 import SwiftUI
 
+/// A picture's small likeness on its card. Made once, small, away from the window, and kept: the
+/// picture itself — a phone's screenshot, in its wide colours — read and drawn at full size each
+/// time the thread was laid out, held the whole window up for seconds.
+struct ShotThumbnail: View {
+    let file: URL
+    @State private var image: NSImage?
+
+    @MainActor private static let kept = NSCache<NSURL, NSImage>()
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(nsImage: image).resizable().scaledToFit()
+            } else {
+                RoundedRectangle(cornerRadius: 6).fill(Theme.box)
+            }
+        }
+        .frame(width: 64, height: 110)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.line))
+        .task(id: file) {
+            if let known = Self.kept.object(forKey: file as NSURL) { image = known; return }
+            let file = file
+            let made = await Task.detached(priority: .utility) { Self.small(file) }.value
+            guard let made else { return }
+            let small = NSImage(cgImage: made, size: NSSize(width: made.width, height: made.height))
+            Self.kept.setObject(small, forKey: file as NSURL)
+            image = small
+        }
+    }
+
+    /// At most 330 points on its longer side — three times what the card shows.
+    private nonisolated static func small(_ file: URL) -> CGImage? {
+        guard let source = CGImageSourceCreateWithURL(file as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true,
+                                        kCGImageSourceThumbnailMaxPixelSize: 330]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
+}
+
 /// C5–C7 · a screenshot in the thread: what was read on the Mac, what was left out and why, and
 /// only on "Einordnen" what it means — as a card to take into a matter, or not.
 struct ShotView: View {
@@ -29,10 +69,8 @@ struct ShotView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                if ScreenshotDoor.chatTypes.contains(shot.file.pathExtension.lowercased()), let image = NSImage(contentsOf: shot.file) {
-                    Image(nsImage: image).resizable().scaledToFit().frame(width: 64, height: 110)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.line))
+                if ScreenshotDoor.chatTypes.contains(shot.file.pathExtension.lowercased()) {
+                    ShotThumbnail(file: shot.file)
                         .onTapGesture { NSWorkspace.shared.open(shot.file) }
                         .help("Open the image")
                 }
