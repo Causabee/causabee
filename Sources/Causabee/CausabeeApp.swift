@@ -497,6 +497,7 @@ struct RootView: View {
     @State private var mailCheck = MailCheck()
     /// The closed matters in the sidebar, folded away until opened; remembered on this Mac.
     @AppStorage("sidebar.showsClosed") private var showsClosed = false
+    @AppStorage(AutoMode.key) private var auto = false
     /// The five pages on what Causabee is: once at the first start, then from Help.
     @AppStorage(IntroView.seenKey) private var introSeen = false
     @State private var showsIntro = false
@@ -652,10 +653,28 @@ struct RootView: View {
         .ignoresSafeArea()
         .environment(\.reading, navigation.reading)
         // Right of the green button, as far from it as the buttons are apart; open or folded alike.
+        // On glass, as the matter's own controls on the right: the sidebar, reading and Auto in one
+        // capsule, and the bee beside it — the assistant's column, shown and put away.
         .overlay(alignment: .topLeading) {
-            HStack(spacing: 8) { SidebarButton(); ReadingButton() }
-                .padding(.leading, WindowMetrics.sidebarButtonX).padding(.top, WindowMetrics.sidebarButtonTop).ignoresSafeArea()
+            HStack(spacing: 8) {
+                HStack(spacing: 2) { SidebarButton(); ReadingButton(); AutoButton() }
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .onGlass(Capsule())
+                Button {
+                    withAnimation(.snappy(duration: 0.25)) { if showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() } }
+                } label: {
+                    BeeMark(size: 13).foregroundStyle(.black)
+                        .frame(width: 30, height: 30).contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .onGlass(Circle(), tint: Theme.bee)
+                .quickLabel(showsAssistant ? "Put Causabee Away" : "Ask Causabee")
+                .accessibilityLabel("Ask Causabee")
+            }
+            .padding(.leading, WindowMetrics.sidebarButtonX).padding(.top, WindowMetrics.sidebarButtonTop - 2).ignoresSafeArea()
         }
+        // Auto turned on: what is new is looked for, and sorted in, at once.
+        .onChange(of: auto) { if auto { mailCheck.checkQuietly(store: navigation.store, context: context) } }
         .background(WindowChrome())
         .environment(navigation)
         // Plain buttons, switches and checkboxes in black; links are gold by their own style.

@@ -163,7 +163,7 @@ struct MatterScreen: View {
             if !finding {
                 VStack(alignment: .trailing, spacing: 12) {
                     LetterShotBringer(matter: matter)
-                    AssistantButton { navigation.showsAssistant = true }
+                    AssistantButton(matter: matter) { navigation.showsAssistant = true }
                 }
             }
         }

@@ -97,6 +97,30 @@ private struct QuickLabel: ViewModifier {
     }
 }
 
+/// Beside the glasses: Auto on and off — new mail sorted in by itself, or only when the owner says
+/// so. Theirs to choose, and plain to see which it is.
+struct AutoButton: View {
+    @AppStorage(AutoMode.key) private var auto = false
+
+    var body: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { auto.toggle() }
+        } label: {
+            // On: a black bolt on the bee's yellow, round, as the glasses while reading.
+            Image(systemName: auto ? "bolt.fill" : "bolt").font(.body)
+                .foregroundStyle(auto ? Color.black : Color.secondary)
+                .frame(width: 26, height: 26)
+                .background { if auto { Circle().fill(Theme.bee) } }
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .quickLabel(auto ? "Turn Auto Off: new mail waits for “Sort in”" : "Turn Auto On: new mail is sorted in by itself")
+        .accessibilityLabel("Auto")
+        .accessibilityValue(auto ? "On" : "Off")
+        .accessibilityIdentifier("window.auto")
+    }
+}
+
 /// Beside the sidebar's button: reading on and off. Its label comes quicker than the Mac's own
 /// tooltip, which waits about a second.
 struct ReadingButton: View {

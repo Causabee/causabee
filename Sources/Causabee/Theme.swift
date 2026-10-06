@@ -783,6 +783,18 @@ struct ThreadPlace: Equatable {
     var height: CGFloat
 }
 
+/// Auto: what Causabee can do by itself, it does — new mail is sorted in as soon as it is found,
+/// and the owner sees what came of it instead of being asked first. Chosen on each device, off
+/// until the owner turns it on: sorting sends the mail, pseudonymised, and costs what it costs.
+enum AutoMode {
+    static let key = "mail.auto"
+    static var isOn: Bool { UserDefaults.standard.bool(forKey: key) }
+    /// Whose tasks are whose, read where a view is not at hand to say it.
+    @MainActor static func owner(in context: ModelContext) -> [String] {
+        ((try? context.fetch(FetchDescriptor<Profile>())) ?? []).first?.names ?? []
+    }
+}
+
 /// The matters opened last on this device, the newest first: offered under "Find or start a matter"
 /// before anything is typed. Kept by their keys, apart for the demo; one that is gone is left out.
 enum RecentMatters {

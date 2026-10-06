@@ -344,34 +344,97 @@ struct PhoneShotCard: View {
     }
 }
 
-/// The plus beside the assistant's field. Something to read — a photo or a screenshot, a file from
-/// Files — and, inside a matter, everything that can be added to it: a task or a note, said to the
-/// assistant before it is typed, and what has an editor of its own on the matter's page.
+/// What the plus offers: something to read — a photo or a screenshot, a file from Files — and
+/// everything that can be added to a matter. The same beside the assistant's field and held on the
+/// yellow button; with no matter open, which one it is for is asked after the pick.
+struct PlusItems: View {
+    let matter: Matter?
+    @Binding var picksPhoto: Bool
+    @Binding var picksFile: Bool
+    /// "Task" or "Note" was picked for the open matter: the field takes the cursor.
+    var picked: () -> Void = {}
+    @Environment(Navigation.self) private var navigation
+
+    var body: some View {
+        Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
+        Button("File", systemImage: "doc") { picksFile = true }
+        // A letter on the table: scanned with the camera, named and kept among the matter's files.
+        Button("Scan a document", systemImage: "doc.viewfinder") { pick(.scan) }.accessibilityIdentifier("plus.scan")
+        Divider()
+        Button("Contact", systemImage: "person.badge.plus") { pick(.contact) }.accessibilityIdentifier("plus.contact")
+        Button("Detail", systemImage: "info.circle") { pick(.detail) }.accessibilityIdentifier("plus.detail")
+        Button("Link", systemImage: "link") { pick(.link) }.accessibilityIdentifier("plus.link")
+        Button("Note", systemImage: "note.text") { pick(.note) }.accessibilityIdentifier("plus.note")
+        Button("Task", systemImage: "checklist") { pick(.task) }.accessibilityIdentifier("plus.task")
+    }
+
+    private func pick(_ plus: Navigation.Plus) {
+        guard let matter else { navigation.choose(for: plus); return }
+        navigation.add(plus, to: matter)
+        if plus == .note || plus == .task { picked() }
+    }
+}
+
+extension View {
+    /// The pickers behind "Photo or screenshot" and "File": what is picked is kept and read, and
+    /// shows in the assistant.
+    func bringsIn(matter: Matter?, picksPhoto: Binding<Bool>, picksFile: Binding<Bool>) -> some View {
+        modifier(BringsIn(matter: matter, picksPhoto: picksPhoto, picksFile: picksFile))
+    }
+}
+
+private struct BringsIn: ViewModifier {
+    let matter: Matter?
+    @Binding var picksPhoto: Bool
+    @Binding var picksFile: Bool
+    @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
+    @Query private var profiles: [Profile]
+    @State private var photo: PhotosPickerItem?
+
+    func body(content: Content) -> some View {
+        content
+            .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
+            .onChange(of: photo) {
+                guard let photo else { return }
+                self.photo = nil
+                Task {
+                    guard let data = try? await photo.loadTransferable(type: Data.self) else { return }
+                    let type = photo.supportedContentTypes.first { ["png", "jpeg", "heic"].contains($0.preferredFilenameExtension ?? "") }
+                    // As the iPhone names its own: "Screenshot 2026-09-30 at 23.37.01", in local time.
+                    let formatter = DateFormatter()
+                    formatter.locale = Locale(identifier: "en_US_POSIX")
+                    formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+                    let name = "Screenshot \(formatter.string(from: Date())).\(type?.preferredFilenameExtension ?? "png")"
+                    if let file = PhoneShots.shared.keep(data, named: name) { bring(file) }
+                }
+            }
+            .fileImporter(isPresented: $picksFile, allowedContentTypes: [.pdf, .image, UTType(filenameExtension: "eml") ?? .data]) { result in
+                guard case .success(let url) = result else { return }
+                let access = url.startAccessingSecurityScopedResource()
+                defer { if access { url.stopAccessingSecurityScopedResource() } }
+                if let data = try? Data(contentsOf: url), let file = PhoneShots.shared.keep(data, named: url.lastPathComponent) { bring(file) }
+            }
+    }
+
+    private func bring(_ file: URL) {
+        PhoneShots.shared.bring(file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first)
+        // Brought from the yellow button: the assistant opens, where it is read.
+        navigation.showsAssistant = true
+    }
+}
+
+/// The plus beside the assistant's field: everything `PlusItems` offers.
 struct AttachButton: View {
     let matter: Matter?
     /// "Task" or "Note" was picked: the field takes the cursor.
     var picked: () -> Void = {}
-    @Environment(\.modelContext) private var context
-    @Environment(Navigation.self) private var navigation
-    @Query private var profiles: [Profile]
     @State private var picksPhoto = false
     @State private var picksFile = false
-    @State private var photo: PhotosPickerItem?
 
     var body: some View {
         Menu {
-            Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
-            Button("File", systemImage: "doc") { picksFile = true }
-            if let matter {
-                // A letter on the table: scanned with the camera, named and kept among the matter's files.
-                Button("Scan a document", systemImage: "doc.viewfinder") { open(.scan) }.accessibilityIdentifier("plus.scan")
-                Divider()
-                Button("Contact", systemImage: "person.badge.plus") { open(.contact) }.accessibilityIdentifier("plus.contact")
-                Button("Detail", systemImage: "info.circle") { open(.detail) }.accessibilityIdentifier("plus.detail")
-                Button("Link", systemImage: "link") { open(.link) }.accessibilityIdentifier("plus.link")
-                Button("Note", systemImage: "note.text") { say(.note, in: matter) }.accessibilityIdentifier("plus.note")
-                Button("Task", systemImage: "checklist") { say(.task, in: matter) }.accessibilityIdentifier("plus.task")
-            }
+            PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile, picked: picked)
         } label: {
             // A plus, as on the Mac (Figma "Composer"): quiet, so the send button is the one loud thing.
             Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary)
@@ -379,45 +442,63 @@ struct AttachButton: View {
         }
         // A menu's label takes the app's gold; the plus stays grey.
         .tint(Color.secondary)
-        .accessibilityLabel(matter == nil ? "Bring in a screenshot or a file" : "Add to this matter")
+        .accessibilityLabel(matter == nil ? "Bring in or add to a matter" : "Add to this matter")
         .accessibilityIdentifier("assistant.plus")
-        .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
-        .onChange(of: photo) {
-            guard let photo else { return }
-            self.photo = nil
-            Task {
-                guard let data = try? await photo.loadTransferable(type: Data.self) else { return }
-                let type = photo.supportedContentTypes.first { ["png", "jpeg", "heic"].contains($0.preferredFilenameExtension ?? "") }
-                // As the iPhone names its own: "Screenshot 2026-09-30 at 23.37.01", in local time.
-                let formatter = DateFormatter()
-                formatter.locale = Locale(identifier: "en_US_POSIX")
-                formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-                let name = "Screenshot \(formatter.string(from: Date())).\(type?.preferredFilenameExtension ?? "png")"
-                if let file = PhoneShots.shared.keep(data, named: name) { bring(file) }
+        .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+    }
+}
+
+/// Picked from the plus with no matter open: the matter it is for — those opened last on top, then
+/// every open one, found by its name.
+struct MatterChooser: View {
+    let plus: Navigation.Plus
+    @Environment(Navigation.self) private var navigation
+    @Environment(\.dismiss) private var dismiss
+    @Query private var matters: [Matter]
+    @State private var search = ""
+
+    private var title: String {
+        switch plus {
+        case .scan: "Scan for which matter?"
+        case .contact: "Contact for which matter?"
+        case .detail: "Detail for which matter?"
+        case .link: "Link for which matter?"
+        case .note: "Note for which matter?"
+        case .task: "Task for which matter?"
+        }
+    }
+
+    var body: some View {
+        let open = sidebarOrder(matters).filter { !$0.isClosed }
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        let recent = query.isEmpty ? RecentMatters.list(in: open) : []
+        let rest = query.isEmpty ? open.filter { matter in !recent.contains { $0 === matter } }
+                                 : open.filter { $0.name.localizedCaseInsensitiveContains(query) }
+        NavigationStack {
+            List {
+                if !recent.isEmpty { Section("Recent") { rows(recent) } }
+                Section(recent.isEmpty ? "" : "All matters") { rows(rest) }
             }
+            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Find a matter")
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
         }
-        .fileImporter(isPresented: $picksFile, allowedContentTypes: [.pdf, .image, UTType(filenameExtension: "eml") ?? .data]) { result in
-            guard case .success(let url) = result else { return }
-            let access = url.startAccessingSecurityScopedResource()
-            defer { if access { url.stopAccessingSecurityScopedResource() } }
-            if let data = try? Data(contentsOf: url), let file = PhoneShots.shared.keep(data, named: url.lastPathComponent) { bring(file) }
+        .tint(Theme.gold)
+    }
+
+    private func rows(_ list: [Matter]) -> some View {
+        ForEach(list) { matter in
+            Button { navigation.chosen(matter, for: plus) } label: {
+                HStack(spacing: 10) {
+                    MatterIconTile(matter: matter, size: 28)
+                    Text(matter.name).lineLimit(1)
+                }
+            }
+            // The names as any words; gold is for Cancel.
+            .tint(.primary)
+            .accessibilityIdentifier("chooser.matter")
         }
-    }
-
-    private func bring(_ file: URL) {
-        PhoneShots.shared.bring(file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first)
-    }
-
-    /// Said before it is typed: the chip over the field says what the next words are.
-    private func say(_ add: AssistantAdd, in matter: Matter) {
-        navigation.pinned = Navigation.Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
-        picked()
-    }
-
-    /// What has an editor of its own: the assistant steps aside, and the matter's page opens it.
-    private func open(_ adding: Navigation.Adding) {
-        navigation.adding = adding
-        navigation.showsAssistant = false
     }
 }
 

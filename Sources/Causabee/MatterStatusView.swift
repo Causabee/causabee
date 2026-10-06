@@ -916,19 +916,9 @@ struct MatterStatusView: View {
                     Spacer()
                 }
                 if !renaming {
-                    // What the bar can do, on glass as a toolbar's: the bee, the search, the rest.
+                    // What the bar can do, on glass as a toolbar's: the search, the rest. The bee that
+                    // brings the assistant back is by the window's buttons, on the left.
                     HStack(spacing: 8) {
-                        // The assistant's column was put away: its bee brings it back.
-                        if navigation.assistantHidden {
-                            Button { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } } label: {
-                                BeeMark(size: 13).foregroundStyle(.black)
-                                    .frame(width: 30, height: 30).contentShape(Circle())
-                            }
-                            .buttonStyle(.plain)
-                            .onGlass(Circle(), tint: Theme.bee)
-                            .help("Ask Causabee about this matter")
-                            .accessibilityLabel("Ask Causabee")
-                        }
                         // What is added goes in by the assistant's plus, beside its field: there is none here.
                         PageFindField(find: find)
                         // What is seldom needed sits behind the dots, not in the bar: what the sidebar's

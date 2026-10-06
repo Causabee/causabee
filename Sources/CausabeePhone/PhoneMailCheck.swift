@@ -140,7 +140,12 @@ final class PhoneMailCheck {
         if DemoData.isRequested {
             // The demo's three are always new: the quiet line, ready to be looked at.
             lastChecked = Date()
-            state = .demoNew
+            if AutoMode.isOn { sortInDemo(context: context) } else { state = .demoNew }
+            return
+        }
+        // Auto turned on while new mail waited: it is sorted in now.
+        if AutoMode.isOn, case .newMail(let look, let door) = state {
+            classify(look, with: door, context: context, owner: AutoMode.owner(in: context))
             return
         }
         guard let door = door(context: context).door else { return }
@@ -151,7 +156,9 @@ final class PhoneMailCheck {
                   let look = try? await door.look(password: password) else { return }
             lastChecked = Date()
             guard isQuiet else { return }
-            if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
+            // Auto: sorted in at once, and what came of it shown.
+            if look.pending > 0, AutoMode.isOn { classify(look, with: door, context: context, owner: AutoMode.owner(in: context)) }
+            else if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
         }
     }
 
@@ -187,7 +194,9 @@ final class PhoneMailCheck {
                 let look = try await door.look(password: password)
                 guard !Task.isCancelled else { return }
                 lastChecked = Date()
-                state = look.pending == 0 ? .nothingNew(known: look.intake.alreadyKnown) : .ready(look, door)
+                if look.pending == 0 { state = .nothingNew(known: look.intake.alreadyKnown) }
+                else if AutoMode.isOn { classify(look, with: door, context: context, owner: AutoMode.owner(in: context)) }
+                else { state = .ready(look, door) }
             } catch {
                 guard !Task.isCancelled else { return }
                 state = .failed(plainWords(error))
@@ -206,7 +215,7 @@ final class PhoneMailCheck {
             try? await Task.sleep(for: .seconds(1.8))
             guard !Task.isCancelled else { return }
             // Every time the whole round: the last one's three mails are taken out on Sort in.
-            state = .demoReady
+            if AutoMode.isOn { sortInDemo(context: context) } else { state = .demoReady }
         }
     }
 
@@ -450,7 +459,8 @@ struct PhoneMailCheckView: View {
         .buttonStyle(.phone)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
-        .accessibilityHint("Reads only new mail with the label. Nothing is sent until you tap Sort in.")
+        .accessibilityHint(AutoMode.isOn ? "Reads new mail with the label and sorts it in at once: Auto is on."
+                                         : "Reads only new mail with the label. Nothing is sent until you tap Sort in.")
     }
 
     /// Mail that was read but found no matter: to put into one, or to set aside.

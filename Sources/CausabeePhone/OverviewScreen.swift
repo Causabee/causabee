@@ -34,6 +34,8 @@ struct RootView: View {
             AssistantSheet(matter: navigation.path.last.flatMap { id in matters.first { $0.persistentModelID == id } })
                 .presentationDragIndicator(.visible)
         }
+        // Picked from the plus with no matter open: which one it is for.
+        .sheet(item: $navigation.choosing) { plus in MatterChooser(plus: plus) }
         .modifier(MatterQuestions())
         // The share sheet's matters, and what was shared to Causabee meanwhile.
         .modifier(SharedIn(matters: matters))
@@ -125,7 +127,7 @@ struct OverviewScreen: View {
         // Pulled down: new mail is read — free — and waits for "Sort in"; in the demo, its three.
         .refreshable { PhoneMailCheck.shared.look(context: context) }
         .background(Theme.canvas)
-        // The assistant about every matter, as on a matter's page.
+        // The assistant about every matter, as on a matter's page; held, its plus for any matter.
         .overlay(alignment: .bottomTrailing) {
             if search.isEmpty { AssistantButton { navigation.showsAssistant = true } }
         }

@@ -237,6 +237,8 @@ struct AssistantSheet: View {
             // What was in hand from another matter is put down; words to send go into the field.
             if let pinned = navigation.pinned, pinned.matter != matter?.persistentModelID { navigation.pinned = nil }
             if let prefill = navigation.prefill { draft = prefill; navigation.prefill = nil }
+            // "Task" or "Note" held on the yellow button: the field takes the cursor at once.
+            if navigation.pinned.flatMap({ AssistantAdd(rawValue: $0.kind) }) != nil { typing = true }
         }
     }
 

@@ -24,6 +24,41 @@ final class Navigation {
     /// assistant steps aside and the page opens it.
     enum Adding { case contact, detail, link, scan }
     var adding: Adding?
+    /// What the plus adds to a matter — beside the assistant's field, or held on the yellow button.
+    enum Plus: String, Identifiable {
+        case scan, contact, detail, link, note, task
+        var id: String { rawValue }
+    }
+    /// Picked where no matter is open: which matter it is for is asked first.
+    var choosing: Plus?
+
+    /// A task or a note is said to the assistant, over the matter; the others have an editor of
+    /// their own on the matter's page, and the assistant steps aside for it.
+    func add(_ plus: Plus, to matter: Matter) {
+        switch plus {
+        case .note, .task:
+            let add: AssistantAdd = plus == .note ? .note : .task
+            pinned = Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
+            showsAssistant = true
+        case .scan, .contact, .detail, .link:
+            adding = switch plus { case .scan: .scan; case .contact: .contact; case .detail: .detail; default: .link }
+            showsAssistant = false
+        }
+    }
+
+    /// Picked with no matter open: the assistant's sheet goes first, then the matters are offered.
+    func choose(for plus: Plus) {
+        guard showsAssistant else { choosing = plus; return }
+        showsAssistant = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.choosing = plus }
+    }
+
+    /// The matter it is for: opened, and once its page is there, what was picked is added to it.
+    func chosen(_ matter: Matter, for plus: Plus) {
+        choosing = nil
+        open(matter)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self.add(plus, to: matter) }
+    }
 
     /// Puts an item in hand and opens the assistant over its matter, as the Mac's pin does.
     func talk(_ text: String, kind: String, in matter: Matter, prefill: String? = nil) {

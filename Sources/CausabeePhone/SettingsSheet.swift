@@ -12,6 +12,7 @@ struct SettingsSheet: View {
     @AppStorage(ModelChoice.assistantKey) private var assistant = Claude.Model.opus.id
     @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
     @AppStorage(ModelChoice.strictKey) private var strict = true
+    @AppStorage(AutoMode.key) private var auto = false
     @Query(sort: \NameList.updatedAt, order: .reverse) private var lists: [NameList]
     @State private var sync = PhoneCloudStatus.shared
     @State private var accounts = Keychain.accounts().filter { !$0.usesGoogle }
@@ -40,6 +41,10 @@ struct SettingsSheet: View {
                     if mail.hasPrefix("mistral") || mail.hasPrefix("gpt-") {
                         Toggle("Fewer, real tasks", isOn: $strict)
                     }
+                    Toggle("Auto: sort in by itself", isOn: $auto)
+                    Text(auto ? "New mail is sorted in as soon as it is found, and you see what came of it. It is sent pseudonymised, without asking first."
+                              : "New mail waits until you tap “Sort in”.")
+                        .font(.footnote).foregroundStyle(.secondary)
                     Text(String(format: "About %.2f cents per mail. A mail is sorted only once — here or on your Mac: what a model sorted in stays that way. Screenshots and files are sorted in on the Mac.",
                                 (Claude.Model.choices.first { $0.id == mail } ?? .opus).perMail * 100))
                         .font(.footnote).foregroundStyle(.secondary)

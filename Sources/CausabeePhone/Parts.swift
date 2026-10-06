@@ -61,20 +61,32 @@ extension View {
 }
 
 /// The yellow round button in the corner, with the bee on it: the assistant, over whatever is open.
+/// Held, it offers what the assistant's plus does — straight to a task, a note, a scan — without
+/// going through the assistant first.
 struct AssistantButton: View {
+    var matter: Matter? = nil
     let action: () -> Void
+    @State private var picksPhoto = false
+    @State private var picksFile = false
 
     var body: some View {
-        Button(action: action) {
+        Menu {
+            PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+        } label: {
             // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
             BeeMark(size: 24, livesNowAndThen: true)
                 .foregroundStyle(.black)
                 .frame(width: 60, height: 60)
                 .background(Theme.bee, in: Circle())
                 .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+        } primaryAction: {
+            action()
         }
+        .menuIndicator(.hidden)
         .buttonStyle(.plain)
         .accessibilityLabel("Ask Causabee")
+        .accessibilityHint("Hold to add to a matter")
+        .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
         .padding(.trailing, 16).padding(.bottom, 8)
     }
 }

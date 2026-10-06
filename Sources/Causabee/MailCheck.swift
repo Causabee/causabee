@@ -61,9 +61,15 @@ final class MailCheck {
     }
 
     /// Checks by itself — on start, every ten minutes, after sleep — and only says something when
-    /// there is new mail: "3 new mails · Review". Reading is free; nothing is sent.
+    /// there is new mail: "3 new mails · Review". Reading is free; nothing is sent — unless Auto is
+    /// on: then what is new is sorted in at once, and what came of it is shown.
     func checkQuietly(store: URL, context: ModelContext) {
         guard !DemoData.isRequested, IntroShot.current == nil, !checking else { return }
+        // Auto turned on while new mail waited: it is sorted in now.
+        if AutoMode.isOn, case .newMail(let look, let door) = state {
+            classify(look, with: door, context: context, owner: AutoMode.owner(in: context))
+            return
+        }
         switch state {
         case .idle, .nothingNew, .done, .failed, .newMail: break
         default: return
@@ -79,7 +85,9 @@ final class MailCheck {
             // Something else began meanwhile — a check by hand, a Sort in: that one decides.
             switch state {
             case .idle, .nothingNew, .done, .failed, .newMail:
-                if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
+                if look.pending > 0, AutoMode.isOn {
+                    classify(look, with: door, context: context, owner: AutoMode.owner(in: context))
+                } else if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
             default: break
             }
         }
@@ -112,7 +120,7 @@ final class MailCheck {
     }
 
     func look(store: URL, context: ModelContext) {
-        if DemoData.isRequested { lookInDemo(); return }
+        if DemoData.isRequested { lookInDemo(context: context); return }
         guard let account = Keychain.accounts().first else {
             state = .failed("No mail account yet. Choose Causabee → Set Up Causabee … to log in.")
             return
@@ -128,7 +136,10 @@ final class MailCheck {
                 }
                 let look = try await door.look(password: password)
                 lastChecked = Date()
-                state = look.pending == 0 ? .nothingNew(known: look.intake.alreadyKnown) : .ready(look, door)
+                if look.pending == 0 { state = .nothingNew(known: look.intake.alreadyKnown) }
+                // Auto: no list to tick first — sorted in, and what came of it shown.
+                else if AutoMode.isOn { classify(look, with: door, context: context, owner: AutoMode.owner(in: context)) }
+                else { state = .ready(look, door) }
             } catch {
                 state = .failed(plainWords(error))
             }
@@ -179,11 +190,12 @@ final class MailCheck {
 extension MailCheck {
     /// The demo's round, at the pace of a real one: fetching, three new mails, sorting, and what
     /// came of it — the mails, a task and two dates in three matters. Nothing is read or sent.
-    private func lookInDemo() {
+    private func lookInDemo(context: ModelContext) {
         state = .reading("Fetching mail …")
         Task {
             try? await Task.sleep(for: .seconds(1.8))
             guard case .reading = state else { return }
+            if AutoMode.isOn { sortInDemo(context: context); return }
             // Every time the whole round: the last one's three mails are taken out on Sort in.
             state = .demoReady
         }
@@ -360,6 +372,7 @@ struct MailCheckView: View {
         }
         // In the demo too: its round is made up, and the way back is Causabee → Leave the Demo.
         .help(DemoData.isRequested ? "Fetches the demo's three made-up mails. Nothing is read or sent."
+                                   : AutoMode.isOn ? "Reads new mail with the label and sorts it in at once: Auto is on."
                                    : "Reads only new mail with the label. Nothing is sent until you click “Sort in”.")
     }
 }
