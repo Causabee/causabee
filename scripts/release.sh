@@ -148,7 +148,13 @@ step "Notarizing the app (Apple usually answers within a few minutes)"
 ditto -c -k --keepParent "$APP" "$OUT/notarize.zip"
 notarize "$OUT/notarize.zip" "the app"
 xcrun stapler staple -q "$APP"
-spctl -a -t exec -vv "$APP" 2>&1 | grep -q "Notarized Developer ID" || fail "Gatekeeper does not see the app as notarized."
+# Gatekeeper may need a moment to see a ticket just stapled: asked again a few times before giving up.
+seen=false
+for _ in {1..6}; do
+  if spctl -a -t exec -vv "$APP" 2>&1 | grep -q "Notarized Developer ID"; then seen=true; break; fi
+  sleep 5
+done
+$seen || fail "Gatekeeper does not see the app as notarized."
 rm "$OUT/notarize.zip"
 disk_image
 step "Notarizing the disk image"
