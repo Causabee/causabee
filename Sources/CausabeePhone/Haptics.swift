@@ -8,6 +8,8 @@ enum Haptics {
     static func tap() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
     /// Something was cut short: the question on its way was stopped.
     static func stop() { UIImpactFeedbackGenerator(style: .rigid).impactOccurred() }
+    /// Held long enough: what was under the finger opens its menu.
+    static func held() { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
     /// Arrived where it was asked to go: the row a source or an overdue line pointed at.
     static func landed() { UIImpactFeedbackGenerator(style: .soft).impactOccurred() }
     /// It worked: the answer is there, a task is done, a suggestion is taken in, the mail is sorted.

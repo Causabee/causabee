@@ -84,6 +84,8 @@ struct AssistantButton: View {
         }
         .menuIndicator(.hidden)
         .buttonStyle(.plain)
+        // Held: a small knock in the hand as its menu comes, as the system's own held things give.
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
         .accessibilityLabel("Ask Causabee")
         .accessibilityHint("Hold to add to a matter")
         .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
