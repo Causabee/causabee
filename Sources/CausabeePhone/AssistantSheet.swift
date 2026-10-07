@@ -60,7 +60,22 @@ struct AssistantSheet: View {
     /// How tall each thing in the thread is, as laid out: kept beside the view, so that measuring
     /// draws nothing again.
     @State private var heights = Heights()
-    private final class Heights { var of: [UUID: CGFloat] = [:] }
+    private final class Heights {
+        var of: [UUID: CGFloat] = [:]
+        /// Where the thread stood when a finger came down on it.
+        var touchedAt: CGFloat?
+    }
+    /// The height the room under the newest is cut for: the smallest the newest has had. Sources
+    /// unfolded under an answer make it taller for a while; the room is not taken in for that —
+    /// shrunk while the answer still grew, it left the thread too short, and the thread slid down.
+    @State private var roomHeight: CGFloat = 0
+    @State private var roomFor: AnyHashable?
+
+    /// The newest, measured.
+    private func measured(_ id: AnyHashable, _ height: CGFloat) {
+        lastHeight = height
+        if roomFor != id { roomFor = id; roomHeight = height } else if height < roomHeight { roomHeight = height }
+    }
 
     /// What a question here would take along: worked out only when the footer is opened.
     private var seen: String {
@@ -142,7 +157,7 @@ struct AssistantSheet: View {
 
     private static let topRoom: CGFloat = 16
     /// The room under the newest, so that it can stand at the top: what the screen shows beyond it.
-    private var roomBelow: CGFloat { max(1, viewport - lastHeight - tail - Self.topRoom - 36) }
+    private var roomBelow: CGFloat { max(1, viewport - roomHeight - tail - Self.topRoom - 36) }
 
     /// What stands after the newest, as it was measured: each thing and the gap before it.
     private func measureTail() {
@@ -189,7 +204,7 @@ struct AssistantSheet: View {
                             // Measured once it is laid out: the room under the newest depends on its height.
                             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                                 heights.of[entry.id] = height
-                                if asking == nil, entry.id == newestID { lastHeight = height }
+                                if asking == nil, entry.id == newestID { measured(AnyHashable(entry.id), height) }
                                 measureTail()
                             }
                         }
@@ -197,7 +212,7 @@ struct AssistantSheet: View {
                             PendingTurn(question: asking.question, step: step, sentAt: sentAt)
                                 .id("asking")
                                 .transition(.opacity)
-                                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { lastHeight = $0 }
+                                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { measured(AnyHashable("asking"), $0) }
                         }
                         if let failure {
                             // The question is back in the field: sending it is trying again.
@@ -219,8 +234,18 @@ struct AssistantSheet: View {
                 // Opened at its end; once it is laid out, the newest is put at the top. What the thread
                 // does after that is decided below, in one place.
                 .defaultScrollAnchor(.bottom, for: .initialOffset)
-                // A finger on the thread makes it the owner's, until the next question is sent.
-                .onScrollPhaseChange { _, phase in if phase == .interacting { touched = true } }
+                // A finger that moves the thread makes it the owner's, until the next question is sent.
+                // A tap on something in it — Sources, a button — comes down on the thread too, and
+                // moves nothing: that is no scrolling.
+                .onScrollPhaseChange { old, new, context in
+                    let at = context.geometry.contentOffset.y
+                    if new == .interacting { heights.touchedAt = at }
+                    if old == .interacting, let from = heights.touchedAt {
+                        if abs(at - from) > 6 { touched = true }
+                        heights.touchedAt = nil
+                    }
+                    if new == .decelerating { touched = true }
+                }
                 // The keyboard goes when the thread is scrolled or tapped, to see all of it.
                 .dismissesKeyboard()
                 // Where the thread is, and how much of it the screen shows — read together, so that what
@@ -290,8 +315,11 @@ struct AssistantSheet: View {
                 //    card that grows, the keyboard: the newest is put, and kept, at the top.
                 .onChange(of: lastHeight) {
                     guard !touched else { return }
-                    toNewest(scroller, animated: placed)
+                    // At once, and once more when what changed its height has come to rest.
+                    if placed { settle(scroller, in: viewport) }
+                    toNewest(scroller, animated: false)
                     placed = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { if !touched { toNewest(scroller, animated: false) } }
                 }
                 // 2. Something sent or brought in: it goes to the top, wherever the thread was — it is
                 //    the owner's own doing — and the thread is no longer held by the finger.
@@ -312,7 +340,7 @@ struct AssistantSheet: View {
                 //    the owner's it stays where it is read, and the button says "New answer".
                 .onChange(of: mine) {
                     guard let mine else { return }
-                    if let known = heights.of[mine] { lastHeight = known }
+                    if let known = heights.of[mine] { measured(AnyHashable(mine), known) }
                     measureTail()
                     if touched { newAnswer = mine; return }
                     // At once, where its question stood while it was asked — no glide across what
@@ -325,7 +353,7 @@ struct AssistantSheet: View {
                 // A turn from the Mac, arriving while the assistant is open.
                 .onChange(of: entries.last?.id) { old, new in
                     guard let new, new != old, new != mine, mine == nil, new == newestID else { return }
-                    if let known = heights.of[new], asking == nil { lastHeight = known }
+                    if let known = heights.of[new], asking == nil { measured(AnyHashable(new), known) }
                     if case .shot = entries.last { return }
                     if touched { newAnswer = new; return }
                     toNewest(scroller)
