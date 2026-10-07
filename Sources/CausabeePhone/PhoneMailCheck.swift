@@ -508,22 +508,23 @@ struct PhoneMailCheckView: View {
             case .demoReady:
                 PhoneDemoMailReview(later: { check.state = .demoNew }) { chosen in check.sortInDemo(context: context, only: chosen) }
             case .done(let text, let items, let mails):
-                Label(text, systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
-                    .multilineTextAlignment(.center).frame(maxWidth: .infinity)
-                    .padding(.horizontal, 28)
-                    // It stays until it is closed: its lines are ways into the matters, to come back to.
-                    .overlay(alignment: .trailing) {
+                // One card: what was done, with its close, over where each mail went — a wrong one moved
+                // from here — and what it brought. The tick stands in the column of the rows' icons, the
+                // close at the card's right. It stays until it is closed: its lines are ways into the
+                // matters, to come back to.
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Label(text, systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
+                            .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         Button { withAnimation(.easeOut(duration: 0.2)) { check.state = .idle } } label: {
                             Image(systemName: "xmark").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-                                .frame(width: 28, height: 28).contentShape(Rectangle())
+                                .padding(8).contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.plain).padding(-8)
                         .accessibilityLabel("Close").accessibilityIdentifier("receipt.close")
                     }
-                    .padding(.top, 14)
-                if !items.isEmpty || !mails.isEmpty {
-                    // Where each mail went — a wrong one moved from here — and what it brought.
-                    VStack(alignment: .leading, spacing: 10) {
+                    if !items.isEmpty || !mails.isEmpty {
                         ForEach(mails, id: \.messageID) { mail in
                             PhoneIntakeMailRow(mail: mail) { name in check.moved(mail.messageID, to: name) }
                         }
@@ -543,8 +544,9 @@ struct PhoneMailCheckView: View {
                             .accessibilityHint("Opens it in its matter")
                         }
                     }
-                    .phoneBox()
                 }
+                .phoneBox()
+                .padding(.top, 14)
                 button
             case .failed(let text):
                 Label(text, systemImage: "exclamationmark.triangle").font(.subheadline).foregroundStyle(Theme.warning).textSelection(.enabled)
