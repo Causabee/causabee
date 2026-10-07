@@ -55,6 +55,7 @@ final class ThreadPlacement {
     /// puts the thread anywhere at once — that would cut the way short, and the question would
     /// stand at the top from nowhere.
     @ObservationIgnored private var glidesUntil = Date.distantPast
+    @ObservationIgnored private var glides = 0
 
     // MARK: What the view tells it
 
@@ -124,10 +125,6 @@ final class ThreadPlacement {
         newAnswer = nil
         glidesUntil = Date().addingTimeInterval(Self.glideTime)
         place(scroller, animated: true)
-        // Once it is there, to the point: what was laid out on the way may have moved its place.
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.glideTime + 0.05) { [self] in
-            if follows { place(scroller) }
-        }
     }
 
     /// The button. From further up, to the newest. At a newest longer than the screen — at its
@@ -182,7 +179,15 @@ final class ThreadPlacement {
             guard let newest else { return }
             let anchor: UnitPoint = showsEnd ? .bottom : .top
             let animated = animated || Date() < glidesUntil
-            if animated { withAnimation(Self.glide) { scroller.scrollTo(newest, anchor: anchor) } } else { scroller.scrollTo(newest, anchor: anchor) }
+            guard animated else { scroller.scrollTo(newest, anchor: anchor); return }
+            withAnimation(Self.glide) { scroller.scrollTo(newest, anchor: anchor) }
+            // Once it is there, to the point: what was laid out on the way may have moved its
+            // place. After the last of its glides — one begun on the way starts the time again.
+            glides += 1
+            let glide = glides
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.glideTime + 0.1) { [self] in
+                if glide == glides, follows, !showsEnd { scroller.scrollTo(newest, anchor: .top) }
+            }
         }
     }
 }
