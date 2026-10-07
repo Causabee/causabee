@@ -466,7 +466,9 @@ struct PhoneMailCheckView: View {
         VStack(alignment: .leading, spacing: 10) {
             switch check.state {
             case .idle:
-                button
+                // Nothing to show, and no button: mail is looked for when Causabee is opened, and the
+                // overview pulled down looks at once.
+                EmptyView()
             case .reading(let text):
                 // Centred, as the button it came from: the bee at work, and Cancel under it.
                 VStack(spacing: 12) {
@@ -490,7 +492,6 @@ struct PhoneMailCheckView: View {
                     .frame(maxWidth: .infinity)
                     // Apart from the overview's sentence above: its own line, not part of it.
                     .padding(.top, 14)
-                button
             case .newMail(let look, let door):
                 quiet(look.pending) { check.state = .ready(look, door) }
             case .demoNew:
@@ -547,26 +548,13 @@ struct PhoneMailCheckView: View {
                 }
                 .phoneBox()
                 .padding(.top, 14)
-                button
             case .failed(let text):
                 Label(text, systemImage: "exclamationmark.triangle").font(.subheadline).foregroundStyle(Theme.warning).textSelection(.enabled)
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
                     .padding(.top, 14)
-                button
+                Text("Pull down to try again.").font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }
         }
-    }
-
-    /// In the middle, with room above and below: the overview's one thing to do.
-    private var button: some View {
-        Button { check.look(context: context) } label: {
-            Label("Get new mail", systemImage: "arrow.down.circle")
-        }
-        .buttonStyle(.phone)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .accessibilityHint(AutoMode.isOn ? "Auto is on: new mail with the label is read by the AI at once. You decide what is taken in."
-                                         : "Reads only new mail with the label. Nothing is sent until you tap Sort in.")
     }
 
     /// Mail that was read but found no matter: to put into one, or to set aside.

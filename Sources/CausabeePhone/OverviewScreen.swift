@@ -251,7 +251,7 @@ struct OverviewScreen: View {
             Text("No matters yet").font(.headline)
             Text(PhoneCloud.container == nil
                  ? "This store stays on the iPhone."
-                 : "Get new mail above, and Causabee makes the matters from it. From your Mac, they come here through your iCloud — the first time can take a few minutes.")
+                 : "Pull down to get new mail, and Causabee makes the matters from it. From your Mac, they come here through your iCloud — the first time can take a few minutes.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if !store.isDemo {
                 Button("Try the demo") { store.switchDemo(true) }.buttonStyle(.phoneFilled)
