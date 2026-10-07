@@ -60,7 +60,7 @@ final class PhoneStore {
             let container = try MatterSchema.container(at: url, cloudKit: cloud)
             // The demo's made-up dates never go into the owner's calendars.
             Calendars.shared.isSealed = DemoData.isRequested
-            if DemoData.isRequested { DemoData.seed(container.mainContext) }
+            if DemoData.isRequested { DemoData.seed(container.mainContext); DemoData.keepTalkBehindTheClock(container.mainContext) }
             StoredChanges.shared.watch(container.mainContext)
             return container
         })

@@ -272,7 +272,11 @@ struct AssistantSheet: View {
                 .onChange(of: mine) {
                     guard let mine else { return }
                     if let known = heights.of[mine] { lastHeight = known }
-                    if touched { newAnswer = mine } else { toNewest(scroller) }
+                    if touched { newAnswer = mine; return }
+                    // At once, where its question stood while it was asked — no glide across what
+                    // lies between — and once more when it is laid out and its height is known.
+                    scroller.scrollTo(mine, anchor: UnitPoint(x: 0.5, y: Self.topRoom / max(viewport, 200)))
+                    toNewest(scroller, animated: false)
                 }
                 // A turn from the Mac, arriving while the assistant is open.
                 .onChange(of: entries.last?.id) { old, new in

@@ -76,7 +76,7 @@ struct CausabeeApp: App {
                 }
             }
             #endif
-            if DemoData.isRequested { MainActor.assumeIsolated { Calendars.shared.isSealed = true; DemoData.seed(container.mainContext) } }
+            if DemoData.isRequested { MainActor.assumeIsolated { Calendars.shared.isSealed = true; DemoData.seed(container.mainContext); DemoData.keepTalkBehindTheClock(container.mainContext) } }
             // Files taken in before they were kept as files of their matter.
             MainActor.assumeIsolated { _ = try? MatterImport.addDroppedFiles(to: container.mainContext) }
             // This Mac's list of names, for the iPhone to ask with: now, and whenever Causabee

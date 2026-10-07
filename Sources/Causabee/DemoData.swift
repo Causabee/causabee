@@ -43,6 +43,25 @@ enum DemoData {
     static let contentVersion = 3
     private static let seededKey = "demo.filled"
 
+    /// The demo's own talk, where it stands ahead of the clock, is put an hour behind it — in the
+    /// order it had. A demo started before ten had its talk dated ten o'clock: a question asked in
+    /// it stood above that talk, not at the thread's end.
+    static func keepTalkBehindTheClock(_ context: ModelContext) {
+        let now = Date()
+        guard let ahead = try? context.fetch(FetchDescriptor<ThreadTurn>(predicate: #Predicate { $0.date > now }, sortBy: [SortDescriptor(\.date)])),
+              !ahead.isEmpty else { return }
+        for (index, record) in ahead.enumerated() {
+            let date = now.addingTimeInterval(-3600 + Double(index))
+            // The turn says its time too: both are set, or the thread would still sort it ahead.
+            if var json = (try? JSONSerialization.jsonObject(with: record.payload)) as? [String: Any], json["date"] is NSNumber {
+                json["date"] = date.timeIntervalSinceReferenceDate
+                if let payload = try? JSONSerialization.data(withJSONObject: json, options: [.sortedKeys]) { record.payload = payload }
+            }
+            record.date = date
+        }
+        try? context.save()
+    }
+
     static func seed(_ context: ModelContext) {
         // Filled again on a new day too: its dates are counted from the day it was filled, and a demo
         // left for a week would open with everything overdue.
