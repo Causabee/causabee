@@ -43,6 +43,10 @@ struct AssistantSheet: View {
     @State private var newAnswer: UUID?
     /// The thread has been put at its newest once, after it was first laid out.
     @State private var placed = false
+    /// The turn asked here last, once its answer is in the thread: it is the newest whatever its
+    /// place in the thread — a turn from a device whose clock runs ahead, or the demo's own, can
+    /// stand after it.
+    @State private var mine: UUID?
     /// How much of the thread the screen shows, between the header and the field.
     @State private var viewport: CGFloat = 0
     /// How tall the newest is — the question on its way, or the last turn or card: the room left
@@ -81,7 +85,16 @@ struct AssistantSheet: View {
     }
 
     private var entries: [Entry] {
-        (shown.map { Entry.turn($0.record, $0.turn) } + shots.map { Entry.shot($0) }).sorted { $0.date < $1.date }
+        // By their time, and two of the same moment always the same way round: left to chance, the
+        // thread's last was another one each time it was laid out.
+        (shown.map { Entry.turn($0.record, $0.turn) } + shots.map { Entry.shot($0) })
+            .sorted { ($0.date, $0.id.uuidString) < ($1.date, $1.id.uuidString) }
+    }
+
+    /// What counts as the newest: the turn asked here last, else the thread's last.
+    private var newestID: UUID? {
+        if let mine, entries.contains(where: { $0.id == mine }) { return mine }
+        return entries.last?.id
     }
 
     /// The one rule of the thread: the newest — the question just asked, or the last turn — stands
@@ -93,7 +106,7 @@ struct AssistantSheet: View {
             // A little under the top edge, not against it.
             let top = UnitPoint(x: 0.5, y: Self.topRoom / max(viewport, 200))
             let go = {
-                if asking != nil { scroller.scrollTo("asking", anchor: top) } else if let last = entries.last { scroller.scrollTo(last.id, anchor: top) }
+                if asking != nil { scroller.scrollTo("asking", anchor: top) } else if let newest = newestID { scroller.scrollTo(newest, anchor: top) }
             }
             if animated { withAnimation(Self.glide) { go() } } else { go() }
         }
@@ -104,7 +117,7 @@ struct AssistantSheet: View {
     /// the field has the cursor and the newest is taller than what is left of the screen, its end
     /// stands right over the field: that is what is being answered. Else its beginning, on top.
     private func settle(_ scroller: ScrollViewProxy, in height: CGFloat) {
-        let id: AnyHashable? = asking != nil ? AnyHashable("asking") : entries.last.map { AnyHashable($0.id) }
+        let id: AnyHashable? = asking != nil ? AnyHashable("asking") : newestID.map { AnyHashable($0) }
         guard let id else { return }
         if typing, lastHeight + Self.topRoom > height {
             scroller.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 1 - 12 / max(height, 200)))
@@ -151,7 +164,7 @@ struct AssistantSheet: View {
                             // Measured once it is laid out: the room under the newest depends on its height.
                             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                                 heights.of[entry.id] = height
-                                if asking == nil, entry.id == entries.last?.id { lastHeight = height }
+                                if asking == nil, entry.id == newestID { lastHeight = height }
                             }
                         }
                         if let asking {
@@ -244,6 +257,7 @@ struct AssistantSheet: View {
                 //    the owner's own doing — and the thread is no longer held by the finger.
                 .onChange(of: asking?.date) {
                     guard asking != nil else { return }
+                    mine = nil
                     touched = false
                     newAnswer = nil
                     toNewest(scroller)
@@ -255,8 +269,14 @@ struct AssistantSheet: View {
                 }
                 // 3. An answer: it comes in under its question, which stays on top. If the thread is
                 //    the owner's it stays where it is read, and the button says "New answer".
+                .onChange(of: mine) {
+                    guard let mine else { return }
+                    if let known = heights.of[mine] { lastHeight = known }
+                    if touched { newAnswer = mine } else { toNewest(scroller) }
+                }
+                // A turn from the Mac, arriving while the assistant is open.
                 .onChange(of: entries.last?.id) { old, new in
-                    guard let new, new != old else { return }
+                    guard let new, new != old, new != mine, mine == nil else { return }
                     if let known = heights.of[new], asking == nil { lastHeight = known }
                     if case .shot = entries.last { return }
                     if touched { newAnswer = new; return }
@@ -431,11 +451,13 @@ extension AssistantSheet {
         } }
         failure = nil
         // The keyboard lets go of what it holds first, then the field starts afresh, empty.
+        let wasTyping = typing
         typing = false
         draft = ""
         fieldKey += 1
-        // The new field keeps the keyboard, as in Messages.
-        DispatchQueue.main.async { typing = true }
+        // The new field keeps the keyboard, as in Messages — when it was there: a question spoken
+        // and sent without it does not bring it up.
+        if wasTyping { DispatchQueue.main.async { typing = true } }
         let date = Date()
         asking = (question, date)
         step = .disguising
@@ -494,6 +516,7 @@ extension AssistantSheet {
         context.insert(record)
         record.matter = matter
         try? context.save()
+        mine = turn.id
         Haptics.success()
         guard let index = card, let answer = turn.answer, answer.reply.cards.indices.contains(index) else { return }
         let made = answer.reply.cards[index]

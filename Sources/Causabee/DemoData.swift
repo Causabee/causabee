@@ -303,7 +303,8 @@ enum DemoData {
         func ask(_ offset: Int, _ question: String, lines: [(String, [String])], cards: [[String: Any]] = [], applied: Set<Int> = []) {
             var turn = Navigation.Turn(question: question, scope: "about \(matter.name)", inHand: nil, seen: seen, refs: refs,
                                        matter: matter.persistentModelID)
-            turn.date = DemoData.date(offset, hour: 10)
+            // Never ahead of the clock: a question asked in the demo before ten would stand above them.
+            turn.date = min(DemoData.date(offset, hour: 10), Date().addingTimeInterval(-3600))
             turn.state = .answered(DemoData.answer(lines: lines, cards: cards))
             turn.applied = applied
             keep(turn)
