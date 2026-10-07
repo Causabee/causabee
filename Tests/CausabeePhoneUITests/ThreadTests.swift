@@ -10,7 +10,8 @@ final class ThreadTests: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["--demo"]
+        // The demo filled anew at every start: what an earlier run asked is not in the thread.
+        app.launchArguments = ["--demo", "-demo.filled", "anew"]
         app.launch()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
@@ -51,6 +52,21 @@ final class ThreadTests: XCTestCase {
             last = now
         }
         return last
+    }
+
+    /// Sources unfolded under the newest answer, and folded again: the answer grows and shrinks
+    /// downwards, and its question does not move by a point.
+    func testSourcesUnfoldingLeavesTheQuestionWhereItIs() {
+        let asked = question("What do I need to do before")
+        XCTAssertTrue(asked.waitForExistence(timeout: 8), "The demo's question is not in the thread.")
+        let place = top(of: asked)
+        let sources = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Sources")).firstMatch
+        XCTAssertTrue(sources.waitForExistence(timeout: 5), "The answer has no sources to unfold.")
+        sources.tap()
+        XCTAssertEqual(top(of: asked), place, accuracy: 0.5, "The question moved when its sources unfolded.")
+        XCTAssertFalse(app.buttons["thread.toNewest"].exists, "The way back shows though the thread is at its newest.")
+        sources.tap()
+        XCTAssertEqual(top(of: asked), place, accuracy: 0.5, "The question moved when its sources folded.")
     }
 
     func testTheNewestStandsAtTheTopAndStays() {

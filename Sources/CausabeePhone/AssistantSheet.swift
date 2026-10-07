@@ -44,7 +44,6 @@ struct AssistantSheet: View {
     ///    it: it changed, the room changed, the keyboard came or went.
     /// 3. A finger that moves the thread ends the following; the next question, the button, or the
     ///    thread brought back to its newest by hand, begins it again.
-    @State private var position = ScrollPosition(idType: UUID.self)
     @State private var viewport: CGFloat = 0
     @State private var follows = true
     /// An answer that came while the thread did not follow: the button says "New answer".
@@ -54,8 +53,11 @@ struct AssistantSheet: View {
     private final class Watch {
         /// Where the thread stood when a finger came down on it.
         var fingerAt: CGFloat?
-        /// How far under the thread's top edge the newest stands.
+        /// How far under the thread's top edge the newest stands, and how tall it is.
         var newestTop: CGFloat?
+        var newestHeight: CGFloat = 0
+        /// Which newest has been laid out, and so could be put in its place.
+        var laidOut: UUID?
     }
 
     private static let topRoom: CGFloat = 16
@@ -109,25 +111,28 @@ struct AssistantSheet: View {
     /// The newest to its place — its beginning to the top; while the field has the cursor, its end
     /// over the field: that is what is being answered. Once the thread is laid out with what is
     /// new: asked for in the same moment, the newest is not there yet.
-    private func place(animated: Bool = false) {
+    private func place(_ scroller: ScrollViewProxy, animated: Bool = false) {
         DispatchQueue.main.async {
             guard let newest = newestID else { return }
-            let anchor: UnitPoint = typing ? .bottom : .top
-            if animated { withAnimation(Self.glide) { position.scrollTo(id: newest, anchor: anchor) } } else { position.scrollTo(id: newest, anchor: anchor) }
+            // Only a newest taller than the room has an end to show: one that fits is all there, and
+            // stands by its top whether the field has the cursor or not.
+            let anchor: UnitPoint = typing && watch.newestHeight > viewport + 1 ? .bottom : .top
+            if animated { withAnimation(Self.glide) { scroller.scrollTo(newest, anchor: anchor) } } else { scroller.scrollTo(newest, anchor: anchor) }
         }
     }
 
     /// The owner's own doing — a question sent, a file brought in, the button: the thread follows again.
-    private func follow() {
+    private func follow(_ scroller: ScrollViewProxy) {
         follows = true
         newAnswer = nil
-        place(animated: true)
+        place(scroller, animated: true)
     }
 
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider()
+            ScrollViewReader { scroller in
             ScrollView {
                 // Laid out whole, not lazily: a matter's thread is short enough.
                 VStack(alignment: .leading, spacing: 20) {
@@ -160,17 +165,23 @@ struct AssistantSheet: View {
                         // and its answer grows into the room under it.
                         .frame(minHeight: newest ? viewport : nil, alignment: .top)
                         .id(entry.id)
-                        .transition(.opacity)
-                        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .scrollView(axis: .vertical)).minY } action: { top in
-                            if newest { watch.newestTop = top }
+                        // What has just come fades in — by itself: the thread's layout changes at once.
+                        .modifier(FadesIn(fresh: Date().timeIntervalSince(entry.date) < 3))
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView(axis: .vertical)) } action: { frame in
+                            guard newest else { return }
+                            // Laid out for the first time, or another height — an answer came, sources
+                            // unfolded: now it can be put in its place, and is, while the thread follows.
+                            let changed = watch.laidOut != entry.id || abs(frame.height - watch.newestHeight) > 0.5
+                            watch.newestTop = frame.minY
+                            watch.newestHeight = frame.height
+                            watch.laidOut = entry.id
+                            if changed, follows { place(scroller) }
                         }
                     }
                 }
-                .scrollTargetLayout()
                 .padding(Self.padding)
                 .containerRelativeFrame(.horizontal)
             }
-            .scrollPosition($position, anchor: .top)
             // The thread's top stands a little under the edge: what is put "at the top" keeps that room.
             .safeAreaPadding(.top, Self.topRoom)
             // The keyboard goes when the thread is scrolled or tapped, to see all of it.
@@ -191,7 +202,7 @@ struct AssistantSheet: View {
             .overlay(alignment: .bottom) {
                 // Away from the newest: the way back — and "New answer", when one came meanwhile.
                 if !follows {
-                    Button(action: follow) {
+                    Button { follow(scroller) } label: {
                         HStack(spacing: 6) {
                             Image(systemName: newAnswer != nil ? "arrow.down" : "chevron.down").font(.body.weight(.semibold))
                             if newAnswer != nil { Text("New answer").font(.subheadline.weight(.medium)) }
@@ -209,24 +220,25 @@ struct AssistantSheet: View {
                     .transition(.opacity)
                 }
             }
-            // What comes into the thread fades in, and what is under it moves, not jumps.
-            .animation(Self.glide, value: entries.map(\.id))
+            // The thread's things take their places at once, with no glide between: a place worked out
+            // while they still moved was a place they were no longer in.
             .animation(Self.glide, value: failure)
             .animation(.easeOut(duration: 0.15), value: follows)
             // Opened: the newest on top.
-            .onAppear { place() }
+            .onAppear { place(scroller) }
             // Sent or brought in.
-            .onChange(of: asking?.id) { if asking != nil { follow() } }
-            .onChange(of: shots.count) { old, new in if new > old { follow() } }
+            .onChange(of: asking?.id) { if asking != nil { follow(scroller) } }
+            .onChange(of: shots.count) { old, new in if new > old { follow(scroller) } }
             // Something new is the thread's last — an answer kept at once, a turn from the Mac.
             .onChange(of: entries.last?.id) { old, new in
                 guard let new, new != old, new != asking?.id else { return }
-                if follows { place(animated: true) } else if newAnswer == nil { newAnswer = new }
+                if follows { place(scroller, animated: true) } else if newAnswer == nil { newAnswer = new }
             }
             // The room changed — the keyboard, the field taking a line, a chip over it: the newest
             // keeps its place, at once.
-            .onChange(of: viewport) { if follows { place() } }
-            .onChange(of: typing) { if follows { place() } }
+            .onChange(of: viewport) { if follows { place(scroller) } }
+            .onChange(of: typing) { if follows { place(scroller) } }
+            }
             composer
         }
         .background(Theme.canvas)
@@ -500,6 +512,19 @@ extension AssistantSheet {
             draft = asking.question
             fieldKey += 1
         }
+    }
+}
+
+/// Something new in the thread comes in from nothing, in a quarter of a second — its own doing, so
+/// that the thread around it does not have to move for it.
+private struct FadesIn: ViewModifier {
+    let fresh: Bool
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown || !fresh ? 1 : 0)
+            .onAppear { if fresh { withAnimation(.easeIn(duration: 0.25)) { shown = true } } }
     }
 }
 
