@@ -128,7 +128,8 @@ struct AssistantSheet: View {
                         .frame(minHeight: newest ? placement.viewport : nil, alignment: .top)
                         .id(entry.id)
                         // What has just come fades in — by itself: the thread's layout changes at once.
-                        .modifier(FadesIn(fresh: Date().timeIntervalSince(entry.date) < 3))
+                        // A question just sent comes up from the field instead.
+                        .modifier(FadesIn(fresh: Date().timeIntervalSince(entry.date) < 3 && entry.id != asking?.id))
                         .onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView(axis: .vertical)) } action: { frame in
                             placement.laidOut(AnyHashable(entry.id), at: frame, newest: newest, with: scroller)
                         }
@@ -136,6 +137,7 @@ struct AssistantSheet: View {
                 }
                 .padding(Self.padding)
                 .containerRelativeFrame(.horizontal)
+                .environment(\.threadRoom, placement.viewport)
             }
             // The thread's top stands a little under the edge: what is put "at the top" keeps that room.
             .safeAreaPadding(.top, Self.topRoom)
@@ -496,9 +498,10 @@ struct PendingTurn: View {
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .background(Theme.honey, in: RoundedRectangle(cornerRadius: 18))
                 .foregroundStyle(.black)
+                .modifier(Lands(fresh: true))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.leading, 40)
-            AskSteps(step: step, sentAt: sentAt, size: 12)
+            AskSteps(step: step, sentAt: sentAt, size: 12).modifier(FadesIn(fresh: true))
         }
     }
 }

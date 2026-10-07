@@ -10,14 +10,15 @@ import SwiftUI
 /// 3. A finger that moves the thread ends the following; a question sent, the button, or the
 ///    thread brought back to its newest by hand begins it again.
 ///
-/// The view makes the newest `viewport` tall, lays its things out at once — nothing glides into
-/// place, or a place worked out meanwhile is one they are no longer in — and tells this what
-/// happened. `ThreadTests` measures that it holds.
+/// The view makes the newest `viewport` tall, lays its things out at once — no thing glides into
+/// its place, or a place worked out meanwhile is one they are no longer in — and tells this what
+/// happened. What does glide is the thread itself, up to a question just sent. `ThreadTests` measures that it holds.
 @MainActor
 @Observable
 final class ThreadPlacement {
     /// How the thread moves when it moves by itself: slowly enough to follow, not a jump.
-    static let glide = Animation.easeInOut(duration: 0.3)
+    static let glideTime = 0.35
+    static let glide = Animation.easeInOut(duration: glideTime)
 
     // MARK: What the view draws from
 
@@ -42,6 +43,10 @@ final class ThreadPlacement {
     /// The keyboard came up over a newest taller than what is left of the screen: its end stands
     /// over the field — that is what is being answered — until the keyboard goes or a question is sent.
     @ObservationIgnored private var showsEnd = false
+    /// A question was just sent and the thread is on its way up to it: until it is there, nothing
+    /// puts the thread anywhere at once — that would cut the way short, and the question would
+    /// stand at the top from nowhere.
+    @ObservationIgnored private var glidesUntil = Date.distantPast
 
     // MARK: What the view tells it
 
@@ -59,6 +64,8 @@ final class ThreadPlacement {
     func laidOut(_ id: AnyHashable, at frame: CGRect, newest isNewest: Bool, with scroller: ScrollViewProxy) {
         guard isNewest else { return }
         let changed = laidOut != id || abs(frame.height - height) > 0.5
+        // Another newest than the one before it: a question sent. The thread goes up to it.
+        if let laidOut, laidOut != id, follows { glidesUntil = Date().addingTimeInterval(Self.glideTime) }
         newest = id
         top = frame.minY
         height = frame.height
@@ -88,7 +95,12 @@ final class ThreadPlacement {
         follows = true
         showsEnd = false
         newAnswer = nil
+        glidesUntil = Date().addingTimeInterval(Self.glideTime)
         place(scroller, animated: true)
+        // Once it is there, to the point: what was laid out on the way may have moved its place.
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.glideTime + 0.05) { [self] in
+            if follows { place(scroller) }
+        }
     }
 
     /// Another thread in the same place — another matter opened beside it.
@@ -105,7 +117,14 @@ final class ThreadPlacement {
     /// says something came.
     func arrived(_ id: AnyHashable, newest: AnyHashable?, with scroller: ScrollViewProxy) {
         self.newest = newest
-        if follows { place(scroller, animated: true) } else if newAnswer == nil { newAnswer = id }
+        if follows { place(scroller, animated: true) } else if newAnswer == nil, !answerSeen { newAnswer = id }
+    }
+
+    /// The thread was moved, but so little that the newest still stands in sight with room under
+    /// it: what comes under it is seen coming, and no button has to say so.
+    private var answerSeen: Bool {
+        guard laidOut == newest, let top else { return false }
+        return top > -8 && top + own < viewport - 60
     }
 
     /// The field took the cursor, or gave it up. Only a newest taller than the room has an end to
@@ -123,7 +142,40 @@ final class ThreadPlacement {
         DispatchQueue.main.async { [self] in
             guard let newest else { return }
             let anchor: UnitPoint = showsEnd ? .bottom : .top
+            let animated = animated || Date() < glidesUntil
             if animated { withAnimation(Self.glide) { scroller.scrollTo(newest, anchor: anchor) } } else { scroller.scrollTo(newest, anchor: anchor) }
+        }
+    }
+}
+
+extension EnvironmentValues {
+    /// How tall the thread's part of the screen is, for what in it starts from the field under it.
+    @Entry var threadRoom: CGFloat = 0
+}
+
+/// A question just sent comes out of the field it was written in: small, from the thread's lower
+/// edge, up to where it stands — so that it is seen where it came from. Drawn there only: its
+/// place in the thread is its own from the start, and nothing around it moves for it.
+struct Lands: ViewModifier {
+    let fresh: Bool
+    @Environment(\.threadRoom) private var room
+    /// How far under its place the field is; nil until the question has been laid out.
+    @State private var from: CGFloat?
+    @State private var landed = false
+
+    func body(content: Content) -> some View {
+        if fresh {
+            content
+                .scaleEffect(landed ? 1 : 0.3, anchor: .bottomTrailing)
+                .offset(y: landed ? 0 : (from ?? 0))
+                .opacity(from == nil ? 0 : 1)
+                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .scrollView(axis: .vertical)).maxY } action: { bottom in
+                    guard from == nil else { return }
+                    from = max(0, room - bottom)
+                    DispatchQueue.main.async { withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) { landed = true } }
+                }
+        } else {
+            content
         }
     }
 }

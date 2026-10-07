@@ -173,13 +173,13 @@ struct AssistantColumn: View {
                             // The newest is at least as tall as the column shows: it can stand at the top,
                             // and its answer grows into the room under it.
                             .frame(minHeight: turn.id == shown.last?.id ? placement.viewport : nil, alignment: .top)
-                            .modifier(FadesIn(fresh: Date().timeIntervalSince(turn.date) < 3))
                             .onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView(axis: .vertical)) } action: { frame in
                                 placement.laidOut(AnyHashable(turn.id), at: frame, newest: turn.id == shown.last?.id, with: scroller)
                             }
                         }
                     }
                     .padding(16)
+                    .environment(\.threadRoom, placement.viewport)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .safeAreaInset(edge: .top, spacing: 0) { header }
@@ -590,6 +590,7 @@ struct TurnView: View {
                 .background(Theme.honey, in: RoundedRectangle(cornerRadius: 16))
                 .foregroundStyle(.black)
                 .textSelection(.enabled)
+                .modifier(Lands(fresh: Date().timeIntervalSince(turn.date) < 2))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.leading, 80)
             ForEach(turn.readAs, id: \.self) { note in
@@ -599,7 +600,7 @@ struct TurnView: View {
 
             switch turn.state {
             case .asking:
-                AskSteps(step: turn.step ?? .disguising, sentAt: turn.sentAt)
+                AskSteps(step: turn.step ?? .disguising, sentAt: turn.sentAt).modifier(FadesIn(fresh: Date().timeIntervalSince(turn.date) < 2))
             case .failed(let message):
                 // Stopped by the owner is no failure: said quietly.
                 if AssistantAsk.wasStopped(message) {
