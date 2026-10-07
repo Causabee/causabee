@@ -122,10 +122,10 @@ struct AssistantSheet: View {
                             // A question that could not go out says why, under the newest.
                             if newest, let failure { failed(failure) }
                         }
-                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if newest { placement.own(height) } }
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if newest { placement.own(height, with: scroller) } }
                         // The newest is at least as tall as the screen shows: it can stand at the top,
                         // and its answer grows into the room under it.
-                        .frame(minHeight: newest ? placement.viewport : nil, alignment: .top)
+                        .modifier(TallAsThread(on: newest))
                         .id(entry.id)
                         // What has just come fades in — by itself: the thread's layout changes at once.
                         // A question just sent comes up from the field instead.
@@ -148,9 +148,9 @@ struct AssistantSheet: View {
             .onScrollPhaseChange { old, new, context in placement.finger(from: old, to: new, at: context.geometry.contentOffset.y) }
             .overlay(alignment: .bottom) {
                 // Away from the newest: the way back — and "New answer", when one came meanwhile.
-                if !placement.follows {
+                if placement.offersButton {
                     let newAnswer = placement.newAnswer != nil
-                    Button { placement.follow(newestID.map { AnyHashable($0) }, with: scroller) } label: {
+                    Button { placement.button(newestID.map { AnyHashable($0) }, with: scroller) } label: {
                         HStack(spacing: 6) {
                             Image(systemName: newAnswer ? "arrow.down" : "chevron.down").font(.body.weight(.semibold))
                             if newAnswer { Text("New answer").font(.subheadline.weight(.medium)) }
@@ -169,7 +169,7 @@ struct AssistantSheet: View {
                 }
             }
             .animation(ThreadPlacement.glide, value: failure)
-            .animation(.easeOut(duration: 0.15), value: placement.follows)
+            .animation(.easeOut(duration: 0.15), value: placement.offersButton)
             // Opened; sent or brought in; something new as the thread's last — an answer, a task
             // kept at once, a turn from the Mac; the keyboard.
             .onAppear { placement.opened(newestID.map { AnyHashable($0) }, with: scroller) }

@@ -65,9 +65,11 @@ final class ThreadTests: XCTestCase {
         XCTAssertTrue(sources.waitForExistence(timeout: 5), "The answer has no sources to unfold.")
         sources.tap()
         XCTAssertEqual(top(of: asked), place, accuracy: 0.5, "The question moved when its sources unfolded.")
-        XCTAssertFalse(app.buttons["thread.toNewest"].exists, "The way back shows though the thread is at its newest.")
         sources.tap()
         XCTAssertEqual(top(of: asked), place, accuracy: 0.5, "The question moved when its sources folded.")
+        // Unfolded, the answer may reach under the edge, and the button offers the way down; folded
+        // again it is all there, and nothing is offered.
+        XCTAssertFalse(app.buttons["thread.toNewest"].waitForExistence(timeout: 1), "The way back shows though the thread is at its newest, all of it in sight.")
     }
 
     private func ask(_ words: String) {

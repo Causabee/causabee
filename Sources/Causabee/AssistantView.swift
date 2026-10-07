@@ -169,10 +169,10 @@ struct AssistantColumn: View {
                                     .id(turn.id).transition(.opacity)
                             }
                             }
-                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if turn.id == shown.last?.id { placement.own(height) } }
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if turn.id == shown.last?.id { placement.own(height, with: scroller) } }
                             // The newest is at least as tall as the column shows: it can stand at the top,
                             // and its answer grows into the room under it.
-                            .frame(minHeight: turn.id == shown.last?.id ? placement.viewport : nil, alignment: .top)
+                            .modifier(TallAsThread(on: turn.id == shown.last?.id))
                             .onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView(axis: .vertical)) } action: { frame in
                                 placement.laidOut(AnyHashable(turn.id), at: frame, newest: turn.id == shown.last?.id, with: scroller)
                             }
@@ -201,9 +201,9 @@ struct AssistantColumn: View {
                 .onScrollPhaseChange { old, new, context in placement.finger(from: old, to: new, at: context.geometry.contentOffset.y) }
                 .overlay(alignment: .bottom) {
                     // Away from the newest: the way back — and "New answer", when one came meanwhile.
-                    if !placement.follows {
+                    if placement.offersButton {
                         let newAnswer = placement.newAnswer != nil
-                        Button { placement.follow(newestID, with: scroller) } label: { ToNewestLabel(newAnswer: newAnswer) }
+                        Button { placement.button(newestID, with: scroller) } label: { ToNewestLabel(newAnswer: newAnswer) }
                             .buttonStyle(.plain)
                             .help(newAnswer ? "To the new answer" : "To the newest")
                             .accessibilityIdentifier("thread.toNewest")
@@ -211,7 +211,7 @@ struct AssistantColumn: View {
                             .transition(.opacity)
                     }
                 }
-                .animation(.easeOut(duration: 0.15), value: placement.follows)
+                .animation(.easeOut(duration: 0.15), value: placement.offersButton)
                 // Shown, and another matter opened beside it.
                 .onAppear { placement.opened(newestID, with: scroller) }
                 .onChange(of: navigation.place) {
