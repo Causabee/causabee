@@ -81,9 +81,12 @@ struct AssistantColumn: View {
     }
 
     /// With a matter open, its own conversation; on the overview, everything.
+    /// Only what was asked and brought in: that mail was taken in is said in the sidebar, and the
+    /// mail is in its matter — a line for it here, too, said it a third time.
     private var shown: [Navigation.Turn] {
-        guard let open = openMatter else { return navigation.turns }
-        return navigation.turns.filter { $0.matter == open.persistentModelID }
+        let spoken = navigation.turns.filter { $0.note == nil }
+        guard let open = openMatter else { return spoken }
+        return spoken.filter { $0.matter == open.persistentModelID }
     }
 
     /// How many of the newest turns are laid out: a long thread, all of it at once, kept the column

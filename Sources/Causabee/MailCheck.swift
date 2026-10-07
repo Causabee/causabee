@@ -412,8 +412,19 @@ struct MailCheckView: View {
                 ForEach(mails, id: \.messageID) { mail in
                     IntakeMailRow(mail: mail) { name in check.moved(mail.messageID, to: name) }
                 }
+                // Each opens its matter where it stands: the task, the date.
                 ForEach(items, id: \.self) { item in
-                    Label(item.text, systemImage: item.symbol).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    Button {
+                        guard let place = Receipt.place(of: item, in: context) else { return }
+                        navigation.open(place.matter, showing: place.row)
+                    } label: {
+                        Label(item.text, systemImage: item.symbol).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open it in its matter")
                 }
                 button
             case .failed(let text):
@@ -592,10 +603,21 @@ struct IntakeMailRow: View {
     let moved: (String) -> Void
     @Query private var matters: [Matter]
     @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Label(mail.subject, systemImage: "envelope").font(.caption).lineLimit(1)
+            // Opens its matter at this very mail.
+            Button {
+                guard let place = Receipt.place(ofMail: mail.messageID, in: context) else { return }
+                navigation.open(place.matter, showing: place.row)
+            } label: {
+                Label(mail.subject, systemImage: "envelope").font(.caption).lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Open it in its matter")
             HStack(spacing: 6) {
                 Text("→ " + mail.matter).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 4)

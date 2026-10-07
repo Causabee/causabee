@@ -727,3 +727,36 @@ struct MessageCard: View {
         }
     }
 }
+
+
+/// Where a line of a mail round's receipt is now — the mail, the task, the date — so that a tap on
+/// it opens its matter at that very line, as a source under an answer does.
+@MainActor
+enum Receipt {
+    static func place(ofMail messageID: String, in context: ModelContext) -> (matter: Matter, row: PersistentIdentifier)? {
+        guard let entry = try? context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { $0.messageID == messageID })).first,
+              let matter = entry.matter else { return nil }
+        return (matter, entry.persistentModelID)
+    }
+
+    /// A task by its words, a date by what it is for: the receipt keeps the words, not the thing.
+    /// The newest of that name, when there are several.
+    static func place(of item: IntakeSummary.Item, in context: ModelContext) -> (matter: Matter, row: PersistentIdentifier)? {
+        // "Oct 27, 08:00 · Carry & Co come with the van", "by Oct 16 · Answer …": what it is for comes last.
+        let what = item.text.components(separatedBy: " · ").dropFirst().joined(separator: " · ")
+        switch item.symbol {
+        case "checklist":
+            let text = item.text
+            let found = (try? context.fetch(FetchDescriptor<Todo>(predicate: #Predicate { $0.text == text }))) ?? []
+            return found.last(where: { $0.matter != nil }).flatMap { todo in todo.matter.map { ($0, todo.persistentModelID) } }
+        case "calendar":
+            let found = (try? context.fetch(FetchDescriptor<Appointment>(predicate: #Predicate { $0.what == what }))) ?? []
+            return found.last(where: { $0.matter != nil }).flatMap { item in item.matter.map { ($0, item.persistentModelID) } }
+        case "flag":
+            let found = (try? context.fetch(FetchDescriptor<Deadline>(predicate: #Predicate { $0.what == what }))) ?? []
+            return found.last(where: { $0.matter != nil }).flatMap { item in item.matter.map { ($0, item.persistentModelID) } }
+        default:
+            return nil
+        }
+    }
+}

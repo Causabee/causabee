@@ -451,7 +451,7 @@ struct Composer: View {
                         .foregroundStyle(.secondary)
                         .help("Attach a screenshot, a mail (.eml) or a PDF — or drag it here, or paste it (⌘V). It is scanned on the Mac.")
                 }
-                TextField(voice.phase == .writing ? "Writing it down …" : placeholder, text: $draft, selection: $cursor, axis: .vertical)
+                TextField(voice.phase == .writing ? voice.writingWords : placeholder, text: $draft, selection: $cursor, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     .focused(focused)

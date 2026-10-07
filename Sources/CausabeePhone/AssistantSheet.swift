@@ -71,6 +71,9 @@ struct AssistantSheet: View {
         records
             .filter { matter == nil || $0.matter?.persistentModelID == matter?.persistentModelID }
             .compactMap { record in navigation.turn(record).map { (record, $0) } }
+            // Only what was asked and brought in. That mail was taken in is said on the overview, and
+            // the mail is in its matter: a line for it here, too, said it a third time.
+            .filter { $0.1.note == nil }
     }
 
     private static let bottom = "thread-bottom"
@@ -402,7 +405,7 @@ struct AssistantSheet: View {
               } else {
                 // "Task" or "Note" picked: the chip says what comes; to type or to speak is chosen after.
                 AttachButton(matter: matter)
-                TextField(voice.phase == .writing ? "Writing it down …" : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, selection: $cursor, axis: .vertical)
+                TextField(voice.phase == .writing ? voice.writingWords : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, selection: $cursor, axis: .vertical)
                     .lineLimit(1...5)
                     // The keyboard's Return starts a new line; the button sends. With a keyboard
                     // of keys, Return sends and Shift-Return starts a new line, as on the Mac.

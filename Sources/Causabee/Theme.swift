@@ -415,6 +415,10 @@ final class VoiceInput {
     let recorder = VoiceRecorder()
     private var deliver: ((String) -> Void)?
 
+    /// What the field says while the words are written down — or while they wait for the speech
+    /// model to come into memory first.
+    var writingWords: String { Transcriber.shared.state == .warming ? "Getting speech ready …" : "Writing it down …" }
+
     /// Starts listening; `deliver` gets the words. Without the model, the card to load it comes first.
     func start(deliver: @escaping (String) -> Void) {
         guard phase == .idle else { return }
@@ -573,11 +577,22 @@ struct MicButton: View {
                 if voice.phase == .writing {
                     ProgressView().controlSize(.small)
                 } else {
-                    #if os(iOS)
-                    Image(systemName: "mic").font(.system(size: 19))
-                    #else
-                    Image(systemName: "mic").font(.system(size: 15))
-                    #endif
+                    // While the speech model comes into memory, the microphone says so: paler, with a
+                    // small wheel. It can be tapped all the same — what is said waits for the model.
+                    let warming = Transcriber.shared.state == .warming
+                    Group {
+                        #if os(iOS)
+                        Image(systemName: "mic").font(.system(size: 19))
+                        #else
+                        Image(systemName: "mic").font(.system(size: 15))
+                        #endif
+                    }
+                    .opacity(warming ? 0.45 : 1)
+                    .overlay(alignment: .topTrailing) {
+                        if warming { ProgressView().controlSize(.mini).scaleEffect(0.7).offset(x: 7, y: -6).transition(.opacity) }
+                    }
+                    .animation(.easeInOut(duration: 0.2), value: warming)
+                    .accessibilityHint(warming ? "Speech is getting ready" : "")
                 }
             }
             .frame(width: 34, height: 34).contentShape(Rectangle())

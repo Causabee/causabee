@@ -192,7 +192,7 @@ struct NotesPart: View {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
               } else {
-                TextField(voice.phase == .writing ? "Writing it down …" : "A thought, what was agreed, what to remember …", text: $draft, selection: $cursor, axis: .vertical)
+                TextField(voice.phase == .writing ? voice.writingWords : "A thought, what was agreed, what to remember …", text: $draft, selection: $cursor, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     .frame(minHeight: 34)

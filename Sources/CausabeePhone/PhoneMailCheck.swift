@@ -403,6 +403,7 @@ final class PhoneMailCheck {
 /// bottom, on the iPhone.
 struct PhoneMailCheckView: View {
     @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
     @Query private var profiles: [Profile]
     @Query private var matters: [Matter]
     @State private var check = PhoneMailCheck.shared
@@ -516,9 +517,20 @@ struct PhoneMailCheckView: View {
                         ForEach(mails, id: \.messageID) { mail in
                             PhoneIntakeMailRow(mail: mail) { name in check.moved(mail.messageID, to: name) }
                         }
+                        // Each opens its matter where it stands: the task, the date.
                         ForEach(items, id: \.self) { item in
-                            Label(item.text, systemImage: item.symbol).font(.subheadline)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Button {
+                                guard let place = Receipt.place(of: item, in: context) else { return }
+                                navigation.open(place.matter, showing: place.row)
+                            } label: {
+                                Label(item.text, systemImage: item.symbol).font(.subheadline)
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Opens it in its matter")
                         }
                     }
                     .phoneBox()
@@ -731,10 +743,22 @@ struct PhoneIntakeMailRow: View {
     let moved: (String) -> Void
     @Query private var matters: [Matter]
     @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Label(mail.subject, systemImage: "envelope").font(.subheadline.weight(.medium)).lineLimit(2)
+            // Opens its matter at this very mail.
+            Button {
+                guard let place = Receipt.place(ofMail: mail.messageID, in: context) else { return }
+                navigation.open(place.matter, showing: place.row)
+            } label: {
+                Label(mail.subject, systemImage: "envelope").font(.subheadline.weight(.medium)).lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens it in its matter")
             HStack(spacing: 6) {
                 Text("→ " + mail.matter).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 4)
