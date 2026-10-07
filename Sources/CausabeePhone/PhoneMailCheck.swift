@@ -514,7 +514,7 @@ struct PhoneMailCheckView: View {
                 // close at the card's right. It stays until it is closed: its lines are ways into the
                 // matters, to come back to.
                 VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline, spacing: 20) {
                         Label(text, systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
                             .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
