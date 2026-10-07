@@ -91,10 +91,16 @@ struct AssistantSheet: View {
             .sorted { ($0.date, $0.id.uuidString) < ($1.date, $1.id.uuidString) }
     }
 
-    /// What counts as the newest: the turn asked here last, else the thread's last.
+    /// What counts as the newest: the turn asked here last, else the last thing asked or brought
+    /// in. A line that only says mail was taken in is not it — it stands under the newest, in its
+    /// room: put on top by itself, it left the screen empty.
     private var newestID: UUID? {
         if let mine, entries.contains(where: { $0.id == mine }) { return mine }
-        return entries.last?.id
+        let spoken = entries.last { entry in
+            if case .turn(_, let turn) = entry { return turn.note == nil }
+            return true
+        }
+        return (spoken ?? entries.last)?.id
     }
 
     /// The one rule of the thread: the newest — the question just asked, or the last turn — stands
@@ -242,8 +248,10 @@ struct AssistantSheet: View {
                     }
                 }
                 // What comes into the thread fades in, and what is under it moves, not jumps.
-                .animation(Self.glide, value: entries.map(\.id))
-                .animation(Self.glide, value: asking?.date)
+                // An answer to what was asked here takes the place of its question at once: gliding
+                // into it, the thread was put where the answer was not yet.
+                .animation(mine == nil ? Self.glide : nil, value: entries.map(\.id))
+                .animation(asking == nil ? nil : Self.glide, value: asking?.date)
                 .animation(Self.glide, value: failure)
                 // When the thread moves by itself — and never once a finger has moved it:
                 // 1. Opened, and whenever the newest changes its height or the screen its own — a
@@ -277,10 +285,12 @@ struct AssistantSheet: View {
                     // lies between — and once more when it is laid out and its height is known.
                     scroller.scrollTo(mine, anchor: UnitPoint(x: 0.5, y: Self.topRoom / max(viewport, 200)))
                     toNewest(scroller, animated: false)
+                    // And once everything has come to rest — unless a finger has taken the thread.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { if !touched { toNewest(scroller, animated: false) } }
                 }
                 // A turn from the Mac, arriving while the assistant is open.
                 .onChange(of: entries.last?.id) { old, new in
-                    guard let new, new != old, new != mine, mine == nil else { return }
+                    guard let new, new != old, new != mine, mine == nil, new == newestID else { return }
                     if let known = heights.of[new], asking == nil { lastHeight = known }
                     if case .shot = entries.last { return }
                     if touched { newAnswer = new; return }
