@@ -234,17 +234,13 @@ struct AssistantColumn: View {
                     placement.answered(AnyHashable(last.id), with: scroller)
                 }
             }
+            // On the overview too: the bee by the window's buttons opens the assistant there, and a
+            // question asked there is about every matter with something going on — as on the iPhone.
             let scope = scopeMatter
-            if scope == nil {
-                // Only a dropped file brings the assistant to the overview: it is sorted into a
-                // matter from its card, and questions are asked inside a matter.
-                Text("Take the file into a matter above — or open a matter on the left to ask about it.")
-                    .font(.caption).foregroundStyle(.secondary).padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            } else {
             Composer(draft: $draft, focused: $focused, pinned: navigation.pinned,
                      seen: { FactSheet.facts(for: scope.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date()),
                                              focus: navigation.pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text }).seen },
-                     placeholder: scope.map { "Ask about \($0.name)" } ?? "Say anything",
+                     placeholder: scope.map { "Ask about \($0.name)" } ?? "Ask about your matters",
                      unpin: { navigation.pinned = nil },
                      attach: chooseScreenshot,
                      // Said before it is typed: the chip over the field, and the cursor in the field.
@@ -254,7 +250,6 @@ struct AssistantColumn: View {
                      } },
                      stop: asking.map { turn in { conversation.stop(turn.id) } },
                      send: send)
-            }
         }
         .background(Theme.canvas)
         // A screenshot dragged here is read on the Mac, like one chosen with the paper clip.

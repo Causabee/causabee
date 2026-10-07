@@ -137,7 +137,8 @@ final class ThreadPlacement {
         }
         // What lies from the top edge to the thread's end when the newest stands in its place.
         let rest = metrics.topRoom + newestHeight + metrics.spacing + tail + roomBelow + metrics.padding + extra
-        up = content - top > rest + 60
+        // A bar over the thread: what stands under it is seen, and counts as scrolled past.
+        up = content - top > rest + metrics.header + 60
         // The thread's own end — not the empty room after it — under the lower edge.
         below = (content - roomBelow - metrics.spacing - metrics.padding) - bottom > 40
         if !up { newAnswer = nil }
