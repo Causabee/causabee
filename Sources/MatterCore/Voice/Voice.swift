@@ -35,9 +35,12 @@ public final class Transcriber {
     private final class Engine: @unchecked Sendable {
         let kit: WhisperKit
 
-        init(model: String, base: URL, repo: String, folder: String) async throws {
+        /// `prewarm`: each part of the model is made ready for this device by itself first, then all
+        /// are loaded — easier on memory the first time, when the device still has to fit the model
+        /// to its chip, and about twice as long every time after, when there is nothing left to fit.
+        init(model: String, base: URL, repo: String, folder: String, prewarm: Bool) async throws {
             let config = WhisperKitConfig(model: model, downloadBase: base, modelRepo: repo, modelFolder: folder,
-                                          verbose: false, logLevel: .error, prewarm: true, load: true, download: false)
+                                          verbose: false, logLevel: .error, prewarm: prewarm, load: true, download: false)
             kit = try await WhisperKit(config)
         }
 
@@ -102,12 +105,21 @@ public final class Transcriber {
         }
     }
 
-    /// The model into memory, once: the first words then do not wait for it.
+    /// Which model this build of the app has fitted to this device already: the careful, slower
+    /// start is only for the first time after the model, or the app, is new.
+    private static let fittedKey = "speech.fitted"
+    private static var fitting: String { variant + " " + (Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "") }
+
+    /// The model into memory, once: the first words then do not wait for it. Asked for as soon as
+    /// the assistant is opened — not only when the microphone is tapped — so that it is there by the
+    /// time something has been said.
     public func warmUp() async {
         guard state == .cold else { return }
         state = .warming
         do {
-            engine = try await Engine(model: Self.variant, base: Self.base, repo: Self.repo, folder: Self.modelFolder.path)
+            let first = UserDefaults.standard.string(forKey: Self.fittedKey) != Self.fitting
+            engine = try await Engine(model: Self.variant, base: Self.base, repo: Self.repo, folder: Self.modelFolder.path, prewarm: first)
+            UserDefaults.standard.set(Self.fitting, forKey: Self.fittedKey)
             state = .ready
         } catch {
             state = .failed("The speech model could not be started: \(String(describing: error))")

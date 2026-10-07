@@ -341,6 +341,9 @@ struct AssistantSheet: View {
             // What was in hand from another matter is put down; words to send go into the field.
             if let pinned = navigation.pinned, pinned.matter != matter?.persistentModelID { navigation.pinned = nil }
             if let prefill = navigation.prefill { draft = prefill; navigation.prefill = nil }
+            // The speech model into memory now, if it is on the iPhone: what is said next is then
+            // written down without waiting for it.
+            Task { await Transcriber.shared.warmUp() }
         }
     }
 

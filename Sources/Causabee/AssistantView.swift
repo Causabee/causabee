@@ -330,6 +330,8 @@ struct AssistantColumn: View {
             focused = true
         }
         .onAppear {
+            // The speech model into memory now, if it is on the Mac: ⌥ Space then does not wait for it.
+            Task { await Transcriber.shared.warmUp() }
             // `--ask "<question>"` asks once at launch, to see an answer without typing.
             let arguments = CommandLine.arguments
             if navigation.turns.isEmpty, let flag = arguments.firstIndex(of: "--ask"), flag + 1 < arguments.count {
