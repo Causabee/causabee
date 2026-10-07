@@ -174,6 +174,18 @@ final class PhoneMailCheck {
         }
     }
 
+    /// Auto was turned on: mail that waits is read now, and what is new is looked for.
+    func autoTurnedOn(context: ModelContext) {
+        switch state {
+        case .newMail(let look, let door), .ready(let look, let door):
+            classify(look, with: door, context: context, owner: AutoMode.owner(in: context))
+        case .demoNew, .demoReady:
+            sortInDemo(context: context)
+        default:
+            checkQuietly(context: context)
+        }
+    }
+
     /// What another device sorted meanwhile is no longer asked about here: the mails it took in or
     /// put aside go from the line that says "new mails", from the list to tick, and from what was
     /// read and waits to be taken in. With none left, the prompt is gone.

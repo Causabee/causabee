@@ -99,6 +99,20 @@ struct AssistantSheet: View {
         }
     }
 
+    /// The newest where it belongs for the room there is, at once and without a glide — for the
+    /// moment the keyboard comes or goes, so that the thread moves with it and not after it. While
+    /// the field has the cursor and the newest is taller than what is left of the screen, its end
+    /// stands right over the field: that is what is being answered. Else its beginning, on top.
+    private func settle(_ scroller: ScrollViewProxy, in height: CGFloat) {
+        let id: AnyHashable? = asking != nil ? AnyHashable("asking") : entries.last.map { AnyHashable($0.id) }
+        guard let id else { return }
+        if typing, lastHeight + Self.topRoom > height {
+            scroller.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 1 - 12 / max(height, 200)))
+        } else {
+            scroller.scrollTo(id, anchor: UnitPoint(x: 0.5, y: Self.topRoom / max(height, 200)))
+        }
+    }
+
     private static let topRoom: CGFloat = 16
     /// The room under the newest, so that it can stand at the top: what the screen shows beyond it.
     private var roomBelow: CGFloat { max(1, viewport - lastHeight - Self.topRoom - 36) }
@@ -181,9 +195,11 @@ struct AssistantSheet: View {
                     return ThreadPlace(up: geometry.contentSize.height - geometry.visibleRect.minY > rest + 60, height: geometry.containerSize.height)
                 } action: { old, new in
                     viewport = new.height
-                    // The keyboard coming or going, the field growing by a line: the newest stays on top.
+                    // The keyboard coming or going, the field growing by a line: the thread moves with it,
+                    // in the same motion — to the end of the newest while typing, back to its top after.
+                    // A thread the owner scrolled stays where they put it.
                     if new.height != old.height, !touched {
-                        toNewest(scroller, animated: false)
+                        settle(scroller, in: new.height)
                         return
                     }
                     withAnimation(.easeOut(duration: 0.15)) { scrolledUp = new.up }
@@ -316,7 +332,8 @@ struct AssistantSheet: View {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
               } else {
-                AttachButton(matter: matter) { typing = true }
+                // "Task" or "Note" picked: the chip says what comes; to type or to speak is chosen after.
+                AttachButton(matter: matter)
                 TextField(voice.phase == .writing ? "Writing it down …" : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, selection: $cursor, axis: .vertical)
                     .lineLimit(1...5)
                     // The keyboard's Return starts a new line; the button sends. With a keyboard

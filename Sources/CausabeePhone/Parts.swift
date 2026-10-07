@@ -70,6 +70,15 @@ struct AssistantButton: View {
     @State private var picksFile = false
 
     var body: some View {
+        // Over the bee, Auto: how the assistant works is turned on and off where the assistant is.
+        VStack(spacing: 10) {
+            PhoneAutoButton()
+            bee
+        }
+        .padding(.trailing, 16).padding(.bottom, 8)
+    }
+
+    private var bee: some View {
         Menu {
             PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
         } label: {
@@ -89,7 +98,57 @@ struct AssistantButton: View {
         .accessibilityLabel("Ask Causabee")
         .accessibilityHint("Hold to add to a matter")
         .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
-        .padding(.trailing, 16).padding(.bottom, 8)
+    }
+}
+
+/// Auto on and off, small, over the bee — the same switch as in Settings › New mail and the bolt
+/// on the Mac. On: the black bolt on the bee's yellow. The first few times it says what changed,
+/// beside it, since a bolt alone does not.
+struct PhoneAutoButton: View {
+    @AppStorage(AutoMode.key) private var auto = false
+    @AppStorage("auto.explained") private var explained = 0
+    @Environment(\.modelContext) private var context
+    @State private var says: String?
+
+    var body: some View {
+        Button {
+            auto.toggle()
+            Haptics.tap()
+            if auto { PhoneMailCheck.shared.autoTurnedOn(context: context) }
+            guard explained < 4 else { return }
+            explained += 1
+            let words = auto ? "Auto on: mail and files are read at once" : "Auto off: mail and files wait for “Sort in”"
+            withAnimation(.easeOut(duration: 0.2)) { says = words }
+            Task {
+                try? await Task.sleep(for: .seconds(2.8))
+                if says == words { withAnimation(.easeIn(duration: 0.25)) { says = nil } }
+            }
+        } label: {
+            Image(systemName: auto ? "bolt.fill" : "bolt").font(.system(size: 15, weight: .medium))
+                .foregroundStyle(auto ? Color.black : Color.secondary)
+                .frame(width: 36, height: 36)
+                .background(auto ? AnyShapeStyle(Theme.bee) : AnyShapeStyle(.regularMaterial), in: Circle())
+                .overlay(Circle().stroke(Theme.line).opacity(auto ? 0 : 1))
+                .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
+                // A finger's room around the small disc.
+                .frame(width: 44, height: 44).contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Auto")
+        .accessibilityValue(auto ? "On" : "Off")
+        .accessibilityHint("New mail and files are read at once, or only when you say so")
+        .accessibilityIdentifier("auto.toggle")
+        .overlay(alignment: .trailing) {
+            if let says {
+                Text(says).font(.footnote.weight(.medium)).foregroundStyle(Theme.onInk)
+                    .padding(.horizontal, 12).padding(.vertical, 8)
+                    .background(Theme.ink, in: Capsule())
+                    .fixedSize()
+                    .offset(x: -50)
+                    .transition(.opacity)
+                    .allowsHitTesting(false)
+            }
+        }
     }
 }
 
