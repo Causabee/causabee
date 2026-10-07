@@ -356,24 +356,44 @@ struct PlusItems: View {
     /// "Task" or "Note" was picked for the open matter: the field takes the cursor.
     var picked: () -> Void = {}
     @Environment(Navigation.self) private var navigation
+    @Query private var matters: [Matter]
 
     var body: some View {
         Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
         Button("File", systemImage: "doc") { picksFile = true }
         // A letter on the table: scanned with the camera, named and kept among the matter's files.
-        Button("Scan a document", systemImage: "doc.viewfinder") { pick(.scan) }.accessibilityIdentifier("plus.scan")
+        item("Scan a document", "doc.viewfinder", .scan)
         Divider()
-        Button("Contact", systemImage: "person.badge.plus") { pick(.contact) }.accessibilityIdentifier("plus.contact")
-        Button("Detail", systemImage: "info.circle") { pick(.detail) }.accessibilityIdentifier("plus.detail")
-        Button("Link", systemImage: "link") { pick(.link) }.accessibilityIdentifier("plus.link")
-        Button("Note", systemImage: "note.text") { pick(.note) }.accessibilityIdentifier("plus.note")
-        Button("Task", systemImage: "checklist") { pick(.task) }.accessibilityIdentifier("plus.task")
+        item("Contact", "person.badge.plus", .contact)
+        item("Detail", "info.circle", .detail)
+        item("Link", "link", .link)
+        item("Note", "note.text", .note)
+        item("Task", "checklist", .task)
     }
 
-    private func pick(_ plus: Navigation.Plus) {
-        guard let matter else { navigation.choose(for: plus); return }
-        navigation.add(plus, to: matter)
-        if plus == .note || plus == .task { picked() }
+    /// In a matter, it is for that matter. With none open, it opens onto the matters opened last —
+    /// one more tap, and no sheet to choose from — and onto every matter, for the rest.
+    @ViewBuilder
+    private func item(_ title: String, _ symbol: String, _ plus: Navigation.Plus) -> some View {
+        if let matter {
+            Button(title, systemImage: symbol) {
+                navigation.add(plus, to: matter)
+                if plus == .note || plus == .task { picked() }
+            }
+            .accessibilityIdentifier("plus." + plus.rawValue)
+        } else {
+            let open = matters.filter { !$0.isClosed }
+            Menu {
+                ForEach(RecentMatters.list(in: open, fillingFrom: activeMatters(open)).prefix(5)) { recent in
+                    Button(recent.name) { navigation.chosen(recent, for: plus) }
+                }
+                Divider()
+                Button("Another matter …", systemImage: "magnifyingglass") { navigation.choose(for: plus) }
+            } label: {
+                Label(title, systemImage: symbol)
+            }
+            .accessibilityIdentifier("plus." + plus.rawValue)
+        }
     }
 }
 

@@ -31,8 +31,13 @@ struct RootView: View {
             navigation.showsAssistant = true
         }
         .sheet(isPresented: $navigation.showsAssistant) {
-            AssistantSheet(matter: navigation.path.last.flatMap { id in matters.first { $0.persistentModelID == id } })
+            let about = navigation.path.last.flatMap { id in matters.first { $0.persistentModelID == id } }
+            AssistantSheet(matter: about)
+                // About another matter — one chosen from its plus — it is that matter's thread, anew.
+                .id(about?.persistentModelID)
                 .presentationDragIndicator(.visible)
+                // Every matter, to choose from, over the assistant: the assistant stays.
+                .sheet(item: $navigation.choosingInAssistant) { plus in MatterChooser(plus: plus) }
         }
         // Picked from the plus with no matter open: which one it is for.
         .sheet(item: $navigation.choosing) { plus in MatterChooser(plus: plus) }

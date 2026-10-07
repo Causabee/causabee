@@ -29,8 +29,11 @@ final class Navigation {
         case scan, contact, detail, link, note, task
         var id: String { rawValue }
     }
-    /// Picked where no matter is open: which matter it is for is asked first.
+    /// Picked where no matter is open, and none of the matters offered with it was the one: every
+    /// matter is offered, to find it. Over the overview — or over the assistant, when that is open:
+    /// the assistant stays where it is.
     var choosing: Plus?
+    var choosingInAssistant: Plus?
 
     /// A task or a note is said to the assistant, over the matter; the others have an editor of
     /// their own on the matter's page, and the assistant steps aside for it.
@@ -46,18 +49,28 @@ final class Navigation {
         }
     }
 
-    /// Picked with no matter open: the assistant's sheet goes first, then the matters are offered.
+    /// Every matter is offered, over what is open now.
     func choose(for plus: Plus) {
-        guard showsAssistant else { choosing = plus; return }
-        showsAssistant = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.choosing = plus }
+        if showsAssistant { choosingInAssistant = plus } else { choosing = plus }
     }
 
-    /// The matter it is for: opened, and once its page is there, what was picked is added to it.
+    /// The matter it is for. A task or a note: the matter comes under the assistant, which stays —
+    /// or comes — and is about that matter from then on; nothing goes down to come up again. What
+    /// has an editor of its own: the matter's page opens, and the editor on it.
     func chosen(_ matter: Matter, for plus: Plus) {
         choosing = nil
-        open(matter)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self.add(plus, to: matter) }
+        choosingInAssistant = nil
+        RecentMatters.note(matter)
+        showing = nil
+        if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }
+        switch plus {
+        case .note, .task:
+            add(plus, to: matter)
+        case .scan, .contact, .detail, .link:
+            showsAssistant = false
+            // Once its page is there, and the assistant has gone.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self.add(plus, to: matter) }
+        }
     }
 
     /// Puts an item in hand and opens the assistant over its matter, as the Mac's pin does.
