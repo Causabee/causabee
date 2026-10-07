@@ -748,7 +748,13 @@ struct PhoneActionCard: View {
                     .padding(6)
                     .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
             } else if editable {
-                TextField("", text: $text, axis: .vertical)
+                // As tall as its words: the same words, unseen, take the room, and the field lies on
+                // them. Left to size itself, the field was cut to half a line under a long answer.
+                Text(text.isEmpty ? " " : text + (text.hasSuffix("\n") ? " " : ""))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .hidden()
+                    .overlay(alignment: .topLeading) { TextField("", text: $text, axis: .vertical) }
                     .padding(.horizontal, 10).padding(.vertical, 8)
                     .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
                     .disabled(done)
