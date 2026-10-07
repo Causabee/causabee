@@ -64,6 +64,8 @@ struct AssistantSheet: View {
         var of: [UUID: CGFloat] = [:]
         /// Where the thread stood when a finger came down on it.
         var touchedAt: CGFloat?
+        /// Where the thread is now, as last read.
+        var place: ThreadPlace?
     }
     /// The height the room under the newest is cut for: the smallest the newest has had. Sources
     /// unfolded under an answer make it taller for a while; the room is not taken in for that —
@@ -157,7 +159,9 @@ struct AssistantSheet: View {
 
     private static let topRoom: CGFloat = 16
     /// The room under the newest, so that it can stand at the top: what the screen shows beyond it.
-    private var roomBelow: CGFloat { max(1, viewport - roomHeight - tail - Self.topRoom - 36) }
+    /// A little more than it takes: cut to the point, the newest stood a few points short of its
+    /// place until something under it made the thread longer — and then moved up to it.
+    private var roomBelow: CGFloat { max(1, viewport - roomHeight - tail - Self.topRoom - 36 + 24) }
 
     /// What stands after the newest, as it was measured: each thing and the gap before it.
     private func measureTail() {
@@ -255,7 +259,9 @@ struct AssistantSheet: View {
                 .onScrollGeometryChange(for: ThreadPlace.self) { geometry in
                     // Up: more of the thread lies under the screen's top edge than the newest and its
                     // room — the thread shows what came before.
-                    let rest = max(geometry.containerSize.height, lastHeight + tail + Self.topRoom + 37) + (failure == nil ? 0 : 120)
+                    // What lies from the screen's top to the thread's end when the newest stands in its
+                    // place: itself, what follows it, and the room — whatever height it has just now.
+                    let rest = Self.topRoom + lastHeight + 20 + tail + roomBelow + 16 + (failure == nil ? 0 : 120)
                     // Below: the thread's own end — not the empty room after it — is under the lower edge.
                     let end = geometry.contentSize.height - roomBelow - 36
                     return ThreadPlace(up: geometry.contentSize.height - geometry.visibleRect.minY > rest + 60, height: geometry.containerSize.height,
@@ -269,7 +275,17 @@ struct AssistantSheet: View {
                         settle(scroller, in: new.height)
                         return
                     }
-                    withAnimation(.easeOut(duration: 0.15)) { scrolledUp = new.up; moreBelow = new.below }
+                    // Gone at once; shown only when it is still so a moment later: something unfolding
+                    // under an answer made the button blink while the thread took its new height.
+                    heights.place = new
+                    if !new.up, scrolledUp { withAnimation(.easeOut(duration: 0.15)) { scrolledUp = false } }
+                    if !new.below, moreBelow { withAnimation(.easeOut(duration: 0.15)) { moreBelow = false } }
+                    if (new.up && !scrolledUp) || (new.below && !moreBelow) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                            guard let now = heights.place else { return }
+                            withAnimation(.easeOut(duration: 0.15)) { scrolledUp = now.up; moreBelow = now.below }
+                        }
+                    }
                     // At the newest again: the answer has been reached.
                     if !new.up { newAnswer = nil }
                 }
