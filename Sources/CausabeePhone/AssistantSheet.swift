@@ -143,6 +143,9 @@ struct AssistantSheet: View {
 
     /// What stands after the newest, as it was measured: each thing and the gap before it.
     private func measureTail() {
+        // A question on its way is the thread's end: nothing stands after it. Counted in, the lines
+        // after the turn before it took the room the question needs to stand on top.
+        guard asking == nil else { if tail != 0 { tail = 0 }; return }
         let entries = entries
         guard let newest = newestID, let at = entries.firstIndex(where: { $0.id == newest }) else { return }
         let after = entries[(at + 1)...].reduce(CGFloat(0)) { $0 + (heights.of[$1.id] ?? 0) + 20 }
@@ -251,6 +254,9 @@ struct AssistantSheet: View {
                                 newAnswer = nil
                                 toNewest(scroller)
                             } else {
+                                // Gone to the end by the owner's own tap: the thread is theirs, as if
+                                // scrolled there — the field growing does not take it back to the top.
+                                touched = true
                                 withAnimation(Self.glide) { scroller.scrollTo(Self.bottom, anchor: .bottom) }
                             }
                         } label: {
@@ -287,7 +293,8 @@ struct AssistantSheet: View {
                 // 2. Something sent or brought in: it goes to the top, wherever the thread was — it is
                 //    the owner's own doing — and the thread is no longer held by the finger.
                 .onChange(of: asking?.date) {
-                    guard asking != nil else { return }
+                    guard asking != nil else { measureTail(); return }
+                    tail = 0
                     mine = nil
                     touched = false
                     newAnswer = nil
@@ -303,6 +310,7 @@ struct AssistantSheet: View {
                 .onChange(of: mine) {
                     guard let mine else { return }
                     if let known = heights.of[mine] { lastHeight = known }
+                    measureTail()
                     if touched { newAnswer = mine; return }
                     // At once, where its question stood while it was asked — no glide across what
                     // lies between — and once more when it is laid out and its height is known.
