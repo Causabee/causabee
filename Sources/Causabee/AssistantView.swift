@@ -40,7 +40,7 @@ struct AssistantColumn: View {
     #endif
     /// Where the thread stands and when it moves by itself: the one rule, kept with the iPhone's.
     /// The window's top line stands over the thread; what is put "at the top" stands under it.
-    @State private var placement = ThreadPlacement(.init(topRoom: 0, spacing: 12, padding: 16, header: WindowMetrics.topLine))
+    @State private var placement = ThreadPlacement()
     @FocusState private var focused: Bool
     private var conversation: Conversation {
         Conversation(context: context, navigation: navigation, owner: profiles.first?.names.first)
@@ -90,15 +90,8 @@ struct AssistantColumn: View {
         Color.clear.frame(height: WindowMetrics.topLine)
     }
 
-    /// The thread's things in order, and its newest: the last of them.
-    private struct ThreadKey: Equatable {
-        var ids: [AnyHashable]
-        var newest: AnyHashable?
-    }
-
-    private var threadKey: ThreadKey {
-        ThreadKey(ids: laidOut.map { AnyHashable($0.id) }, newest: shown.last.map { AnyHashable($0.id) })
-    }
+    /// The newest: the thread's last.
+    private var newestID: AnyHashable? { shown.last.map { AnyHashable($0.id) } }
 
     /// How far a file brought in is, as a number: its card grows with it.
     private static func step(_ shot: Navigation.Shot) -> Int {
@@ -132,7 +125,7 @@ struct AssistantColumn: View {
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: placement.metrics.spacing) {
+                    VStack(alignment: .leading, spacing: 12) {
                         if shown.isEmpty {
                             Text(openMatter != nil
                                  ? "No talk about this matter yet. Ask something — or click “talk” on a line on the right."
@@ -176,10 +169,15 @@ struct AssistantColumn: View {
                                     .id(turn.id).transition(.opacity)
                             }
                             }
-                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { placement.measured(AnyHashable(turn.id), $0, with: scroller) }
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if turn.id == shown.last?.id { placement.own(height) } }
+                            // The newest is at least as tall as the column shows: it can stand at the top,
+                            // and its answer grows into the room under it.
+                            .frame(minHeight: turn.id == shown.last?.id ? placement.viewport : nil, alignment: .top)
+                            .modifier(FadesIn(fresh: Date().timeIntervalSince(turn.date) < 3))
+                            .onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView(axis: .vertical)) } action: { frame in
+                                placement.laidOut(AnyHashable(turn.id), at: frame, newest: turn.id == shown.last?.id, with: scroller)
+                            }
                         }
-                        // The room an answer grows into: with it, the newest can stand at the top.
-                        Color.clear.frame(height: placement.roomBelow).id(ThreadPlacement.bottom)
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -198,40 +196,40 @@ struct AssistantColumn: View {
                         .transition(.opacity)
                     }
                 }
-                // Where the thread is, and what the owner does with it — the trackpad, the wheel, the
-                // bar: told to the placement, which decides. ThreadPlacement says how.
+                // What happens to the thread is told to the placement, which decides where it goes.
+                .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in placement.room(height, with: scroller) }
                 .onScrollPhaseChange { old, new, context in placement.finger(from: old, to: new, at: context.geometry.contentOffset.y) }
-                .onScrollGeometryChange(for: ThreadPlacement.Geometry.self) { ThreadPlacement.Geometry($0) } action: { _, new in
-                    placement.geometry(new, with: scroller)
-                }
-                // What comes into the thread fades in, and what is under it moves, not jumps.
-                .animation(ThreadPlacement.glide, value: shown.map(\.id))
                 .overlay(alignment: .bottom) {
-                    if placement.showsButton {
+                    // Away from the newest: the way back — and "New answer", when one came meanwhile.
+                    if !placement.follows {
                         let newAnswer = placement.newAnswer != nil
-                        Button { placement.buttonTapped(scroller) } label: { ToNewestLabel(newAnswer: newAnswer) }
+                        Button { placement.follow(newestID, with: scroller) } label: { ToNewestLabel(newAnswer: newAnswer) }
                             .buttonStyle(.plain)
                             .help(newAnswer ? "To the new answer" : "To the newest")
+                            .accessibilityIdentifier("thread.toNewest")
                             .padding(.bottom, 10)
                             .transition(.opacity)
                     }
                 }
-                // What the thread holds, and what happened in it.
-                .onChange(of: threadKey, initial: true) { placement.holds(threadKey.ids, newest: threadKey.newest) }
+                .animation(.easeOut(duration: 0.15), value: placement.follows)
+                // Shown, and another matter opened beside it.
+                .onAppear { placement.opened(newestID, with: scroller) }
                 .onChange(of: navigation.place) {
                     showsNewest = Self.page
-                    placement.opened(scroller)
+                    placement.opened(newestID, with: scroller)
                 }
                 // A question just asked, or a file brought in, is the owner's own doing; anything else
                 // that comes in leaves a reader where they are.
                 .onChange(of: shown.count) { old, new in
                     guard new > old, let last = shown.last else { return }
                     let own = last.shot != nil || { if case .asking = last.state { true } else { false } }()
-                    if own { placement.asked(scroller) } else { placement.arrived(AnyHashable(last.id), with: scroller) }
+                    if own { placement.follow(newestID, with: scroller) } else { placement.arrived(AnyHashable(last.id), newest: newestID, with: scroller) }
                 }
+                // An answer comes in under its question, in the same place. Read further up meanwhile,
+                // the thread stays, and the button says an answer came.
                 .onChange(of: answeredCount) { old, new in
                     guard new > old, let last = shown.last(where: { if case .asking = $0.state { false } else { $0.shot == nil } }) else { return }
-                    placement.answered(AnyHashable(last.id), with: scroller)
+                    placement.arrived(AnyHashable(last.id), newest: newestID, with: scroller)
                 }
             }
             // On the overview too: the bee by the window's buttons opens the assistant there, and a
