@@ -787,6 +787,8 @@ enum AppRelease {
 struct ThreadPlace: Equatable {
     var up: Bool
     var height: CGFloat
+    /// More of the thread lies under the lower edge: what came after the newest.
+    var below = false
 }
 
 /// Auto: the two steps that only wait for a yes are done by themselves — new mail and files are

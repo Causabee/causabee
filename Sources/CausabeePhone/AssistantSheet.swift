@@ -52,6 +52,11 @@ struct AssistantSheet: View {
     /// How tall the newest is — the question on its way, or the last turn or card: the room left
     /// open under it is what the screen has beyond that.
     @State private var lastHeight: CGFloat = 0
+    /// How tall what stands after the newest is — lines about mail taken in, a turn from a device
+    /// whose clock runs ahead: it takes up part of the room under the newest.
+    @State private var tail: CGFloat = 0
+    /// The thread goes on under the screen's lower edge, at its newest though it is.
+    @State private var moreBelow = false
     /// How tall each thing in the thread is, as laid out: kept beside the view, so that measuring
     /// draws nothing again.
     @State private var heights = Heights()
@@ -134,7 +139,15 @@ struct AssistantSheet: View {
 
     private static let topRoom: CGFloat = 16
     /// The room under the newest, so that it can stand at the top: what the screen shows beyond it.
-    private var roomBelow: CGFloat { max(1, viewport - lastHeight - Self.topRoom - 36) }
+    private var roomBelow: CGFloat { max(1, viewport - lastHeight - tail - Self.topRoom - 36) }
+
+    /// What stands after the newest, as it was measured: each thing and the gap before it.
+    private func measureTail() {
+        let entries = entries
+        guard let newest = newestID, let at = entries.firstIndex(where: { $0.id == newest }) else { return }
+        let after = entries[(at + 1)...].reduce(CGFloat(0)) { $0 + (heights.of[$1.id] ?? 0) + 20 }
+        if abs(after - tail) > 0.5 { tail = after }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -171,6 +184,7 @@ struct AssistantSheet: View {
                             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                                 heights.of[entry.id] = height
                                 if asking == nil, entry.id == newestID { lastHeight = height }
+                                measureTail()
                             }
                         }
                         if let asking {
@@ -210,8 +224,11 @@ struct AssistantSheet: View {
                 .onScrollGeometryChange(for: ThreadPlace.self) { geometry in
                     // Up: more of the thread lies under the screen's top edge than the newest and its
                     // room — the thread shows what came before.
-                    let rest = max(geometry.containerSize.height, lastHeight + Self.topRoom + 37) + (failure == nil ? 0 : 120)
-                    return ThreadPlace(up: geometry.contentSize.height - geometry.visibleRect.minY > rest + 60, height: geometry.containerSize.height)
+                    let rest = max(geometry.containerSize.height, lastHeight + tail + Self.topRoom + 37) + (failure == nil ? 0 : 120)
+                    // Below: the thread's own end — not the empty room after it — is under the lower edge.
+                    let end = geometry.contentSize.height - roomBelow - 36
+                    return ThreadPlace(up: geometry.contentSize.height - geometry.visibleRect.minY > rest + 60, height: geometry.containerSize.height,
+                                       below: end - geometry.visibleRect.maxY > 40)
                 } action: { old, new in
                     viewport = new.height
                     // The keyboard coming or going, the field growing by a line: the thread moves with it,
@@ -221,15 +238,21 @@ struct AssistantSheet: View {
                         settle(scroller, in: new.height)
                         return
                     }
-                    withAnimation(.easeOut(duration: 0.15)) { scrolledUp = new.up }
+                    withAnimation(.easeOut(duration: 0.15)) { scrolledUp = new.up; moreBelow = new.below }
                     // At the newest again: the answer has been reached.
                     if !new.up { newAnswer = nil }
                 }
                 .overlay(alignment: .bottom) {
-                    if scrolledUp {
+                    if scrolledUp || moreBelow {
                         Button {
-                            newAnswer = nil
-                            toNewest(scroller)
+                            // From further up: to the newest. At the newest, with more under the edge:
+                            // down to the thread's end.
+                            if scrolledUp || newAnswer != nil {
+                                newAnswer = nil
+                                toNewest(scroller)
+                            } else {
+                                withAnimation(Self.glide) { scroller.scrollTo(Self.bottom, anchor: .bottom) }
+                            }
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: newAnswer != nil ? "arrow.down" : "chevron.down").font(.body.weight(.semibold))
