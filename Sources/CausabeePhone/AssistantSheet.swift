@@ -134,10 +134,11 @@ struct AssistantSheet: View {
     /// with what is new — asked for in the same moment, its edges are still the old ones.
     private func toNewest(_ scroller: ScrollViewProxy, animated: Bool = true) {
         DispatchQueue.main.async {
-            // A little under the top edge, not against it.
-            let top = UnitPoint(x: 0.5, y: Self.topRoom / max(viewport, 200))
+            // Its top to the thread's top — which the thread keeps a little under the edge. Not a
+            // point part of the way down both: that point moves with the height of what is put
+            // there, and an answer that grew by a line stood two points higher.
             let go = {
-                if asking != nil { scroller.scrollTo("asking", anchor: top) } else if let newest = newestID { scroller.scrollTo(newest, anchor: top) }
+                if asking != nil { scroller.scrollTo("asking", anchor: .top) } else if let newest = newestID { scroller.scrollTo(newest, anchor: .top) }
             }
             if animated { withAnimation(Self.glide) { go() } } else { go() }
         }
@@ -151,9 +152,9 @@ struct AssistantSheet: View {
         let id: AnyHashable? = asking != nil ? AnyHashable("asking") : newestID.map { AnyHashable($0) }
         guard let id else { return }
         if typing, lastHeight + Self.topRoom > height {
-            scroller.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 1 - 12 / max(height, 200)))
+            scroller.scrollTo(id, anchor: .bottom)
         } else {
-            scroller.scrollTo(id, anchor: UnitPoint(x: 0.5, y: Self.topRoom / max(height, 200)))
+            scroller.scrollTo(id, anchor: .top)
         }
     }
 
@@ -235,6 +236,9 @@ struct AssistantSheet: View {
                     .padding(16)
                     .containerRelativeFrame(.horizontal)
                 }
+                // The thread's top stands a little under the edge: what is put "at the top" keeps that
+                // room, whatever its height.
+                .safeAreaPadding(.top, Self.topRoom)
                 // Opened at its end; once it is laid out, the newest is put at the top. What the thread
                 // does after that is decided below, in one place.
                 .defaultScrollAnchor(.bottom, for: .initialOffset)
@@ -361,7 +365,7 @@ struct AssistantSheet: View {
                     if touched { newAnswer = mine; return }
                     // At once, where its question stood while it was asked — no glide across what
                     // lies between — and once more when it is laid out and its height is known.
-                    scroller.scrollTo(mine, anchor: UnitPoint(x: 0.5, y: Self.topRoom / max(viewport, 200)))
+                    scroller.scrollTo(mine, anchor: .top)
                     toNewest(scroller, animated: false)
                     // And once everything has come to rest — unless a finger has taken the thread.
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { if !touched { toNewest(scroller, animated: false) } }
