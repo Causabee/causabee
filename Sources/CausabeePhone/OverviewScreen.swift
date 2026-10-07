@@ -79,7 +79,6 @@ struct OverviewScreen: View {
                     Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))).uppercased())
                         .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Text("Overview").font(Theme.phoneTitleFont)
-                    Text(OverviewSummary.text(ordered)).font(.body).fixedSize(horizontal: false, vertical: true)
                 }
                 // In the demo, three made-up mails come in: the whole round, nothing read or sent.
                 PhoneMailCheckView()
