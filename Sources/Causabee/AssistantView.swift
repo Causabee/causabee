@@ -696,6 +696,10 @@ struct TurnView: View {
                 Text(missing).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
             }
             ForEach(Array(answer.reply.cards.enumerated()), id: \.offset) { index, card in
+                if card.kind == .shortMessage {
+                    // A message for a chat: copied, not taken in. Asked for, so it stays while reading.
+                    MessageCard(id: "\(turn.id)-\(index)", asked: turn.date, to: card.party.map { id in turn.refs[id].map(label) ?? id }, words: card.text, reason: card.reason)
+                } else
                 // While reading, a draft asked for stays; the other suggestions are put away.
                 if !reading || card.kind == .draftMessage {
                     ActionCard(card: card, done: turn.applied.contains(index), refs: turn.refs, open: open, label: label,
@@ -968,6 +972,7 @@ struct ActionCard: View {
         case .correctText: return "Text corrected"
         case .changeOwner: return "Now " + whose.lowercased()
         case .draftMessage: return "Opened in Mail"
+        case .shortMessage: return "Copied"
         }
     }
 
@@ -1011,6 +1016,7 @@ struct ActionCard: View {
         case .sameParty: "Merge"
         case .addNote: "Save note"
         case .draftMessage: "Open in Mail"
+        case .shortMessage: "Copy"
         case .changeDate: "Change date"
         case .newMatter: "Create"
         case .waitsFor: "Link"
@@ -1031,6 +1037,7 @@ struct ActionCard: View {
         case .changeRole: return "Change role?"
         case .addNote: return card.todo == nil ? "Note for the matter?" : "Note for the task?"
         case .draftMessage: return "Draft"
+        case .shortMessage: return "Message"
         case .changeDate: return "Change date?"
         case .newMatter: return "New matter?"
         case .waitsFor: return "Waits for another task?"
@@ -1053,6 +1060,7 @@ struct ActionCard: View {
         case .renameParty: return "\(name(card.party))  is called:"
         case .changeRole: return "\(name(card.party))  is here:"
         case .addNote: return card.todo == nil ? nil : name(card.todo)
+        case .shortMessage: return nil
         case .draftMessage:
             guard let recipient else { return "To: (fill in in Mail)" }
             return "To: \(recipient.name)" + (recipient.address.map { " <\($0)>" } ?? " — address not known, fill it in in Mail")

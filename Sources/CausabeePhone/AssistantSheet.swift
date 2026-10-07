@@ -620,7 +620,13 @@ struct PhoneTurnView: View {
                 Text(missing).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
             }
             ForEach(Array(answer.reply.cards.enumerated()), id: \.offset) { index, card in
-                PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
+                if card.kind == .shortMessage {
+                    // A message for a chat: copied, not taken in.
+                    MessageCard(id: "\(turn.id)-\(index)", asked: turn.date, to: card.party.map { id in turn.refs[id].map { CardActions.label($0, in: context) } ?? id },
+                                words: card.text, reason: card.reason)
+                } else {
+                    PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
+                }
             }
             // One line under the answer: copy it, what it rests on — and what it cost.
             HStack(spacing: 6) {
@@ -884,6 +890,7 @@ struct PhoneActionCard: View {
         case .correctText: return "Text corrected"
         case .changeOwner: return "Now " + whose.lowercased()
         case .draftMessage: return "Opened in Mail"
+        case .shortMessage: return "Copied"
         }
     }
 
@@ -979,6 +986,7 @@ struct PhoneActionCard: View {
         case .sameParty: "Merge"
         case .addNote: "Save note"
         case .draftMessage: "Open in Mail"
+        case .shortMessage: "Copy"
         case .changeDate: "Change date"
         case .newMatter: "Create"
         case .waitsFor: "Link"
@@ -999,6 +1007,7 @@ struct PhoneActionCard: View {
         case .changeRole: return "Change role?"
         case .addNote: return card.todo == nil ? "Note for the matter?" : "Note for the task?"
         case .draftMessage: return "Draft"
+        case .shortMessage: return "Message"
         case .changeDate: return "Change date?"
         case .newMatter: return "New matter?"
         case .waitsFor: return "Waits for another task?"
@@ -1021,6 +1030,7 @@ struct PhoneActionCard: View {
         case .renameParty: return "\(name(card.party))  is called:"
         case .changeRole: return "\(name(card.party))  is here:"
         case .addNote: return card.todo == nil ? nil : name(card.todo)
+        case .shortMessage: return nil
         case .draftMessage:
             guard let recipient else { return "To: (fill in in Mail)" }
             return "To: \(recipient.name)" + (recipient.address.map { " <\($0)>" } ?? " — address not known, fill it in in Mail")

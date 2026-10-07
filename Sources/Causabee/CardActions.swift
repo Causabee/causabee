@@ -369,6 +369,9 @@ enum CardActions {
                 item.what = item.what.replacingOccurrences(of: from, with: text)
             }
             undo = .texts(before)
+        case .shortMessage:
+            // Copied by its card, into a chat by the owner's own hand: nothing changes in a matter.
+            return .nothing
         case .draftMessage:
             // The one door out: Mail opens with the draft in it, and the owner sends it — or not.
             let to = recipient(card.party, refs: refs, question: question, mail: mail, scope: scope, in: context)?.address ?? ""
@@ -631,5 +634,88 @@ struct MailAddressItems: View {
         #else
         UIPasteboard.general.string = item.address
         #endif
+    }
+}
+
+
+/// A short message for a chat — WhatsApp, Signal, a text: the words to change, and on the
+/// clipboard as soon as the card lands, again whenever they are changed, and with a tap. Pasted
+/// into the chat by the owner; nothing is sent from here and nothing changes in a matter.
+struct MessageCard: View {
+    /// The turn and the card's place in it: a card is copied by itself once, when it lands.
+    let id: String
+    /// When its question was asked: only a card that has just come copies itself — not every one
+    /// in the thread each time the thread is opened.
+    let asked: Date
+    let to: String?
+    let words: String
+    let reason: String
+    @State private var text = ""
+    @State private var copied = false
+    @State private var waits: Task<Void, Never>?
+
+    @MainActor private static var landed: Set<String> = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text(to.map { "Message · for \($0)" } ?? "Message").font(.footnote.weight(.semibold))
+                Spacer(minLength: 4)
+                if copied {
+                    Label("Copied", systemImage: "checkmark").font(.caption.weight(.medium)).foregroundStyle(Theme.done)
+                        .transition(.opacity)
+                }
+            }
+            TextField("", text: $text, axis: .vertical)
+                .textFieldStyle(.plain)
+                .lineLimit(1...14)
+                .padding(.horizontal, 10).padding(.vertical, 8)
+                .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
+                .accessibilityIdentifier("message.text")
+            if !reason.isEmpty {
+                Text(reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: 8) {
+                Text("On your clipboard: paste it into the chat.").font(.caption).foregroundStyle(.secondary)
+                Spacer(minLength: 4)
+                Button("Copy") { copy() }.buttonStyle(.gold).font(.footnote.weight(.medium))
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .onAppear {
+            if text.isEmpty { text = words }
+            // Landed just now, and not copied yet while the app is open.
+            guard !Self.landed.contains(id), Date().timeIntervalSince(asked) < 300 else { return }
+            Self.landed.insert(id)
+            copy()
+        }
+        // Changed: on the clipboard again, once the typing rests.
+        .onChange(of: text) { old, new in
+            guard !old.isEmpty, new != old else { return }
+            waits?.cancel()
+            waits = Task {
+                try? await Task.sleep(for: .seconds(0.8))
+                if !Task.isCancelled { copy() }
+            }
+        }
+    }
+
+    private func copy() {
+        let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !words.isEmpty else { return }
+        #if os(iOS)
+        UIPasteboard.general.string = words
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(words, forType: .string)
+        #endif
+        withAnimation(.easeOut(duration: 0.15)) { copied = true }
+        Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            withAnimation(.easeIn(duration: 0.2)) { copied = false }
+        }
     }
 }

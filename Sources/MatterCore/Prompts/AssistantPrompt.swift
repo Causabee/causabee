@@ -85,7 +85,16 @@ public enum AssistantPrompt {
     to, `subject` its subject, `text` the whole message, ready to send: in the language and the \
     tone of the mail with that party, from the facts only, signed with the owner's name. It is \
     opened in the owner's mail program; the owner sends it, never you. When the owner asks for a \
-    message, this card is the answer, and the lines only say what it contains.
+    mail, this card is the answer, and the lines only say what it contains.
+    - `short_message`: the owner asks for a short message to send in a chat — WhatsApp, Signal, \
+    iMessage, SMS, Slack, "a short message to …", "text her that …". `party` is who it goes to, \
+    `text` the whole message as it would be typed into the chat: short, in the language and the \
+    tone the owner uses with that person, from the facts only — no subject, no greeting block, no \
+    signature. `subject` is null. It is put on the owner's clipboard to paste into the chat; the \
+    owner sends it, never you. When the owner names a chat app or asks for a short message, this \
+    card is the answer — not `draft_message` — and the lines only say what it contains. When \
+    they ask for "a message" without saying which kind, choose by their words and by how they \
+    usually reach that person; a mail when in doubt.
     Suggest a card only when the facts or the owner's words carry it. None is fine. But when the \
     owner writes or dictates something to keep — "note that …", "appointment on …", "the number \
     is …", "add …" — or a text they pasted holds tasks, dates, people or numbers, offer a card for \
@@ -124,7 +133,7 @@ public enum AssistantPrompt {
         return object([
             "lines": ["type": "array", "items": object(["text": string, "cites": ["type": "array", "items": string]])],
             "cards": ["type": "array", "items": object([
-                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact", "new_appointment", "new_deadline", "add_detail"]],
+                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "short_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact", "new_appointment", "new_deadline", "add_detail"]],
                 "todo": optional,
                 "party": optional,
                 "into": optional,
@@ -154,6 +163,8 @@ public enum AssistantPrompt {
                 case newMatter = "new_matter", waitsFor = "waits_for", addLink = "add_link", addContact = "add_contact"
                 case newAppointment = "new_appointment", newDeadline = "new_deadline", addDetail = "add_detail"
                 case correctText = "correct_text", changeOwner = "change_owner"
+                /// A short message for a chat: copied, not opened in Mail.
+                case shortMessage = "short_message"
             }
             public var kind: Kind
             public var todo: String?
