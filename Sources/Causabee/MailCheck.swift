@@ -530,7 +530,8 @@ struct MailVerdict: View {
     init(answered: MailCheck.Answered, take: @escaping (Set<String>, [String: PersistentIdentifier], [String: Set<String>]) -> Void) {
         self.answered = answered
         self.take = take
-        _chosen = State(initialValue: Set(answered.judgements.filter { !$0.isBulk }.map(\.emailID)))
+        // A mail no matter was found for starts unticked: put aside with one tap, ticked only to place it.
+        _chosen = State(initialValue: Set(answered.judgements.filter { !$0.isBulk && $0.matter != nil }.map(\.emailID)))
     }
 
     var body: some View {
