@@ -51,15 +51,16 @@ public final class Calendars {
         return store.calendarItems(withExternalIdentifier: id).compactMap { $0 as? EKReminder }.first
     }
 
-    /// An event on that day that is this appointment: at about the same time, or about the same thing.
+    /// An event on that day that is this appointment: one about the same thing. Being at the same
+    /// time is not enough — a blocker the owner put there for the slot was taken for the meeting,
+    /// offered to connect to, and the meeting itself never came into the calendar chosen for it.
     public func findEvent(day: String, time: String?, what: String) -> EKEvent? {
         guard canReadEvents, !isSealed, let start = Self.date(of: day), let end = Calendar.current.date(byAdding: .day, value: 1, to: start) else { return nil }
         let events = store.events(matching: store.predicateForEvents(withStart: start, end: end, calendars: nil))
-        let at = Self.start(day: day, time: time)
-        return events.first { event in
-            let near = time != nil && at.map { abs(event.startDate.timeIntervalSince($0)) <= 3_600 } == true
-            return Duplicates.alike(event.title ?? "", what) || (near && !event.isAllDay)
-        }
+        let alike = events.filter { Duplicates.alike($0.title ?? "", what) }
+        // Two of the same name on one day: the one nearest in time.
+        guard let at = Self.start(day: day, time: time) else { return alike.first }
+        return alike.min { abs($0.startDate.timeIntervalSince(at)) < abs($1.startDate.timeIntervalSince(at)) }
     }
 
     /// A reminder as far as a matter's page needs it: plain values, safe to pass around.
