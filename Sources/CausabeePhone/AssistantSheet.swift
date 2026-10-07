@@ -46,6 +46,9 @@ struct AssistantSheet: View {
     ///    thread brought back to its newest by hand, begins it again.
     @State private var viewport: CGFloat = 0
     @State private var follows = true
+    /// The keyboard came up over a newest taller than what is left of the screen: its end stands
+    /// over the field — that is what is being answered — until the keyboard goes or a question is sent.
+    @State private var showsEnd = false
     /// An answer that came while the thread did not follow: the button says "New answer".
     @State private var newAnswer: UUID?
     /// Read while scrolling, kept beside the view: it draws nothing again.
@@ -56,6 +59,8 @@ struct AssistantSheet: View {
         /// How far under the thread's top edge the newest stands, and how tall it is.
         var newestTop: CGFloat?
         var newestHeight: CGFloat = 0
+        /// How tall the newest is by itself — not made up to the room's height.
+        var newestOwn: CGFloat = 0
         /// Which newest has been laid out, and so could be put in its place.
         var laidOut: UUID?
     }
@@ -114,9 +119,7 @@ struct AssistantSheet: View {
     private func place(_ scroller: ScrollViewProxy, animated: Bool = false) {
         DispatchQueue.main.async {
             guard let newest = newestID else { return }
-            // Only a newest taller than the room has an end to show: one that fits is all there, and
-            // stands by its top whether the field has the cursor or not.
-            let anchor: UnitPoint = typing && watch.newestHeight > viewport + 1 ? .bottom : .top
+            let anchor: UnitPoint = showsEnd ? .bottom : .top
             if animated { withAnimation(Self.glide) { scroller.scrollTo(newest, anchor: anchor) } } else { scroller.scrollTo(newest, anchor: anchor) }
         }
     }
@@ -124,6 +127,7 @@ struct AssistantSheet: View {
     /// The owner's own doing — a question sent, a file brought in, the button: the thread follows again.
     private func follow(_ scroller: ScrollViewProxy) {
         follows = true
+        showsEnd = false
         newAnswer = nil
         place(scroller, animated: true)
     }
@@ -161,6 +165,7 @@ struct AssistantSheet: View {
                             // A question that could not go out says why, under the newest.
                             if newest, let failure { failed(failure) }
                         }
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if newest { watch.newestOwn = height } }
                         // The newest is at least as tall as the screen shows: it can stand at the top,
                         // and its answer grows into the room under it.
                         .frame(minHeight: newest ? viewport : nil, alignment: .top)
@@ -237,7 +242,11 @@ struct AssistantSheet: View {
             // The room changed — the keyboard, the field taking a line, a chip over it: the newest
             // keeps its place, at once.
             .onChange(of: viewport) { if follows { place(scroller) } }
-            .onChange(of: typing) { if follows { place(scroller) } }
+            // Only a newest taller than the room has an end to show: one that fits is all there.
+            .onChange(of: typing) {
+                showsEnd = typing && follows && watch.laidOut == newestID && watch.newestOwn > viewport
+                if follows { place(scroller) }
+            }
             }
             composer
         }
@@ -403,6 +412,33 @@ extension AssistantSheet {
             turn.keys = CardActions.keys(of: facts.refs, in: context)
             turn.state = .answered(answer)
             keep(turn, taking: 0)
+            return
+        }
+        // `--demo --answers`: an answer made up after a moment, with nothing sent — for the tests that
+        // measure where the thread stands while an answer comes.
+        if store.isDemo, CommandLine.arguments.contains("--answers") {
+            failure = nil
+            let wasTyping = typing
+            if wasTyping { keepsKeyboard = true } else { typing = false }
+            draft = ""
+            fieldKey += 1
+            if wasTyping { DispatchQueue.main.async { typing = true } }
+            let id = UUID(), date = Date()
+            asking = (id, question, date)
+            step = .disguising
+            sentAt = nil
+            let matter = self.matter
+            ask = Task {
+                try? await Task.sleep(for: .seconds(5))
+                guard !Task.isCancelled else { return }
+                var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
+                                           inHand: nil, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
+                turn.id = id
+                turn.date = date
+                turn.state = .answered(DemoData.standIn(for: question))
+                keep(turn, taking: nil)
+                asking = nil
+            }
             return
         }
         guard let claude = client else {

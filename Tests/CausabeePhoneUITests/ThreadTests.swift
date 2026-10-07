@@ -11,7 +11,8 @@ final class ThreadTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         // The demo filled anew at every start: what an earlier run asked is not in the thread.
-        app.launchArguments = ["--demo", "-demo.filled", "anew"]
+        // `--answers`: a question gets a made-up answer after a moment, with nothing sent.
+        app.launchArguments = ["--demo", "--answers", "-demo.filled", "anew"]
         app.launch()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
@@ -67,6 +68,86 @@ final class ThreadTests: XCTestCase {
         XCTAssertFalse(app.buttons["thread.toNewest"].exists, "The way back shows though the thread is at its newest.")
         sources.tap()
         XCTAssertEqual(top(of: asked), place, accuracy: 0.5, "The question moved when its sources folded.")
+    }
+
+    private func ask(_ words: String) {
+        field.tap()
+        field.typeText(words)
+        app.buttons["Send"].firstMatch.tap()
+    }
+
+    private var header: CGFloat { app.staticTexts["Causabee"].firstMatch.frame.maxY }
+
+    /// A question goes to the top, and its answer comes in under it: the question does not move
+    /// when the answer arrives, and nothing offers a way "back" — the thread is where it should be.
+    func testAnAnswerComesInUnderItsQuestion() {
+        ask("Who has the spare key?")
+        let asked = question("Who has the spare key?")
+        XCTAssertTrue(asked.waitForExistence(timeout: 8), "The question is not in the thread.")
+        let place = top(of: asked)
+        XCTAssertLessThan(place - header, 80, "The question just asked does not stand at the top of the thread.")
+        let answer = question("the key is kept at number 4")
+        XCTAssertTrue(answer.waitForExistence(timeout: 15), "No answer came.")
+        XCTAssertEqual(top(of: asked), place, accuracy: 1, "The question moved when its answer came.")
+        XCTAssertGreaterThan(answer.frame.minY, asked.frame.maxY, "The answer is not under its question.")
+        XCTAssertFalse(app.buttons["thread.toNewest"].exists, "The way back shows though the thread is at its newest.")
+    }
+
+    /// An answer longer than the screen is read from its beginning: its question stays on top.
+    func testALongAnswerIsReadFromItsBeginning() {
+        ask("Give me the long version")
+        let asked = question("Give me the long version")
+        XCTAssertTrue(asked.waitForExistence(timeout: 8), "The question is not in the thread.")
+        let place = top(of: asked)
+        XCTAssertTrue(question("Point 14").waitForExistence(timeout: 15), "No answer came.")
+        XCTAssertEqual(top(of: asked), place, accuracy: 1, "The question moved when its long answer came.")
+    }
+
+    /// The keyboard coming up over an answer longer than the screen shows its end, right over the
+    /// field — that is what is being answered; going, it gives the beginning back.
+    func testTheKeyboardShowsTheEndOfALongAnswer() {
+        ask("Give me the long version")
+        let asked = question("Give me the long version")
+        XCTAssertTrue(asked.waitForExistence(timeout: 8), "The question is not in the thread.")
+        let last = question("Point 14")
+        XCTAssertTrue(last.waitForExistence(timeout: 15), "No answer came.")
+        // The keyboard goes with a tap on the thread: the answer from its beginning, under its question.
+        question("Point 2").tap()
+        let place = top(of: asked)
+        XCTAssertLessThan(place - header, 80, "Without the keyboard, the long answer is not shown from its question.")
+        // It comes: the answer's end stands over the field.
+        field.tap()
+        _ = top(of: last)
+        XCTAssertLessThan(last.frame.maxY, field.frame.minY, "With the keyboard up, the end of the answer is not over the field.")
+        XCTAssertGreaterThan(last.frame.minY, header, "With the keyboard up, the end of the answer is not on the screen.")
+        // It goes: the beginning again.
+        last.tap()
+        XCTAssertEqual(top(of: asked), place, accuracy: 1.5, "The keyboard gone, the answer is not back at its question.")
+    }
+
+    /// The thread scrolled by hand while the answer is on its way: it stays where it is being read,
+    /// the button says an answer came, and takes the reader to its question.
+    func testAThreadBeingReadStaysAndSaysAnAnswerCame() {
+        ask("Who has the spare key?")
+        let asked = question("Who has the spare key?")
+        XCTAssertTrue(asked.waitForExistence(timeout: 8), "The question is not in the thread.")
+        let place = top(of: asked)
+        // Back into what came before.
+        let before = question("What do I need to do before")
+        let finger = asked.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        finger.press(forDuration: 0.05, thenDragTo: finger.withOffset(CGVector(dx: 0, dy: 260)))
+        XCTAssertTrue(before.waitForExistence(timeout: 5), "The thread did not scroll back.")
+        let read = top(of: before)
+        let back = app.buttons["thread.toNewest"]
+        XCTAssertTrue(back.waitForExistence(timeout: 12), "Scrolled away from the newest, there is no way back.")
+        // The answer comes: what is being read stays, and the button says so.
+        var said = false
+        for _ in 0..<60 where !said { said = back.label == "To the new answer"; if !said { Thread.sleep(forTimeInterval: 0.2) } }
+        XCTAssertTrue(said, "An answer came while the thread was being read, and the button does not say so.")
+        XCTAssertEqual(top(of: before), read, accuracy: 1, "The thread moved under the reader when the answer came.")
+        back.tap()
+        XCTAssertEqual(top(of: asked), place, accuracy: 1.5, "The button did not bring the question back to the top.")
+        XCTAssertTrue(question("the key is kept at number 4").exists, "The answer is not under its question.")
     }
 
     func testTheNewestStandsAtTheTopAndStays() {

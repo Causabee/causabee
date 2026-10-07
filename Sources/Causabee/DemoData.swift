@@ -340,6 +340,16 @@ enum DemoData {
     }
 
     /// An answer as the assistant returns it. Read from JSON: the types have no public initialiser.
+    /// An answer made up for a question asked in the demo, with nothing sent: for the tests that
+    /// measure where a thread stands while an answer comes. Long, when the question asks for it —
+    /// longer than a screen shows.
+    nonisolated static func standIn(for question: String) -> AssistantAsk.Answer {
+        let short = [("The stand-in answers: the key is kept at number 4.", [String]()),
+                     ("The assessor comes at 10:00; the physio would overlap, so it is best moved to the afternoon.", [])]
+        let more = (1...14).map { ("Point \($0): something more that has to be read, said in a full sentence so that it takes its line and a half.", [String]()) }
+        return answer(lines: question.lowercased().contains("long") ? short + more : short, cards: [])
+    }
+
     nonisolated private static func answer(lines: [(String, [String])], cards: [[String: Any]]) -> AssistantAsk.Answer {
         let json: [String: Any] = [
             "reply": ["lines": lines.map { ["text": $0.0, "cites": $0.1] }, "cards": cards],
