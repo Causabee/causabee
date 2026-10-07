@@ -204,7 +204,7 @@ struct NotesPart: View {
                 if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Button("Add", action: add).filledButton().padding(.bottom, 4).accessibilityIdentifier("note.add")
                 }
-                MicButton(voice: voice, text: $draft, selection: $cursor)
+                MicButton(voice: voice, text: $draft, selection: $cursor) { focused = false }
               }
             }
             .padding(.leading, inset).padding(.trailing, 6).padding(.vertical, 5)

@@ -560,9 +560,15 @@ struct MicButton: View {
     @Binding var text: String
     /// Where the cursor is in the field: the words go there.
     @Binding var selection: TextSelection?
+    /// Done in the moment of the tap, before the listening starts: on the iPhone the field lets the
+    /// keyboard go — it gave way to the recording a second later, and the keyboard only then.
+    var willListen: () -> Void = {}
 
     var body: some View {
-        Button { voice.start(text: $text, selection: $selection) } label: {
+        Button {
+            willListen()
+            voice.start(text: $text, selection: $selection)
+        } label: {
             Group {
                 if voice.phase == .writing {
                     ProgressView().controlSize(.small)
