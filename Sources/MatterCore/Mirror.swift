@@ -154,6 +154,14 @@ public enum Mirror {
                 let written = !merge.pushed || write(merge.remote, to: event, calendars: calendars)
                 if merge.pushed, written { result.pushed += 1 }
                 if written { stamps["event:" + id] = merge.stamp }
+                // An event Causabee made an hour long, as every one was, although its words say when
+                // it ends: given its end once. One whose length the owner has set is theirs.
+                if event.notes?.hasPrefix("Causabee · ") == true, !event.isAllDay,
+                   abs(event.endDate.timeIntervalSince(event.startDate) - 3_600) < 1,
+                   let end = Calendars.end(in: event.title ?? "", from: event.startDate), abs(end.timeIntervalSince(event.endDate)) > 1 {
+                    event.endDate = end
+                    if (try? calendars.store.save(event, span: .thisEvent, commit: false)) != nil { result.pushed += 1 }
+                }
             }
             for deadline in (try? context.fetch(FetchDescriptor<Deadline>())) ?? [] {
                 guard let id = deadline.calendarID, let event = calendars.event(id) else { continue }

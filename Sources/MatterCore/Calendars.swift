@@ -40,6 +40,23 @@ public final class Calendars {
         return Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: date)
     }
 
+    /// When an appointment ends, read from its own words — "Portfolio review, 12:00–13:30",
+    /// "Interview, 3:30–6:00 PM": an appointment keeps its beginning only, and without this every
+    /// event was an hour long whatever it said. Nil when the words give no end after the beginning.
+    static func end(in what: String, from start: Date) -> Date? {
+        let range = #/(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?\s*(?:[–—-]|to|bis)\s*(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?/#
+        guard let found = what.firstMatch(of: range), var hour = Int(found.4), let minute = Int(found.5),
+              hour < 24, minute < 60 else { return nil }
+        let half = found.6.map { $0.lowercased().prefix(1) }
+        if half == "p", hour < 12 { hour += 12 }
+        if half == "a", hour == 12 { hour = 0 }
+        let calendar = Calendar.current
+        guard var end = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: start) else { return nil }
+        // "3:30–6:00" with nothing said after it, for a beginning in the afternoon: the six is the evening's.
+        if half == nil, end <= start, hour < 12, let later = calendar.date(byAdding: .hour, value: 12, to: end) { end = later }
+        return end > start ? end : nil
+    }
+
     /// The event this id stands for, if it is still there.
     public func event(_ id: String?) -> EKEvent? {
         guard canReadEvents, !isSealed, let id, !id.isEmpty else { return nil }
@@ -172,7 +189,7 @@ public final class Calendars {
         event.title = what
         event.startDate = start
         event.isAllDay = time == nil
-        event.endDate = time == nil ? start : start.addingTimeInterval(3_600)
+        event.endDate = time == nil ? start : Self.end(in: what, from: start) ?? start.addingTimeInterval(3_600)
         event.location = place
         event.notes = "Causabee · \(matter)"
         event.calendar = try targetCalendar(for: .event)
