@@ -650,25 +650,34 @@ struct MessageCard: View {
     let to: String?
     let words: String
     let reason: String
-    @State private var text = ""
+    @State private var text: String
     @State private var copied = false
     @State private var waits: Task<Void, Never>?
 
     @MainActor private static var landed: Set<String> = []
+
+    /// With its words from the first moment: a card that got them only once it showed grew after
+    /// it was laid out, and the thread jumped under the finger.
+    init(id: String, asked: Date, to: String?, words: String, reason: String) {
+        (self.id, self.asked, self.to, self.words, self.reason) = (id, asked, to, words, reason)
+        _text = State(initialValue: words)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Text(to.map { "Message · for \($0)" } ?? "Message").font(.footnote.weight(.semibold))
                 Spacer(minLength: 4)
-                if copied {
-                    Label("Copied", systemImage: "checkmark").font(.caption.weight(.medium)).foregroundStyle(Theme.done)
-                        .transition(.opacity)
-                }
+                // Always there, seen only for a moment: the line keeps its height.
+                Label("Copied", systemImage: "checkmark").font(.caption.weight(.medium)).foregroundStyle(Theme.done)
+                    .opacity(copied ? 1 : 0)
+                    .accessibilityHidden(!copied)
             }
             TextField("", text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...14)
+                // As tall as its words, decided once: not measured again while the thread scrolls.
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 10).padding(.vertical, 8)
                 .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
                 .accessibilityIdentifier("message.text")
@@ -685,7 +694,6 @@ struct MessageCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
         .onAppear {
-            if text.isEmpty { text = words }
             // Landed just now, and not copied yet while the app is open.
             guard !Self.landed.contains(id), Date().timeIntervalSince(asked) < 300 else { return }
             Self.landed.insert(id)
@@ -693,7 +701,7 @@ struct MessageCard: View {
         }
         // Changed: on the clipboard again, once the typing rests.
         .onChange(of: text) { old, new in
-            guard !old.isEmpty, new != old else { return }
+            guard new != old else { return }
             waits?.cancel()
             waits = Task {
                 try? await Task.sleep(for: .seconds(0.8))
