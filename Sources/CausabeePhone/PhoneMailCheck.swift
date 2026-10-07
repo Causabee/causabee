@@ -510,6 +510,16 @@ struct PhoneMailCheckView: View {
             case .done(let text, let items, let mails):
                 Label(text, systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
                     .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                    .padding(.horizontal, 28)
+                    // It stays until it is closed: its lines are ways into the matters, to come back to.
+                    .overlay(alignment: .trailing) {
+                        Button { withAnimation(.easeOut(duration: 0.2)) { check.state = .idle } } label: {
+                            Image(systemName: "xmark").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                                .frame(width: 28, height: 28).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Close").accessibilityIdentifier("receipt.close")
+                    }
                     .padding(.top, 14)
                 if !items.isEmpty || !mails.isEmpty {
                     // Where each mail went — a wrong one moved from here — and what it brought.

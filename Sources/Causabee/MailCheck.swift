@@ -407,7 +407,17 @@ struct MailCheckView: View {
             case .demoReady:
                 DemoMailReview(later: { check.state = .idle }) { chosen in check.sortInDemo(context: context, only: chosen) }
             case .done(let text, let items, let mails):
-                Label(text, systemImage: "checkmark.circle").font(.caption).foregroundStyle(Theme.done)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Label(text, systemImage: "checkmark.circle").font(.caption).foregroundStyle(Theme.done)
+                    Spacer(minLength: 0)
+                    // It stays until it is closed: its lines are ways into the matters, to come back to.
+                    Button { withAnimation(.easeOut(duration: 0.2)) { check.state = .idle } } label: {
+                        Image(systemName: "xmark").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                            .frame(width: 18, height: 18).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Close").accessibilityLabel("Close").accessibilityIdentifier("receipt.close")
+                }
                 // Where each mail went — a wrong one moved from here — and what it brought.
                 ForEach(mails, id: \.messageID) { mail in
                     IntakeMailRow(mail: mail) { name in check.moved(mail.messageID, to: name) }
