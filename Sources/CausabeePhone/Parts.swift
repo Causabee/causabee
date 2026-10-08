@@ -66,13 +66,15 @@ extension View {
 struct AssistantButton: View {
     var matter: Matter? = nil
     let action: () -> Void
+    @Environment(Navigation.self) private var navigation
     @State private var picksPhoto = false
     @State private var picksFile = false
 
     var body: some View {
         // Over the bee, Auto: how the assistant works is turned on and off where the assistant is.
         VStack(spacing: 10) {
-            PhoneAutoButton()
+            // With the iPad's sidebar open, Auto is in its capsule.
+            if !(navigation.isPad && navigation.showsSidebar) { PhoneAutoButton() }
             bee
         }
         .padding(.trailing, 16).padding(.bottom, 8)

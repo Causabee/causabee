@@ -8,10 +8,62 @@ struct RootView: View {
     @Environment(\.modelContext) private var context
     @Query private var matters: [Matter]
     @Environment(\.scenePhase) private var phase
+    @Environment(\.horizontalSizeClass) private var width
+    /// The window's whole width.
+    @State private var whole = CGFloat.zero
+
+    /// The matter the assistant is about: the one that is open.
+    private var about: Matter? { navigation.path.last.flatMap { id in matters.first { $0.persistentModelID == id } } }
 
     var body: some View {
         @Bindable var navigation = navigation
-        NavigationStack(path: $navigation.path) {
+        // One row on every device, so the page stays the same view when an iPad's window is made
+        // narrow or wide: on the iPhone it is the page alone.
+        HStack(spacing: 0) {
+            if navigation.isPad, navigation.showsSidebar {
+                PadSidebar(matters: matters).frame(width: PadMetrics.sidebar).transition(.move(edge: .leading))
+                Divider().ignoresSafeArea()
+            }
+            // The page has what the columns beside it leave, said in points: left to take what it
+            // likes, it kept the width it had before the assistant came, and slid under the sidebar.
+            let room = max(320, whole - (navigation.showsSidebar ? PadMetrics.sidebar + 1 : 0) - (navigation.showsAssistant ? PadMetrics.assistant + 1 : 0))
+            page.frame(width: navigation.isPad && whole > 0 ? room : nil)
+                .onChange(of: room, initial: true) { navigation.pageWidth = room }
+            if navigation.isPad, navigation.showsAssistant {
+                Divider().ignoresSafeArea()
+                // In a stack of its own: what in it is as wide or as tall "as its container" — the
+                // thread's newest turn — then measures by this column, not by the whole window.
+                NavigationStack {
+                    AssistantSheet(matter: about)
+                        .toolbar(.hidden, for: .navigationBar)
+                }
+                    .id(about?.persistentModelID)
+                    .frame(width: PadMetrics.assistant)
+                    .background(Theme.canvas)
+                    .sheet(item: $navigation.choosingInAssistant) { plus in MatterChooser(plus: plus) }
+                    .transition(.move(edge: .trailing))
+            }
+        }
+        // The window's width, not the columns': measured by what they stand in.
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { wide in
+            whole = wide
+            let narrow = wide < PadMetrics.wide
+            guard narrow != navigation.isNarrow || !navigation.measured else { return }
+            navigation.measured = true
+            navigation.isNarrow = narrow
+            // Turned upright, the sidebar steps aside; turned on its side, it is back.
+            withAnimation(.snappy(duration: 0.25)) { navigation.showsSidebar = !narrow }
+        }
+        .onChange(of: width, initial: true) { navigation.isPad = width == .regular }
+        .tint(Theme.gold)
+        .environment(\.reading, navigation.reading)
+        .environment(navigation)
+    }
+
+    private var page: some View {
+        @Bindable var navigation = navigation
+        return NavigationStack(path: $navigation.path) {
             OverviewScreen(matters: matters)
                 .navigationDestination(for: PersistentIdentifier.self) { id in
                     if let matter = matters.first(where: { $0.persistentModelID == id }) {
@@ -39,8 +91,7 @@ struct RootView: View {
             try? await Task.sleep(for: .seconds(1.2))
             navigation.showsAssistant = true
         }
-        .sheet(isPresented: $navigation.showsAssistant) {
-            let about = navigation.path.last.flatMap { id in matters.first { $0.persistentModelID == id } }
+        .sheet(isPresented: Binding(get: { navigation.showsAssistant && !navigation.isPad }, set: { navigation.showsAssistant = $0 })) {
             AssistantSheet(matter: about)
                 // About another matter — one chosen from its plus — it is that matter's thread, anew.
                 .id(about?.persistentModelID)
@@ -76,6 +127,8 @@ struct OverviewScreen: View {
     @State private var editsAccount = false
     @AppStorage(WelcomeSheet.seenKey) private var introSeen = false
     @State private var showsWelcome = false
+    /// How many cards fit side by side: one on the iPhone, two on a wide iPad.
+    private var columns: Int { navigation.isPad && navigation.pageWidth >= PadMetrics.twoColumns ? 2 : 1 }
 
     private var ordered: [Matter] { activeMatters(matters) }
 
@@ -100,10 +153,13 @@ struct OverviewScreen: View {
                 let pinned = Pins.pinned(matters)
                 if !pinned.isEmpty {
                     SectionHeader(title: "Pinned", detail: "stays on top").padding(.top, 4)
-                    ForEach(pinned) { matter in
-                        PhoneMatterCard(matter: matter) { todo in navigation.open(matter, showing: todo) }
-                            // Held: unpinned, renamed or merged, as a row of the Mac's sidebar.
-                            .contextMenu { MatterMenuItems(matter: matter, all: sidebarOrder(matters)) }
+                    // Side by side where there is room for two, as on the Mac.
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: columns), alignment: .leading, spacing: 12) {
+                        ForEach(pinned) { matter in
+                            PhoneMatterCard(matter: matter) { todo in navigation.open(matter, showing: todo) }
+                                // Held: unpinned, renamed or merged, as a row of the Mac's sidebar.
+                                .contextMenu { MatterMenuItems(matter: matter, all: sidebarOrder(matters)) }
+                        }
                     }
                 }
                 let rest = ordered.filter { !$0.isPinned }
@@ -111,7 +167,16 @@ struct OverviewScreen: View {
                     SectionHeader(title: pinned.isEmpty ? "Matters" : "Everything else",
                                   detail: pinned.isEmpty ? "hold one to pin it" : rest.count == 1 ? "1 matter" : "\(rest.count) matters")
                         .padding(.top, 4)
-                    PhoneMatterRows(matters: rest, all: sidebarOrder(matters))
+                    if columns == 1 {
+                        PhoneMatterRows(matters: rest, all: sidebarOrder(matters))
+                    } else {
+                        // Two lists side by side, read down the first and then the second.
+                        let half = (rest.count + 1) / 2
+                        HStack(alignment: .top, spacing: 12) {
+                            PhoneMatterRows(matters: Array(rest.prefix(half)), all: sidebarOrder(matters))
+                            if rest.count > half { PhoneMatterRows(matters: Array(rest.dropFirst(half)), all: sidebarOrder(matters)) }
+                        }
+                    }
                 }
                 ForEach(matters.filter { $0.isClosed && !MatterStatus($0).mailsSinceClosed.isEmpty }) { matter in
                     let new = MatterStatus(matter).mailsSinceClosed.count
@@ -134,7 +199,7 @@ struct OverviewScreen: View {
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
-            .containerRelativeFrame(.horizontal)
+            .pageWide(columns == 1 ? PadMetrics.page : PadMetrics.widePage)
         }
         .dismissesKeyboard()
         // Pulled down: new mail is read — free — and waits for "Sort in"; in the demo, its three.
@@ -142,13 +207,16 @@ struct OverviewScreen: View {
         .background(Theme.canvas)
         // The assistant about every matter, as on a matter's page; held, its plus for any matter.
         .overlay(alignment: .bottomTrailing) {
-            if search.isEmpty { AssistantButton { navigation.showsAssistant = true } }
+            if search.isEmpty, !(navigation.isPad && navigation.showsAssistant) { AssistantButton { navigation.openAssistant() } }
         }
         // No assistant here, as on the Mac: it opens from a matter, about that matter.
         // The ⋯ in the bar, drawn by the system as in a matter: a glass of our own on it, and the
         // bar hidden here and shown there, broke the swipe back from a matter (iOS 27).
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if navigation.isPad, !navigation.showsSidebar {
+                ToolbarItem(placement: .topBarLeading) { PadSidebarButton() }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Settings", systemImage: "gearshape") { editsAccount = true }

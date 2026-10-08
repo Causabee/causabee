@@ -1,6 +1,7 @@
 import Foundation
 import MatterCore
 import SwiftData
+import SwiftUI
 
 /// Where the iPhone is — the overview, a matter pushed on it, the assistant over both — and the
 /// assistant's thread as the Mac writes it into the store, one record a turn.
@@ -13,7 +14,22 @@ final class Navigation {
     var reading = UserDefaults.standard.bool(forKey: "ui.reading") {
         didSet { UserDefaults.standard.set(reading, forKey: "ui.reading") }
     }
-    var showsAssistant = false
+    var showsAssistant = false {
+        // On a narrow iPad — upright — the sidebar and the assistant do not both fit beside the page.
+        didSet { if showsAssistant, isPad, isNarrow { showsSidebar = false } }
+    }
+    /// On an iPad: the matters in a sidebar, the assistant in a column of its own beside the page,
+    /// as on the Mac — not a sheet over it.
+    var isPad = false
+    /// Too narrow for the sidebar, the page and the assistant side by side: the iPad upright.
+    var isNarrow = false
+    /// The room the page has between the columns on an iPad.
+    var pageWidth = CGFloat.zero
+    /// The window's width has been looked at once.
+    var measured = false
+    var showsSidebar = true {
+        didSet { if showsSidebar, isPad, isNarrow { showsAssistant = false } }
+    }
     /// A task to scroll to when its matter opens: the one an overdue line pointed at.
     var showing: PersistentIdentifier?
     /// The item "Talk about it" put into the assistant: shown above the field, taken off with ×.
@@ -47,6 +63,15 @@ final class Navigation {
             adding = switch plus { case .scan: .scan; case .contact: .contact; case .detail: .detail; default: .link }
             showsAssistant = false
         }
+    }
+
+    /// The bee: the assistant over the page on the iPhone, in beside it on the iPad.
+    func openAssistant() {
+        if isPad { withAnimation(.snappy(duration: 0.25)) { showsAssistant = true } } else { showsAssistant = true }
+    }
+
+    func closeAssistant() {
+        if isPad { withAnimation(.snappy(duration: 0.25)) { showsAssistant = false } } else { showsAssistant = false }
     }
 
     /// Every matter is offered, over what is open now.
@@ -90,7 +115,8 @@ final class Navigation {
         showing = todo
         showsAssistant = false
         RecentMatters.note(matter)
-        if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }
+        // On the iPad the sidebar is the way between matters: one page, not a pile of them.
+        if isPad { path = [matter.persistentModelID] } else if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }
     }
 
     /// The item the owner had in hand when asking on the Mac. Only its words are read here: the
