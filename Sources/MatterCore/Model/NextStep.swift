@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import SwiftData
 
@@ -44,6 +45,22 @@ extension Todo {
 extension Matter {
     /// When its to-dos last changed: one came in, one was done.
     public var lastChange: Date? { (todos ?? []).flatMap { [$0.createdAt, $0.doneAt].compactMap { $0 } }.max() }
+
+    /// What the matter's record holds, as one short word that is another whenever the record is:
+    /// a mail taken in or moved away, a file, a task added, changed or done, a date, a note. Not
+    /// the next step and the summary themselves — they are written from it — and not the day it
+    /// is, so that nothing looks changed only because a night went by.
+    public var recordStamp: String {
+        var parts: [String] = []
+        parts += (entries ?? []).map { "m|" + $0.messageID }
+        parts += (documents ?? []).filter { !$0.isHidden }.map { "f|" + $0.messageID + "|" + $0.name }
+        parts += (todos ?? []).map { "t|\($0.origin)|\($0.text)|\($0.isDone)|\($0.due ?? "")|\($0.dueTime ?? "")|\($0.owner.rawValue)|\($0.note ?? "")" }
+        parts += (appointments ?? []).map { "a|\($0.what)|\($0.day)|\($0.time ?? "")|\($0.place ?? "")" }
+        parts += (deadlines ?? []).map { "d|\($0.what)|\($0.day)" }
+        parts.append("n|" + (notesText ?? ""))
+        let digest = SHA256.hash(data: Data(parts.sorted().joined(separator: "\n").utf8))
+        return digest.prefix(8).map { String(format: "%02x", $0) }.joined()
+    }
 }
 
 /// The one thing to do next in a matter, and why — worked out on the device from what is open,

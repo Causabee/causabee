@@ -680,6 +680,15 @@ struct RootView: View {
         }
         // Auto turned on: what is new is looked for, and read, at once.
         .onChange(of: auto) { if auto { mailCheck.checkQuietly(store: navigation.store, context: context) } }
+        // And the whole circle: a matter whose record has changed and come to rest gets its next
+        // step and its summary written again. Looked at every quarter of a minute; nothing is sent
+        // unless something changed.
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(15))
+                AutoUpdate.shared.look(matters, context: context, owner: profiles.first?.names.first) { .file(navigation.mapping) }
+            }
+        }
         .background(WindowChrome())
         .environment(navigation)
         // Plain buttons, switches and checkboxes in black; links are gold by their own style.

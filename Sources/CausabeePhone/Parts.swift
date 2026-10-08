@@ -117,7 +117,7 @@ struct PhoneAutoButton: View {
             if auto { PhoneMailCheck.shared.autoTurnedOn(context: context) }
             guard explained < 4 else { return }
             explained += 1
-            let words = auto ? "Auto on: mail and files are read at once" : "Auto off: mail and files wait for “Sort in”"
+            let words = auto ? "Auto on: mail and files are read at once, next steps and summaries kept up to date" : "Auto off: mail and files wait for “Sort in”"
             withAnimation(.easeOut(duration: 0.2)) { says = words }
             Task {
                 try? await Task.sleep(for: .seconds(2.8))

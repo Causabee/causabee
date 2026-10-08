@@ -411,7 +411,10 @@ struct MatterScreen: View {
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
         VStack(alignment: .leading, spacing: 10) {
             if fresh, let step = matter.nextStep {
-                BeeChip(text: "NEXT · FROM CAUSABEE")
+                HStack(spacing: 8) {
+                    BeeChip(text: "NEXT · FROM CAUSABEE")
+                    if AutoUpdate.wroteStep(of: matter) { Text("Auto").font(.caption).foregroundStyle(.secondary) }
+                }
                 Text(step).font(.headline).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
@@ -433,7 +436,7 @@ struct MatterScreen: View {
             // Asking Claude, below the buttons: apart from what the step itself offers — as on the Mac.
             let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(summaryFacts, model: ModelChoice.assistant) * 100)
             HStack(spacing: 4) {
-                if askingStep {
+                if askingStep || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 12)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else {
@@ -543,12 +546,15 @@ struct MatterScreen: View {
     @ViewBuilder
     private var summary: some View {
         let cost = String(format: "≈ %.1f cents", AssistantAsk.summaryEstimate(summaryFacts, model: ModelChoice.assistant) * 100)
+        // Drawn again when Auto has written it.
+        let _ = AutoUpdate.shared.done
         let text = matter.summary ?? ""
         VStack(alignment: .leading, spacing: 10) {
             if !text.isEmpty {
                 HStack(spacing: 8) {
                     BeeChip(text: "SUMMARY")
-                    if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
+                    // Written by Auto when the record changed: said beside its day.
+                    if let at = matter.summaryAt { Text(Dates.short(at) + (AutoUpdate.wroteSummary(of: matter) ? " · Auto" : "")).font(.caption).foregroundStyle(.secondary) }
                 }
                 ForEach(Array(text.split(separator: "\n").enumerated()), id: \.offset) { index, line in
                     Text(String(line)).fixedSize(horizontal: false, vertical: true)
@@ -557,7 +563,7 @@ struct MatterScreen: View {
             }
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 8) {
-                if writingSummary {
+                if writingSummary || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 12)
                     Text("Writing the summary …").font(.caption).foregroundStyle(.secondary)
                     Spacer()

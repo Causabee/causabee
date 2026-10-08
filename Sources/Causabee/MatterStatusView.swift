@@ -250,12 +250,14 @@ struct MatterStatusView: View {
     /// Three or four lines on top, written only when asked for, and dated.
     @ViewBuilder
     private func summary(_ facts: Facts) -> some View {
+        let _ = AutoUpdate.shared.done
         let cost = String(format: "≈ %.1f cents", AssistantAsk.summaryEstimate(facts, model: ModelChoice.assistant) * 100)
         VStack(alignment: .leading, spacing: 10) {
             if let text = matter.summary, !text.isEmpty {
                 HStack(spacing: 8) {
                     BeeChip(text: "SUMMARY")
-                    if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
+                    // Written by Auto when the record changed: said beside its day.
+                    if let at = matter.summaryAt { Text(Dates.short(at) + (AutoUpdate.wroteSummary(of: matter) ? " · Auto" : "")).font(.caption).foregroundStyle(.secondary) }
                 }
                 ForEach(Array(text.split(separator: "\n").enumerated()), id: \.offset) { index, line in
                     Text(String(line)).fixedSize(horizontal: false, vertical: true)
@@ -264,7 +266,7 @@ struct MatterStatusView: View {
             }
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 10) {
-                if writingSummary {
+                if writingSummary || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 10)
                     Text("Writing the summary …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
@@ -314,12 +316,17 @@ struct MatterStatusView: View {
     /// suggestion, asked for with a click, is shown instead while nothing has changed since.
     @ViewBuilder
     private func nextStep(_ status: MatterStatus, _ facts: Facts) -> some View {
+        // Drawn again when Auto has written it.
+        let _ = AutoUpdate.shared.done
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
         let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(facts, model: ModelChoice.assistant) * 100)
         VStack(alignment: .leading, spacing: 10) {
             if fresh, let step = matter.nextStep {
-                BeeChip(text: "NEXT · FROM CAUSABEE")
+                HStack(spacing: 8) {
+                    BeeChip(text: "NEXT · FROM CAUSABEE")
+                    if AutoUpdate.wroteStep(of: matter) { Text("Auto").font(.caption).foregroundStyle(.secondary) }
+                }
                 Text(step).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
@@ -344,7 +351,7 @@ struct MatterStatusView: View {
             .tool()
             // Asking Claude, below the buttons on the left: apart from what the step itself offers.
             HStack(spacing: 10) {
-                if askingStep {
+                if askingStep || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 10)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else {
