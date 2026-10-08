@@ -127,8 +127,9 @@ struct MatterMenuItems: View {
         Button("Rename", systemImage: "pencil") { navigation.renaming = matter }
         MatterIconMenu(matter: matter)
         Menu("Merge with", systemImage: "arrow.triangle.merge") {
-            ForEach(all.filter { $0 !== matter }) { other in
-                Button(other.name + (other.isClosed ? " (closed)" : "")) { navigation.merging = (matter, other) }
+            // Only into a matter that is going on: a closed one is opened again first.
+            ForEach(all.filter { $0 !== matter && !$0.isClosed }) { other in
+                Button(other.name) { navigation.merging = (matter, other) }
             }
         }
     }

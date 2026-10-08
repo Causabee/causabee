@@ -943,8 +943,9 @@ struct MatterStatusView: View {
                             PinMenuItem(matter: matter, all: allMatters)
                             Button("Rename …", action: startRenaming)
                             Menu("Merge with …") {
-                                ForEach(allMatters.filter { $0 !== matter }) { other in
-                                    Button(other.name + (other.isClosed ? " (closed)" : "")) { mergingMatter = (matter, other) }
+                                // Only into a matter that is going on: a closed one is opened again first.
+                                ForEach(allMatters.filter { $0 !== matter && !$0.isClosed }) { other in
+                                    Button(other.name) { mergingMatter = (matter, other) }
                                 }
                             }
                             // Everything the matter holds, as one document: what is gathered here can leave at any time.

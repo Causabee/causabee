@@ -575,8 +575,9 @@ struct RootView: View {
                 PinMenuItem(matter: matter, all: sorted)
                 Button("Rename …") { newName = matter.name; renaming = matter }
                 Menu("Merge with …") {
-                    ForEach(sorted.filter { $0 !== matter }) { other in
-                        Button(other.name + (other.isClosed ? " (closed)" : "")) { merging = (matter, other) }
+                    // Only into a matter that is going on: a closed one is opened again first.
+                    ForEach(sorted.filter { $0 !== matter && !$0.isClosed }) { other in
+                        Button(other.name) { merging = (matter, other) }
                     }
                 }
             }
