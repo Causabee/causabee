@@ -45,6 +45,15 @@ struct CausabeeApp: App {
                 exit(1)
             }
         }
+        // Causabee's own words on the command line — `--demo`, a shot's name, a test's `YES` — are not
+        // files to open: taken for one, macOS starts the app "to open a file" and gives it no window.
+        UserDefaults.standard.register(defaults: ["NSTreatUnknownArgumentsAsOpen": "NO"])
+        // The demo, a shot and a test start with a window of their own, whatever windows Causabee had
+        // when it last quit: quit with none — a test stopped, a shot killed — it started with none, and
+        // every test after waited for a sidebar that never came.
+        if DemoData.isRequested || ProcessInfo.processInfo.environment["CAUSABEE_UI_TEST"] != nil {
+            UserDefaults.standard.register(defaults: ["ApplePersistenceIgnoreState": "YES"])
+        }
         Theme.registerFonts()
         // Started from the terminal with `swift run`, the process is not an app yet until it says so.
         NSApplication.shared.setActivationPolicy(.regular)
