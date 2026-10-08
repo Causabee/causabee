@@ -277,7 +277,7 @@ final class AutoUpdate {
     /// Looks at every matter going on, every few seconds while Auto is on; cheap, and sends nothing
     /// unless one has changed and come to rest.
     func look(_ matters: [Matter], context: ModelContext, owner: String?, names: () throws -> Names) {
-        guard AutoMode.isOn, !DemoData.isRequested else { lastSeen = [:]; return }
+        guard AutoMode.isOn else { lastSeen = [:]; return }
         var known = Self.known
         defer { Self.known = known }
         for matter in matters where !matter.isClosed && !working.contains(matter.key) {
@@ -293,6 +293,30 @@ final class AutoUpdate {
             // Still changing: once more round.
             guard lastSeen[key] == stamp else { lastSeen[key] = stamp; continue }
             lastSeen[key] = nil
+            // The demo sends nothing and costs nothing: after a moment, the step worked out on the
+            // device and the summary as it stands, marked as Auto's — to see how it goes.
+            if DemoData.isRequested {
+                known[key] = Known(stamp: stamp, stepAt: before.stepAt, summaryAt: before.summaryAt)
+                working.insert(key)
+                Task {
+                    try? await Task.sleep(for: .seconds(4))
+                    defer { working.remove(key); done += 1 }
+                    guard AutoMode.isOn else { return }
+                    let now = Date()
+                    if let rule = MatterStatus(matter).nextStep {
+                        matter.nextStep = rule.text
+                        matter.nextStepWhy = rule.why
+                        matter.nextStepTodo = rule.todo.flatMap { id in (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+                        matter.nextStepAt = now
+                    }
+                    if matter.summary != nil { matter.summaryAt = now }
+                    try? context.save()
+                    var all = Self.known
+                    all[key] = Known(stamp: matter.recordStamp, stepAt: matter.nextStepAt == now ? now : nil, summaryAt: matter.summaryAt == now ? now : nil)
+                    Self.known = all
+                }
+                continue
+            }
             guard let names = try? names() else { continue }
             let model = ModelChoice.assistant
             guard let claude = ModelChoice.client(for: model) else { continue }
