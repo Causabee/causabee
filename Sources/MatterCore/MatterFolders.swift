@@ -178,8 +178,28 @@ public enum MatterFolders {
     static func stamp(_ date: Date?) -> String { date.map { MatterStatus.day($0) + " " } ?? "" }
 
     /// Where a file of the matter goes: its day first, so two mails' "Rechnung.pdf" do not meet.
+    /// Two of one day and one name, from two mails, are two files: the second is "… 2", the same
+    /// on every device — counted by their mails' ids, not by which came first here.
     public static func place(for document: Document, in folder: URL) -> URL {
-        folder.appendingPathComponent(stamp(document.source.date) + document.name.replacingOccurrences(of: "/", with: "-"))
+        let name = stamp(document.source.date) + document.name.replacingOccurrences(of: "/", with: "-")
+        let twins = (document.matter?.documents ?? [])
+            .filter { !$0.isHidden && !$0.isOwnFile && $0.name == document.name && stamp($0.source.date) == stamp(document.source.date) }
+            .map(\.messageID)
+        let before = Set(twins).filter { $0 < document.messageID }.count
+        guard before > 0, !document.isOwnFile, !document.isHidden else { return folder.appendingPathComponent(name) }
+        let file = name as NSString
+        let numbered = file.deletingPathExtension + " \(before + 1)"
+        return folder.appendingPathComponent(file.pathExtension.isEmpty ? numbered : numbered + "." + file.pathExtension)
+    }
+
+    /// A file in the folder with exactly these bytes, if there is one: the same attachment sent
+    /// again is not kept twice. One that iCloud has not brought down yet cannot be compared, and
+    /// counts as another.
+    static func twin(of data: Data, in folder: URL) -> URL? {
+        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.fileSizeKey])) ?? []
+        return files.first { file in
+            (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) == data.count && (try? Data(contentsOf: file)) == data
+        }
     }
 
     /// The files of the matter worth a place in its folder: not hidden, not a logo.
@@ -245,7 +265,16 @@ public enum MatterFolders {
                     data = EMLParser.attachment(named: document.name, in: mail)
                 }
             }
-            guard let data, (try? data.write(to: target, options: .atomic)) != nil else { result.failed.append(document.name); continue }
+            guard let data else { result.failed.append(document.name); continue }
+            // The same file, to the byte, is in the folder already — sent again with a reply: it is
+            // not kept twice, and its second entry is put away. One that differs at all is kept.
+            if twin(of: data, in: folder) != nil {
+                document.isHidden = true
+                try? document.modelContext?.save()
+                result.already += 1
+                continue
+            }
+            guard (try? data.write(to: target, options: .atomic)) != nil else { result.failed.append(document.name); continue }
             result.saved += 1
         }
         return result

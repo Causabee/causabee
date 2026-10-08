@@ -352,6 +352,8 @@ final class PhoneMailCheck {
             let takenIDs = Set(judgements.map(\.emailID))
             for outcome in look.report.outcomes where takenIDs.contains(outcome.judgement.emailID) { _ = MailLinks.suggest(outcome.email, in: context) }
             try? context.save()
+            // What came attached, into the matters' folders — as the Mac does when it takes mail in.
+            PhoneFolderSaver.save(for: judgements, in: matters)
             let keys = Set(judgements.compactMap(\.matter))
             let names = matters.filter { matter in keys.contains { matter.answers(to: $0) } }.map(\.name)
             // Short: what came of it, and what it cost; what it brought, line by line, under it.
@@ -574,6 +576,7 @@ struct PhoneMailCheckView: View {
                                     ForEach(matters.filter { !$0.isClosed }.sorted { $0.name < $1.name }) { matter in
                                         Button(matter.name) {
                                             try? Unplaced.place(mail, in: matter, context: context, owner: profiles.first?.names ?? [])
+                                            PhoneFolderSaver.save([matter])
                                             refresh()
                                         }
                                     }

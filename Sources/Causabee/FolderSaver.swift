@@ -12,8 +12,12 @@ final class FolderSaver {
     var busy: String?
     var last: String?
 
+    /// Asked for while another save runs: done after it, not dropped.
+    private var waiting: [Matter] = []
+
     func save(_ matters: [Matter]) {
-        guard MatterFolders.root != nil, busy == nil, !matters.isEmpty else { return }
+        guard MatterFolders.root != nil, !matters.isEmpty else { return }
+        guard busy == nil else { waiting += matters.filter { new in !waiting.contains { $0 === new } }; return }
         let account = Keychain.accounts().first
         busy = "Saving files …"
         Task {
@@ -25,6 +29,9 @@ final class FolderSaver {
             busy = nil
             last = "\(result.saved) saved, \(result.already) there already"
                 + (result.failed.isEmpty ? "" : ", \(result.failed.count) not found in their mail")
+            let next = waiting
+            waiting = []
+            save(next)
         }
     }
 

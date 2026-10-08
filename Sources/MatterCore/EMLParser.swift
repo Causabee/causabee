@@ -192,6 +192,7 @@ public enum EMLParser {
         let filename = part.disposition.parameters["filename"] ?? parameters["name"]
         let isAttachment = part.disposition.value.lowercased().hasPrefix("attachment")
             || (filename != nil && !lowered.hasPrefix("text/"))
+        if isAttachment, isDecoration(part) { return "" }
         if isAttachment {
             attachments.append(Email.Attachment(
                 filename: filename ?? "unnamed",
@@ -202,6 +203,17 @@ public enum EMLParser {
 
         if lowered.hasPrefix("text/html") { return HTMLText.strip(decoded) }
         return decoded.trimmed
+    }
+
+    /// Not a file anyone attached: a picture set into the mail's own text — a logo, the art of a
+    /// signature — or the mail's cryptographic signature. A picture set into the text that is
+    /// large is a photograph someone sent, and stays.
+    static func isDecoration(_ part: Part) -> Bool {
+        let type = part.contentType.value.lowercased()
+        if ["application/pkcs7-signature", "application/x-pkcs7-signature", "application/pgp-signature"].contains(type) { return true }
+        let attached = part.disposition.value.lowercased().hasPrefix("attachment")
+        guard type.hasPrefix("image/"), !attached, part.headers["content-id"] != nil else { return false }
+        return byteCount(part.body, transferEncoding: part.transferEncoding) < 150_000
     }
 
     /// The bytes of one attachment, found by the name it was recorded under.

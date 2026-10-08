@@ -318,6 +318,7 @@ struct MailCheckView: View {
                                     ForEach(matters.filter { !$0.isClosed }.sorted { $0.name < $1.name }) { matter in
                                         Button(matter.name) {
                                             try? Unplaced.place(mail, in: matter, context: context, owner: profiles.first?.names ?? [])
+                                            FolderSaver.shared.save([matter])
                                             refresh()
                                         }
                                     }
