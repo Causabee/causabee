@@ -64,7 +64,7 @@ struct MatterStatusView: View {
     /// The record, whole or one kind of it.
     enum RecordFilter: String { case all, mail, files, details, links }
     // `--demo --shot lisbon-files`: the picture of the files is of the record's files.
-    @State private var part: Part = [.lisbonFiles, .careDetails].contains(IntroShot.current) ? .record : [.carePeople, .careContact].contains(IntroShot.current) ? .people : .todo
+    @State private var part: Part = [.lisbonFiles, .careDetails, .lisbonRecord].contains(IntroShot.current) ? .record : [.carePeople, .careContact].contains(IntroShot.current) ? .people : .todo
     @State private var filter: RecordFilter = IntroShot.current == .lisbonFiles ? .files : IntroShot.current == .careDetails ? .details : .all
     /// One person's part of the record: chosen in "People".
     @State private var person: PersistentIdentifier?
@@ -2318,12 +2318,9 @@ struct ThreadMailRow: View {
     var body: some View {
         let depth = min(row.depth, Self.deepest)
         let entry = row.entry
+        // The lines to the mail it answers are drawn behind the row, as tall as the row is: set
+        // beside it, the lines asked for all the height there was, and the row grew with them.
         HStack(alignment: .top, spacing: 0) {
-            if depth > 0 {
-                ThreadRails(depth: depth, rails: Array(row.rails.suffix(depth - 1)), isLast: row.isLast)
-                    .stroke(Theme.strongLine, lineWidth: 1.5)
-                    .frame(width: CGFloat(depth) * Self.step)
-            }
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
@@ -2343,6 +2340,14 @@ struct ThreadMailRow: View {
             }
             .padding(.vertical, 6)
             .padding(.leading, depth > 0 ? 6 : 0)
+        }
+        .padding(.leading, CGFloat(depth) * Self.step)
+        .background(alignment: .topLeading) {
+            if depth > 0 {
+                ThreadRails(depth: depth, rails: Array(row.rails.suffix(depth - 1)), isLast: row.isLast)
+                    .stroke(Theme.strongLine, lineWidth: 1.5)
+                    .frame(width: CGFloat(depth) * Self.step)
+            }
         }
         .contentShape(Rectangle())
         // The same in the right click, as on every row: no button that comes and goes.

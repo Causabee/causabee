@@ -453,7 +453,9 @@ struct Composer: View {
                 }
                 TextField(voice.phase == .writing ? voice.writingWords : placeholder, text: $draft, selection: $cursor, axis: .vertical)
                     .textFieldStyle(.plain)
-                    .lineLimit(1...8)
+                    // Empty, it is one line: a long placeholder in a narrow column made the field two
+                    // lines tall, and its words stood high in the pill.
+                    .lineLimit(draft.isEmpty ? 1...1 : 1...8)
                     .focused(focused)
                     .accessibilityIdentifier("assistant.field")
                     // Return sends; Shift-Return starts a new line, as in Messages.

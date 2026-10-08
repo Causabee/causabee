@@ -20,6 +20,8 @@ enum IntroShot: String {
     case carePeople = "care-people"
     case careDetails = "care-details"
     case careContact = "care-contact"
+    /// The record with its conversations — a mail and the replies under it — for checking them.
+    case lisbonRecord = "lisbon-record"
 
     nonisolated static let current: IntroShot? = {
         let arguments = CommandLine.arguments
@@ -34,7 +36,7 @@ enum IntroShot: String {
     var matter: String? {
         switch self {
         case .overview: nil
-        case .lisbon, .lisbonTasks, .lisbonFiles, .lisbonEdit: "Lisbon"
+        case .lisbon, .lisbonTasks, .lisbonFiles, .lisbonEdit, .lisbonRecord: "Lisbon"
         case .care, .carePeople, .careDetails, .careContact: "Care for Mum"
         }
     }

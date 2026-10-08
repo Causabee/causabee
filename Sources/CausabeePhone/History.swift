@@ -69,12 +69,9 @@ struct PhoneThreadMailRow: View {
     var body: some View {
         let depth = min(row.depth, Self.deepest)
         let entry = row.entry
+        // The lines to the mail it answers are drawn behind the row, as tall as the row is — as on
+        // the Mac, where set beside it they asked for all the height there was.
         HStack(alignment: .top, spacing: 0) {
-            if depth > 0 {
-                PhoneThreadRails(depth: depth, rails: Array(row.rails.suffix(depth - 1)), isLast: row.isLast)
-                    .stroke(Theme.strongLine, lineWidth: 1.5)
-                    .frame(width: CGFloat(depth) * Self.step)
-            }
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
@@ -100,6 +97,14 @@ struct PhoneThreadMailRow: View {
             }
             .padding(.vertical, 6)
             .padding(.leading, depth > 0 ? 6 : 0)
+        }
+        .padding(.leading, CGFloat(depth) * Self.step)
+        .background(alignment: .topLeading) {
+            if depth > 0 {
+                PhoneThreadRails(depth: depth, rails: Array(row.rails.suffix(depth - 1)), isLast: row.isLast)
+                    .stroke(Theme.strongLine, lineWidth: 1.5)
+                    .frame(width: CGFloat(depth) * Self.step)
+            }
         }
         .contentShape(Rectangle())
         .contextMenu { items(entry) }
