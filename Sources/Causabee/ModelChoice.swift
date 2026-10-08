@@ -203,3 +203,135 @@ final class StoredChanges {
         }
     }
 }
+
+/// Auto, the whole circle: when a matter's record has changed, its next step and its summary are
+/// written again by themselves — what "ask again" and "Update" do on a tap.
+///
+/// - What counts as a change: `Matter.recordStamp` is another — a mail, a file, a task, a date, a note.
+/// - Bundled: a matter is written again only once its record has stood still from one look to the
+///   next, so a round of mail that brings three things is one update, not three.
+/// - Never for the first sight of a matter: turning Auto on writes nothing; only what changes after.
+/// - What it spent is kept by the day, and which step and summary it wrote, to say so beside them.
+/// - Written on another device meanwhile: taken as it is, not paid for twice.
+@MainActor
+@Observable
+final class AutoUpdate {
+    static let shared = AutoUpdate()
+
+    /// The names to disguise with: the Mac's file of them, or the iPhone's list.
+    enum Names {
+        case file(URL)
+        case list(Pseudonymizer.Mapping, [Pseudonymizer.Entry])
+    }
+
+    /// The matters being written right now: their boxes say so.
+    private(set) var working: Set<String> = []
+    /// Counts up with every update done, so that what is shown of it is drawn again.
+    private(set) var done = 0
+
+    private struct Known: Codable {
+        var stamp: String
+        /// When Auto wrote the step and the summary, as the matter says it: beside them, "Auto".
+        var stepAt: Date?
+        var summaryAt: Date?
+    }
+
+    @ObservationIgnored private var lastSeen: [String: String] = [:]
+    private static let knownKey = "auto.known", spentKey = "auto.spent"
+
+    private static var known: [String: Known] {
+        get { (UserDefaults.standard.data(forKey: knownKey)).flatMap { try? JSONDecoder().decode([String: Known].self, from: $0) } ?? [:] }
+        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: knownKey) }
+    }
+
+    /// What Auto spent on a day, in dollars.
+    static func spent(on day: String = MatterStatus.day(Date())) -> Double {
+        (UserDefaults.standard.dictionary(forKey: spentKey) as? [String: Double])?[day] ?? 0
+    }
+
+    /// "Auto · $0.12 today", or nil when it spent nothing today.
+    static var spentWords: String? {
+        let spent = spent()
+        return spent > 0 ? String(format: "Auto has spent $%.2f today on next steps and summaries", spent) : nil
+    }
+
+    private static func add(_ cost: Double) {
+        var all = (UserDefaults.standard.dictionary(forKey: spentKey) as? [String: Double]) ?? [:]
+        let today = MatterStatus.day(Date())
+        all[today, default: 0] += cost
+        // A month of days is enough to look back on.
+        for day in all.keys.sorted().dropLast(31) { all[day] = nil }
+        UserDefaults.standard.set(all, forKey: spentKey)
+    }
+
+    /// The step, or the summary, as it stands was written by Auto.
+    static func wroteStep(of matter: Matter) -> Bool {
+        guard let at = matter.nextStepAt, let mine = known[matter.key]?.stepAt else { return false }
+        return abs(at.timeIntervalSince(mine)) < 1
+    }
+    static func wroteSummary(of matter: Matter) -> Bool {
+        guard let at = matter.summaryAt, let mine = known[matter.key]?.summaryAt else { return false }
+        return abs(at.timeIntervalSince(mine)) < 1
+    }
+
+    /// Looks at every matter going on, every few seconds while Auto is on; cheap, and sends nothing
+    /// unless one has changed and come to rest.
+    func look(_ matters: [Matter], context: ModelContext, owner: String?, names: () throws -> Names) {
+        guard AutoMode.isOn, !DemoData.isRequested else { lastSeen = [:]; return }
+        var known = Self.known
+        defer { Self.known = known }
+        for matter in matters where !matter.isClosed && !working.contains(matter.key) {
+            let key = matter.key, stamp = matter.recordStamp
+            guard let before = known[key] else { known[key] = Known(stamp: stamp); continue }
+            guard before.stamp != stamp else { lastSeen[key] = nil; continue }
+            // Both written elsewhere in the last minutes — the other device's Auto: taken as they are.
+            if let step = matter.nextStepAt, let summary = matter.summaryAt, step != before.stepAt, summary != before.summaryAt,
+               min(step, summary) > Date().addingTimeInterval(-600) {
+                known[key] = Known(stamp: stamp)
+                continue
+            }
+            // Still changing: once more round.
+            guard lastSeen[key] == stamp else { lastSeen[key] = stamp; continue }
+            lastSeen[key] = nil
+            guard let names = try? names() else { continue }
+            let model = ModelChoice.assistant
+            guard let claude = ModelChoice.client(for: model) else { continue }
+            // Its stamp is kept before anything is sent: an update that fails is not tried again
+            // and again, each time for money — the next change tries the next.
+            known[key] = Known(stamp: stamp, stepAt: before.stepAt, summaryAt: before.summaryAt)
+            working.insert(key)
+            let facts = FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40)
+            let today = MatterStatus.day(Date())
+            Task {
+                defer { working.remove(key); done += 1 }
+                do {
+                    let step: (step: String, why: String, todo: FactRef?, cost: Double)
+                    let summary: (lines: [String], cost: Double)
+                    switch names {
+                    case .file(let url):
+                        step = try await AssistantAsk.nextStep(facts: facts, owner: owner, today: today, mapping: url, claude: claude, model: model)
+                        summary = try await AssistantAsk.summarize(facts: facts, owner: owner, today: today, mapping: url, claude: claude, model: model)
+                    case .list(let mapping, let others):
+                        step = try await AssistantAsk.nextStep(facts: facts, owner: owner, today: today, mapping: mapping, others: others, claude: claude, model: model)
+                        summary = try await AssistantAsk.summarize(facts: facts, owner: owner, today: today, mapping: mapping, others: others, claude: claude, model: model)
+                    }
+                    // Turned off while it was on its way: what came back is not put in.
+                    guard AutoMode.isOn else { return }
+                    let now = Date()
+                    matter.nextStep = step.step
+                    matter.nextStepWhy = step.why
+                    if case .todo(let id) = step.todo { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+                    else { matter.nextStepTodo = nil }
+                    matter.nextStepAt = now
+                    matter.summary = summary.lines.joined(separator: "\n")
+                    matter.summaryAt = now
+                    try? context.save()
+                    Self.add(step.cost + summary.cost)
+                    var all = Self.known
+                    all[key] = Known(stamp: matter.recordStamp, stepAt: now, summaryAt: now)
+                    Self.known = all
+                } catch {}
+            }
+        }
+    }
+}
