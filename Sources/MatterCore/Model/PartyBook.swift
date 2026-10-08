@@ -206,6 +206,37 @@ public struct PartyBook {
     }
 }
 
+extension Matter {
+    /// Who of the matter's people wrote a mail, by its sender line. By the name in it, in any way
+    /// it is written; a line that is an address alone — `lutz.barbara@gmx.net` — is the person who
+    /// has that address, or the one person here whose whole name is in it. Two it could be is nobody.
+    public func writer(_ from: String) -> Party? {
+        if let name = Email.displayName(in: from) {
+            let key = PartyNames.key(name)
+            return parties.first { ([$0.name] + $0.spellings).contains { PartyNames.key($0) == key } }
+        }
+        let address = Email.address(in: from)
+        guard address.contains("@") else { return nil }
+        if let known = parties.first(where: { $0.address?.lowercased() == address }) { return known }
+        // The words before the @ and the domain's own name; not its ending.
+        let parts = address.split(separator: "@")
+        let domain = parts.last.map { $0.split(separator: ".").dropLast().joined(separator: ".") } ?? ""
+        let words = Set(((parts.first.map(String.init) ?? "") + " " + domain).split { !$0.isLetter }
+            .map { PartyNames.fold(String($0)) }.filter { $0.count >= 3 })
+        let fits = parties.filter { party in
+            let tokens = PartyNames.tokens(party.name)
+            return !tokens.isEmpty && tokens.allSatisfy(words.contains)
+        }
+        return fits.count == 1 ? fits[0] : nil
+    }
+
+    /// The name a mail's sender is shown by: the one in its sender line; for an address alone, the
+    /// person of the matter it is, and only failing that the address.
+    public func writerName(_ from: String) -> String {
+        Email.displayName(in: from) ?? writer(from)?.name ?? Email.address(in: from)
+    }
+}
+
 extension Party {
     /// A name the owner gave. The old one stays among the spellings, so the next mail that
     /// writes it still finds this party.

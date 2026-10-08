@@ -256,7 +256,12 @@ enum CardActions {
         var seen = Set<String>()
         for matter in party.matters {
             for entry in matter.entries ?? [] {
-                guard let name = Email.displayName(in: entry.from), keys.contains(PartyNames.key(name)) else { continue }
+                // By the name in the sender line; a line that is an address alone, by whose it is here.
+                if let name = Email.displayName(in: entry.from) {
+                    guard keys.contains(PartyNames.key(name)) else { continue }
+                } else {
+                    guard matter.writer(entry.from) === party else { continue }
+                }
                 let address = Email.address(in: entry.from).lowercased()
                 // A mail filed in two matters counts once.
                 guard address.contains("@"), seen.insert(entry.messageID.isEmpty ? "\(address) \(String(describing: entry.date))" : entry.messageID).inserted else { continue }

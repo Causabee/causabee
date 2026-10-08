@@ -677,11 +677,13 @@ struct RootView: View {
                 Button {
                     withAnimation(.snappy(duration: 0.25)) { if showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() } }
                 } label: {
-                    BeeMark(size: 13).foregroundStyle(.black)
+                    // Yellow while it offers the assistant; grey glass, as the capsule beside it,
+                    // while the assistant is open and the button only puts it away.
+                    BeeMark(size: 13).foregroundStyle(showsAssistant ? Color.secondary : Color.black)
                         .frame(width: 30, height: 30).contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .onGlass(Circle(), tint: Theme.bee)
+                .onGlass(Circle(), tint: showsAssistant ? nil : Theme.bee)
                 .quickLabel(showsAssistant ? "Put Causabee Away" : "Ask Causabee")
                 .accessibilityLabel("Ask Causabee")
                 .accessibilityIdentifier("window.bee")

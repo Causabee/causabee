@@ -1296,8 +1296,7 @@ struct MatterStatusView: View {
     /// Whether this person wrote it: by any way their name is written.
     private func wrote(_ party: Party, _ from: String?) -> Bool {
         guard let from else { return false }
-        let keys = Set(([party.name] + party.spellings).map(PartyNames.key))
-        return keys.contains(PartyNames.key(Email.displayName(in: from) ?? Email.address(in: from)))
+        return matter.writer(from) === party
     }
 
     /// Everything that came in or was added — mail, files, links — as one list, or one kind of it.
@@ -2327,7 +2326,7 @@ struct ThreadMailRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        Text(sent ? "You" : Email.displayName(in: entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
+                        Text(sent ? "You" : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
                         if entry.source.kind == .mail { MailWay(sent: sent) }
                     }
                     .accessibilityElement(children: .combine)

@@ -794,8 +794,7 @@ struct MatterScreen: View {
     /// Whether this person wrote it: by any way their name is written.
     private func wrote(_ party: Party, _ from: String?) -> Bool {
         guard let from else { return false }
-        let keys = Set(([party.name] + party.spellings).map(PartyNames.key))
-        return keys.contains(PartyNames.key(Email.displayName(in: from) ?? Email.address(in: from)))
+        return matter.writer(from) === party
     }
 
     /// Everything that came in or was added — mail, files, links — as one list, or one kind of it.

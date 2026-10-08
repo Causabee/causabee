@@ -95,7 +95,7 @@ public enum MailThreads {
             collect(tree)
             var senders: [String] = []
             for entry in all.sorted(by: { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }) {
-                let name = Email.displayName(in: entry.from) ?? Email.address(in: entry.from)
+                let name = entry.matter?.writerName(entry.from) ?? Email.displayName(in: entry.from) ?? Email.address(in: entry.from)
                 if !name.isEmpty, !senders.contains(name) { senders.append(name) }
             }
             let dates = all.compactMap(\.date)

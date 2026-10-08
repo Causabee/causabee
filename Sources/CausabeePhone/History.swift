@@ -78,7 +78,7 @@ struct PhoneThreadMailRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        Text(sent ? "You" : Email.displayName(in: entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
+                        Text(sent ? "You" : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
                         if entry.source.kind == .mail { PhoneMailWay(sent: sent) }
                     }
                     .accessibilityElement(children: .combine)
