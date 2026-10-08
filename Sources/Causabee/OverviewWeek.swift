@@ -88,14 +88,15 @@ struct OverviewWeek: View {
                     Text(Self.dayOfMonth.string(from: date)).font(.title3.weight(.semibold))
                         .foregroundStyle(.primary)
                 }
-                // How many things, as every day says it; on today an orange dot while anything is
-                // overdue — how many is said once, on the day's first tile.
-                HStack(spacing: 4) {
-                    if late > 0 { Circle().fill(Theme.warning).frame(width: 6, height: 6) }
-                    Text(count == 0 ? "—" : count == 1 ? "1 thing" : "\(count) things")
-                        .foregroundStyle(.secondary)
+                // A dot a thing, three at most, as on the iPhone; the orange one first, for what is
+                // overdue. How many is said once, in the line under the days.
+                HStack(spacing: 3) {
+                    if late > 0 { Circle().fill(Theme.warning).frame(width: 5, height: 5) }
+                    ForEach(0..<min(count, late > 0 ? 2 : 3), id: \.self) { _ in
+                        Circle().fill(Theme.bee).frame(width: 5, height: 5)
+                    }
                 }
-                .font(.caption)
+                .frame(height: 12)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 7)
@@ -106,7 +107,7 @@ struct OverviewWeek: View {
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
-        .help(Self.spoken.string(from: date) + (late > 0 ? " — \(late) overdue" : ""))
+        .help(Self.spoken.string(from: date) + (count == 0 ? "" : count == 1 ? " — 1 thing" : " — \(count) things") + (late > 0 ? ", \(late) overdue" : ""))
     }
 
     private func tile(_ thing: DayThing) -> some View {

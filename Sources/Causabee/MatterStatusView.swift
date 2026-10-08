@@ -879,6 +879,10 @@ struct MatterStatusView: View {
     }
 
     /// The name, how much mail and since when, the page search and Close: on glass, always on top.
+    /// Where the bar's column begins in the window: at its left edge with the sidebar and the
+    /// assistant put away, and then under the window's controls.
+    @State private var barLeft: CGFloat = 400
+
     private func titleBar(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -910,6 +914,7 @@ struct MatterStatusView: View {
                     Button("Cancel") { renaming = false }
                 } else {
                     Text(matter.name).font(Theme.titleFont)
+                        .accessibilityIdentifier("matter.title")
                         .onTapGesture(perform: startRenaming)
                         .pointerStyle(.horizontalText)
                         .help("Click to rename. The old name stays as an alias, so new mail still finds the matter.")
@@ -949,8 +954,9 @@ struct MatterStatusView: View {
                         .accessibilityIdentifier("matter.more")
                         .tool()
                     }
-                    // On the line of the name: the row is set by its words' baseline.
-                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 5 }
+                    // On the line of the window's controls, as the icon is: their middle eight over
+                    // the name's baseline, which is the middle of its capitals.
+                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 8 }
                 }
             }
             // Once the parts in the page have gone under this bar, they stay at hand here — in the place
@@ -967,10 +973,16 @@ struct MatterStatusView: View {
                 parts(status).opacity(showsParts ? 1 : 0).allowsHitTesting(showsParts).accessibilityHidden(!showsParts)
             }
         }
+        // One row with the window's buttons and Causabee's controls by them: where this page is the
+        // window's first column, its name begins after the bee, not under it. The cards keep the margin.
+        .padding(.leading, max(0, navigation.controlsEdge + 16 - (barLeft + 24)))
         .padding(.horizontal, 24)
-        .padding(.top, 20)
+        // The icon's middle and the name's capitals on the middle of the window's top line, as the
+        // controls': 26 down.
+        .padding(.top, 7)
         .padding(.bottom, 12)
         .frame(maxWidth: 820, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minX } action: { barLeft = $0 }
         .frame(maxWidth: .infinity)
         // At the top it is the page itself; once the page scrolls under it, glass and a line.
         .background(scrolledUnder ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
@@ -1257,10 +1269,11 @@ struct MatterStatusView: View {
     /// What is to do, the record, the people: the system's own segmented control.
     private func parts(_ status: MatterStatus) -> some View {
         Picker("Part of the matter", selection: $part) {
-            Text("To do · \(matter.openTodos.count)").tag(Part.todo)
-            Text("Record · \(status.mailEntries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
-            Text("People · \(status.memberships.count)").tag(Part.people)
-            Text("Notes · \(matter.noteCount)").tag(Part.notes)
+            // By name only: a count on each was four numbers to read before anything was chosen.
+            Text("To do").tag(Part.todo)
+            Text("Record").tag(Part.record)
+            Text("People").tag(Part.people)
+            Text("Notes").tag(Part.notes)
         }
         .pickerStyle(.segmented)
         .labelsHidden()

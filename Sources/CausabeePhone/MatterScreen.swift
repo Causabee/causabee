@@ -771,10 +771,11 @@ struct MatterScreen: View {
     /// What is to do, the record, the people: the system's own segmented control.
     private func parts(_ status: MatterStatus) -> some View {
         Picker("Part of the matter", selection: $part) {
-            Text("To do · \(matter.openTodos.count)").tag(Part.todo)
-            Text("Record · \(status.mailEntries.count + shownDocuments.count + keptLinks.count)").tag(Part.record)
-            Text("People · \(status.memberships.count)").tag(Part.people)
-            Text("Notes · \(matter.noteCount)").tag(Part.notes)
+            // By name only: a count on each was four numbers to read before anything was chosen.
+            Text("To do").tag(Part.todo)
+            Text("Record").tag(Part.record)
+            Text("People").tag(Part.people)
+            Text("Notes").tag(Part.notes)
         }
         .pickerStyle(.segmented)
         .labelsHidden()

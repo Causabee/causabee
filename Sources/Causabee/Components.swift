@@ -45,6 +45,7 @@ struct SidebarButton: View {
         }
         .buttonStyle(.plain)
         .quickLabel(navigation.sidebarHidden ? "Show Sidebar" : "Hide Sidebar")
+        .accessibilityLabel("Sidebar").accessibilityIdentifier("window.sidebar")
     }
 }
 
@@ -152,9 +153,6 @@ enum WindowMetrics {
     /// The sidebar's button: 12 right of the green button, in the middle of the top line.
     static let sidebarButtonX: CGFloat = 87
     static let sidebarButtonTop: CGFloat = (topLine - 26) / 2
-    /// Where the assistant's bar starts with the sidebar folded away: past the window's buttons
-    /// and the sidebar's.
-    static let clearOfWindowButtons: CGFloat = sidebarButtonX + 26 + 8 + 26 + 12
 }
 
 /// The window without the Mac's bar showing: an empty toolbar of its own makes the title bar 52 high,
@@ -175,6 +173,13 @@ struct WindowChrome: NSViewRepresentable {
                 window.toolbar = toolbar
             }
             window.toolbarStyle = .unified
+            // A test asks for a window of a width — the narrowest, where a page's name comes to
+            // stand by the window's controls.
+            if let width = ProcessInfo.processInfo.environment["CAUSABEE_WINDOW_WIDTH"].flatMap(Double.init) {
+                var frame = window.frame
+                frame.size.width = width
+                DispatchQueue.main.async { window.setFrame(frame, display: true) }
+            }
         }
     }
 }

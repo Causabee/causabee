@@ -230,6 +230,9 @@ final class Navigation {
     }
     /// The sidebar folded away: the assistant's bar then starts right of the window's buttons.
     var sidebarHidden = false
+    /// Where the controls by the window's buttons end, in the window: what stands first under the
+    /// top line begins after it.
+    var controlsEdge: CGFloat = 235
     /// Reading: small actions and the AI's explanations put away. Kept for the next start.
     /// The introduction's pictures show everything, whatever the owner chose.
     var reading = Navigation.remembers && UserDefaults.standard.bool(forKey: "ui.reading") {
@@ -670,7 +673,9 @@ struct RootView: View {
                 .onGlass(Circle(), tint: Theme.bee)
                 .quickLabel(showsAssistant ? "Put Causabee Away" : "Ask Causabee")
                 .accessibilityLabel("Ask Causabee")
+                .accessibilityIdentifier("window.bee")
             }
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxX } action: { if abs($0 - navigation.controlsEdge) > 0.5 { navigation.controlsEdge = $0 } }
             .padding(.leading, WindowMetrics.sidebarButtonX).padding(.top, WindowMetrics.sidebarButtonTop - 2).ignoresSafeArea()
         }
         // Auto turned on: what is new is looked for, and read, at once.
