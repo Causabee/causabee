@@ -16,10 +16,14 @@ final class AutoTests: XCTestCase {
         let done = app.buttons["Done"].firstMatch
         XCTAssertTrue(done.waitForExistence(timeout: 10), "The matter's next step has no Done.")
         XCTAssertFalse(app.staticTexts["Auto"].exists, "The step says Auto before anything changed.")
-        // Auto takes note of the matters on its first look, a quarter of a minute in; then the change.
-        Thread.sleep(forTimeInterval: 20)
+        // With Auto on there is nothing to ask with: no link, no price.
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ask again")).firstMatch.exists, "The link to ask again is there though Auto asks.")
+        // Auto takes note of the matters on its first look, a few seconds in; then the change.
+        Thread.sleep(forTimeInterval: 6)
         done.tap()
-        // Seen at the next look, at rest at the one after, written a moment later.
-        XCTAssertTrue(app.staticTexts["Auto"].waitForExistence(timeout: 60), "The next step was not written again by Auto.")
+        // Said at once that it will be written, and written within a few seconds.
+        let soon = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Auto updates this in a moment")).firstMatch
+        XCTAssertTrue(soon.waitForExistence(timeout: 8), "Nothing says the record changed and will be written.")
+        XCTAssertTrue(app.staticTexts["Auto"].waitForExistence(timeout: 20), "The next step was not written again by Auto.")
     }
 }

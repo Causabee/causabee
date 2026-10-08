@@ -53,6 +53,7 @@ struct MatterScreen: View {
     @Query private var profiles: [Profile]
     @Environment(PhoneStore.self) private var store
     @State private var askingStep = false
+    @AppStorage(AutoMode.key) private var auto = false
     @State private var stepError: String?
     @State private var writingSummary = false
     @State private var summaryError: String?
@@ -439,6 +440,9 @@ struct MatterScreen: View {
                 if askingStep || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 12)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
+                } else if auto {
+                    // Auto asks: no link to ask with, and no price to weigh.
+                    AutoLine(matter: matter, size: 11)
                 } else {
                     // An older suggestion says only its day; the link beside it says what to do.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
@@ -566,6 +570,9 @@ struct MatterScreen: View {
                 if writingSummary || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 12)
                     Text("Writing the summary …").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                } else if matter.summaryAt != nil, auto {
+                    AutoLine(matter: matter, size: 11)
                     Spacer()
                 } else if matter.summaryAt != nil {
                     Button("Update · \(cost)", action: writeSummary).font(.caption).underline().foregroundStyle(.secondary)

@@ -12,7 +12,7 @@ final class ThreadTests: XCTestCase {
         app = XCUIApplication()
         // The demo filled anew at every start: what an earlier run asked is not in the thread.
         // `--answers`: a question gets a made-up answer after a moment, with nothing sent.
-        app.launchArguments = ["--demo", "--answers", "-demo.filled", "anew"]
+        app.launchArguments = ["--demo", "--answers", "-demo.filled", "anew", "-mail.auto", "NO"]
         app.launch()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")

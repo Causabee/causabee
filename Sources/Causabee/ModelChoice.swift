@@ -204,6 +204,25 @@ final class StoredChanges {
     }
 }
 
+/// Under a matter's next step and its summary while Auto is on, in the place of the link that
+/// asks for them: Auto does the asking. "Auto mode", or that the record has changed and they are
+/// written in a moment.
+struct AutoLine: View {
+    let matter: Matter
+    var size: CGFloat = 10
+
+    var body: some View {
+        let soon = AutoUpdate.shared.pending.contains(matter.key)
+        HStack(spacing: 5) {
+            Image(systemName: "bolt.fill").font(.system(size: size))
+            Text(soon ? "Changed · Auto updates this in a moment" : "Auto mode")
+        }
+        .font(.caption).foregroundStyle(.secondary)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("auto.line")
+    }
+}
+
 /// Auto, the whole circle: when a matter's record has changed, its next step and its summary are
 /// written again by themselves — what "ask again" and "Update" do on a tap.
 ///
@@ -228,6 +247,10 @@ final class AutoUpdate {
     private(set) var working: Set<String> = []
     /// Counts up with every update done, so that what is shown of it is drawn again.
     private(set) var done = 0
+    /// The matters whose record has changed and is coming to rest: written in a moment, and said so.
+    private(set) var pending: Set<String> = []
+    /// How often it looks. A matter is written once it has stood still from one look to the next.
+    private static let pace: Duration = .seconds(3)
 
     private struct Known: Codable {
         var stamp: String
@@ -281,8 +304,8 @@ final class AutoUpdate {
         // A test starts from nothing known.
         if CommandLine.arguments.contains("--auto-anew") { Self.known = [:] }
         while !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(15))
-            guard AutoMode.isOn else { lastSeen = [:]; continue }
+            try? await Task.sleep(for: Self.pace)
+            guard AutoMode.isOn else { lastSeen = [:]; if !pending.isEmpty { pending = [] }; continue }
             let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
             look(matters, context: context, owner: AutoMode.owner(in: context).first, names: names)
         }
@@ -297,16 +320,18 @@ final class AutoUpdate {
         for matter in matters where !matter.isClosed && !working.contains(matter.key) {
             let key = matter.key, stamp = matter.recordStamp
             guard let before = known[key] else { known[key] = Known(stamp: stamp); continue }
-            guard before.stamp != stamp else { lastSeen[key] = nil; continue }
+            guard before.stamp != stamp else { lastSeen[key] = nil; if pending.contains(key) { pending.remove(key) }; continue }
             // Both written elsewhere in the last minutes — the other device's Auto: taken as they are.
             if let step = matter.nextStepAt, let summary = matter.summaryAt, step != before.stepAt, summary != before.summaryAt,
                min(step, summary) > Date().addingTimeInterval(-600) {
                 known[key] = Known(stamp: stamp)
+                pending.remove(key)
                 continue
             }
-            // Still changing: once more round.
-            guard lastSeen[key] == stamp else { lastSeen[key] = stamp; continue }
+            // Still changing: once more round — and said meanwhile, that it will be written.
+            guard lastSeen[key] == stamp else { lastSeen[key] = stamp; if !pending.contains(key) { pending.insert(key) }; continue }
             lastSeen[key] = nil
+            pending.remove(key)
             // The demo sends nothing and costs nothing: after a moment, the step worked out on the
             // device and the summary as it stands, marked as Auto's — to see how it goes.
             if DemoData.isRequested {

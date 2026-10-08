@@ -13,7 +13,9 @@ final class RegressionTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         // The letter test is handed a letter as the camera would bring it.
-        app.launchArguments = name.contains("Letter") ? ["--demo", "--shot", "letter"] : ["--demo"]
+        // Auto off, whatever this simulator was left with: with it on, a letter is read at once
+        // and nothing waits for "Sort in".
+        app.launchArguments = (name.contains("Letter") ? ["--demo", "--shot", "letter"] : ["--demo"]) + ["-mail.auto", "NO"]
         app.launch()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")

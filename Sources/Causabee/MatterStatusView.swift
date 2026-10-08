@@ -25,6 +25,7 @@ struct MatterStatusView: View {
     @State private var splitting = false
     @State private var newMatterName = ""
     @State private var askingStep = false
+    @AppStorage(AutoMode.key) private var auto = false
     @State private var addingLink = false
     /// A task the owner is writing with "+ Task": in the matter while its popover is open, taken
     /// out again if it is left without words.
@@ -270,6 +271,9 @@ struct MatterStatusView: View {
                     BeeLoader(size: 10)
                     Text("Writing the summary …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
+                } else if matter.summaryAt != nil, auto {
+                    AutoLine(matter: matter)
+                    Spacer()
                 } else if matter.summaryAt != nil {
                     Button("Update · \(cost)", action: writeSummary)
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
@@ -354,6 +358,9 @@ struct MatterStatusView: View {
                 if askingStep || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 10)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
+                } else if auto {
+                    // Auto asks: no link to ask with, and no price to weigh.
+                    AutoLine(matter: matter)
                 } else {
                     // An older suggestion says only its day; the link beside it says what to do.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
