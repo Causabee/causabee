@@ -13,8 +13,12 @@ import pathlib
 import shutil
 import subprocess
 
-from fontTools import subset
 from PIL import Image
+
+try:
+    from fontTools import subset
+except ImportError:  # only the font needs it; `--pictures` does without
+    subset = None
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SHOTS = ROOT / "scripts/shots"
@@ -26,11 +30,11 @@ IMG = OUT / "img"
 # animations in site/index.html measure the same parts in the older 1800-wide pixels (× 1.6 here).
 CROPS = {
     "matter-phone": ("intro-2", (1464, 0, 2856, 1547)),
-    "tasks": ("intro-3", (1440, 464, 2880, 1304)),
-    "calendar": ("intro-3", (1448, 1216, 2456, 1800)),
-    "files": ("intro-4", (1440, 168, 2880, 1008)),
-    "sources": ("intro-5", (1440, 1104, 2880, 1800)),
-    "assistant": ("intro-5", (547, 128, 1435, 1250)),
+    "tasks": ("intro-3", (1440, 450, 2880, 1290)),
+    "calendar": ("intro-3", (1448, 1202, 2456, 1786)),
+    "files": ("intro-4", (1440, 140, 2880, 980)),
+    "sources": ("intro-5", (1440, 1076, 2880, 1772)),
+    "assistant": ("intro-5", (547, 40, 1435, 878)),
 }
 FULL = {"overview": "intro-1", "matter": "intro-2", "care": "intro-5"}
 # A crop that starts right under the matter's pinned bar still catches its lower edge — a grey strip
@@ -94,9 +98,12 @@ def font():
 
 
 if __name__ == "__main__":
+    import sys
     screenshots()
-    icon()
-    font()
+    # `--pictures`: only the pictures — the icon and the font need rsvg-convert and fontTools.
+    if "--pictures" not in sys.argv:
+        icon()
+        font()
     for path in sorted(OUT.rglob("*")):
         if path.is_file():
             print(f"{path.stat().st_size // 1024:6d} KB  {path.relative_to(ROOT)}")

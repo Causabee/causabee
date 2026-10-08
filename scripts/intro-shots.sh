@@ -18,8 +18,11 @@ if [[ ${1:-} != --reuse || ! -d $APP ]]; then
   print "→ Building the Release app"
   # A build folder of its own: the owner's Release app may be running from .build-app, and must not be
   # replaced under it.
+  # Under an identifier of its own, as CausabeeDemo: beside the owner's Causabee, open at the same
+  # time, a second app under Causabee's own identifier is given no window.
   xcodebuild -project App/Causabee.xcodeproj -scheme CausabeeApp -configuration Release -derivedDataPath .build-app/shots \
-    -allowProvisioningUpdates -skipMacroValidation build -quiet > /dev/null
+    -allowProvisioningUpdates -skipMacroValidation PRODUCT_BUNDLE_IDENTIFIER=de.chille.causabee.demo CODE_SIGN_ENTITLEMENTS= \
+    build -quiet > /dev/null
 fi
 mkdir -p scripts/shots
 TMP=$(mktemp -d)
@@ -32,7 +35,10 @@ for i in {1..5}; do
   mkdir -p "$TMP/$shot"
   # Opened as an app, not run from this shell: then it is in front, and macOS gives it Causabee's own
   # Calendar and Reminders access, so the dates show "Add to Calendar" (the demo still adds nothing).
-  open -n -a "$APP" --args --store "$TMP/$shot/matters.store" --demo --shot "$shot"
+  # Auto off, whatever the owner has chosen: the pictures show Causabee as it starts out.
+  # And macOS told not to take the shot's name for a file to open: launched "to open a file", the
+  # app is given no window of its own.
+  open -n -a "$APP" --args --store "$TMP/$shot/matters.store" --demo --shot "$shot" -mail.auto NO -NSTreatUnknownArgumentsAsOpen NO
   for _ in {1..20}; do pid=$(pgrep -n -f -- "--shot $shot" || true); [[ -n $pid ]] && break; sleep 0.25; done
   [[ -n $pid ]] || { print -u2 "✗ Causabee did not start for $shot."; exit 1 }
   # The demo fills its store, opens the matter, scrolls, and a marked to-do fades again.
