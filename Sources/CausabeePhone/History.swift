@@ -21,8 +21,9 @@ struct PhoneThreadCard: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 let me = Me(names: profiles.first?.names ?? [], withAccounts: true)
+                let joined = MailThreads.joined(thread.rows, deepest: PhoneThreadMailRow.deepest)
                 ForEach(thread.rows) { row in
-                    PhoneThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from), matter: matter)
+                    PhoneThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from), matter: matter, joinsNext: joined.contains(row.id))
                         .findable(.model(row.entry.persistentModelID), row.entry.title, row.entry.from, row.entry.digest)
                 }
             }
@@ -57,6 +58,8 @@ struct PhoneThreadMailRow: View {
     /// The owner wrote it: it went out, the others came in.
     let sent: Bool
     let matter: Matter
+    /// At the deepest indent and answered: its line goes on down to its answer.
+    var joinsNext = false
     @Environment(Navigation.self) private var navigation
     @Environment(\.openURL) private var openURL
     @Environment(\.modelContext) private var context
@@ -101,7 +104,7 @@ struct PhoneThreadMailRow: View {
         .padding(.leading, CGFloat(depth) * Self.step)
         .background(alignment: .topLeading) {
             if depth > 0 {
-                PhoneThreadRails(depth: depth, rails: Array(row.rails.suffix(depth - 1)), isLast: row.isLast)
+                PhoneThreadRails(depth: depth, rails: Array(row.rails.prefix(depth - 1)), isLast: row.isLast && !joinsNext)
                     .stroke(Theme.strongLine, lineWidth: 1.5)
                     .frame(width: CGFloat(depth) * Self.step)
             }

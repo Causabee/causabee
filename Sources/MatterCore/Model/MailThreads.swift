@@ -33,6 +33,18 @@ public enum MailThreads {
         public var children: [Node]
     }
 
+    /// The rows whose line goes on down into the next: a reply shown at the deepest indent that is
+    /// itself answered. Its answer cannot step further in and stands under it at the same indent —
+    /// the line between them says it belongs there, where two corners with a gap looked like two
+    /// replies to the mail above.
+    public static func joined(_ rows: [Row], deepest: Int) -> Set<ObjectIdentifier> {
+        var joined: Set<ObjectIdentifier> = []
+        for (row, next) in zip(rows, rows.dropFirst()) where row.depth >= deepest && next.depth > row.depth {
+            joined.insert(row.id)
+        }
+        return joined
+    }
+
     public struct Row: Identifiable {
         public var id: ObjectIdentifier { ObjectIdentifier(entry) }
         public var entry: Entry

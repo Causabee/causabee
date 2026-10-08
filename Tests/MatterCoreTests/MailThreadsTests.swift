@@ -34,6 +34,26 @@ struct MailThreadsTests {
         #expect(house.rows[4].rails == [false])
     }
 
+    @Test("A reply at the deepest indent that is answered is joined to its answer; a last one is not")
+    func joined() {
+        // A chain six deep, and a second reply to the first mail after it.
+        let chain = ["a", "b", "c", "d", "e", "f"]
+        var mails = chain.enumerated().map { index, id in
+            mail(id, index == 0 ? "Ausklang" : "Re: Ausklang", from: "P\(index) <p\(index)@example.org>", day: index + 1, answers: index == 0 ? "" : chain[index - 1])
+        }
+        mails.append(mail("g", "Re: Ausklang", from: "Jasper <j@example.org>", day: 9, answers: "a"))
+        let rows = MailThreads.build(mails)[0].rows
+        #expect(rows.map(\.depth) == [0, 1, 2, 3, 4, 5, 1])
+        // Shown four deep: "e" stands at the fourth indent and is answered by "f", which cannot step in.
+        let four = MailThreads.joined(rows, deepest: 4)
+        #expect(rows.filter { four.contains($0.id) }.map(\.entry.messageID) == ["e"])
+        // Shown three deep, as on the iPhone: "d" and "e" both.
+        let three = MailThreads.joined(rows, deepest: 3)
+        #expect(rows.filter { three.contains($0.id) }.map(\.entry.messageID) == ["d", "e"])
+        // The line of the first level goes on past the deep ones, down to the second reply.
+        #expect(rows[5].rails.prefix(3) == [true, false, false])
+    }
+
     @Test("Two mails answering each other are never a loop")
     func noLoop() {
         let a = mail("a", "x", from: "a@example.org", day: 1, answers: "b")

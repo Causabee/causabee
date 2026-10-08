@@ -2244,8 +2244,9 @@ struct ThreadCard: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 let me = Me(names: profiles.first?.names ?? [], withAccounts: true)
+                let joined = MailThreads.joined(thread.rows, deepest: ThreadMailRow.deepest)
                 ForEach(thread.rows) { row in
-                    ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from)) { talk(row.entry) }
+                    ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from), joinsNext: joined.contains(row.id)) { talk(row.entry) }
                         .findable(.model(row.entry.persistentModelID), row.entry.title, row.entry.from, row.entry.digest)
                 }
             }
@@ -2282,6 +2283,8 @@ struct ThreadMailRow: View {
     let started: Bool
     /// The owner wrote it: it went out, the others came in.
     let sent: Bool
+    /// At the deepest indent and answered: its line goes on down to its answer.
+    var joinsNext = false
     let talk: () -> Void
     @Environment(\.modelContext) private var context
     @State private var naming = false
@@ -2344,7 +2347,7 @@ struct ThreadMailRow: View {
         .padding(.leading, CGFloat(depth) * Self.step)
         .background(alignment: .topLeading) {
             if depth > 0 {
-                ThreadRails(depth: depth, rails: Array(row.rails.suffix(depth - 1)), isLast: row.isLast)
+                ThreadRails(depth: depth, rails: Array(row.rails.prefix(depth - 1)), isLast: row.isLast && !joinsNext)
                     .stroke(Theme.strongLine, lineWidth: 1.5)
                     .frame(width: CGFloat(depth) * Self.step)
             }
