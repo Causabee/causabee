@@ -116,8 +116,8 @@ struct AutoButton: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .quickLabel(auto ? "Turn Auto Off: mail and files wait for “Sort in”, next steps and summaries for a click"
-                         : "Turn Auto On: mail and files are read at once, and a matter’s next step and summary are written again when its record changes; you decide what is taken in")
+        // Short, as the glasses': what Auto does is said in Settings and where it works.
+        .quickLabel(auto ? "Turn Auto Off" : "Turn Auto On: the AI reads and updates by itself")
         // What it has spent today, for the asking.
         .help(AutoUpdate.spentWords ?? (auto ? "Auto has spent nothing today on next steps and summaries" : "Auto is off"))
         .accessibilityLabel("Auto")
