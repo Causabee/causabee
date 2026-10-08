@@ -257,8 +257,8 @@ struct MatterStatusView: View {
             if let text = matter.summary, !text.isEmpty {
                 HStack(spacing: 8) {
                     BeeChip(text: "SUMMARY")
-                    // Written by Auto when the record changed: said beside its day.
-                    if let at = matter.summaryAt { Text(Dates.short(at) + (AutoUpdate.wroteSummary(of: matter) ? " · Auto" : "")).font(.caption).foregroundStyle(.secondary) }
+                    // With Auto on it is kept up to date, and has no day to go by: "Auto mode" stands under it.
+                    if let at = matter.summaryAt, !auto { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
                 }
                 ForEach(Array(text.split(separator: "\n").enumerated()), id: \.offset) { index, line in
                     Text(String(line)).fixedSize(horizontal: false, vertical: true)
@@ -327,10 +327,7 @@ struct MatterStatusView: View {
         let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(facts, model: ModelChoice.assistant) * 100)
         VStack(alignment: .leading, spacing: 10) {
             if fresh, let step = matter.nextStep {
-                HStack(spacing: 8) {
-                    BeeChip(text: "NEXT · FROM CAUSABEE")
-                    if AutoUpdate.wroteStep(of: matter) { Text("Auto").font(.caption).foregroundStyle(.secondary) }
-                }
+                BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }

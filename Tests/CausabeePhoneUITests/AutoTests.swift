@@ -1,7 +1,7 @@
 import XCTest
 
 /// Auto, the whole circle: with Auto on, a matter whose record has changed and come to rest gets
-/// its next step written again by itself, and says "Auto" beside it. On the demo, where nothing is
+/// its next step written again by itself; a line under it says "Auto mode". On the demo, where nothing is
 /// sent: the step worked out on the device stands in for the AI's.
 final class AutoTests: XCTestCase {
     func testAStepDoneBringsTheNextByItself() {
@@ -15,7 +15,6 @@ final class AutoTests: XCTestCase {
         matter.tap()
         let done = app.buttons["Done"].firstMatch
         XCTAssertTrue(done.waitForExistence(timeout: 10), "The matter's next step has no Done.")
-        XCTAssertFalse(app.staticTexts["Auto"].exists, "The step says Auto before anything changed.")
         // With Auto on there is nothing to ask with: no link, no price.
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "ask again")).firstMatch.exists, "The link to ask again is there though Auto asks.")
         // Auto takes note of the matters on its first look, a few seconds in; then the change.
@@ -24,6 +23,8 @@ final class AutoTests: XCTestCase {
         // Said at once that it will be written, and written within a few seconds.
         let soon = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Auto updates this in a moment")).firstMatch
         XCTAssertTrue(soon.waitForExistence(timeout: 8), "Nothing says the record changed and will be written.")
-        XCTAssertTrue(app.staticTexts["Auto"].waitForExistence(timeout: 20), "The next step was not written again by Auto.")
+        // Written: the line says "Auto mode" again, and the step is Causabee's.
+        XCTAssertTrue(soon.waitForNonExistence(timeout: 20), "The next step was not written again by Auto.")
+        XCTAssertTrue(app.staticTexts["NEXT · FROM CAUSABEE"].waitForExistence(timeout: 5), "After Auto wrote it, the step is not Causabee's.")
     }
 }
