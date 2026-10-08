@@ -706,6 +706,9 @@ struct RootView: View {
         .font(.body)
         // And the system's own controls — its buttons, menus and fields — a size up beside it.
         .controlSize(TextSize.scale > 1.1 ? .large : .regular)
+        // A button that names no look of its own is the grey one, drawn by us at the text's size:
+        // the system's stood small beside the black one.
+        .buttonStyle(QuietButtonStyle())
         .environment(navigation)
         // Plain buttons, switches and checkboxes in black; links are gold by their own style.
         .tint(.primary)

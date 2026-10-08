@@ -238,7 +238,8 @@ struct AssistantColumn: View {
             Composer(draft: $draft, focused: $focused, pinned: navigation.pinned,
                      seen: { FactSheet.facts(for: scope.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date()),
                                              focus: navigation.pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text }).seen },
-                     placeholder: scope.map { "Ask about \($0.name)" } ?? "Ask about your matters",
+                     // A long name does not fit the field, and a placeholder is cut off without a sign.
+                     placeholder: scope.map { $0.name.count > 22 ? "Ask about this matter" : "Ask about \($0.name)" } ?? "Ask about your matters",
                      unpin: { navigation.pinned = nil },
                      attach: chooseScreenshot,
                      // Said before it is typed: the chip over the field, and the cursor in the field.
