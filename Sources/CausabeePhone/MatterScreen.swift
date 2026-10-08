@@ -110,9 +110,11 @@ struct MatterScreen: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 90)
-                // Exactly the screen's width: nothing on the page — a long address, a word without
-                // a break — can make it wider and let it slide sideways.
-                .containerRelativeFrame(.horizontal)
+                // On an iPad no wider than is good to read.
+                // Exactly the page's width, and on an iPad no wider than is good to read: nothing on
+                // the page — a long address, a word without a break — can make it wider and let it
+                // slide sideways.
+                .pageWide(PadMetrics.page)
                 // A tap on the page puts the keyboard away. Behind the page, not over it: a tap
                 // gesture over the scroll view takes the taps from the system's segmented control.
                 .background {
@@ -164,7 +166,7 @@ struct MatterScreen: View {
             if !finding {
                 VStack(alignment: .trailing, spacing: 12) {
                     LetterShotBringer(matter: matter)
-                    AssistantButton(matter: matter) { navigation.showsAssistant = true }
+                    if !(navigation.isPad && navigation.showsAssistant) { AssistantButton(matter: matter) { navigation.openAssistant() } }
                 }
             }
         }
@@ -195,12 +197,20 @@ struct MatterScreen: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        // On the iPad the sidebar leads to the overview and to every matter: no way back is needed
+        // beside it. Put away, its button stands where the way back was.
+        .navigationBarBackButtonHidden(navigation.isPad)
         .toolbar {
+            if navigation.isPad, !navigation.showsSidebar {
+                ToolbarItem(placement: .topBarLeading) { PadSidebarButton() }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { startFinding() } label: { Image(systemName: "magnifyingglass") }
                     .tint(.primary)
                     .accessibilityLabel("Find in this matter")
             }
+            // With the iPad's sidebar open the glasses are in its capsule, with the sidebar's button and Auto.
+            if !(navigation.isPad && navigation.showsSidebar) {
             ToolbarItem(placement: .topBarTrailing) {
                 // Glasses, as on the Mac: on, black on the bee's yellow.
                 Button {
@@ -212,6 +222,7 @@ struct MatterScreen: View {
                         .background { if navigation.reading { Circle().fill(Theme.bee) } }
                 }
                 .accessibilityLabel(navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode")
+            }
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {

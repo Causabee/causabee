@@ -57,6 +57,8 @@ struct PhoneMatterRows: View {
     let matters: [Matter]
     /// Every matter, for "Merge with".
     let all: [Matter]
+    /// The matter that is open, in the iPad's sidebar: its row is marked.
+    var chosen: PersistentIdentifier? = nil
     @Environment(Navigation.self) private var navigation
 
     var body: some View {
@@ -67,6 +69,7 @@ struct PhoneMatterRows: View {
                     PhoneMatterRow(matter: matter)
                         .padding(.horizontal, 14).padding(.vertical, 10)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(chosen == matter.persistentModelID ? Theme.box : .clear)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

@@ -216,17 +216,21 @@ struct AssistantSheet: View {
             }
             .padding(.horizontal, 60)
             HStack {
-                Button { dismiss() } label: {
+                // A column on the iPad: put away at its outer edge, as the Mac's.
+                if navigation.isPad { Spacer() }
+                Button { navigation.closeAssistant() } label: {
                     Image(systemName: "xmark").font(.body.weight(.semibold)).foregroundStyle(.primary)
                         .frame(width: 44, height: 44)
                         .background(.regularMaterial, in: Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close")
-                Spacer()
+                if !navigation.isPad { Spacer() }
             }
         }
-        .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 10)
+        // On the iPad on the line of the page's bar and the sidebar's controls.
+        .padding(.horizontal, 16).padding(.top, navigation.isPad ? 0 : 18).padding(.bottom, navigation.isPad ? 0 : 10)
+        .frame(height: navigation.isPad ? PadMetrics.bar : nil)
     }
 
     /// The field as the Mac has it: what is typed goes out pseudonymised, and only on send.
