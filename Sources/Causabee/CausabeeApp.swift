@@ -684,10 +684,8 @@ struct RootView: View {
         // step and its summary written again. Looked at every quarter of a minute; nothing is sent
         // unless something changed.
         .task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(15))
-                AutoUpdate.shared.look(matters, context: context, owner: profiles.first?.names.first) { .file(navigation.mapping) }
-            }
+            let mapping = navigation.mapping
+            await AutoUpdate.shared.run(context: context) { .file(mapping) }
         }
         .background(WindowChrome())
         .environment(navigation)

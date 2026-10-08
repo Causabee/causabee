@@ -274,6 +274,20 @@ final class AutoUpdate {
         return abs(at.timeIntervalSince(mine)) < 1
     }
 
+    /// For as long as the app's first view is there: a look every quarter of a minute. The matters
+    /// are read from the store each time — not from the view that started this, whose copy of them
+    /// is the one it had then.
+    func run(context: ModelContext, names: @escaping () throws -> Names) async {
+        // A test starts from nothing known.
+        if CommandLine.arguments.contains("--auto-anew") { Self.known = [:] }
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(15))
+            guard AutoMode.isOn else { lastSeen = [:]; continue }
+            let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
+            look(matters, context: context, owner: AutoMode.owner(in: context).first, names: names)
+        }
+    }
+
     /// Looks at every matter going on, every few seconds while Auto is on; cheap, and sends nothing
     /// unless one has changed and come to rest.
     func look(_ matters: [Matter], context: ModelContext, owner: String?, names: () throws -> Names) {

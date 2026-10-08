@@ -26,13 +26,10 @@ struct RootView: View {
         // Auto, the whole circle, as on the Mac: a matter whose record has changed and come to rest
         // gets its next step and its summary written again — while Causabee is open.
         .task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(15))
-                guard phase == .active else { continue }
-                AutoUpdate.shared.look(matters, context: context, owner: AutoMode.owner(in: context).first) {
-                    let names = try PhoneNames.current(in: context)
-                    return .list(names.mapping, names.others)
-                }
+            let context = context
+            await AutoUpdate.shared.run(context: context) {
+                let names = try PhoneNames.current(in: context)
+                return .list(names.mapping, names.others)
             }
         }
         // `--demo --shot listening`: the care matter open, the assistant over it.
