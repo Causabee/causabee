@@ -52,13 +52,20 @@ enum Theme {
     static let line = adaptive("line", light: Palette.greyLight[7], dark: Palette.greyDark[4])
     static let strongLine = adaptive("strongLine", light: Palette.greyLight[4], dark: Palette.greyDark[2])
 
+    /// What the Mac's text is larger by than the system sets it; the iPhone's follows its own setting.
+    #if os(macOS)
+    static var textScale: CGFloat { TextSize.scale }
+    #else
+    static let textScale: CGFloat = 1
+    #endif
+
     /// A matter's name on top of its page: Source Serif 4, regular, the size of a large title.
-    static let titleFont = Font.custom("Source Serif 4", size: 26, relativeTo: .largeTitle)
+    static let titleFont = Font.custom("Source Serif 4", size: 26 * Theme.textScale, relativeTo: .largeTitle)
     /// A matter's name on its overview card: the same face, the size of a title (Figma "Title 1 Serif").
-    static let cardTitleFont = Font.custom("Source Serif 4", size: 22, relativeTo: .title)
+    static let cardTitleFont = Font.custom("Source Serif 4", size: 22 * Theme.textScale, relativeTo: .title)
     /// A matter's name on its one line in the overview: the cards' serif, smaller — so a matter
     /// never looks like one of its tasks.
-    static let rowTitleFont = Font.custom("Source Serif 4", size: 17, relativeTo: .headline)
+    static let rowTitleFont = Font.custom("Source Serif 4", size: 17 * Theme.textScale, relativeTo: .headline)
 
     /// The serif ships with the app; made known to it once, at start.
     static func registerFonts() {
@@ -698,6 +705,7 @@ struct InkButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .macBody()
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .foregroundStyle(isEnabled ? Theme.onInk : Color.secondary)
@@ -770,6 +778,7 @@ struct QuietButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .macBody()
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .foregroundStyle(isEnabled ? Color.primary : Color.secondary)
@@ -930,5 +939,17 @@ enum RecentMatters {
         var list = keys.compactMap { key in matters.first { $0.key == key } }
         for matter in others where list.count < 3 && !list.contains(where: { $0 === matter }) { list.append(matter) }
         return list
+    }
+}
+
+extension View {
+    /// A button's words at the size of the Mac's text: a button sets its own, the system's, and
+    /// stood small beside the lines around it. The iPhone's buttons keep theirs.
+    @ViewBuilder func macBody() -> some View {
+        #if os(macOS)
+        font(.body)
+        #else
+        self
+        #endif
     }
 }

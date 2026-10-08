@@ -589,7 +589,7 @@ struct RootView: View {
             // The selection drawn by Causabee, not by the Mac: a light grey, as in the design.
             List {
                 let overview = navigation.place == .assistant || navigation.place == nil
-                Text("Overview").fontWeight(.semibold)
+                Text("Overview").font(.body.weight(.semibold))
                     .sidebarRow(selected: overview) { navigation.place = .assistant }
                 let pinned = Pins.pinned(sorted)
                 if !pinned.isEmpty {
@@ -702,6 +702,10 @@ struct RootView: View {
             await AutoUpdate.shared.run(context: context) { .file(mapping) }
         }
         .background(WindowChrome())
+        // Text that names no size of its own is the body, at Causabee's size.
+        .font(.body)
+        // And the system's own controls — its buttons, menus and fields — a size up beside it.
+        .controlSize(TextSize.scale > 1.1 ? .large : .regular)
         .environment(navigation)
         // Plain buttons, switches and checkboxes in black; links are gold by their own style.
         .tint(.primary)
@@ -810,7 +814,7 @@ struct MatterRow: View {
         HStack(spacing: 9) {
         MatterIconTile(matter: matter, size: 26)
         VStack(alignment: .leading, spacing: 2) {
-            Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
+            Text(matter.name).font(.body).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
             if matter.isClosed {
                 HStack(spacing: 4) {
                     Text("closed \(matter.closedAt.map(Dates.short) ?? "")")
