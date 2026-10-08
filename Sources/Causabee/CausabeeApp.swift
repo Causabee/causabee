@@ -669,8 +669,10 @@ struct RootView: View {
         // capsule, and the bee beside it — the assistant's column, shown and put away.
         .overlay(alignment: .topLeading) {
             HStack(spacing: 8) {
-                HStack(spacing: 2) { SidebarButton(); ReadingButton(); AutoButton() }
-                    .padding(.horizontal, 6).padding(.vertical, 2)
+                // The yellow round of a button that is on sits in the capsule's own curve: as far
+                // from its end as from its top and bottom.
+                HStack(spacing: 8) { SidebarButton(); ReadingButton(); AutoButton() }
+                    .padding(.leading, 7).padding(.trailing, 2).padding(.vertical, 2)
                     .onGlass(Capsule())
                 Button {
                     withAnimation(.snappy(duration: 0.25)) { if showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() } }
