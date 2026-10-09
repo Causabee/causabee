@@ -1019,11 +1019,8 @@ struct MatterStatusView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open · \(status.done.count) done" : nil)
-                if hasTodos {
-                    Button(action: addTodo) { Label("Task", systemImage: "plus") }
-                        .buttonStyle(.borderless).font(.caption)
-                        .help("Write a task of your own")
-                }
+                // No "+ Task" here: a task of one's own is said to the assistant, from its plus, or
+                // written from the menu — whose editor still opens at this line.
             }
             .popover(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .bottom) {
                 if let newTodo {
