@@ -47,23 +47,19 @@ struct PadSidebar: View {
                         PhoneMatterRows(matters: open, all: sorted, chosen: navigation.path.last)
                     }
                 }
-                .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 24)
+                .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 24)
         }
         .safeAreaBar(edge: .top, alignment: .leading, spacing: 0) {
-            // On the line of the page's bar: the sheet begins 4 under the screen's safe edge.
             PadControls()
-                .padding(.leading, 12)
-                .frame(height: PadMetrics.bar - 8)
+                .padding(.leading, 16)
+                .frame(height: PadMetrics.bar)
         }
-        // A sheet of glass lying on the page's ground, clear of the screen's edges — as the
-        // iPad's own sidebars.
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .padding(.leading, 8).padding(.top, 4).padding(.bottom, 8)
+        .background(Color(.secondarySystemBackground))
     }
 }
 
-/// The sidebar's button, reading and Auto side by side on the sidebar's own glass — no glass of
-/// their own on it; one that is on has the bee's yellow round.
+/// The sidebar's button, reading and Auto in one capsule of glass, as by the Mac's window buttons —
+/// a finger high. Only they are on glass: the list under them is the sidebar's own ground.
 struct PadControls: View {
     @Environment(Navigation.self) private var navigation
     @AppStorage(AutoMode.key) private var auto = false
@@ -82,13 +78,16 @@ struct PadControls: View {
             }
             .accessibilityValue(auto ? "On" : "Off")
         }
+        // The yellow round of one that is on sits in the capsule's own curve.
+        .padding(.leading, 6).padding(.trailing, 3).padding(.vertical, 3)
+        .onGlass(Capsule())
     }
 
     private func round(_ symbol: String, on: Bool, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 17, weight: .medium))
                 .foregroundStyle(on ? Color.black : Color.secondary)
-                .frame(width: 34, height: 34)
+                .frame(width: 38, height: 38)
                 .background { if on { Circle().fill(Theme.bee) } }
                 .contentShape(Circle())
         }
@@ -107,7 +106,7 @@ struct PadSidebarButton: View {
         } label: {
             Image(systemName: "sidebar.left").font(.system(size: 17, weight: .medium))
                 .foregroundStyle(navigation.showsSidebar ? Color.secondary : Color.primary)
-                .frame(width: 34, height: 34).contentShape(Rectangle())
+                .frame(width: 38, height: 38).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(navigation.showsSidebar ? "Hide Sidebar" : "Show Sidebar")

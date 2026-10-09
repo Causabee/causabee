@@ -22,10 +22,11 @@ struct RootView: View {
         HStack(spacing: 0) {
             if navigation.isPad, navigation.showsSidebar {
                 PadSidebar(matters: matters).frame(width: PadMetrics.sidebar).transition(.move(edge: .leading))
+                Divider().ignoresSafeArea()
             }
             // The page has what the columns beside it leave, said in points: left to take what it
             // likes, it kept the width it had before the assistant came, and slid under the sidebar.
-            let room = max(320, whole - (navigation.showsSidebar ? PadMetrics.sidebar : 0) - (navigation.showsAssistant ? PadMetrics.assistant + 1 : 0))
+            let room = max(320, whole - (navigation.showsSidebar ? PadMetrics.sidebar + 1 : 0) - (navigation.showsAssistant ? PadMetrics.assistant + 1 : 0))
             page.frame(width: navigation.isPad && whole > 0 ? room : nil)
                 .onChange(of: room, initial: true) { navigation.pageWidth = room }
             if navigation.isPad, navigation.showsAssistant {
