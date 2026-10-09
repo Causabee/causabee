@@ -118,6 +118,7 @@ struct AssistantColumn: View {
                 .padding(.top, 14).padding(.trailing, 14)
                 .help("Close the assistant")
                 .accessibilityLabel("Close the assistant")
+                .accessibilityIdentifier("assistant.close")
             }
     }
 

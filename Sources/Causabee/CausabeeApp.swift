@@ -629,17 +629,11 @@ struct RootView: View {
                     .transition(.move(edge: .leading))
                 Divider()
             }
-            // A matter: the assistant on the left, the matter on the right, in the golden ratio —
-            // 38.2 to 61.8. The overview: only what is going on — nothing is asked there — unless a
+            // A matter: the matter beside the sidebar, the assistant on the right, in the golden
+            // ratio — 61.8 to 38.2. The overview: only what is going on — nothing is asked there — unless a
             // file dropped on it waits to be sorted into a matter.
             GeometryReader { geometry in
                 HStack(spacing: 0) {
-                    if showsAssistant {
-                        AssistantColumn(matters: sorted)
-                            .frame(width: max(320, geometry.size.width * 0.382))
-                            .frame(maxHeight: .infinity)
-                        Divider()
-                    }
                     Group {
                         switch navigation.place {
                         case .matter(let id):
@@ -651,6 +645,35 @@ struct RootView: View {
                         }
                     }
                     .frame(minWidth: 320, maxWidth: .infinity, maxHeight: .infinity)
+                    // The bee, floating in the matter's lower right corner while the assistant is put
+                    // away: it brings the assistant in beside the matter. The overview has its own
+                    // "Ask Causabee".
+                    .overlay(alignment: .bottomTrailing) {
+                        if !showsAssistant, case .matter = navigation.place {
+                            Button {
+                                withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() }
+                            } label: {
+                                BeeMark(size: 20).foregroundStyle(.black)
+                                    .frame(width: 48, height: 48)
+                                    .background(Theme.bee, in: Circle())
+                                    .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+                                    .contentShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .quickLabel("Ask Causabee")
+                            .accessibilityLabel("Ask Causabee")
+                            .accessibilityIdentifier("window.bee")
+                            .padding(20)
+                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                        }
+                    }
+                    if showsAssistant {
+                        Divider()
+                        AssistantColumn(matters: sorted)
+                            .frame(width: max(320, geometry.size.width * 0.382))
+                            .frame(maxHeight: .infinity)
+                            .transition(.move(edge: .trailing))
+                    }
                 }
             }
             // Up into the empty window bar: the pages start at the very top.
@@ -667,7 +690,7 @@ struct RootView: View {
         .environment(\.reading, navigation.reading)
         // Right of the green button, as far from it as the buttons are apart; open or folded alike.
         // On glass, as the matter's own controls on the right: the sidebar, reading and Auto in one
-        // capsule, and the bee beside it — the assistant's column, shown and put away.
+        // capsule.
         .overlay(alignment: .topLeading) {
             HStack(spacing: 8) {
                 // The yellow round of a button that is on sits in the capsule's own curve: as far
@@ -675,19 +698,8 @@ struct RootView: View {
                 HStack(spacing: 8) { SidebarButton(); ReadingButton(); AutoButton() }
                     .padding(.leading, 7).padding(.trailing, 2).padding(.vertical, 2)
                     .onGlass(Capsule())
-                Button {
-                    withAnimation(.snappy(duration: 0.25)) { if showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() } }
-                } label: {
-                    // Yellow while it offers the assistant; grey glass, as the capsule beside it,
-                    // while the assistant is open and the button only puts it away.
-                    BeeMark(size: 13).foregroundStyle(showsAssistant ? Color.secondary : Color.black)
-                        .frame(width: 30, height: 30).contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .onGlass(Circle(), tint: showsAssistant ? nil : Theme.bee)
-                .quickLabel(showsAssistant ? "Put Causabee Away" : "Ask Causabee")
-                .accessibilityLabel("Ask Causabee")
-                .accessibilityIdentifier("window.bee")
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("window.controls")
             }
             .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxX } action: { if abs($0 - navigation.controlsEdge) > 0.5 { navigation.controlsEdge = $0 } }
             .padding(.leading, WindowMetrics.sidebarButtonX).padding(.top, WindowMetrics.sidebarButtonTop - 2).ignoresSafeArea()
