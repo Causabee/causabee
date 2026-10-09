@@ -4,7 +4,11 @@ import SwiftUI
 
 /// The Mac's sidebar order: what is going on, then the quiet ones by their newest mail, then the
 /// closed ones, the last closed first.
-func sidebarOrder(_ matters: [Matter]) -> [Matter] {
+@MainActor func sidebarOrder(_ matters: [Matter]) -> [Matter] {
+    Once.worked("order", for: matters) { workOutSidebarOrder(matters) }
+}
+
+@MainActor private func workOutSidebarOrder(_ matters: [Matter]) -> [Matter] {
     let active = activeMatters(matters)
     let shown = Set(active.map(\.persistentModelID))
     let byNewestMail = { (list: [Matter]) in

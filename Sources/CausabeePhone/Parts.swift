@@ -225,8 +225,12 @@ struct PhoneMatterCard: View {
 }
 
 /// The matters that have something going on, late ones first, then by their next day — as on the Mac.
-func activeMatters(_ matters: [Matter]) -> [Matter] {
-    matters.compactMap { matter -> (matter: Matter, late: Bool, next: String)? in
+@MainActor func activeMatters(_ matters: [Matter]) -> [Matter] {
+    Once.worked("active", for: matters) { workOutActiveMatters(matters) }
+}
+
+private func workOutActiveMatters(_ matters: [Matter]) -> [Matter] {
+    return matters.compactMap { matter -> (matter: Matter, late: Bool, next: String)? in
         guard !matter.isClosed else { return nil }
         let status = MatterStatus(matter), next = status.next
         guard !matter.openTodos.isEmpty || next != nil else { return nil }
@@ -238,4 +242,30 @@ func activeMatters(_ matters: [Matter]) -> [Matter] {
         return a.matter.name.localizedStandardCompare(b.matter.name) == .orderedAscending
     }
     .map(\.matter)
+}
+
+/// What is worked out from all the matters — which are going on, their order — is worked out once
+/// for each drawing of the screen, however many views ask: on the iPad the sidebar, the overview and
+/// a matter's menus each asked, and each for itself; opening one matter worked out the order of all
+/// of them thirty times. Kept only until the main queue is next free, so nothing shown is ever older
+/// than the drawing it was worked out in.
+@MainActor
+enum Once {
+    private static var kept: [String: Any] = [:]
+    private static var clears = false
+
+    static func worked<Value>(_ name: String, for matters: [Matter], _ work: () -> Value) -> Value {
+        var hasher = Hasher()
+        hasher.combine(name)
+        for matter in matters { hasher.combine(matter.persistentModelID) }
+        let key = "\(name) \(hasher.finalize())"
+        if let value = kept[key] as? Value { return value }
+        let value = work()
+        kept[key] = value
+        if !clears {
+            clears = true
+            DispatchQueue.main.async { kept.removeAll(); clears = false }
+        }
+        return value
+    }
 }
