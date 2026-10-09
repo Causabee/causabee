@@ -71,6 +71,15 @@ final class Navigation {
         }
     }
 
+    /// On the iPad another page is simply there: beside a sidebar nothing is pushed on anything,
+    /// and the push's own transition made the matter's name fly or fade into the bar.
+    func go(_ pages: [PersistentIdentifier]) {
+        guard pages != path else { return }
+        var now = Transaction()
+        now.disablesAnimations = true
+        withTransaction(now) { path = pages }
+    }
+
     /// The bee: the assistant over the page on the iPhone, in beside it on the iPad.
     func openAssistant() {
         if isPad { withAnimation(.snappy(duration: 0.25)) { showsAssistant = true } } else { showsAssistant = true }
@@ -93,7 +102,7 @@ final class Navigation {
         choosingInAssistant = nil
         RecentMatters.note(matter)
         showing = nil
-        if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }
+        if isPad { go([matter.persistentModelID]) } else if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }
         switch plus {
         case .note, .task:
             add(plus, to: matter)
@@ -122,7 +131,7 @@ final class Navigation {
         showsAssistant = false
         RecentMatters.note(matter)
         // On the iPad the sidebar is the way between matters: one page, not a pile of them.
-        if isPad { path = [matter.persistentModelID] } else if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }
+        if isPad { go([matter.persistentModelID]) } else if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }
     }
 
     /// The item the owner had in hand when asking on the Mac. Only its words are read here: the

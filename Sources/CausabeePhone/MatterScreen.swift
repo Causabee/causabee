@@ -202,12 +202,13 @@ struct MatterScreen: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         // On the iPad the sidebar leads to the overview and to every matter: no way back is needed
-        // beside it. Put away, its button stands where the way back was.
+        // beside it.
         .navigationBarBackButtonHidden(navigation.isPad)
         .toolbar {
-            if navigation.isPad, !navigation.showsSidebar {
-                ToolbarItem(placement: .topBarLeading) { PadSidebarButton() }
-            }
+            // The bar has the same things in it whether the sidebar is open or put away: one that
+            // came and went with the sidebar made the system form find and ⋯ anew — they shrank
+            // into one, blurred and came back as two. The sidebar's own capsule lies over the page
+            // while the sidebar is away (RootView), and the name stands clear of it.
             // The matter's icon and name in the bar, as on the Mac: on the line of find and ⋯, and
             // there however far the page is scrolled. On the bar's own ground, no glass around them.
             if navigation.isPad {
@@ -221,7 +222,10 @@ struct MatterScreen: View {
                     }
                     // Its room said in points — what find and ⋯, and the sidebar's button, leave of
                     // the page's width: left to the bar, the name got the width of a letter.
-                    .frame(width: max(120, navigation.pageWidth - 150 - (navigation.showsSidebar ? 0 : 56)), alignment: .leading)
+                    .padding(.leading, navigation.showsSidebar ? 0 : PadMetrics.controls)
+                    .frame(width: max(120, navigation.pageWidth - 172), alignment: .leading)
+                    // Moved with the page, not by a transition of the bar's own.
+                    .animation(nil, value: navigation.showsSidebar)
                 }
                 .sharedBackgroundVisibility(.hidden)
             }

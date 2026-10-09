@@ -15,6 +15,8 @@ enum PadMetrics {
     static let wide: CGFloat = 1000
     /// The line the sidebar's controls, the page's bar and the assistant's name stand on.
     static let bar: CGFloat = 44
+    /// The room the sidebar's capsule takes of the page's bar while the sidebar is put away.
+    static let controls: CGFloat = 154
 }
 
 /// The iPad's sidebar: its controls on top, the overview, and every matter that is going on — the
@@ -32,7 +34,7 @@ struct PadSidebar: View {
         // under the system's bars.
         ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
-                    Button { navigation.path = [] } label: {
+                    Button { navigation.go([]) } label: {
                         Text("Overview").font(.headline)
                             .padding(.horizontal, 14).padding(.vertical, 10)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -66,7 +68,7 @@ struct PadControls: View {
     @Environment(\.modelContext) private var context
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 10) {
             PadSidebarButton()
             round("eyeglasses", on: navigation.reading, label: navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode") {
                 withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
@@ -81,7 +83,9 @@ struct PadControls: View {
         // The yellow round of one that is on sits in the capsule's own curve.
         // As high as the page's own find and ⋯, and as black: beside them a smaller, greyer
         // capsule looked like something else.
-        .padding(.horizontal, 3).padding(.vertical, 3)
+        // The yellow round of one that is on sits in the capsule's own curve: 3 from its end as
+        // from its top and bottom.
+        .padding(3)
         .onGlass(Capsule())
     }
 
@@ -89,7 +93,7 @@ struct PadControls: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 20, weight: .medium))
                 .foregroundStyle(on ? Color.black : Color.primary)
-                .frame(width: 44, height: 38)
+                .frame(width: 38, height: 38)
                 .background { if on { Circle().fill(Theme.bee) } }
                 .contentShape(Circle())
         }
@@ -108,7 +112,7 @@ struct PadSidebarButton: View {
         } label: {
             Image(systemName: "sidebar.left").font(.system(size: 20, weight: .medium))
                 .foregroundStyle(Color.primary)
-                .frame(width: 44, height: 38).contentShape(Rectangle())
+                .frame(width: 38, height: 38).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(navigation.showsSidebar ? "Hide Sidebar" : "Show Sidebar")

@@ -19,6 +19,15 @@ struct RootView: View {
         // row of columns, measured, kept the width its columns had on the iPad's side, and stood
         // too wide once the iPad was turned upright again.
         Color.clear.overlay(alignment: .leading) { columns }
+        // The sidebar put away: its capsule stays where it was, over the page — the way back to the
+        // sidebar, and reading and Auto still at hand. Not in the page's bar: a bar whose things
+        // change with the sidebar is formed anew by the system, with a transition of its own.
+        .overlay(alignment: .topLeading) {
+            if navigation.isPad, !navigation.showsSidebar {
+                PadControls().padding(.leading, 16).frame(height: PadMetrics.bar)
+                    .transition(.identity)
+            }
+        }
         .background(Theme.canvas)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { wide in
             navigation.whole = wide
@@ -217,9 +226,6 @@ struct OverviewScreen: View {
         // bar hidden here and shown there, broke the swipe back from a matter (iOS 27).
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if navigation.isPad, !navigation.showsSidebar {
-                ToolbarItem(placement: .topBarLeading) { PadSidebarButton() }
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Settings", systemImage: "gearshape") { editsAccount = true }
