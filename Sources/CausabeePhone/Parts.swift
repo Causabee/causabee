@@ -89,18 +89,18 @@ struct AssistantButton: View {
             // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
             BeeMark(size: 24, livesNowAndThen: true)
                 .foregroundStyle(.black)
-                .frame(width: 60, height: 60)
-                .contentShape(Circle())
+                .frame(width: 46, height: 46)
         } primaryAction: {
             action()
         }
         .menuIndicator(.hidden)
-        .buttonStyle(.plain)
-        // Glass in the bee's yellow, and alive under the finger, as the system's own buttons: a
-        // flat yellow disc lay on the page like a sticker. On the menu, not on its label: the
-        // system takes the label away for a moment as the held menu closes, and with the glass on
-        // it the bee stood there bare, without its round, until the label was back.
-        .onGlass(Circle(), tint: Theme.bee.opacity(0.82))
+        // The system's own glass button, in the bee's yellow and round: alive under the finger, and
+        // the held menu grows out of it and goes back into it. Glass of our own on the menu or on
+        // its label stood bare, or black, for a moment as the menu closed.
+        .menuStyle(.button)
+        .buttonStyle(.glassProminent)
+        .buttonBorderShape(.circle)
+        .tint(Theme.bee)
         // Held: a small knock in the hand as its menu comes, as the system's own held things give.
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
         .accessibilityLabel("Ask Causabee")
