@@ -180,7 +180,7 @@ struct OverviewScreen: View {
                 let rest = ordered.filter { !$0.isPinned }
                 if !rest.isEmpty {
                     SectionHeader(title: pinned.isEmpty ? "Matters" : "Everything else",
-                                  detail: pinned.isEmpty ? "hold one to pin it" : nil)
+                                  detail: nil)
                         .padding(.top, 4)
                     if columns == 1 {
                         PhoneMatterRows(matters: rest, all: sidebarOrder(matters))
