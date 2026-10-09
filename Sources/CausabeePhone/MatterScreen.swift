@@ -334,8 +334,10 @@ struct MatterScreen: View {
     private func header(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             // On the iPad the icon and the name stand in the bar, beside find and ⋯, and stay there.
+            // No count of the mails under it there, nor on the iPhone: how many came, and since when,
+            // is what the record shows.
             if navigation.isPad {
-                Text(meta(status)).font(.subheadline).foregroundStyle(.secondary)
+                Color.clear.frame(height: 0)
             } else {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 // The matter's icon in front of its name, level with the first line: a tap chooses another.
@@ -346,23 +348,15 @@ struct MatterScreen: View {
                 // The count under the name, on the name's left edge — not under the icon.
                 VStack(alignment: .leading, spacing: 4) {
                     Text(matter.name).font(Theme.phoneTitleFont).fixedSize(horizontal: false, vertical: true)
-                    Text(meta(status)).font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             }
         }
         // Under the iPad's bar a little air: the name is up there, and the page began too close to it.
-        .padding(.top, navigation.isPad ? 18 : 4)
+        .padding(.top, navigation.isPad ? 10 : 4)
         .sheet(isPresented: $choosingIcon) {
             MatterIconPicker(matter: matter).presentationDetents([.height(470)]).presentationDragIndicator(.visible)
         }
-    }
-
-    private func meta(_ status: MatterStatus) -> String {
-        let mails = status.mailEntries.count
-        var parts = ["\(mails) \(mails == 1 ? "mail" : "mails")"]
-        if let first = status.firstDate { parts.append("since \(Dates.short(first))") }
-        return parts.joined(separator: " · ")
     }
 
     // MARK: Find
@@ -681,7 +675,7 @@ struct MatterScreen: View {
 
     private func todos(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open · \(status.done.count) done" : nil)
+            SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open" : nil)
             if !hasTodos {
                 PhoneEmptyBox(text: "What is to do, and whose. Tasks in mail are found when it is sorted in.",
                               action: "Add Task", symbol: "checklist", run: addTodo)

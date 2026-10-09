@@ -25,7 +25,7 @@ struct PeopleSection: View {
             .sheet(isPresented: $adding) { ContactEditor(matter: matter) }
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "People", detail: "\(memberships.count) · to merge, hold a name")
+                SectionHeader(title: "People", detail: memberships.count == 1 ? "1 name" : "\(memberships.count) names")
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
