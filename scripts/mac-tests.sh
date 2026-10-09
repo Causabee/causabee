@@ -32,10 +32,40 @@ if ps -axo comm= | grep -q "Causabee.app/Contents/MacOS/Causabee$"; then
   exit 1
 fi
 
-print "→ Clicking through the Mac app on the demo"
+# Can it work at all? An app in full screen on the main screen, or a screen too small: said here,
+# with what to do, and nothing is started — a run in that state fails in a dozen misleading ways.
+print "→ Checking that the Mac's screen is free for the tests"
+swift scripts/mac-preflight.swift || { print -u2 "✗ Not clicked through: put right what is named above, then run this again."; exit 1 }
+
 LOG=${TMPDIR:-/tmp}/causabee-mac-tests.log
-xcodebuild test -project App/Causabee.xcodeproj -scheme CausabeeAppUITests -destination 'platform=macOS' \
-  -derivedDataPath .build-app/mactests -skipMacroValidation -allowProvisioningUpdates > "$LOG" 2>&1 \
-  || { grep -E "error:|failed" "$LOG" | tail -15; print -u2 "✗ The Mac's regression tests failed. The whole log: $LOG"; exit 1 }
+# What a failed run saw, said at once: the last picture of its screen recording and the windows
+# in front — so the reason is looked at, not guessed and tried again.
+evidence() {
+  local result=$(ls -dt .build-app/mactests/Logs/Test/*.xcresult 2>/dev/null | head -1) out=${TMPDIR:-/tmp}/causabee-mac-tests-evidence
+  grep -E "error:|failed" "$LOG" | tail -15
+  mkdir -p "$out"
+  if [[ -n $result ]] && xcrun xcresulttool export attachments --path "$result" --output-path "$out" > /dev/null 2>&1; then
+    local film=$(ls -t "$out"/*.mp4 2>/dev/null | head -1)
+    if [[ -n $film ]] && command -v ffmpeg > /dev/null; then
+      ffmpeg -v error -y -sseof -0.6 -i "$film" -frames:v 1 "$out/last-picture.png" && print -u2 "  The screen as the failed test left it: $out/last-picture.png"
+    fi
+  fi
+  swift scripts/mac-preflight.swift >&2 || true
+  print -u2 "✗ The Mac's regression tests failed. Look at the picture before anything is changed or run again. The whole log: $LOG"
+}
+# A test may take a minute and a half, not four: one that hangs is ended, and says so.
+run() {
+  xcodebuild test -project App/Causabee.xcodeproj -scheme CausabeeAppUITests -destination 'platform=macOS' \
+    -derivedDataPath .build-app/mactests -skipMacroValidation -allowProvisioningUpdates \
+    -test-timeouts-enabled YES -default-test-execution-time-allowance 90 -maximum-test-execution-time-allowance 90 "$@" > "$LOG" 2>&1
+}
+
+# First one test alone, half a minute: is the window there to be clicked? If not, the eleven others
+# are not run to fail one after the other.
+print "→ One test first: can the window be clicked?"
+run -only-testing:CausabeeAppUITests/ToolbarTests/testTheNameIsNeverUnderTheControls || { evidence; exit 1 }
+
+print "→ Clicking through the Mac app on the demo"
+run -skip-testing:CausabeeAppUITests/ToolbarTests/testTheNameIsNeverUnderTheControls || { evidence; exit 1 }
 grep -E "Executed .* tests" "$LOG" | tail -1
 print "✓ The Mac's regression tests passed."
