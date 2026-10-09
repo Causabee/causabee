@@ -61,7 +61,9 @@ final class ToolbarTests: XCTestCase {
         guard !field.exists else { return }
         let bee = thing("window.bee")
         XCTAssertTrue(bee.waitForExistence(timeout: 5), "The bee is not in the matter's corner.")
-        bee.click()
+        // By the bee where it can be clicked. On a screen smaller than the window — a laptop's
+        // own — the window's lower right corner hangs outside it: there by ⌘K.
+        if bee.isHittable { bee.click() } else { app.typeKey("k", modifierFlags: .command) }
         XCTAssertTrue(field.waitForExistence(timeout: 5), "The assistant did not open.")
     }
 

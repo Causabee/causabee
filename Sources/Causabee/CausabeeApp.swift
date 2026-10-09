@@ -645,28 +645,6 @@ struct RootView: View {
                         }
                     }
                     .frame(minWidth: 320, maxWidth: .infinity, maxHeight: .infinity)
-                    // The bee, floating in the matter's lower right corner while the assistant is put
-                    // away: it brings the assistant in beside the matter. The overview has its own
-                    // "Ask Causabee".
-                    .overlay(alignment: .bottomTrailing) {
-                        if !showsAssistant, case .matter = navigation.place {
-                            Button {
-                                withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() }
-                            } label: {
-                                BeeMark(size: 20).foregroundStyle(.black)
-                                    .frame(width: 48, height: 48)
-                                    .background(Theme.bee, in: Circle())
-                                    .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
-                                    .contentShape(Circle())
-                            }
-                            .buttonStyle(.plain)
-                            .quickLabel("Ask Causabee")
-                            .accessibilityLabel("Ask Causabee")
-                            .accessibilityIdentifier("window.bee")
-                            .padding(20)
-                            .transition(.scale(scale: 0.6).combined(with: .opacity))
-                        }
-                    }
                     if showsAssistant {
                         Divider()
                         AssistantColumn(matters: sorted)
@@ -689,6 +667,35 @@ struct RootView: View {
         .ignoresSafeArea()
         .environment(\.reading, navigation.reading)
         // Right of the green button, as far from it as the buttons are apart; open or folded alike.
+        // The bee, floating in the matter's lower right corner while the assistant is put away —
+        // the window's own corner then: it brings the assistant in beside the matter. Laid over the
+        // window, as the capsule is: over the page's own column it could not be clicked once the
+        // sidebar had been put away. The overview has its own "Ask Causabee".
+        // ⌘K brings the assistant in and puts it away, from the keyboard.
+        .background {
+            Button("") {
+                withAnimation(.snappy(duration: 0.25)) { if showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() } }
+            }
+            .keyboardShortcut("k", modifiers: .command).hidden()
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if !showsAssistant, case .matter = navigation.place {
+                Button {
+                    withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() }
+                } label: {
+                    BeeMark(size: 20).foregroundStyle(.black)
+                        .frame(width: 48, height: 48)
+                        .background(Theme.bee, in: Circle())
+                        .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Ask Causabee")
+                .accessibilityIdentifier("window.bee")
+                .padding(20)
+                .transition(.scale(scale: 0.6).combined(with: .opacity))
+            }
+        }
         // On glass, as the matter's own controls on the right: the sidebar, reading and Auto in one
         // capsule.
         .overlay(alignment: .topLeading) {

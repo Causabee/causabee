@@ -178,21 +178,10 @@ struct WindowChrome: NSViewRepresentable {
             window.toolbarStyle = .unified
             // A test asks for a window of a width — the narrowest, where a page's name comes to
             // stand by the window's controls.
-            let environment = ProcessInfo.processInfo.environment
-            let width = environment["CAUSABEE_WINDOW_WIDTH"].flatMap(Double.init)
-            if width != nil || environment["CAUSABEE_UI_TEST"] != nil {
-                DispatchQueue.main.async {
-                    var frame = window.frame
-                    if let width { frame.size.width = width }
-                    // And all of it on the screen: a test clicks the bee in the window's lower
-                    // corner, and a window hanging under the screen's edge has none to click.
-                    if let visible = window.screen?.visibleFrame {
-                        frame.size.height = min(frame.height, visible.height)
-                        frame.origin.y = visible.maxY - frame.height
-                        frame.origin.x = max(visible.minX, min(frame.origin.x, visible.maxX - frame.width))
-                    }
-                    window.setFrame(frame, display: true)
-                }
+            if let width = ProcessInfo.processInfo.environment["CAUSABEE_WINDOW_WIDTH"].flatMap(Double.init) {
+                var frame = window.frame
+                frame.size.width = width
+                DispatchQueue.main.async { window.setFrame(frame, display: true) }
             }
         }
     }
