@@ -297,6 +297,8 @@ struct MailAccountSheet: View {
     @State private var password = ""
     @State private var saved = Keychain.accounts().filter { !$0.usesGoogle }
     @State private var failure: String?
+    /// The saved account asked about before its password goes — from every device, and not back.
+    @State private var removing: String?
 
     private var knownHost: String? { MailAccount(user: address.trimmingCharacters(in: .whitespaces))?.host }
 
@@ -312,11 +314,20 @@ struct MailAccountSheet: View {
                                     Text(account.host).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Button("Remove from all devices", role: .destructive) {
-                                    try? Keychain.delete(account: account.user)
-                                    saved = Keychain.accounts().filter { !$0.usesGoogle }
-                                }
+                                Button("Remove from all devices", role: .destructive) { removing = account.user }
                                 .buttonStyle(.borderless)
+                                // Asked first: the password goes from the Macs too, and cannot be brought back.
+                                .confirmationDialog("Remove the password for \(account.user)?",
+                                                    isPresented: Binding(get: { removing == account.user }, set: { if !$0 { removing = nil } }),
+                                                    titleVisibility: .visible) {
+                                    Button("Remove from all devices", role: .destructive) {
+                                        try? Keychain.delete(account: account.user)
+                                        saved = Keychain.accounts().filter { !$0.usesGoogle }
+                                    }
+                                    Button("Cancel", role: .cancel) { }
+                                } message: {
+                                    Text("It goes from iCloud Keychain, so from your Macs as well. To get mail again you type it in anew.")
+                                }
                             }
                         }
                     }
@@ -339,6 +350,7 @@ struct MailAccountSheet: View {
             }
             .navigationTitle("Mail account")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([address, host, password])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

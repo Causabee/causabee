@@ -60,6 +60,7 @@ struct ScanSheet: View {
             }
             .navigationTitle("Add a document")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([title, file?.name])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

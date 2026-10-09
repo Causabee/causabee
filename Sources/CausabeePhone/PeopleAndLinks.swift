@@ -191,6 +191,7 @@ struct PartyEditor: View {
             }
             .navigationTitle("Change person")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -459,6 +460,7 @@ struct PhoneLinkEditor: View {
             }
             .navigationTitle(link == nil ? "Add link" : "Change link")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([address, title, todo])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

@@ -24,6 +24,30 @@ extension View {
     }
 }
 
+/// A sheet that is written in is not swiped away with what was typed: once something in it has
+/// changed, a swipe down lets go again, and Cancel — said on purpose — still drops it.
+private struct KeepsWhatWasTyped: ViewModifier {
+    let now: [AnyHashable?]
+    /// What stood in the sheet once it had filled its fields from what it edits.
+    @State private var first: [AnyHashable?]?
+    /// The sheet's own onAppear has put what is edited into the fields.
+    @State private var filled = false
+
+    func body(content: Content) -> some View {
+        content
+            .interactiveDismissDisabled(first != nil && first != now)
+            // A moment after the sheet is there — sooner than anything can be typed.
+            .task { try? await Task.sleep(for: .milliseconds(400)); filled = true }
+            // Read here, not in the task: the task still holds the fields as they were when it began.
+            .onChange(of: filled) { if first == nil { first = now } }
+    }
+}
+
+extension View {
+    /// The fields of an editing sheet, as they are now: changed, the sheet stays under a swipe.
+    func keepsWhatWasTyped(_ fields: [AnyHashable?]) -> some View { modifier(KeepsWhatWasTyped(now: fields)) }
+}
+
 /// A section with nothing in it yet, as on the Mac: a grey box, what goes in it in the middle,
 /// and — where the owner can add it by hand — the button that does.
 struct PhoneEmptyBox: View {

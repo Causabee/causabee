@@ -209,7 +209,7 @@ ahead of the rest.
 - The iPhone is portrait-only (`project.pbxproj:571`); this was taken as intended and not reported.
 - Uppercase section headers (`Causabee/Theme.swift:181`) are documented as a wireframe decision and were not reported.
 
-## 8. Fixed on the branch `hig-fixes` (uncommitted)
+## 8. Fixed on the branch `hig-fixes`
 
 Only what changes behaviour, menus or words — the window looks as it did. Pictures in `raw/fixes/`.
 
@@ -226,12 +226,19 @@ Only what changes behaviour, menus or words — the window looks as it did. Pict
 | P2 | The capsule stands right of the iPad's window controls when there are any (`containerCornerOffset`), and where it was when there are none. | Running: pictures `ipad-0` (before), `ipad-1`, `ipad-2` |
 | P6 | "this iPad" on an iPad: 21 strings through `ThisDevice.name`. | Built; in the simulator's full-screen overview no such string is on screen |
 | B5 | Save and Remove in the iPhone's API-key rows are each pressed only where they stand. | Built |
+| B2 | The task, date, person, link, scan and mail-account sheets stay under a swipe or a tap beside them once something in them was changed; unchanged they go as before, and Cancel still drops what was typed. | Running on the iPad, both ways: picture `ipad-3` |
+| B3 | "Remove from all devices" asks before the synced password goes. Person and link removal wait for undo (B14). | Built |
+
+**Tried and taken out again**
+- B1, the 44-point targets: a larger content shape, and then padding taken back in the layout, both left the ⋯ menus answering only inside their 30 × 26 — tried in the simulator. A menu takes the finger where its label is laid out, so 44 points need a label that is that large, which moves the row's text a few points. That is a look to decide, not a silent change.
+- P4, hover: nothing here can show a pointer over the simulator, so the effect would have gone in unseen.
+- M8/B14, undo: switching undo on for the whole store would also take back what a mail check or the assistant wrote, while their records beside the store stayed. It needs a decision on which actions are undoable — the deletes by hand first — before any code.
 
 **Left alone, with a suggestion instead — each would change something that is meant to look as it does**
 - M14 (Matter after Edit) and M15 (" …" with a space): documented choices. Compliant alternative: delete `MenuOrder`; write "Rename…".
 - M7's filled default button, M13, M20, M21, B4, B8: the look. Compliant alternative per row in section 3.
 - M2, M3, M11, P3: need the system's list selection and split containers — section 5.
-- M8/B14 undo, B2 unsaved sheets, B3, B12, I1, I2, I3, B1, P4, P5: next round; B1 and P4 can be done without a visible change at rest.
+- B12, I1, I2, I3, P5 and the shared contact and detail sheets (B2 is not yet on those two): next.
 - M25: the code already asks for the right place; needs a look at why the built menu differs.
 
 **Not run:** the Mac's and the iPhone's UI tests. The Mac's need Causabee itself quit, and it was open.
