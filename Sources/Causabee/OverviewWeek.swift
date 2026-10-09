@@ -10,33 +10,53 @@ struct OverviewWeek: View {
     @Environment(Navigation.self) private var navigation
     @State private var chosen: String?
     @State private var showsOverdue = false
+    /// What is over today, unfolded.
+    @State private var showsEarlier = false
     /// How wide the week is: how many of a day's tiles fit side by side.
     @State private var width: CGFloat = 800
 
     var body: some View {
+        // Looked at again every minute: what is over leaves today's tiles as the day goes on.
+        TimelineView(.everyMinute) { clock in week(now: clock.date) }
+    }
+
+    private func week(now: Date) -> some View {
         // What came from another device shows at once: an arriving change redraws this.
         let _ = StoredChanges.shared.count
-        let days = Week.days()
+        let days = Week.days(from: now)
         let today = days[0]
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today
-        let things = Week.things(on: day, in: matters)
-        VStack(alignment: .leading, spacing: 10) {
+        // On a full day what is done with leaves the tiles: it stayed as crowded at night as in the morning.
+        let (things, over) = Week.asTheDayGoes(Week.things(on: day, in: matters), on: day, now: now)
+        return VStack(alignment: .leading, spacing: 10) {
             // As Figma's "Mac · Overview" has them: at most 72 wide each, and from the left.
             HStack(spacing: 6) {
                 ForEach(days, id: \.self) { each in
                     cell(each, isToday: each == today, isChosen: each == day,
-                         count: Week.things(on: each, in: matters).count, late: each == today ? overdue.count : 0)
+                         count: Week.asTheDayGoes(Week.things(on: each, in: matters), on: each, now: now).ahead.count, late: each == today ? overdue.count : 0)
                         .frame(maxWidth: 72)
                 }
                 Spacer(minLength: 0)
             }
             SectionHeader(title: day == today ? "Today · " + Self.heading(day) : Self.heading(day),
-                          detail: things.isEmpty ? "nothing" : things.count == 1 ? "1 thing" : "\(things.count) things")
+                          detail: things.isEmpty ? (over.isEmpty ? "nothing" : "nothing left") : things.count == 1 ? "1 thing" : "\(things.count) things")
             // As high as the chosen day needs: an empty today leaves no hole over the matters. Going
             // to a fuller day, what is under it moves down, and up again, gently.
-            dayGrid(day, today: today, isShown: true)
+            dayGrid(day, today: today, isShown: true, now: now)
                 .id(day)
                 .transition(.opacity)
+            // What is over is not gone: one quiet line unfolds it, under the tiles.
+            if !over.isEmpty {
+                Button { withAnimation(.smooth(duration: 0.25)) { showsEarlier.toggle() } } label: {
+                    HStack(spacing: 4) {
+                        Text(over.count == 1 ? "1 earlier today" : "\(over.count) earlier today")
+                        Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).rotationEffect(.degrees(showsEarlier ? 180 : 0))
+                    }
+                    .font(.caption).foregroundStyle(.secondary).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("week.earlier")
+            }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     }
@@ -45,15 +65,18 @@ struct OverviewWeek: View {
     private enum Item {
         case overdue([Todo])
         case thing(DayThing)
+        case earlier(DayThing)
         case nothing(String)
     }
 
-    private func dayGrid(_ day: String, today: String, isShown: Bool) -> some View {
-        let things = Week.things(on: day, in: matters)
+    private func dayGrid(_ day: String, today: String, isShown: Bool, now: Date) -> some View {
+        let (things, over) = Week.asTheDayGoes(Week.things(on: day, in: matters), on: day, now: now)
         let late = day == today ? overdue : []
-        // A day without anything is one tile too, a column wide, saying what comes next.
-        let items = things.isEmpty && late.isEmpty ? [Item.nothing(day)]
-            : (late.isEmpty ? [] : [Item.overdue(late)]) + things.map(Item.thing)
+        // A day without anything is one tile too, a column wide, saying what comes next. What is
+        // over comes after what is ahead, paler, only while it is unfolded.
+        let earlier = showsEarlier ? over.map(Item.earlier) : []
+        let items = things.isEmpty && late.isEmpty && over.isEmpty ? [Item.nothing(day)]
+            : (late.isEmpty ? [] : [Item.overdue(late)]) + things.map(Item.thing) + earlier
         // As many columns as fit at 260 points; in a row, every tile as high as the highest.
         let columns = max(1, Int((width + 8) / 268))
         let rows = stride(from: 0, to: items.count, by: columns).map { Array(items[$0..<min($0 + columns, items.count)]) }
@@ -65,6 +88,7 @@ struct OverviewWeek: View {
                             switch row[index] {
                             case .overdue(let late): overdueTile(late, isShown: isShown)
                             case .thing(let thing): tile(thing)
+                            case .earlier(let thing): tile(thing).opacity(0.55)
                             case .nothing(let day): nothing(after: day, isToday: day == today)
                             }
                         } else {

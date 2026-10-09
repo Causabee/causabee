@@ -10,33 +10,55 @@ struct PhoneWeek: View {
     @Environment(Navigation.self) private var navigation
     @State private var chosen: String?
     @State private var showsOverdue = false
+    /// What is over today, unfolded.
+    @State private var showsEarlier = false
 
     var body: some View {
+        // Looked at again every minute: what is over leaves today's list as the day goes on.
+        TimelineView(.everyMinute) { clock in week(now: clock.date) }
+    }
+
+    private func week(now: Date) -> some View {
         // What came from another device shows at once: an arriving change redraws this.
         let _ = StoredChanges.shared.count
-        let days = Week.days()
+        let days = Week.days(from: now)
         let today = days[0]
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today
         let late = !overdue.isEmpty
-        let things = Week.things(on: day, in: matters)
+        // On a full day what is done with leaves the list: it stayed as crowded at night as in the morning.
+        let (things, over) = Week.asTheDayGoes(Week.things(on: day, in: matters), on: day, now: now)
         let lateToday = day == today ? overdue : []
-        VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 4) {
                 ForEach(days, id: \.self) { each in
                     cell(each, isToday: each == today, isChosen: each == day,
-                         count: Week.things(on: each, in: matters).count, late: each == today && late)
+                         count: Week.asTheDayGoes(Week.things(on: each, in: matters), on: each, now: now).ahead.count, late: each == today && late)
                 }
             }
             SectionHeader(title: day == today ? "Today · " + Self.heading(day) : Self.heading(day),
-                          detail: things.isEmpty ? "nothing" : things.count == 1 ? "1 thing" : "\(things.count) things")
+                          detail: things.isEmpty ? (over.isEmpty ? "nothing" : "nothing left") : things.count == 1 ? "1 thing" : "\(things.count) things")
                 .padding(.top, 4)
             // Today first says what is overdue, as the Mac's first tile does; "Nothing today" only
             // when nothing is late either.
             if !lateToday.isEmpty { overdueBox(lateToday) }
             if !things.isEmpty {
                 list(things)
-            } else if lateToday.isEmpty {
+            } else if lateToday.isEmpty, over.isEmpty {
                 nothing(on: day, isToday: day == today)
+            }
+            // What is over is not gone: one quiet line unfolds it.
+            if !over.isEmpty {
+                Button { withAnimation(.snappy) { showsEarlier.toggle() } } label: {
+                    HStack(spacing: 4) {
+                        Text(over.count == 1 ? "1 earlier today" : "\(over.count) earlier today")
+                        Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).rotationEffect(.degrees(showsEarlier ? 180 : 0))
+                    }
+                    .font(.caption).foregroundStyle(.secondary)
+                    .padding(.horizontal, 4).padding(.vertical, 4).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("week.earlier")
+                if showsEarlier { list(over).opacity(0.55) }
             }
         }
     }

@@ -30,6 +30,21 @@ public enum Week {
         .sorted { ($0.time ?? "99", $0.matter.name) < ($1.time ?? "99", $1.matter.name) }
     }
 
+    /// Today's things as the day goes on: what is still ahead, and what is over — an appointment
+    /// whose end has passed: the end its words say ("11:00–12:30"), or an hour after it begins.
+    /// A task or a deadline has no hour, and is ahead for as long as its day lasts. On any other
+    /// day everything is ahead.
+    public static func asTheDayGoes(_ things: [DayThing], on day: String, now: Date = Date()) -> (ahead: [DayThing], over: [DayThing]) {
+        guard day == MatterStatus.day(now), let midnight = MatterStatus.date(of: day) else { return (things, []) }
+        func isOver(_ thing: DayThing) -> Bool {
+            guard let time = thing.time else { return false }
+            let parts = time.split(separator: ":").compactMap { Int($0) }
+            guard parts.count == 2, let start = Calendar.current.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: midnight) else { return false }
+            return (Calendars.end(in: thing.what, from: start) ?? start.addingTimeInterval(3600)) <= now
+        }
+        return (things.filter { !isOver($0) }, things.filter(isOver))
+    }
+
     /// The first day after `day` with anything on it, and its first thing: what an empty day
     /// says comes next.
     public static func next(after day: String, in matters: [Matter]) -> (day: String, thing: DayThing)? {

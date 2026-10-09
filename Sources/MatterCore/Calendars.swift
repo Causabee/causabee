@@ -43,7 +43,7 @@ public final class Calendars {
     /// When an appointment ends, read from its own words — "Portfolio review, 12:00–13:30",
     /// "Interview, 3:30–6:00 PM": an appointment keeps its beginning only, and without this every
     /// event was an hour long whatever it said. Nil when the words give no end after the beginning.
-    static func end(in what: String, from start: Date) -> Date? {
+    nonisolated static func end(in what: String, from start: Date) -> Date? {
         let range = #/(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?\s*(?:[–—-]|to|bis)\s*(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?/#
         guard let found = what.firstMatch(of: range), var hour = Int(found.4), let minute = Int(found.5),
               hour < 24, minute < 60 else { return nil }
