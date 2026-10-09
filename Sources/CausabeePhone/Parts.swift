@@ -7,6 +7,8 @@ import SwiftUI
 extension Theme {
     /// The overview's and a matter's name on top of the page (Figma "iOS/Large Title Serif").
     static let phoneTitleFont = Font.custom("Source Serif 4", size: 34, relativeTo: .largeTitle)
+    /// A matter's name in the iPad's bar: the same face, the size of the bar.
+    static let padTitleFont = Font.custom("Source Serif 4", size: 24, relativeTo: .title2)
     /// A matter's name on its overview card.
     static let phoneCardTitleFont = Font.custom("Source Serif 4", size: 22, relativeTo: .title2)
 }

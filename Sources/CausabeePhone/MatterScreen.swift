@@ -208,13 +208,30 @@ struct MatterScreen: View {
             if navigation.isPad, !navigation.showsSidebar {
                 ToolbarItem(placement: .topBarLeading) { PadSidebarButton() }
             }
+            // The matter's icon and name in the bar, as on the Mac: on the line of find and ⋯, and
+            // there however far the page is scrolled. On the bar's own ground, no glass around them.
+            if navigation.isPad {
+                ToolbarItem(placement: .topBarLeading) {
+                    HStack(spacing: 10) {
+                        Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 30) }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Icon").accessibilityHint("Chooses another icon")
+                        Text(matter.name).font(Theme.padTitleFont).lineLimit(1).minimumScaleFactor(0.75)
+                            .accessibilityIdentifier("matter.title")
+                    }
+                    // Its room said in points — what find and ⋯, and the sidebar's button, leave of
+                    // the page's width: left to the bar, the name got the width of a letter.
+                    .frame(width: max(120, navigation.pageWidth - 150 - (navigation.showsSidebar ? 0 : 56)), alignment: .leading)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { startFinding() } label: { Image(systemName: "magnifyingglass") }
                     .tint(.primary)
                     .accessibilityLabel("Find in this matter")
             }
-            // With the iPad's sidebar open the glasses are in its capsule, with the sidebar's button and Auto.
-            if !(navigation.isPad && navigation.showsSidebar) {
+            // On the iPad the glasses are in the sidebar's capsule, with the sidebar's button and Auto.
+            if !navigation.isPad {
             ToolbarItem(placement: .topBarTrailing) {
                 // Glasses, as on the Mac: on, black on the bee's yellow.
                 Button {
@@ -309,6 +326,10 @@ struct MatterScreen: View {
 
     private func header(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 4) {
+            // On the iPad the icon and the name stand in the bar, beside find and ⋯, and stay there.
+            if navigation.isPad {
+                Text(meta(status)).font(.subheadline).foregroundStyle(.secondary)
+            } else {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 // The matter's icon in front of its name, level with the first line: a tap chooses another.
                 Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 36) }
@@ -320,6 +341,7 @@ struct MatterScreen: View {
                     Text(matter.name).font(Theme.phoneTitleFont).fixedSize(horizontal: false, vertical: true)
                     Text(meta(status)).font(.subheadline).foregroundStyle(.secondary)
                 }
+            }
             }
         }
         .padding(.top, 4)
