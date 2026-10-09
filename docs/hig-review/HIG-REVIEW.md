@@ -228,11 +228,12 @@ Only what changes behaviour, menus or words — the window looks as it did. Pict
 | B5 | Save and Remove in the iPhone's API-key rows are each pressed only where they stand. | Built |
 | B2 | The task, date, person, link, scan and mail-account sheets stay under a swipe or a tap beside them once something in them was changed; unchanged they go as before, and Cancel still drops what was typed. | Running on the iPad, both ways: picture `ipad-3` |
 | B3 | "Remove from all devices" asks before the synced password goes. Person and link removal wait for undo (B14). | Built |
+| M8, B14 | What is deleted by hand — a task, a date, a note, a detail, a link — comes back with Edit → Undo, or a shake on the iPhone. Only that: what a mail check or the assistant writes never reaches the undo manager. It is made anew from what was written down of it; its reminder or Calendar entry, removed with it, is not reconnected. No Redo yet. The delete dialogs no longer say "This cannot be undone". | Unit tests (4); both apps build; not yet tried in the running apps |
 
 **Tried and taken out again**
 - B1, the 44-point targets: a larger content shape, and then padding taken back in the layout, both left the ⋯ menus answering only inside their 30 × 26 — tried in the simulator. A menu takes the finger where its label is laid out, so 44 points need a label that is that large, which moves the row's text a few points. That is a look to decide, not a silent change.
 - P4, hover: nothing here can show a pointer over the simulator, so the effect would have gone in unseen.
-- M8/B14, undo: switching undo on for the whole store would also take back what a mail check or the assistant wrote, while their records beside the store stayed. It needs a decision on which actions are undoable — the deletes by hand first — before any code.
+- Undo through the store's own undo manager, switched on only for the length of a delete: under test the deleted thing did not come back, so it is done by writing down and making anew instead (above).
 
 **Left alone, with a suggestion instead — each would change something that is meant to look as it does**
 - M14 (Matter after Edit) and M15 (" …" with a space): documented choices. Compliant alternative: delete `MenuOrder`; write "Rename…".

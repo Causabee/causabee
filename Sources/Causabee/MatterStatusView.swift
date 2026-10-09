@@ -14,6 +14,7 @@ struct MatterStatusView: View {
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var showsDone = false
     @State private var showsInfos = false
     @State private var writingSummary = false
@@ -691,8 +692,7 @@ struct MatterStatusView: View {
     }
 
     private func remove(_ link: WebLink) {
-        withAnimation { context.delete(link) }
-        try? context.save()
+        withAnimation { context.deleteByHand([link], undo: undoManager, named: "Remove Link") }
     }
 
     /// Off the list or back on it. Nothing is deleted: the file lives in its mail.
@@ -1509,6 +1509,7 @@ struct TodoRow: View {
     let toggle: () -> Void
     let talk: () -> Void
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var editing = false
     @State private var deleting = false
 
@@ -1611,13 +1612,12 @@ struct TodoRow: View {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
                 Calendars.shared.removeReminder(todo.reminderID)
-                withAnimation { context.delete(todo) }
-                try? context.save()
+                withAnimation { context.deleteByHand([todo], undo: undoManager, named: "Delete Task") }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(todo.reminderID == nil ? "It goes from this matter. This cannot be undone. Something only good to know can go to Info instead."
-                 : "It goes from this matter, and its reminder from Reminders. This cannot be undone.")
+            Text(todo.reminderID == nil ? "It goes from this matter; Edit → Undo brings it back. Something only good to know can go to Info instead."
+                 : "It goes from this matter, and its reminder from Reminders. Edit → Undo brings the task back, not the reminder.")
         }
     }
 
@@ -1960,6 +1960,7 @@ struct DateRow: View {
     var save: () -> Void = {}
     let talk: () -> Void
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var editing = false
     @State private var deleting = false
 
@@ -2000,14 +2001,13 @@ struct DateRow: View {
             Button("Delete", role: .destructive) {
                 // The entry in Calendar it is connected with goes too.
                 Calendars.shared.removeEvent(item.calendarID)
-                if let appointment = item.appointment { context.delete(appointment) }
-                if let deadline = item.deadline { context.delete(deadline) }
+                context.deleteByHand(([item.appointment, item.deadline] as [(any PersistentModel)?]).compactMap { $0 }, undo: undoManager, named: "Delete Date")
                 save()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(item.calendarID == nil ? "It goes from this matter. This cannot be undone."
-                 : "It goes from this matter, and its entry from Calendar. This cannot be undone.")
+            Text(item.calendarID == nil ? "It goes from this matter; Edit → Undo brings it back."
+                 : "It goes from this matter, and its entry from Calendar. Edit → Undo brings the date back, not the entry.")
         }
     }
 

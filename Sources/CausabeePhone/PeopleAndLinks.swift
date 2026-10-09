@@ -246,6 +246,7 @@ struct PhoneSuggestionCard: View {
 struct LinksSection: View {
     let matter: Matter
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var adding = false
     @State private var showsSuggestions = true
     @State private var searching: String?
@@ -262,8 +263,7 @@ struct LinksSection: View {
                     ForEach(Array(all.enumerated()), id: \.element.persistentModelID) { index, link in
                         if index > 0 { Divider().padding(.leading, 50) }
                         PhoneLinkRow(link: link, todos: matter.openTodos) {
-                            withAnimation { context.delete(link) }
-                            try? context.save()
+                            withAnimation { context.deleteByHand([link], undo: undoManager, named: "Remove Link") }
                         }
                     }
                 }

@@ -174,6 +174,7 @@ struct NotesPart: View {
     /// Set from outside — "Write Note" in the menu — to put the cursor into the field.
     @Binding var writing: Bool
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var draft = ""
     @State private var editing: PersistentIdentifier?
     @State private var editingEarlier = false
@@ -220,7 +221,7 @@ struct NotesPart: View {
                 block(Self.label(note.createdAt) + (note.fromAssistant ? " · from the assistant" : ""), note.text, isEditing: editing == note.persistentModelID,
                       edit: { edited = note.text; editing = note.persistentModelID; editingEarlier = false },
                       save: { text in if text.isEmpty { context.delete(note) } else { note.text = text } },
-                      delete: { context.delete(note) })
+                      delete: { context.deleteByHand([note], undo: undoManager, named: "Delete Note") })
                     .findable(.model(note.persistentModelID), note.text)
             }
             if let earlier = matter.earlierNote {
@@ -406,6 +407,7 @@ struct DetailEditor: View {
     let matter: Matter
     var detail: MatterDetail? = nil
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @Environment(\.dismiss) private var dismiss
     @State private var label = ""
     @State private var value = ""
@@ -484,7 +486,7 @@ struct DetailEditor: View {
     }
 
     private func delete() {
-        if let detail { context.delete(detail); try? context.save() }
+        if let detail { context.deleteByHand([detail], undo: undoManager, named: "Delete Detail") }
         dismiss()
     }
 }
@@ -493,6 +495,7 @@ struct DetailEditor: View {
 /// copies one; it is put right or deleted from its menu.
 struct DetailsSection: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     let matter: Matter
     /// Shown even while there is none yet — when the record shows only the details.
     var showsEmpty = false
@@ -564,7 +567,7 @@ struct DetailsSection: View {
             if let party = detail.party { ContactItems(party: party) }
             Button("Edit", systemImage: "pencil") { editing = detail }
             Divider()
-            Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { context.delete(detail); try? context.save() } }
+            Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { context.deleteByHand([detail], undo: undoManager, named: "Delete Detail") } }
         }
     }
 
