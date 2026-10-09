@@ -900,7 +900,9 @@ struct MatterStatusView: View {
                 // The matter's icon: a click chooses another.
                 Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 30) }
                     .buttonStyle(.plain)
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 7 }
+                    // Its middle on the middle of the name's capitals — 8 over the baseline at the
+                    // system's size, more with the larger text.
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - (15 - 8 * Theme.textScale) }
                     .help("Choose another icon")
                     .popover(isPresented: $choosingIcon, arrowEdge: .bottom) { MatterIconPicker(matter: matter) }
                 if renaming {
@@ -968,7 +970,7 @@ struct MatterStatusView: View {
                     }
                     // On the line of the window's controls, as the icon is: their middle eight over
                     // the name's baseline, which is the middle of its capitals.
-                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 8 }
+                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 8 * Theme.textScale }
                 }
             }
             // Once the parts in the page have gone under this bar, they stay at hand here — in the place
@@ -990,8 +992,9 @@ struct MatterStatusView: View {
         .padding(.leading, max(0, navigation.controlsEdge + 16 - (barLeft + 24)))
         .padding(.horizontal, 24)
         // The icon's middle and the name's capitals on the middle of the window's top line, as the
-        // controls': 26 down.
-        .padding(.top, 7)
+        // controls': 26 down. The larger text has its capitals' middle lower in its line, by what
+        // the padding gives back — at a fifth larger the name sat three points under the controls.
+        .padding(.top, 7 - 16.5 * (Theme.textScale - 1))
         .padding(.bottom, 12)
         .frame(maxWidth: 820, alignment: .leading)
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minX } action: { barLeft = $0 }

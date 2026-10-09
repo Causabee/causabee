@@ -90,8 +90,9 @@ struct AssistantButton: View {
             BeeMark(size: 24, livesNowAndThen: true)
                 .foregroundStyle(.black)
                 .frame(width: 60, height: 60)
-                .background(Theme.bee, in: Circle())
-                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+                // Glass in the bee's yellow, and alive under the finger, as the system's own
+                // buttons: a flat yellow disc lay on the page like a sticker.
+                .onGlass(Circle(), tint: Theme.bee.opacity(0.82))
         } primaryAction: {
             action()
         }
@@ -131,9 +132,8 @@ struct PhoneAutoButton: View {
             Image(systemName: auto ? "bolt.fill" : "bolt").font(.system(size: 15, weight: .medium))
                 .foregroundStyle(auto ? Color.black : Color.secondary)
                 .frame(width: 36, height: 36)
-                .background(auto ? AnyShapeStyle(Theme.bee) : AnyShapeStyle(.regularMaterial), in: Circle())
-                .overlay(Circle().stroke(Theme.line).opacity(auto ? 0 : 1))
-                .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
+                // Glass, as the bee under it: clear while Auto is off, the bee's yellow while it is on.
+                .onGlass(Circle(), tint: auto ? Theme.bee.opacity(0.82) : nil)
                 // A finger's room around the small disc.
                 .frame(width: 44, height: 44).contentShape(Circle())
         }
