@@ -101,8 +101,10 @@ struct RootView: View {
         }
         // `--demo --shot listening`: the care matter open, the assistant over it.
         .task {
-            guard PhoneShot.isListening, let care = matters.first(where: { $0.name.hasPrefix("Care for Mum") }) else { return }
+            // `--shot matter`: the care matter alone, for the website's picture of a matter.
+            guard PhoneShot.isListening || PhoneShot.isMatter, let care = matters.first(where: { $0.name.hasPrefix("Care for Mum") }) else { return }
             navigation.path = [care.persistentModelID]
+            guard PhoneShot.isListening else { return }
             try? await Task.sleep(for: .seconds(1.2))
             navigation.showsAssistant = true
         }
@@ -360,6 +362,11 @@ enum PhoneShot {
         return room
     }()
 
+    static let isMatter: Bool = {
+        let arguments = CommandLine.arguments
+        guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot"), at + 1 < arguments.count else { return false }
+        return arguments[at + 1] == "matter"
+    }()
     static let isListening: Bool = {
         let arguments = CommandLine.arguments
         guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot"), at + 1 < arguments.count else { return false }
