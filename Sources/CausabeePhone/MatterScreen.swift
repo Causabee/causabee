@@ -222,7 +222,10 @@ struct MatterScreen: View {
                     }
                     // Its room said in points — what find and ⋯, and the sidebar's button, leave of
                     // the page's width: left to the bar, the name got the width of a letter.
-                    .padding(.leading, navigation.showsSidebar ? 0 : PadMetrics.controls)
+                    // On the page's own left edge, over its first line — and clear of the sidebar's
+                    // capsule where that lies over the page.
+                    .padding(.leading, max((navigation.pageWidth - min(navigation.pageWidth, PadMetrics.page)) / 2,
+                                           navigation.showsSidebar ? 0 : PadMetrics.controls))
                     .frame(width: max(120, navigation.pageWidth - 172), alignment: .leading)
                     // Moved with the page, not by a transition of the bar's own.
                     .animation(nil, value: navigation.showsSidebar)
@@ -348,7 +351,8 @@ struct MatterScreen: View {
             }
             }
         }
-        .padding(.top, 4)
+        // Under the iPad's bar a little air: the name is up there, and the page began too close to it.
+        .padding(.top, navigation.isPad ? 18 : 4)
         .sheet(isPresented: $choosingIcon) {
             MatterIconPicker(matter: matter).presentationDetents([.height(470)]).presentationDragIndicator(.visible)
         }

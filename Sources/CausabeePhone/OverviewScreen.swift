@@ -210,6 +210,7 @@ struct OverviewScreen: View {
                 }
             }
             .padding(.horizontal, 16)
+            .padding(.top, navigation.isPad ? 14 : 0)
             .padding(.bottom, 24)
             .pageWide(columns == 1 ? PadMetrics.page : PadMetrics.widePage)
         }

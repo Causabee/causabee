@@ -16,7 +16,7 @@ enum PadMetrics {
     /// The line the sidebar's controls, the page's bar and the assistant's name stand on.
     static let bar: CGFloat = 44
     /// The room the sidebar's capsule takes of the page's bar while the sidebar is put away.
-    static let controls: CGFloat = 154
+    static let controls: CGFloat = 168
 }
 
 /// The iPad's sidebar: its controls on top, the overview, and every matter that is going on — the
