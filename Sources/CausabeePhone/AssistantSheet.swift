@@ -92,7 +92,8 @@ struct AssistantSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
+            // A column on the iPad has no bar of its own: its name and its × stand on the page's ground.
+            if !navigation.isPad { Divider() }
             ScrollViewReader { scroller in
             ScrollView {
                 // Laid out whole, not lazily: a matter's thread is short enough.
@@ -221,7 +222,7 @@ struct AssistantSheet: View {
                 Button { navigation.closeAssistant() } label: {
                     Image(systemName: "xmark").font(.body.weight(.semibold)).foregroundStyle(.primary)
                         .frame(width: 44, height: 44)
-                        .background(.regularMaterial, in: Circle())
+                        .onGlass(Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close")
