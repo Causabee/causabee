@@ -23,8 +23,14 @@ final class Navigation {
     var isPad = false
     /// Too narrow for the sidebar, the page and the assistant side by side: the iPad upright.
     var isNarrow = false
-    /// The room the page has between the columns on an iPad.
-    var pageWidth = CGFloat.zero
+    /// The window's whole width on an iPad.
+    var whole = CGFloat.zero
+    /// The room the page has between the columns on an iPad. Worked out, not stored: the page and
+    /// what is on it get their new width in the same moment the assistant comes or goes — told a
+    /// moment later, the page's content jumped behind its column.
+    var pageWidth: CGFloat {
+        max(320, whole - (showsSidebar ? PadMetrics.sidebar + 1 : 0) - (showsAssistant ? PadMetrics.assistant + 1 : 0))
+    }
     /// The window's width has been looked at once.
     var measured = false
     var showsSidebar = true {

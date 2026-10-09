@@ -9,8 +9,6 @@ struct RootView: View {
     @Query private var matters: [Matter]
     @Environment(\.scenePhase) private var phase
     @Environment(\.horizontalSizeClass) private var width
-    /// The window's whole width.
-    @State private var whole = CGFloat.zero
 
     /// The matter the assistant is about: the one that is open.
     private var about: Matter? { navigation.path.last.flatMap { id in matters.first { $0.persistentModelID == id } } }
@@ -23,7 +21,7 @@ struct RootView: View {
         Color.clear.overlay(alignment: .leading) { columns }
         .background(Theme.canvas)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { wide in
-            whole = wide
+            navigation.whole = wide
             let narrow = wide < PadMetrics.wide
             guard narrow != navigation.isNarrow || !navigation.measured else { return }
             navigation.measured = true
@@ -48,9 +46,7 @@ struct RootView: View {
             }
             // The page has what the columns beside it leave, said in points: left to take what it
             // likes, it kept the width it had before the assistant came, and slid under the sidebar.
-            let room = max(320, whole - (navigation.showsSidebar ? PadMetrics.sidebar + 1 : 0) - (navigation.showsAssistant ? PadMetrics.assistant + 1 : 0))
-            page.frame(width: navigation.isPad && whole > 0 ? room : nil)
-                .onChange(of: room, initial: true) { navigation.pageWidth = room }
+            page.frame(width: navigation.isPad && navigation.whole > 0 ? navigation.pageWidth : nil)
             if navigation.isPad, navigation.showsAssistant {
                 Divider().ignoresSafeArea()
                 // In a stack of its own: what in it is as wide or as tall "as its container" — the

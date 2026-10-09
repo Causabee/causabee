@@ -121,7 +121,7 @@ private struct PageWide: ViewModifier {
     @Environment(Navigation.self) private var navigation
 
     func body(content: Content) -> some View {
-        if navigation.isPad, navigation.pageWidth > 0 {
+        if navigation.isPad, navigation.whole > 0 {
             // The room is said by the columns' own row: measured here, the page kept the width it
             // had before the assistant came in beside it.
             content.frame(width: min(navigation.pageWidth, most)).frame(width: navigation.pageWidth)
