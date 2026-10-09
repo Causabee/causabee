@@ -73,8 +73,8 @@ struct AssistantButton: View {
     var body: some View {
         // Over the bee, Auto: how the assistant works is turned on and off where the assistant is.
         VStack(spacing: 10) {
-            // With the iPad's sidebar open, Auto is in its capsule.
-            if !(navigation.isPad && navigation.showsSidebar) { PhoneAutoButton() }
+            // On the iPad Auto is in the sidebar's capsule, top left.
+            if !navigation.isPad { PhoneAutoButton() }
             bee
         }
         .padding(.trailing, 16).padding(.bottom, 8)

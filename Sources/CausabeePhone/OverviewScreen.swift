@@ -17,9 +17,31 @@ struct RootView: View {
 
     var body: some View {
         @Bindable var navigation = navigation
-        // One row on every device, so the page stays the same view when an iPad's window is made
-        // narrow or wide: on the iPhone it is the page alone.
-        HStack(spacing: 0) {
+        // The window itself is measured, by a ground that is as large as it is and no larger: the
+        // row of columns, measured, kept the width its columns had on the iPad's side, and stood
+        // too wide once the iPad was turned upright again.
+        Color.clear.overlay(alignment: .leading) { columns }
+        .background(Theme.canvas)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { wide in
+            whole = wide
+            let narrow = wide < PadMetrics.wide
+            guard narrow != navigation.isNarrow || !navigation.measured else { return }
+            navigation.measured = true
+            navigation.isNarrow = narrow
+            // Turned upright, the sidebar steps aside; turned on its side, it is back.
+            withAnimation(.snappy(duration: 0.25)) { navigation.showsSidebar = !narrow }
+        }
+        .onChange(of: width, initial: true) { navigation.isPad = width == .regular }
+        .tint(Theme.gold)
+        .environment(\.reading, navigation.reading)
+        .environment(navigation)
+    }
+
+    /// One row on every device, so the page stays the same view when an iPad's window is made
+    /// narrow or wide: on the iPhone it is the page alone.
+    private var columns: some View {
+        @Bindable var navigation = navigation
+        return HStack(spacing: 0) {
             if navigation.isPad, navigation.showsSidebar {
                 PadSidebar(matters: matters).frame(width: PadMetrics.sidebar).transition(.move(edge: .leading))
                 Divider().ignoresSafeArea()
@@ -44,22 +66,6 @@ struct RootView: View {
                     .transition(.move(edge: .trailing))
             }
         }
-        // The window's width, not the columns': measured by what they stand in.
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.canvas)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { wide in
-            whole = wide
-            let narrow = wide < PadMetrics.wide
-            guard narrow != navigation.isNarrow || !navigation.measured else { return }
-            navigation.measured = true
-            navigation.isNarrow = narrow
-            // Turned upright, the sidebar steps aside; turned on its side, it is back.
-            withAnimation(.snappy(duration: 0.25)) { navigation.showsSidebar = !narrow }
-        }
-        .onChange(of: width, initial: true) { navigation.isPad = width == .regular }
-        .tint(Theme.gold)
-        .environment(\.reading, navigation.reading)
-        .environment(navigation)
     }
 
     private var page: some View {
