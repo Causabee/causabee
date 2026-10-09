@@ -214,10 +214,15 @@ struct MatterScreen: View {
             if navigation.isPad {
                 ToolbarItem(placement: .topBarLeading) {
                     HStack(spacing: 10) {
-                        Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 26) }
+                        Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 32) }
+                            // A bar draws its symbols a size up: here the icon keeps the share of
+                            // its tile it has everywhere else.
+                            .imageScale(.small)
                             .buttonStyle(.plain)
                             .accessibilityLabel("Icon").accessibilityHint("Chooses another icon")
-                        Text(matter.name).font(Theme.padTitleFont).lineLimit(1).minimumScaleFactor(0.75)
+                        // At its own size always, as large beside the page's text as on the Mac and the
+                        // iPhone: a name too long for the bar ends in "…", it is not made small to fit.
+                        Text(matter.name).font(Theme.padTitleFont).lineLimit(1).truncationMode(.tail)
                             .accessibilityIdentifier("matter.title")
                     }
                     // Its room said in points — what find and ⋯, and the sidebar's button, leave of
