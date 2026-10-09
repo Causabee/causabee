@@ -79,15 +79,17 @@ struct PadControls: View {
             .accessibilityValue(auto ? "On" : "Off")
         }
         // The yellow round of one that is on sits in the capsule's own curve.
-        .padding(.leading, 6).padding(.trailing, 3).padding(.vertical, 3)
+        // As high as the page's own find and ⋯, and as black: beside them a smaller, greyer
+        // capsule looked like something else.
+        .padding(.horizontal, 3).padding(.vertical, 3)
         .onGlass(Capsule())
     }
 
     private func round(_ symbol: String, on: Bool, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .medium))
-                .foregroundStyle(on ? Color.black : Color.secondary)
-                .frame(width: 38, height: 38)
+            Image(systemName: symbol).font(.system(size: 20, weight: .medium))
+                .foregroundStyle(on ? Color.black : Color.primary)
+                .frame(width: 44, height: 38)
                 .background { if on { Circle().fill(Theme.bee) } }
                 .contentShape(Circle())
         }
@@ -104,9 +106,9 @@ struct PadSidebarButton: View {
         Button {
             withAnimation(.snappy(duration: 0.25)) { navigation.showsSidebar.toggle() }
         } label: {
-            Image(systemName: "sidebar.left").font(.system(size: 17, weight: .medium))
-                .foregroundStyle(navigation.showsSidebar ? Color.secondary : Color.primary)
-                .frame(width: 38, height: 38).contentShape(Rectangle())
+            Image(systemName: "sidebar.left").font(.system(size: 20, weight: .medium))
+                .foregroundStyle(Color.primary)
+                .frame(width: 44, height: 38).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(navigation.showsSidebar ? "Hide Sidebar" : "Show Sidebar")
