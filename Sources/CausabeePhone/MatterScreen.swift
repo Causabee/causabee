@@ -135,8 +135,12 @@ struct MatterScreen: View {
             .overlay(alignment: .top) {
                 if partsUnder, !find.isActive {
                     // The tabs change places without a fade: there is one set of them at a time.
+                    // As wide as they are in the page, on a bar as wide as the column: on an
+                    // iPad the page is narrower than its column.
                     parts(status)
-                        .padding(.horizontal, 16).padding(.top, 6).padding(.bottom, 10)
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: PadMetrics.page).frame(maxWidth: .infinity)
+                        .padding(.top, 6).padding(.bottom, 10)
                         .background(.bar, ignoresSafeAreaEdges: .top)
                         .overlay(alignment: .bottom) { Divider() }
                 }
