@@ -237,7 +237,7 @@ final class PhoneMailCheck {
         running = Task {
             do {
                 guard let password = try Keychain.password(for: account.user) else {
-                    state = .failed("No password for \(account.user) on this iPhone: add it in Settings (⋯ above).")
+                    state = .failed("No password for \(account.user) on this \(ThisDevice.name): add it in Settings (⋯ above).")
                     return
                 }
                 let look = try await door.look(password: password)

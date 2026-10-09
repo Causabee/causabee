@@ -469,9 +469,8 @@ struct OverviewView: View {
         .padding(.bottom, 14)
         // The overview opens ready to type: the cursor in the field.
         .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { searching = true } }
-        .background {
-            Button("") { searching = true }.keyboardShortcut("f", modifiers: .command).hidden()
-        }
+        // Edit → Find, ⌘F.
+        .onReceive(NotificationCenter.default.publisher(for: .find)) { _ in searching = true }
     }
 
     var body: some View {

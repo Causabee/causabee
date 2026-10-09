@@ -163,6 +163,10 @@ struct MatterScreen: View {
             .onChange(of: find.current) { if let at = find.current { withAnimation { scroller.scrollTo(at, anchor: .center) } } }
         }
         .environment(find)
+        // Edit → Find, ⌘F: in the matter that is open.
+        .onReceive(NotificationCenter.default.publisher(for: .phoneFind)) { _ in
+            if navigation.path.last == matter.persistentModelID { startFinding() }
+        }
         .safeAreaInset(edge: .top) { if finding { findBar } }
         .background(Theme.canvas)
         .overlay(alignment: .bottomTrailing) {

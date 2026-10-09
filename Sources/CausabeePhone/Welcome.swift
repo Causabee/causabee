@@ -77,7 +77,7 @@ struct WelcomeSheet: View {
     private var checks: some View {
         let there = [signedIn, hasKey, hasAccount].filter { $0 }.count
         return VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "On this iPhone", detail: there == 3 ? "All there" : "\(there) of 3 there")
+            SectionHeader(title: "On this \(ThisDevice.name)", detail: there == 3 ? "All there" : "\(there) of 3 there")
             VStack(spacing: 0) {
                 check("iCloud", done: signedIn, detail: signedIn ? "from your Mac" : "sign in, in Settings")
                 Divider().padding(.leading, 48)

@@ -312,8 +312,9 @@ struct MatterIconMenu: View {
     var body: some View {
         Menu("Icon", systemImage: matter.shownIcon) {
             ForEach(MatterIcons.all) { icon in
-                Button { choose(icon.symbol) } label: {
-                    Label(icon.label + (matter.shownIcon == icon.symbol ? "  ✓" : ""), systemImage: icon.symbol)
+                // The menu's own tick, in its own column.
+                Toggle(isOn: Binding(get: { matter.shownIcon == icon.symbol }, set: { _ in choose(icon.symbol) })) {
+                    Label(icon.label, systemImage: icon.symbol)
                 }
             }
             if matter.icon != nil {
@@ -669,7 +670,7 @@ struct SpeechModelCard: View {
         let state = Transcriber.shared.state
         VStack(alignment: .leading, spacing: 8) {
             #if os(iOS)
-            Text("Speech is written down on this iPhone").font(.headline)
+            Text("Speech is written down on this \(ThisDevice.name)").font(.headline)
             #else
             Text("Speech is written down on this Mac").font(.body.weight(.semibold))
             #endif

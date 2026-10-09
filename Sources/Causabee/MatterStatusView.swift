@@ -625,7 +625,7 @@ struct MatterStatusView: View {
     /// in them matter. Free: nothing leaves the Mac but the reading itself.
     private func searchLinks() {
         guard let account = Keychain.accounts().first else {
-            searchingLinks = "No mail account saved. First: matter-spike login"
+            searchingLinks = "No mail account saved. Choose Causabee → Set Up Causabee … to add one."
             return
         }
         let mails = (matter.entries ?? []).filter { $0.source.pointer.hasPrefix("imap://") && !$0.messageID.isEmpty }
@@ -749,7 +749,7 @@ struct MatterStatusView: View {
             if (try? bytes.write(to: target, options: .atomic)) != nil { use(target); return }
         }
         guard let account = Keychain.accounts().first else {
-            fetching[document.persistentModelID] = "No mail account saved. First: matter-spike login"
+            fetching[document.persistentModelID] = "No mail account saved. Choose Causabee → Set Up Causabee … to add one."
             return
         }
         let id = document.persistentModelID
@@ -870,7 +870,7 @@ struct MatterStatusView: View {
             TextField("Name", text: $newMatterName).textFieldStyle(.roundedBorder).onSubmit(startNewMatter)
             HStack {
                 Spacer()
-                Button("Cancel") { splitting = false }
+                Button("Cancel") { splitting = false }.keyboardShortcut(.cancelAction)
                 Button("Start", action: startNewMatter)
                     .keyboardShortcut(.defaultAction)
                     .disabled(newMatterName.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -2053,7 +2053,7 @@ struct DateEditor: View {
             }
             HStack {
                 Spacer()
-                Button("Cancel", action: cancel)
+                Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
                 Button("Save", action: saveChanges)
                     .keyboardShortcut(.defaultAction)
                     .disabled(what.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -2170,7 +2170,7 @@ struct PartyRow: View {
                                     .help("Only from this matter. A later mail naming them will not put them back.")
                             }
                             Spacer()
-                            Button("Cancel") { editing = false }
+                            Button("Cancel") { editing = false }.keyboardShortcut(.cancelAction)
                             Button("Save") {
                                 save(name, role)
                                 let mail = address.trimmingCharacters(in: .whitespacesAndNewlines), number = phone.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2501,7 +2501,7 @@ struct DocumentRow: View {
                 .font(.caption).foregroundStyle(.secondary).frame(width: 320, alignment: .leading)
             HStack {
                 Spacer()
-                Button("Cancel") { renaming = false }
+                Button("Cancel") { renaming = false }.keyboardShortcut(.cancelAction)
                 Button("Save", action: saveName).keyboardShortcut(.defaultAction)
             }
         }
@@ -2607,7 +2607,7 @@ struct LinkEditor: View {
             }
             HStack {
                 Spacer()
-                Button("Cancel", action: cancel)
+                Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
                 Button("Save") {
                     guard let valid else { return }
                     save(valid, title.trimmingCharacters(in: .whitespacesAndNewlines), todos.first { $0.persistentModelID == todo })

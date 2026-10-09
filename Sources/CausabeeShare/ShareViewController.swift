@@ -1,3 +1,4 @@
+import MatterCore
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -190,7 +191,7 @@ struct ShareView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(summary).fontWeight(.medium)
-                Text("Scanned on this iPhone. Nothing is sent until you tap “Sort in” in Causabee — about 4 cents.")
+                Text("Scanned on this \(ThisDevice.name). Nothing is sent until you tap “Sort in” in Causabee — about 4 cents.")
                     .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)

@@ -83,8 +83,10 @@ struct PadSidebar: View {
                 .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 24)
         }
         .safeAreaBar(edge: .top, alignment: .leading, spacing: 0) {
+            // Clear of the window's own three buttons, where the iPad shows them in this corner.
             PadControls()
                 .padding(.leading, 16)
+                .containerCornerOffset(.leading, sizeToFit: true)
                 .frame(height: PadMetrics.bar)
         }
         .background(Color(.secondarySystemBackground))

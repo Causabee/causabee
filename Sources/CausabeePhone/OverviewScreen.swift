@@ -27,7 +27,9 @@ struct RootView: View {
         // change with the sidebar is formed anew by the system, with a transition of its own.
         .overlay(alignment: .topLeading) {
             if navigation.isPad, !navigation.showsSidebar {
-                PadControls().padding(.leading, 16).frame(height: PadMetrics.bar)
+                // In a window of its own the iPad sets its three buttons in this corner: the capsule
+                // stands clear of them, right of them, and where it was when there are none.
+                PadControls().padding(.leading, 16).containerCornerOffset(.leading, sizeToFit: true).frame(height: PadMetrics.bar)
                     .transition(.identity)
             }
         }
@@ -125,6 +127,21 @@ struct RootView: View {
         .onAppear { MirrorRunner.shared.start(context) }
         // This iPhone's list of names into the store when it goes to the background, as the Mac's.
         .onChange(of: phase) { _, now in if now == .background { PhoneNames.publish(in: context) } }
+        // The menu bar's commands, and their keys.
+        .onReceive(NotificationCenter.default.publisher(for: .phoneSidebar)) { _ in
+            if navigation.isPad { withAnimation(.snappy(duration: 0.25)) { navigation.showsSidebar.toggle() } }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneAssistant)) { _ in
+            if navigation.showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneReading)) { _ in
+            withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneNewMatter)) { _ in
+            if navigation.isPad { navigation.go([]) } else { navigation.path = [] }
+        }
+        .focusedSceneValue(\.phoneWindow, PhoneWindowState(isPad: navigation.isPad, showsSidebar: navigation.showsSidebar,
+                                                          showsAssistant: navigation.showsAssistant, reading: navigation.reading))
         .environment(\.reading, navigation.reading)
         .environment(navigation)
     }
@@ -243,6 +260,13 @@ struct OverviewScreen: View {
             }
         }
         .sheet(isPresented: $editsAccount) { SettingsSheet() }
+        // The menu bar's commands: Settings, new mail, and the field a matter is found or started in.
+        .onReceive(NotificationCenter.default.publisher(for: .phoneSettings)) { _ in editsAccount = true }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneGetMail)) { _ in PhoneMailCheck.shared.look(context: context) }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneFind)) { _ in if navigation.path.isEmpty { searching = true } }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneNewMatter)) { _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { searching = true }
+        }
         // Once, at the first start: what Causabee is and what it needs.
         .sheet(isPresented: $showsWelcome) { WelcomeSheet() }
         .onAppear { if !introSeen, !store.isDemo { showsWelcome = true } }
@@ -341,7 +365,7 @@ struct OverviewScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("No matters yet").font(.headline)
             Text(PhoneCloud.container == nil
-                 ? "This store stays on the iPhone."
+                 ? "This store stays on the \(ThisDevice.name)."
                  : "Pull down to get new mail, and Causabee makes the matters from it. From your Mac, they come here through your iCloud — the first time can take a few minutes.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if !store.isDemo {

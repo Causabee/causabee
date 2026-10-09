@@ -192,12 +192,13 @@ struct SetupAssistant: View {
             if step == .you {
                 Button("Later") { if !SetupState.isFresh { later = true }; dismiss() }
                     .help("Close for now. Causabee → Set Up Causabee … opens it again.")
+                    .keyboardShortcut(.cancelAction)
             } else {
                 Button("Back") { step = Step(rawValue: step.rawValue - 1) ?? .you }
             }
             Spacer()
             if step == .ready {
-                Button("Close") { dismiss() }
+                Button("Close") { dismiss() }.keyboardShortcut(.cancelAction)
                 // The test reads no mail: its account is only in memory, and its matters are the demo's.
                 Button(SetupState.isFresh ? "Finish test" : "Get new mail") { dismiss(); if !SetupState.isFresh { getMail() } }
                     .filledButton()

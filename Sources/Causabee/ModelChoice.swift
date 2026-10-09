@@ -120,6 +120,11 @@ struct KeyField: View {
                 .disabled(pasted.trimmingCharacters(in: .whitespaces).isEmpty)
                 if stored { Button("Remove") { APIKeys.delete(name); stored = false } }
             }
+            #if os(iOS)
+            // In a form's row on the iPhone a tap anywhere presses every plain button in it:
+            // Save, and then Remove. Borderless, each is pressed only where it stands.
+            .buttonStyle(.borderless)
+            #endif
             if let error { Text(error).font(.caption).foregroundStyle(Theme.warning) }
         }
         .onAppear { stored = APIKeys.get(name) != nil }

@@ -18,7 +18,7 @@ enum MailFiles {
             switch self {
             case .noAccount: "Add your mail account first, to open files from your mail."
             case .notInMail: "This file was added on another device, not attached to a mail — it is only there."
-            case .noPassword(let user): "No password saved for \(user) on this iPhone."
+            case .noPassword(let user): "No password saved for \(user) on this \(ThisDevice.name)."
             }
         }
     }
@@ -153,7 +153,7 @@ struct FilesSection: View {
                             // With a name of its own, the file's name is still there to see, small.
                             // "scanned" in the same line, not beside the name: the name and what it says keep the row's width.
                             (Text(document.isOwnFile
-                                 ? (document.source.fileURL != nil ? "on this iPhone, in Files › Causabee" : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder" : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
+                                 ? (document.source.fileURL != nil ? "on this \(ThisDevice.name), in Files › Causabee" : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder" : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
                                     : "added on \(document.source.addedOn) · not in the matter's folder yet")
                                  : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
                                     ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
@@ -333,7 +333,7 @@ struct MailAccountSheet: View {
                 } header: {
                     Text(saved.isEmpty ? "Mail account" : "Add another")
                 } footer: {
-                    Text("Files are taken out of your mail when you open them — read-only, one mail at a time — and are not kept in iCloud. The password is kept in your iCloud Keychain, end-to-end encrypted, so Causabee on your Macs and this iPhone shares it — typed once — and it goes only to your mail server. For Gmail, use an app password (Google Account › Security › App passwords).")
+                    Text("Files are taken out of your mail when you open them — read-only, one mail at a time — and are not kept in iCloud. The password is kept in your iCloud Keychain, end-to-end encrypted, so Causabee on your Macs and this \(ThisDevice.name) shares it — typed once — and it goes only to your mail server. For Gmail, use an app password (Google Account › Security › App passwords).")
                 }
                 if let failure { Text(failure).foregroundStyle(Theme.warning) }
             }

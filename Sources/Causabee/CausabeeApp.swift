@@ -10,6 +10,7 @@ import SwiftUI
 /// `--demo` fills an empty store with made-up matters, in `Causabee-Demo` unless a store is named.
 @main
 struct CausabeeApp: App {
+    @NSApplicationDelegateAdaptor(LastWindow.self) private var lastWindow
     let storeURL: URL
     let opened: Result<ModelContainer, Error>
 
@@ -126,6 +127,8 @@ struct CausabeeApp: App {
                     .keyboardShortcut("n", modifiers: .command)
             }
             MatterCommands()
+            WindowCommands()
+            FindCommands()
             // The About panel names the release as it went out: "Version Beta 0.5 (19)".
             CommandGroup(replacing: .appInfo) {
                 Button("About Causabee") {
@@ -671,13 +674,10 @@ struct RootView: View {
         // the window's own corner then: it brings the assistant in beside the matter. Laid over the
         // window, as the capsule is: over the page's own column it could not be clicked once the
         // sidebar had been put away. The overview has its own "Ask Causabee".
-        // ⌘K brings the assistant in and puts it away, from the keyboard.
-        .background {
-            Button("") {
-                withAnimation(.snappy(duration: 0.25)) { if showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() } }
-            }
-            .keyboardShortcut("k", modifiers: .command).hidden()
-        }
+        // ⌘K brings the assistant in and puts it away, from the keyboard: View → Show Assistant.
+        .modifier(WindowMenuActions(navigation: navigation, showsAssistant: showsAssistant) {
+            mailCheck.look(store: navigation.store, context: context)
+        })
         .overlay(alignment: .bottomTrailing) {
             if !showsAssistant, case .matter = navigation.place {
                 Button {
@@ -820,7 +820,7 @@ struct RootView: View {
         .overlay {
             if matters.isEmpty {
                 ContentUnavailableView("No matters yet", systemImage: "tray",
-                                       description: Text("First: matter-spike fetch --classify, then matter-spike import"))
+                                       description: Text("Choose Causabee → Set Up Causabee … to bring in your mail, or File → New Matter … to start one."))
             }
         }
     }
@@ -947,6 +947,89 @@ struct MatterCommands: Commands {
     }
 }
 
+/// Causabee is its one window: closed, Causabee quits. Left running without it, New Matter …, Set Up
+/// and the Introduction had nothing to act on, and nothing in the menu bar brought the window back.
+final class LastWindow: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+}
+
+/// View: what the capsule by the window's buttons and the bee do, in the menu bar too — with the
+/// words for what a click would do now, and dimmed while no window is in front.
+struct WindowCommands: Commands {
+    @FocusedValue(\.windowState) private var window
+
+    var body: some Commands {
+        CommandGroup(replacing: .sidebar) {
+            Button(window?.sidebarHidden == true ? "Show Sidebar" : "Hide Sidebar") { post(.toggleSidebar) }
+                .keyboardShortcut("s", modifiers: [.command, .control]).disabled(window == nil)
+            Button(window?.showsAssistant == true ? "Hide Assistant" : "Show Assistant") { post(.toggleAssistant) }
+                .keyboardShortcut("k", modifiers: .command).disabled(window == nil)
+            Button(window?.reading == true ? "Deactivate Reading Mode" : "Activate Reading Mode") { post(.toggleReading) }
+                .disabled(window == nil)
+            Divider()
+        }
+        CommandGroup(after: .newItem) {
+            Button("Get New Mail") { post(.getNewMail) }.disabled(window == nil)
+        }
+    }
+
+    private func post(_ name: Notification.Name) { NotificationCenter.default.post(name: name, object: nil) }
+}
+
+/// Edit → Find: ⌘F opens the page's search — the matter's, or the overview's field — and ⌘G and
+/// ⇧⌘G go between what it found, as ↩ and ⇧↩ do in the field.
+struct FindCommands: Commands {
+    @FocusedValue(\.windowState) private var window
+    @FocusedValue(\.findHasMatches) private var hasMatches
+
+    var body: some Commands {
+        CommandGroup(after: .pasteboard) {
+            Divider()
+            Menu("Find") {
+                Button("Find …") { post(.find) }.keyboardShortcut("f", modifiers: .command)
+                    .disabled(window == nil)
+                Button("Find Next") { post(.findNext) }.keyboardShortcut("g", modifiers: .command)
+                    .disabled(hasMatches != true)
+                Button("Find Previous") { post(.findPrevious) }.keyboardShortcut("g", modifiers: [.command, .shift])
+                    .disabled(hasMatches != true)
+            }
+        }
+    }
+
+    private func post(_ name: Notification.Name) { NotificationCenter.default.post(name: name, object: nil) }
+}
+
+/// What View's and File's commands do in the window, and what the window tells them of itself.
+struct WindowMenuActions: ViewModifier {
+    let navigation: Navigation
+    let showsAssistant: Bool
+    let getMail: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .toggleAssistant)) { _ in
+                withAnimation(.snappy(duration: 0.25)) { if showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() } }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleSidebar)) { _ in
+                // One movement for all of it, as from the sidebar's button.
+                withAnimation(.easeInOut(duration: 0.25)) { navigation.sidebarHidden.toggle() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleReading)) { _ in
+                withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .getNewMail)) { _ in getMail() }
+            .focusedSceneValue(\.windowState, WindowState(sidebarHidden: navigation.sidebarHidden, showsAssistant: showsAssistant,
+                                                          reading: navigation.reading))
+    }
+}
+
+/// What the window shows, for the menu bar's words.
+struct WindowState: Equatable {
+    var sidebarHidden: Bool
+    var showsAssistant: Bool
+    var reading: Bool
+}
+
 /// An action of the Matter menu, for the matter that is open.
 enum MatterAction: String, CaseIterable {
     case newTask, writeNote, addFile, addContact, addDetail, addLink
@@ -976,6 +1059,10 @@ enum MatterAction: String, CaseIterable {
 extension FocusedValues {
     /// The matter open in the window: the Matter menu's actions go to it.
     @Entry var openMatter: PersistentIdentifier?
+    /// The window in front: its sidebar, its assistant, reading — for View's words.
+    @Entry var windowState: WindowState?
+    /// The matter's search has found something to go between.
+    @Entry var findHasMatches: Bool?
 }
 
 /// SwiftUI puts a menu of its own before Window; the Matter menu belongs after Edit, where a
@@ -1016,4 +1103,14 @@ extension Notification.Name {
     static let showSetup = Notification.Name("causabee.showSetup")
     /// File → New Matter …
     static let newMatter = Notification.Name("causabee.newMatter")
+    /// File → Get New Mail
+    static let getNewMail = Notification.Name("causabee.getNewMail")
+    /// View → Show Sidebar, Show Assistant, Activate Reading Mode
+    static let toggleSidebar = Notification.Name("causabee.toggleSidebar")
+    static let toggleAssistant = Notification.Name("causabee.toggleAssistant")
+    static let toggleReading = Notification.Name("causabee.toggleReading")
+    /// Edit → Find
+    static let find = Notification.Name("causabee.find")
+    static let findNext = Notification.Name("causabee.findNext")
+    static let findPrevious = Notification.Name("causabee.findPrevious")
 }

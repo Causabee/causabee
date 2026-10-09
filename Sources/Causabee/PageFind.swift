@@ -142,9 +142,11 @@ struct PageFindField: View {
         .overlay { if open, focused { Capsule().strokeBorder(Color.accentColor.opacity(0.6), lineWidth: 3) } }
         .onChange(of: focused) { if !focused, !find.isActive, open { close() } }
         .onAppear { if find.isActive { open = true; shown = true } }
-        .background {
-            Button("", action: start).keyboardShortcut("f", modifiers: .command).hidden()
-        }
+        // Edit → Find: ⌘F, ⌘G and ⇧⌘G.
+        .onReceive(NotificationCenter.default.publisher(for: .find)) { _ in start() }
+        .onReceive(NotificationCenter.default.publisher(for: .findNext)) { _ in find.next() }
+        .onReceive(NotificationCenter.default.publisher(for: .findPrevious)) { _ in find.previous() }
+        .focusedSceneValue(\.findHasMatches, find.isActive && !find.matches.isEmpty)
     }
 
     private func start() {
