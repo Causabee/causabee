@@ -367,6 +367,8 @@ struct PlusItems: View {
         item("Contact", "person.badge.plus", .contact)
         item("Detail", "info.circle", .detail)
         item("Link", "link", .link)
+        // A line before what is said to the assistant: a note and a task, as in the Mac's plus.
+        Divider()
         item("Note", "note.text", .note)
         item("Task", "checklist", .task)
     }
