@@ -90,14 +90,17 @@ struct AssistantButton: View {
             BeeMark(size: 24, livesNowAndThen: true)
                 .foregroundStyle(.black)
                 .frame(width: 60, height: 60)
-                // Glass in the bee's yellow, and alive under the finger, as the system's own
-                // buttons: a flat yellow disc lay on the page like a sticker.
-                .onGlass(Circle(), tint: Theme.bee.opacity(0.82))
+                .contentShape(Circle())
         } primaryAction: {
             action()
         }
         .menuIndicator(.hidden)
         .buttonStyle(.plain)
+        // Glass in the bee's yellow, and alive under the finger, as the system's own buttons: a
+        // flat yellow disc lay on the page like a sticker. On the menu, not on its label: the
+        // system takes the label away for a moment as the held menu closes, and with the glass on
+        // it the bee stood there bare, without its round, until the label was back.
+        .onGlass(Circle(), tint: Theme.bee.opacity(0.82))
         // Held: a small knock in the hand as its menu comes, as the system's own held things give.
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
         .accessibilityLabel("Ask Causabee")
