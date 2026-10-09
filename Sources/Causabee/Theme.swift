@@ -290,13 +290,15 @@ struct SendGlyph: View {
 struct MatterIconTile: View {
     let matter: Matter
     var size: CGFloat = 30
+    /// Its ground: the grey of a box — lighter where the row it is in lies on that grey itself.
+    var ground: Color = Theme.box
 
     var body: some View {
         Image(systemName: matter.shownIcon)
             .font(.system(size: size * 0.5))
             .foregroundStyle(matter.isClosed ? .secondary : .primary)
             .frame(width: size, height: size)
-            .background(Theme.box, in: RoundedRectangle(cornerRadius: size * 0.27))
+            .background(ground, in: RoundedRectangle(cornerRadius: size * 0.27))
             .accessibilityHidden(true)
     }
 }

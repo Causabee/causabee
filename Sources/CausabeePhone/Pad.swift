@@ -54,12 +54,12 @@ struct PadSidebar: View {
                     let pinned = Pins.pinned(sorted)
                     if !pinned.isEmpty {
                         heading("Pinned")
-                        PhoneMatterRows(matters: pinned, all: sorted, chosen: navigation.path.last)
+                        PhoneMatterRows(matters: pinned, all: sorted, chosen: navigation.path.last, inSidebar: true)
                     }
                     let rest = open.filter { !$0.isPinned }
                     if !rest.isEmpty {
                         heading("Matters")
-                        PhoneMatterRows(matters: rest, all: sorted, chosen: navigation.path.last)
+                        PhoneMatterRows(matters: rest, all: sorted, chosen: navigation.path.last, inSidebar: true)
                     }
                     let closed = sorted.filter(\.isClosed)
                     if !closed.isEmpty {
@@ -77,7 +77,7 @@ struct PadSidebar: View {
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("sidebar.closed")
                         .accessibilityHint(showsClosed ? "Hides the closed matters" : "Shows the closed matters")
-                        if showsClosed { PhoneMatterRows(matters: closed, all: sorted, chosen: navigation.path.last) }
+                        if showsClosed { PhoneMatterRows(matters: closed, all: sorted, chosen: navigation.path.last, inSidebar: true) }
                     }
                 }
                 .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 24)

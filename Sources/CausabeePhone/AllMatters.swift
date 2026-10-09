@@ -63,17 +63,24 @@ struct PhoneMatterRows: View {
     let all: [Matter]
     /// The matter that is open, in the iPad's sidebar: its row is marked.
     var chosen: PersistentIdentifier? = nil
+    /// In the iPad's sidebar: no lines between the rows — beside the marked one they ran into its
+    /// grey and tied it to its neighbours — and the mark lies 4 inside the card, clear of its outline.
+    var inSidebar = false
     @Environment(Navigation.self) private var navigation
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(matters.enumerated()), id: \.element.persistentModelID) { index, matter in
-                if index > 0 { Divider().padding(.leading, 62) }
+                let isChosen = chosen == matter.persistentModelID
+                if index > 0, !inSidebar { Divider().padding(.leading, 62) }
                 Button { navigation.open(matter) } label: {
-                    PhoneMatterRow(matter: matter)
+                    // On the mark's grey the icon's own grey would be gone: there it is on white.
+                    PhoneMatterRow(matter: matter, tile: isChosen ? Theme.card : Theme.box)
                         .padding(.horizontal, 14).padding(.vertical, 10)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(chosen == matter.persistentModelID ? Theme.box : .clear)
+                        .background {
+                            if isChosen { RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.box).padding(4) }
+                        }
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -88,13 +95,15 @@ struct PhoneMatterRows: View {
 /// and what is overdue — or when it was closed, and new mail since.
 struct PhoneMatterRow: View {
     let matter: Matter
+    /// The ground of its icon.
+    var tile: Color = Theme.box
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
         let _ = StoredChanges.shared.count
         let status = MatterStatus(matter)
         HStack(spacing: 12) {
-        MatterIconTile(matter: matter, size: 36)
+        MatterIconTile(matter: matter, size: 36, ground: tile)
         VStack(alignment: .leading, spacing: 2) {
             Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
             HStack(spacing: 4) {
