@@ -24,6 +24,13 @@ enum PadMetrics {
 struct PadSidebar: View {
     let matters: [Matter]
     @Environment(Navigation.self) private var navigation
+    /// The closed matters, unfolded; folded away until asked for, and remembered.
+    @AppStorage("pad.showsClosed") private var showsClosed = false
+
+    private func heading(_ title: String) -> some View {
+        Text(title).font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+            .padding(.horizontal, 14).padding(.top, 10)
+    }
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
@@ -43,10 +50,34 @@ struct PadSidebar: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("sidebar.overview")
-                    if !open.isEmpty {
-                        Text("Matters").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-                            .padding(.horizontal, 14).padding(.top, 10)
-                        PhoneMatterRows(matters: open, all: sorted, chosen: navigation.path.last)
+                    // The Mac's sections: what is pinned, the matters, and the closed ones folded away.
+                    let pinned = Pins.pinned(sorted)
+                    if !pinned.isEmpty {
+                        heading("Pinned")
+                        PhoneMatterRows(matters: pinned, all: sorted, chosen: navigation.path.last)
+                    }
+                    let rest = open.filter { !$0.isPinned }
+                    if !rest.isEmpty {
+                        heading("Matters")
+                        PhoneMatterRows(matters: rest, all: sorted, chosen: navigation.path.last)
+                    }
+                    let closed = sorted.filter(\.isClosed)
+                    if !closed.isEmpty {
+                        Button { withAnimation(.snappy(duration: 0.2)) { showsClosed.toggle() } } label: {
+                            HStack(spacing: 6) {
+                                Text("Closed · \(closed.count)").font(.footnote.weight(.semibold))
+                                Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
+                                    .rotationEffect(.degrees(showsClosed ? 90 : 0))
+                                Spacer(minLength: 0)
+                            }
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 2)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("sidebar.closed")
+                        .accessibilityHint(showsClosed ? "Hides the closed matters" : "Shows the closed matters")
+                        if showsClosed { PhoneMatterRows(matters: closed, all: sorted, chosen: navigation.path.last) }
                     }
                 }
                 .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 24)
