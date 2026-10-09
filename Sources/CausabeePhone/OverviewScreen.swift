@@ -167,7 +167,7 @@ struct OverviewScreen: View {
                 }
                 let pinned = Pins.pinned(matters)
                 if !pinned.isEmpty {
-                    SectionHeader(title: "Pinned", detail: "stays on top").padding(.top, 4)
+                    SectionHeader(title: "Pinned", detail: nil).padding(.top, 4)
                     // Side by side where there is room for two, as on the Mac.
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: columns), alignment: .leading, spacing: 12) {
                         ForEach(pinned) { matter in
@@ -180,7 +180,7 @@ struct OverviewScreen: View {
                 let rest = ordered.filter { !$0.isPinned }
                 if !rest.isEmpty {
                     SectionHeader(title: pinned.isEmpty ? "Matters" : "Everything else",
-                                  detail: pinned.isEmpty ? "hold one to pin it" : rest.count == 1 ? "1 matter" : "\(rest.count) matters")
+                                  detail: pinned.isEmpty ? "hold one to pin it" : nil)
                         .padding(.top, 4)
                     if columns == 1 {
                         PhoneMatterRows(matters: rest, all: sidebarOrder(matters))

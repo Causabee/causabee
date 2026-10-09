@@ -513,7 +513,7 @@ struct OverviewView: View {
                 let rest = ordered.filter { !$0.isPinned }
                 if !rest.isEmpty {
                     SectionHeader(title: pinned.isEmpty ? "Matters" : "Everything else",
-                                  detail: pinned.isEmpty ? "right-click one to pin it" : rest.count == 1 ? "1 matter" : "\(rest.count) matters")
+                                  detail: pinned.isEmpty ? "right-click one to pin it" : nil)
                         .padding(.top, 6)
                     OverviewRows(matters: rest, all: matters)
                 }
@@ -553,7 +553,7 @@ struct OverviewView: View {
         let fit = width >= 1100 ? 3 : width >= 720 ? 2 : 1
         let columns = Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: max(1, min(pinned.count, fit)))
         return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Pinned", detail: "stays on top")
+            SectionHeader(title: "Pinned", detail: nil)
             LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
                 ForEach(pinned) { matter in
                     MatterCard(matter: matter, open: { navigation.open(matter) }, openTodo: { navigation.open(matter, showing: $0) })

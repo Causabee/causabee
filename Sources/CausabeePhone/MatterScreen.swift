@@ -214,7 +214,7 @@ struct MatterScreen: View {
             if navigation.isPad {
                 ToolbarItem(placement: .topBarLeading) {
                     HStack(spacing: 10) {
-                        Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 30) }
+                        Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 26) }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Icon").accessibilityHint("Chooses another icon")
                         Text(matter.name).font(Theme.padTitleFont).lineLimit(1).minimumScaleFactor(0.75)

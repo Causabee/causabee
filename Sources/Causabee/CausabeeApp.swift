@@ -837,25 +837,12 @@ struct MatterRow: View {
         MatterIconTile(matter: matter, size: 26)
         VStack(alignment: .leading, spacing: 2) {
             Text(matter.name).font(.body).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
-            if matter.isClosed {
-                HStack(spacing: 4) {
-                    Text("closed \(matter.closedAt.map(Dates.short) ?? "")")
-                    let new = status.mailsSinceClosed.count
-                    if new > 0 { Text("· \(new) new \(new == 1 ? "mail" : "mails")").foregroundStyle(Theme.warning) }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            } else {
-            HStack(spacing: 4) {
-                Text("\(matter.openTodos.count) open")
-                if let next = status.next { Text("· \(Dates.short(next.day))") }
-                if !status.overdue.isEmpty {
-                    Text("· \(status.overdue.count) overdue").foregroundStyle(Theme.warning)
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            }
+            // Only what asks for a look stands under the name: what is overdue, new mail in a
+            // closed matter. How many are open and the next day are on the matter's own page.
+            let new = matter.isClosed ? status.mailsSinceClosed.count : 0
+            let late = matter.isClosed ? 0 : status.overdue.count
+            if new > 0 { Text("\(new) new \(new == 1 ? "mail" : "mails")").font(.caption).foregroundStyle(Theme.warning) }
+            if late > 0 { Text("\(late) overdue").font(.caption).foregroundStyle(Theme.warning) }
         }
         }
         .padding(.vertical, 2)

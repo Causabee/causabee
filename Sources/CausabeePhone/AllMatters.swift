@@ -75,7 +75,7 @@ struct PhoneMatterRows: View {
                 if index > 0, !inSidebar { Divider().padding(.leading, 62) }
                 Button { navigation.open(matter) } label: {
                     // On the mark's grey the icon's own grey would be gone: there it is on white.
-                    PhoneMatterRow(matter: matter, tile: isChosen ? Theme.card : Theme.box)
+                    PhoneMatterRow(matter: matter, tile: isChosen ? Theme.card : Theme.box, brief: inSidebar)
                         .padding(.horizontal, 14).padding(.vertical, 10)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background {
@@ -97,6 +97,9 @@ struct PhoneMatterRow: View {
     let matter: Matter
     /// The ground of its icon.
     var tile: Color = Theme.box
+    /// In a sidebar: only what asks for a look stands under the name — what is overdue, new mail
+    /// in a closed matter. How many are open and the next day are on the matter's own page.
+    var brief = false
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
@@ -106,6 +109,12 @@ struct PhoneMatterRow: View {
         MatterIconTile(matter: matter, size: 36, ground: tile)
         VStack(alignment: .leading, spacing: 2) {
             Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
+            if brief {
+                let new = matter.isClosed ? status.mailsSinceClosed.count : 0
+                let late = matter.isClosed ? 0 : status.overdue.count
+                if new > 0 { Text("\(new) new \(new == 1 ? "mail" : "mails")").font(.caption).foregroundStyle(Theme.warning) }
+                if late > 0 { Text("\(late) overdue").font(.caption).foregroundStyle(Theme.warning) }
+            } else {
             HStack(spacing: 4) {
                 if matter.isClosed {
                     Text("closed \(matter.closedAt.map(Dates.short) ?? "")")
@@ -118,6 +127,7 @@ struct PhoneMatterRow: View {
                 }
             }
             .font(.caption).foregroundStyle(.secondary)
+            }
         }
         }
     }
