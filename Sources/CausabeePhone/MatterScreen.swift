@@ -217,7 +217,7 @@ struct MatterScreen: View {
                         Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 32) }
                             // A bar draws its symbols a size up: here the icon keeps the share of
                             // its tile it has everywhere else.
-                            .imageScale(.small)
+                            .imageScale(.medium)
                             .buttonStyle(.plain)
                             .accessibilityLabel("Icon").accessibilityHint("Chooses another icon")
                         // At its own size always, as large beside the page's text as on the Mac and the
