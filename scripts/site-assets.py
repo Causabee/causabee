@@ -28,13 +28,14 @@ IMG = OUT / "img"
 # The screenshots are 2880 × 1800: a 1440-point window at 2x, every pixel kept, so the website's
 # pictures are as sharp as the app on a Retina screen. Each crop is (left, top, right, bottom); the
 # animations in site/index.html measure the same parts in the older 1800-wide pixels (× 1.6 here).
+# The matter's column is the window's second, from 542 to 1986 of 2880; the assistant's the third.
 CROPS = {
-    "matter-phone": ("intro-2", (1464, 0, 2856, 1547)),
-    "tasks": ("intro-3", (1440, 450, 2880, 1290)),
-    "calendar": ("intro-3", (1448, 1202, 2456, 1786)),
-    "files": ("intro-4", (1440, 140, 2880, 980)),
-    "sources": ("intro-5", (1440, 1076, 2880, 1772)),
-    "assistant": ("intro-5", (547, 40, 1435, 878)),
+    "matter-phone": ("intro-2", (568, 0, 1960, 1547)),
+    "tasks": ("intro-3", (544, 460, 1984, 1300)),
+    "calendar": ("intro-3", (552, 1216, 1560, 1800)),
+    "files": ("intro-4", (544, 140, 1984, 980)),
+    "sources": ("intro-5", (544, 1040, 1984, 1736)),
+    "assistant": ("intro-5", (1990, 56, 2878, 894)),
 }
 FULL = {"overview": "intro-1", "matter": "intro-2", "care": "intro-5"}
 # A crop that starts right under the matter's pinned bar still catches its lower edge — a grey strip

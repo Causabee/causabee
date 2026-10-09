@@ -19,6 +19,9 @@ struct RootView: View {
         // row of columns, measured, kept the width its columns had on the iPad's side, and stood
         // too wide once the iPad was turned upright again.
         Color.clear.overlay(alignment: .leading) { columns }
+        // For a picture of the iPad on its side, taken in a simulator held upright: there the
+        // status bar is drawn over the page, which keeps no room for it.
+        .padding(.top, PhoneShot.topRoom)
         // The sidebar put away: its capsule stays where it was, over the page — the way back to the
         // sidebar, and reading and Auto still at hand. Not in the page's bar: a bar whose things
         // change with the sidebar is formed anew by the system, with a transition of its own.
@@ -350,6 +353,13 @@ struct OverviewScreen: View {
 /// Started as `--demo --shot listening`, the app shows the assistant while it listens: for the
 /// website's picture, taken in the simulator, which has no microphone.
 enum PhoneShot {
+    /// `--shot-top 24`: room kept on top, in a picture only.
+    static let topRoom: CGFloat = {
+        let arguments = CommandLine.arguments
+        guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot-top"), at + 1 < arguments.count, let room = Double(arguments[at + 1]) else { return 0 }
+        return room
+    }()
+
     static let isListening: Bool = {
         let arguments = CommandLine.arguments
         guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot"), at + 1 < arguments.count else { return false }
