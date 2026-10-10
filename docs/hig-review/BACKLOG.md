@@ -1,0 +1,87 @@
+# Backlog from the HIG review and the purpose-layer experiment
+
+Written 2026-10-10, on the branch `hig-fixes` at `7aad9b5`. What is still open after five rounds of
+fixes, as issues to pick up one by one. Line numbers are for this branch; paths are under `Sources/`.
+
+- IDs like **M5** or **B12** are findings of `HIG-REVIEW.md` (section 3), where each has its HIG page.
+- **X1–X3** are the three most important findings of the purpose-layer experiment (branch
+  `purpose-layer-experiment`, `design-rules/reports/2026-10-10-report.md`).
+- Effort: **S** under an hour, **M** half a day, **L** more than a day.
+- "Look" means the fix changes what is seen, so it is the owner's choice before it is code.
+
+## Assessment
+
+Of 50 findings, 15 are fixed, 13 are left alone on purpose, and 22 are open below, with the three
+from the experiment and two that came up while fixing. The Mac no longer has an open High finding;
+the iPad's are fixed too. What is left falls into four kinds:
+
+1. **Trust** (X1, X2, X3) — the app's own promise: nothing sent unasked, nothing lost, said plainly.
+   Small in code, large in what they mean. First.
+2. **Unproven fixes** (V1, V2) — undo and the UI tests. Everything later builds on these.
+3. **Completing what was started** (#6–#12) — the same fix on the remaining places.
+4. **Choices about the look** (#13–#16, and "Decided") — nothing to code until decided.
+
+## Do first
+
+| # | Issue | Where | What to do | Effort |
+|---|---|---|---|---|
+| **X1** | **Auto is switched on with one click and nothing visible says what it does.** From then on new mail is read by the AI without asking — the one place where "only when you click" stops being true, said only in a tooltip. | `Causabee/Components.swift:123` (Mac), `CausabeePhone/Pad.swift:110` (iPad), `CausabeePhone/Parts.swift:147` (iPhone) | Say it at the moment of switching on, once: a short line or a confirmation — "Auto: new mail is read by the AI at once, about … per mail" — as the iPhone's Settings already does beside its switch. Look: one new line or dialog. | S–M |
+| **X3** | **Errors from the AI service are shown raw**: "HTTP 529: …" and the service's own body, on the matter page, in the assistant and in the mail check, on all platforms. | `MatterCore/Claude.swift:384` (`plainWords`), and the failure cases at `:19`–`:27` | Give each case its own sentence with the next step ("The AI service is busy. Try again in a minute."), keep the raw answer for a "Details" disclosure or the log. Unit-testable. | M |
+| **X2** | **Removing is protected for some things and not for others.** Notes, details and links now come back with Undo; taking a **person** out of a matter still has neither a question nor undo, and the Mac's right-click "Remove from this matter" is not marked destructive. | `Causabee/MatterStatusView.swift:1234`, `:2155`, `:2169`; `CausabeePhone/PeopleAndLinks.swift:156`, `:187` | Put the membership (and the person, when it was their only matter) through `deleteByHand` like the other five kinds; mark `:1234` destructive. | M |
+| **V1** | **Undo has not been tried in the running apps**, and there is no Redo. Four unit tests pass. | `MatterCore/Model/DeleteByHand.swift` | Delete a task, a date, a note, a detail and a link on the Mac and the iPhone and bring each back (⌘Z, shake, three-finger swipe); check Calendar/Reminders stay consistent. Then Redo: register the delete again inside the undo. | S to try, M for Redo |
+| **V2** | **The UI tests have not run on this branch.** Closing the window now quits the app, ⌘K and ⌘F moved to the menu bar, and the sidebar takes focus on a click — each could break a test. | `scripts/mac-tests.sh`, `scripts/testflight.sh` | Quit Causabee, run both; one fix per failure. | S–M |
+
+## Then: finishing what was started
+
+| # | Issue | Where | What to do | Effort |
+|---|---|---|---|---|
+| 6 | **B2, rest — the contact and detail sheets still lose typed text** on a swipe (iPhone); they are shared with the Mac. | `Causabee/PageFind.swift:342`, `:406` | `.keepsWhatWasTyped([...])` inside their iOS branch. | S |
+| 7 | **Mac popovers lose typed text on a click beside them** — task, date, person and link editors (the experiment's weakest rule, 19%). | `Causabee/MatterStatusView.swift:1595`, `:1989`, `:2158`, `:2562` | Keep the draft in the row's state so reopening shows it, or do not close on an outside click once something changed. | M |
+| 8 | **B12 — three sheets on top of each other**: Welcome → Settings → Mail account. | `CausabeePhone/Welcome.swift:43`, `CausabeePhone/SettingsSheet.swift:115` | Push Settings and Mail account inside one navigation stack. | M |
+| 9 | **M5 — most matter actions are not in the menu bar**: Pin, Rename, Merge, Export, Close, Open Again. | `Causabee/CausabeeApp.swift:974` | Build the Matter menu, the ⋯ and the sidebar's context menu from one list. | M |
+| 10 | **The setup sheet's middle steps have no way out, and "Use another account" deletes a login at once.** | `Causabee/SetupAssistant.swift:551` | A Later/Close on every step; ask before the Keychain entry goes. | S |
+| 11 | **I2 — pull to refresh ends before the mail check does.** | `CausabeePhone/OverviewScreen.swift:241` | Await the running check in `refreshable`. Look: the system's spinner then shows beside the bee loader — choose one. | S |
+| 12 | **M25 — "Set Up Causabee …" and "Try the Demo" stand above Settings…** although the code asks for after. | `Causabee/CausabeeApp.swift:140` | Find why the built menu differs; check with the menu read-out in `raw/runtime-checks.md`. | S |
+
+## Needs a choice about the look first
+
+| # | Issue | Where | The choice | Effort |
+|---|---|---|---|---|
+| 13 | **B1 — tap targets under 44 points** (⋯ 30 × 26, tick box 26 × 26). Two ways of enlarging only the touch area did not work: a menu answers where its label is laid out. *Waiting, at the owner's word.* | `CausabeePhone/MatterScreen.swift:1092` and five like it | A larger label moves the row's text a few points — accept that, or leave it. | S |
+| 14 | **M7, rest — in five Mac popovers the main button looks like Cancel.** | `Causabee/MatterStatusView.swift:873`, `:2056`, `:2173`, `:2504`, `:2610` | Fill Save/Start as the task editor does, or keep them quiet. | S |
+| 15 | **I1 — no title in the iPhone's bar once a matter is scrolled.** | `CausabeePhone/MatterScreen.swift:208`, `CausabeePhone/OverviewScreen.swift:250` | Show the matter's name in the bar when the header has scrolled under. | S–M |
+| 16 | **"Export failed" is an alert with one OK** (Mac and iPhone). | `Causabee/MatterStatusView.swift:232`, `CausabeePhone/MatterScreen.swift:283` | A line by the menu instead, or keep the alert: a rare error may be one. | S |
+
+## Later
+
+| # | Issue | Effort |
+|---|---|---|
+| 17 | **P4 — no hover feedback on the iPad.** Needs a real iPad with a pointer to look at. | M |
+| 18 | **P5 — no drag and drop on iPhone and iPad**, though the Mac takes drops in the same places. | M |
+| 19 | **P8 — several windows are possible on the iPad but not designed for.** Support it or switch it off. | S to switch off, L to support |
+| 20 | **P7 — the icon picker is a fixed-height sheet on the iPad**; a popover there, and a scroll view for large text. | S |
+| 21 | **I3 — no swipe actions on task, date, file and link rows.** The rows are cards, not a list. | M–L |
+| 22 | **M19 — the open matter is not restored at the next start; the first window opens at its smallest.** | S–M |
+| 23 | **M18 — nothing lights up under a drag; files cannot be dragged out.** | M |
+| 24 | **M22 — two open panels block the whole app instead of hanging on the window.** | S |
+| 25 | **M11 — full screen was never looked at** with the hand-drawn window frame. | S to look |
+| 26 | **M12 — text size is only a launch argument;** View ▸ Bigger/Smaller, and Settings in the same size. | M |
+| 27 | **M2, rest — typing a name in the sidebar does not jump to it**; Tab into the sidebar is built, not tried. | S–M |
+| 28 | **M6, rest — ⌘G / ⇧⌘G were built, not tried.** | S |
+| 29 | **Structural: M3, P3 — the sidebar and the columns are hand-built** on Mac and iPad: no dragging the divider, no edge swipe, a flat sidebar on 26. The system's containers would also settle M11. A design decision as much as work. | L |
+
+## Decided: left as they are
+
+Each would change something that is meant to look or work as it does; `HIG-REVIEW.md` gives the
+compliant alternative for each. Not planned unless the owner reopens them.
+
+M14 the Matter menu after Edit · M15 " …" with a space · M13 the floating bee and the custom
+controls · M20 the black tint · M21, B4, B7, B8 bar backgrounds and glass details · B9 the
+overview's own search field · B6 the assistant's hand-built header · M10 ⌥Space for dictation ·
+M17 the quicker tooltips · M24, B13 dates in English form.
+
+## Waiting for a yes or no
+
+- **M1 — closing the window quits Causabee.** Done and tried; say so if it should stay running instead.
+- **The new words**: the View menu's titles, "Get New Mail", "Next Matter" / "Previous Matter",
+  the two hint texts that replaced the command-line ones, and the delete dialogs that now mention Undo.
