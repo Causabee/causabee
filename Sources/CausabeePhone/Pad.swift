@@ -160,13 +160,13 @@ private struct PageWide: ViewModifier {
     @Environment(Navigation.self) private var navigation
 
     func body(content: Content) -> some View {
-        if navigation.isPad, navigation.whole > 0 {
-            // The room is said by the columns' own row: measured here, the page kept the width it
-            // had before the assistant came in beside it.
-            content.frame(width: min(navigation.pageWidth, most)).frame(width: navigation.pageWidth)
-        } else {
-            content.containerRelativeFrame(.horizontal)
-        }
+        // The room is said in points, from the window as it was measured: beside the columns on a
+        // wide iPad, the whole window on the iPhone and in an iPad's narrow window. Asked of its
+        // container instead (containerRelativeFrame), a page kept the width it had before an
+        // iPad's window was made smaller, and stood cut off on both sides. One view for both, so
+        // nothing on the page starts anew when a window crosses from wide to narrow.
+        let room: CGFloat? = navigation.whole > 0 ? (navigation.isPad ? navigation.pageWidth : navigation.whole) : nil
+        content.frame(width: room.map { min($0, most) }).frame(width: room)
     }
 }
 

@@ -44,6 +44,16 @@ private struct KeepsWhatWasTyped: ViewModifier {
 }
 
 extension View {
+    /// Inside a scroll view: exactly as wide as that scroll view, by a width we measured ourselves
+    /// (`tellsItsWidth`). `containerRelativeFrame` did this until an iPad's window was resized: then
+    /// it kept the old width, and what was in the sheet stood cut off on both sides.
+    func asWide(as width: CGFloat) -> some View { frame(width: width > 0 ? width : nil) }
+
+    /// On a scroll view: says how wide it is, now and whenever its window changes.
+    func tellsItsWidth(_ width: Binding<CGFloat>) -> some View {
+        onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width.wrappedValue = $0 }
+    }
+
     /// The signs in a menu — every menu, held or tapped: one grey, a step quieter than the words
     /// beside them, whatever colour the button has that opens it. A menu takes its signs' colour
     /// from its button otherwise: yellow under the bee, black under ⋯, gold when held.
