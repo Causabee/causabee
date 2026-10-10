@@ -17,7 +17,6 @@ struct AssistantSheet: View {
     @Environment(PhoneStore.self) private var store
     @State private var draft = ""
     /// How wide the thread's scroll view is, measured: it follows an iPad's window as it is resized.
-    @State private var threadWidth = CGFloat.zero
     /// A new field after each send. Emptying the words is not enough while the keyboard still
     /// holds some of them — dictation, a word being autocorrected: the old field kept showing
     /// them, and with the words gone from `draft` nothing could be sent again.
@@ -97,6 +96,10 @@ struct AssistantSheet: View {
             // A column on the iPad has no bar of its own: its name and its × stand on the page's ground.
             if !navigation.isPad { Divider() }
             ScrollViewReader { scroller in
+            // The thread is exactly as wide as its scroll view, by the width layout hands down here
+            // and now: a width told a moment later (onGeometryChange) could stay behind — on an
+            // iPad the thread then stood narrow in the middle of its column.
+            GeometryReader { room in
             ScrollView {
                 // Laid out whole, not lazily: a matter's thread is short enough.
                 VStack(alignment: .leading, spacing: 20) {
@@ -139,10 +142,9 @@ struct AssistantSheet: View {
                     }
                 }
                 .padding(Self.padding)
-                .asWide(as: threadWidth)
+                .asWide(as: room.size.width)
                 .environment(\.threadRoom, placement.viewport)
             }
-            .tellsItsWidth($threadWidth)
             // The thread's top stands a little under the edge: what is put "at the top" keeps that room.
             .safeAreaPadding(.top, Self.topRoom)
             // The keyboard goes when the thread is scrolled or tapped, to see all of it.
@@ -187,6 +189,7 @@ struct AssistantSheet: View {
             }
             .onChange(of: answered) { if let answered { placement.arrived(AnyHashable(answered), newest: newestID.map { AnyHashable($0) }, with: scroller) } }
             .onChange(of: typing) { placement.typing(typing, with: scroller) }
+            }
             }
             composer
         }
