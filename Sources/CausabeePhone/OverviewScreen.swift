@@ -404,9 +404,9 @@ enum PhoneShot {
 }
 
 /// A page pulled down looks for new mail. In the room the pull opens the bee comes with the pull,
-/// whole when it is far enough. Then it is handed on, and is never there twice: while the bee is
-/// over the page, the one beside "Fetching mail …" is not shown; the one above grows small and
-/// fades, and only then the one in the mail's place appears. The page goes back up meanwhile; the
+/// alive — hovering, its wings beating — and whole when it is far enough. Then it is handed on, in
+/// the moment the hand feels the looking begin: the bee above grows small and fades while the one
+/// beside "Fetching mail …" grows and comes. The page goes back up meanwhile; the
 /// system's own wheel is not shown (PhoneApp). What changes with every point of the pull is kept
 /// here, so the page under it is not made anew while it is pulled.
 private struct PullsForMail: ViewModifier {
@@ -423,13 +423,13 @@ private struct PullsForMail: ViewModifier {
                 handedFrom = max(10, pulled / 2 - 15)
                 check.beeIsAbove = true
                 check.look(context: context)
-                // Small, down a little, and gone …
-                withAnimation(.easeIn(duration: 0.3)) { going = true }
-                try? await Task.sleep(for: .milliseconds(310))
+                // The mail's place is there, its bee small and unseen. Now, in one moment — the one
+                // the hand feels — the bee above grows small and fades, and the one there grows and comes.
+                await Task.yield()
+                withAnimation(.easeInOut(duration: 0.28)) { going = true; check.beeIsAbove = false }
+                try? await Task.sleep(for: .milliseconds(300))
                 handedFrom = nil
                 going = false
-                // … and then, not before, the bee in the mail's place.
-                withAnimation(.easeOut(duration: 0.2)) { check.beeIsAbove = false }
             }
             // How far it is pulled down past its top, in points.
             .onScrollGeometryChange(for: CGFloat.self) { max(0, -($0.contentOffset.y + $0.contentInsets.top)).rounded() } action: { _, far in pulled = far }

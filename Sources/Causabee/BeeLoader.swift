@@ -110,8 +110,8 @@ struct BeeLoader: View {
 
     fileprivate static func fraction(_ value: Double) -> Double { value - value.rounded(.down) }
     /// 0 → 1 → 0 over each whole number.
-    private static func triangle(_ value: Double) -> Double { 1 - abs(2 * fraction(value) - 1) }
-    private static func easeInOut(_ x: Double) -> Double { x * x * (3 - 2 * x) }
+    fileprivate static func triangle(_ value: Double) -> Double { 1 - abs(2 * fraction(value) - 1) }
+    fileprivate static func easeInOut(_ x: Double) -> Double { x * x * (3 - 2 * x) }
     fileprivate static func easeOut(_ x: Double) -> Double { 1 - pow(1 - x, 3) }
 }
 
@@ -123,10 +123,15 @@ struct BeePulled: View {
     /// How far the page is pulled, 0 to 1: at 1 it looks for mail.
     var pull: Double
     var size: CGFloat = 30
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Canvas { context, canvas in
-            BeeLoader.drawPulled(in: context, size: canvas, pull: pull)
+        // Alive from the first point of the pull: it hovers and beats its wings while it comes.
+        TimelineView(.animation(minimumInterval: reduceMotion ? 1.0 / 15 : nil, paused: reduceMotion)) { timeline in
+            let time = timeline.date.timeIntervalSinceReferenceDate
+            Canvas { context, canvas in
+                BeeLoader.drawPulled(in: context, size: canvas, pull: pull, time: time, still: reduceMotion)
+            }
         }
         .frame(width: size * BeeLoader.aspect, height: size)
         .foregroundStyle(Theme.beeMark)
@@ -135,22 +140,27 @@ struct BeePulled: View {
 }
 
 extension BeeLoader {
-    fileprivate static func drawPulled(in context: GraphicsContext, size: CGSize, pull: Double) {
+    fileprivate static func drawPulled(in context: GraphicsContext, size: CGSize, pull: Double, time: TimeInterval, still: Bool) {
         var context = context
         let scale = size.height / box.height
         context.scaleBy(x: scale, y: scale)
         context.translateBy(x: -box.minX, y: -box.minY)
-        // The wings come in the pull's second half, folded at first and open at its end.
-        let wings = easeOut(min(max((pull - 0.4) / 0.6, 0), 1))
-        let angle = Angle.degrees(-4 + 20 * wings)
+        // It hovers, as the bee at work does.
+        if !still { context.translateBy(x: 0, y: -90 * (1 - cos(2 * .pi * time / beat)) / 2) }
+        // The wings come in the pull's second half — and beat from the moment they are there.
+        let wings = easeOut(min(max((pull - 0.35) / 0.5, 0), 1))
+        let swing = still ? 0.5 : easeInOut(triangle(time / (beat / 2)))
+        let angle = Angle.degrees(-4 + 20 * swing)
         fill(leftWing, turned: angle, around: leftRoot, opacity: 0.55 * wings, in: context)
         fill(rightWing, turned: -angle, around: rightRoot, opacity: 0.55 * wings, in: context)
         for (index, bar) in bars.enumerated() {
-            // Each stripe has its share of the pull's first two thirds to drop in.
+            // Each stripe has its share of the pull's first two thirds to drop in; once all are
+            // there they sort, one after another, as at work.
             let mine = easeOut(min(max(pull / 0.7 * Double(bars.count) - Double(index), 0), 1))
+            let turn = pull >= 0.7 && !still ? sorting(fraction((time - Double(index) * 0.16) / beat)) : (opacity: 1.0, drop: CGFloat(0))
             var layer = context
-            layer.opacity = 0.14 + 0.86 * mine
-            layer.fill(Path(roundedRect: CGRect(x: bar.x, y: bar.y - 160 * (1 - mine), width: bar.width, height: 264), cornerRadius: 112), with: .foreground)
+            layer.opacity = (0.14 + 0.86 * mine) * turn.opacity
+            layer.fill(Path(roundedRect: CGRect(x: bar.x, y: bar.y - 160 * (1 - mine) + turn.drop, width: bar.width, height: 264), cornerRadius: 112), with: .foreground)
         }
     }
 }
