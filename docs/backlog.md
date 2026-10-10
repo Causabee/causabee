@@ -107,6 +107,25 @@ purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`.
 
 ## UI
 
+- **Done 2026-10-10: the Mac's matter page hung when the assistant opened in a narrow window
+  without the sidebar** (MatterStatusView.swift, `titleBar`; found by
+  `ToolbarTests.testANarrowWindowKeepsTheNameClear`, which ran out of its time now and then —
+  "Timed out while evaluating UI query", the main thread in endless SwiftUI updates). The cause,
+  from a trace of every state the page's geometry writes: the name's leading padding comes from
+  `barLeft`, and `barLeft` is the measured left edge of the same bar. At 960 points with the
+  sidebar away the assistant takes 38.2 percent and leaves the matter a column of 592.28 points —
+  between two pixels. There the bar's edge comes out a fraction of a point negative, and the
+  fraction depends on the padding: each write made another, about a hundred a second, between
+  −0.06 and −0.47, never the same twice, each one drawing the whole page again. Everything else
+  (`barEdge`, `pageHeight`, `partsEdge`) settled at once. A wide window is not touched: its
+  column is wider than the bar's 820 points, and the centred bar's edge does not answer the
+  padding. The fix: `barLeft` is written only when the edge has moved by more than a point, as
+  `controlsEdge` is in CausabeeApp.swift. All of `scripts/mac-tests.sh` passed after it. Not
+  found: which view in the bar rounds its width to the pixel, and why some runs passed before.
+  The same shape is worth a look wherever `onGeometryChange` writes a state that the measured
+  view's own layout reads. Seen beside it: `testTheNameIsNeverUnderTheControls` took 64 of its
+  90 seconds. (2026-10-10)
+
 - **Sticky section titles on the matter page.** While scrolling, the title of the section in view
   (TASKS, APPOINTMENTS AND DEADLINES, FILES, HISTORY …) stays just under the matter's title bar
   until the next section's title pushes it away. A `LazyVStack(pinnedViews: .sectionHeaders)`
