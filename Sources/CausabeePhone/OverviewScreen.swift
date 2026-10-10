@@ -404,46 +404,58 @@ enum PhoneShot {
 }
 
 /// A page pulled down looks for new mail. In the room the pull opens the bee comes with the pull,
-/// alive — hovering, its wings beating — and whole when it is far enough. Then it is handed on, in
-/// the moment the hand feels the looking begin: the bee above grows small and fades while the one
-/// beside "Fetching mail …" grows and comes. The page goes back up meanwhile; the
+/// alive — hovering, its wings beating — and whole once the pull is far enough; from then on it
+/// stays whole while the page goes back up. When the looking begins — the moment the hand feels
+/// it — the bee flies down into its place beside "Fetching mail …", growing small on the way to
+/// the size it has there, and the two change places as it arrives: one bee, never two. The
 /// system's own wheel is not shown (PhoneApp). What changes with every point of the pull is kept
 /// here, so the page under it is not made anew while it is pulled.
 private struct PullsForMail: ViewModifier {
     @Environment(\.modelContext) private var context
     @State private var pulled = CGFloat.zero
-    /// Where the bee stood when the looking began, while it is handed on to the mail's place.
-    @State private var handedFrom: CGFloat?
-    @State private var going = false
+    /// Pulled far enough once: the bee is whole, and stays so until the page is at rest again.
+    @State private var whole = false
+    /// Where the page's top is on the screen: the bee is placed from there.
+    @State private var top = CGRect.zero
+    /// Flying down to the mail's place, and arriving there.
+    @State private var flying = false
+    @State private var arriving = false
+    @State private var handing = false
+
+    /// Where the bee hovers over the page, from the page's top.
+    private var above: CGFloat { max(10, pulled / 2 - 15) }
 
     func body(content: Content) -> some View {
+        let place = PhoneMailCheck.shared.beePlace
+        // From the bee's own middle over the page to the middle of the small one's place.
+        let down = CGSize(width: place.midX - top.midX, height: place.midY - top.minY - 15 - above)
         content
             .refreshable {
                 let check = PhoneMailCheck.shared
-                handedFrom = max(10, pulled / 2 - 15)
+                handing = true
                 check.beeIsAbove = true
                 check.look(context: context)
-                // The mail's place is there, its bee small and unseen. Now, in one moment — the one
-                // the hand feels — the bee above grows small and fades, and the one there grows and comes.
-                await Task.yield()
-                withAnimation(.easeInOut(duration: 0.28)) { going = true; check.beeIsAbove = false }
-                try? await Task.sleep(for: .milliseconds(300))
-                handedFrom = nil
-                going = false
+                // The mail's place is laid out, its bee unseen: now the one above flies there.
+                try? await Task.sleep(for: .milliseconds(30))
+                withAnimation(.easeInOut(duration: 0.3)) { flying = true }
+                try? await Task.sleep(for: .milliseconds(170))
+                // The last part of the way: this one goes as that one comes, in the same place.
+                withAnimation(.easeOut(duration: 0.14)) { arriving = true; check.beeIsAbove = false }
+                try? await Task.sleep(for: .milliseconds(160))
+                handing = false; flying = false; arriving = false; whole = false
             }
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { top = $0 }
             // How far it is pulled down past its top, in points.
-            .onScrollGeometryChange(for: CGFloat.self) { max(0, -($0.contentOffset.y + $0.contentInsets.top)).rounded() } action: { _, far in pulled = far }
+            .onScrollGeometryChange(for: CGFloat.self) { max(0, -($0.contentOffset.y + $0.contentInsets.top)).rounded() } action: { _, far in
+                pulled = far
+                if far >= 90 { whole = true } else if far == 0, !handing { whole = false }
+            }
             .overlay(alignment: .top) {
-                if let handedFrom {
-                    BeePulled(pull: 1)
-                        .scaleEffect(going ? 0.5 : 1)
-                        .offset(y: handedFrom + (going ? 20 : 0))
-                        .opacity(going ? 0 : 1)
-                        .allowsHitTesting(false)
-                } else if pulled > 6 {
-                    BeePulled(pull: min(1, Double(pulled) / 90))
-                        .offset(y: max(10, pulled / 2 - 15))
-                        .opacity(min(1, Double(pulled) / 40))
+                if handing || pulled > 6 {
+                    BeePulled(pull: whole || handing ? 1 : min(1, Double(pulled) / 90))
+                        .scaleEffect(flying ? 0.5 : 1)
+                        .offset(x: flying ? down.width : 0, y: above + (flying ? down.height : 0))
+                        .opacity(arriving ? 0 : whole || handing ? 1 : min(1, Double(pulled) / 40))
                         .allowsHitTesting(false)
                 }
             }
