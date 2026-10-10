@@ -35,8 +35,8 @@ the iPad's are fixed too. What is left falls into four kinds:
 
 | # | Issue | Where | What to do | Effort |
 |---|---|---|---|---|
-| 6 | ~~B2, rest — the contact and detail sheets lose typed text.~~ **Done 2026-10-10**, built; same guard as the other editors. | `Causabee/PageFind.swift` | — | — |
-| 7 | ~~Mac popovers lose typed text on a click beside them.~~ **Done 2026-10-10:** once something in the task, date, person or link editor has changed, a click beside it leaves it open; Cancel and Esc drop it. Built; not clicked through. | `Causabee/PageFind.swift` (`keepsWhatWasTyped`) | Try it. | S |
+| 6 | ~~B2, rest — the contact and detail sheets lose typed text.~~ **Done 2026-10-10**; same guard as the other editors. Tried on the iPhone simulator (2026-10-10): the contact sheet with a phone number typed in stays on a swipe down, Cancel drops it, and an untouched sheet still closes on the swipe. The detail sheet has the same guard and was not tried by itself. | `Causabee/PageFind.swift` | — | — |
+| 7 | ~~Mac popovers lose typed text on a click beside them.~~ **Done 2026-10-10:** once something in the task, date, person or link editor has changed, a click beside it leaves it open; Cancel and Esc drop it. Built; still not clicked through — it needs real clicks on the Mac's screen, and the owner was at the Mac. | `Causabee/PageFind.swift` (`keepsWhatWasTyped`) | Try it. | S |
 | 8 | B12 — three sheets on top of each other: Welcome → Settings → Mail account. **Parked by the owner (2026-10-10):** Settings, Welcome and onboarding are not designed yet. | `CausabeePhone/Welcome.swift:43` | — | — |
 | 9 | ~~M5 — most matter actions are not in the menu bar.~~ **Done 2026-10-10:** Matter ▸ Pin to Top / Unpin, Rename …, Export as RTF, Close Matter… / Open Again; seen in the running app, Pin and Unpin clicked. Merge stays in the ⋯ (it needs the list of matters). | `Causabee/CausabeeApp.swift` | — | — |
 | 10 | The setup sheet's middle steps have no way out, and "Use another account" deletes a login at once. **Parked by the owner:** onboarding is not designed yet. | `Causabee/SetupAssistant.swift:551` | — | — |
