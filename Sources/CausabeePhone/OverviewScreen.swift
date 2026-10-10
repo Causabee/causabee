@@ -421,6 +421,9 @@ private struct PullsForMail: ViewModifier {
     @State private var flying = false
     @State private var arriving = false
     @State private var handing = false
+    /// The bee has flown down for this pull: it does not come again over the page until the page
+    /// has been at rest — or it stood there a second time while the page went back up.
+    @State private var spent = false
 
     /// Where the bee hovers over the page, from the page's top.
     private var above: CGFloat { max(10, pulled / 2 - 15) }
@@ -435,6 +438,7 @@ private struct PullsForMail: ViewModifier {
                 // Already at it — pulled again while mail is fetched or sorted: nothing to hand on.
                 guard !check.isBusy, !handing else { return }
                 handing = true
+                spent = true
                 check.beeIsAbove = true
                 check.look(context: context)
                 // In a task of its own: the pull's own task is ended as soon as the page is drawn
@@ -455,10 +459,10 @@ private struct PullsForMail: ViewModifier {
             // How far it is pulled down past its top, in points.
             .onScrollGeometryChange(for: CGFloat.self) { max(0, -($0.contentOffset.y + $0.contentInsets.top)).rounded() } action: { _, far in
                 pulled = far
-                if far >= 90 { whole = true } else if far == 0, !handing { whole = false }
+                if far >= 90 { whole = true } else if far == 0, !handing { whole = false; spent = false }
             }
             .overlay(alignment: .top) {
-                if handing || pulled > 6 {
+                if handing || (pulled > 6 && !spent) {
                     BeePulled(pull: whole || handing ? 1 : min(1, Double(pulled) / 90))
                         .scaleEffect(flying ? 0.5 : 1)
                         .offset(x: flying ? down.width : 0, y: above + (flying ? down.height : 0))
