@@ -278,4 +278,44 @@ extension Membership {
         context.insert(Rule(.notInMatter, subject: party.name, object: "", matterKey: matter.key, origin: origin))
         context.delete(self)
     }
+
+    /// The same by the owner's hand, and to be taken back: Undo puts the person in the matter
+    /// again — their role, how often they were named — and takes the rule out that kept them away.
+    @MainActor
+    public func removeByHand(in context: ModelContext, origin: String, undo: UndoManager?) {
+        guard let party, let matter else { return }
+        let who = party.persistentModelID, where_ = matter.persistentModelID
+        let name = party.name, key = matter.key, roles = roles, mentions = mentions
+        remove(in: context, origin: origin)
+        try? context.save()
+        undo?.registerUndo(withTarget: context) { context in
+            MainActor.assumeIsolated {
+                func live<T: PersistentModel>(_ id: PersistentIdentifier, _ type: T.Type) -> T? {
+                    var descriptor = FetchDescriptor<T>(predicate: #Predicate { $0.persistentModelID == id })
+                    descriptor.fetchLimit = 1
+                    return (try? context.fetch(descriptor))?.first
+                }
+                // Gone meanwhile — the person merged away, the matter merged — there is nothing to put back.
+                guard let party = live(who, Party.self), let matter = live(where_, Matter.self) else { return }
+                let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
+                for rule in rules where rule.kind == .notInMatter && rule.subject == name && rule.matterKey == key { context.delete(rule) }
+                if !(matter.memberships ?? []).contains(where: { $0.party === party }) {
+                    let membership = Membership()
+                    context.insert(membership)
+                    membership.party = party
+                    membership.matter = matter
+                    membership.roles = roles
+                    membership.mentions = mentions
+                    try? context.save()
+                    // Registered while undoing, this is the Redo: they go again.
+                    undo?.registerUndo(withTarget: context) { context in
+                        MainActor.assumeIsolated { membership.removeByHand(in: context, origin: origin, undo: undo) }
+                    }
+                    undo?.setActionName("Remove Person")
+                }
+                try? context.save()
+            }
+        }
+        undo?.setActionName("Remove Person")
+    }
 }

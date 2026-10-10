@@ -1212,7 +1212,7 @@ struct MatterStatusView: View {
                             PartyRow(party: party, membership: membership, matter: matter, save: { name, role in
                                 edit(party, membership: membership, name: name, role: role)
                             }, remove: {
-                                withAnimation { membership.remove(in: context, origin: origin) }
+                                withAnimation { membership.removeByHand(in: context, origin: origin, undo: undoManager) }
                                 try? context.save()
                             }) {
                                 talk(party.name, "Person")
@@ -1231,8 +1231,8 @@ struct MatterStatusView: View {
                                 }
                                 Button("Ask Causabee") { talk(party.name, "Person") }
                                 Divider()
-                                Button("Remove from this matter") {
-                                    withAnimation { membership.remove(in: context, origin: origin) }
+                                Button("Remove from this matter", role: .destructive) {
+                                    withAnimation { membership.removeByHand(in: context, origin: origin, undo: undoManager) }
                                     try? context.save()
                                 }
                                 .help("Takes them out of this matter only. A later mail naming them will not put them back.")

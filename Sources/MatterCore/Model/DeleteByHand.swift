@@ -7,7 +7,7 @@ import SwiftData
 ///
 /// The store does not take a delete back by itself, so what goes is written down first and made
 /// anew from that: its words, its matter, what hung on it. Not its reminder or its entry in
-/// Calendar — those were removed with it, and it comes back unconnected.
+/// Calendar — those were removed with it, and it comes back unconnected. Redo deletes it again.
 public extension ModelContext {
     @MainActor
     func deleteByHand(_ models: [any PersistentModel], undo: UndoManager?, named name: String) {
@@ -17,8 +17,13 @@ public extension ModelContext {
         guard let undo, !kept.isEmpty else { return }
         undo.registerUndo(withTarget: self) { context in
             MainActor.assumeIsolated {
-                for item in kept { item.putBack(in: context) }
+                let back = kept.map { $0.putBack(in: context) }
                 try? context.save()
+                // Registered while undoing, this is the Redo: what came back goes again.
+                undo.registerUndo(withTarget: context) { context in
+                    MainActor.assumeIsolated { context.deleteByHand(back, undo: undo, named: name) }
+                }
+                undo.setActionName(name)
             }
         }
         undo.setActionName(name)
@@ -76,8 +81,8 @@ private enum Kept: @unchecked Sendable {
     /// A stand-in where the first mail is asked for and there was none.
     private static let byHand = Source(kind: .conversation, pointer: "")
 
-    @MainActor
-    func putBack(in context: ModelContext) {
+    @MainActor @discardableResult
+    func putBack(in context: ModelContext) -> any PersistentModel {
         switch self {
         case let .todo(text, ownerRaw, due, dueTime, note, isDone, isInfo, doneAt, doneSource, sources, origin, createdAt, matter, waitsFor, unblocks, links):
             let todo = Todo(text: text, owner: .unknown, due: due, source: sources.first ?? Self.byHand, origin: origin)
@@ -100,25 +105,30 @@ private enum Kept: @unchecked Sendable {
             for id in links {
                 if let link = Self.live(id, as: WebLink.self, in: context), link.todo == nil { link.todo = todo }
             }
+            return todo
         case let .appointment(what, day, time, place, sources, matter):
             let item = Appointment(what: what, day: day, time: time, place: place, source: sources.first ?? Self.byHand)
             item.sources = sources
             context.insert(item)
             item.matter = Self.live(matter, as: Matter.self, in: context)
+            return item
         case let .deadline(what, day, sources, matter):
             let item = Deadline(what: what, day: day, source: sources.first ?? Self.byHand)
             item.sources = sources
             context.insert(item)
             item.matter = Self.live(matter, as: Matter.self, in: context)
+            return item
         case let .detail(label, value, createdAt, matter, party):
             let detail = MatterDetail(label: label, value: value, createdAt: createdAt)
             context.insert(detail)
             detail.matter = Self.live(matter, as: Matter.self, in: context)
             detail.party = Self.live(party, as: Party.self, in: context)
+            return detail
         case let .note(text, createdAt, fromAssistant, matter):
             let note = MatterNote(text: text, createdAt: createdAt, fromAssistant: fromAssistant)
             context.insert(note)
             note.matter = Self.live(matter, as: Matter.self, in: context)
+            return note
         case let .link(address, title, createdAt, messageID, isSuggestion, isDismissed, matter, todo):
             let link = WebLink(address: address, title: title)
             link.createdAt = createdAt
@@ -128,6 +138,7 @@ private enum Kept: @unchecked Sendable {
             context.insert(link)
             link.matter = Self.live(matter, as: Matter.self, in: context)
             link.todo = Self.live(todo, as: Todo.self, in: context)
+            return link
         }
     }
 }

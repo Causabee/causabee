@@ -9,6 +9,7 @@ struct PeopleSection: View {
     /// A tap on a person: their part of the record.
     var choose: ((Party) -> Void)? = nil
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var merging: (Party, Party)?
     @State private var adding = false
 
@@ -43,7 +44,7 @@ struct PeopleSection: View {
                             PhonePartyRow(party: party, membership: membership, matter: matter,
                                           save: { name, role in edit(party, membership: membership, name: name, role: role) },
                                           remove: {
-                                              withAnimation { membership.remove(in: context, origin: origin) }
+                                              withAnimation { membership.removeByHand(in: context, origin: origin, undo: undoManager) }
                                               try? context.save()
                                           },
                                           merge: { other in merging = (party, other) })

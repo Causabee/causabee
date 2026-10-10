@@ -111,6 +111,62 @@ struct DeleteByHandTests {
         #expect(!undo.canUndo)
     }
 
+    @Test("A person taken out of a matter comes back with their role, and the rule that kept them away goes")
+    func aPersonComesBack() throws {
+        let container = try MatterSchema.container(at: nil)
+        let context = container.mainContext
+        let matter = try Matter.make(named: "Lisbon", in: context)
+        let party = Party(name: "Marta Reis")
+        context.insert(party)
+        let membership = Membership()
+        context.insert(membership)
+        membership.party = party
+        membership.matter = matter
+        membership.roles = ["host"]
+        membership.mentions = 3
+        try context.save()
+
+        let undo = UndoManager()
+        membership.removeByHand(in: context, origin: "hand", undo: undo)
+
+        #expect((matter.memberships ?? []).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<Rule>()).contains { $0.kind == .notInMatter && $0.subject == "Marta Reis" })
+        #expect(try context.fetch(FetchDescriptor<Party>()).count == 1)
+        #expect(undo.undoActionName == "Remove Person")
+
+        undo.undo()
+
+        let back = try #require((matter.memberships ?? []).first)
+        #expect(back.party?.name == "Marta Reis")
+        #expect(back.roles == ["host"])
+        #expect(back.mentions == 3)
+        #expect(try context.fetch(FetchDescriptor<Rule>()).isEmpty)
+    }
+
+    @Test("Redo deletes it again, and Undo brings it back once more")
+    func redo() throws {
+        let container = try MatterSchema.container(at: nil)
+        let context = container.mainContext
+        let matter = try Matter.make(named: "Lisbon", in: context)
+        let note = MatterNote(text: "Marta has the keys")
+        context.insert(note)
+        note.matter = matter
+        try context.save()
+
+        let undo = UndoManager()
+        undo.groupsByEvent = false
+        undo.beginUndoGrouping(); context.deleteByHand([note], undo: undo, named: "Delete Note"); undo.endUndoGrouping()
+        undo.undo()
+        #expect(try context.fetch(FetchDescriptor<MatterNote>()).count == 1)
+        #expect(undo.canRedo)
+        #expect(undo.redoActionName == "Delete Note")
+        undo.redo()
+        #expect(try context.fetch(FetchDescriptor<MatterNote>()).isEmpty)
+        #expect(undo.canUndo)
+        undo.undo()
+        #expect(try context.fetch(FetchDescriptor<MatterNote>()).first?.text == "Marta has the keys")
+    }
+
     @Test("Without an undo manager it is simply deleted")
     func withoutUndo() throws {
         let container = try MatterSchema.container(at: nil)
