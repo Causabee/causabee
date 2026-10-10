@@ -196,7 +196,7 @@ struct FilesSection: View {
         }
         .padding(14)
         .opacity(document.isHidden ? 0.55 : 1)
-        .contextMenu { items(document) }
+        .contextMenu { Group { items(document) }.menuSigns() }
     }
 
     /// What goes with it, said before it goes.

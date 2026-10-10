@@ -264,15 +264,18 @@ struct MatterScreen: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
-                    // Everything the matter holds, as one document: what is gathered here can leave at any time.
-                    Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
-                    Divider()
-                    if matter.isClosed {
-                        Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
-                    } else {
-                        Button("Close", systemImage: "archivebox") { asksToClose = true }
+                    Group {
+                        MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
+                        // Everything the matter holds, as one document: what is gathered here can leave at any time.
+                        Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
+                        Divider()
+                        if matter.isClosed {
+                            Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
+                        } else {
+                            Button("Close", systemImage: "archivebox") { asksToClose = true }
+                        }
                     }
+                    .menuSigns()
                 } label: { Image(systemName: "ellipsis") }
                 .tint(.primary)
                 .accessibilityLabel("More")
@@ -1098,7 +1101,7 @@ struct PhoneTodoRow: View {
         }
         .padding(.horizontal, 12).padding(.vertical, 12)
         .contentShape(Rectangle())
-        .contextMenu { moreItems }
+        .contextMenu { Group { moreItems }.menuSigns() }
         .sheet(isPresented: $editing) { PhoneTodoEditor(todo: todo) }
         .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
@@ -1405,7 +1408,7 @@ struct PhoneDateRow: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
-        .contextMenu { moreItems }
+        .contextMenu { Group { moreItems }.menuSigns() }
         .sheet(isPresented: $editing) { PhoneDateEditor(item: item) }
         .confirmationDialog("Delete “\(item.what)”?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {

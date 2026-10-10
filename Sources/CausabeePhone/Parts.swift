@@ -44,6 +44,11 @@ private struct KeepsWhatWasTyped: ViewModifier {
 }
 
 extension View {
+    /// The signs in a menu — every menu, held or tapped: one grey, a step quieter than the words
+    /// beside them, whatever colour the button has that opens it. A menu takes its signs' colour
+    /// from its button otherwise: yellow under the bee, black under ⋯, gold when held.
+    func menuSigns() -> some View { tint(Color.secondary) }
+
     /// The fields of an editing sheet, as they are now: changed, the sheet stays under a swipe.
     func keepsWhatWasTyped(_ fields: [AnyHashable?]) -> some View { modifier(KeepsWhatWasTyped(now: fields)) }
 }
@@ -108,7 +113,10 @@ struct AssistantButton: View {
 
     private var bee: some View {
         Menu {
+            // The button is yellow; what its menu lists is not: yellow signs on the menu's white
+            // could hardly be read.
             PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+                .menuSigns()
         } label: {
             // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
             BeeMark(size: 24, livesNowAndThen: true)

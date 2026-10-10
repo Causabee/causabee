@@ -110,7 +110,7 @@ struct PhoneThreadMailRow: View {
             }
         }
         .contentShape(Rectangle())
-        .contextMenu { items(entry) }
+        .contextMenu { Group { items(entry) }.menuSigns() }
         .alert("Move to a new matter", isPresented: $naming) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}

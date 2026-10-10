@@ -192,7 +192,7 @@ struct OverviewScreen: View {
                         ForEach(pinned) { matter in
                             PhoneMatterCard(matter: matter) { todo in navigation.open(matter, showing: todo) }
                                 // Held: unpinned, renamed or merged, as a row of the Mac's sidebar.
-                                .contextMenu { MatterMenuItems(matter: matter, all: sidebarOrder(matters)) }
+                                .contextMenu { MatterMenuItems(matter: matter, all: sidebarOrder(matters)).menuSigns() }
                         }
                     }
                 }
@@ -251,9 +251,12 @@ struct OverviewScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Settings", systemImage: "gearshape") { editsAccount = true }
-                    Button("Introduction", systemImage: "info.circle") { showsWelcome = true }
-                    Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: store.isDemo ? "arrow.uturn.backward" : "sparkles") { store.switchDemo(!store.isDemo) }
+                    Group {
+                        Button("Settings", systemImage: "gearshape") { editsAccount = true }
+                        Button("Introduction", systemImage: "info.circle") { showsWelcome = true }
+                        Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: store.isDemo ? "arrow.uturn.backward" : "sparkles") { store.switchDemo(!store.isDemo) }
+                    }
+                    .menuSigns()
                 } label: { Image(systemName: "ellipsis") }
                 .tint(.primary)
                 .accessibilityLabel("More")
