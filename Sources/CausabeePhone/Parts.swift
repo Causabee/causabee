@@ -159,9 +159,13 @@ struct PhoneAutoButton: View {
     @AppStorage("auto.explained") private var explained = 0
     @Environment(\.modelContext) private var context
     @State private var says: String?
+    @State private var asks = false
 
     var body: some View {
         Button {
+            // The first time it is turned on, what it does is said and asked — before anything is
+            // read, not beside the bolt once it already is.
+            if AutoMode.asksFirst { asks = true; return }
             auto.toggle()
             Haptics.tap()
             if auto { PhoneMailCheck.shared.autoTurnedOn(context: context) }
@@ -187,6 +191,11 @@ struct PhoneAutoButton: View {
         .accessibilityValue(auto ? "On" : "Off")
         .accessibilityHint("New mail and files are read at once, or only when you say so")
         .accessibilityIdentifier("auto.toggle")
+        .asksBeforeAuto($asks) {
+            auto = true
+            Haptics.tap()
+            PhoneMailCheck.shared.autoTurnedOn(context: context)
+        }
         .overlay(alignment: .trailing) {
             if let says {
                 Text(says).font(.footnote.weight(.medium)).foregroundStyle(Theme.onInk)

@@ -99,6 +99,7 @@ struct PadControls: View {
     @Environment(Navigation.self) private var navigation
     @AppStorage(AutoMode.key) private var auto = false
     @Environment(\.modelContext) private var context
+    @State private var asksAuto = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -107,11 +108,18 @@ struct PadControls: View {
                 withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
             }
             round(auto ? "bolt.fill" : "bolt", on: auto, label: "Auto") {
+                // The first time it is turned on, what it does is said and asked.
+                if AutoMode.asksFirst { asksAuto = true; return }
                 auto.toggle()
                 Haptics.tap()
                 if auto { PhoneMailCheck.shared.autoTurnedOn(context: context) }
             }
             .accessibilityValue(auto ? "On" : "Off")
+            .asksBeforeAuto($asksAuto) {
+                auto = true
+                Haptics.tap()
+                PhoneMailCheck.shared.autoTurnedOn(context: context)
+            }
         }
         // The yellow round of one that is on sits in the capsule's own curve.
         // As high as the page's own find and ⋯, and as black: beside them a smaller, greyer

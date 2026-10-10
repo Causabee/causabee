@@ -117,10 +117,12 @@ private struct QuickLabel: ViewModifier {
 /// choose, and plain to see which it is.
 struct AutoButton: View {
     @AppStorage(AutoMode.key) private var auto = false
+    @State private var asks = false
 
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) { auto.toggle() }
+            // The first time it is turned on, what it does is said and asked.
+            if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto.toggle() } }
         } label: {
             // On: a black bolt on the bee's yellow, round, as the glasses while reading.
             Image(systemName: auto ? "bolt.fill" : "bolt").font(.body)
@@ -137,6 +139,7 @@ struct AutoButton: View {
         .accessibilityLabel("Auto")
         .accessibilityValue(auto ? "On" : "Off")
         .accessibilityIdentifier("window.auto")
+        .asksBeforeAuto($asks) { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
     }
 }
 

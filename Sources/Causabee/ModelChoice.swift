@@ -403,3 +403,31 @@ final class AutoUpdate {
         }
     }
 }
+
+/// Before Auto is on for the first time, at the bolt: what it does, said once and agreed to.
+/// Everything else goes to an AI only at a click; Auto is the one switch after which it goes by
+/// itself — so that is not left to a tooltip. Agreed once, the bolt is a bolt again.
+struct AutoQuestion: ViewModifier {
+    @Binding var asks: Bool
+    let turnOn: () -> Void
+    @AppStorage(AutoMode.agreedKey) private var agreed = false
+    @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
+
+    func body(content: Content) -> some View {
+        let model = Claude.Model.choices.first { $0.id == mail } ?? .opus
+        content.confirmationDialog("Turn Auto on?", isPresented: $asks, titleVisibility: .visible) {
+            Button("Turn Auto On") { agreed = true; turnOn() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("New mail and files are then read by the AI as soon as they are there — sent pseudonymised to \(model.label), without asking first — and next steps and summaries are kept up to date. " +
+                 "What is taken in, and into which matter, you still decide. " + String(format: "About %.2f cents per mail.", model.perMail * 100))
+        }
+    }
+}
+
+extension View {
+    /// The question before Auto is turned on for the first time.
+    func asksBeforeAuto(_ asks: Binding<Bool>, turnOn: @escaping () -> Void) -> some View {
+        modifier(AutoQuestion(asks: asks, turnOn: turnOn))
+    }
+}

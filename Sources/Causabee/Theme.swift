@@ -817,6 +817,11 @@ enum AppRelease {
 enum AutoMode {
     static let key = "mail.auto"
     static var isOn: Bool { UserDefaults.standard.bool(forKey: key) }
+    /// The owner has been told once what Auto does, and said yes.
+    static let agreedKey = "auto.agreed"
+    /// The bolt was pressed to turn Auto on, and what Auto does has not been said and agreed to
+    /// yet: it is asked first.
+    static var asksFirst: Bool { !isOn && !UserDefaults.standard.bool(forKey: agreedKey) }
     /// Whose tasks are whose, read where a view is not at hand to say it.
     @MainActor static func owner(in context: ModelContext) -> [String] {
         ((try? context.fetch(FetchDescriptor<Profile>())) ?? []).first?.names ?? []
