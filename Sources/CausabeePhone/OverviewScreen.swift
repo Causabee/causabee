@@ -404,36 +404,41 @@ enum PhoneShot {
 }
 
 /// A page pulled down looks for new mail. In the room the pull opens the bee comes with the pull,
-/// whole when it is far enough. Then it is handed on: the bee over the page drops a little towards
-/// the mail's place and fades, as the bee there starts work beside "Fetching mail …" — one bee, in
-/// two places one after the other. The page goes back up meanwhile; the system's own wheel is not
-/// shown (PhoneApp). What changes with every point of the pull is kept here, so the page under it
-/// is not made anew while it is pulled.
+/// whole when it is far enough. Then it is handed on, and is never there twice: while the bee is
+/// over the page, the one beside "Fetching mail …" is not shown; the one above grows small and
+/// fades, and only then the one in the mail's place appears. The page goes back up meanwhile; the
+/// system's own wheel is not shown (PhoneApp). What changes with every point of the pull is kept
+/// here, so the page under it is not made anew while it is pulled.
 private struct PullsForMail: ViewModifier {
     @Environment(\.modelContext) private var context
     @State private var pulled = CGFloat.zero
     /// Where the bee stood when the looking began, while it is handed on to the mail's place.
     @State private var handedFrom: CGFloat?
-    @State private var gone = false
+    @State private var going = false
 
     func body(content: Content) -> some View {
         content
             .refreshable {
+                let check = PhoneMailCheck.shared
                 handedFrom = max(10, pulled / 2 - 15)
-                withAnimation(.easeIn(duration: 0.32)) { gone = true }
-                PhoneMailCheck.shared.look(context: context)
-                // As long as the handing on takes; the mail's own place says the rest.
-                try? await Task.sleep(for: .milliseconds(340))
+                check.beeIsAbove = true
+                check.look(context: context)
+                // Small, down a little, and gone …
+                withAnimation(.easeIn(duration: 0.3)) { going = true }
+                try? await Task.sleep(for: .milliseconds(310))
                 handedFrom = nil
-                gone = false
+                going = false
+                // … and then, not before, the bee in the mail's place.
+                withAnimation(.easeOut(duration: 0.2)) { check.beeIsAbove = false }
             }
             // How far it is pulled down past its top, in points.
             .onScrollGeometryChange(for: CGFloat.self) { max(0, -($0.contentOffset.y + $0.contentInsets.top)).rounded() } action: { _, far in pulled = far }
             .overlay(alignment: .top) {
                 if let handedFrom {
                     BeePulled(pull: 1)
-                        .offset(y: handedFrom + (gone ? 34 : 0))
-                        .opacity(gone ? 0 : 1)
+                        .scaleEffect(going ? 0.5 : 1)
+                        .offset(y: handedFrom + (going ? 20 : 0))
+                        .opacity(going ? 0 : 1)
                         .allowsHitTesting(false)
                 } else if pulled > 6 {
                     BeePulled(pull: min(1, Double(pulled) / 90))

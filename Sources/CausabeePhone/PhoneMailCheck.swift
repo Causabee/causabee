@@ -70,6 +70,9 @@ final class PhoneMailCheck {
     }
 
     var state: State = .idle
+    /// The bee is still over the pulled page: the one beside "Fetching mail …" waits until that one
+    /// has gone, so there is never a bee twice.
+    var beeIsAbove = false
     /// Which step it is at, for the panel's transitions: one view each, faded into the next.
     var phase: String {
         switch state {
@@ -475,7 +478,8 @@ struct PhoneMailCheckView: View {
             // No Cancel under fetching: it is over in a moment, and reading mail sends nothing.
             case .reading(let text), .sending(let text):
                 HStack(spacing: 10) {
-                    BeeLoader(size: 15)
+                    // It keeps its place while it waits, so the words do not move when it comes.
+                    BeeLoader(size: 15).opacity(check.beeIsAbove ? 0 : 1)
                     Text(text).font(.subheadline).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
