@@ -52,10 +52,12 @@ final class ThreadTests: XCTestCase {
         XCTAssertLessThan(place - window.minY, 120, "The newest question does not stand at the top of the thread.")
         let sources = app.buttons.matching(NSPredicate(format: "title BEGINSWITH %@ OR label BEGINSWITH %@", "Sources", "Sources")).firstMatch
         XCTAssertTrue(sources.waitForExistence(timeout: 5), "The answer has no sources to unfold.")
-        sources.click()
-        XCTAssertEqual(top(of: asked), place, accuracy: 0.5, "The question moved when its sources unfolded.")
+        // Asked before the sources unfold: in a low window they run past the thread's end, and the
+        // button down to the answer's end is then right to show.
         XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "thread.toNewest").firstMatch.exists,
                        "The way back shows though the thread is at its newest.")
+        sources.click()
+        XCTAssertEqual(top(of: asked), place, accuracy: 0.5, "The question moved when its sources unfolded.")
         sources.click()
         XCTAssertEqual(top(of: asked), place, accuracy: 0.5, "The question moved when its sources folded.")
     }
