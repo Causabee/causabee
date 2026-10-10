@@ -302,3 +302,50 @@ enum Once {
         return value
     }
 }
+
+/// A shake, the three-finger swipe and ⌘Z ask "whoever has the keys" what there is to undo — and
+/// in Causabee nobody had them unless a field was being typed in, so a deleted task could not be
+/// shaken back although its Undo was written down. This takes the keys whenever no field has
+/// them: nothing is seen of it, and a field that is tapped takes them over as before.
+struct KeepsUndoAtHand: UIViewRepresentable {
+    func makeUIView(context: Context) -> Holder { Holder() }
+    func updateUIView(_ view: Holder, context: Context) {}
+
+    final class Holder: UIView {
+        override var canBecomeFirstResponder: Bool { true }
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            guard window != nil else { return }
+            let center = NotificationCenter.default
+            for name in [UIApplication.didBecomeActiveNotification, UIResponder.keyboardDidHideNotification,
+                         UITextField.textDidEndEditingNotification, UITextView.textDidEndEditingNotification] {
+                center.addObserver(self, selector: #selector(take), name: name, object: nil)
+            }
+            take()
+        }
+
+        /// A moment later: what gave the keys up has finished doing so, and a field that takes them
+        /// next has them already.
+        @objc private func take() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                guard let self, self.window != nil, !self.isFirstResponder, !Self.someoneTypes else { return }
+                self.becomeFirstResponder()
+            }
+        }
+
+        /// A field or a text view has the keys: they are not taken from it.
+        private static var someoneTypes: Bool {
+            Finder.found = nil
+            UIApplication.shared.sendAction(#selector(UIResponder.causabeeSaysItHasTheKeys), to: nil, from: nil, for: nil)
+            return Finder.found is UITextInput
+        }
+    }
+
+    fileprivate enum Finder { nonisolated(unsafe) static weak var found: UIResponder? }
+}
+
+private extension UIResponder {
+    /// Sent to nobody in particular, it arrives at whoever has the keys.
+    @objc func causabeeSaysItHasTheKeys() { KeepsUndoAtHand.Finder.found = self }
+}
