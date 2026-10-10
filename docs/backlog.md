@@ -2,6 +2,9 @@
 
 Small things noticed while using the app, to pick up later. Newest first.
 
+What is open from the review against Apple's Human Interface Guidelines, and the three findings of the
+purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`. (2026-10-10)
+
 ## Before the App Store
 
 - **The assistant as a proper chat, second round** (AssistantView.swift, Conversation.swift,

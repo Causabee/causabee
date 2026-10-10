@@ -24,6 +24,24 @@ extension View {
     }
 }
 
+extension View {
+    /// Inside a scroll view: exactly as wide as that scroll view, by a width we measured ourselves
+    /// (`tellsItsWidth`). `containerRelativeFrame` did this until an iPad's window was resized: then
+    /// it kept the old width, and what was in the sheet stood cut off on both sides.
+    func asWide(as width: CGFloat) -> some View { frame(width: width > 0 ? width : nil) }
+
+    /// On a scroll view: says how wide it is, now and whenever its window changes.
+    func tellsItsWidth(_ width: Binding<CGFloat>) -> some View {
+        onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width.wrappedValue = $0 }
+    }
+
+    /// The signs in a menu — every menu, held or tapped: one grey, a step quieter than the words
+    /// beside them, whatever colour the button has that opens it. A menu takes its signs' colour
+    /// from its button otherwise: yellow under the bee, black under ⋯, gold when held.
+    func menuSigns() -> some View { tint(Color.secondary) }
+
+}
+
 /// A section with nothing in it yet, as on the Mac: a grey box, what goes in it in the middle,
 /// and — where the owner can add it by hand — the button that does.
 struct PhoneEmptyBox: View {
@@ -84,7 +102,10 @@ struct AssistantButton: View {
 
     private var bee: some View {
         Menu {
+            // The button is yellow; what its menu lists is not: yellow signs on the menu's white
+            // could hardly be read.
             PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+                .menuSigns()
         } label: {
             // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
             BeeMark(size: 24, livesNowAndThen: true)
@@ -110,27 +131,21 @@ struct AssistantButton: View {
 }
 
 /// Auto on and off, small, over the bee — the same switch as in Settings › New mail and the bolt
-/// on the Mac. On: the black bolt on the bee's yellow. The first few times it says what changed,
-/// beside it, since a bolt alone does not.
+/// on the Mac. On: the black bolt on the bee's yellow. What Auto does is asked once, before it is
+/// first turned on (AutoQuestion).
 struct PhoneAutoButton: View {
     @AppStorage(AutoMode.key) private var auto = false
-    @AppStorage("auto.explained") private var explained = 0
     @Environment(\.modelContext) private var context
-    @State private var says: String?
+    @State private var asks = false
 
     var body: some View {
         Button {
+            // The first time it is turned on, what it does is said and asked — before anything is
+            // read, not beside the bolt once it already is.
+            if AutoMode.asksFirst { asks = true; return }
             auto.toggle()
             Haptics.tap()
             if auto { PhoneMailCheck.shared.autoTurnedOn(context: context) }
-            guard explained < 4 else { return }
-            explained += 1
-            let words = auto ? "Auto on: mail and files are read at once, next steps and summaries kept up to date" : "Auto off: mail and files wait for “Sort in”"
-            withAnimation(.easeOut(duration: 0.2)) { says = words }
-            Task {
-                try? await Task.sleep(for: .seconds(2.8))
-                if says == words { withAnimation(.easeIn(duration: 0.25)) { says = nil } }
-            }
         } label: {
             Image(systemName: auto ? "bolt.fill" : "bolt").font(.system(size: 15, weight: .medium))
                 .foregroundStyle(auto ? Color.black : Color.secondary)
@@ -145,16 +160,10 @@ struct PhoneAutoButton: View {
         .accessibilityValue(auto ? "On" : "Off")
         .accessibilityHint("New mail and files are read at once, or only when you say so")
         .accessibilityIdentifier("auto.toggle")
-        .overlay(alignment: .trailing) {
-            if let says {
-                Text(says).font(.footnote.weight(.medium)).foregroundStyle(Theme.onInk)
-                    .padding(.horizontal, 12).padding(.vertical, 8)
-                    .background(Theme.ink, in: Capsule())
-                    .fixedSize()
-                    .offset(x: -50)
-                    .transition(.opacity)
-                    .allowsHitTesting(false)
-            }
+        .asksBeforeAuto($asks) {
+            auto = true
+            Haptics.tap()
+            PhoneMailCheck.shared.autoTurnedOn(context: context)
         }
     }
 }
@@ -271,4 +280,51 @@ enum Once {
         }
         return value
     }
+}
+
+/// A shake, the three-finger swipe and ⌘Z ask "whoever has the keys" what there is to undo — and
+/// in Causabee nobody had them unless a field was being typed in, so a deleted task could not be
+/// shaken back although its Undo was written down. This takes the keys whenever no field has
+/// them: nothing is seen of it, and a field that is tapped takes them over as before.
+struct KeepsUndoAtHand: UIViewRepresentable {
+    func makeUIView(context: Context) -> Holder { Holder() }
+    func updateUIView(_ view: Holder, context: Context) {}
+
+    final class Holder: UIView {
+        override var canBecomeFirstResponder: Bool { true }
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            guard window != nil else { return }
+            let center = NotificationCenter.default
+            for name in [UIApplication.didBecomeActiveNotification, UIResponder.keyboardDidHideNotification,
+                         UITextField.textDidEndEditingNotification, UITextView.textDidEndEditingNotification] {
+                center.addObserver(self, selector: #selector(take), name: name, object: nil)
+            }
+            take()
+        }
+
+        /// A moment later: what gave the keys up has finished doing so, and a field that takes them
+        /// next has them already.
+        @objc private func take() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                guard let self, self.window != nil, !self.isFirstResponder, !Self.someoneTypes else { return }
+                self.becomeFirstResponder()
+            }
+        }
+
+        /// A field or a text view has the keys: they are not taken from it.
+        private static var someoneTypes: Bool {
+            Finder.found = nil
+            UIApplication.shared.sendAction(#selector(UIResponder.causabeeSaysItHasTheKeys), to: nil, from: nil, for: nil)
+            return Finder.found is UITextInput
+        }
+    }
+
+    fileprivate enum Finder { nonisolated(unsafe) static weak var found: UIResponder? }
+}
+
+private extension UIResponder {
+    /// Sent to nobody in particular, it arrives at whoever has the keys.
+    @objc func causabeeSaysItHasTheKeys() { KeepsUndoAtHand.Finder.found = self }
 }

@@ -55,7 +55,7 @@ struct FolderSetting: View {
             Button(name == nil ? "Choose a folder …" : "Choose another …") { picks = true }
                 .fileImporter(isPresented: $picks, allowedContentTypes: [.folder]) { result in
                     guard case .success(let url) = result else { return }
-                    if PhoneFolder.choose(url) { name = url.lastPathComponent; failure = nil } else { failure = "This folder cannot be used. Choose one in iCloud Drive or on this iPhone." }
+                    if PhoneFolder.choose(url) { name = url.lastPathComponent; failure = nil } else { failure = "This folder cannot be used. Choose one in iCloud Drive or on this \(ThisDevice.name)." }
                 }
             if name != nil { Button("Use none", role: .destructive) { PhoneFolder.forget(); name = nil } }
             if let failure { Text(failure).font(.footnote).foregroundStyle(Theme.warning) }
@@ -68,7 +68,7 @@ struct FolderSetting: View {
                      : "\(inside.count) \(inside.count == 1 ? "folder or file" : "folders and files") in it, such as “\(inside.sorted().first ?? "")”.")
                     .font(.footnote).foregroundStyle(inside.isEmpty ? Theme.warning : Color.secondary)
             }
-            Text("iCloud Drive is off for Causabee on this iPhone, so its own folder is not found. Switch it on in the iPhone's Settings › your name › iCloud › Drive — or choose a folder here. Then a letter photographed here opens on the Mac, and the Mac's files open here. The files are in your own iCloud Drive; Causabee has no server.")
+            Text("iCloud Drive is off for Causabee on this \(ThisDevice.name), so its own folder is not found. Switch it on in the \(ThisDevice.name)'s Settings › your name › iCloud › Drive — or choose a folder here. Then a letter photographed here opens on the Mac, and the Mac's files open here. The files are in your own iCloud Drive; Causabee has no server.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }

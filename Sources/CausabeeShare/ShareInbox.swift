@@ -1,4 +1,5 @@
 import Foundation
+import MatterCore
 
 /// What the share sheet and the app hand each other, in the App Group they share: the matters to
 /// choose from, written by the app whenever it opens or goes away, and what was shared, waiting
@@ -44,7 +45,7 @@ enum ShareInbox {
 
     enum Failure: LocalizedError {
         case noGroup
-        var errorDescription: String? { "Causabee's shared folder on this iPhone cannot be reached." }
+        var errorDescription: String? { "Causabee's shared folder on this \(ThisDevice.name) cannot be reached." }
     }
 
     static func put(_ data: Data, named name: String, into matterKey: String?) throws {

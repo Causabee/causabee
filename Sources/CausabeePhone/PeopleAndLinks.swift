@@ -9,6 +9,7 @@ struct PeopleSection: View {
     /// A tap on a person: their part of the record.
     var choose: ((Party) -> Void)? = nil
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var merging: (Party, Party)?
     @State private var adding = false
 
@@ -43,7 +44,7 @@ struct PeopleSection: View {
                             PhonePartyRow(party: party, membership: membership, matter: matter,
                                           save: { name, role in edit(party, membership: membership, name: name, role: role) },
                                           remove: {
-                                              withAnimation { membership.remove(in: context, origin: origin) }
+                                              withAnimation { membership.removeByHand(in: context, origin: origin, undo: undoManager) }
                                               try? context.save()
                                           },
                                           merge: { other in merging = (party, other) })
@@ -134,7 +135,7 @@ struct PhonePartyRow: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
-        .contextMenu { items }
+        .contextMenu { Group { items }.menuSigns() }
         .findable(.model(party.persistentModelID), party.name, membership.role)
         .sheet(isPresented: $editing) {
             PartyEditor(party: party, membership: membership, matter: matter, save: save, remove: remove)
@@ -191,6 +192,7 @@ struct PartyEditor: View {
             }
             .navigationTitle("Change person")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -245,6 +247,7 @@ struct PhoneSuggestionCard: View {
 struct LinksSection: View {
     let matter: Matter
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var adding = false
     @State private var showsSuggestions = true
     @State private var searching: String?
@@ -261,8 +264,7 @@ struct LinksSection: View {
                     ForEach(Array(all.enumerated()), id: \.element.persistentModelID) { index, link in
                         if index > 0 { Divider().padding(.leading, 50) }
                         PhoneLinkRow(link: link, todos: matter.openTodos) {
-                            withAnimation { context.delete(link) }
-                            try? context.save()
+                            withAnimation { context.deleteByHand([link], undo: undoManager, named: "Remove Link") }
                         }
                     }
                 }
@@ -401,7 +403,7 @@ struct PhoneLinkRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .contextMenu { items }
+        .contextMenu { Group { items }.menuSigns() }
         .findable(.model(link.persistentModelID), link.shownName, link.address)
         .sheet(isPresented: $editing) {
             PhoneLinkEditor(link: link, todos: todos) { address, title, todo in
@@ -459,6 +461,7 @@ struct PhoneLinkEditor: View {
             }
             .navigationTitle(link == nil ? "Add link" : "Change link")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([address, title, todo])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

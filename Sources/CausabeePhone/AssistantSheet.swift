@@ -16,6 +16,8 @@ struct AssistantSheet: View {
     @Query private var profiles: [Profile]
     @Environment(PhoneStore.self) private var store
     @State private var draft = ""
+    /// How wide the thread's scroll view is, measured: it follows an iPad's window as it is resized.
+    @State private var threadWidth = CGFloat.zero
     /// A new field after each send. Emptying the words is not enough while the keyboard still
     /// holds some of them — dictation, a word being autocorrected: the old field kept showing
     /// them, and with the words gone from `draft` nothing could be sent again.
@@ -137,9 +139,10 @@ struct AssistantSheet: View {
                     }
                 }
                 .padding(Self.padding)
-                .containerRelativeFrame(.horizontal)
+                .asWide(as: threadWidth)
                 .environment(\.threadRoom, placement.viewport)
             }
+            .tellsItsWidth($threadWidth)
             // The thread's top stands a little under the edge: what is put "at the top" keeps that room.
             .safeAreaPadding(.top, Self.topRoom)
             // The keyboard goes when the thread is scrolled or tapped, to see all of it.

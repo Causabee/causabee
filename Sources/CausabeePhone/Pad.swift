@@ -83,8 +83,10 @@ struct PadSidebar: View {
                 .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 24)
         }
         .safeAreaBar(edge: .top, alignment: .leading, spacing: 0) {
+            // Clear of the window's own three buttons, where the iPad shows them in this corner.
             PadControls()
                 .padding(.leading, 16)
+                .containerCornerOffset(.leading, sizeToFit: true)
                 .frame(height: PadMetrics.bar)
         }
         .background(Color(.secondarySystemBackground))
@@ -97,6 +99,7 @@ struct PadControls: View {
     @Environment(Navigation.self) private var navigation
     @AppStorage(AutoMode.key) private var auto = false
     @Environment(\.modelContext) private var context
+    @State private var asksAuto = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -105,11 +108,18 @@ struct PadControls: View {
                 withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
             }
             round(auto ? "bolt.fill" : "bolt", on: auto, label: "Auto") {
+                // The first time it is turned on, what it does is said and asked.
+                if AutoMode.asksFirst { asksAuto = true; return }
                 auto.toggle()
                 Haptics.tap()
                 if auto { PhoneMailCheck.shared.autoTurnedOn(context: context) }
             }
             .accessibilityValue(auto ? "On" : "Off")
+            .asksBeforeAuto($asksAuto) {
+                auto = true
+                Haptics.tap()
+                PhoneMailCheck.shared.autoTurnedOn(context: context)
+            }
         }
         // The yellow round of one that is on sits in the capsule's own curve.
         // As high as the page's own find and ⋯, and as black: beside them a smaller, greyer
@@ -158,13 +168,13 @@ private struct PageWide: ViewModifier {
     @Environment(Navigation.self) private var navigation
 
     func body(content: Content) -> some View {
-        if navigation.isPad, navigation.whole > 0 {
-            // The room is said by the columns' own row: measured here, the page kept the width it
-            // had before the assistant came in beside it.
-            content.frame(width: min(navigation.pageWidth, most)).frame(width: navigation.pageWidth)
-        } else {
-            content.containerRelativeFrame(.horizontal)
-        }
+        // The room is said in points, from the window as it was measured: beside the columns on a
+        // wide iPad, the whole window on the iPhone and in an iPad's narrow window. Asked of its
+        // container instead (containerRelativeFrame), a page kept the width it had before an
+        // iPad's window was made smaller, and stood cut off on both sides. One view for both, so
+        // nothing on the page starts anew when a window crosses from wide to narrow.
+        let room: CGFloat? = navigation.whole > 0 ? (navigation.isPad ? navigation.pageWidth : navigation.whole) : nil
+        content.frame(width: room.map { min($0, most) }).frame(width: room)
     }
 }
 

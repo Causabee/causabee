@@ -192,12 +192,13 @@ struct SetupAssistant: View {
             if step == .you {
                 Button("Later") { if !SetupState.isFresh { later = true }; dismiss() }
                     .help("Close for now. Causabee → Set Up Causabee … opens it again.")
+                    .keyboardShortcut(.cancelAction)
             } else {
                 Button("Back") { step = Step(rawValue: step.rawValue - 1) ?? .you }
             }
             Spacer()
             if step == .ready {
-                Button("Close") { dismiss() }
+                Button("Close") { dismiss() }.keyboardShortcut(.cancelAction)
                 // The test reads no mail: its account is only in memory, and its matters are the demo's.
                 Button(SetupState.isFresh ? "Finish test" : "Get new mail") { dismiss(); if !SetupState.isFresh { getMail() } }
                     .filledButton()
@@ -400,7 +401,7 @@ private struct AIStep: View {
                     pasted = ""
                     result = ("The key works, and is saved\(SetupState.isFresh ? " for this test only" : " in the Keychain").", true)
                 } catch {
-                    result = ("The key works, but could not be saved: \(error)", false)
+                    result = ("The key works, but could not be saved: \(plainWords(error))", false)
                 }
             } else {
                 result = (answer.text, false)
@@ -594,7 +595,7 @@ private struct MailStep: View {
             } catch where GoogleSignInFlow.wasCancelled(error) {
                 result = nil
             } catch {
-                result = ("Not signed in: \(error)", false)
+                result = ("Not signed in: \(plainWords(error))", false)
             }
             working = false
             tick += 1
@@ -620,7 +621,7 @@ private struct MailStep: View {
                 password = ""
                 result = ("Logged in. The password is saved\(SetupState.isFresh ? " for this test only" : " in the Keychain").", true)
             } catch {
-                result = ("Not logged in: \(error)", false)
+                result = ("Not logged in: \(plainWords(error))", false)
             }
             working = false
             tick += 1
@@ -638,7 +639,7 @@ private struct MailStep: View {
                 label = await count(in: try await client.folders(), client: client)
                 await client.logout()
             } catch {
-                result = ("Could not look: \(error)", false)
+                result = ("Could not look: \(plainWords(error))", false)
             }
             working = false
         }

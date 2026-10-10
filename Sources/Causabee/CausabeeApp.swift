@@ -10,6 +10,7 @@ import SwiftUI
 /// `--demo` fills an empty store with made-up matters, in `Causabee-Demo` unless a store is named.
 @main
 struct CausabeeApp: App {
+    @NSApplicationDelegateAdaptor(LastWindow.self) private var lastWindow
     let storeURL: URL
     let opened: Result<ModelContainer, Error>
 
@@ -126,6 +127,8 @@ struct CausabeeApp: App {
                     .keyboardShortcut("n", modifiers: .command)
             }
             MatterCommands()
+            WindowCommands()
+            FindCommands()
             // The About panel names the release as it went out: "Version Beta 0.5 (19)".
             CommandGroup(replacing: .appInfo) {
                 Button("About Causabee") {
@@ -565,12 +568,15 @@ struct RootView: View {
         return "Merge “\(from.name)” into “\(into.name)”?"
     }
 
+    /// The keyboard is in the sidebar: ↑ and ↓ move through its rows.
+    @FocusState private var keysInSidebar: Bool
+
     /// Causabee's own sidebar, not the Mac's: 270 wide, the window's buttons and the sidebar's on
     /// its top 52 points, the matters below, getting new mail at the bottom.
     /// One matter in the sidebar, open or closed alike, with its menu.
     private func sidebarRow(_ matter: Matter, _ sorted: [Matter]) -> some View {
         MatterRow(matter: matter)
-            .sidebarRow(selected: navigation.place == .matter(matter.persistentModelID)) { navigation.open(matter) }
+            .sidebarRow(selected: navigation.place == .matter(matter.persistentModelID)) { navigation.open(matter); keysInSidebar = true }
             .contextMenu {
                 PinMenuItem(matter: matter, all: sorted)
                 Button("Rename …") { newName = matter.name; renaming = matter }
@@ -583,14 +589,34 @@ struct RootView: View {
             }
     }
 
+    /// The sidebar's rows from top to bottom, as they are shown: the overview, the pinned, the
+    /// matters going on, and the closed ones while they are unfolded. Nil is the overview.
+    private func sidebarStops(_ sorted: [Matter]) -> [Matter?] {
+        [nil] + Pins.pinned(sorted) + sorted.filter { !$0.isClosed && !$0.isPinned } + (showsClosed ? sorted.filter(\.isClosed) : [])
+    }
+
+    /// One row down or up from the one that is open — ↓ and ↑ in the sidebar, and View → Next
+    /// Matter and Previous Matter from anywhere. It stops at the ends.
+    private func step(_ by: Int, in sorted: [Matter]) {
+        let stops = sidebarStops(sorted)
+        let at: Int
+        if case .matter(let id) = navigation.place { at = stops.firstIndex { $0?.persistentModelID == id } ?? 0 } else { at = 0 }
+        let to = min(max(at + by, 0), stops.count - 1)
+        guard to != at else { return }
+        if let matter = stops[to] { navigation.open(matter) } else { navigation.place = .assistant }
+    }
+
     private func sidebar(_ sorted: [Matter]) -> some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: WindowMetrics.topLine)
-            // The selection drawn by Causabee, not by the Mac: a light grey, as in the design.
+            // The selection drawn by Causabee, not by the Mac: a light grey, as in the design —
+            // a shade darker while the keys are in the sidebar, as the Mac's own selection is.
+            ScrollViewReader { rows in
             List {
                 let overview = navigation.place == .assistant || navigation.place == nil
                 Text("Overview").font(.body.weight(.semibold))
-                    .sidebarRow(selected: overview) { navigation.place = .assistant }
+                    .sidebarRow(selected: overview) { navigation.place = .assistant; keysInSidebar = true }
+                    .id("overview")
                 let pinned = Pins.pinned(sorted)
                 if !pinned.isEmpty {
                     Section("Pinned") {
@@ -611,6 +637,21 @@ struct RootView: View {
             }
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
+            // The keys in the sidebar: ↓ and ↑ go from row to row and open what they come to.
+            // The list takes the keys itself — by Tab, or by a click on one of its rows — and shows
+            // it by its open row's darker grey, not by a ring around all of it.
+            .focusable()
+            .focusEffectDisabled()
+            .focused($keysInSidebar)
+            .environment(\.sidebarHasKeys, keysInSidebar)
+            .onKeyPress(.downArrow) { step(1, in: sorted); return .handled }
+            .onKeyPress(.upArrow) { step(-1, in: sorted); return .handled }
+            // What the keys opened is brought into view.
+            .onChange(of: navigation.place) {
+                guard keysInSidebar else { return }
+                if case .matter(let id) = navigation.place { rows.scrollTo(id) } else { rows.scrollTo("overview") }
+            }
+            }
             MailCheckView(check: mailCheck)
         }
         .frame(width: WindowMetrics.sidebarWidth)
@@ -671,13 +712,10 @@ struct RootView: View {
         // the window's own corner then: it brings the assistant in beside the matter. Laid over the
         // window, as the capsule is: over the page's own column it could not be clicked once the
         // sidebar had been put away. The overview has its own "Ask Causabee".
-        // ⌘K brings the assistant in and puts it away, from the keyboard.
-        .background {
-            Button("") {
-                withAnimation(.snappy(duration: 0.25)) { if showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() } }
-            }
-            .keyboardShortcut("k", modifiers: .command).hidden()
-        }
+        // ⌘K brings the assistant in and puts it away, from the keyboard: View → Show Assistant.
+        .modifier(WindowMenuActions(navigation: navigation, showsAssistant: showsAssistant, step: { step($0, in: sidebarOrder()) }) {
+            mailCheck.look(store: navigation.store, context: context)
+        })
         .overlay(alignment: .bottomTrailing) {
             if !showsAssistant, case .matter = navigation.place {
                 Button {
@@ -820,7 +858,7 @@ struct RootView: View {
         .overlay {
             if matters.isEmpty {
                 ContentUnavailableView("No matters yet", systemImage: "tray",
-                                       description: Text("First: matter-spike fetch --classify, then matter-spike import"))
+                                       description: Text("Choose Causabee → Set Up Causabee … to bring in your mail, or File → New Matter … to start one."))
             }
         }
     }
@@ -938,13 +976,130 @@ struct MatterCommands: Commands {
             ForEach(MatterAction.allCases, id: \.self) { action in
                 if action == .newTask { item(action.title, action).keyboardShortcut("t", modifiers: [.command, .shift]) } else { item(action.title, action) }
             }
+            // And what the matter's ⋯ does with the matter itself — in the menu bar too, with the
+            // words for what it would do now. Merging stays in the ⋯: it needs the list of matters.
+            Divider()
+            command(state?.isPinned == true ? "Unpin" : "Pin to Top", .pin).disabled(state?.isClosed == true && state?.isPinned != true)
+            command("Rename …", .rename)
+            command("Export as RTF", .export)
+            Divider()
+            command(state?.isClosed == true ? "Open Again" : "Close Matter…", .close)
         }
+    }
+
+    @FocusedValue(\.matterState) private var state
+
+    private func command(_ title: String, _ command: MatterCommand) -> some View {
+        Button(title) { NotificationCenter.default.post(name: .matterCommand, object: command.rawValue) }
+            .disabled(open == nil)
     }
 
     private func item(_ title: String, _ action: MatterAction) -> some View {
         Button(title) { NotificationCenter.default.post(name: .matterAction, object: action.rawValue) }
             .disabled(open == nil)
     }
+}
+
+/// Causabee is its one window: closed, Causabee quits. Left running without it, New Matter …, Set Up
+/// and the Introduction had nothing to act on, and nothing in the menu bar brought the window back.
+final class LastWindow: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+}
+
+/// View: what the capsule by the window's buttons and the bee do, in the menu bar too — with the
+/// words for what a click would do now, and dimmed while no window is in front.
+struct WindowCommands: Commands {
+    @FocusedValue(\.windowState) private var window
+
+    var body: some Commands {
+        CommandGroup(replacing: .sidebar) {
+            Button(window?.sidebarHidden == true ? "Show Sidebar" : "Hide Sidebar") { post(.toggleSidebar) }
+                .keyboardShortcut("s", modifiers: [.command, .control]).disabled(window == nil)
+            Button(window?.showsAssistant == true ? "Hide Assistant" : "Show Assistant") { post(.toggleAssistant) }
+                .keyboardShortcut("k", modifiers: .command).disabled(window == nil)
+            Button(window?.reading == true ? "Deactivate Reading Mode" : "Activate Reading Mode") { post(.toggleReading) }
+                .disabled(window == nil)
+            Divider()
+            // Through the sidebar's rows without the mouse, wherever the keys are.
+            Button("Next Matter") { post(.nextMatter) }
+                .keyboardShortcut(.downArrow, modifiers: [.command, .option]).disabled(window == nil)
+            Button("Previous Matter") { post(.previousMatter) }
+                .keyboardShortcut(.upArrow, modifiers: [.command, .option]).disabled(window == nil)
+            Divider()
+        }
+        CommandGroup(after: .newItem) {
+            Button("Get New Mail") { post(.getNewMail) }.disabled(window == nil)
+        }
+    }
+
+    private func post(_ name: Notification.Name) { NotificationCenter.default.post(name: name, object: nil) }
+}
+
+/// Edit → Find: ⌘F opens the page's search — the matter's, or the overview's field — and ⌘G and
+/// ⇧⌘G go between what it found, as ↩ and ⇧↩ do in the field.
+struct FindCommands: Commands {
+    @FocusedValue(\.windowState) private var window
+    @FocusedValue(\.findHasMatches) private var hasMatches
+
+    var body: some Commands {
+        CommandGroup(after: .pasteboard) {
+            Divider()
+            Menu("Find") {
+                Button("Find …") { post(.find) }.keyboardShortcut("f", modifiers: .command)
+                    .disabled(window == nil)
+                Button("Find Next") { post(.findNext) }.keyboardShortcut("g", modifiers: .command)
+                    .disabled(hasMatches != true)
+                Button("Find Previous") { post(.findPrevious) }.keyboardShortcut("g", modifiers: [.command, .shift])
+                    .disabled(hasMatches != true)
+            }
+        }
+    }
+
+    private func post(_ name: Notification.Name) { NotificationCenter.default.post(name: name, object: nil) }
+}
+
+/// What View's and File's commands do in the window, and what the window tells them of itself.
+struct WindowMenuActions: ViewModifier {
+    let navigation: Navigation
+    let showsAssistant: Bool
+    /// One matter down (1) or up (-1) in the sidebar's order.
+    let step: (Int) -> Void
+    let getMail: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .toggleAssistant)) { _ in
+                withAnimation(.snappy(duration: 0.25)) { if showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() } }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleSidebar)) { _ in
+                // One movement for all of it, as from the sidebar's button.
+                withAnimation(.easeInOut(duration: 0.25)) { navigation.sidebarHidden.toggle() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleReading)) { _ in
+                withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .getNewMail)) { _ in getMail() }
+            .onReceive(NotificationCenter.default.publisher(for: .nextMatter)) { _ in step(1) }
+            .onReceive(NotificationCenter.default.publisher(for: .previousMatter)) { _ in step(-1) }
+            .focusedSceneValue(\.windowState, WindowState(sidebarHidden: navigation.sidebarHidden, showsAssistant: showsAssistant,
+                                                          reading: navigation.reading))
+    }
+}
+
+/// What the window shows, for the menu bar's words.
+struct WindowState: Equatable {
+    var sidebarHidden: Bool
+    var showsAssistant: Bool
+    var reading: Bool
+}
+
+/// What the Matter menu does with the open matter itself, as its ⋯ does.
+enum MatterCommand: String { case pin, rename, export, close }
+
+/// What the open matter is, for the Matter menu's words.
+struct MatterState: Equatable {
+    var isPinned: Bool
+    var isClosed: Bool
 }
 
 /// An action of the Matter menu, for the matter that is open.
@@ -976,6 +1131,12 @@ enum MatterAction: String, CaseIterable {
 extension FocusedValues {
     /// The matter open in the window: the Matter menu's actions go to it.
     @Entry var openMatter: PersistentIdentifier?
+    /// Whether it is pinned, whether it is closed: for the Matter menu's words.
+    @Entry var matterState: MatterState?
+    /// The window in front: its sidebar, its assistant, reading — for View's words.
+    @Entry var windowState: WindowState?
+    /// The matter's search has found something to go between.
+    @Entry var findHasMatches: Bool?
 }
 
 /// SwiftUI puts a menu of its own before Window; the Matter menu belongs after Edit, where a
@@ -1008,6 +1169,8 @@ enum MenuOrder {
 extension Notification.Name {
     /// Matter → New Task …, Add Note …, Add File … and the others, and the title bar's plus: the action as its raw value.
     static let matterAction = Notification.Name("causabee.matterAction")
+    /// Matter → Pin to Top, Rename …, Export as RTF, Close Matter…: the command as its raw value.
+    static let matterCommand = Notification.Name("causabee.matterCommand")
     /// iCloud brought changes in: the assistant's thread may have new or changed turns.
     static let threadMayHaveChanged = Notification.Name("causabee.threadMayHaveChanged")
     /// Help → Introduction to Causabee.
@@ -1016,4 +1179,17 @@ extension Notification.Name {
     static let showSetup = Notification.Name("causabee.showSetup")
     /// File → New Matter …
     static let newMatter = Notification.Name("causabee.newMatter")
+    /// File → Get New Mail
+    static let getNewMail = Notification.Name("causabee.getNewMail")
+    /// View → Show Sidebar, Show Assistant, Activate Reading Mode
+    static let toggleSidebar = Notification.Name("causabee.toggleSidebar")
+    static let toggleAssistant = Notification.Name("causabee.toggleAssistant")
+    static let toggleReading = Notification.Name("causabee.toggleReading")
+    /// View → Next Matter, Previous Matter
+    static let nextMatter = Notification.Name("causabee.nextMatter")
+    static let previousMatter = Notification.Name("causabee.previousMatter")
+    /// Edit → Find
+    static let find = Notification.Name("causabee.find")
+    static let findNext = Notification.Name("causabee.findNext")
+    static let findPrevious = Notification.Name("causabee.findPrevious")
 }

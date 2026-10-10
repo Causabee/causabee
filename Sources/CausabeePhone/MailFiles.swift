@@ -18,7 +18,7 @@ enum MailFiles {
             switch self {
             case .noAccount: "Add your mail account first, to open files from your mail."
             case .notInMail: "This file was added on another device, not attached to a mail — it is only there."
-            case .noPassword(let user): "No password saved for \(user) on this iPhone."
+            case .noPassword(let user): "No password saved for \(user) on this \(ThisDevice.name)."
             }
         }
     }
@@ -153,7 +153,7 @@ struct FilesSection: View {
                             // With a name of its own, the file's name is still there to see, small.
                             // "scanned" in the same line, not beside the name: the name and what it says keep the row's width.
                             (Text(document.isOwnFile
-                                 ? (document.source.fileURL != nil ? "on this iPhone, in Files › Causabee" : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder" : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
+                                 ? (document.source.fileURL != nil ? "on this \(ThisDevice.name), in Files › Causabee" : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder" : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
                                     : "added on \(document.source.addedOn) · not in the matter's folder yet")
                                  : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
                                     ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
@@ -196,7 +196,7 @@ struct FilesSection: View {
         }
         .padding(14)
         .opacity(document.isHidden ? 0.55 : 1)
-        .contextMenu { items(document) }
+        .contextMenu { Group { items(document) }.menuSigns() }
     }
 
     /// What goes with it, said before it goes.
@@ -297,6 +297,8 @@ struct MailAccountSheet: View {
     @State private var password = ""
     @State private var saved = Keychain.accounts().filter { !$0.usesGoogle }
     @State private var failure: String?
+    /// The saved account asked about before its password goes — from every device, and not back.
+    @State private var removing: String?
 
     private var knownHost: String? { MailAccount(user: address.trimmingCharacters(in: .whitespaces))?.host }
 
@@ -312,11 +314,20 @@ struct MailAccountSheet: View {
                                     Text(account.host).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Button("Remove from all devices", role: .destructive) {
-                                    try? Keychain.delete(account: account.user)
-                                    saved = Keychain.accounts().filter { !$0.usesGoogle }
-                                }
+                                Button("Remove from all devices", role: .destructive) { removing = account.user }
                                 .buttonStyle(.borderless)
+                                // Asked first: the password goes from the Macs too, and cannot be brought back.
+                                .confirmationDialog("Remove the password for \(account.user)?",
+                                                    isPresented: Binding(get: { removing == account.user }, set: { if !$0 { removing = nil } }),
+                                                    titleVisibility: .visible) {
+                                    Button("Remove from all devices", role: .destructive) {
+                                        try? Keychain.delete(account: account.user)
+                                        saved = Keychain.accounts().filter { !$0.usesGoogle }
+                                    }
+                                    Button("Cancel", role: .cancel) { }
+                                } message: {
+                                    Text("It goes from iCloud Keychain, so from your Macs as well. To get mail again you type it in anew.")
+                                }
                             }
                         }
                     }
@@ -333,12 +344,13 @@ struct MailAccountSheet: View {
                 } header: {
                     Text(saved.isEmpty ? "Mail account" : "Add another")
                 } footer: {
-                    Text("Files are taken out of your mail when you open them — read-only, one mail at a time — and are not kept in iCloud. The password is kept in your iCloud Keychain, end-to-end encrypted, so Causabee on your Macs and this iPhone shares it — typed once — and it goes only to your mail server. For Gmail, use an app password (Google Account › Security › App passwords).")
+                    Text("Files are taken out of your mail when you open them — read-only, one mail at a time — and are not kept in iCloud. The password is kept in your iCloud Keychain, end-to-end encrypted, so Causabee on your Macs and this \(ThisDevice.name) shares it — typed once — and it goes only to your mail server. For Gmail, use an app password (Google Account › Security › App passwords).")
                 }
                 if let failure { Text(failure).foregroundStyle(Theme.warning) }
             }
             .navigationTitle("Mail account")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([address, host, password])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

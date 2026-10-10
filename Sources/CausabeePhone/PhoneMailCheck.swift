@@ -70,6 +70,11 @@ final class PhoneMailCheck {
     }
 
     var state: State = .idle
+    /// The bee is still over the pulled page, or on its way down: the one beside "Fetching mail …"
+    /// is unseen until that one has arrived in its place.
+    var beeIsAbove = false
+    /// Where the bee beside "Fetching mail …" stands, on the screen.
+    var beePlace = CGRect.zero
     /// Which step it is at, for the panel's transitions: one view each, faded into the next.
     var phase: String {
         switch state {
@@ -237,7 +242,7 @@ final class PhoneMailCheck {
         running = Task {
             do {
                 guard let password = try Keychain.password(for: account.user) else {
-                    state = .failed("No password for \(account.user) on this iPhone: add it in Settings (⋯ above).")
+                    state = .failed("No password for \(account.user) on this \(ThisDevice.name): add it in Settings (⋯ above).")
                     return
                 }
                 let look = try await door.look(password: password)
@@ -471,20 +476,14 @@ struct PhoneMailCheckView: View {
                 // Nothing to show, and no button: mail is looked for when Causabee is opened, and the
                 // overview pulled down looks at once.
                 EmptyView()
-            case .reading(let text):
-                // Centred, as the button it came from: the bee at work, and Cancel under it.
-                VStack(spacing: 12) {
-                    HStack(spacing: 10) {
-                        BeeLoader(size: 15)
-                        Text(text).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    Button("Cancel") { check.cancel() }.buttonStyle(.phone)
-                }
-                .frame(maxWidth: .infinity)
-                .phoneBox()
-            case .sending(let text):
+            // Fetching and sorting look alike: the bee at work and what it is at, in one line.
+            // No Cancel under fetching: it is over in a moment, and reading mail sends nothing.
+            case .reading(let text), .sending(let text):
                 HStack(spacing: 10) {
-                    BeeLoader(size: 15)
+                    // It keeps its place while it waits, so the words do not move when it comes.
+                    BeeLoader(size: 15).opacity(check.beeIsAbove ? 0 : 1)
+                        // Where it stands on the screen: the bee from over the page flies here.
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { check.beePlace = $0 }
                     Text(text).font(.subheadline).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)

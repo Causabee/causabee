@@ -142,9 +142,11 @@ struct PageFindField: View {
         .overlay { if open, focused { Capsule().strokeBorder(Color.accentColor.opacity(0.6), lineWidth: 3) } }
         .onChange(of: focused) { if !focused, !find.isActive, open { close() } }
         .onAppear { if find.isActive { open = true; shown = true } }
-        .background {
-            Button("", action: start).keyboardShortcut("f", modifiers: .command).hidden()
-        }
+        // Edit → Find: ⌘F, ⌘G and ⇧⌘G.
+        .onReceive(NotificationCenter.default.publisher(for: .find)) { _ in start() }
+        .onReceive(NotificationCenter.default.publisher(for: .findNext)) { _ in find.next() }
+        .onReceive(NotificationCenter.default.publisher(for: .findPrevious)) { _ in find.previous() }
+        .focusedSceneValue(\.findHasMatches, find.isActive && !find.matches.isEmpty)
     }
 
     private func start() {
@@ -172,6 +174,7 @@ struct NotesPart: View {
     /// Set from outside — "Write Note" in the menu — to put the cursor into the field.
     @Binding var writing: Bool
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var draft = ""
     @State private var editing: PersistentIdentifier?
     @State private var editingEarlier = false
@@ -218,7 +221,7 @@ struct NotesPart: View {
                 block(Self.label(note.createdAt) + (note.fromAssistant ? " · from the assistant" : ""), note.text, isEditing: editing == note.persistentModelID,
                       edit: { edited = note.text; editing = note.persistentModelID; editingEarlier = false },
                       save: { text in if text.isEmpty { context.delete(note) } else { note.text = text } },
-                      delete: { context.delete(note) })
+                      delete: { context.deleteByHand([note], undo: undoManager, named: "Delete Note") })
                     .findable(.model(note.persistentModelID), note.text)
             }
             if let earlier = matter.earlierNote {
@@ -366,6 +369,7 @@ struct ContactEditor: View {
             }
             .navigationTitle("New contact")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Add", action: add).disabled(!canAdd) }
@@ -404,6 +408,7 @@ struct DetailEditor: View {
     let matter: Matter
     var detail: MatterDetail? = nil
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @Environment(\.dismiss) private var dismiss
     @State private var label = ""
     @State private var value = ""
@@ -438,6 +443,7 @@ struct DetailEditor: View {
                 }
                 .navigationTitle(detail == nil ? "New detail" : "Detail")
                 .navigationBarTitleDisplayMode(.inline)
+                .keepsWhatWasTyped([label, value, party])
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) { Button(detail == nil ? "Add" : "Save", action: save).disabled(!canSave) }
@@ -482,7 +488,7 @@ struct DetailEditor: View {
     }
 
     private func delete() {
-        if let detail { context.delete(detail); try? context.save() }
+        if let detail { context.deleteByHand([detail], undo: undoManager, named: "Delete Detail") }
         dismiss()
     }
 }
@@ -491,6 +497,7 @@ struct DetailEditor: View {
 /// copies one; it is put right or deleted from its menu.
 struct DetailsSection: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     let matter: Matter
     /// Shown even while there is none yet — when the record shows only the details.
     var showsEmpty = false
@@ -562,7 +569,7 @@ struct DetailsSection: View {
             if let party = detail.party { ContactItems(party: party) }
             Button("Edit", systemImage: "pencil") { editing = detail }
             Divider()
-            Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { context.delete(detail); try? context.save() } }
+            Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { context.deleteByHand([detail], undo: undoManager, named: "Delete Detail") } }
         }
     }
 
@@ -630,4 +637,29 @@ struct LinkItems: View {
             ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
         }
     }
+}
+
+/// A sheet or a popover that is written in does not go with what was typed: once something in it
+/// has changed, a swipe down on the iPhone lets go again, and on the Mac a click beside the popover
+/// leaves it open. Cancel and Esc — said on purpose — still drop it. Unchanged, it goes as before.
+private struct KeepsWhatWasTyped: ViewModifier {
+    let now: [AnyHashable?]
+    /// What stood in the sheet once it had filled its fields from what it edits.
+    @State private var first: [AnyHashable?]?
+    /// The sheet's own onAppear has put what is edited into the fields.
+    @State private var filled = false
+
+    func body(content: Content) -> some View {
+        content
+            .interactiveDismissDisabled(first != nil && first != now)
+            // A moment after the sheet is there — sooner than anything can be typed.
+            .task { try? await Task.sleep(for: .milliseconds(400)); filled = true }
+            // Read here, not in the task: the task still holds the fields as they were when it began.
+            .onChange(of: filled) { if first == nil { first = now } }
+    }
+}
+
+extension View {
+    /// The fields of an editor, as they are now: changed, it stays under a swipe or a click beside it.
+    func keepsWhatWasTyped(_ fields: [AnyHashable?]) -> some View { modifier(KeepsWhatWasTyped(now: fields)) }
 }

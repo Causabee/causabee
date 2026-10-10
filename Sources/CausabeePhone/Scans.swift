@@ -54,12 +54,13 @@ struct ScanSheet: View {
                 } header: {
                     Text("What is it?")
                 } footer: {
-                    Text("Saved on this iPhone, in \(PhoneShots.place), under this name. Then scanned here and sorted into “\(matter.name)” when you tap “Sort in” — about 4 cents — as with the paperclip. Its tasks and dates go to all your devices; the file stays on this iPhone.")
+                    Text("Saved on this \(ThisDevice.name), in \(PhoneShots.place), under this name. Then scanned here and sorted into “\(matter.name)” when you tap “Sort in” — about 4 cents — as with the paperclip. Its tasks and dates go to all your devices; the file stays on this \(ThisDevice.name).")
                 }
                 if let failure { Text(failure).foregroundStyle(Theme.warning) }
             }
             .navigationTitle("Add a document")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([title, file?.name])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -96,7 +97,7 @@ struct ScanSheet: View {
     private func add() {
         guard let file, let name = keptName else { return }
         guard let kept = PhoneShots.shared.keep(file.data, named: name) else {
-            failure = "It could not be saved on this iPhone. Is there space left?"
+            failure = "It could not be saved on this \(ThisDevice.name). Is there space left?"
             return
         }
         PhoneShots.shared.bring(kept, matter: matter.persistentModelID, context: context, owner: profiles.first?.names.first)

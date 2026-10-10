@@ -14,6 +14,10 @@ struct CausabeePhoneApp: App {
 
     init() {
         Theme.registerFonts()
+        // Pulled down, the overview looks for new mail, and says so with its own bee and words in
+        // the mail's place. The system's wheel on top of that said it twice, and was gone before
+        // the mail was read: it is not shown.
+        UIRefreshControl.appearance().tintColor = .clear
         PhoneCloudStatus.shared.watch()
         PhoneFolder.restore()
     }
@@ -32,6 +36,7 @@ struct CausabeePhoneApp: App {
                                        description: Text("\(store.url.path)\n\(error.localizedDescription)"))
             }
         }
+        .commands { PhoneCommands() }
     }
 }
 
@@ -135,16 +140,69 @@ final class PhoneCloudStatus {
             }
         }
         // The demo has no iCloud, and CausabeeDemo is not signed for the container: asking would stop it.
-        guard PhoneCloud.container != nil else { account = "the demo stays on this iPhone"; return }
+        guard PhoneCloud.container != nil else { account = "the demo stays on this \(ThisDevice.name)"; return }
         Task {
             let status = try? await CKContainer(identifier: PhoneCloud.ownContainer).accountStatus()
             account = switch status {
             case .available: "signed in to iCloud"
-            case .noAccount: "no iCloud account on this iPhone"
-            case .restricted: "iCloud is restricted on this iPhone"
+            case .noAccount: "no iCloud account on this \(ThisDevice.name)"
+            case .restricted: "iCloud is restricted on this \(ThisDevice.name)"
             case .temporarilyUnavailable: "iCloud is not available right now"
             default: "iCloud status unknown"
             }
         }
     }
+}
+
+/// The iPad's menu bar, and its keyboard: what the Mac has in its own — a new matter, the search,
+/// the sidebar, the assistant, reading, new mail, Settings. On the iPhone nothing shows them.
+struct PhoneCommands: Commands {
+    @FocusedValue(\.phoneWindow) private var window
+
+    var body: some Commands {
+        // One window of matters, as on the Mac: ⌘N starts a matter.
+        CommandGroup(replacing: .newItem) {
+            Button("New Matter …") { post(.phoneNewMatter) }.keyboardShortcut("n", modifiers: .command)
+            Button("Get New Mail") { post(.phoneGetMail) }
+        }
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings …") { post(.phoneSettings) }.keyboardShortcut(",", modifiers: .command)
+        }
+        CommandGroup(after: .pasteboard) {
+            Button("Find …") { post(.phoneFind) }.keyboardShortcut("f", modifiers: .command)
+        }
+        CommandGroup(replacing: .sidebar) {
+            if window?.isPad != false {
+                Button(window?.showsSidebar == false ? "Show Sidebar" : "Hide Sidebar") { post(.phoneSidebar) }
+                    .keyboardShortcut("s", modifiers: [.command, .control])
+            }
+            Button(window?.showsAssistant == true ? "Hide Assistant" : "Show Assistant") { post(.phoneAssistant) }
+                .keyboardShortcut("k", modifiers: .command)
+            Button(window?.reading == true ? "Deactivate Reading Mode" : "Activate Reading Mode") { post(.phoneReading) }
+        }
+    }
+
+    private func post(_ name: Notification.Name) { NotificationCenter.default.post(name: name, object: nil) }
+}
+
+/// What the window shows, for the menu bar's words.
+struct PhoneWindowState: Equatable {
+    var isPad: Bool
+    var showsSidebar: Bool
+    var showsAssistant: Bool
+    var reading: Bool
+}
+
+extension FocusedValues {
+    @Entry var phoneWindow: PhoneWindowState?
+}
+
+extension Notification.Name {
+    static let phoneNewMatter = Notification.Name("causabee.phone.newMatter")
+    static let phoneGetMail = Notification.Name("causabee.phone.getMail")
+    static let phoneSettings = Notification.Name("causabee.phone.settings")
+    static let phoneFind = Notification.Name("causabee.phone.find")
+    static let phoneSidebar = Notification.Name("causabee.phone.sidebar")
+    static let phoneAssistant = Notification.Name("causabee.phone.assistant")
+    static let phoneReading = Notification.Name("causabee.phone.reading")
 }

@@ -29,17 +29,17 @@ struct BeeLoader: View {
     /// The bee with room above it for the hover and the stripes dropping in, and at each side for
     /// the wings: swung out to 16°, a wing's tip reaches about 300 past the body's drawing — so 450,
     /// the same on both sides, and the bee stays in the middle.
-    private static let box = CGRect(x: -450, y: -300, width: 4201 + 900, height: 2900)
+    fileprivate static let box = CGRect(x: -450, y: -300, width: 4201 + 900, height: 2900)
     static let aspect = box.width / box.height
-    private static let beat = 2.4
+    fileprivate static let beat = 2.4
     static var beatLength: Double { beat }
 
-    private static let bars: [(x: CGFloat, y: CGFloat, width: CGFloat)] = [
+    fileprivate static let bars: [(x: CGFloat, y: CGFloat, width: CGFloat)] = [
         (1525, 0, 1151), (1241, 436, 1719), (1241, 872, 1719), (1436, 1308, 1329), (1729.5, 1744, 742), (1925.5, 2180, 350),
     ]
 
     /// The left wing: a drop hanging from the body's top. The right one is its mirror.
-    private static let leftWing: Path = {
+    fileprivate static let leftWing: Path = {
         var path = Path()
         path.move(to: CGPoint(x: 840.879, y: 830.165))
         path.addCurve(to: CGPoint(x: 1064.5, y: 915.257), control1: CGPoint(x: 919.099, y: 742.266), control2: CGPoint(x: 1064.5, y: 797.594))
@@ -54,10 +54,10 @@ struct BeeLoader: View {
         path.closeSubpath()
         return path
     }()
-    private static let rightWing = leftWing.applying(CGAffineTransform(a: -1, b: 0, c: 0, d: 1, tx: 4201, ty: 0))
+    fileprivate static let rightWing = leftWing.applying(CGAffineTransform(a: -1, b: 0, c: 0, d: 1, tx: 4201, ty: 0))
     /// Where each wing meets the body, which it turns around.
-    private static let leftRoot = CGPoint(x: 1010, y: 880)
-    private static let rightRoot = CGPoint(x: 3191, y: 880)
+    fileprivate static let leftRoot = CGPoint(x: 1010, y: 880)
+    fileprivate static let rightRoot = CGPoint(x: 3191, y: 880)
 
     /// `asIcon`: the pose of the app icon — wings straight, nothing moving. `flutter`: the icon's
     /// bee lifting off for one beat — wings out and back twice, a hover — its stripes staying lit,
@@ -87,7 +87,7 @@ struct BeeLoader: View {
         }
     }
 
-    private static func fill(_ wing: Path, turned angle: Angle, around root: CGPoint, opacity: Double, in context: GraphicsContext) {
+    fileprivate static func fill(_ wing: Path, turned angle: Angle, around root: CGPoint, opacity: Double, in context: GraphicsContext) {
         var layer = context
         layer.opacity = opacity
         layer.translateBy(x: root.x, y: root.y)
@@ -97,7 +97,7 @@ struct BeeLoader: View {
     }
 
     /// One stripe's turn in the sort: it drops in and lights up, stays, then fades back to a trace.
-    private static func sorting(_ phase: Double) -> (opacity: Double, drop: CGFloat) {
+    fileprivate static func sorting(_ phase: Double) -> (opacity: Double, drop: CGFloat) {
         switch phase {
         case ..<0.18:
             let arrived = easeOut(phase / 0.18)
@@ -108,11 +108,61 @@ struct BeeLoader: View {
         }
     }
 
-    private static func fraction(_ value: Double) -> Double { value - value.rounded(.down) }
+    fileprivate static func fraction(_ value: Double) -> Double { value - value.rounded(.down) }
     /// 0 → 1 → 0 over each whole number.
-    private static func triangle(_ value: Double) -> Double { 1 - abs(2 * fraction(value) - 1) }
-    private static func easeInOut(_ x: Double) -> Double { x * x * (3 - 2 * x) }
-    private static func easeOut(_ x: Double) -> Double { 1 - pow(1 - x, 3) }
+    fileprivate static func triangle(_ value: Double) -> Double { 1 - abs(2 * fraction(value) - 1) }
+    fileprivate static func easeInOut(_ x: Double) -> Double { x * x * (3 - 2 * x) }
+    fileprivate static func easeOut(_ x: Double) -> Double { 1 - pow(1 - x, 3) }
+}
+
+/// The bee over a page that is pulled down to look for new mail: it comes with the pull — its
+/// stripes one after another from the top, its wings opening — and is whole when the pull is far
+/// enough. In the place of the system's wheel, which is not shown. Let go, it drops towards the
+/// mail's place and is gone as the bee there starts work (PullsForMail).
+struct BeePulled: View {
+    /// How far the page is pulled, 0 to 1: at 1 it looks for mail.
+    var pull: Double
+    var size: CGFloat = 30
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        // Alive from the first point of the pull: it hovers and beats its wings while it comes.
+        TimelineView(.animation(minimumInterval: reduceMotion ? 1.0 / 15 : nil, paused: reduceMotion)) { timeline in
+            let time = timeline.date.timeIntervalSinceReferenceDate
+            Canvas { context, canvas in
+                BeeLoader.drawPulled(in: context, size: canvas, pull: pull, time: time, still: reduceMotion)
+            }
+        }
+        .frame(width: size * BeeLoader.aspect, height: size)
+        .foregroundStyle(Theme.beeMark)
+        .accessibilityHidden(true)
+    }
+}
+
+extension BeeLoader {
+    fileprivate static func drawPulled(in context: GraphicsContext, size: CGSize, pull: Double, time: TimeInterval, still: Bool) {
+        var context = context
+        let scale = size.height / box.height
+        context.scaleBy(x: scale, y: scale)
+        context.translateBy(x: -box.minX, y: -box.minY)
+        // It hovers, as the bee at work does.
+        if !still { context.translateBy(x: 0, y: -90 * (1 - cos(2 * .pi * time / beat)) / 2) }
+        // The wings come in the pull's second half — and beat from the moment they are there.
+        let wings = easeOut(min(max((pull - 0.35) / 0.5, 0), 1))
+        let swing = still ? 0.5 : easeInOut(triangle(time / (beat / 2)))
+        let angle = Angle.degrees(-4 + 20 * swing)
+        fill(leftWing, turned: angle, around: leftRoot, opacity: 0.55 * wings, in: context)
+        fill(rightWing, turned: -angle, around: rightRoot, opacity: 0.55 * wings, in: context)
+        for (index, bar) in bars.enumerated() {
+            // Each stripe has its share of the pull's first two thirds to drop in; once all are
+            // there they sort, one after another, as at work.
+            let mine = easeOut(min(max(pull / 0.7 * Double(bars.count) - Double(index), 0), 1))
+            let turn = pull >= 0.7 && !still ? sorting(fraction((time - Double(index) * 0.16) / beat)) : (opacity: 1.0, drop: CGFloat(0))
+            var layer = context
+            layer.opacity = (0.14 + 0.86 * mine) * turn.opacity
+            layer.fill(Path(roundedRect: CGRect(x: bar.x, y: bar.y - 160 * (1 - mine) + turn.drop, width: bar.width, height: 264), cornerRadius: 112), with: .foreground)
+        }
+    }
 }
 
 /// The icon's bee standing still: the assistant's own mark, where another app would put a speech

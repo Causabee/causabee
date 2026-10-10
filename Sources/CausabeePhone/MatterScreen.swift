@@ -13,6 +13,7 @@ struct MatterScreen: View {
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var showsDone = false
     @State private var showsPast = false
     @State private var writingNote = false
@@ -163,6 +164,10 @@ struct MatterScreen: View {
             .onChange(of: find.current) { if let at = find.current { withAnimation { scroller.scrollTo(at, anchor: .center) } } }
         }
         .environment(find)
+        // Edit → Find, ⌘F: in the matter that is open.
+        .onReceive(NotificationCenter.default.publisher(for: .phoneFind)) { _ in
+            if navigation.path.last == matter.persistentModelID { startFinding() }
+        }
         .safeAreaInset(edge: .top) { if finding { findBar } }
         .background(Theme.canvas)
         .overlay(alignment: .bottomTrailing) {
@@ -259,15 +264,18 @@ struct MatterScreen: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
-                    // Everything the matter holds, as one document: what is gathered here can leave at any time.
-                    Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
-                    Divider()
-                    if matter.isClosed {
-                        Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
-                    } else {
-                        Button("Close", systemImage: "archivebox") { asksToClose = true }
+                    Group {
+                        MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
+                        // Everything the matter holds, as one document: what is gathered here can leave at any time.
+                        Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
+                        Divider()
+                        if matter.isClosed {
+                            Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
+                        } else {
+                            Button("Close", systemImage: "archivebox") { asksToClose = true }
+                        }
                     }
+                    .menuSigns()
                 } label: { Image(systemName: "ellipsis") }
                 .tint(.primary)
                 .accessibilityLabel("More")
@@ -958,8 +966,7 @@ struct MatterScreen: View {
                         FilesSection(matter: matter, only: document)
                     case .link(let link):
                         PhoneLinkRow(link: link, todos: matter.openTodos) {
-                            withAnimation { context.delete(link) }
-                            try? context.save()
+                            withAnimation { context.deleteByHand([link], undo: undoManager, named: "Remove Link") }
                         }
                         .findable(.model(link.persistentModelID), link.shownName, link.address)
                         .phoneCard()
@@ -1022,6 +1029,7 @@ struct PhoneTodoRow: View {
     var calendarTick = 0
     let toggle: () -> Void
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @Environment(Navigation.self) private var navigation
     @State private var editing = false
     @State private var deleting = false
@@ -1093,19 +1101,18 @@ struct PhoneTodoRow: View {
         }
         .padding(.horizontal, 12).padding(.vertical, 12)
         .contentShape(Rectangle())
-        .contextMenu { moreItems }
+        .contextMenu { Group { moreItems }.menuSigns() }
         .sheet(isPresented: $editing) { PhoneTodoEditor(todo: todo) }
         .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
                 Calendars.shared.removeReminder(todo.reminderID)
-                withAnimation { context.delete(todo) }
-                try? context.save()
+                withAnimation { context.deleteByHand([todo], undo: undoManager, named: "Delete Task") }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(todo.reminderID == nil ? "It goes from this matter. This cannot be undone. Something only good to know can go to Info instead."
-                 : "It goes from this matter, and its reminder from Reminders. This cannot be undone.")
+            Text(todo.reminderID == nil ? "It goes from this matter; Undo brings it back. Something only good to know can go to Info instead."
+                 : "It goes from this matter, and its reminder from Reminders. Undo brings the task back, not the reminder.")
         }
     }
 
@@ -1254,6 +1261,7 @@ struct PhoneTodoEditor: View {
             .environment(\.locale, Locale(identifier: "en_US"))
             .navigationTitle(isNew ? "New task" : "Change task")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -1363,6 +1371,7 @@ struct PhoneDateRow: View {
     let matter: Matter
     var tick = 0
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @Environment(Navigation.self) private var navigation
     @State private var editing = false
     @State private var deleting = false
@@ -1399,20 +1408,18 @@ struct PhoneDateRow: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
-        .contextMenu { moreItems }
+        .contextMenu { Group { moreItems }.menuSigns() }
         .sheet(isPresented: $editing) { PhoneDateEditor(item: item) }
         .confirmationDialog("Delete “\(item.what)”?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 // The entry in Calendar it is connected with goes too.
                 Calendars.shared.removeEvent(item.calendarID)
-                if let appointment = item.appointment { context.delete(appointment) }
-                if let deadline = item.deadline { context.delete(deadline) }
-                try? context.save()
+                context.deleteByHand(([item.appointment, item.deadline] as [(any PersistentModel)?]).compactMap { $0 }, undo: undoManager, named: "Delete Date")
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(item.calendarID == nil ? "It goes from this matter. This cannot be undone."
-                 : "It goes from this matter, and its entry from Calendar. This cannot be undone.")
+            Text(item.calendarID == nil ? "It goes from this matter; Undo brings it back."
+                 : "It goes from this matter, and its entry from Calendar. Undo brings the date back, not the entry.")
         }
     }
 
@@ -1453,6 +1460,7 @@ struct PhoneDateEditor: View {
             .environment(\.locale, Locale(identifier: "en_US"))
             .navigationTitle(isAppointment ? "Change appointment" : "Change deadline")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([what, day, hasTime, time, place])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

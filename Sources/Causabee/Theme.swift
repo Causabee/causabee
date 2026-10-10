@@ -136,20 +136,6 @@ enum Dates {
     }
 }
 
-/// The overview's first line, the same on the Mac and the iPhone: how many matters are going on,
-/// and the task overdue the longest by name — the one line that says where to start.
-enum OverviewSummary {
-    static func text(_ going: [Matter]) -> String {
-        var text = going.count == 1 ? "One matter is going on." : "\(going.count) matters are going on."
-        let overdue = going.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "", $0.text) < ($1.due ?? "", $1.text) }
-        if let first = overdue.first {
-            text += " Overdue since \(first.due.map(Dates.short) ?? ""): “\(first.text)”"
-            text += overdue.count == 1 ? "." : overdue.count == 2 ? ", and 1 more." : ", and \(overdue.count - 1) more."
-        }
-        return text
-    }
-}
-
 /// Text with its web addresses made into links, to open in the browser with a click.
 enum Linked {
     private static let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
@@ -312,8 +298,9 @@ struct MatterIconMenu: View {
     var body: some View {
         Menu("Icon", systemImage: matter.shownIcon) {
             ForEach(MatterIcons.all) { icon in
-                Button { choose(icon.symbol) } label: {
-                    Label(icon.label + (matter.shownIcon == icon.symbol ? "  ✓" : ""), systemImage: icon.symbol)
+                // The menu's own tick, in its own column.
+                Toggle(isOn: Binding(get: { matter.shownIcon == icon.symbol }, set: { _ in choose(icon.symbol) })) {
+                    Label(icon.label, systemImage: icon.symbol)
                 }
             }
             if matter.icon != nil {
@@ -669,7 +656,7 @@ struct SpeechModelCard: View {
         let state = Transcriber.shared.state
         VStack(alignment: .leading, spacing: 8) {
             #if os(iOS)
-            Text("Speech is written down on this iPhone").font(.headline)
+            Text("Speech is written down on this \(ThisDevice.name)").font(.headline)
             #else
             Text("Speech is written down on this Mac").font(.body.weight(.semibold))
             #endif
@@ -816,6 +803,11 @@ enum AppRelease {
 enum AutoMode {
     static let key = "mail.auto"
     static var isOn: Bool { UserDefaults.standard.bool(forKey: key) }
+    /// The owner has been told once what Auto does, and said yes.
+    static let agreedKey = "auto.agreed"
+    /// The bolt was pressed to turn Auto on, and what Auto does has not been said and agreed to
+    /// yet: it is asked first.
+    static var asksFirst: Bool { !isOn && !UserDefaults.standard.bool(forKey: agreedKey) }
     /// Whose tasks are whose, read where a view is not at hand to say it.
     @MainActor static func owner(in context: ModelContext) -> [String] {
         ((try? context.fetch(FetchDescriptor<Profile>())) ?? []).first?.names ?? []

@@ -380,6 +380,36 @@ public struct Claude: Sendable {
     }
 }
 
+public extension Claude.Failure {
+    /// The failure for the owner to read: what happened and what to do now — no status number,
+    /// nothing of the service's own answer. `description` stays as it is, for the log and the
+    /// command line.
+    var forPeople: String {
+        switch self {
+        case .noKey:
+            return "No API key for this AI model yet. Add one in Settings."
+        case .http(let status, _):
+            switch status {
+            case 401, 403: return "The AI service did not accept the API key. Check it in Settings."
+            case 402: return "The AI service says the account has no credit left. Top it up with the provider, then try again."
+            case 404: return "The AI service does not know this model. Choose another in Settings."
+            case 408, 504: return "The AI service took too long to answer. Try again."
+            case 413: return "This is too much text for the AI model at once. Try with less, or choose another model in Settings."
+            case 429: return "Too many requests to the AI service just now. Wait a minute, then try again."
+            case 529, 503, 502: return "The AI service is busy right now. Try again in a minute."
+            case 500...599: return "The AI service had a problem of its own. Try again in a minute."
+            default: return "The AI service could not take the request. Try again; if it stays, choose another model in Settings."
+            }
+        case .unreadable:
+            return "The AI's answer could not be read. Try again."
+        case .refused:
+            return "The AI model declined to answer this. Try other words, or choose another model in Settings."
+        case .truncated:
+            return "The AI's answer was too long and was cut off. Try again, or ask about less at once."
+        }
+    }
+}
+
 /// An error in words a person reads — "The connection was lost." — not the system's own dump of it.
 public func plainWords(_ error: Error) -> String {
     if let error = error as? URLError {
@@ -394,6 +424,8 @@ public func plainWords(_ error: Error) -> String {
         }
     }
     if error is CancellationError { return "Stopped." }
+    // What the AI service answered, in words with what to do — not "HTTP 529" and its raw answer.
+    if let failure = error as? Claude.Failure { return failure.forPeople }
     let words = "\(error)"
     // The system's own errors print their whole record; what they say for people is shorter.
     return words.hasPrefix("Error Domain=") ? error.localizedDescription : words

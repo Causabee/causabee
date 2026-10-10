@@ -68,6 +68,7 @@ struct IntroView: View {
             Spacer(minLength: 16)
             HStack {
                 Button("Skip") { finish() }
+                    .keyboardShortcut(.cancelAction)
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
                     .opacity(index == Self.pages.count - 1 ? 0 : 1)
                 Spacer()

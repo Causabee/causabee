@@ -84,7 +84,7 @@ struct PhoneMatterRows: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .contextMenu { MatterMenuItems(matter: matter, all: all) }
+                .contextMenu { MatterMenuItems(matter: matter, all: all).menuSigns() }
             }
         }
         .phoneCard()

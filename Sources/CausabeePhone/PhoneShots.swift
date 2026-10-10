@@ -57,7 +57,7 @@ final class PhoneShots {
         return DemoData.isRequested ? documents.appendingPathComponent("Demo", isDirectory: true) : documents
     }
     /// The same, in the words Files uses.
-    static let place = "Files › On My iPhone › Causabee"
+    static let place = "Files › On My \(ThisDevice.name) › Causabee"
 
     static func isKept(_ file: URL) -> Bool {
         file.resolvingSymlinksInPath().path.hasPrefix(folder.resolvingSymlinksInPath().path)
@@ -224,11 +224,11 @@ struct PhoneShotCard: View {
             Label(name, systemImage: shot.file.pathExtension.lowercased() == "pdf" ? "doc.text" : "photo")
                 .font(.caption).foregroundStyle(.secondary).lineLimit(1)
             if PhoneShots.isKept(shot.file) {
-                Text("Saved on this iPhone, in \(PhoneShots.place).").font(.caption).foregroundStyle(.secondary)
+                Text("Saved on this \(ThisDevice.name), in \(PhoneShots.place).").font(.caption).foregroundStyle(.secondary)
             }
             switch shot.stage {
             case .reading:
-                HStack(spacing: 8) { BeeLoader(size: 15); Text("Scanning it on this iPhone …").font(.subheadline).foregroundStyle(.secondary) }
+                HStack(spacing: 8) { BeeLoader(size: 15); Text("Scanning it on this \(ThisDevice.name) …").font(.subheadline).foregroundStyle(.secondary) }
             case .read(let look):
                 preview(look)
                 Text(look.earlier != nil ? "Scanned before: its answer is kept, nothing is sent again."

@@ -27,11 +27,15 @@ struct RootView: View {
         // change with the sidebar is formed anew by the system, with a transition of its own.
         .overlay(alignment: .topLeading) {
             if navigation.isPad, !navigation.showsSidebar {
-                PadControls().padding(.leading, 16).frame(height: PadMetrics.bar)
+                // In a window of its own the iPad sets its three buttons in this corner: the capsule
+                // stands clear of them, right of them, and where it was when there are none.
+                PadControls().padding(.leading, 16).containerCornerOffset(.leading, sizeToFit: true).frame(height: PadMetrics.bar)
                     .transition(.identity)
             }
         }
         .background(Theme.canvas)
+        // A shake, or ⌘Z on an iPad's keyboard, finds what was deleted by hand.
+        .background { KeepsUndoAtHand().frame(width: 0, height: 0).accessibilityHidden(true) }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { wide in
             navigation.whole = wide
             let narrow = wide < PadMetrics.wide
@@ -125,6 +129,21 @@ struct RootView: View {
         .onAppear { MirrorRunner.shared.start(context) }
         // This iPhone's list of names into the store when it goes to the background, as the Mac's.
         .onChange(of: phase) { _, now in if now == .background { PhoneNames.publish(in: context) } }
+        // The menu bar's commands, and their keys.
+        .onReceive(NotificationCenter.default.publisher(for: .phoneSidebar)) { _ in
+            if navigation.isPad { withAnimation(.snappy(duration: 0.25)) { navigation.showsSidebar.toggle() } }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneAssistant)) { _ in
+            if navigation.showsAssistant { navigation.closeAssistant() } else { navigation.openAssistant() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneReading)) { _ in
+            withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneNewMatter)) { _ in
+            if navigation.isPad { navigation.go([]) } else { navigation.path = [] }
+        }
+        .focusedSceneValue(\.phoneWindow, PhoneWindowState(isPad: navigation.isPad, showsSidebar: navigation.showsSidebar,
+                                                          showsAssistant: navigation.showsAssistant, reading: navigation.reading))
         .environment(\.reading, navigation.reading)
         .environment(navigation)
     }
@@ -175,7 +194,7 @@ struct OverviewScreen: View {
                         ForEach(pinned) { matter in
                             PhoneMatterCard(matter: matter) { todo in navigation.open(matter, showing: todo) }
                                 // Held: unpinned, renamed or merged, as a row of the Mac's sidebar.
-                                .contextMenu { MatterMenuItems(matter: matter, all: sidebarOrder(matters)) }
+                                .contextMenu { MatterMenuItems(matter: matter, all: sidebarOrder(matters)).menuSigns() }
                         }
                     }
                 }
@@ -221,7 +240,7 @@ struct OverviewScreen: View {
         }
         .dismissesKeyboard()
         // Pulled down: new mail is read — free — and waits for "Sort in"; in the demo, its three.
-        .refreshable { PhoneMailCheck.shared.look(context: context) }
+        .modifier(PullsForMail())
         .background(Theme.canvas)
         // The assistant about every matter, as on a matter's page; held, its plus for any matter.
         .overlay(alignment: .bottomTrailing) {
@@ -234,15 +253,25 @@ struct OverviewScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Settings", systemImage: "gearshape") { editsAccount = true }
-                    Button("Introduction", systemImage: "info.circle") { showsWelcome = true }
-                    Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: store.isDemo ? "arrow.uturn.backward" : "sparkles") { store.switchDemo(!store.isDemo) }
+                    Group {
+                        Button("Settings", systemImage: "gearshape") { editsAccount = true }
+                        Button("Introduction", systemImage: "info.circle") { showsWelcome = true }
+                        Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: store.isDemo ? "arrow.uturn.backward" : "sparkles") { store.switchDemo(!store.isDemo) }
+                    }
+                    .menuSigns()
                 } label: { Image(systemName: "ellipsis") }
                 .tint(.primary)
                 .accessibilityLabel("More")
             }
         }
         .sheet(isPresented: $editsAccount) { SettingsSheet() }
+        // The menu bar's commands: Settings, new mail, and the field a matter is found or started in.
+        .onReceive(NotificationCenter.default.publisher(for: .phoneSettings)) { _ in editsAccount = true }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneGetMail)) { _ in PhoneMailCheck.shared.look(context: context) }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneFind)) { _ in if navigation.path.isEmpty { searching = true } }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneNewMatter)) { _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { searching = true }
+        }
         // Once, at the first start: what Causabee is and what it needs.
         .sheet(isPresented: $showsWelcome) { WelcomeSheet() }
         .onAppear { if !introSeen, !store.isDemo { showsWelcome = true } }
@@ -341,7 +370,7 @@ struct OverviewScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("No matters yet").font(.headline)
             Text(PhoneCloud.container == nil
-                 ? "This store stays on the iPhone."
+                 ? "This store stays on the \(ThisDevice.name)."
                  : "Pull down to get new mail, and Causabee makes the matters from it. From your Mac, they come here through your iCloud — the first time can take a few minutes.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if !store.isDemo {
@@ -372,4 +401,74 @@ enum PhoneShot {
         guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot"), at + 1 < arguments.count else { return false }
         return arguments[at + 1] == "listening"
     }()
+}
+
+/// A page pulled down looks for new mail. In the room the pull opens the bee comes with the pull,
+/// alive — hovering, its wings beating — and whole once the pull is far enough; from then on it
+/// stays whole while the page goes back up. When the looking begins — the moment the hand feels
+/// it — the bee flies down into its place beside "Fetching mail …", growing small on the way to
+/// the size it has there, and the two change places as it arrives: one bee, never two. The
+/// system's own wheel is not shown (PhoneApp). What changes with every point of the pull is kept
+/// here, so the page under it is not made anew while it is pulled.
+private struct PullsForMail: ViewModifier {
+    @Environment(\.modelContext) private var context
+    @State private var pulled = CGFloat.zero
+    /// Pulled far enough once: the bee is whole, and stays so until the page is at rest again.
+    @State private var whole = false
+    /// Where the page's top is on the screen: the bee is placed from there.
+    @State private var top = CGRect.zero
+    /// Flying down to the mail's place, and arriving there.
+    @State private var flying = false
+    @State private var arriving = false
+    @State private var handing = false
+    /// The bee has flown down for this pull: it does not come again over the page until the page
+    /// has been at rest — or it stood there a second time while the page went back up.
+    @State private var spent = false
+
+    /// Where the bee hovers over the page, from the page's top.
+    private var above: CGFloat { max(10, pulled / 2 - 15) }
+
+    func body(content: Content) -> some View {
+        let place = PhoneMailCheck.shared.beePlace
+        // From the bee's own middle over the page to the middle of the small one's place.
+        let down = CGSize(width: place.midX - top.midX, height: place.midY - top.minY - 15 - above)
+        content
+            .refreshable {
+                let check = PhoneMailCheck.shared
+                // Already at it — pulled again while mail is fetched or sorted: nothing to hand on.
+                guard !check.isBusy, !handing else { return }
+                handing = true
+                spent = true
+                check.beeIsAbove = true
+                check.look(context: context)
+                // In a task of its own: the pull's own task is ended as soon as the page is drawn
+                // anew, and its waits with it — all of this then happened in one instant, the bee
+                // jumping and gone, and the small one there at once.
+                Task { @MainActor in
+                    // The mail's place is laid out, its bee unseen: now the one above flies there.
+                    try? await Task.sleep(for: .milliseconds(40))
+                    withAnimation(.easeInOut(duration: 0.34)) { flying = true }
+                    try? await Task.sleep(for: .milliseconds(220))
+                    // The last part of the way: this one goes as that one comes, in the same place.
+                    withAnimation(.easeOut(duration: 0.12)) { arriving = true; check.beeIsAbove = false }
+                    try? await Task.sleep(for: .milliseconds(160))
+                    handing = false; flying = false; arriving = false; whole = false
+                }
+            }
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { top = $0 }
+            // How far it is pulled down past its top, in points.
+            .onScrollGeometryChange(for: CGFloat.self) { max(0, -($0.contentOffset.y + $0.contentInsets.top)).rounded() } action: { _, far in
+                pulled = far
+                if far >= 90 { whole = true } else if far == 0, !handing { whole = false; spent = false }
+            }
+            .overlay(alignment: .top) {
+                if handing || (pulled > 6 && !spent) {
+                    BeePulled(pull: whole || handing ? 1 : min(1, Double(pulled) / 90))
+                        .scaleEffect(flying ? 0.5 : 1)
+                        .offset(x: flying ? down.width : 0, y: above + (flying ? down.height : 0))
+                        .opacity(arriving ? 0 : whole || handing ? 1 : min(1, Double(pulled) / 40))
+                        .allowsHitTesting(false)
+                }
+            }
+    }
 }

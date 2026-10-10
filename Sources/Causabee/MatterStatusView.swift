@@ -14,6 +14,7 @@ struct MatterStatusView: View {
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var showsDone = false
     @State private var showsInfos = false
     @State private var writingSummary = false
@@ -205,6 +206,22 @@ struct MatterStatusView: View {
         }
         .environment(find)
         .focusedSceneValue(\.openMatter, matter.persistentModelID)
+        .focusedSceneValue(\.matterState, MatterState(isPinned: matter.isPinned, isClosed: matter.isClosed))
+        // Matter → Pin to Top, Rename …, Export as RTF, Close Matter…: what the ⋯ beside the name does.
+        .onReceive(NotificationCenter.default.publisher(for: .matterCommand)) { note in
+            guard let command = (note.object as? String).flatMap(MatterCommand.init) else { return }
+            switch command {
+            case .pin:
+                if matter.isPinned { matter.pinnedAt = nil; try? context.save() }
+                // Full: which one it replaces is asked, as from the ⋯.
+                else if Pins.pinned(allMatters).count >= Pins.most { navigation.pinning = matter }
+                else { matter.pinnedAt = Date(); try? context.save() }
+            case .rename: startRenaming()
+            case .export: export()
+            case .close:
+                if matter.isClosed { matter.reopen(); try? context.save() } else { asksToClose = true }
+            }
+        }
         .navigationTitle(matter.name)
         .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
             Button("Merge") {
@@ -625,7 +642,7 @@ struct MatterStatusView: View {
     /// in them matter. Free: nothing leaves the Mac but the reading itself.
     private func searchLinks() {
         guard let account = Keychain.accounts().first else {
-            searchingLinks = "No mail account saved. First: matter-spike login"
+            searchingLinks = "No mail account saved. Choose Causabee → Set Up Causabee … to add one."
             return
         }
         let mails = (matter.entries ?? []).filter { $0.source.pointer.hasPrefix("imap://") && !$0.messageID.isEmpty }
@@ -691,8 +708,7 @@ struct MatterStatusView: View {
     }
 
     private func remove(_ link: WebLink) {
-        withAnimation { context.delete(link) }
-        try? context.save()
+        withAnimation { context.deleteByHand([link], undo: undoManager, named: "Remove Link") }
     }
 
     /// Off the list or back on it. Nothing is deleted: the file lives in its mail.
@@ -749,7 +765,7 @@ struct MatterStatusView: View {
             if (try? bytes.write(to: target, options: .atomic)) != nil { use(target); return }
         }
         guard let account = Keychain.accounts().first else {
-            fetching[document.persistentModelID] = "No mail account saved. First: matter-spike login"
+            fetching[document.persistentModelID] = "No mail account saved. Choose Causabee → Set Up Causabee … to add one."
             return
         }
         let id = document.persistentModelID
@@ -870,7 +886,7 @@ struct MatterStatusView: View {
             TextField("Name", text: $newMatterName).textFieldStyle(.roundedBorder).onSubmit(startNewMatter)
             HStack {
                 Spacer()
-                Button("Cancel") { splitting = false }
+                Button("Cancel") { splitting = false }.keyboardShortcut(.cancelAction)
                 Button("Start", action: startNewMatter)
                     .keyboardShortcut(.defaultAction)
                     .disabled(newMatterName.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -1212,7 +1228,7 @@ struct MatterStatusView: View {
                             PartyRow(party: party, membership: membership, matter: matter, save: { name, role in
                                 edit(party, membership: membership, name: name, role: role)
                             }, remove: {
-                                withAnimation { membership.remove(in: context, origin: origin) }
+                                withAnimation { membership.removeByHand(in: context, origin: origin, undo: undoManager) }
                                 try? context.save()
                             }) {
                                 talk(party.name, "Person")
@@ -1231,8 +1247,8 @@ struct MatterStatusView: View {
                                 }
                                 Button("Ask Causabee") { talk(party.name, "Person") }
                                 Divider()
-                                Button("Remove from this matter") {
-                                    withAnimation { membership.remove(in: context, origin: origin) }
+                                Button("Remove from this matter", role: .destructive) {
+                                    withAnimation { membership.removeByHand(in: context, origin: origin, undo: undoManager) }
                                     try? context.save()
                                 }
                                 .help("Takes them out of this matter only. A later mail naming them will not put them back.")
@@ -1509,6 +1525,7 @@ struct TodoRow: View {
     let toggle: () -> Void
     let talk: () -> Void
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var editing = false
     @State private var deleting = false
 
@@ -1611,13 +1628,12 @@ struct TodoRow: View {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
                 Calendars.shared.removeReminder(todo.reminderID)
-                withAnimation { context.delete(todo) }
-                try? context.save()
+                withAnimation { context.deleteByHand([todo], undo: undoManager, named: "Delete Task") }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(todo.reminderID == nil ? "It goes from this matter. This cannot be undone. Something only good to know can go to Info instead."
-                 : "It goes from this matter, and its reminder from Reminders. This cannot be undone.")
+            Text(todo.reminderID == nil ? "It goes from this matter; Edit → Undo brings it back. Something only good to know can go to Info instead."
+                 : "It goes from this matter, and its reminder from Reminders. Edit → Undo brings the task back, not the reminder.")
         }
     }
 
@@ -1759,6 +1775,7 @@ struct TodoEditor: View {
         .padding(.horizontal, 18).padding(.vertical, 16)
         .frame(width: 396)
         .environment(\.locale, Locale(identifier: "en_US"))
+        .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink])
         .onAppear { load(); focus = .text }
     }
 
@@ -1960,6 +1977,7 @@ struct DateRow: View {
     var save: () -> Void = {}
     let talk: () -> Void
     @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var editing = false
     @State private var deleting = false
 
@@ -2000,14 +2018,13 @@ struct DateRow: View {
             Button("Delete", role: .destructive) {
                 // The entry in Calendar it is connected with goes too.
                 Calendars.shared.removeEvent(item.calendarID)
-                if let appointment = item.appointment { context.delete(appointment) }
-                if let deadline = item.deadline { context.delete(deadline) }
+                context.deleteByHand(([item.appointment, item.deadline] as [(any PersistentModel)?]).compactMap { $0 }, undo: undoManager, named: "Delete Date")
                 save()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(item.calendarID == nil ? "It goes from this matter. This cannot be undone."
-                 : "It goes from this matter, and its entry from Calendar. This cannot be undone.")
+            Text(item.calendarID == nil ? "It goes from this matter; Edit → Undo brings it back."
+                 : "It goes from this matter, and its entry from Calendar. Edit → Undo brings the date back, not the entry.")
         }
     }
 
@@ -2053,7 +2070,7 @@ struct DateEditor: View {
             }
             HStack {
                 Spacer()
-                Button("Cancel", action: cancel)
+                Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
                 Button("Save", action: saveChanges)
                     .keyboardShortcut(.defaultAction)
                     .disabled(what.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -2061,6 +2078,7 @@ struct DateEditor: View {
         }
         .padding(16)
         .environment(\.locale, Locale(identifier: "en_US"))
+        .keepsWhatWasTyped([what, day, hasTime, time, place])
         .onAppear(perform: load)
     }
 
@@ -2170,7 +2188,7 @@ struct PartyRow: View {
                                     .help("Only from this matter. A later mail naming them will not put them back.")
                             }
                             Spacer()
-                            Button("Cancel") { editing = false }
+                            Button("Cancel") { editing = false }.keyboardShortcut(.cancelAction)
                             Button("Save") {
                                 save(name, role)
                                 let mail = address.trimmingCharacters(in: .whitespacesAndNewlines), number = phone.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2183,6 +2201,7 @@ struct PartyRow: View {
                         }
                     }
                     .padding(16)
+                    .keepsWhatWasTyped([name, role, address, phone])
                 }
             }
         }
@@ -2501,7 +2520,7 @@ struct DocumentRow: View {
                 .font(.caption).foregroundStyle(.secondary).frame(width: 320, alignment: .leading)
             HStack {
                 Spacer()
-                Button("Cancel") { renaming = false }
+                Button("Cancel") { renaming = false }.keyboardShortcut(.cancelAction)
                 Button("Save", action: saveName).keyboardShortcut(.defaultAction)
             }
         }
@@ -2607,7 +2626,7 @@ struct LinkEditor: View {
             }
             HStack {
                 Spacer()
-                Button("Cancel", action: cancel)
+                Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
                 Button("Save") {
                     guard let valid else { return }
                     save(valid, title.trimmingCharacters(in: .whitespacesAndNewlines), todos.first { $0.persistentModelID == todo })
@@ -2617,6 +2636,7 @@ struct LinkEditor: View {
             }
         }
         .padding(16)
+        .keepsWhatWasTyped([address, title, todo])
         .onAppear {
             if let link {
                 address = link.address

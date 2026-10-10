@@ -120,6 +120,11 @@ struct KeyField: View {
                 .disabled(pasted.trimmingCharacters(in: .whitespaces).isEmpty)
                 if stored { Button("Remove") { APIKeys.delete(name); stored = false } }
             }
+            #if os(iOS)
+            // In a form's row on the iPhone a tap anywhere presses every plain button in it:
+            // Save, and then Remove. Borderless, each is pressed only where it stands.
+            .buttonStyle(.borderless)
+            #endif
             if let error { Text(error).font(.caption).foregroundStyle(Theme.warning) }
         }
         .onAppear { stored = APIKeys.get(name) != nil }
@@ -396,5 +401,34 @@ final class AutoUpdate {
                 } catch {}
             }
         }
+    }
+}
+
+/// Before Auto is on for the first time, at the bolt: what it does, said once and agreed to.
+/// Everything else goes to an AI only at a click; Auto is the one switch after which it goes by
+/// itself — so that is not left to a tooltip. Agreed once, the bolt is a bolt again.
+struct AutoQuestion: ViewModifier {
+    @Binding var asks: Bool
+    let turnOn: () -> Void
+    @AppStorage(AutoMode.agreedKey) private var agreed = false
+    @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
+
+    func body(content: Content) -> some View {
+        let model = Claude.Model.choices.first { $0.id == mail } ?? .opus
+        content.confirmationDialog("Turn Auto on?", isPresented: $asks, titleVisibility: .visible) {
+            Button("Turn Auto On") { agreed = true; turnOn() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            // Short, and by name: which model reads, that names are disguised, who decides, what it costs.
+            Text("Causabee then reads new mail and files for you as they arrive — names disguised, with \(model.label). " +
+                 "You still decide what goes into a matter. " + String(format: "About %.1f cents a mail.", model.perMail * 100))
+        }
+    }
+}
+
+extension View {
+    /// The question before Auto is turned on for the first time.
+    func asksBeforeAuto(_ asks: Binding<Bool>, turnOn: @escaping () -> Void) -> some View {
+        modifier(AutoQuestion(asks: asks, turnOn: turnOn))
     }
 }

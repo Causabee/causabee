@@ -86,11 +86,11 @@ struct SettingsSheet: View {
                 Section {
                     if lists.isEmpty { Label("Not here yet", systemImage: "hourglass").foregroundStyle(Theme.warning) }
                     ForEach(lists) { list in
-                        LabeledContent(list.device == PhoneNames.device ? "This iPhone" : list.deviceName.isEmpty ? "A Mac" : list.deviceName,
+                        LabeledContent(list.device == PhoneNames.device ? "This \(ThisDevice.name)" : list.deviceName.isEmpty ? "A Mac" : list.deviceName,
                                        value: list.updatedAt.formatted(date: .abbreviated, time: .shortened))
                     }
                 } header: { Text("List of names") } footer: {
-                    Text("Names are disguised before anything is sent. Each device keeps its own list — this iPhone once it gets new mail — and puts it into iCloud, end-to-end encrypted, when you switch away from Causabee; a name one device learned, the others disguise too. Without any list, the assistant sends nothing.")
+                    Text("Names are disguised before anything is sent. Each device keeps its own list — this \(ThisDevice.name) once it gets new mail — and puts it into iCloud, end-to-end encrypted, when you switch away from Causabee; a name one device learned, the others disguise too. Without any list, the assistant sends nothing.")
                 }
 
                 Section {

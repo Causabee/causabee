@@ -15,6 +15,8 @@ struct WelcomeSheet: View {
     @State private var sync = PhoneCloudStatus.shared
     @State private var addsAccount = false
     @State private var opensSettings = false
+    /// How wide the sheet's page is, measured: it follows an iPad's window as it is resized.
+    @State private var pageWidth = CGFloat.zero
     /// Counts up when something may have come in meanwhile — a password, a key.
     @State private var tick = 0
 
@@ -33,8 +35,9 @@ struct WelcomeSheet: View {
                     .font(.footnote).foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 20)
-                .containerRelativeFrame(.horizontal)
+                .asWide(as: pageWidth)
             }
+            .tellsItsWidth($pageWidth)
             // The buttons stay at the foot, whatever the length of the page.
             .safeAreaInset(edge: .bottom) { buttons }
             .background(Theme.canvas)
@@ -77,7 +80,7 @@ struct WelcomeSheet: View {
     private var checks: some View {
         let there = [signedIn, hasKey, hasAccount].filter { $0 }.count
         return VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "On this iPhone", detail: there == 3 ? "All there" : "\(there) of 3 there")
+            SectionHeader(title: "On this \(ThisDevice.name)", detail: there == 3 ? "All there" : "\(there) of 3 there")
             VStack(spacing: 0) {
                 check("iCloud", done: signedIn, detail: signedIn ? "from your Mac" : "sign in, in Settings")
                 Divider().padding(.leading, 48)

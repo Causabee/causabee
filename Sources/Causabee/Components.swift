@@ -24,12 +24,26 @@ extension View {
         frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture(perform: open)
-            .listRowBackground(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(selected ? Color.secondary.opacity(0.08) : .clear)
-                    .padding(.horizontal, 10)
-            )
+            .listRowBackground(SidebarRowGround(selected: selected))
     }
+}
+
+/// The grey a sidebar's open row lies on: 0.08 of secondary, and 0.14 while the keys are in the
+/// sidebar — so it is seen where ↑ and ↓ will go.
+private struct SidebarRowGround: View {
+    let selected: Bool
+    @Environment(\.sidebarHasKeys) private var hasKeys
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 6)
+            .fill(selected ? Color.secondary.opacity(hasKeys ? 0.14 : 0.08) : .clear)
+            .padding(.horizontal, 10)
+    }
+}
+
+extension EnvironmentValues {
+    /// The keyboard is in the sidebar.
+    @Entry var sidebarHasKeys = false
 }
 
 /// Shows or hides the sidebar: a small plain icon, no round button.
@@ -103,10 +117,12 @@ private struct QuickLabel: ViewModifier {
 /// choose, and plain to see which it is.
 struct AutoButton: View {
     @AppStorage(AutoMode.key) private var auto = false
+    @State private var asks = false
 
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) { auto.toggle() }
+            // The first time it is turned on, what it does is said and asked.
+            if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto.toggle() } }
         } label: {
             // On: a black bolt on the bee's yellow, round, as the glasses while reading.
             Image(systemName: auto ? "bolt.fill" : "bolt").font(.body)
@@ -123,6 +139,7 @@ struct AutoButton: View {
         .accessibilityLabel("Auto")
         .accessibilityValue(auto ? "On" : "Off")
         .accessibilityIdentifier("window.auto")
+        .asksBeforeAuto($asks) { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
     }
 }
 

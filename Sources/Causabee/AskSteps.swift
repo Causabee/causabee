@@ -10,7 +10,7 @@ struct AskSteps: View {
     var size: CGFloat = 10
 
     #if os(iOS)
-    private static let device = "iPhone"
+    private static let device = ThisDevice.name
     #else
     private static let device = "Mac"
     #endif
