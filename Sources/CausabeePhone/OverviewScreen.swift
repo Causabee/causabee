@@ -403,29 +403,42 @@ enum PhoneShot {
     }()
 }
 
-/// A page pulled down looks for new mail. In the room the pull opens stand the bee's stripes: they
-/// come with the pull, and sort — as the bee at work does — while the mail is fetched, for which
-/// the page stays pulled. The system's own wheel is not shown (PhoneApp). What changes with every
-/// point of the pull is kept here, so the page under it is not made anew while it is pulled.
+/// A page pulled down looks for new mail. In the room the pull opens the bee comes with the pull,
+/// whole when it is far enough. Then it is handed on: the bee over the page drops a little towards
+/// the mail's place and fades, as the bee there starts work beside "Fetching mail …" — one bee, in
+/// two places one after the other. The page goes back up meanwhile; the system's own wheel is not
+/// shown (PhoneApp). What changes with every point of the pull is kept here, so the page under it
+/// is not made anew while it is pulled.
 private struct PullsForMail: ViewModifier {
     @Environment(\.modelContext) private var context
     @State private var pulled = CGFloat.zero
-    @State private var looking = false
+    /// Where the bee stood when the looking began, while it is handed on to the mail's place.
+    @State private var handedFrom: CGFloat?
+    @State private var gone = false
 
     func body(content: Content) -> some View {
         content
             .refreshable {
-                looking = true
-                await PhoneMailCheck.shared.lookAndWait(context: context)
-                looking = false
+                handedFrom = max(10, pulled / 2 - 15)
+                withAnimation(.easeIn(duration: 0.32)) { gone = true }
+                PhoneMailCheck.shared.look(context: context)
+                // As long as the handing on takes; the mail's own place says the rest.
+                try? await Task.sleep(for: .milliseconds(340))
+                handedFrom = nil
+                gone = false
             }
             // How far it is pulled down past its top, in points.
             .onScrollGeometryChange(for: CGFloat.self) { max(0, -($0.contentOffset.y + $0.contentInsets.top)).rounded() } action: { _, far in pulled = far }
             .overlay(alignment: .top) {
-                if pulled > 6 || looking {
-                    BeeStripes(pull: min(1, Double(pulled) / 90), working: looking)
-                        .offset(y: max(10, pulled / 2 - 13))
-                        .opacity(looking ? 1 : min(1, Double(pulled) / 40))
+                if let handedFrom {
+                    BeePulled(pull: 1)
+                        .offset(y: handedFrom + (gone ? 34 : 0))
+                        .opacity(gone ? 0 : 1)
+                        .allowsHitTesting(false)
+                } else if pulled > 6 {
+                    BeePulled(pull: min(1, Double(pulled) / 90))
+                        .offset(y: max(10, pulled / 2 - 15))
+                        .opacity(min(1, Double(pulled) / 40))
                         .allowsHitTesting(false)
                 }
             }

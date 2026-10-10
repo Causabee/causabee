@@ -255,13 +255,6 @@ final class PhoneMailCheck {
 
     @ObservationIgnored private var running: Task<Void, Never>?
 
-    /// The same, for a page pulled down: it comes back when the mail has been fetched, so the page
-    /// stays pulled, and the bee's stripes over it at work, for as long as that takes.
-    func lookAndWait(context: ModelContext) async {
-        look(context: context)
-        await running?.value
-    }
-
     /// Stops reading: nothing was sent, and nothing is kept.
     /// The demo's round, at the pace of a real one: fetching, three new mails, sorting, and what
     /// came of it — the mails, a task and two dates in three matters. Nothing is read or sent.

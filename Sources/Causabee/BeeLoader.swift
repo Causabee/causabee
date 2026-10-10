@@ -29,7 +29,7 @@ struct BeeLoader: View {
     /// The bee with room above it for the hover and the stripes dropping in, and at each side for
     /// the wings: swung out to 16°, a wing's tip reaches about 300 past the body's drawing — so 450,
     /// the same on both sides, and the bee stays in the middle.
-    private static let box = CGRect(x: -450, y: -300, width: 4201 + 900, height: 2900)
+    fileprivate static let box = CGRect(x: -450, y: -300, width: 4201 + 900, height: 2900)
     static let aspect = box.width / box.height
     fileprivate static let beat = 2.4
     static var beatLength: Double { beat }
@@ -39,7 +39,7 @@ struct BeeLoader: View {
     ]
 
     /// The left wing: a drop hanging from the body's top. The right one is its mirror.
-    private static let leftWing: Path = {
+    fileprivate static let leftWing: Path = {
         var path = Path()
         path.move(to: CGPoint(x: 840.879, y: 830.165))
         path.addCurve(to: CGPoint(x: 1064.5, y: 915.257), control1: CGPoint(x: 919.099, y: 742.266), control2: CGPoint(x: 1064.5, y: 797.594))
@@ -54,10 +54,10 @@ struct BeeLoader: View {
         path.closeSubpath()
         return path
     }()
-    private static let rightWing = leftWing.applying(CGAffineTransform(a: -1, b: 0, c: 0, d: 1, tx: 4201, ty: 0))
+    fileprivate static let rightWing = leftWing.applying(CGAffineTransform(a: -1, b: 0, c: 0, d: 1, tx: 4201, ty: 0))
     /// Where each wing meets the body, which it turns around.
-    private static let leftRoot = CGPoint(x: 1010, y: 880)
-    private static let rightRoot = CGPoint(x: 3191, y: 880)
+    fileprivate static let leftRoot = CGPoint(x: 1010, y: 880)
+    fileprivate static let rightRoot = CGPoint(x: 3191, y: 880)
 
     /// `asIcon`: the pose of the app icon — wings straight, nothing moving. `flutter`: the icon's
     /// bee lifting off for one beat — wings out and back twice, a hover — its stripes staying lit,
@@ -87,7 +87,7 @@ struct BeeLoader: View {
         }
     }
 
-    private static func fill(_ wing: Path, turned angle: Angle, around root: CGPoint, opacity: Double, in context: GraphicsContext) {
+    fileprivate static func fill(_ wing: Path, turned angle: Angle, around root: CGPoint, opacity: Double, in context: GraphicsContext) {
         var layer = context
         layer.opacity = opacity
         layer.translateBy(x: root.x, y: root.y)
@@ -115,56 +115,42 @@ struct BeeLoader: View {
     fileprivate static func easeOut(_ x: Double) -> Double { 1 - pow(1 - x, 3) }
 }
 
-/// Only the bee's stripes — its body, without the wings: the sign over a page that is pulled down
-/// to look for new mail. Pulled, the stripes come one after another from the top, as far as the
-/// pull has gone; let go, they sort as the bee at work does, for as long as the looking takes.
-/// In the place of the system's wheel, which is not shown.
-struct BeeStripes: View {
-    /// How far the page is pulled, 0 to 1: at 1 it looks for mail when let go.
+/// The bee over a page that is pulled down to look for new mail: it comes with the pull — its
+/// stripes one after another from the top, its wings opening — and is whole when the pull is far
+/// enough. In the place of the system's wheel, which is not shown. Let go, it drops towards the
+/// mail's place and is gone as the bee there starts work (PullsForMail).
+struct BeePulled: View {
+    /// How far the page is pulled, 0 to 1: at 1 it looks for mail.
     var pull: Double
-    var working: Bool
-    var size: CGFloat = 26
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var size: CGFloat = 30
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: reduceMotion ? 1.0 / 15 : nil, paused: !working)) { timeline in
-            let time = timeline.date.timeIntervalSinceReferenceDate
-            Canvas { context, canvas in
-                BeeLoader.drawStripes(in: context, size: canvas, time: time, pull: pull, working: working, still: reduceMotion)
-            }
+        Canvas { context, canvas in
+            BeeLoader.drawPulled(in: context, size: canvas, pull: pull)
         }
-        .frame(width: size * BeeLoader.stripesAspect, height: size)
+        .frame(width: size * BeeLoader.aspect, height: size)
         .foregroundStyle(Theme.beeMark)
         .accessibilityHidden(true)
     }
 }
 
 extension BeeLoader {
-    /// The stripes alone, with room above for one to drop in.
-    private static let stripesBox = CGRect(x: 1241, y: -200, width: 1719, height: 2444 + 200)
-    static let stripesAspect = stripesBox.width / stripesBox.height
-
-    fileprivate static func drawStripes(in context: GraphicsContext, size: CGSize, time: TimeInterval, pull: Double, working: Bool, still: Bool) {
+    fileprivate static func drawPulled(in context: GraphicsContext, size: CGSize, pull: Double) {
         var context = context
-        let scale = size.height / stripesBox.height
+        let scale = size.height / box.height
         context.scaleBy(x: scale, y: scale)
-        context.translateBy(x: -stripesBox.minX, y: -stripesBox.minY)
+        context.translateBy(x: -box.minX, y: -box.minY)
+        // The wings come in the pull's second half, folded at first and open at its end.
+        let wings = easeOut(min(max((pull - 0.4) / 0.6, 0), 1))
+        let angle = Angle.degrees(-4 + 20 * wings)
+        fill(leftWing, turned: angle, around: leftRoot, opacity: 0.55 * wings, in: context)
+        fill(rightWing, turned: -angle, around: rightRoot, opacity: 0.55 * wings, in: context)
         for (index, bar) in bars.enumerated() {
+            // Each stripe has its share of the pull's first two thirds to drop in.
+            let mine = easeOut(min(max(pull / 0.7 * Double(bars.count) - Double(index), 0), 1))
             var layer = context
-            var drop = CGFloat(0)
-            if working && !still {
-                let turn = sorting(fraction((time - Double(index) * 0.16) / beat))
-                layer.opacity = turn.opacity
-                drop = turn.drop
-            } else if working {
-                layer.opacity = 0.45 + 0.55 * (0.5 + 0.5 * cos(2 * .pi * time / 2))
-            } else {
-                // Each stripe has its sixth of the pull to come in.
-                let mine = min(max(pull * Double(bars.count) - Double(index), 0), 1)
-                layer.opacity = 0.14 + 0.86 * easeOut(mine)
-                drop = CGFloat(-160 * (1 - easeOut(mine)))
-            }
-            layer.fill(Path(roundedRect: CGRect(x: bar.x, y: bar.y + drop, width: bar.width, height: 264), cornerRadius: 112), with: .foreground)
+            layer.opacity = 0.14 + 0.86 * mine
+            layer.fill(Path(roundedRect: CGRect(x: bar.x, y: bar.y - 160 * (1 - mine), width: bar.width, height: 264), cornerRadius: 112), with: .foreground)
         }
     }
 }
