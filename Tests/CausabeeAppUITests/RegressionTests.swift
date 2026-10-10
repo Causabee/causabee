@@ -145,12 +145,11 @@ final class RegressionTests: XCTestCase {
     func testClosedAndOpenedAgain() {
         choose("Close Matter…", from: "matter.more")
         press("Leave them open and close")
-        element("matter.more").click()
-        let again = app.menuItems["Open Again"].firstMatch
-        XCTAssertTrue(again.waitForExistence(timeout: 8), "A closed matter's ⋯ does not offer to open it again.")
-        again.click()
-        element("matter.more").click()
-        XCTAssertTrue(app.menuItems["Close Matter…"].firstMatch.waitForExistence(timeout: 8), "Opened again, the matter cannot be closed.")
+        // Under the ⋯ itself: the menu bar's Matter menu has entries of the same names.
+        choose("Open Again", from: "matter.more")
+        let more = element("matter.more")
+        more.click()
+        XCTAssertTrue(more.descendants(matching: .menuItem)["Close Matter…"].firstMatch.waitForExistence(timeout: 8), "Opened again, the matter cannot be closed.")
         app.typeKey(.escape, modifierFlags: [])
     }
 
