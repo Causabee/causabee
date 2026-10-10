@@ -216,6 +216,7 @@ Only what changes behaviour, menus or words — the window looks as it did. Pict
 | ID | What was done | Checked |
 |---|---|---|
 | M1 | Closing the window quits Causabee (`LastWindow` delegate). The scene stays a `WindowGroup`. | Running: File ▸ Close ends the app |
+| M2 | The sidebar takes the keys: after a click on a row, or by Tab, ↓ and ↑ go from row to row and open what they come to; View ▸ Next Matter ⌥⌘↓ and Previous Matter ⌥⌘↑ do the same from anywhere. The open row's grey stays Causabee's own, a shade darker (0.14 for 0.08) while the keys are in the sidebar; no ring. No type-to-select. | Running: both menu items and the arrow keys, picture `mac-6` |
 | M4 | View ▸ Hide/Show Sidebar ⌃⌘S, Show/Hide Assistant ⌘K, Activate/Deactivate Reading Mode; File ▸ Get New Mail. The words follow the window; ⌘K and ⌘F moved from hidden buttons to the menu. | Running: each clicked, words flip, pictures 2–4 |
 | M6 | Edit ▸ Find ▸ Find … ⌘F, Find Next ⌘G, Find Previous ⇧⌘G. | Running: Find … (picture 5); ⌘G not exercised |
 | M7 | Esc on the Cancel of the five popovers. The default button's look is untouched. | Built |
@@ -238,7 +239,7 @@ Only what changes behaviour, menus or words — the window looks as it did. Pict
 **Left alone, with a suggestion instead — each would change something that is meant to look as it does**
 - M14 (Matter after Edit) and M15 (" …" with a space): documented choices. Compliant alternative: delete `MenuOrder`; write "Rename…".
 - M7's filled default button, M13, M20, M21, B4, B8: the look. Compliant alternative per row in section 3.
-- M2, M3, M11, P3: need the system's list selection and split containers — section 5.
+- M3, M11, P3: need the system's split containers — section 5.
 - B12, I1, I2, I3, P5 and the shared contact and detail sheets (B2 is not yet on those two): next.
 - M25: the code already asks for the right place; needs a look at why the built menu differs.
 

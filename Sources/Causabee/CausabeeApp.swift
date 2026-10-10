@@ -568,12 +568,15 @@ struct RootView: View {
         return "Merge “\(from.name)” into “\(into.name)”?"
     }
 
+    /// The keyboard is in the sidebar: ↑ and ↓ move through its rows.
+    @FocusState private var keysInSidebar: Bool
+
     /// Causabee's own sidebar, not the Mac's: 270 wide, the window's buttons and the sidebar's on
     /// its top 52 points, the matters below, getting new mail at the bottom.
     /// One matter in the sidebar, open or closed alike, with its menu.
     private func sidebarRow(_ matter: Matter, _ sorted: [Matter]) -> some View {
         MatterRow(matter: matter)
-            .sidebarRow(selected: navigation.place == .matter(matter.persistentModelID)) { navigation.open(matter) }
+            .sidebarRow(selected: navigation.place == .matter(matter.persistentModelID)) { navigation.open(matter); keysInSidebar = true }
             .contextMenu {
                 PinMenuItem(matter: matter, all: sorted)
                 Button("Rename …") { newName = matter.name; renaming = matter }
@@ -586,14 +589,34 @@ struct RootView: View {
             }
     }
 
+    /// The sidebar's rows from top to bottom, as they are shown: the overview, the pinned, the
+    /// matters going on, and the closed ones while they are unfolded. Nil is the overview.
+    private func sidebarStops(_ sorted: [Matter]) -> [Matter?] {
+        [nil] + Pins.pinned(sorted) + sorted.filter { !$0.isClosed && !$0.isPinned } + (showsClosed ? sorted.filter(\.isClosed) : [])
+    }
+
+    /// One row down or up from the one that is open — ↓ and ↑ in the sidebar, and View → Next
+    /// Matter and Previous Matter from anywhere. It stops at the ends.
+    private func step(_ by: Int, in sorted: [Matter]) {
+        let stops = sidebarStops(sorted)
+        let at: Int
+        if case .matter(let id) = navigation.place { at = stops.firstIndex { $0?.persistentModelID == id } ?? 0 } else { at = 0 }
+        let to = min(max(at + by, 0), stops.count - 1)
+        guard to != at else { return }
+        if let matter = stops[to] { navigation.open(matter) } else { navigation.place = .assistant }
+    }
+
     private func sidebar(_ sorted: [Matter]) -> some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: WindowMetrics.topLine)
-            // The selection drawn by Causabee, not by the Mac: a light grey, as in the design.
+            // The selection drawn by Causabee, not by the Mac: a light grey, as in the design —
+            // a shade darker while the keys are in the sidebar, as the Mac's own selection is.
+            ScrollViewReader { rows in
             List {
                 let overview = navigation.place == .assistant || navigation.place == nil
                 Text("Overview").font(.body.weight(.semibold))
-                    .sidebarRow(selected: overview) { navigation.place = .assistant }
+                    .sidebarRow(selected: overview) { navigation.place = .assistant; keysInSidebar = true }
+                    .id("overview")
                 let pinned = Pins.pinned(sorted)
                 if !pinned.isEmpty {
                     Section("Pinned") {
@@ -614,6 +637,21 @@ struct RootView: View {
             }
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
+            // The keys in the sidebar: ↓ and ↑ go from row to row and open what they come to.
+            // The list takes the keys itself — by Tab, or by a click on one of its rows — and shows
+            // it by its open row's darker grey, not by a ring around all of it.
+            .focusable()
+            .focusEffectDisabled()
+            .focused($keysInSidebar)
+            .environment(\.sidebarHasKeys, keysInSidebar)
+            .onKeyPress(.downArrow) { step(1, in: sorted); return .handled }
+            .onKeyPress(.upArrow) { step(-1, in: sorted); return .handled }
+            // What the keys opened is brought into view.
+            .onChange(of: navigation.place) {
+                guard keysInSidebar else { return }
+                if case .matter(let id) = navigation.place { rows.scrollTo(id) } else { rows.scrollTo("overview") }
+            }
+            }
             MailCheckView(check: mailCheck)
         }
         .frame(width: WindowMetrics.sidebarWidth)
@@ -675,7 +713,7 @@ struct RootView: View {
         // window, as the capsule is: over the page's own column it could not be clicked once the
         // sidebar had been put away. The overview has its own "Ask Causabee".
         // ⌘K brings the assistant in and puts it away, from the keyboard: View → Show Assistant.
-        .modifier(WindowMenuActions(navigation: navigation, showsAssistant: showsAssistant) {
+        .modifier(WindowMenuActions(navigation: navigation, showsAssistant: showsAssistant, step: { step($0, in: sidebarOrder()) }) {
             mailCheck.look(store: navigation.store, context: context)
         })
         .overlay(alignment: .bottomTrailing) {
@@ -967,6 +1005,12 @@ struct WindowCommands: Commands {
             Button(window?.reading == true ? "Deactivate Reading Mode" : "Activate Reading Mode") { post(.toggleReading) }
                 .disabled(window == nil)
             Divider()
+            // Through the sidebar's rows without the mouse, wherever the keys are.
+            Button("Next Matter") { post(.nextMatter) }
+                .keyboardShortcut(.downArrow, modifiers: [.command, .option]).disabled(window == nil)
+            Button("Previous Matter") { post(.previousMatter) }
+                .keyboardShortcut(.upArrow, modifiers: [.command, .option]).disabled(window == nil)
+            Divider()
         }
         CommandGroup(after: .newItem) {
             Button("Get New Mail") { post(.getNewMail) }.disabled(window == nil)
@@ -1003,6 +1047,8 @@ struct FindCommands: Commands {
 struct WindowMenuActions: ViewModifier {
     let navigation: Navigation
     let showsAssistant: Bool
+    /// One matter down (1) or up (-1) in the sidebar's order.
+    let step: (Int) -> Void
     let getMail: () -> Void
 
     func body(content: Content) -> some View {
@@ -1018,6 +1064,8 @@ struct WindowMenuActions: ViewModifier {
                 withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
             }
             .onReceive(NotificationCenter.default.publisher(for: .getNewMail)) { _ in getMail() }
+            .onReceive(NotificationCenter.default.publisher(for: .nextMatter)) { _ in step(1) }
+            .onReceive(NotificationCenter.default.publisher(for: .previousMatter)) { _ in step(-1) }
             .focusedSceneValue(\.windowState, WindowState(sidebarHidden: navigation.sidebarHidden, showsAssistant: showsAssistant,
                                                           reading: navigation.reading))
     }
@@ -1109,6 +1157,9 @@ extension Notification.Name {
     static let toggleSidebar = Notification.Name("causabee.toggleSidebar")
     static let toggleAssistant = Notification.Name("causabee.toggleAssistant")
     static let toggleReading = Notification.Name("causabee.toggleReading")
+    /// View → Next Matter, Previous Matter
+    static let nextMatter = Notification.Name("causabee.nextMatter")
+    static let previousMatter = Notification.Name("causabee.previousMatter")
     /// Edit → Find
     static let find = Notification.Name("causabee.find")
     static let findNext = Notification.Name("causabee.findNext")

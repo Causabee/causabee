@@ -24,12 +24,26 @@ extension View {
         frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture(perform: open)
-            .listRowBackground(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(selected ? Color.secondary.opacity(0.08) : .clear)
-                    .padding(.horizontal, 10)
-            )
+            .listRowBackground(SidebarRowGround(selected: selected))
     }
+}
+
+/// The grey a sidebar's open row lies on: 0.08 of secondary, and 0.14 while the keys are in the
+/// sidebar — so it is seen where ↑ and ↓ will go.
+private struct SidebarRowGround: View {
+    let selected: Bool
+    @Environment(\.sidebarHasKeys) private var hasKeys
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 6)
+            .fill(selected ? Color.secondary.opacity(hasKeys ? 0.14 : 0.08) : .clear)
+            .padding(.horizontal, 10)
+    }
+}
+
+extension EnvironmentValues {
+    /// The keyboard is in the sidebar.
+    @Entry var sidebarHasKeys = false
 }
 
 /// Shows or hides the sidebar: a small plain icon, no round button.
