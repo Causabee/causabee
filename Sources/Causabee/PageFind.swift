@@ -648,18 +648,29 @@ private struct KeepsWhatWasTyped: ViewModifier {
     @State private var first: [AnyHashable?]?
     /// The sheet's own onAppear has put what is edited into the fields.
     @State private var filled = false
+    /// The Mac's Esc: a popover that may not be closed by a click beside it swallows the key, and
+    /// its Cancel never hears it.
+    var cancel: (() -> Void)?
 
     func body(content: Content) -> some View {
-        content
+        escapes(content)
             .interactiveDismissDisabled(first != nil && first != now)
             // A moment after the sheet is there — sooner than anything can be typed.
             .task { try? await Task.sleep(for: .milliseconds(400)); filled = true }
             // Read here, not in the task: the task still holds the fields as they were when it began.
             .onChange(of: filled) { if first == nil { first = now } }
     }
+
+    @ViewBuilder private func escapes(_ content: Content) -> some View {
+        #if os(macOS)
+        if let cancel { content.onExitCommand(perform: cancel) } else { content }
+        #else
+        content
+        #endif
+    }
 }
 
 extension View {
     /// The fields of an editor, as they are now: changed, it stays under a swipe or a click beside it.
-    func keepsWhatWasTyped(_ fields: [AnyHashable?]) -> some View { modifier(KeepsWhatWasTyped(now: fields)) }
+    func keepsWhatWasTyped(_ fields: [AnyHashable?], cancel: (() -> Void)? = nil) -> some View { modifier(KeepsWhatWasTyped(now: fields, cancel: cancel)) }
 }

@@ -1775,7 +1775,7 @@ struct TodoEditor: View {
         .padding(.horizontal, 18).padding(.vertical, 16)
         .frame(width: 396)
         .environment(\.locale, Locale(identifier: "en_US"))
-        .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink])
+        .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink], cancel: cancel)
         .onAppear { load(); focus = .text }
     }
 
@@ -2078,7 +2078,7 @@ struct DateEditor: View {
         }
         .padding(16)
         .environment(\.locale, Locale(identifier: "en_US"))
-        .keepsWhatWasTyped([what, day, hasTime, time, place])
+        .keepsWhatWasTyped([what, day, hasTime, time, place], cancel: cancel)
         .onAppear(perform: load)
     }
 
@@ -2201,7 +2201,7 @@ struct PartyRow: View {
                         }
                     }
                     .padding(16)
-                    .keepsWhatWasTyped([name, role, address, phone])
+                    .keepsWhatWasTyped([name, role, address, phone]) { editing = false }
                 }
             }
         }
@@ -2636,7 +2636,7 @@ struct LinkEditor: View {
             }
         }
         .padding(16)
-        .keepsWhatWasTyped([address, title, todo])
+        .keepsWhatWasTyped([address, title, todo], cancel: cancel)
         .onAppear {
             if let link {
                 address = link.address
