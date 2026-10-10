@@ -80,8 +80,8 @@ controls · M20 the black tint · M21, B4, B7, B8 bar backgrounds and glass deta
 overview's own search field · B6 the assistant's hand-built header · M10 ⌥Space for dictation ·
 M17 the quicker tooltips · M24, B13 dates in English form.
 
-## Waiting for a yes or no
+## Confirmed by the owner (2026-10-10)
 
-- **M1 — closing the window quits Causabee.** Done and tried; say so if it should stay running instead.
+- **M1 — closing the window quits Causabee.** Yes.
 - **The new words**: the View menu's titles, "Get New Mail", "Next Matter" / "Previous Matter",
-  the two hint texts that replaced the command-line ones, and the delete dialogs that now mention Undo.
+  the two hint texts that replaced the command-line ones, and the delete dialogs that mention Undo. Yes.
