@@ -432,17 +432,24 @@ private struct PullsForMail: ViewModifier {
         content
             .refreshable {
                 let check = PhoneMailCheck.shared
+                // Already at it — pulled again while mail is fetched or sorted: nothing to hand on.
+                guard !check.isBusy, !handing else { return }
                 handing = true
                 check.beeIsAbove = true
                 check.look(context: context)
-                // The mail's place is laid out, its bee unseen: now the one above flies there.
-                try? await Task.sleep(for: .milliseconds(30))
-                withAnimation(.easeInOut(duration: 0.3)) { flying = true }
-                try? await Task.sleep(for: .milliseconds(170))
-                // The last part of the way: this one goes as that one comes, in the same place.
-                withAnimation(.easeOut(duration: 0.14)) { arriving = true; check.beeIsAbove = false }
-                try? await Task.sleep(for: .milliseconds(160))
-                handing = false; flying = false; arriving = false; whole = false
+                // In a task of its own: the pull's own task is ended as soon as the page is drawn
+                // anew, and its waits with it — all of this then happened in one instant, the bee
+                // jumping and gone, and the small one there at once.
+                Task { @MainActor in
+                    // The mail's place is laid out, its bee unseen: now the one above flies there.
+                    try? await Task.sleep(for: .milliseconds(40))
+                    withAnimation(.easeInOut(duration: 0.34)) { flying = true }
+                    try? await Task.sleep(for: .milliseconds(220))
+                    // The last part of the way: this one goes as that one comes, in the same place.
+                    withAnimation(.easeOut(duration: 0.12)) { arriving = true; check.beeIsAbove = false }
+                    try? await Task.sleep(for: .milliseconds(160))
+                    handing = false; flying = false; arriving = false; whole = false
+                }
             }
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { top = $0 }
             // How far it is pulled down past its top, in points.
