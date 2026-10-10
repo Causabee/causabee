@@ -471,18 +471,9 @@ struct PhoneMailCheckView: View {
                 // Nothing to show, and no button: mail is looked for when Causabee is opened, and the
                 // overview pulled down looks at once.
                 EmptyView()
-            case .reading(let text):
-                // Centred, as the button it came from: the bee at work, and Cancel under it.
-                VStack(spacing: 12) {
-                    HStack(spacing: 10) {
-                        BeeLoader(size: 15)
-                        Text(text).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    Button("Cancel") { check.cancel() }.buttonStyle(.phone)
-                }
-                .frame(maxWidth: .infinity)
-                .phoneBox()
-            case .sending(let text):
+            // Fetching and sorting look alike: the bee at work and what it is at, in one line.
+            // No Cancel under fetching: it is over in a moment, and reading mail sends nothing.
+            case .reading(let text), .sending(let text):
                 HStack(spacing: 10) {
                     BeeLoader(size: 15)
                     Text(text).font(.subheadline).foregroundStyle(.secondary)
