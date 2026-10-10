@@ -240,7 +240,7 @@ struct OverviewScreen: View {
         }
         .dismissesKeyboard()
         // Pulled down: new mail is read — free — and waits for "Sort in"; in the demo, its three.
-        .refreshable { PhoneMailCheck.shared.look(context: context) }
+        .modifier(PullsForMail())
         .background(Theme.canvas)
         // The assistant about every matter, as on a matter's page; held, its plus for any matter.
         .overlay(alignment: .bottomTrailing) {
@@ -401,4 +401,33 @@ enum PhoneShot {
         guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot"), at + 1 < arguments.count else { return false }
         return arguments[at + 1] == "listening"
     }()
+}
+
+/// A page pulled down looks for new mail. In the room the pull opens stand the bee's stripes: they
+/// come with the pull, and sort — as the bee at work does — while the mail is fetched, for which
+/// the page stays pulled. The system's own wheel is not shown (PhoneApp). What changes with every
+/// point of the pull is kept here, so the page under it is not made anew while it is pulled.
+private struct PullsForMail: ViewModifier {
+    @Environment(\.modelContext) private var context
+    @State private var pulled = CGFloat.zero
+    @State private var looking = false
+
+    func body(content: Content) -> some View {
+        content
+            .refreshable {
+                looking = true
+                await PhoneMailCheck.shared.lookAndWait(context: context)
+                looking = false
+            }
+            // How far it is pulled down past its top, in points.
+            .onScrollGeometryChange(for: CGFloat.self) { max(0, -($0.contentOffset.y + $0.contentInsets.top)).rounded() } action: { _, far in pulled = far }
+            .overlay(alignment: .top) {
+                if pulled > 6 || looking {
+                    BeeStripes(pull: min(1, Double(pulled) / 90), working: looking)
+                        .offset(y: max(10, pulled / 2 - 13))
+                        .opacity(looking ? 1 : min(1, Double(pulled) / 40))
+                        .allowsHitTesting(false)
+                }
+            }
+    }
 }

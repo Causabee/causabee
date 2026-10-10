@@ -206,6 +206,22 @@ struct MatterStatusView: View {
         }
         .environment(find)
         .focusedSceneValue(\.openMatter, matter.persistentModelID)
+        .focusedSceneValue(\.matterState, MatterState(isPinned: matter.isPinned, isClosed: matter.isClosed))
+        // Matter → Pin to Top, Rename …, Export as RTF, Close Matter…: what the ⋯ beside the name does.
+        .onReceive(NotificationCenter.default.publisher(for: .matterCommand)) { note in
+            guard let command = (note.object as? String).flatMap(MatterCommand.init) else { return }
+            switch command {
+            case .pin:
+                if matter.isPinned { matter.pinnedAt = nil; try? context.save() }
+                // Full: which one it replaces is asked, as from the ⋯.
+                else if Pins.pinned(allMatters).count >= Pins.most { navigation.pinning = matter }
+                else { matter.pinnedAt = Date(); try? context.save() }
+            case .rename: startRenaming()
+            case .export: export()
+            case .close:
+                if matter.isClosed { matter.reopen(); try? context.save() } else { asksToClose = true }
+            }
+        }
         .navigationTitle(matter.name)
         .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
             Button("Merge") {
@@ -1759,6 +1775,7 @@ struct TodoEditor: View {
         .padding(.horizontal, 18).padding(.vertical, 16)
         .frame(width: 396)
         .environment(\.locale, Locale(identifier: "en_US"))
+        .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink])
         .onAppear { load(); focus = .text }
     }
 
@@ -2061,6 +2078,7 @@ struct DateEditor: View {
         }
         .padding(16)
         .environment(\.locale, Locale(identifier: "en_US"))
+        .keepsWhatWasTyped([what, day, hasTime, time, place])
         .onAppear(perform: load)
     }
 
@@ -2183,6 +2201,7 @@ struct PartyRow: View {
                         }
                     }
                     .padding(16)
+                    .keepsWhatWasTyped([name, role, address, phone])
                 }
             }
         }
@@ -2617,6 +2636,7 @@ struct LinkEditor: View {
             }
         }
         .padding(16)
+        .keepsWhatWasTyped([address, title, todo])
         .onAppear {
             if let link {
                 address = link.address

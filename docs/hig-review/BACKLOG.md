@@ -35,13 +35,13 @@ the iPad's are fixed too. What is left falls into four kinds:
 
 | # | Issue | Where | What to do | Effort |
 |---|---|---|---|---|
-| 6 | **B2, rest — the contact and detail sheets still lose typed text** on a swipe (iPhone); they are shared with the Mac. | `Causabee/PageFind.swift:342`, `:406` | `.keepsWhatWasTyped([...])` inside their iOS branch. | S |
-| 7 | **Mac popovers lose typed text on a click beside them** — task, date, person and link editors (the experiment's weakest rule, 19%). | `Causabee/MatterStatusView.swift:1595`, `:1989`, `:2158`, `:2562` | Keep the draft in the row's state so reopening shows it, or do not close on an outside click once something changed. | M |
-| 8 | **B12 — three sheets on top of each other**: Welcome → Settings → Mail account. | `CausabeePhone/Welcome.swift:43`, `CausabeePhone/SettingsSheet.swift:115` | Push Settings and Mail account inside one navigation stack. | M |
-| 9 | **M5 — most matter actions are not in the menu bar**: Pin, Rename, Merge, Export, Close, Open Again. | `Causabee/CausabeeApp.swift:974` | Build the Matter menu, the ⋯ and the sidebar's context menu from one list. | M |
-| 10 | **The setup sheet's middle steps have no way out, and "Use another account" deletes a login at once.** | `Causabee/SetupAssistant.swift:551` | A Later/Close on every step; ask before the Keychain entry goes. | S |
-| 11 | **I2 — pull to refresh ends before the mail check does.** | `CausabeePhone/OverviewScreen.swift:241` | Await the running check in `refreshable`. Look: the system's spinner then shows beside the bee loader — choose one. | S |
-| 12 | **M25 — "Set Up Causabee …" and "Try the Demo" stand above Settings…** although the code asks for after. | `Causabee/CausabeeApp.swift:140` | Find why the built menu differs; check with the menu read-out in `raw/runtime-checks.md`. | S |
+| 6 | ~~B2, rest — the contact and detail sheets lose typed text.~~ **Done 2026-10-10**, built; same guard as the other editors. | `Causabee/PageFind.swift` | — | — |
+| 7 | ~~Mac popovers lose typed text on a click beside them.~~ **Done 2026-10-10:** once something in the task, date, person or link editor has changed, a click beside it leaves it open; Cancel and Esc drop it. Built; not clicked through. | `Causabee/PageFind.swift` (`keepsWhatWasTyped`) | Try it. | S |
+| 8 | B12 — three sheets on top of each other: Welcome → Settings → Mail account. **Parked by the owner (2026-10-10):** Settings, Welcome and onboarding are not designed yet. | `CausabeePhone/Welcome.swift:43` | — | — |
+| 9 | ~~M5 — most matter actions are not in the menu bar.~~ **Done 2026-10-10:** Matter ▸ Pin to Top / Unpin, Rename …, Export as RTF, Close Matter… / Open Again; seen in the running app, Pin and Unpin clicked. Merge stays in the ⋯ (it needs the list of matters). | `Causabee/CausabeeApp.swift` | — | — |
+| 10 | The setup sheet's middle steps have no way out, and "Use another account" deletes a login at once. **Parked by the owner:** onboarding is not designed yet. | `Causabee/SetupAssistant.swift:551` | — | — |
+| 11 | ~~I2 — pull to refresh ends before the mail check does.~~ **Done 2026-10-10, to be looked at on a device:** the system's wheel is not shown; in the room the pull opens the bee's stripes come with the pull and sort while the mail is fetched, for which the page stays pulled. Seen in the simulator: the stripes with the pull. Not seen: the fetching — simulated touches do not start a refresh there. | `CausabeePhone/OverviewScreen.swift` (`PullsForMail`), `Causabee/BeeLoader.swift` (`BeeStripes`) | Pull on a device. | S |
+| 12 | M25 — "Set Up Causabee …" and "Try the Demo" stand above Settings…. **Parked with onboarding.** | `Causabee/CausabeeApp.swift:140` | — | — |
 
 ## Needs a choice about the look first
 

@@ -369,6 +369,7 @@ struct ContactEditor: View {
             }
             .navigationTitle("New contact")
             .navigationBarTitleDisplayMode(.inline)
+            .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Add", action: add).disabled(!canAdd) }
@@ -442,6 +443,7 @@ struct DetailEditor: View {
                 }
                 .navigationTitle(detail == nil ? "New detail" : "Detail")
                 .navigationBarTitleDisplayMode(.inline)
+                .keepsWhatWasTyped([label, value, party])
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) { Button(detail == nil ? "Add" : "Save", action: save).disabled(!canSave) }
@@ -635,4 +637,29 @@ struct LinkItems: View {
             ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
         }
     }
+}
+
+/// A sheet or a popover that is written in does not go with what was typed: once something in it
+/// has changed, a swipe down on the iPhone lets go again, and on the Mac a click beside the popover
+/// leaves it open. Cancel and Esc — said on purpose — still drop it. Unchanged, it goes as before.
+private struct KeepsWhatWasTyped: ViewModifier {
+    let now: [AnyHashable?]
+    /// What stood in the sheet once it had filled its fields from what it edits.
+    @State private var first: [AnyHashable?]?
+    /// The sheet's own onAppear has put what is edited into the fields.
+    @State private var filled = false
+
+    func body(content: Content) -> some View {
+        content
+            .interactiveDismissDisabled(first != nil && first != now)
+            // A moment after the sheet is there — sooner than anything can be typed.
+            .task { try? await Task.sleep(for: .milliseconds(400)); filled = true }
+            // Read here, not in the task: the task still holds the fields as they were when it began.
+            .onChange(of: filled) { if first == nil { first = now } }
+    }
+}
+
+extension View {
+    /// The fields of an editor, as they are now: changed, it stays under a swipe or a click beside it.
+    func keepsWhatWasTyped(_ fields: [AnyHashable?]) -> some View { modifier(KeepsWhatWasTyped(now: fields)) }
 }

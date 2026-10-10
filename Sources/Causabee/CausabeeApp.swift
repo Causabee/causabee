@@ -976,7 +976,22 @@ struct MatterCommands: Commands {
             ForEach(MatterAction.allCases, id: \.self) { action in
                 if action == .newTask { item(action.title, action).keyboardShortcut("t", modifiers: [.command, .shift]) } else { item(action.title, action) }
             }
+            // And what the matter's ⋯ does with the matter itself — in the menu bar too, with the
+            // words for what it would do now. Merging stays in the ⋯: it needs the list of matters.
+            Divider()
+            command(state?.isPinned == true ? "Unpin" : "Pin to Top", .pin).disabled(state?.isClosed == true && state?.isPinned != true)
+            command("Rename …", .rename)
+            command("Export as RTF", .export)
+            Divider()
+            command(state?.isClosed == true ? "Open Again" : "Close Matter…", .close)
         }
+    }
+
+    @FocusedValue(\.matterState) private var state
+
+    private func command(_ title: String, _ command: MatterCommand) -> some View {
+        Button(title) { NotificationCenter.default.post(name: .matterCommand, object: command.rawValue) }
+            .disabled(open == nil)
     }
 
     private func item(_ title: String, _ action: MatterAction) -> some View {
@@ -1078,6 +1093,15 @@ struct WindowState: Equatable {
     var reading: Bool
 }
 
+/// What the Matter menu does with the open matter itself, as its ⋯ does.
+enum MatterCommand: String { case pin, rename, export, close }
+
+/// What the open matter is, for the Matter menu's words.
+struct MatterState: Equatable {
+    var isPinned: Bool
+    var isClosed: Bool
+}
+
 /// An action of the Matter menu, for the matter that is open.
 enum MatterAction: String, CaseIterable {
     case newTask, writeNote, addFile, addContact, addDetail, addLink
@@ -1107,6 +1131,8 @@ enum MatterAction: String, CaseIterable {
 extension FocusedValues {
     /// The matter open in the window: the Matter menu's actions go to it.
     @Entry var openMatter: PersistentIdentifier?
+    /// Whether it is pinned, whether it is closed: for the Matter menu's words.
+    @Entry var matterState: MatterState?
     /// The window in front: its sidebar, its assistant, reading — for View's words.
     @Entry var windowState: WindowState?
     /// The matter's search has found something to go between.
@@ -1143,6 +1169,8 @@ enum MenuOrder {
 extension Notification.Name {
     /// Matter → New Task …, Add Note …, Add File … and the others, and the title bar's plus: the action as its raw value.
     static let matterAction = Notification.Name("causabee.matterAction")
+    /// Matter → Pin to Top, Rename …, Export as RTF, Close Matter…: the command as its raw value.
+    static let matterCommand = Notification.Name("causabee.matterCommand")
     /// iCloud brought changes in: the assistant's thread may have new or changed turns.
     static let threadMayHaveChanged = Notification.Name("causabee.threadMayHaveChanged")
     /// Help → Introduction to Causabee.

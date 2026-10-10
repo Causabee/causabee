@@ -14,6 +14,10 @@ struct CausabeePhoneApp: App {
 
     init() {
         Theme.registerFonts()
+        // Pulled down, the overview looks for new mail, and says so with its own bee and words in
+        // the mail's place. The system's wheel on top of that said it twice, and was gone before
+        // the mail was read: it is not shown.
+        UIRefreshControl.appearance().tintColor = .clear
         PhoneCloudStatus.shared.watch()
         PhoneFolder.restore()
     }
