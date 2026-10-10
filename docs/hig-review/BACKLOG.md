@@ -11,8 +11,8 @@ fixes, as issues to pick up one by one. Line numbers are for this branch; paths 
 
 ## Assessment
 
-Of 50 findings, 15 are fixed, 13 are left alone on purpose, and 22 are open below, with the three
-from the experiment and two that came up while fixing. The Mac no longer has an open High finding;
+Of 50 findings, 16 are fixed in whole or in part, 14 are left alone on purpose, and the rest are
+open below, with the three from the experiment and two checks that came up while fixing. The Mac no longer has an open High finding;
 the iPad's are fixed too. What is left falls into four kinds:
 
 1. **Trust** (X1, X2, X3) — the app's own promise: nothing sent unasked, nothing lost, said plainly.
