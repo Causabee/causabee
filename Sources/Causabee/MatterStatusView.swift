@@ -1013,7 +1013,10 @@ struct MatterStatusView: View {
         .padding(.top, 7 - 16.5 * (Theme.textScale - 1))
         .padding(.bottom, 12)
         .frame(maxWidth: 820, alignment: .leading)
-        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minX } action: { barLeft = $0 }
+        // Only a real move counts. The padding above comes from this edge, and in a column of a
+        // width between two pixels — the window's 61.8 percent — the edge answers the padding by
+        // a fraction of a point, which made the next padding, and so on without end.
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minX } action: { if abs($0 - barLeft) > 1 { barLeft = $0 } }
         .frame(maxWidth: .infinity)
         // At the top it is the page itself; once the page scrolls under it, glass and a line.
         .background(scrolledUnder ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
