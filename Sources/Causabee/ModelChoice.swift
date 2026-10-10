@@ -419,8 +419,9 @@ struct AutoQuestion: ViewModifier {
             Button("Turn Auto On") { agreed = true; turnOn() }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("New mail and files are then read by the AI as soon as they are there — sent pseudonymised to \(model.label), without asking first — and next steps and summaries are kept up to date. " +
-                 "What is taken in, and into which matter, you still decide. " + String(format: "About %.2f cents per mail.", model.perMail * 100))
+            // Short, and by name: which model reads, that names are disguised, who decides, what it costs.
+            Text("Causabee then reads new mail and files for you as they arrive — names disguised, with \(model.label). " +
+                 "You still decide what goes into a matter. " + String(format: "About %.1f cents a mail.", model.perMail * 100))
         }
     }
 }

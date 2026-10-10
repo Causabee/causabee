@@ -152,13 +152,11 @@ struct AssistantButton: View {
 }
 
 /// Auto on and off, small, over the bee — the same switch as in Settings › New mail and the bolt
-/// on the Mac. On: the black bolt on the bee's yellow. The first few times it says what changed,
-/// beside it, since a bolt alone does not.
+/// on the Mac. On: the black bolt on the bee's yellow. What Auto does is asked once, before it is
+/// first turned on (AutoQuestion).
 struct PhoneAutoButton: View {
     @AppStorage(AutoMode.key) private var auto = false
-    @AppStorage("auto.explained") private var explained = 0
     @Environment(\.modelContext) private var context
-    @State private var says: String?
     @State private var asks = false
 
     var body: some View {
@@ -169,14 +167,6 @@ struct PhoneAutoButton: View {
             auto.toggle()
             Haptics.tap()
             if auto { PhoneMailCheck.shared.autoTurnedOn(context: context) }
-            guard explained < 4 else { return }
-            explained += 1
-            let words = auto ? "Auto on: mail and files are read at once, next steps and summaries kept up to date" : "Auto off: mail and files wait for “Sort in”"
-            withAnimation(.easeOut(duration: 0.2)) { says = words }
-            Task {
-                try? await Task.sleep(for: .seconds(2.8))
-                if says == words { withAnimation(.easeIn(duration: 0.25)) { says = nil } }
-            }
         } label: {
             Image(systemName: auto ? "bolt.fill" : "bolt").font(.system(size: 15, weight: .medium))
                 .foregroundStyle(auto ? Color.black : Color.secondary)
@@ -195,17 +185,6 @@ struct PhoneAutoButton: View {
             auto = true
             Haptics.tap()
             PhoneMailCheck.shared.autoTurnedOn(context: context)
-        }
-        .overlay(alignment: .trailing) {
-            if let says {
-                Text(says).font(.footnote.weight(.medium)).foregroundStyle(Theme.onInk)
-                    .padding(.horizontal, 12).padding(.vertical, 8)
-                    .background(Theme.ink, in: Capsule())
-                    .fixedSize()
-                    .offset(x: -50)
-                    .transition(.opacity)
-                    .allowsHitTesting(false)
-            }
         }
     }
 }
