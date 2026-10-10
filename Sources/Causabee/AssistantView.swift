@@ -478,13 +478,11 @@ struct OverviewView: View {
         let _ = StoredChanges.shared.count
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                // The day, where things stand and the search: one block in the middle, as wide as a
-                // search needs — not the page — with room around it.
+                // The day and the search: one block in the middle, as wide as a search needs — not
+                // the page — with room above it, so the page does not begin tight under the top.
                 VStack(spacing: 10) {
                     Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
                         .font(.caption).foregroundStyle(.secondary)
-                    Text(OverviewSummary.text(ordered)).font(.title3).multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
                     searchField.padding(.top, 4)
                     // The assistant about every matter, beside the overview.
                     if !navigation.assistantOnOverview {
@@ -505,7 +503,7 @@ struct OverviewView: View {
                 }
                 .frame(maxWidth: 600)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 12).padding(.bottom, 18)
+                .padding(.top, 84).padding(.bottom, 18)
                 if !matters.isEmpty { OverviewWeek(matters: matters) }
                 let pinned = Pins.pinned(matters)
                 if !pinned.isEmpty { pinnedCards(pinned).padding(.top, 6) }

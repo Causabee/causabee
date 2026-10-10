@@ -136,20 +136,6 @@ enum Dates {
     }
 }
 
-/// The overview's first line, the same on the Mac and the iPhone: how many matters are going on,
-/// and the task overdue the longest by name — the one line that says where to start.
-enum OverviewSummary {
-    static func text(_ going: [Matter]) -> String {
-        var text = going.count == 1 ? "One matter is going on." : "\(going.count) matters are going on."
-        let overdue = going.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "", $0.text) < ($1.due ?? "", $1.text) }
-        if let first = overdue.first {
-            text += " Overdue since \(first.due.map(Dates.short) ?? ""): “\(first.text)”"
-            text += overdue.count == 1 ? "." : overdue.count == 2 ? ", and 1 more." : ", and \(overdue.count - 1) more."
-        }
-        return text
-    }
-}
-
 /// Text with its web addresses made into links, to open in the browser with a click.
 enum Linked {
     private static let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
