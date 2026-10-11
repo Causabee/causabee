@@ -92,6 +92,8 @@ struct AssistantColumn: View {
 
     /// The newest: the thread's last.
     private var newestID: AnyHashable? { shown.last.map { AnyHashable($0.id) } }
+    /// How tall the field's bar is: the way back to the newest stands over it.
+    @State private var barHeight = CGFloat.zero
 
     /// How far a file brought in is, as a number: its card grows with it.
     private static func step(_ shot: Navigation.Shot) -> Int {
@@ -258,9 +260,12 @@ struct AssistantColumn: View {
                 // The field is a bar over the thread, as on the iPhone: the thread is sharp down to it,
                 // seen through its glass, and gone under its lower half. The way back stands over it.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    composerBar.overlay(alignment: .top) {
-                        ToNewestButton(placement: placement, newest: newestID, scroller: scroller).alignmentGuide(.top) { $0[.bottom] }
-                    }
+                    composerBar.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
+                }
+                // On the thread, lifted by the bar's height: hung on the bar it stood outside the bar's
+                // bounds, and a click there went through to the thread.
+                .overlay(alignment: .bottom) {
+                    ToNewestButton(placement: placement, newest: newestID, scroller: scroller).padding(.bottom, barHeight)
                 }
                 // Shown, and another matter opened beside it.
                 .onAppear { placement.opened(newestID, with: scroller) }

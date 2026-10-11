@@ -91,6 +91,8 @@ struct AssistantSheet: View {
 
     /// The newest: the question on its way, else the thread's last.
     private var newestID: UUID? { asking?.id ?? entries.last?.id }
+    /// How tall the field's bar is: the way back to the newest stands over it.
+    @State private var barHeight = CGFloat.zero
 
     var body: some View {
         VStack(spacing: 0) {
@@ -151,13 +153,15 @@ struct AssistantSheet: View {
             // own bars are. Nothing is cut off at a line.
             .safeAreaBar(edge: .top, spacing: 0) { header }
             .safeAreaBar(edge: .bottom, spacing: 0) {
-                composer
-                    // Away from the newest: the way back, standing over the field. A view of its own:
-                    // it alone is drawn again when the thread leaves its newest or comes back to it.
-                    .overlay(alignment: .top) {
-                        PhoneToNewestButton(placement: placement, newest: newestID.map { AnyHashable($0) }, scroller: scroller)
-                            .alignmentGuide(.top) { $0[.bottom] }
-                    }
+                composer.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
+            }
+            // Away from the newest: the way back, standing over the field — on the thread, lifted by
+            // the bar's height. Hung on the bar itself it stood outside the bar's own bounds, where a
+            // tap went through to the thread and the button did nothing. A view of its own: it alone
+            // is drawn again when the thread leaves its newest or comes back to it.
+            .overlay(alignment: .bottom) {
+                PhoneToNewestButton(placement: placement, newest: newestID.map { AnyHashable($0) }, scroller: scroller)
+                    .padding(.bottom, barHeight)
             }
             .scrollEdgeEffectStyle(.soft, for: .top)
             // Below, the system's blur began a hand's breadth over the field. There the glass is the

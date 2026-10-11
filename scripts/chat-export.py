@@ -1,29 +1,58 @@
 #!/usr/bin/env python3
-# The Claude Code sessions for this repo, written out as Markdown under concept/chat — one file per
-# session and a README.md that lists them:
+# The Claude Code sessions for a repo, written out as Markdown — one file per session and a
+# README.md that lists them. Works in any repo; nothing to install beyond Python 3.
 #
-#   scripts/chat-export.py
+#   scripts/chat-export.py                       # the repo you are in, into concept/chat
+#   scripts/chat-export.py --out docs/chat       # somewhere else (relative to the repo, or absolute)
+#   scripts/chat-export.py --also ~/old/path     # a folder the repo lived in before; may be repeated
+#   scripts/chat-export.py --repo ~/Developer/x  # a repo other than the one you are in
 #
 # What it does:
-# - reads the transcripts Claude Code keeps under ~/.claude/projects, for this folder and for the
-#   folders the repo lived in before the rename, when it was called matterbee;
+# - reads the transcripts Claude Code keeps under ~/.claude/projects, for the repo's folder, for
+#   the worktrees Claude made of it, and for every folder given with --also;
 # - writes what was said, each tool call with its input and output, and the subagents' transcripts
 #   at the end of the session they belong to;
-# - puts the pictures into concept/chat/images, each one once, named after its content.
+# - puts the pictures into <out>/images, each one once, named after its content.
 #
-# Every run writes all files again. concept/ is not in git: tool output can hold what should not
-# be pushed.
-import json, re, glob, os, sys
+# Every run writes all files again. Keep the output out of git: tool output can hold what should
+# not be pushed. The script says so when the folder is not ignored.
+import json, re, glob, os, sys, argparse, subprocess
 from datetime import datetime, timezone
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# The folders this repo lived in before, read on every run. Here: from before the rename, when it
+# was called matterbee. Empty this list when the script goes to another repo.
+ALSO = ['~/Documents/GitHub/matterbee', '~/Developer/matterbee']
+
+ap = argparse.ArgumentParser(description='Export the Claude Code sessions of a repo as Markdown.')
+ap.add_argument('--repo', help='the repo (default: the git repo you are in, else the current folder)')
+ap.add_argument('--out', default='concept/chat', help='where to write (default: concept/chat)')
+ap.add_argument('--also', action='append', default=[], metavar='PATH',
+                help='a folder the repo lived in before; may be repeated')
+args = ap.parse_args()
+
+def git(*a, cwd=None):
+    try: return subprocess.run(['git', *a], cwd=cwd, capture_output=True, text=True)
+    except OSError: return None
+
+if args.repo: REPO = os.path.abspath(os.path.expanduser(args.repo))
+else:
+    g = git('rev-parse', '--show-toplevel')
+    REPO = g.stdout.strip() if g and g.returncode == 0 and g.stdout.strip() else os.getcwd()
 ROOT = os.path.expanduser('~/.claude/projects')
-DIRS = ['-Users-ralfchille-Documents-GitHub-matterbee',
-        '-Users-ralfchille-Developer-matterbee',
-        '-Users-ralfchille-Developer-matterbee--claude-worktrees-great-swirles-0ee2a3',
-        re.sub(r'[^A-Za-z0-9]', '-', REPO)]
-OUT = os.path.join(REPO, 'concept', 'chat')
+# Claude Code names a project's folder after its path, every other character turned into a dash;
+# the worktrees it makes of a repo get the same name with --claude-worktrees-<name> after it.
+def encoded(path): return re.sub(r'[^A-Za-z0-9]', '-', os.path.abspath(os.path.expanduser(path)).rstrip('/'))
+DIRS = []
+for path in ALSO + args.also + [REPO]:
+    e = encoded(path)
+    for d in [e] + sorted(os.path.basename(x) for x in glob.glob(os.path.join(ROOT, glob.escape(e) + '--claude-worktrees-*'))):
+        if d not in DIRS and os.path.isdir(os.path.join(ROOT, d)): DIRS.append(d)
+if not DIRS: sys.exit(f'No Claude Code transcripts for {REPO} under {ROOT}')
+OUT = os.path.join(REPO, os.path.expanduser(args.out))
 os.makedirs(OUT, exist_ok=True)
+g = git('check-ignore', '-q', OUT, cwd=REPO)
+if g and g.returncode == 1:
+    print(f'Note: {OUT} is not ignored by git — add it to .gitignore before you commit.', file=sys.stderr)
 
 REMINDER = re.compile(r'<system-reminder>.*?</system-reminder>', re.S)
 TAGS = re.compile(r'<(local-command-stdout|local-command-caveat|command-message|command-args|ide_[a-z_]+)>.*?</\1>', re.S)
@@ -184,8 +213,7 @@ for d in DIRS:
 
 index.sort()
 with open(os.path.join(OUT, 'README.md'), 'w', encoding='utf-8') as f:
-    f.write('# Chat sessions\n\nThe Claude Code sessions for this repo on this machine, as text. '
-            'The first ones are from before the rename, when the folder was called matterbee.\n\n'
+    f.write(f'# Chat sessions\n\nThe Claude Code sessions for {os.path.basename(REPO)} on this machine, as text.\n\n'
             '| Start | End | Session | User messages | Subagents |\n|---|---|---|---|---|\n')
     for f0, name, title, f1, n, size, ns in index:
         f.write(f'| {f0.strftime("%Y-%m-%d %H:%M")} | {f1.strftime("%Y-%m-%d %H:%M")} | [{title}]({name}) | {n} | {ns or ""} |\n')
