@@ -35,10 +35,11 @@ for i in {1..5}; do
   mkdir -p "$TMP/$shot"
   # Opened as an app, not run from this shell: then it is in front, and macOS gives it Causabee's own
   # Calendar and Reminders access, so the dates show "Add to Calendar" (the demo still adds nothing).
-  # Auto off, whatever the owner has chosen: the pictures show Causabee as it starts out.
+  # Auto on, whatever the owner has chosen: the pictures show Causabee as the owner wants it shown
+  # (said on 2026-10-11) — the bolt yellow, "Auto mode" under the next step and the summary.
   # And macOS told not to take the shot's name for a file to open: launched "to open a file", the
   # app is given no window of its own.
-  open -n -a "$APP" --args --store "$TMP/$shot/matters.store" --demo --shot "$shot" -mail.auto NO -NSTreatUnknownArgumentsAsOpen NO
+  open -n -a "$APP" --args --store "$TMP/$shot/matters.store" --demo --shot "$shot" -mail.auto YES -auto.agreed YES -NSTreatUnknownArgumentsAsOpen NO
   for _ in {1..20}; do pid=$(pgrep -n -f -- "--shot $shot" || true); [[ -n $pid ]] && break; sleep 0.25; done
   [[ -n $pid ]] || { print -u2 "✗ Causabee did not start for $shot."; exit 1 }
   # The demo fills its store, opens the matter, scrolls, and a marked to-do fades again.

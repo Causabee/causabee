@@ -35,15 +35,16 @@ CROPS = {
     "matter-phone": ("intro-2", (568, 0, 1960, 1547)),
     "tasks": ("intro-3", (544, 496, 1984, 1336)),
     "calendar": ("intro-3", (552, 1252, 1560, 1836)),
-    "files": ("intro-4", (544, 140, 1984, 980)),
+    "files": ("intro-4", (544, 140, 1984, 820)),
     "sources": ("intro-5", (544, 1104, 1984, 1800)),
-    "assistant": ("intro-5", (1990, 56, 2878, 894)),
+    # From under the day and the ×, which a crop cut through, to under the answer's own line of tools.
+    "assistant": ("intro-5", (1990, 100, 2878, 990)),
 }
 FULL = {"overview": "intro-1", "matter": "intro-2", "care": "intro-5"}
 # A crop that starts right under the matter's pinned bar still catches its lower edge — a grey strip
 # with the tabs' bottoms. Those rows are painted in the page's own colour, taken from just below them;
 # the crop itself stays, because the animation over the picture is measured from its top.
-CLEAR_TOP = {"files": 32}
+CLEAR_TOP = {"files": 46}
 
 # The icon as Icon Composer draws it: the bee's stripes and wings over the yellow, the wings
 # half see-through. The layers are App/Resources/BeeStripesWings.icon/Assets, moved up 30 points.
