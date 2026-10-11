@@ -947,3 +947,61 @@ extension View {
         #endif
     }
 }
+
+/// The parts of a matter as pills, as Mail's categories: a sign each, and the open one filled and
+/// wide with its word — one word in the bar where there were four. The others say theirs when the
+/// pointer rests on them, and to VoiceOver. In the app's ink, like its filled buttons: no colour of
+/// their own. On the iPhone the open pill takes the room that is left, and the pills are a finger high.
+struct PartTabs<Value: Hashable>: View {
+    struct Tab {
+        let value: Value
+        let title: String
+        let symbol: String
+    }
+
+    let tabs: [Tab]
+    @Binding var selection: Value
+    #if os(iOS)
+    private let height: CGFloat = 44, sign: CGFloat = 17, fills = true
+    private let word = Font.subheadline.weight(.semibold)
+    #else
+    private let height: CGFloat = 32, sign: CGFloat = 14, fills = false
+    private let word = Font.callout.weight(.semibold)
+    #endif
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(tabs, id: \.value) { tab in
+                let chosen = tab.value == selection
+                Button { selection = tab.value } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: tab.symbol).symbolVariant(chosen ? .fill : .none)
+                            .font(.system(size: sign, weight: .medium)).frame(width: sign + 8, height: sign + 4)
+                        // As in Mail: the pill opens first, with its sign alone; the word comes when
+                        // there is room for it, and goes at once when another part is chosen.
+                        if chosen {
+                            Text(tab.title).font(word).fixedSize()
+                                .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.16).delay(0.1)),
+                                                        removal: .opacity.animation(.easeOut(duration: 0.06))))
+                        }
+                    }
+                    .padding(.horizontal, chosen ? 16 : 14)
+                    .frame(maxWidth: chosen && fills ? .infinity : nil)
+                    .frame(height: height)
+                    .foregroundStyle(chosen ? Theme.onInk : Color.secondary)
+                    .background(chosen ? Theme.ink : Color.secondary.opacity(0.12), in: Capsule())
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(tab.title)
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(chosen ? .isSelected : [])
+                .accessibilityIdentifier("part." + tab.title)
+            }
+        }
+        // The pills and the words move; the page under them changes at once, as before.
+        .animation(.spring(response: 0.34, dampingFraction: 0.82), value: selection)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Part of the matter")
+    }
+}
