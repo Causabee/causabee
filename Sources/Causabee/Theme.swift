@@ -965,7 +965,7 @@ struct PartTabs<Value: Hashable>: View {
     // The open pill takes the room that is left, as in Mail — in a row no wider than a phone's: on
     // an iPad's wide page a pill across all of it is a bar, not a pill.
     private let fills = true
-    private let most: CGFloat? = 400
+    private let most: CGFloat? = 360
     private let height: CGFloat = 44, sign: CGFloat = 17
     private let word = Font.subheadline.weight(.semibold)
     #else
