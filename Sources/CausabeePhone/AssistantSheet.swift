@@ -159,7 +159,10 @@ struct AssistantSheet: View {
                             .alignmentGuide(.top) { $0[.bottom] }
                     }
             }
-            .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
+            .scrollEdgeEffectStyle(.soft, for: .top)
+            // Below, the system's blur began a hand's breadth over the field. There the glass is the
+            // field's own: the thread is sharp down to it, seen through it, and gone under its lower half.
+            .scrollEdgeEffectHidden(true, for: .bottom)
             // The keyboard goes when the thread is scrolled or tapped, to see all of it.
             .dismissesKeyboard()
             // What happens to the thread is told to the placement, which decides where it goes.
@@ -306,7 +309,13 @@ struct AssistantSheet: View {
                 .environment(\.openURL, OpenURLAction { _ in showsMore.toggle(); return .handled })
                 .padding(.horizontal, 8)
         }
-        .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
+        .padding(.horizontal, 16).padding(.top, 0).padding(.bottom, 8)
+        // The page's ground from the field's middle down, thinning out upwards to its upper edge.
+        .background {
+            LinearGradient(stops: [.init(color: Theme.canvas.opacity(0), location: 0), .init(color: Theme.canvas, location: 0.45), .init(color: Theme.canvas, location: 1)],
+                           startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 }
 
