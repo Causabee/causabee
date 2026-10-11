@@ -329,7 +329,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   background: var(--ink);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), var(--shadow-shot);
 }
-.pad img { display: block; width: 100%; height: auto; aspect-ratio: 2000 / 1379; object-fit: cover; border-radius: calc(var(--w) * 0.028); background: var(--paper); }
+.pad img { display: block; width: 100%; height: auto; aspect-ratio: 2000 / 1500; object-fit: cover; border-radius: calc(var(--w) * 0.028); background: var(--paper); }
 
 /* On phones: one row that scrolls sideways and snaps to each screen; the next one peeks in. */
 @media (max-width: 719px) {
