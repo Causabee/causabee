@@ -211,6 +211,16 @@ extension View {
         }
     }
 
+    /// Glass behind what is here, not around it: a field's words stay as sharp as they are, and
+    /// what scrolls under the field is seen through it. A thin material before glass came.
+    @ViewBuilder func glassBehind<S: Shape>(_ shape: S) -> some View {
+        if #available(macOS 26, iOS 26, *) {
+            background { shape.fill(.clear).glassEffect(.regular, in: shape) }
+        } else {
+            background(.thinMaterial, in: shape).overlay(shape.stroke(Color.primary.opacity(0.08), lineWidth: 0.5))
+        }
+    }
+
     /// A small action — a link, a ⋯, a pin, a button that asks the AI — gone while reading.
     func tool() -> some View { modifier(PutAwayWhileReading()) }
     /// What the AI says about why, what it cost, where it looked — gone while reading.

@@ -500,7 +500,8 @@ struct Composer: View {
               }
             }
             .padding(7)
-            .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))
+            // Glass: the thread is seen through it as it passes under.
+            .glassBehind(RoundedRectangle(cornerRadius: 24))
             // "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(showsMore
                 ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen()) · goes pseudonymised, like the mails • [less](causabee://footer)"
@@ -510,8 +511,12 @@ struct Composer: View {
                 .padding(.horizontal, 8)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(.bar)
+        .padding(.bottom, 12)
+        // The page's ground from the field's middle down, thinning out upwards to its upper edge.
+        .background {
+            LinearGradient(stops: [.init(color: Theme.canvas.opacity(0), location: 0), .init(color: Theme.canvas, location: 0.45), .init(color: Theme.canvas, location: 1)],
+                           startPoint: .top, endPoint: .bottom)
+        }
         .modifier(SpeakKey(voice: voice) { voice.start(text: $draft, selection: $cursor) })
     }
 }

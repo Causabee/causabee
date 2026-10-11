@@ -209,15 +209,8 @@ struct AssistantSheet: View {
 
     private var header: some View {
         ZStack {
-            // On the iPhone nothing but the way out: that this is Causabee is known, and what it is
-            // asked about stands in the field below. The iPad's column keeps its name.
-            if navigation.isPad {
-                VStack(spacing: 2) {
-                    Text("Causabee").font(.headline)
-                    Text(matter?.name ?? "All matters").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                }
-                .padding(.horizontal, 60)
-            }
+            // Nothing but the way out, on the iPhone and the iPad: that this is Causabee is known, and
+            // what it is asked about stands in the field below.
             HStack {
                 // A column on the iPad: put away at its outer edge, as the Mac's.
                 if navigation.isPad { Spacer() }
@@ -300,7 +293,7 @@ struct AssistantSheet: View {
             }
             .padding(.leading, 7).padding(.trailing, 7).padding(.vertical, 7)
             // The field itself is glass: the thread is seen through it as it passes under.
-            .background { RoundedRectangle(cornerRadius: 24).fill(.clear).glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24)) }
+            .glassBehind(RoundedRectangle(cornerRadius: 24))
             // As on the Mac: "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(showsMore
                 ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen) · goes pseudonymised, like the mails • [less](causabee://footer)"

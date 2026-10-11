@@ -151,6 +151,27 @@ struct AssistantColumn: View {
         try? report.write(toFile: out, atomically: true, encoding: .utf8)
     }
 
+    /// The field under the thread: a bar over it, not a row beside it — the thread goes on under it.
+    private var composerBar: some View {
+        // On the overview too: the bee by the window's buttons opens the assistant there, and a
+        // question asked there is about every matter with something going on — as on the iPhone.
+        let scope = scopeMatter
+        return Composer(draft: $draft, focused: $focused, pinned: navigation.pinned,
+                     seen: { FactSheet.facts(for: scope.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date()),
+                                             focus: navigation.pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text }).seen },
+                     // A long name does not fit the field, and a placeholder is cut off without a sign.
+                     placeholder: scope.map { $0.name.count > 22 ? "Ask about this matter" : "Ask about \($0.name)" } ?? "Ask about your matters",
+                     unpin: { navigation.pinned = nil },
+                     attach: chooseScreenshot,
+                     // Said before it is typed: the chip over the field, and the cursor in the field.
+                     add: scope.map { matter in { add in
+                         navigation.pinned = Navigation.Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
+                         focused = true
+                     } },
+                     stop: asking.map { turn in { conversation.stop(turn.id) } },
+                     send: send)
+    }
+
     private var column: some View {
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
@@ -234,7 +255,13 @@ struct AssistantColumn: View {
                 // A view of its own: it alone is drawn again when the thread leaves its newest or comes
                 // back to it. Read here, every turn of the thread was drawn again at those moments —
                 // a tenth of a second each time, in the middle of a scroll.
-                .overlay(alignment: .bottom) { ToNewestButton(placement: placement, newest: newestID, scroller: scroller) }
+                // The field is a bar over the thread, as on the iPhone: the thread is sharp down to it,
+                // seen through its glass, and gone under its lower half. The way back stands over it.
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    composerBar.overlay(alignment: .top) {
+                        ToNewestButton(placement: placement, newest: newestID, scroller: scroller).alignmentGuide(.top) { $0[.bottom] }
+                    }
+                }
                 // Shown, and another matter opened beside it.
                 .onAppear { placement.opened(newestID, with: scroller) }
                 .onChange(of: navigation.place) {
@@ -255,23 +282,6 @@ struct AssistantColumn: View {
                     placement.arrived(AnyHashable(last.id), newest: newestID, with: scroller)
                 }
             }
-            // On the overview too: the bee by the window's buttons opens the assistant there, and a
-            // question asked there is about every matter with something going on — as on the iPhone.
-            let scope = scopeMatter
-            Composer(draft: $draft, focused: $focused, pinned: navigation.pinned,
-                     seen: { FactSheet.facts(for: scope.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date()),
-                                             focus: navigation.pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text }).seen },
-                     // A long name does not fit the field, and a placeholder is cut off without a sign.
-                     placeholder: scope.map { $0.name.count > 22 ? "Ask about this matter" : "Ask about \($0.name)" } ?? "Ask about your matters",
-                     unpin: { navigation.pinned = nil },
-                     attach: chooseScreenshot,
-                     // Said before it is typed: the chip over the field, and the cursor in the field.
-                     add: scope.map { matter in { add in
-                         navigation.pinned = Navigation.Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
-                         focused = true
-                     } },
-                     stop: asking.map { turn in { conversation.stop(turn.id) } },
-                     send: send)
         }
         .background(Theme.canvas)
         // A screenshot dragged here is read on the Mac, like one chosen with the paper clip.
