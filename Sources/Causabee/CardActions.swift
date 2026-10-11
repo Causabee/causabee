@@ -39,8 +39,40 @@ enum CardActions {
         case taken(Undo)
         /// A matter was made; the cards beside it put their to-dos there.
         case madeMatter(Matter, Undo)
-        /// A draft: Mail opens with it, and the owner sends it — or not.
-        case openMail(URL)
+        /// A draft: Mail opens with it, and the owner sends it — or not. With the files it names,
+        /// when the matter has them on this device: a `mailto:` cannot carry a file, so the draft is
+        /// handed over whole as well.
+        case openMail(URL, MailDraft)
+    }
+
+    struct MailDraft {
+        var to: String
+        var subject: String
+        var body: String
+        /// The matter's files the draft or the question names, where they are on this device.
+        var files: [URL] = []
+        /// Named, and not on this device — a mail's attachment never opened here.
+        var missing: [String] = []
+    }
+
+    /// What a draft's card says of its files before it is opened: "Attached: memo.pdf", and what is
+    /// named but not on this device. Nil when the draft names no file of the matter.
+    static func attachmentLine(text: String, question: String?, scope: Matter?) -> String? {
+        let along = attachments(text: text, question: question, scope: scope)
+        var parts: [String] = []
+        if !along.files.isEmpty { parts.append("Attached: " + along.files.map(\.lastPathComponent).joined(separator: ", ")) }
+        if !along.missing.isEmpty { parts.append("Not on this \(ThisDevice.name), attach by hand: " + along.missing.joined(separator: ", ")) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// The files a draft takes along: the matter's files named in it or in what was asked.
+    static func attachments(text: String, question: String?, scope: Matter?) -> (files: [URL], missing: [String]) {
+        var files: [URL] = [], missing: [String] = []
+        for document in DraftAttachments.named(in: [text, question ?? ""], among: scope?.documents ?? []) {
+            let own = document.source.fileURL.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
+            if let file = own ?? MatterFolders.kept(document) { files.append(file) } else { missing.append(document.shownName) }
+        }
+        return (files, missing)
     }
 
     /// A fact by its id, if it is still there. A party merged away or a to-do deleted is gone,
@@ -385,7 +417,8 @@ enum CardActions {
             parts.path = to
             parts.queryItems = [URLQueryItem(name: "subject", value: subject ?? card.subject ?? ""), URLQueryItem(name: "body", value: text)]
             guard let url = parts.url else { return .nothing }
-            return .openMail(url)
+            let along = attachments(text: text, question: question, scope: scope)
+            return .openMail(url, MailDraft(to: to, subject: subject ?? card.subject ?? "", body: text, files: along.files, missing: along.missing))
         case .newMatter:
             guard !text.isEmpty, let matter = try? Matter.make(named: text, in: context) else { return .nothing }
             return .madeMatter(matter, .madeMatter(matter.persistentModelID))

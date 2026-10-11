@@ -166,6 +166,7 @@ struct AssistantColumn: View {
                                              if dismissed { navigation.turns[at].dismissedCards.insert(index) } else { navigation.turns[at].dismissedCards.remove(index) }
                                          },
                                          recipient: { conversation.recipient($0, in: turn) },
+                                         along: { conversation.attachmentLine($0, in: turn) },
                                          again: turn.id == newestQuestion && asking == nil ? { conversation.again(turn, all: matters) } : nil)
                                     .id(turn.id).transition(.opacity)
                             }
@@ -571,6 +572,8 @@ struct TurnView: View {
     var dismiss: (Int, Bool) -> Void = { _, _ in }
     var recipient: (String?) -> (name: String, address: String?)? = { _ in nil }
     /// Asks the same question once more — for the newest question, while nothing else is on its way.
+    /// What a draft with these words takes along.
+    var along: (String) -> String? = { _ in nil }
     var again: (() -> Void)? = nil
     @State private var showsSent = false
     /// The answer's sources, unfolded: one list for the whole answer.
@@ -641,7 +644,7 @@ struct TurnView: View {
                 if !reading || card.kind == .draftMessage {
                     ActionCard(card: card, done: turn.applied.contains(index), refs: turn.refs, open: open, label: label,
                                apply: { apply(index, $0, $1) }, undo: turn.undos[index] == nil ? nil : { undo(index) },
-                               recipient: recipient(card.party),
+                               recipient: recipient(card.party), along: along,
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
             }
@@ -737,6 +740,7 @@ struct ActionCard: View {
     let apply: (String, String?) -> Void
     let undo: (() -> Void)?
     var recipient: (name: String, address: String?)? = nil
+    var along: (String) -> String? = { _ in nil }
     @State private var text: String
     @State private var subject: String
     /// Dismissed, as the thread keeps it.
@@ -763,10 +767,11 @@ struct ActionCard: View {
 
     init(card: AssistantPrompt.Reply.Card, done: Bool, refs: [String: FactRef], open: @escaping (FactRef) -> Void,
          label: @escaping (FactRef) -> String, apply: @escaping (String, String?) -> Void, undo: (() -> Void)?,
-         recipient: (name: String, address: String?)? = nil,
+         recipient: (name: String, address: String?)? = nil, along: @escaping (String) -> String? = { _ in nil },
          dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
         (self.card, self.done, self.refs, self.open, self.label, self.apply, self.undo) = (card, done, refs, open, label, apply, undo)
         self.recipient = recipient
+        self.along = along
         (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
         _text = State(initialValue: card.text)
         _subject = State(initialValue: card.subject ?? "")
@@ -815,6 +820,10 @@ struct ActionCard: View {
                         .cardField()
                         .disabled(done)
                         .help("Change it before taking it in, if it is not quite right")
+                }
+                // A file the draft names goes along: said here, before Mail opens.
+                if card.kind == .draftMessage, let files = along(text) {
+                    Label(files, systemImage: "paperclip").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if card.kind == .sameParty, !done {

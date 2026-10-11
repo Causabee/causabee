@@ -1,6 +1,8 @@
 import MatterCore
+import MessageUI
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The assistant's thread, one with the Mac's, over a matter: that matter's part of it. Asked here,
 /// a question goes out disguised by the Mac's own list of names — the copy the Mac put into the
@@ -770,6 +772,10 @@ struct PhoneActionCard: View {
                     .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
                     .disabled(done)
             }
+            // A file the draft names goes along: said here, before Mail opens.
+            if card.kind == .draftMessage, let files = CardActions.attachmentLine(text: text, question: turn.question, scope: scope) {
+                Label(files, systemImage: "paperclip").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if card.kind == .sameParty, !done {
                 Text("Later you can only turn merging off for new mail; you cannot split it again.")
@@ -907,9 +913,10 @@ struct PhoneActionCard: View {
                                  question: turn.question, mail: mailInHand, in: context) {
         case .nothing:
             return
-        case .openMail(let url):
+        case .openMail(let url, let draft):
             Haptics.tap()
-            openURL(url)
+            // With a file to take along, the system's own mail sheet: it attaches what it is handed.
+            if !MailSheet.open(draft) { openURL(url) }
             // Opened again from the small box: it stays small. Edited and opened: it folds.
             if editingDraft { step { editingDraft = false } }
             // The version opened is the one kept: the thread remembers what went to Mail.
@@ -1008,5 +1015,37 @@ struct PhoneActionCard: View {
             return "\(name(card.todo))  →  \(when)"
         case .changeOwner: return name(card.todo)
         }
+    }
+}
+
+/// The system's mail sheet, for a draft that takes files along: a `mailto:` cannot carry one. Shown
+/// over whatever is on screen; the owner sends it there, or not.
+@MainActor
+final class MailSheet: NSObject, MFMailComposeViewControllerDelegate {
+    private static let shared = MailSheet()
+
+    /// False when there is nothing to attach, or no mail account is set up in Mail: then the draft
+    /// is opened the old way.
+    static func open(_ draft: CardActions.MailDraft) -> Bool {
+        guard !draft.files.isEmpty, MFMailComposeViewController.canSendMail() else { return false }
+        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first { $0.activationState == .foregroundActive }
+        guard var top = scene?.keyWindow?.rootViewController else { return false }
+        while let over = top.presentedViewController { top = over }
+        let mail = MFMailComposeViewController()
+        mail.mailComposeDelegate = shared
+        if !draft.to.isEmpty { mail.setToRecipients([draft.to]) }
+        mail.setSubject(draft.subject)
+        mail.setMessageBody(draft.body, isHTML: false)
+        for file in draft.files {
+            guard let data = FolderImport.data(of: file) else { continue }
+            let type = UTType(filenameExtension: file.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+            mail.addAttachmentData(data, mimeType: type, fileName: file.lastPathComponent)
+        }
+        top.present(mail, animated: true)
+        return true
+    }
+
+    nonisolated func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+        Task { @MainActor in controller.dismiss(animated: true) }
     }
 }

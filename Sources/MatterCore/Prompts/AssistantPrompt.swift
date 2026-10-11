@@ -85,7 +85,9 @@ public enum AssistantPrompt {
     to, `subject` its subject, `text` the whole message, ready to send: in the language and the \
     tone of the mail with that party, from the facts only, signed with the owner's name. It is \
     opened in the owner's mail program; the owner sends it, never you. When the owner asks for a \
-    mail, this card is the answer, and the lines only say what it contains.
+    mail, this card is the answer, and the lines only say what it contains. A file of the matter \
+    that the owner wants sent along is attached by the app when the draft names it by its exact \
+    file name: name it in `text`, and do not say that it cannot be attached.
     - `short_message`: the owner asks for a short message to send in a chat — WhatsApp, Signal, \
     iMessage, SMS, Slack, "a short message to …", "text her that …". `party` is who it goes to, \
     `text` the whole message as it would be typed into the chat: short, in the language and the \
