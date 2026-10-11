@@ -28,13 +28,15 @@ IMG = OUT / "img"
 # The screenshots are 2880 × 1800: a 1440-point window at 2x, every pixel kept, so the website's
 # pictures are as sharp as the app on a Retina screen. Each crop is (left, top, right, bottom); the
 # animations in site/index.html measure the same parts in the older 1800-wide pixels (× 1.6 here).
+# Since Beta 53 the matter's name stands 36 points lower at rest, and with it the page: the crops
+# of a page at its top are 36 lower than they were.
 # The matter's column is the window's second, from 542 to 1986 of 2880; the assistant's the third.
 CROPS = {
     "matter-phone": ("intro-2", (568, 0, 1960, 1547)),
-    "tasks": ("intro-3", (544, 460, 1984, 1300)),
-    "calendar": ("intro-3", (552, 1216, 1560, 1800)),
+    "tasks": ("intro-3", (544, 496, 1984, 1336)),
+    "calendar": ("intro-3", (552, 1252, 1560, 1836)),
     "files": ("intro-4", (544, 140, 1984, 980)),
-    "sources": ("intro-5", (544, 1040, 1984, 1736)),
+    "sources": ("intro-5", (544, 1104, 1984, 1800)),
     "assistant": ("intro-5", (1990, 56, 2878, 894)),
 }
 FULL = {"overview": "intro-1", "matter": "intro-2", "care": "intro-5"}
@@ -63,7 +65,12 @@ def screenshots():
         webp(image, f"{name}-2880")
         webp(image.resize((1440, 900), Image.LANCZOS), f"{name}-1440")
     for name, (source, box) in CROPS.items():
-        image = Image.open(SHOTS / f"{source}.png").convert("RGB").crop(box)
+        shot = Image.open(SHOTS / f"{source}.png").convert("RGB")
+        image = shot.crop(box)
+        # A crop that runs past the picture's lower edge is the page's white there, not black.
+        if box[3] > shot.height:
+            over = box[3] - shot.height
+            image.paste((255, 255, 255), (0, image.height - over, image.width, image.height))
         if rows := CLEAR_TOP.get(name):
             image.paste(image.getpixel((image.width // 2, rows + 4)), (0, 0, image.width, rows))
         webp(image, name)
