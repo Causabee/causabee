@@ -906,6 +906,9 @@ struct MatterStatusView: View {
     /// assistant put away, and then under the window's controls.
     @State private var barLeft: CGFloat = 400
 
+    /// How far under the window's top line the name stands while the page is at its top.
+    private static let restRoom: CGFloat = 36
+
     private func titleBar(_ status: MatterStatus) -> some View {
         // Once the page has gone up under it, the bar is a bar: one line high, the name small in
         // it. The large name with the count under it, on glass over the page, stood squeezed.
@@ -1022,6 +1025,11 @@ struct MatterStatusView: View {
         // the padding gives back — at a fifth larger the name sat three points under the controls.
         .padding(.top, 7 - 16.5 * (Theme.textScale - 1))
         .padding(.bottom, 12)
+        // At rest the name stands a good way into the page, under the window's top line; scrolled,
+        // it goes up onto that line. Moved, not laid out anew: the bar keeps its room, and the page
+        // under it does not jump.
+        .padding(.top, Self.restRoom)
+        .offset(y: scrolledUnder ? -Self.restRoom : 0)
         .frame(maxWidth: 820, alignment: .leading)
         // Only a real move counts. The padding above comes from this edge, and in a column of a
         // width between two pixels — the window's 61.8 percent — the edge answers the padding by
@@ -1036,12 +1044,14 @@ struct MatterStatusView: View {
                 Rectangle().fill(.ultraThinMaterial)
                     .overlay(alignment: .bottom) { Divider() }
                     .frame(height: compact && !showsParts ? WindowMetrics.topLine : nil)
+                    // With the parts in it, it ends where they end: the room the name left is the page's.
+                    .padding(.bottom, compact && !showsParts ? 0 : Self.restRoom)
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { barEdge = $0 }
         // The parts in the page reach the place the bar has for them — twelve over its lower edge —
         // and are in the bar from there: they stay where they have come to.
-        .onChange(of: partsEdge < barEdge - 11) { _, under in
+        .onChange(of: partsEdge < barEdge - 11 - Self.restRoom) { _, under in
             withAnimation(.easeOut(duration: 0.15)) { partsUnder = under && scrolledUnder }
         }
         .onChange(of: scrolledUnder) { _, under in if !under { partsUnder = false } }

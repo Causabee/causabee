@@ -50,8 +50,9 @@ final class ToolbarTests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.8)
         let controls = thing("window.controls").frame, name = thing("matter.title").frame
         XCTAssertGreaterThanOrEqual(name.minX, controls.maxX + 8, "\(state): the matter's name begins under the window's controls.")
-        // By its first line: a long name in a narrow column runs on under it.
-        XCTAssertEqual(name.minY + 18, controls.midY, accuracy: 6, "\(state): the matter's name is not on the line of the window's controls.")
+        // By its first line: a long name in a narrow column runs on under it. With the page at its
+        // top the name stands 36 under the controls' line; it goes up onto it when the page scrolls.
+        XCTAssertEqual(name.minY + 18, controls.midY + 36, accuracy: 6, "\(state): the matter's name is not where it stands with the page at its top.")
     }
 
     private var field: XCUIElement { app.textFields.matching(NSPredicate(format: "placeholderValue BEGINSWITH %@", "Ask about")).firstMatch }
