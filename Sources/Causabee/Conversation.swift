@@ -313,6 +313,11 @@ struct Conversation {
                               scope: turn.matter.flatMap { live($0, as: Matter.self) }, in: context)
     }
 
+    /// What a draft of this turn would take along, said on its card.
+    func attachmentLine(_ text: String, in turn: Navigation.Turn) -> String? {
+        CardActions.attachmentLine(text: text, question: turn.question, scope: turn.matter.flatMap { live($0, as: Matter.self) })
+    }
+
     /// A card the owner ticked: what it does is CardActions' — the same on the iPhone; the turn
     /// keeps that it was taken in, and how to take it back.
     func apply(_ index: Int, text: String, subject: String? = nil, in turn: Navigation.Turn) {
@@ -327,8 +332,16 @@ struct Conversation {
                                  question: turn.question, mail: turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil }, in: context) {
         case .nothing:
             return
-        case .openMail(let url):
-            NSWorkspace.shared.open(url)
+        case .openMail(let url, let draft):
+            // With a file to take along, the draft goes to the mail program as a whole — it attaches
+            // what it is handed; a `mailto:` cannot. Without one, as before.
+            if !draft.files.isEmpty, let mail = NSSharingService(named: .composeEmail) {
+                if !draft.to.isEmpty { mail.recipients = [draft.to] }
+                mail.subject = draft.subject
+                mail.perform(withItems: [draft.body as NSString] + draft.files.map { $0 as NSURL })
+            } else {
+                NSWorkspace.shared.open(url)
+            }
             // The version opened is the one kept: the thread remembers what went to Mail.
             if case .answered(var kept) = navigation.turns[position].state {
                 kept.reply.cards[index].text = text.trimmingCharacters(in: .whitespacesAndNewlines)

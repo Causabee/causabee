@@ -122,6 +122,35 @@ struct AssistantColumn: View {
             }
     }
 
+    /// Measuring, in the demo only — `--demo --long-thread 60 [--page 30] --measure-out <file>`: the
+    /// demo's answer many times over, the thread glided from its end to its beginning and back, and
+    /// how the frames came written to the file: how many, and how late the late ones were.
+    private func measure(with scroller: ScrollViewProxy) async {
+        let arguments = CommandLine.arguments
+        func value(_ name: String) -> String? { arguments.firstIndex(of: name).flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil } }
+        guard DemoData.isRequested, let count = value("--long-thread").flatMap({ Int($0) }), let out = value("--measure-out") else { return }
+        try? await Task.sleep(for: .seconds(4))
+        guard let seed = shown.last(where: { $0.shot == nil }) else { return }
+        for step in 1..<count {
+            var copy = seed
+            copy.id = UUID()
+            copy.date = seed.date.addingTimeInterval(Double(step))
+            navigation.turns.append(copy)
+        }
+        showsNewest = value("--page").flatMap { Int($0) } ?? Self.page
+        try? await Task.sleep(for: .seconds(4))
+        let ids = laidOut.map(\.id)
+        guard let first = ids.first, let last = ids.last else { return }
+        let meter = FrameMeter()
+        meter.start()
+        for target in [first, last, first, last] {
+            withAnimation(.linear(duration: 2.5)) { scroller.scrollTo(target, anchor: .top) }
+            try? await Task.sleep(for: .seconds(2.7))
+        }
+        let report = "turns laid out: \(ids.count) of \(shown.count) shown, \(navigation.turns.count) in all, page \(showsNewest)\n" + meter.stop()
+        try? report.write(toFile: out, atomically: true, encoding: .utf8)
+    }
+
     private var column: some View {
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
@@ -166,6 +195,7 @@ struct AssistantColumn: View {
                                              if dismissed { navigation.turns[at].dismissedCards.insert(index) } else { navigation.turns[at].dismissedCards.remove(index) }
                                          },
                                          recipient: { conversation.recipient($0, in: turn) },
+                                         along: { conversation.attachmentLine($0, in: turn) },
                                          again: turn.id == newestQuestion && asking == nil ? { conversation.again(turn, all: matters) } : nil)
                                     .id(turn.id).transition(.opacity)
                             }
@@ -184,6 +214,7 @@ struct AssistantColumn: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .safeAreaInset(edge: .top, spacing: 0) { header }
+                .task { await measure(with: scroller) }
                 // With the sidebar folded away, the window's buttons sit over the thread: it fades
                 // out under them — the page's own colour on top, thinning to nothing below their line.
                 .softTopEdge()
@@ -200,19 +231,10 @@ struct AssistantColumn: View {
                 // What happens to the thread is told to the placement, which decides where it goes.
                 .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in placement.room(height, with: scroller) }
                 .onScrollPhaseChange { old, new, context in placement.finger(from: old, to: new, at: context.geometry.contentOffset.y) }
-                .overlay(alignment: .bottom) {
-                    // Away from the newest: the way back — and "New answer", when one came meanwhile.
-                    if placement.offersButton {
-                        let newAnswer = placement.newAnswer != nil
-                        Button { placement.button(newestID, with: scroller) } label: { ToNewestLabel(newAnswer: newAnswer) }
-                            .buttonStyle(.plain)
-                            .help(newAnswer ? "To the new answer" : "To the newest")
-                            .accessibilityIdentifier("thread.toNewest")
-                            .padding(.bottom, 10)
-                            .transition(.opacity)
-                    }
-                }
-                .animation(.easeOut(duration: 0.15), value: placement.offersButton)
+                // A view of its own: it alone is drawn again when the thread leaves its newest or comes
+                // back to it. Read here, every turn of the thread was drawn again at those moments —
+                // a tenth of a second each time, in the middle of a scroll.
+                .overlay(alignment: .bottom) { ToNewestButton(placement: placement, newest: newestID, scroller: scroller) }
                 // Shown, and another matter opened beside it.
                 .onAppear { placement.opened(newestID, with: scroller) }
                 .onChange(of: navigation.place) {
@@ -570,6 +592,8 @@ struct TurnView: View {
     let undo: (Int) -> Void
     var dismiss: (Int, Bool) -> Void = { _, _ in }
     var recipient: (String?) -> (name: String, address: String?)? = { _ in nil }
+    /// What a draft with these words takes along.
+    var along: (String) -> String? = { _ in nil }
     /// Asks the same question once more — for the newest question, while nothing else is on its way.
     var again: (() -> Void)? = nil
     @State private var showsSent = false
@@ -641,7 +665,7 @@ struct TurnView: View {
                 if !reading || card.kind == .draftMessage {
                     ActionCard(card: card, done: turn.applied.contains(index), refs: turn.refs, open: open, label: label,
                                apply: { apply(index, $0, $1) }, undo: turn.undos[index] == nil ? nil : { undo(index) },
-                               recipient: recipient(card.party),
+                               recipient: recipient(card.party), along: along,
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
             }
@@ -737,6 +761,7 @@ struct ActionCard: View {
     let apply: (String, String?) -> Void
     let undo: (() -> Void)?
     var recipient: (name: String, address: String?)? = nil
+    var along: (String) -> String? = { _ in nil }
     @State private var text: String
     @State private var subject: String
     /// Dismissed, as the thread keeps it.
@@ -763,10 +788,11 @@ struct ActionCard: View {
 
     init(card: AssistantPrompt.Reply.Card, done: Bool, refs: [String: FactRef], open: @escaping (FactRef) -> Void,
          label: @escaping (FactRef) -> String, apply: @escaping (String, String?) -> Void, undo: (() -> Void)?,
-         recipient: (name: String, address: String?)? = nil,
+         recipient: (name: String, address: String?)? = nil, along: @escaping (String) -> String? = { _ in nil },
          dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
         (self.card, self.done, self.refs, self.open, self.label, self.apply, self.undo) = (card, done, refs, open, label, apply, undo)
         self.recipient = recipient
+        self.along = along
         (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
         _text = State(initialValue: card.text)
         _subject = State(initialValue: card.subject ?? "")
@@ -815,6 +841,10 @@ struct ActionCard: View {
                         .cardField()
                         .disabled(done)
                         .help("Change it before taking it in, if it is not quite right")
+                }
+                // A file the draft names goes along: said here, before Mail opens.
+                if card.kind == .draftMessage, let files = along(text) {
+                    Label(files, systemImage: "paperclip").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if card.kind == .sameParty, !done {
@@ -1115,3 +1145,55 @@ struct FlowRow: Layout {
     }
 }
 
+
+/// Counts the frames the main thread is in time for, by the screen's own clock: a frame's callback
+/// that comes late is a frame the thread could not keep.
+@MainActor
+final class FrameMeter: NSObject {
+    private var link: CADisplayLink?
+    private var last: CFTimeInterval = 0
+    private var gaps: [Double] = []
+
+    func start() {
+        link = NSScreen.main?.displayLink(target: self, selector: #selector(tick(_:)))
+        link?.add(to: .main, forMode: .common)
+    }
+
+    @objc private func tick(_ link: CADisplayLink) {
+        if last > 0 { gaps.append((link.timestamp - last) * 1000) }
+        last = link.timestamp
+    }
+
+    func stop() -> String {
+        link?.invalidate()
+        guard !gaps.isEmpty else { return "no frames" }
+        let sorted = gaps.sorted()
+        let usual = sorted[sorted.count / 2]
+        let late = gaps.filter { $0 > usual * 1.5 }
+        return String(format: "frames: %d\nusual gap: %.1f ms\np95: %.1f ms\nworst: %.1f ms\nlate frames (over 1.5 × usual): %d, %.0f%%\ntime lost to late frames: %.0f ms of %.0f",
+                      gaps.count, usual, sorted[Int(Double(sorted.count) * 0.95)], sorted.last ?? 0, late.count,
+                      100 * Double(late.count) / Double(gaps.count), late.reduce(0) { $0 + $1 - usual }, gaps.reduce(0, +))
+    }
+}
+
+/// Away from the newest: the way back — and "New answer", when one came meanwhile.
+private struct ToNewestButton: View {
+    let placement: ThreadPlacement
+    let newest: AnyHashable?
+    let scroller: ScrollViewProxy
+
+    var body: some View {
+        ZStack {
+            if placement.offersButton {
+                let newAnswer = placement.newAnswer != nil
+                Button { placement.button(newest, with: scroller) } label: { ToNewestLabel(newAnswer: newAnswer) }
+                    .buttonStyle(.plain)
+                    .help(newAnswer ? "To the new answer" : "To the newest")
+                    .accessibilityIdentifier("thread.toNewest")
+                    .padding(.bottom, 10)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeOut(duration: 0.15), value: placement.offersButton)
+    }
+}
