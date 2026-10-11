@@ -32,6 +32,8 @@ struct MatterStatusView: View {
     /// out again if it is left without words.
     @State private var newTodo: Todo?
     @State private var addingFile = false
+    /// What a folder brought in came to: "12 files added · 3 already here".
+    @State private var filesSaid: String?
     /// The owner's reminders, read when the matter opens and again when Reminders changes.
     @State private var reminders: [Calendars.Reminder] = []
     @State private var calendarTick = 0
@@ -485,10 +487,11 @@ struct MatterStatusView: View {
                     SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
                                   + (hidden.isEmpty ? "" : " · \(hidden.count) hidden")
                                   + (small.isEmpty ? "" : " · \(small.count) small \(small.count == 1 ? "image" : "images")"))
+                    if let filesSaid { Text(filesSaid).font(.caption).foregroundStyle(.secondary).transition(.opacity) }
                     if !all.isEmpty {
                         Button { addingFile = true } label: { Label("File", systemImage: "plus") }
                             .buttonStyle(.borderless).font(.caption)
-                            .help("Add a PDF, a scan or any file from this Mac — or drag it onto the matter")
+                            .help("Add a PDF, a scan, any file or a whole folder from this Mac — or drag it onto the matter")
                     }
                     if MatterFolders.root != nil {
                         Button { if let folder = MatterFolders.folder(for: matter) { try? context.save(); FolderSaver.reveal(folder) } } label: {
@@ -499,11 +502,11 @@ struct MatterStatusView: View {
                         .help("This matter's folder in iCloud Drive → Causabee")
                     }
                 }
-                .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
+                .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
                     if case .success(let files) = result { addFiles(files) }
                 }
                 if all.isEmpty {
-                    EmptyBox(text: "A letter, a scan, a PDF — or drag it here from the Finder. Files in mail come by themselves.",
+                    EmptyBox(text: "A letter, a scan, a PDF, a whole folder — or drag it here from the Finder. Files in mail come by themselves.",
                              action: "Add File", symbol: "doc.badge.plus") { addingFile = true }
                 }
                 if !shown.isEmpty {
@@ -534,25 +537,22 @@ struct MatterStatusView: View {
         }
     }
 
-    /// Files from this Mac, copied in beside the store so they stay when the originals move, each
-    /// a file of the matter — and into its iCloud Drive folder, when there is one.
+    /// Files from this Mac — and every file in a folder picked or dropped, however deep — copied in
+    /// beside the store so they stay when the originals move, each a file of the matter — and into
+    /// its iCloud Drive folder, when there is one. What is here already is left out.
     private func addFiles(_ files: [URL]) {
         let folder = ScreenshotDoor.attachments(besides: navigation.store)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        for file in files {
-            let scoped = file.startAccessingSecurityScopedResource()
-            defer { if scoped { file.stopAccessingSecurityScopedResource() } }
-            let target = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + file.lastPathComponent)
-            guard (try? FileManager.default.copyItem(at: file, to: target)) != nil else { continue }
-            let size = (try? target.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-            let type = UTType(filenameExtension: file.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
-            let source = Source(kind: .document, pointer: target.path, messageID: "file-" + UUID().uuidString, date: Date())
-            let document = MatterCore.Document(name: file.lastPathComponent, contentType: type, byteCount: size, source: source)
-            context.insert(document)
-            document.matter = matter
+        let result = FolderImport.add(files, to: matter, context: context) { file, name in
+            let target = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name)
+            return (try? FileManager.default.copyItem(at: file, to: target)) != nil ? target : nil
         }
         try? context.save()
         FolderSaver.shared.save([matter])
+        filesSaid = result.said
+        let said = filesSaid
+        // Said for a while, then gone — unless something newer is said by then.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { if filesSaid == said { filesSaid = nil } }
     }
 
     // MARK: Calendar and Reminders

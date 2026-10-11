@@ -363,6 +363,8 @@ struct PlusItems: View {
         Button("File", systemImage: "doc") { picksFile = true }
         // A letter on the table: scanned with the camera, named and kept among the matter's files.
         item("Scan a document", "doc.viewfinder", .scan)
+        // As the Mac's "Add File …": files, or every file of a folder, kept as they are — not read, nothing sent.
+        item("Files or a folder", "folder", .files)
         Divider()
         item("Contact", "person.badge.plus", .contact)
         item("Detail", "info.circle", .detail)
@@ -484,6 +486,7 @@ struct MatterChooser: View {
     private var title: String {
         switch plus {
         case .scan: "Scan for which matter?"
+        case .files: "Files for which matter?"
         case .contact: "Contact for which matter?"
         case .detail: "Detail for which matter?"
         case .link: "Link for which matter?"

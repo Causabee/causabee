@@ -40,6 +40,9 @@ struct MatterScreen: View {
     @State private var addingDetail = false
     @State private var addingLink = false
     @State private var addingScan = false
+    @State private var addingFiles = false
+    /// What files or a folder brought in came to: "12 files added · 3 already here".
+    @State private var filesSaid: String?
     /// The parts in the page have scrolled under the bar, which shows them then.
     @State private var partsUnder = false
     /// The matter written out as a document, and why it could not be.
@@ -189,10 +192,26 @@ struct MatterScreen: View {
                 case .detail: addingDetail = true
                 case .link: addingLink = true
                 case .scan: addingScan = true
+                case .files: addingFiles = true
                 }
             }
         }
         .sheet(isPresented: $addingScan, onDismiss: { part = .record; filter = .files }) { ScanSheet(matter: matter) }
+        // Files, or a folder with all that is in it: each a file of the matter, as on the Mac.
+        .fileImporter(isPresented: $addingFiles, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
+            guard case .success(let picked) = result else { return }
+            let result = FolderImport.add(picked, to: matter, context: context) { file, name in
+                (try? Data(contentsOf: file)).flatMap { PhoneShots.shared.keep($0, named: name) }
+            }
+            try? context.save()
+            PhoneFolderSaver.save([matter])
+            part = .record
+            filter = .files
+            filesSaid = result.said
+        }
+        .alert(filesSaid ?? "", isPresented: Binding(get: { filesSaid != nil }, set: { if !$0 { filesSaid = nil } })) {
+            Button("OK", role: .cancel) { filesSaid = nil }
+        }
         .sheet(isPresented: $addingContact, onDismiss: { part = .people }) { ContactEditor(matter: matter) }
         .sheet(isPresented: $addingDetail, onDismiss: { part = .record; filter = .details }) { DetailEditor(matter: matter) }
         .sheet(isPresented: $addingLink, onDismiss: { part = .record; filter = .links }) {

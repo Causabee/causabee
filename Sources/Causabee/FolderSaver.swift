@@ -16,6 +16,9 @@ final class FolderSaver {
     private var waiting: [Matter] = []
 
     func save(_ matters: [Matter]) {
+        // The demo's made-up matters stay in the demo: not into the owner's folder, and no asking
+        // the Keychain for the mail's password.
+        guard !DemoData.isRequested else { return }
         guard MatterFolders.root != nil, !matters.isEmpty else { return }
         guard busy == nil else { waiting += matters.filter { new in !waiting.contains { $0 === new } }; return }
         let account = Keychain.accounts().first
