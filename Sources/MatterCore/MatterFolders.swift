@@ -182,6 +182,9 @@ public enum MatterFolders {
     /// on every device — counted by their mails' ids, not by which came first here.
     public static func place(for document: Document, in folder: URL) -> URL {
         let name = stamp(document.source.date) + document.name.replacingOccurrences(of: "/", with: "-")
+        // Asked first: only a mail's file can have a twin, and looking for one goes through every
+        // file of the matter — for each of three hundred files brought in, a third of a second.
+        guard !document.isOwnFile, !document.isHidden else { return folder.appendingPathComponent(name) }
         let twins = (document.matter?.documents ?? [])
             .filter { !$0.isHidden && !$0.isOwnFile && $0.name == document.name && stamp($0.source.date) == stamp(document.source.date) }
             .map(\.messageID)
@@ -219,6 +222,10 @@ public enum MatterFolders {
         }
     }
 
+    private nonisolated static func copied(_ file: URL, to target: URL) async -> Bool {
+        await Task.detached(priority: .utility) { (try? FileManager.default.copyItem(at: file, to: target)) != nil }.value
+    }
+
     public struct Result: Sendable {
         public var saved = 0
         public var already = 0
@@ -234,17 +241,22 @@ public enum MatterFolders {
         var client: IMAPClient?
         defer { if let client { Task { await client.logout() } } }
         let jobs = matters.flatMap { matter in wanted(matter).map { (matter, $0) } }
+        // Each matter's folder is asked for once — asking makes it if it is missing — and a file is
+        // copied off the main thread: a folder of three hundred brought in stood the window still.
+        // By the matter itself: a matter not saved yet gets another identifier when it is.
+        var folders: [ObjectIdentifier: URL] = [:]
+        for matter in matters { folders[ObjectIdentifier(matter)] = folder(for: matter) }
         for matter in matters {
-            guard let folder = folder(for: matter) else { continue }
+            guard let folder = folders[ObjectIdentifier(matter)] else { continue }
             for (file, name) in dropped(matter) {
                 let target = folder.appendingPathComponent(name)
                 if FileManager.default.fileExists(atPath: target.path) { result.already += 1; continue }
-                if (try? FileManager.default.copyItem(at: file, to: target)) != nil { result.saved += 1 } else { result.failed.append(name) }
+                if await copied(file, to: target) { result.saved += 1 } else { result.failed.append(name) }
             }
         }
         for (index, (matter, document)) in jobs.enumerated() {
             progress(index + 1, jobs.count)
-            guard let folder = folder(for: matter) else { continue }
+            guard let folder = folders[ObjectIdentifier(matter)] else { continue }
             let target = place(for: document, in: folder)
             if FileManager.default.fileExists(atPath: target.path) { result.already += 1; continue }
             // A file the owner dropped in is copied as it is — unless it was saved already, before it
@@ -253,7 +265,7 @@ public enum MatterFolders {
                 guard let file = document.source.fileURL else { result.failed.append(document.name); continue }
                 let before = folder.appendingPathComponent(stamp(document.source.date) + file.lastPathComponent)
                 if FileManager.default.fileExists(atPath: before.path) { result.already += 1; continue }
-                if (try? FileManager.default.copyItem(at: file, to: target)) != nil { result.saved += 1 } else { result.failed.append(document.name) }
+                if await copied(file, to: target) { result.saved += 1 } else { result.failed.append(document.name) }
                 continue
             }
             var data: Data?

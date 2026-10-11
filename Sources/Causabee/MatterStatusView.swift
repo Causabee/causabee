@@ -133,10 +133,10 @@ struct MatterStatusView: View {
                             // with the parts above it out of sight — and the ones in the bar stay.
                             // The bar that is seen ends above the room it keeps: the part goes up
                             // to there, by a mark that far into it, and is tall enough to.
-                            .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 24 + Self.restRoom), alignment: .topLeading)
+                            .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 24 + given), alignment: .topLeading)
                             .overlay(alignment: .top) {
                                 VStack(spacing: 0) {
-                                    Color.clear.frame(height: Self.restRoom)
+                                    Color.clear.frame(height: given)
                                     Color.clear.frame(height: 0).id("partTop")
                                 }
                                 .allowsHitTesting(false)
@@ -917,6 +917,13 @@ struct MatterStatusView: View {
 
     /// How far under the window's top line the name stands while the page is at its top.
     private static let restRoom: CGFloat = 36
+    /// How much taller than one line the name is: a long name runs onto a second line, which the
+    /// bar does not keep once the page is under it.
+    @State private var nameHeight = CGFloat.zero
+    @State private var oneLine = CGFloat.zero
+    private var nameExtra: CGFloat { oneLine > 0 ? max(0, nameHeight - oneLine) : 0 }
+    /// What the bar gives up when the page goes under it: the room on top, and the name's further lines.
+    private var given: CGFloat { Self.restRoom + nameExtra }
 
     private func titleBar(_ status: MatterStatus) -> some View {
         // Once the page has gone up under it, the bar is a bar: one line high, the name small in
@@ -960,10 +967,19 @@ struct MatterStatusView: View {
                     // and what stands on that line with it, do not move when the small one comes.
                     Text(matter.name).font(Theme.titleFont)
                         .opacity(compact ? 0 : 1)
-                        .overlay(alignment: .leading) {
+                        // Its height against one line's, measured beside it.
+                        .background(alignment: .topLeading) {
+                            Text(" ").font(Theme.titleFont).hidden()
+                                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { oneLine = $0 }
+                        }
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { nameHeight = $0 }
+                        // On the large name's first line, in its middle: a name of two lines has
+                        // its own middle a line lower, and the small one hung out under the bar.
+                        .overlay(alignment: .topLeading) {
                             Text(matter.name).font(.custom("Source Serif 4", size: 18 * Theme.textScale, relativeTo: .title3))
                                 .lineLimit(1)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .padding(.top, 5 * Theme.textScale)
                                 .opacity(compact ? 1 : 0)
                                 .accessibilityHidden(true)
                         }
@@ -1026,6 +1042,8 @@ struct MatterStatusView: View {
                 .opacity(showsParts || compact ? 0 : 1)
                 parts(status).opacity(showsParts ? 1 : 0).allowsHitTesting(showsParts).accessibilityHidden(!showsParts)
             }
+            // Under the small name, which is one line: up by what a longer name's further lines took.
+            .offset(y: scrolledUnder ? -nameExtra : 0)
         }
         // One row with the window's buttons and Causabee's controls by them: where this page is the
         // window's first column, its name begins after the bee, not under it. The cards keep the margin.
@@ -1056,13 +1074,13 @@ struct MatterStatusView: View {
                     .overlay(alignment: .bottom) { Divider() }
                     .frame(height: compact && !showsParts ? WindowMetrics.topLine : nil)
                     // With the parts in it, it ends where they end: the room the name left is the page's.
-                    .padding(.bottom, compact && !showsParts ? 0 : Self.restRoom)
+                    .padding(.bottom, compact && !showsParts ? 0 : given)
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { barEdge = $0 }
         // The parts in the page reach the place the bar has for them — twelve over its lower edge —
         // and are in the bar from there: they stay where they have come to.
-        .onChange(of: partsEdge < barEdge - 11 - Self.restRoom) { _, under in
+        .onChange(of: partsEdge < barEdge - 11 - given) { _, under in
             withAnimation(.easeOut(duration: 0.15)) { partsUnder = under && scrolledUnder }
         }
         .onChange(of: scrolledUnder) { _, under in if !under { partsUnder = false } }
