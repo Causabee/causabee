@@ -962,13 +962,18 @@ struct PartTabs<Value: Hashable>: View {
     let tabs: [Tab]
     @Binding var selection: Value
     #if os(iOS)
-    private let height: CGFloat = 44, sign: CGFloat = 17, fills = true
+    // The open pill takes the room that is left, as in Mail — in a row no wider than a phone's: on
+    // an iPad's wide page a pill across all of it is a bar, not a pill.
+    private let fills = true
+    private let most: CGFloat? = 400
+    private let height: CGFloat = 44, sign: CGFloat = 17
     private let word = Font.subheadline.weight(.semibold)
     #else
     // On the Mac the open pill is as wide as its word, no wider: stretched to fill a row it looked
     // heavy there (tried, and taken back the same day).
     private let height: CGFloat = 32, sign: CGFloat = 14, fills = false
     private let word = Font.callout.weight(.semibold)
+    private let most: CGFloat? = nil
     #endif
 
     var body: some View {
@@ -1001,6 +1006,7 @@ struct PartTabs<Value: Hashable>: View {
                 .accessibilityIdentifier("part." + tab.title)
             }
         }
+        .frame(maxWidth: most, alignment: .leading)
         // The pills and the words move; the page under them changes at once, as before.
         .animation(.spring(response: 0.34, dampingFraction: 0.82), value: selection)
         .accessibilityElement(children: .contain)
