@@ -131,7 +131,16 @@ struct MatterStatusView: View {
                             }
                             // As tall as the page shows, so its top can stand right under the title bar
                             // with the parts above it out of sight — and the ones in the bar stay.
-                            .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 24), alignment: .topLeading)
+                            // The bar that is seen ends above the room it keeps: the part goes up
+                            // to there, by a mark that far into it, and is tall enough to.
+                            .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 24 + Self.restRoom), alignment: .topLeading)
+                            .overlay(alignment: .top) {
+                                VStack(spacing: 0) {
+                                    Color.clear.frame(height: Self.restRoom)
+                                    Color.clear.frame(height: 0).id("partTop")
+                                }
+                                .allowsHitTesting(false)
+                            }
                             .id("part")
                         }
                     }
@@ -144,7 +153,7 @@ struct MatterStatusView: View {
                 // What the page shows under the title bar: the container's size is already without the bar.
                 .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
                 // Another part chosen in the title bar: it is shown from its start, not from where the last one was read.
-                .onChange(of: part) { if partsUnder { scroller.scrollTo("part", anchor: .top) } }
+                .onChange(of: part) { if partsUnder { scroller.scrollTo("partTop", anchor: .top) } }
                 .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 1 } action: { _, under in
                     withAnimation(.easeOut(duration: 0.15)) { scrolledUnder = under }
                 }
