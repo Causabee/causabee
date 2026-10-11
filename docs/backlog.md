@@ -105,6 +105,17 @@ purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`.
   button ("Add to Private"); check why the made "Matterbee" calendar did not sync — which account
   it was made in (iCloud first, then where the default one is). (2026-10-02)
 
+## Tests
+
+- **An iPhone thread test that loses a race.** `ThreadTests.testAThreadBeingReadStaysAndSaysAnAnswerCame`
+  has to scroll the thread back before the demo's answer comes; on a slow or just-started
+  simulator the answer is there first, the button never says "To the new answer", and the test
+  fails though the app is right. It failed twice in a row on 2026-10-11 and build 53 went to
+  TestFlight without the simulator tests, by the owner's word. `testALongAnswerIsReadFromItsBeginning`
+  fails now and then the same day and passes run again — not looked into. To do: have the demo
+  hold its answer until the test has scrolled, or give it a longer wait under a test argument;
+  then see whether the second one is the same race. (2026-10-11)
+
 ## Files
 
 - **Pinning a file in the record.** Asked for with the folder import (Beta 52): a matter with
