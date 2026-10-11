@@ -41,6 +41,22 @@ struct PseudonymizerTests {
         }
     }
 
+    @Test("A product read as a person does not lend its last word to every title: “Head of Design System” comes back as it went")
+    func aProductIsNotAPerson() {
+        // Learned now, "Design" is no one's surname.
+        var fresh = Pseudonymizer(mode: .placeholder, entries: [])
+        fresh.learn(.person, "Claude Design")
+        let title = "I'm interviewing for the Head of Design System role."
+        #expect(fresh.restore(fresh.disguiser.apply(title).text) == title)
+        // Learned before, as it stands in a name list made by an earlier version: dropped when the list is read.
+        let old = [Pseudonymizer.Entry(kind: .person, original: "Claude Design", standIn: "[Person SH]"),
+                   Pseudonymizer.Entry(kind: .person, original: "Design", standIn: "[Person SH]", partOf: "Claude Design"),
+                   Pseudonymizer.Entry(kind: .person, original: "Annegret Berger", standIn: "[Person A]"),
+                   Pseudonymizer.Entry(kind: .person, original: "Berger", standIn: "[Person A]", partOf: "Annegret Berger")]
+        #expect(Pseudonymizer.withoutWordsAtTheEnd(old + [Pseudonymizer.Entry(kind: .person, original: "Jan Philipp Possmann", standIn: "[Person B]")])
+            .map(\.original) == ["Annegret Berger", "Berger", "Jan Philipp Possmann"])
+    }
+
     @Test("Stand-ins: what comes back is exactly what went in")
     func roundTrip() {
         let pseudonymizer = learned(.standin, hausverwaltung)
