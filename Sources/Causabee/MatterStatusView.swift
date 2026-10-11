@@ -1002,6 +1002,8 @@ struct MatterStatusView: View {
                     // On the line of the window's controls, as the icon is: their middle eight over
                     // the name's baseline, which is the middle of its capitals.
                     .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 8 * Theme.textScale }
+                    // Always on the window's top line: they do not come down with the name, nor go up with it.
+                    .offset(y: scrolledUnder ? 0 : -Self.restRoom)
                 }
             }
             ZStack(alignment: .leading) {
