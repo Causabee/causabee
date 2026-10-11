@@ -965,8 +965,16 @@ struct PartTabs<Value: Hashable>: View {
     private let height: CGFloat = 44, sign: CGFloat = 17, fills = true
     private let word = Font.subheadline.weight(.semibold)
     #else
-    private let height: CGFloat = 32, sign: CGFloat = 14, fills = false
+    private let height: CGFloat = 32, sign: CGFloat = 14, fills = true
     private let word = Font.callout.weight(.semibold)
+    #endif
+    /// On the Mac the row is as wide as a phone's, not as the page: the open pill takes what the
+    /// others leave, so it slides from part to part as on the iPhone — and the row keeps its width
+    /// whichever part is open.
+    #if os(macOS)
+    private let width: CGFloat? = 340
+    #else
+    private let width: CGFloat? = nil
     #endif
 
     var body: some View {
@@ -999,6 +1007,7 @@ struct PartTabs<Value: Hashable>: View {
                 .accessibilityIdentifier("part." + tab.title)
             }
         }
+        .frame(width: width)
         // The pills and the words move; the page under them changes at once, as before.
         .animation(.spring(response: 0.34, dampingFraction: 0.82), value: selection)
         .accessibilityElement(children: .contain)
