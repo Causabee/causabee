@@ -907,7 +907,13 @@ struct MatterStatusView: View {
     @State private var barLeft: CGFloat = 400
 
     private func titleBar(_ status: MatterStatus) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        // Once the page has gone up under it, the bar is a bar: one line high, the name small in
+        // it. The large name with the count under it, on glass over the page, stood squeezed.
+        let compact = scrolledUnder && !renaming
+        // Once the parts in the page have gone under this bar, they stay at hand here — in the place
+        // of the count, so the bar keeps its height and the page under it does not jump.
+        let showsParts = partsUnder && !find.isActive && !renaming
+        return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 // The matter's icon: a click chooses another.
                 Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 30) }
@@ -938,7 +944,17 @@ struct MatterStatusView: View {
                     Button("Save", action: rename).keyboardShortcut(.defaultAction)
                     Button("Cancel") { renaming = false }
                 } else {
+                    // The large name keeps its place when it is not seen: the line it stands on,
+                    // and what stands on that line with it, do not move when the small one comes.
                     Text(matter.name).font(Theme.titleFont)
+                        .opacity(compact ? 0 : 1)
+                        .overlay(alignment: .leading) {
+                            Text(matter.name).font(.custom("Source Serif 4", size: 18 * Theme.textScale, relativeTo: .title3))
+                                .lineLimit(1)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .opacity(compact ? 1 : 0)
+                                .accessibilityHidden(true)
+                        }
                         .accessibilityIdentifier("matter.title")
                         .onTapGesture(perform: startRenaming)
                         .pointerStyle(.horizontalText)
@@ -985,9 +1001,6 @@ struct MatterStatusView: View {
                     .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 8 * Theme.textScale }
                 }
             }
-            // Once the parts in the page have gone under this bar, they stay at hand here — in the place
-            // of the count, so the bar keeps its height and the page under it does not jump.
-            let showsParts = partsUnder && !find.isActive && !renaming
             ZStack(alignment: .leading) {
                 HStack(spacing: 6) {
                     Text(Self.count(matter.entries ?? []))
@@ -995,7 +1008,8 @@ struct MatterStatusView: View {
                 }
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .opacity(showsParts ? 0 : 1)
+                // With the page under the bar the count is gone: the page is read there, not the bar.
+                .opacity(showsParts || compact ? 0 : 1)
                 parts(status).opacity(showsParts ? 1 : 0).allowsHitTesting(showsParts).accessibilityHidden(!showsParts)
             }
         }
@@ -1014,11 +1028,20 @@ struct MatterStatusView: View {
         // a fraction of a point, which made the next padding, and so on without end.
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minX } action: { if abs($0 - barLeft) > 1 { barLeft = $0 } }
         .frame(maxWidth: .infinity)
-        // At the top it is the page itself; once the page scrolls under it, glass and a line.
-        .background(scrolledUnder ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
-        .overlay(alignment: .bottom) { if scrolledUnder { Divider() } }
+        // At the top it is the page itself; once the page scrolls under it, glass and a line — as
+        // high as the window's top line, and down to the parts once they are in it. Under that the
+        // page shows: the bar keeps its room, so nothing in the page moves when it changes.
+        .background(alignment: .top) {
+            if scrolledUnder {
+                Rectangle().fill(.ultraThinMaterial)
+                    .overlay(alignment: .bottom) { Divider() }
+                    .frame(height: compact && !showsParts ? WindowMetrics.topLine : nil)
+            }
+        }
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { barEdge = $0 }
-        .onChange(of: partsEdge < barEdge) { _, under in
+        // The parts in the page reach the place the bar has for them — twelve over its lower edge —
+        // and are in the bar from there: they stay where they have come to.
+        .onChange(of: partsEdge < barEdge - 11) { _, under in
             withAnimation(.easeOut(duration: 0.15)) { partsUnder = under && scrolledUnder }
         }
         .onChange(of: scrolledUnder) { _, under in if !under { partsUnder = false } }
