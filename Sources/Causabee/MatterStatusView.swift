@@ -960,10 +960,13 @@ struct MatterStatusView: View {
                     // and what stands on that line with it, do not move when the small one comes.
                     Text(matter.name).font(Theme.titleFont)
                         .opacity(compact ? 0 : 1)
-                        .overlay(alignment: .leading) {
+                        // On the large name's first line, in its middle: a name of two lines has
+                        // its own middle a line lower, and the small one hung out under the bar.
+                        .overlay(alignment: .topLeading) {
                             Text(matter.name).font(.custom("Source Serif 4", size: 18 * Theme.textScale, relativeTo: .title3))
                                 .lineLimit(1)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .padding(.top, 5 * Theme.textScale)
                                 .opacity(compact ? 1 : 0)
                                 .accessibilityHidden(true)
                         }
