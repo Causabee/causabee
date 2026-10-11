@@ -27,4 +27,13 @@ struct DraftAttachmentTests {
         #expect(DraftAttachments.named(in: ["I attach the tax assessment."], among: [scan, hidden, short]).map(\.name) == [scan.name])
         #expect(DraftAttachments.named(in: ["Offer.pdf and a.b are attached"], among: [scan, hidden, short]).isEmpty)
     }
+
+    @Test("Named as a person says it: “the Sunrise Contract draft pdf” is Sunrise-contract-draft.pdf — and not a file that only shares a word")
+    func asSaid() {
+        let draft = file("Sunrise-contract-draft.pdf"), other = file("Contract_2019.pdf"), short = file("Draft.pdf")
+        let found = DraftAttachments.named(in: ["Confirmation message with the Sunrise Contract draft pdf attached"], among: [other, draft, short])
+        #expect(found.map(\.name) == ["Sunrise-contract-draft.pdf"])
+        #expect(DraftAttachments.named(in: ["I attach the sunrise contract draft."], among: [draft]).count == 1)
+        #expect(DraftAttachments.named(in: ["About the sunrise contract."], among: [draft]).isEmpty)
+    }
 }
