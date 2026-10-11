@@ -35,18 +35,6 @@ extension View {
         onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width.wrappedValue = $0 }
     }
 
-    /// What scrolls here thins out to nothing at its upper and its lower edge, over the last points:
-    /// it goes under what stands above and below it softly, not cut off by a line.
-    func softEdges(top: CGFloat = 14, bottom: CGFloat = 18) -> some View {
-        mask {
-            VStack(spacing: 0) {
-                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: top)
-                Color.black
-                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: bottom)
-            }
-        }
-    }
-
     /// The signs in a menu — every menu, held or tapped: one grey, a step quieter than the words
     /// beside them, whatever colour the button has that opens it. A menu takes its signs' colour
     /// from its button otherwise: yellow under the bee, black under ⋯, gold when held.
