@@ -487,25 +487,6 @@ struct MatterStatusView: View {
                     SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
                                   + (hidden.isEmpty ? "" : " · \(hidden.count) hidden")
                                   + (small.isEmpty ? "" : " · \(small.count) small \(small.count == 1 ? "image" : "images")"))
-                    if let filesSaid { Text(filesSaid).font(.caption).foregroundStyle(.secondary).transition(.opacity) }
-                    if !all.isEmpty {
-                        Button { addingFile = true } label: { Label("File", systemImage: "plus") }
-                            .buttonStyle(.borderless).font(.caption)
-                            .help("Add a PDF, a scan, any file or a whole folder from this Mac — or drag it onto the matter")
-                    }
-                    // Not in the demo: its made-up matters have no folder among the owner's own.
-                    if MatterFolders.root != nil, !DemoData.isRequested {
-                        Button { if let folder = MatterFolders.folder(for: matter) { try? context.save(); FolderSaver.reveal(folder) } } label: {
-                            // Not "Folder": beside "+ File", which takes a folder too, that read as adding one.
-                            Label("Show in Finder", systemImage: "folder")
-                        }
-                        .buttonStyle(.borderless).font(.caption)
-                        .tool()
-                        .help("Opens this matter's folder in iCloud Drive → Causabee")
-                    }
-                }
-                .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
-                    if case .success(let files) = result { addFiles(files) }
                 }
                 if all.isEmpty {
                     EmptyBox(text: "A letter, a scan, a PDF, a whole folder — or drag it here from the Finder. Files in mail come by themselves.",
@@ -1362,6 +1343,28 @@ struct MatterStatusView: View {
                     .help("Only what \(party.name) wrote is shown. Click to show everyone's again.")
             }
             Spacer()
+            // Adding a file and opening the folder, on the record's own line: there under
+            // "Everything" as under "Files", and whether or not there is a file yet.
+            if filter == .all || filter == .files {
+                if let filesSaid { Text(filesSaid).font(.caption).foregroundStyle(.secondary).transition(.opacity) }
+                Button { addingFile = true } label: { Label("File", systemImage: "plus") }
+                    .buttonStyle(.borderless).font(.caption)
+                    .tool()
+                    .help("Add a PDF, a scan, any file or a whole folder from this Mac — or drag it onto the matter")
+                // Not in the demo: its made-up matters have no folder among the owner's own.
+                if MatterFolders.root != nil, !DemoData.isRequested {
+                    Button { if let folder = MatterFolders.folder(for: matter) { try? context.save(); FolderSaver.reveal(folder) } } label: {
+                        // Not "Folder": beside "+ File", which takes a folder too, that read as adding one.
+                        Label("Show in Finder", systemImage: "folder")
+                    }
+                    .buttonStyle(.borderless).font(.caption)
+                    .tool()
+                    .help("Opens this matter's folder in iCloud Drive → Causabee")
+                }
+            }
+        }
+        .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
+            if case .success(let files) = result { addFiles(files) }
         }
         switch filter {
         case .all:
