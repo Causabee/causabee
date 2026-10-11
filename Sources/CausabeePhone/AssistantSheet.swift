@@ -154,30 +154,10 @@ struct AssistantSheet: View {
             // What happens to the thread is told to the placement, which decides where it goes.
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in placement.room(height, with: scroller) }
             .onScrollPhaseChange { old, new, context in placement.finger(from: old, to: new, at: context.geometry.contentOffset.y) }
-            .overlay(alignment: .bottom) {
-                // Away from the newest: the way back — and "New answer", when one came meanwhile.
-                if placement.offersButton {
-                    let newAnswer = placement.newAnswer != nil
-                    Button { placement.button(newestID.map { AnyHashable($0) }, with: scroller) } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: newAnswer ? "arrow.down" : "chevron.down").font(.body.weight(.semibold))
-                            if newAnswer { Text("New answer").font(.subheadline.weight(.medium)) }
-                        }
-                        .foregroundStyle(newAnswer ? .primary : .secondary)
-                        .padding(.horizontal, newAnswer ? 16 : 0)
-                        .frame(minWidth: 40, minHeight: 40)
-                        .background(.regularMaterial, in: Capsule())
-                        .overlay(Capsule().stroke(Theme.line))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(newAnswer ? "To the new answer" : "To the newest")
-                    .accessibilityIdentifier("thread.toNewest")
-                    .padding(.bottom, 10)
-                    .transition(.opacity)
-                }
-            }
+            // A view of its own: it alone is drawn again when the thread leaves its newest or comes
+            // back to it — read here, every turn of the thread was drawn again at those moments.
+            .overlay(alignment: .bottom) { PhoneToNewestButton(placement: placement, newest: newestID.map { AnyHashable($0) }, scroller: scroller) }
             .animation(ThreadPlacement.glide, value: failure)
-            .animation(.easeOut(duration: 0.15), value: placement.offersButton)
             // Opened; sent or brought in; something new as the thread's last — an answer, a task
             // kept at once, a turn from the Mac; the keyboard.
             .onAppear { placement.opened(newestID.map { AnyHashable($0) }, with: scroller) }
@@ -1047,5 +1027,37 @@ final class MailSheet: NSObject, MFMailComposeViewControllerDelegate {
 
     nonisolated func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
         Task { @MainActor in controller.dismiss(animated: true) }
+    }
+}
+
+/// Away from the newest: the way back — and "New answer", when one came meanwhile.
+private struct PhoneToNewestButton: View {
+    let placement: ThreadPlacement
+    let newest: AnyHashable?
+    let scroller: ScrollViewProxy
+
+    var body: some View {
+        ZStack {
+            if placement.offersButton {
+                let newAnswer = placement.newAnswer != nil
+                Button { placement.button(newest, with: scroller) } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: newAnswer ? "arrow.down" : "chevron.down").font(.body.weight(.semibold))
+                        if newAnswer { Text("New answer").font(.subheadline.weight(.medium)) }
+                    }
+                    .foregroundStyle(newAnswer ? .primary : .secondary)
+                    .padding(.horizontal, newAnswer ? 16 : 0)
+                    .frame(minWidth: 40, minHeight: 40)
+                    .background(.regularMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.line))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(newAnswer ? "To the new answer" : "To the newest")
+                .accessibilityIdentifier("thread.toNewest")
+                .padding(.bottom, 10)
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeOut(duration: 0.15), value: placement.offersButton)
     }
 }
