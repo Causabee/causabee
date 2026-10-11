@@ -105,6 +105,17 @@ purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`.
   button ("Add to Private"); check why the made "Matterbee" calendar did not sync — which account
   it was made in (iCloud first, then where the default one is). (2026-10-02)
 
+## Files
+
+- **Pinning a file in the record.** Asked for with the folder import (Beta 52): a matter with
+  fifty files brought in needs the three that matter on top. A file's ⋯ and its right-click get
+  "Pin to Top" — "Unpin" once it is pinned; pinned files stand first under Record, in
+  "Everything" and in "Files", with a small pin as their mark; on the Mac, the iPhone and the
+  iPad, and the same on all of them. That takes a new field on `Document` (`isPinned`, or the
+  time it was pinned, to keep their order), so iCloud's schema has to be deployed in the CloudKit
+  Console before the release that carries it — the owner's step. To decide first: files only, or
+  mails and links in the record too; started with files only unless said otherwise. (2026-10-11)
+
 ## UI
 
 - **Done 2026-10-10: the Mac's matter page hung when the assistant opened in a narrow window
