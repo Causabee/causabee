@@ -48,7 +48,7 @@ public struct Pseudonymizer: Sendable {
         /// 2: in placeholder mode, people who share only a first or a last name no longer share a tag.
         /// 3: a role in front of a name — `Hausmeister Brenner` — is a title, not a first name.
         /// 4: an ordinary word the tagger took for a name, or for the start of one, is no entry.
-        public static let current = 4
+        public static let current = 5
 
         public init() {}
 
@@ -77,6 +77,14 @@ public struct Pseudonymizer: Sendable {
                 let before = placeholder.count
                 placeholder = Pseudonymizer.withoutMisreadWords(placeholder)
                 standin = Pseudonymizer.withoutMisreadWords(standin)
+                changed += before - placeholder.count
+            }
+            if version < 5 {
+                // A product read as a person lent its last word to every text: "Design" stood for
+                // "Claude Design". Such an entry is forgotten, and the word with it.
+                let before = placeholder.count
+                placeholder = Pseudonymizer.withoutWordsAtTheEnd(placeholder)
+                standin = Pseudonymizer.withoutWordsAtTheEnd(standin)
                 changed += before - placeholder.count
             }
             version = Self.current
@@ -233,6 +241,24 @@ public struct Pseudonymizer: Sendable {
             if tokens.allSatisfy(ordinary) || (tokens.count > 1 && ordinary(first)) { dropped.insert(entry.original) }
         }
         return entries.filter { !dropped.contains($0.original) && !($0.partOf.map(dropped.contains) ?? false) }
+    }
+
+    /// The entries without a name or a place that ends in a word of the common list, and without a
+    /// part that is such a word by itself. "Claude Design" is a product, and was read as a first
+    /// name and a surname — and "Design" alone then stood for that person in every text, so that
+    /// "Head of Design System" came back as "Head of Claude Design System". By the common words
+    /// only, not the calendar's: "Jan" is a month and a man.
+    static func withoutWordsAtTheEnd(_ entries: [Entry]) -> [Entry] {
+        func common(_ token: String) -> Bool { commonWords.contains(key(token)) }
+        var dropped = Set<String>()
+        for entry in entries where entry.kind == .person || entry.kind == .place {
+            let tokens = words(entry.original)
+            if entry.partOf != nil ? tokens.allSatisfy(common) : (tokens.allSatisfy(common) || (tokens.count > 1 && tokens.last.map(common) == true)) {
+                dropped.insert(entry.original + "\u{0}" + (entry.partOf ?? ""))
+            }
+        }
+        let whole = Set(entries.filter { $0.partOf == nil && dropped.contains($0.original + "\u{0}") }.map(\.original))
+        return entries.filter { !dropped.contains($0.original + "\u{0}" + ($0.partOf ?? "")) && !($0.partOf.map(whole.contains) ?? false) }
     }
 
     struct Skipped: Error { var reason: String }
@@ -972,6 +998,10 @@ public struct Pseudonymizer: Sendable {
         "meine", "ihnen", "ihren", "ihrer", "uns", "das", "die", "der", "ein", "eine", "von", "bei",
         "on", "als", "am", "im", "um", "für", "bis", "nach", "zum", "zur", "vom", "ab", "seit", "info", "mobil", "handy", "telefon", "fon", "kurz", "kurze",
         "gute", "namen", "post", "sitz", "haus", "privat", "wenn", "ihre", "ihr", "antwort",
+        // Words of work that stand beside a name in a title or a product — "Head of Design System",
+        // "Claude Design" — and are no one's surname.
+        "design", "system", "systems", "product", "team", "portfolio", "strategy", "review", "memo",
+        "quality", "platform", "engineering", "marketing",
         // What the owner types to the assistant in front of a name, or at the start of a sentence.
         "schreibe", "schreib", "antworte", "frage", "erinnere", "alle", "alles", "sachen", "write", "tell", "ask", "reply", "remind",
     ]
