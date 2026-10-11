@@ -493,13 +493,15 @@ struct MatterStatusView: View {
                             .buttonStyle(.borderless).font(.caption)
                             .help("Add a PDF, a scan, any file or a whole folder from this Mac — or drag it onto the matter")
                     }
-                    if MatterFolders.root != nil {
+                    // Not in the demo: its made-up matters have no folder among the owner's own.
+                    if MatterFolders.root != nil, !DemoData.isRequested {
                         Button { if let folder = MatterFolders.folder(for: matter) { try? context.save(); FolderSaver.reveal(folder) } } label: {
-                            Label("Folder", systemImage: "folder")
+                            // Not "Folder": beside "+ File", which takes a folder too, that read as adding one.
+                            Label("Show in Finder", systemImage: "folder")
                         }
                         .buttonStyle(.borderless).font(.caption)
                         .tool()
-                        .help("This matter's folder in iCloud Drive → Causabee")
+                        .help("Opens this matter's folder in iCloud Drive → Causabee")
                     }
                 }
                 .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
