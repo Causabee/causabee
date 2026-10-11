@@ -131,7 +131,16 @@ struct MatterStatusView: View {
                             }
                             // As tall as the page shows, so its top can stand right under the title bar
                             // with the parts above it out of sight — and the ones in the bar stay.
-                            .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 24), alignment: .topLeading)
+                            // The bar that is seen ends above the room it keeps: the part goes up
+                            // to there, by a mark that far into it, and is tall enough to.
+                            .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 24 + Self.restRoom), alignment: .topLeading)
+                            .overlay(alignment: .top) {
+                                VStack(spacing: 0) {
+                                    Color.clear.frame(height: Self.restRoom)
+                                    Color.clear.frame(height: 0).id("partTop")
+                                }
+                                .allowsHitTesting(false)
+                            }
                             .id("part")
                         }
                     }
@@ -144,7 +153,7 @@ struct MatterStatusView: View {
                 // What the page shows under the title bar: the container's size is already without the bar.
                 .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
                 // Another part chosen in the title bar: it is shown from its start, not from where the last one was read.
-                .onChange(of: part) { if partsUnder { scroller.scrollTo("part", anchor: .top) } }
+                .onChange(of: part) { if partsUnder { scroller.scrollTo("partTop", anchor: .top) } }
                 .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 1 } action: { _, under in
                     withAnimation(.easeOut(duration: 0.15)) { scrolledUnder = under }
                 }
@@ -906,8 +915,17 @@ struct MatterStatusView: View {
     /// assistant put away, and then under the window's controls.
     @State private var barLeft: CGFloat = 400
 
+    /// How far under the window's top line the name stands while the page is at its top.
+    private static let restRoom: CGFloat = 36
+
     private func titleBar(_ status: MatterStatus) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        // Once the page has gone up under it, the bar is a bar: one line high, the name small in
+        // it. The large name with the count under it, on glass over the page, stood squeezed.
+        let compact = scrolledUnder && !renaming
+        // Once the parts in the page have gone under this bar, they stay at hand here — in the place
+        // of the count, so the bar keeps its height and the page under it does not jump.
+        let showsParts = partsUnder && !find.isActive && !renaming
+        return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 // The matter's icon: a click chooses another.
                 Button { choosingIcon = true } label: { MatterIconTile(matter: matter, size: 30) }
@@ -938,7 +956,17 @@ struct MatterStatusView: View {
                     Button("Save", action: rename).keyboardShortcut(.defaultAction)
                     Button("Cancel") { renaming = false }
                 } else {
+                    // The large name keeps its place when it is not seen: the line it stands on,
+                    // and what stands on that line with it, do not move when the small one comes.
                     Text(matter.name).font(Theme.titleFont)
+                        .opacity(compact ? 0 : 1)
+                        .overlay(alignment: .leading) {
+                            Text(matter.name).font(.custom("Source Serif 4", size: 18 * Theme.textScale, relativeTo: .title3))
+                                .lineLimit(1)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .opacity(compact ? 1 : 0)
+                                .accessibilityHidden(true)
+                        }
                         .accessibilityIdentifier("matter.title")
                         .onTapGesture(perform: startRenaming)
                         .pointerStyle(.horizontalText)
@@ -983,11 +1011,10 @@ struct MatterStatusView: View {
                     // On the line of the window's controls, as the icon is: their middle eight over
                     // the name's baseline, which is the middle of its capitals.
                     .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 8 * Theme.textScale }
+                    // Always on the window's top line: they do not come down with the name, nor go up with it.
+                    .offset(y: scrolledUnder ? 0 : -Self.restRoom)
                 }
             }
-            // Once the parts in the page have gone under this bar, they stay at hand here — in the place
-            // of the count, so the bar keeps its height and the page under it does not jump.
-            let showsParts = partsUnder && !find.isActive && !renaming
             ZStack(alignment: .leading) {
                 HStack(spacing: 6) {
                     Text(Self.count(matter.entries ?? []))
@@ -995,7 +1022,8 @@ struct MatterStatusView: View {
                 }
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .opacity(showsParts ? 0 : 1)
+                // With the page under the bar the count is gone: the page is read there, not the bar.
+                .opacity(showsParts || compact ? 0 : 1)
                 parts(status).opacity(showsParts ? 1 : 0).allowsHitTesting(showsParts).accessibilityHidden(!showsParts)
             }
         }
@@ -1008,17 +1036,33 @@ struct MatterStatusView: View {
         // the padding gives back — at a fifth larger the name sat three points under the controls.
         .padding(.top, 7 - 16.5 * (Theme.textScale - 1))
         .padding(.bottom, 12)
+        // At rest the name stands a good way into the page, under the window's top line; scrolled,
+        // it goes up onto that line. Moved, not laid out anew: the bar keeps its room, and the page
+        // under it does not jump.
+        .padding(.top, Self.restRoom)
+        .offset(y: scrolledUnder ? -Self.restRoom : 0)
         .frame(maxWidth: 820, alignment: .leading)
         // Only a real move counts. The padding above comes from this edge, and in a column of a
         // width between two pixels — the window's 61.8 percent — the edge answers the padding by
         // a fraction of a point, which made the next padding, and so on without end.
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minX } action: { if abs($0 - barLeft) > 1 { barLeft = $0 } }
         .frame(maxWidth: .infinity)
-        // At the top it is the page itself; once the page scrolls under it, glass and a line.
-        .background(scrolledUnder ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
-        .overlay(alignment: .bottom) { if scrolledUnder { Divider() } }
+        // At the top it is the page itself; once the page scrolls under it, glass and a line — as
+        // high as the window's top line, and down to the parts once they are in it. Under that the
+        // page shows: the bar keeps its room, so nothing in the page moves when it changes.
+        .background(alignment: .top) {
+            if scrolledUnder {
+                Rectangle().fill(.ultraThinMaterial)
+                    .overlay(alignment: .bottom) { Divider() }
+                    .frame(height: compact && !showsParts ? WindowMetrics.topLine : nil)
+                    // With the parts in it, it ends where they end: the room the name left is the page's.
+                    .padding(.bottom, compact && !showsParts ? 0 : Self.restRoom)
+            }
+        }
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { barEdge = $0 }
-        .onChange(of: partsEdge < barEdge) { _, under in
+        // The parts in the page reach the place the bar has for them — twelve over its lower edge —
+        // and are in the bar from there: they stay where they have come to.
+        .onChange(of: partsEdge < barEdge - 11 - Self.restRoom) { _, under in
             withAnimation(.easeOut(duration: 0.15)) { partsUnder = under && scrolledUnder }
         }
         .onChange(of: scrolledUnder) { _, under in if !under { partsUnder = false } }
