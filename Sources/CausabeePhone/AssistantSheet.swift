@@ -94,9 +94,9 @@ struct AssistantSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // No line under it, on the iPhone as on the iPad: the thread fades out under the name and
+            // over the field — it was cut off hard at both.
             header
-            // A column on the iPad has no bar of its own: its name and its × stand on the page's ground.
-            if !navigation.isPad { Divider() }
             ScrollViewReader { scroller in
             // The thread is exactly as wide as its scroll view, by the width layout hands down here
             // and now: a width told a moment later (onGeometryChange) could stay behind — on an
@@ -149,6 +149,7 @@ struct AssistantSheet: View {
             }
             // The thread's top stands a little under the edge: what is put "at the top" keeps that room.
             .safeAreaPadding(.top, Self.topRoom)
+            .softEdges()
             // The keyboard goes when the thread is scrolled or tapped, to see all of it.
             .dismissesKeyboard()
             // What happens to the thread is told to the placement, which decides where it goes.
