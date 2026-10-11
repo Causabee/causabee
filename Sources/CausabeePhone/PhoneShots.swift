@@ -64,8 +64,10 @@ final class PhoneShots {
     }
 
     /// Under its own name — "Tax assessment.pdf" — and "Tax assessment 2.pdf" when that is taken.
-    func keep(_ data: Data, named name: String) -> URL? {
-        let folder = Self.folder
+    func keep(_ data: Data, named name: String) -> URL? { Self.keep(data, named: name, in: Self.folder) }
+
+    /// The same from any thread, for many files at once: the folder is asked for beforehand.
+    nonisolated static func keep(_ data: Data, named name: String, in folder: URL) -> URL? {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let safe = name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
         let base = (safe as NSString).deletingPathExtension, ending = (safe as NSString).pathExtension
@@ -360,9 +362,16 @@ struct PlusItems: View {
 
     var body: some View {
         Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
-        Button("File", systemImage: "doc") { picksFile = true }
+        // Two ways for a file, told apart under their names: this one is read; the other is only kept.
+        Button { picksFile = true } label: {
+            Text("File")
+            Text("Read by Causabee and sorted in")
+            Image(systemName: "doc")
+        }
         // A letter on the table: scanned with the camera, named and kept among the matter's files.
         item("Scan a document", "doc.viewfinder", .scan)
+        // As the Mac's "Add File …": files, or every file of a folder, kept as they are — not read, nothing sent.
+        item("Files or a folder", "folder", .files, saying: "Kept as they are — not read")
         Divider()
         item("Contact", "person.badge.plus", .contact)
         item("Detail", "info.circle", .detail)
@@ -376,11 +385,15 @@ struct PlusItems: View {
     /// In a matter, it is for that matter. With none open, it opens onto the matters opened last —
     /// one more tap, and no sheet to choose from — and onto every matter, for the rest.
     @ViewBuilder
-    private func item(_ title: String, _ symbol: String, _ plus: Navigation.Plus) -> some View {
+    private func item(_ title: String, _ symbol: String, _ plus: Navigation.Plus, saying: String? = nil) -> some View {
         if let matter {
-            Button(title, systemImage: symbol) {
+            Button {
                 navigation.add(plus, to: matter)
                 if plus == .note || plus == .task { picked() }
+            } label: {
+                Text(title)
+                if let saying { Text(saying) }
+                Image(systemName: symbol)
             }
             .accessibilityIdentifier("plus." + plus.rawValue)
         } else {
@@ -484,6 +497,7 @@ struct MatterChooser: View {
     private var title: String {
         switch plus {
         case .scan: "Scan for which matter?"
+        case .files: "Files for which matter?"
         case .contact: "Contact for which matter?"
         case .detail: "Detail for which matter?"
         case .link: "Link for which matter?"

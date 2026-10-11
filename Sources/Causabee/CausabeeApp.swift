@@ -614,7 +614,16 @@ struct RootView: View {
             ScrollViewReader { rows in
             List {
                 let overview = navigation.place == .assistant || navigation.place == nil
-                Text("Overview").font(.body.weight(.semibold))
+                // With a tile of its own, as every matter under it has.
+                HStack(spacing: 9) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.system(size: 13))
+                        .frame(width: 26, height: 26)
+                        .background(Theme.box, in: RoundedRectangle(cornerRadius: 7))
+                        .accessibilityHidden(true)
+                    Text("Overview").font(.body.weight(.semibold))
+                }
+                .padding(.vertical, MatterRow.room)
                     .sidebarRow(selected: overview) { navigation.place = .assistant; keysInSidebar = true }
                     .id("overview")
                 let pinned = Pins.pinned(sorted)
@@ -883,8 +892,11 @@ struct MatterRow: View {
             if late > 0 { Text("\(late) overdue").font(.caption).foregroundStyle(Theme.warning) }
         }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, Self.room)
     }
+
+    /// Over and under a row of the sidebar: room enough that the rows read as rows, not as a block.
+    static let room: CGFloat = 5
 }
 
 // MARK: Keeping the thread

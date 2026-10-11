@@ -44,11 +44,11 @@ final class Navigation {
     var prefill: String?
     /// Picked from the assistant's plus, and with an editor of its own on the matter's page: the
     /// assistant steps aside and the page opens it.
-    enum Adding { case contact, detail, link, scan }
+    enum Adding { case contact, detail, link, scan, files }
     var adding: Adding?
     /// What the plus adds to a matter — beside the assistant's field, or held on the yellow button.
     enum Plus: String, Identifiable {
-        case scan, contact, detail, link, note, task
+        case scan, files, contact, detail, link, note, task
         var id: String { rawValue }
     }
     /// Picked where no matter is open, and none of the matters offered with it was the one: every
@@ -65,8 +65,8 @@ final class Navigation {
             let add: AssistantAdd = plus == .note ? .note : .task
             pinned = Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
             showsAssistant = true
-        case .scan, .contact, .detail, .link:
-            adding = switch plus { case .scan: .scan; case .contact: .contact; case .detail: .detail; default: .link }
+        case .scan, .files, .contact, .detail, .link:
+            adding = switch plus { case .scan: .scan; case .files: .files; case .contact: .contact; case .detail: .detail; default: .link }
             showsAssistant = false
         }
     }
@@ -106,7 +106,7 @@ final class Navigation {
         switch plus {
         case .note, .task:
             add(plus, to: matter)
-        case .scan, .contact, .detail, .link:
+        case .scan, .files, .contact, .detail, .link:
             showsAssistant = false
             // Once its page is there, and the assistant has gone.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self.add(plus, to: matter) }
