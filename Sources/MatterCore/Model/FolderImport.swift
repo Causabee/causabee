@@ -69,38 +69,86 @@ public enum FolderImport {
         public var added = 0
         public var already = 0
         public var failed = 0
-        public var said: String? { FolderImport.said(added: added, already: already, failed: failed) }
+        public var stopped = false
+        public var said: String? {
+            let said = FolderImport.said(added: added, already: already, failed: failed)
+            return stopped ? "Stopped · " + (said ?? (added == 1 ? "1 file added" : "Nothing new")) : said
+        }
     }
 
-    /// Files and folders picked or dropped, each file a file of the matter — the same on the Mac,
-    /// the iPhone and the iPad. `copy` puts a file where this device keeps the owner's own files,
-    /// under the name given, and says where; nil when it could not. Not saved: the caller saves,
-    /// and then has the matter's folder in iCloud Drive filled.
-    @MainActor
-    public static func add(_ picked: [URL], to matter: Matter, context: ModelContext, copy: (URL, String) -> URL?) -> Result {
+    /// A file copied in, not yet a file of the matter.
+    public struct Brought: Sendable {
+        public let name: String
+        public let size: Int
+        public let type: String
+        public let kept: URL
+    }
+
+    public struct Outcome: Sendable {
+        public var brought: [Brought] = []
+        public var already = 0
+        public var failed = 0
+        /// Stopped by the owner before the last file.
+        public var stopped = false
+    }
+
+    /// The slow part, off the main thread: finds the files, and copies each to where this device
+    /// keeps the owner's own files — `copy` does, under the name given, and says where; nil when
+    /// it could not. A file in iCloud Drive is brought down for it first, which is what takes
+    /// time. `taken` is what the matter has already (`taken(by:)`). Says before each file how far
+    /// it is — which of how many, and its name — and stops between two files when its task is cancelled.
+    public nonisolated static func bring(_ picked: [URL], taken: [String: Set<Int>], copy: (URL, String) -> URL?,
+                                         progress: (Int, Int, String) -> Void = { _, _, _ in }) -> Outcome {
         // A folder picked in Files or in an open panel is open only between these two.
         let scoped = picked.filter { $0.startAccessingSecurityScopedResource() }
         defer { scoped.forEach { $0.stopAccessingSecurityScopedResource() } }
-        var result = Result()
-        var taken = taken(by: matter.documents ?? [])
-        for file in files(in: picked) {
-            guard let size = (try? file.resourceValues(forKeys: [.fileSizeKey]))?.fileSize else { result.failed += 1; continue }
-            guard let name = name(for: file.lastPathComponent, size: size, taken: &taken) else { result.already += 1; continue }
+        var outcome = Outcome()
+        var taken = taken
+        let all = files(in: picked)
+        for (index, file) in all.enumerated() {
+            if Task.isCancelled { outcome.stopped = true; break }
+            progress(index + 1, all.count, file.lastPathComponent)
+            guard let size = (try? file.resourceValues(forKeys: [.fileSizeKey]))?.fileSize else { outcome.failed += 1; continue }
+            guard let name = name(for: file.lastPathComponent, size: size, taken: &taken) else { outcome.already += 1; continue }
             guard let kept = copy(file, name) else {
                 // Not there after all: the name is free again.
                 taken[key(name)]?.remove(size)
                 if taken[key(name)]?.isEmpty == true { taken[key(name)] = nil }
-                result.failed += 1
+                outcome.failed += 1
                 continue
             }
             let type = UTType(filenameExtension: file.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
-            let source = Source(kind: .document, pointer: kept.path, messageID: "file-" + UUID().uuidString, date: Date())
-            let document = Document(name: name, contentType: type, byteCount: size, source: source)
+            outcome.brought.append(Brought(name: name, size: size, type: type, kept: kept))
+        }
+        return outcome
+    }
+
+    /// What was copied in becomes files of the matter. Not saved: the caller saves, and then has
+    /// the matter's folder in iCloud Drive filled.
+    @MainActor
+    @discardableResult
+    public static func take(_ outcome: Outcome, into matter: Matter, context: ModelContext) -> Result {
+        for file in outcome.brought {
+            let source = Source(kind: .document, pointer: file.kept.path, messageID: "file-" + UUID().uuidString, date: Date())
+            let document = Document(name: file.name, contentType: file.type, byteCount: file.size, source: source)
             context.insert(document)
             document.matter = matter
-            result.added += 1
         }
-        return result
+        return Result(added: outcome.brought.count, already: outcome.already, failed: outcome.failed, stopped: outcome.stopped)
+    }
+
+    /// Both at once, where nothing has to wait: files and folders picked or dropped, each file a
+    /// file of the matter — the same on the Mac, the iPhone and the iPad.
+    @MainActor
+    public static func add(_ picked: [URL], to matter: Matter, context: ModelContext, copy: (URL, String) -> URL?) -> Result {
+        take(bring(picked, taken: taken(by: matter.documents ?? []), copy: copy), into: matter, context: context)
+    }
+
+    /// A file's bytes, brought down from iCloud Drive first when only its name is on this device.
+    public nonisolated static func data(of file: URL) -> Data? {
+        var data: Data?
+        NSFileCoordinator().coordinate(readingItemAt: file, options: [], error: nil) { data = try? Data(contentsOf: $0) }
+        return data
     }
 
     /// What is said once it is done; nil when there is nothing to say — one file added, as before.

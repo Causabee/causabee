@@ -328,3 +328,43 @@ private extension UIResponder {
     /// Sent to nobody in particular, it arrives at whoever has the keys.
     @objc func causabeeSaysItHasTheKeys() { KeepsUndoAtHand.Finder.found = self }
 }
+
+/// Files or a folder being brought into a matter: the bee, how far it is and which file, and a
+/// way to stop — then what it came to. Small, over the page: the page behind it is still the matter.
+struct FilesComing: View {
+    @MainActor
+    @Observable
+    final class State {
+        var shows = false
+        var done = 0
+        var total = 0
+        var name = ""
+        /// What it came to, once it is done: "12 files added · 3 already here".
+        var said: String?
+        init(shows: Bool = false) { self.shows = shows }
+    }
+
+    let state: State
+    let stop: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 14) {
+            if let said = state.said {
+                Image(systemName: "checkmark.circle").font(.title2).foregroundStyle(Theme.done)
+                Text(said).font(.headline).multilineTextAlignment(.center)
+                Button("Done") { dismiss() }.buttonStyle(.borderedProminent).tint(Theme.ink)
+            } else {
+                BeeLoader(size: 22)
+                Text(state.total == 0 ? "Looking at what was picked …" : "Bringing in \(state.done) of \(state.total) …").font(.headline)
+                // One line, whatever the name: the sheet does not change its height from file to file.
+                Text(state.total == 0 ? "A file in iCloud Drive is brought down first." : state.name)
+                    .font(.footnote).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                Button("Stop", role: .cancel, action: stop).buttonStyle(.bordered)
+            }
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityIdentifier("files.coming")
+    }
+}

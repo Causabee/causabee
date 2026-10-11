@@ -41,8 +41,9 @@ struct MatterScreen: View {
     @State private var addingLink = false
     @State private var addingScan = false
     @State private var addingFiles = false
-    /// What files or a folder brought in came to: "12 files added · 3 already here".
-    @State private var filesSaid: String?
+    /// Files or a folder being brought in: how far it is, and what it came to.
+    @State private var coming = FilesComing.State()
+    @State private var bringing: Task<Void, Never>?
     /// The parts in the page have scrolled under the bar, which shows them then.
     @State private var partsUnder = false
     /// The matter written out as a document, and why it could not be.
@@ -199,18 +200,12 @@ struct MatterScreen: View {
         .sheet(isPresented: $addingScan, onDismiss: { part = .record; filter = .files }) { ScanSheet(matter: matter) }
         // Files, or a folder with all that is in it: each a file of the matter, as on the Mac.
         .fileImporter(isPresented: $addingFiles, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
-            guard case .success(let picked) = result else { return }
-            let result = FolderImport.add(picked, to: matter, context: context) { file, name in
-                (try? Data(contentsOf: file)).flatMap { PhoneShots.shared.keep($0, named: name) }
-            }
-            try? context.save()
-            PhoneFolderSaver.save([matter])
-            part = .record
-            filter = .files
-            filesSaid = result.said
+            if case .success(let picked) = result { bring(picked) }
         }
-        .alert(filesSaid ?? "", isPresented: Binding(get: { filesSaid != nil }, set: { if !$0 { filesSaid = nil } })) {
-            Button("OK", role: .cancel) { filesSaid = nil }
+        .sheet(isPresented: $coming.shows) {
+            FilesComing(state: coming) { bringing?.cancel() }
+                .presentationDetents([.height(210)])
+                .interactiveDismissDisabled(coming.said == nil)
         }
         .sheet(isPresented: $addingContact, onDismiss: { part = .people }) { ContactEditor(matter: matter) }
         .sheet(isPresented: $addingDetail, onDismiss: { part = .record; filter = .details }) { DetailEditor(matter: matter) }
@@ -323,6 +318,33 @@ struct MatterScreen: View {
         let open = matter.openTodos.count
         return open == 0 ? "Close “\(matter.name)”?"
             : "Close “\(matter.name)”? \(open) \(open == 1 ? "task is" : "tasks are") still open."
+    }
+
+    /// Copied in the background — a file in iCloud Drive is brought down first, and a folder of
+    /// them takes its time — while a sheet says how far it is; then they are the matter's files.
+    private func bring(_ picked: [URL]) {
+        coming = FilesComing.State(shows: true)
+        let taken = FolderImport.taken(by: matter.documents ?? [])
+        let folder = PhoneShots.folder
+        let state = coming
+        let work = Task.detached(priority: .userInitiated) {
+            FolderImport.bring(picked, taken: taken) { file, name in
+                FolderImport.data(of: file).flatMap { PhoneShots.keep($0, named: name, in: folder) }
+            } progress: { done, total, name in
+                Task { @MainActor in state.done = done; state.total = total; state.name = name }
+            }
+        }
+        bringing = Task {
+            let outcome = await withTaskCancellationHandler { await work.value } onCancel: { work.cancel() }
+            let result = FolderImport.take(outcome, into: matter, context: context)
+            try? context.save()
+            PhoneFolderSaver.save([matter])
+            part = .record
+            filter = .files
+            bringing = nil
+            // One file, added: nothing to say, as before.
+            if let said = result.said { coming.said = said } else { coming.shows = false }
+        }
     }
 
     private func close(markingOpenDone: Bool) {

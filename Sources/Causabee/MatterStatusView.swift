@@ -543,16 +543,29 @@ struct MatterStatusView: View {
     private func addFiles(_ files: [URL]) {
         let folder = ScreenshotDoor.attachments(besides: navigation.store)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let result = FolderImport.add(files, to: matter, context: context) { file, name in
-            let target = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name)
-            return (try? FileManager.default.copyItem(at: file, to: target)) != nil ? target : nil
+        let taken = FolderImport.taken(by: matter.documents ?? [])
+        // Copied in the background: a folder in iCloud Drive is brought down file by file, and the
+        // window is not to stand still for it. The Files line says how far it is.
+        Task {
+            let outcome = await Task.detached(priority: .userInitiated) {
+                FolderImport.bring(files, taken: taken) { file, name in
+                    let target = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name)
+                    var done = false
+                    NSFileCoordinator().coordinate(readingItemAt: file, options: [], error: nil) { done = (try? FileManager.default.copyItem(at: $0, to: target)) != nil }
+                    return done ? target : nil
+                } progress: { done, total, _ in
+                    if total > 1 { Task { @MainActor in filesSaid = "Bringing in \(done) of \(total) …" } }
+                }
+            }.value
+            let result = FolderImport.take(outcome, into: matter, context: context)
+            try? context.save()
+            FolderSaver.shared.save([matter])
+            filesSaid = result.said
+            let said = filesSaid
+            // Said for a while, then gone — unless something newer is said by then.
+            try? await Task.sleep(for: .seconds(8))
+            if filesSaid == said { filesSaid = nil }
         }
-        try? context.save()
-        FolderSaver.shared.save([matter])
-        filesSaid = result.said
-        let said = filesSaid
-        // Said for a while, then gone — unless something newer is said by then.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { if filesSaid == said { filesSaid = nil } }
     }
 
     // MARK: Calendar and Reminders
