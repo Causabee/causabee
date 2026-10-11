@@ -44,7 +44,8 @@ final class RegressionTests: XCTestCase {
     }
 
     private func tab(_ name: String) {
-        let segment = app.radioButtons.matching(NSPredicate(format: "label BEGINSWITH %@ OR title BEGINSWITH %@", name, name)).firstMatch
+        // By its name for VoiceOver: only the open part shows its word.
+        let segment = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ OR title BEGINSWITH %@", name, name)).firstMatch
         XCTAssertTrue(segment.waitForExistence(timeout: 5), "No tab \(name).")
         segment.click()
     }
@@ -86,7 +87,7 @@ final class RegressionTests: XCTestCase {
     }
 
     func testTheFourTabs() {
-        for name in ["Record", "People", "Notes", "To do"] { tab(name) }
+        for name in ["Record", "People", "Notes", "Plan"] { tab(name) }
         shows("Tasks", "Back on To do, the tasks are not shown.")
     }
 
