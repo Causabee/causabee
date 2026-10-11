@@ -1355,20 +1355,14 @@ struct MatterStatusView: View {
     private var keptLinks: [WebLink] { (matter.links ?? []).filter(\.isKept) }
     private var personParty: Party? { person.flatMap { id in matter.parties.first { $0.persistentModelID == id } } }
 
-    /// What is to do, the record, the people: the system's own segmented control.
+    /// What is planned — tasks and dates —, the record, the people, the notes: signs, with the word
+    /// of the part that is open. "To do" named only half of the first.
     private func parts(_ status: MatterStatus) -> some View {
-        Picker("Part of the matter", selection: $part) {
-            // By name only: a count on each was four numbers to read before anything was chosen.
-            Text("To do").tag(Part.todo)
-            Text("Record").tag(Part.record)
-            Text("People").tag(Part.people)
-            Text("Notes").tag(Part.notes)
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .fixedSize()
-        // The chosen part in white, as on the iPhone — not in the black the app's buttons have.
-        .tint(Theme.card)
+        PartTabs(tabs: [.init(value: Part.todo, title: "Plan", symbol: "calendar.badge.checkmark"),
+                        .init(value: Part.record, title: "Record", symbol: "tray.full"),
+                        .init(value: Part.people, title: "People", symbol: "person.2"),
+                        .init(value: Part.notes, title: "Notes", symbol: "note.text")],
+                 selection: $part)
     }
 
     /// Whether this person wrote it: by any way their name is written.

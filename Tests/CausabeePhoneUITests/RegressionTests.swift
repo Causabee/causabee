@@ -67,7 +67,7 @@ final class RegressionTests: XCTestCase {
     }
 
     func testTheFourTabs() {
-        for name in ["Record", "People", "Notes", "To do"] { tab(name) }
+        for name in ["Record", "People", "Notes", "Plan"] { tab(name) }
         shows("Tasks", "Back on To do, the tasks are not shown.")
     }
 

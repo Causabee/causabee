@@ -94,9 +94,6 @@ struct AssistantSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            header
-            // A column on the iPad has no bar of its own: its name and its × stand on the page's ground.
-            if !navigation.isPad { Divider() }
             ScrollViewReader { scroller in
             // The thread is exactly as wide as its scroll view, by the width layout hands down here
             // and now: a width told a moment later (onGeometryChange) could stay behind — on an
@@ -149,14 +146,28 @@ struct AssistantSheet: View {
             }
             // The thread's top stands a little under the edge: what is put "at the top" keeps that room.
             .safeAreaPadding(.top, Self.topRoom)
+            // The name on top and the field below are bars over the thread, not rows beside it: the
+            // thread goes on under them and is seen through them, blurred — glass, as the system's
+            // own bars are. Nothing is cut off at a line.
+            .safeAreaBar(edge: .top, spacing: 0) { header }
+            .safeAreaBar(edge: .bottom, spacing: 0) {
+                composer
+                    // Away from the newest: the way back, standing over the field. A view of its own:
+                    // it alone is drawn again when the thread leaves its newest or comes back to it.
+                    .overlay(alignment: .top) {
+                        PhoneToNewestButton(placement: placement, newest: newestID.map { AnyHashable($0) }, scroller: scroller)
+                            .alignmentGuide(.top) { $0[.bottom] }
+                    }
+            }
+            .scrollEdgeEffectStyle(.soft, for: .top)
+            // Below, the system's blur began a hand's breadth over the field. There the glass is the
+            // field's own: the thread is sharp down to it, seen through it, and gone under its lower half.
+            .scrollEdgeEffectHidden(true, for: .bottom)
             // The keyboard goes when the thread is scrolled or tapped, to see all of it.
             .dismissesKeyboard()
             // What happens to the thread is told to the placement, which decides where it goes.
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in placement.room(height, with: scroller) }
             .onScrollPhaseChange { old, new, context in placement.finger(from: old, to: new, at: context.geometry.contentOffset.y) }
-            // A view of its own: it alone is drawn again when the thread leaves its newest or comes
-            // back to it — read here, every turn of the thread was drawn again at those moments.
-            .overlay(alignment: .bottom) { PhoneToNewestButton(placement: placement, newest: newestID.map { AnyHashable($0) }, scroller: scroller) }
             .animation(ThreadPlacement.glide, value: failure)
             // Opened; sent or brought in; something new as the thread's last — an answer, a task
             // kept at once, a turn from the Mac; the keyboard.
@@ -173,7 +184,6 @@ struct AssistantSheet: View {
             .onChange(of: typing) { placement.typing(typing, with: scroller) }
             }
             }
-            composer
         }
         .background(Theme.canvas)
         .onAppear {
@@ -199,11 +209,8 @@ struct AssistantSheet: View {
 
     private var header: some View {
         ZStack {
-            VStack(spacing: 2) {
-                Text("Causabee").font(.headline)
-                Text(matter?.name ?? "All matters").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            }
-            .padding(.horizontal, 60)
+            // Nothing but the way out, on the iPhone and the iPad: that this is Causabee is known, and
+            // what it is asked about stands in the field below.
             HStack {
                 // A column on the iPad: put away at its outer edge, as the Mac's.
                 if navigation.isPad { Spacer() }
@@ -218,7 +225,7 @@ struct AssistantSheet: View {
             }
         }
         // On the iPad on the line of the page's bar and the sidebar's controls.
-        .padding(.horizontal, 16).padding(.top, navigation.isPad ? 0 : 18).padding(.bottom, navigation.isPad ? 0 : 10)
+        .padding(.horizontal, 16).padding(.top, navigation.isPad ? 0 : 16).padding(.bottom, navigation.isPad ? 0 : 4)
         .frame(height: navigation.isPad ? PadMetrics.bar : nil)
     }
 
@@ -285,7 +292,8 @@ struct AssistantSheet: View {
               }
             }
             .padding(.leading, 7).padding(.trailing, 7).padding(.vertical, 7)
-            .background(Theme.box, in: RoundedRectangle(cornerRadius: 24))
+            // The field itself is glass: the thread is seen through it as it passes under.
+            .glassBehind(RoundedRectangle(cornerRadius: 24))
             // As on the Mac: "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(showsMore
                 ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen) · goes pseudonymised, like the mails • [less](causabee://footer)"
@@ -294,8 +302,13 @@ struct AssistantSheet: View {
                 .environment(\.openURL, OpenURLAction { _ in showsMore.toggle(); return .handled })
                 .padding(.horizontal, 8)
         }
-        .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
-        .background(Theme.canvas)
+        .padding(.horizontal, 16).padding(.top, 0).padding(.bottom, 8)
+        // The page's ground from the field's middle down, thinning out upwards to its upper edge.
+        .background {
+            LinearGradient(stops: [.init(color: Theme.canvas.opacity(0), location: 0), .init(color: Theme.canvas, location: 0.45), .init(color: Theme.canvas, location: 1)],
+                           startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 }
 

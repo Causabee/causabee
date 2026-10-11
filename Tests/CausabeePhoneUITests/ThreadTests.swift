@@ -78,7 +78,8 @@ final class ThreadTests: XCTestCase {
         app.buttons["Send"].firstMatch.tap()
     }
 
-    private var header: CGFloat { app.staticTexts["Causabee"].firstMatch.frame.maxY }
+    // The sheet has no name on top any more: its lower edge is the close button's.
+    private var header: CGFloat { app.buttons["Close"].firstMatch.frame.maxY }
 
     /// A question goes to the top, and its answer comes in under it: the question does not move
     /// when the answer arrives, and nothing offers a way "back" — the thread is where it should be.
@@ -157,7 +158,7 @@ final class ThreadTests: XCTestCase {
         addTask(first)
         let asked = question("New task: " + first)
         XCTAssertTrue(asked.waitForExistence(timeout: 8), "The question is not in the thread.")
-        let header = app.staticTexts["Causabee"].firstMatch.frame.maxY
+        let header = app.buttons["Close"].firstMatch.frame.maxY
         let place = top(of: asked)
         // Right under the sheet's header, a little room between them.
         XCTAssertLessThan(place - header, 80, "The newest question does not stand at the top of the thread.")

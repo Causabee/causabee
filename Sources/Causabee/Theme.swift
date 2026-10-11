@@ -211,6 +211,16 @@ extension View {
         }
     }
 
+    /// Glass behind what is here, not around it: a field's words stay as sharp as they are, and
+    /// what scrolls under the field is seen through it. A thin material before glass came.
+    @ViewBuilder func glassBehind<S: Shape>(_ shape: S) -> some View {
+        if #available(macOS 26, iOS 26, *) {
+            background { shape.fill(.clear).glassEffect(.regular, in: shape) }
+        } else {
+            background(.thinMaterial, in: shape).overlay(shape.stroke(Color.primary.opacity(0.08), lineWidth: 0.5))
+        }
+    }
+
     /// A small action — a link, a ⋯, a pin, a button that asks the AI — gone while reading.
     func tool() -> some View { modifier(PutAwayWhileReading()) }
     /// What the AI says about why, what it cost, where it looked — gone while reading.
@@ -945,5 +955,69 @@ extension View {
         #else
         self
         #endif
+    }
+}
+
+/// The parts of a matter as pills, as Mail's categories: a sign each, and the open one filled and
+/// wide with its word — one word in the bar where there were four. The others say theirs when the
+/// pointer rests on them, and to VoiceOver. In the app's ink, like its filled buttons: no colour of
+/// their own. On the iPhone the open pill takes the room that is left, and the pills are a finger high.
+struct PartTabs<Value: Hashable>: View {
+    struct Tab {
+        let value: Value
+        let title: String
+        let symbol: String
+    }
+
+    let tabs: [Tab]
+    @Binding var selection: Value
+    #if os(iOS)
+    // On the iPhone the open pill takes the room that is left, as in Mail, and the row is as wide as
+    // the page. On the iPad each pill is as wide as what is in it, as on the Mac: a pill across a
+    // wide page is a bar, not a pill.
+    private let fills = UIDevice.current.userInterfaceIdiom != .pad
+    private let height: CGFloat = 44, sign: CGFloat = 17
+    private let word = Font.subheadline.weight(.semibold)
+    #else
+    // On the Mac the open pill is as wide as its word, no wider: stretched to fill a row it looked
+    // heavy there (tried, and taken back the same day).
+    private let height: CGFloat = 32, sign: CGFloat = 14, fills = false
+    private let word = Font.callout.weight(.semibold)
+    #endif
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(tabs, id: \.value) { tab in
+                let chosen = tab.value == selection
+                Button { selection = tab.value } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: tab.symbol).symbolVariant(chosen ? .fill : .none)
+                            .font(.system(size: sign, weight: .medium)).frame(width: sign + 8, height: sign + 4)
+                        // As in Mail: the pill opens first, with its sign alone; the word comes when
+                        // there is room for it, and goes at once when another part is chosen.
+                        if chosen {
+                            Text(tab.title).font(word).fixedSize()
+                                .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.16).delay(0.1)),
+                                                        removal: .opacity.animation(.easeOut(duration: 0.06))))
+                        }
+                    }
+                    .padding(.horizontal, chosen ? 16 : 14)
+                    .frame(maxWidth: chosen && fills ? .infinity : nil)
+                    .frame(height: height)
+                    .foregroundStyle(chosen ? Theme.onInk : Color.secondary)
+                    .background(chosen ? Theme.ink : Color.secondary.opacity(0.12), in: Capsule())
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(tab.title)
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(chosen ? .isSelected : [])
+                .accessibilityIdentifier("part." + tab.title)
+            }
+        }
+        // The pills and the words move; the page under them changes at once, as before.
+        .animation(.spring(response: 0.34, dampingFraction: 0.82), value: selection)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Part of the matter")
     }
 }
