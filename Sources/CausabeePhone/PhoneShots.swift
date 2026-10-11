@@ -365,13 +365,15 @@ struct PlusItems: View {
         // Two ways for a file, told apart under their names: this one is read; the other is only kept.
         Button { picksFile = true } label: {
             Text("File")
-            Text("Read by Causabee and sorted in")
+            // Short enough for one line: on two, the menu grew past its room over the keyboard, and
+            // "Task" at its far end was out of sight.
+            Text("Read and sorted in")
             Image(systemName: "doc")
         }
         // A letter on the table: scanned with the camera, named and kept among the matter's files.
         item("Scan a document", "doc.viewfinder", .scan)
         // As the Mac's "Add File …": files, or every file of a folder, kept as they are — not read, nothing sent.
-        item("Files or a folder", "folder", .files, saying: "Kept as they are — not read")
+        item("Files or a folder", "folder", .files, saying: "Kept, not read")
         Divider()
         item("Contact", "person.badge.plus", .contact)
         item("Detail", "info.circle", .detail)
