@@ -128,6 +128,42 @@ struct LabelIntakeTests {
         #expect(result.emails[0].source.absoluteString == "imap://imap.gmail.com/Causabee;UIDVALIDITY=7/;UID=1")
     }
 
+    @Test("A new thread from someone in the owner's matters is found in the inbox without a label, and only offered; mail from anyone else is not")
+    func knownSenders() async throws {
+        func mail(_ id: String, from: String, _ subject: String) -> String {
+            "Message-ID: <\(id)>\nFrom: \(from)\nTo: owner@owner.example\nDate: Mon, 1 Sep 2026 09:00:00 +0200\nSubject: \(subject)\n\nText"
+        }
+        let mailbox = FakeMailbox(gmail: true, folders: [
+            MailFolder(name: "INBOX"), MailFolder(name: "Causabee"),
+            MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
+        ], content: [
+            "Causabee": [.init(uid: 1, thread: "100", raw: Self.first)],
+            "[Gmail]/All Mail": [.init(uid: 10, thread: "100", raw: Self.first)],
+            "INBOX": [.init(uid: 20, thread: "100", raw: Self.first),
+                      .init(uid: 21, thread: "300", raw: mail("new@berger-hv.example", from: "Tanguy <Tanguy@Berger-HV.example>", "Something new")),
+                      .init(uid: 22, thread: "400", raw: mail("ad@shop.example", from: "shop@shop.example", "Offer")),
+                      .init(uid: 23, thread: "500", raw: mail("me@owner.example", from: "owner@owner.example", "Note to self"))],
+        ])
+        var intake = LabelIntake(label: "Causabee", host: "imap.gmail.com")
+        intake.knownSenders = ["tanguy@berger-hv.example", "owner@owner.example", "no address"]
+        intake.ownAddresses = ["owner@owner.example"]
+        let result = try await intake.run(mailbox)
+
+        #expect(result.emails.map(\.id).sorted() == ["a@berger-hv.example", "new@berger-hv.example"])
+        #expect(result.bySender == ["new@berger-hv.example": "tanguy@berger-hv.example"])
+        // Not taken for labelled: the bulk filter still decides for it.
+        #expect(result.labelled == ["a@berger-hv.example"])
+        // The labelled mail lies in the inbox too, and is not read a second time.
+        #expect(await mailbox.wholeFetches["INBOX"] == [21])
+
+        // Known already — sorted in or left out before — it is not fetched again.
+        var again = LabelIntake(label: "Causabee", host: "imap.gmail.com", known: ["a@berger-hv.example", "new@berger-hv.example"])
+        again.knownSenders = ["tanguy@berger-hv.example"]
+        #expect(try await again.run(mailbox).bySender.isEmpty)
+        // And with no one known, the inbox is not asked at all.
+        #expect(try await LabelIntake(label: "Causabee", host: "imap.gmail.com").run(mailbox).bySender.isEmpty)
+    }
+
     @Test("Sixty labelled threads are followed in a few searches, not sixty")
     func bundledThreads() async throws {
         func mail(_ n: Int) -> String { "Message-ID: <m\(n)@x.example>\nFrom: a@x.example\nDate: Mon, 1 Sep 2026 09:00:00 +0200\nSubject: S\(n)\n\nText" }

@@ -25,6 +25,8 @@ public struct DailyDoor: Sendable {
     public var alsoKnown: Set<String> = []
     /// New mail the owner unticked once: read, but not offered again until put back.
     public var setAside: Set<String> = []
+    /// The addresses of the people in the owner's matters: their new mail is offered without a label.
+    public var knownSenders: [String] = []
 
     public init(account: MailAccount, label: String = "Causabee", log: URL, mapping: URL, cache: URL, model: Claude.Model = .opus) {
         self.account = account
@@ -52,6 +54,12 @@ public struct DailyDoor: Sendable {
         public var estimate: Double
         /// The new mails, in their order: what the owner ticks or unticks before Sort in.
         public var newIDs: [String] = []
+
+        /// Of the new mails, those with no label: found by who sent them, and only offered. They
+        /// are sorted in when the owner says so — never by Auto.
+        public var offeredIDs: Set<String> { Set(newIDs.filter { intake.bySender[$0] != nil }) }
+        /// The new mails the owner labelled, or that follow a labelled thread: what Auto may read.
+        public var withoutOffered: Look { offeredIDs.isEmpty ? self : only(Set(newIDs).subtracting(offeredIDs)) }
 
         public var newMails: [Spike.Outcome] {
             let ids = Set(newIDs)
@@ -103,6 +111,7 @@ public struct DailyDoor: Sendable {
             // A scan mailed to yourself with the label's name in the subject counts as labelled.
             reading.keyword = label
             reading.ownAddresses = [account.user]
+            reading.knownSenders = knownSenders
             intake = try await reading.run(client, progress: progress)
         } catch {
             await client.logout()
