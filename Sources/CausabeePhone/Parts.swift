@@ -108,12 +108,8 @@ struct AssistantButton: View {
                 .menuSigns()
         } label: {
             // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
-            BeeMark(size: 24, livesNowAndThen: true)
-                .foregroundStyle(.black)
-                // Out celebrating a task: its place stands empty until it is back.
-                .opacity(BeeFlight.shared.isOut ? 0 : 1)
+            BeeAtHome(size: 24, livesNowAndThen: true)
                 .frame(width: 46, height: 46)
-                .onGeometryChange(for: CGPoint.self) { let frame = $0.frame(in: .global); return CGPoint(x: frame.midX, y: frame.midY) } action: { BeeFlight.shared.home = $0 }
         } primaryAction: {
             action()
         }

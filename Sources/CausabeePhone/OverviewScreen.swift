@@ -34,8 +34,6 @@ struct RootView: View {
             }
         }
         .background(Theme.canvas)
-        // The bee on its round for a task ticked, over everything on the page.
-        .overlay { BeeFlightLayer() }
         // A shake, or ⌘Z on an iPad's keyboard, finds what was deleted by hand.
         .background { KeepsUndoAtHand().frame(width: 0, height: 0).accessibilityHidden(true) }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { wide in

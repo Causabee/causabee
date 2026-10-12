@@ -267,12 +267,18 @@ extension View {
 /// on the bee's yellow, in a light line — or a black square, to stop an answer on its way.
 struct SendGlyph: View {
     let stops: Bool
+    /// Nothing is written and nothing is on its way: the bee may come out of this yellow, glad of
+    /// a task ticked, when its own button is not in sight.
+    var mayHostBee = false
+    private let joy = BeeJoy.shared
 
     var body: some View {
         ZStack {
             Circle().fill(Theme.bee)
             if stops {
                 RoundedRectangle(cornerRadius: 2).fill(.black).frame(width: 11, height: 11)
+            } else if mayHostBee, joy.beesInSight == 0, let beat = joy.beat {
+                BeeJoyView(beat: beat, size: 17)
             } else {
                 Image(systemName: "arrow.up").font(.system(size: 16, weight: .regular)).foregroundStyle(.black)
             }

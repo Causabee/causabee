@@ -289,7 +289,7 @@ struct AssistantSheet: View {
                 Button { if asking == nil { send() } else { stop() } } label: {
                     // A black arrow on the bee's yellow, drawn light, as every yellow thing has black
                     // on it — and a black square while an answer is on its way: one question at a time.
-                    SendGlyph(stops: asking != nil)
+                    SendGlyph(stops: asking != nil, mayHostBee: draft.isEmpty)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(asking == nil ? "Send" : "Stop")

@@ -220,3 +220,77 @@ extension BeeMark {
     }
     .padding(32)
 }
+
+/// A task ticked by hand: the bee is glad. It comes up out of its yellow round towards the eye —
+/// larger, with a shadow under it on the yellow —, beats its wings a few times, and settles back.
+/// It does not leave its place: no way up or across. A little more of it for a matter's last open
+/// task. Never with Reduce Motion. Where the bee's own button is not in sight — the assistant open
+/// beside the page on the Mac and the iPad — it is the send button's yellow it comes out of.
+@MainActor
+@Observable
+final class BeeJoy {
+    static let shared = BeeJoy()
+
+    struct Beat: Equatable {
+        let began = Date()
+        let big: Bool
+        var length: TimeInterval { big ? 1.7 : 1.05 }
+    }
+
+    private(set) var beat: Beat?
+    /// How many of the bee's own buttons are on screen: with one there, the send button stays an arrow.
+    var beesInSight = 0
+
+    func celebrate(big: Bool, still: Bool) {
+        guard beat == nil, !still else { return }
+        let beat = Beat(big: big)
+        self.beat = beat
+        Task {
+            try? await Task.sleep(for: .seconds(beat.length))
+            if self.beat == beat { self.beat = nil }
+        }
+    }
+}
+
+/// The bee while it is glad, in the place of the still one.
+struct BeeJoyView: View {
+    let beat: BeeJoy.Beat
+    var size: CGFloat = 24
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let t = min(1, max(0, timeline.date.timeIntervalSince(beat.began) / beat.length))
+            // Up, held with a small bob and a rock from side to side, and down again.
+            let up = 0.22, down = 0.8
+            let lift = t < up ? Self.ease(t / up) : t < down ? 1 : 1 - Self.ease((t - down) / (1 - down))
+            let held = t < up || t > down ? 0 : (t - up) / (down - up)
+            let beats = beat.big ? 5.0 : 3.0
+            let bob = sin(held * .pi * 2 * beats) * 0.05 * lift
+            BeePulled(pull: 1, size: size)
+                .foregroundStyle(.black)
+                .rotationEffect(.degrees(sin(held * .pi * 2 * beats / 2) * (beat.big ? 9 : 6) * lift))
+                .scaleEffect(1 + ((beat.big ? 0.5 : 0.34) + bob) * lift)
+                // The further up, the softer and the further off its shadow on the yellow.
+                .shadow(color: .black.opacity(0.32 * lift), radius: 1 + 5 * lift, y: 1 + 6 * lift)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private static func ease(_ x: Double) -> Double { x < 0.5 ? 2 * x * x : 1 - pow(-2 * x + 2, 2) / 2 }
+}
+
+/// The still bee of a yellow button, and the glad one in its place while a task is celebrated.
+struct BeeAtHome: View {
+    var size: CGFloat = 24
+    var livesNowAndThen = false
+    private let joy = BeeJoy.shared
+
+    var body: some View {
+        ZStack {
+            BeeMark(size: size, livesNowAndThen: livesNowAndThen).foregroundStyle(.black).opacity(joy.beat == nil ? 1 : 0)
+            if let beat = joy.beat { BeeJoyView(beat: beat, size: size) }
+        }
+        .onAppear { joy.beesInSight += 1 }
+        .onDisappear { joy.beesInSight = max(0, joy.beesInSight - 1) }
+    }
+}

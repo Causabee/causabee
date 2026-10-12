@@ -730,7 +730,7 @@ struct RootView: View {
                 Button {
                     withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() }
                 } label: {
-                    BeeMark(size: 20).foregroundStyle(.black)
+                    BeeAtHome(size: 20)
                         .frame(width: 48, height: 48)
                         .background(Theme.bee, in: Circle())
                         .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
