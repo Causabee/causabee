@@ -782,6 +782,87 @@ extension ButtonStyle where Self == PhoneButtonStyle {
 }
 #endif
 
+/// What the assistant suggests, as a card: what it is, small; what it is about — a drafted mail's
+/// subject is its title, plain, and still a field —; its words on a writing area only a touch
+/// darker than the card and as tall as they are; and one button. The × in its corner puts it aside.
+struct CardFace: View {
+    let label: String
+    /// A draft's subject: the title, to change.
+    var subject: Binding<String>? = nil
+    /// What the card is about, when that is all it says.
+    var headline: String? = nil
+    var sub: String? = nil
+    /// The words to change before taking it in.
+    var text: Binding<String>? = nil
+    /// A written message stands in the serif; a task or a name in the app's own face.
+    var serif = false
+    /// Small lines under it: why, what goes along. Each with its sign, or none.
+    var notes: [(text: String, symbol: String?)] = []
+    let verb: String
+    let closeLabel: String
+    let close: () -> Void
+    let take: () -> Void
+
+    var body: some View {
+        #if os(iOS)
+        let disc: CGFloat = 30
+        #else
+        let disc: CGFloat = 24
+        #endif
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, subject == nil && headline == nil && sub == nil ? 0 : 6)
+                    if let subject { TextField("Subject", text: subject, axis: .vertical).textFieldStyle(.plain).font(.headline) }
+                    if let headline { Text(headline).font(.headline).fixedSize(horizontal: false, vertical: true) }
+                    if let sub { Text(sub).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                }
+                .padding(.leading, 4)
+                .frame(maxWidth: .infinity, minHeight: disc, alignment: .leading)
+                Button(action: close) {
+                    Image(systemName: "xmark").font(.system(size: disc * 0.4, weight: .semibold)).foregroundStyle(.secondary)
+                        .frame(width: disc, height: disc)
+                        .background(Color.primary.opacity(0.08), in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(closeLabel)
+            }
+            if let text {
+                let words = text.wrappedValue
+                // As tall as its words: the same words, unseen, take the room, and the field lies on them.
+                Text(words.isEmpty ? " " : words + (words.hasSuffix("\n") ? " " : ""))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .hidden()
+                    .overlay(alignment: .topLeading) { TextField("", text: text, axis: .vertical).textFieldStyle(.plain) }
+                    .font(serif ? Theme.rowTitleFont : .body)
+                    .padding(.horizontal, 16).padding(.vertical, 14)
+                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.top, 14)
+            }
+            ForEach(Array(notes.enumerated()), id: \.offset) { _, note in
+                Group {
+                    if let symbol = note.symbol { Label(note.text, systemImage: symbol) } else { Text(note.text) }
+                }
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10).padding(.leading, 4)
+            }
+            HStack {
+                Spacer(minLength: 0)
+                #if os(iOS)
+                Button(verb, action: take).buttonStyle(.phoneFilled)
+                #else
+                Button(verb, action: take).inkButton()
+                #endif
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 18)
+        }
+    }
+}
+
 /// The Mac's grey button, drawn by us as the black one is, so the two sit on one line at one height.
 struct QuietButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
