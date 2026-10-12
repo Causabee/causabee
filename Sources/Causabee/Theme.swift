@@ -277,12 +277,17 @@ struct SendGlyph: View {
             Circle().fill(Theme.bee)
             if stops {
                 RoundedRectangle(cornerRadius: 2).fill(.black).frame(width: 11, height: 11)
-            } else if mayHostBee, joy.beesInSight == 0, let beat = joy.beat {
-                BeeJoyView(beat: beat, size: 17)
             } else {
+                // The arrow and the bee change places softly: one fades as the other comes — cut
+                // from one to the other, the bee's landing was harsh.
+                let bee = mayHostBee && joy.beesInSight == 0 ? joy.beat : nil
                 Image(systemName: "arrow.up").font(.system(size: 16, weight: .regular)).foregroundStyle(.black)
+                    .opacity(bee == nil ? 1 : 0)
+                    .scaleEffect(bee == nil ? 1 : 0.7)
+                if let bee { BeeJoyView(beat: bee, size: 17).transition(.opacity.combined(with: .scale(scale: 0.8))) }
             }
         }
+        .animation(.easeInOut(duration: 0.22), value: joy.beat)
         .frame(width: 34, height: 34)
         .contentShape(Circle())
     }
