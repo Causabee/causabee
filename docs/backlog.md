@@ -89,6 +89,23 @@ purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`.
 
 ## Calendar and Reminders
 
+- **An invitation is an appointment of its own length, and the one already in the calendar.**
+  Seen on 2026-10-12: Tanguy's invitation "Chat Tanguy Lacroix / Ralf Chille", Oct 13, 11:00–11:15,
+  came to the review as "Oct 13 · Chat with Tanguy Lacroix" with no time, and stood in the calendar
+  as an hour from 11:00 — beside the invitation's own entry, which Google had put there. Two
+  entries for one meeting, one of them wrong. To do: read the invitation itself where a mail
+  carries one (`text/calendar`, the `.ics`): start, end and its UID — not only the mail's words;
+  keep the end with the appointment instead of assuming an hour; and before "Add to Calendar"
+  look for an entry of that UID, or of the same start with nearly the same title, and take that
+  one as the appointment's — "in Calendar" — instead of adding a second. Not looked into yet:
+  which of the two extra entries Causabee made. (2026-10-12)
+- **A file added by hand cannot be scanned or named from its content.** On the iPhone a mail's
+  attachment offers Scan and "Name from content"; a file added by hand, or brought in with a
+  folder, offers neither (`MailFiles.swift`, `items`: both ask for `!isOwnFile`). That was right
+  while a file of one's own always came through the assistant and was read there; since the
+  folder import (Beta 52) such files are kept unread, and have no way to be read later. To do:
+  offer both for any file that is on this device or in the matter's folder. (2026-10-12)
+
 - **Find a connected event again when it moves.** An appointment was added to the "Matterbee"
   calendar, then moved in Calendar to the owner's private calendar: the chip said "no longer in
   Calendar", because an event moved to another calendar or account gets a new id. A "Connect"
