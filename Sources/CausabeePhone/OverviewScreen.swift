@@ -40,8 +40,13 @@ struct RootView: View {
             navigation.whole = wide
             let narrow = wide < PadMetrics.wide
             guard narrow != navigation.isNarrow || !navigation.measured else { return }
+            let first = !navigation.measured
             navigation.measured = true
             navigation.isNarrow = narrow
+            // The first look at the window is no turn of it: nothing glides. Animated, the page —
+            // which gets its width in this same moment — grew out of its middle each time the app
+            // came up, its cards filling with their words on the way.
+            if first { navigation.showsSidebar = !narrow; return }
             // Turned upright, the sidebar steps aside; turned on its side, it is back.
             withAnimation(.snappy(duration: 0.25)) { navigation.showsSidebar = !narrow }
         }
