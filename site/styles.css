@@ -541,7 +541,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 }
 
 /* Files: a file comes in with its mail — the list opens for it at the top, lightly marked. */
-.live--files { --img: url("assets/img/files.webp?v=15"); }
+.live--files { --img: url("assets/img/files.webp?v=16"); }
 .live--files .fl-row { animation-name: fl-row; }
 .live--files .fl-mark { animation-name: fl-mark; border-radius: calc(4 * var(--u)); background: #ecebe6; mix-blend-mode: multiply; }
 .live--files .fl-rest { animation-name: fl-rest; }
