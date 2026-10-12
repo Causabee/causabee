@@ -40,7 +40,7 @@ CROPS = {
     "files": ("intro-4", (544, 140, 1984, 820)),
     "sources": ("intro-5", (544, 1120, 1984, 1816)),
     # From under the day and the ×, which a crop cut through, to under the answer's own line of tools.
-    "assistant": ("intro-5", (1990, 100, 2878, 990)),
+    "assistant": ("intro-5", (1990, 100, 2878, 1070)),
 }
 FULL = {"overview": "intro-1", "matter": "intro-2", "care": "intro-5"}
 # A crop that starts right under the matter's pinned bar still catches its lower edge — a grey strip
