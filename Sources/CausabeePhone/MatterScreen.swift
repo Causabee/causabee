@@ -625,7 +625,13 @@ struct MatterScreen: View {
                 .buttonStyle(.phoneFilled)
             }
             if let todo {
-                if !waiting { Button("Done") { withAnimation { toggle(todo) } }.buttonStyle(.phone) }
+                if !waiting {
+                    Button("Done") {
+                        withAnimation { toggle(todo) }
+                        if todo.isDone { BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: BeeJoy.reducesMotion) }
+                    }
+                    .buttonStyle(.phone)
+                }
                 Button("Show") { show(todo.persistentModelID, with: scroller) }.buttonStyle(.phone)
             } else if !waiting, !Todo.isMessage(text) {
                 Button("Talk it over") { navigation.talk(text, kind: "Step", in: matter) }.buttonStyle(.phone)

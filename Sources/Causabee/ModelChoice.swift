@@ -41,6 +41,7 @@ struct ModelSettingsView: View {
     @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
     @AppStorage(ModelChoice.assistantKey) private var assistant = Claude.Model.opus.id
     @AppStorage(ModelChoice.strictKey) private var strict = true
+    @AppStorage(BeeJoy.key) private var celebrates = true
 
     var body: some View {
         Form {
@@ -58,6 +59,9 @@ struct ModelSettingsView: View {
                 Text("Answers, summaries and the next step. Under each answer you see which model wrote it.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             } header: { Text("Questions") }
+            Section {
+                Toggle("The bee is glad when you tick a task", isOn: $celebrates)
+            } header: { Text("Tasks") }
             Section { CloudSettings() } header: { Text("iCloud") }
             Section { CalendarSettings() } header: { Text("Calendar and Reminders") }
             Section { FolderSettings() } header: { Text("Matter folders in iCloud Drive") }
