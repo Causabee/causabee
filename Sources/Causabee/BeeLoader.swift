@@ -290,6 +290,9 @@ struct BeeJoyView: View {
                 BeeLoader.drawGlad(in: context, size: canvas, time: t * beat.length, lift: lift)
             }
             .frame(width: size * BeeLoader.aspect, height: size)
+                // Where the still bee stands, to the point: it is set a little up in its frame, and
+                // the glad one, not, jumped up as it landed and the still one took its place.
+                .offset(y: -size * 0.036)
                 .foregroundStyle(.black)
                 .rotationEffect(.degrees(sin(held * .pi * 2 * beats / 2) * (beat.big ? 9 : 6) * lift))
                 .scaleEffect(1 + ((beat.big ? 0.5 : 0.34) + bob) * lift)
