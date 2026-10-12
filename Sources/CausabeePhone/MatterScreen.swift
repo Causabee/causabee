@@ -1065,6 +1065,8 @@ struct PhoneTodoRow: View {
     var reminders: [Calendars.Reminder]? = nil
     var calendarTick = 0
     let toggle: () -> Void
+    /// The middle of the box, in the window: where the bee flies its round.
+    @State private var box = CGPoint.zero
     @Environment(\.modelContext) private var context
     @Environment(\.undoManager) private var undoManager
     @Environment(Navigation.self) private var navigation
@@ -1079,13 +1081,22 @@ struct PhoneTodoRow: View {
 
     private var row: some View {
         HStack(alignment: .top, spacing: 12) {
-            Button(action: toggle) {
+            Button {
+                let wasOpen = !todo.isDone
+                toggle()
+                // Ticked by hand: the bee flies a round about the box — twice, when it was the
+                // matter's last open task.
+                if wasOpen, todo.isDone {
+                    BeeFlight.shared.celebrate(at: box, big: (todo.matter?.todos ?? []).allSatisfy(\.isDone))
+                }
+            } label: {
                 Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")
                     .font(.title3)
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(todo.isDone ? Theme.onInk : .secondary, todo.isDone ? Theme.ink : .secondary)
                     .frame(width: 26, height: 26)
                     .contentShape(Rectangle())
+                    .onGeometryChange(for: CGPoint.self) { let frame = $0.frame(in: .global); return CGPoint(x: frame.midX, y: frame.midY) } action: { box = $0 }
             }
             .buttonStyle(.plain)
             .accessibilityLabel(todo.isDone ? "Open again" : "Mark as done")
