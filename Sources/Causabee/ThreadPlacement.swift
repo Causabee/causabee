@@ -51,6 +51,11 @@ final class ThreadPlacement {
     /// The keyboard came up over a newest taller than what is left of the screen: its end stands
     /// over the field — that is what is being answered — until the keyboard goes or a question is sent.
     @ObservationIgnored private var showsEnd = false
+    /// The newest ends in a card that waits for the owner: taller than the room, it stands by its
+    /// end — the card and its button in sight over the field — not by its beginning with the card
+    /// under the edge and the way down offered on top of the card's own button.
+    @ObservationIgnored private var endsInCard = false
+    private var byEnd: Bool { showsEnd || (endsInCard && own > viewport) }
     /// A question was just sent and the thread is on its way up to it: until it is there, nothing
     /// puts the thread anywhere at once — that would cut the way short, and the question would
     /// stand at the top from nowhere.
@@ -67,7 +72,7 @@ final class ThreadPlacement {
         // Standing by its top, the newest stays there by itself as the room changes: put there
         // again on the keyboard's way, it was put by where things stood a moment before, and
         // trailed the keyboard. Only its end over the field has to be kept there.
-        if follows, showsEnd { place(scroller) }
+        if follows, byEnd { place(scroller) }
     }
 
     /// One of the thread's things, where it stands in the scroll view. The newest laid out for the
@@ -88,9 +93,10 @@ final class ThreadPlacement {
     /// The newest's own height, before it is made as tall as the room. Another than before — an
     /// answer came, sources unfolded: it is put in its place again. Not so for the room's height:
     /// that changes all the way of the keyboard, and the newest stands through it by itself.
-    func own(_ height: CGFloat, with scroller: ScrollViewProxy) {
-        let changed = abs(height - own) > 0.5
+    func own(_ height: CGFloat, card: Bool = false, with scroller: ScrollViewProxy) {
+        let changed = abs(height - own) > 0.5 || card != endsInCard
         own = height
+        endsInCard = card
         look()
         if changed, follows, laidOut == newest { place(scroller) }
     }
@@ -113,7 +119,7 @@ final class ThreadPlacement {
         guard new == .idle else { return }
         fingerAt = nil
         // Brought back to its newest by hand: it follows again.
-        if !follows, let top, abs(top) < 8 { follows = true; newAnswer = nil }
+        if !follows, let top, abs(top) < 8 || (byEnd && abs(top + own - viewport) < 8) { follows = true; newAnswer = nil }
     }
 
     /// The owner's own doing — a question sent, a file brought in, the button: the newest goes to
@@ -177,7 +183,7 @@ final class ThreadPlacement {
     private func place(_ scroller: ScrollViewProxy, animated: Bool = false) {
         DispatchQueue.main.async { [self] in
             guard let newest else { return }
-            let anchor: UnitPoint = showsEnd ? .bottom : .top
+            let anchor: UnitPoint = byEnd ? .bottom : .top
             let animated = animated || Date() < glidesUntil
             guard animated else { scroller.scrollTo(newest, anchor: anchor); return }
             withAnimation(Self.glide) { scroller.scrollTo(newest, anchor: anchor) }
@@ -186,7 +192,7 @@ final class ThreadPlacement {
             glides += 1
             let glide = glides
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.glideTime + 0.1) { [self] in
-                if glide == glides, follows, !showsEnd { scroller.scrollTo(newest, anchor: .top) }
+                if glide == glides, follows, !showsEnd { scroller.scrollTo(newest, anchor: byEnd ? .bottom : .top) }
             }
         }
     }

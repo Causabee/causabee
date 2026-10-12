@@ -814,7 +814,11 @@ struct CardFace: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         .padding(.bottom, subject == nil && headline == nil && sub == nil ? 0 : 6)
-                    if let subject { TextField("Subject", text: subject, axis: .vertical).textFieldStyle(.plain).font(.headline) }
+                    if let subject {
+                        // As tall as its words, decided once: squeezed, it was cut under the writing area.
+                        TextField("Subject", text: subject, axis: .vertical).textFieldStyle(.plain).font(.headline)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     if let headline { Text(headline).font(.headline).fixedSize(horizontal: false, vertical: true) }
                     if let sub { Text(sub).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
                 }

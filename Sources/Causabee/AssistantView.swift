@@ -223,7 +223,7 @@ struct AssistantColumn: View {
                                     .id(turn.id).transition(.opacity)
                             }
                             }
-                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if turn.id == shown.last?.id { placement.own(height, with: scroller) } }
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if turn.id == shown.last?.id { placement.own(height, card: turn.waitsWithCard, with: scroller) } }
                             // The newest is at least as tall as the column shows: it can stand at the top,
                             // and its answer grows into the room under it.
                             .modifier(TallAsThread(on: turn.id == shown.last?.id))
@@ -674,7 +674,8 @@ struct TurnView: View {
             ForEach(Array(answer.reply.cards.enumerated()), id: \.offset) { index, card in
                 if card.kind == .shortMessage {
                     // A message for a chat: copied, not taken in. Asked for, so it stays while reading.
-                    MessageCard(id: "\(turn.id)-\(index)", asked: turn.date, to: card.party.map { id in turn.refs[id].map(label) ?? id }, words: card.text, reason: card.reason)
+                    MessageCard(id: "\(turn.id)-\(index)", asked: turn.date, to: card.party.map { id in turn.refs[id].map(label) ?? id }, words: card.text, reason: card.reason,
+                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 } else
                 // While reading, a draft asked for stays; the other suggestions are put away.
                 if !reading || card.kind == .draftMessage {
