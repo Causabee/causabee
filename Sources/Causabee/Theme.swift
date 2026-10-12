@@ -1004,11 +1004,12 @@ struct PartTabs<Value: Hashable>: View {
                     .padding(.horizontal, chosen ? 16 : 14)
                     .frame(maxWidth: chosen && fills ? .infinity : nil)
                     .frame(height: height)
-                    // The open part is a grey a step darker with its words in black, not the ink of
-                    // the app's filled buttons: it says where one is, not what to press — and the
-                    // bee stays the strongest thing on the page.
+                    // The open part lies on the same light grey as the others; only its sign and its
+                    // word are black, where theirs are grey. Not the ink of the app's filled buttons:
+                    // it says where one is, not what to press — and the bee stays the strongest thing
+                    // on the page.
                     .foregroundStyle(chosen ? Color.primary : Color.secondary)
-                    .background(Color.primary.opacity(chosen ? 0.16 : 0.06), in: Capsule())
+                    .background(Color.primary.opacity(0.06), in: Capsule())
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
