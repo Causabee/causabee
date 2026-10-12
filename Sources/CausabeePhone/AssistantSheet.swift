@@ -75,6 +75,11 @@ struct AssistantSheet: View {
         var date: Date {
             switch self { case .turn(_, let turn): turn.date; case .shot(let shot): shot.date; case .pending(_, _, let date): date }
         }
+        /// An answer with a card still to decide on: the thread shows its end, where the card is.
+        var waitsWithCard: Bool {
+            guard case .turn(_, let turn) = self, case .answered(let answer) = turn.state else { return false }
+            return answer.reply.cards.indices.contains { !turn.applied.contains($0) && !turn.dismissedCards.contains($0) }
+        }
     }
 
     private var shots: [PhoneShots.Shot] {
@@ -129,7 +134,7 @@ struct AssistantSheet: View {
                             // A question that could not go out says why, under the newest.
                             if newest, let failure { failed(failure) }
                         }
-                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if newest { placement.own(height, with: scroller) } }
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if newest { placement.own(height, card: entry.waitsWithCard, with: scroller) } }
                         // The newest is at least as tall as the screen shows: it can stand at the top,
                         // and its answer grows into the room under it.
                         .modifier(TallAsThread(on: newest))
@@ -578,7 +583,12 @@ struct PhoneTurnView: View {
                 if card.kind == .shortMessage {
                     // A message for a chat: copied, not taken in.
                     MessageCard(id: "\(turn.id)-\(index)", asked: turn.date, to: card.party.map { id in turn.refs[id].map { CardActions.label($0, in: context) } ?? id },
-                                words: card.text, reason: card.reason)
+                                words: card.text, reason: card.reason,
+                                dismissed: turn.dismissedCards.contains(index),
+                                setDismissed: { put in
+                                    Haptics.tap()
+                                    withAnimation { navigation.mark(record, card: index, dismissed: put, context: context) }
+                                })
                 } else {
                     PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
                 }

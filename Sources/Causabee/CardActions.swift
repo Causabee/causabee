@@ -688,6 +688,9 @@ struct MessageCard: View {
     let to: String?
     let words: String
     let reason: String
+    /// Put aside: a small card that says so, and brings it back.
+    var dismissed = false
+    var setDismissed: (Bool) -> Void = { _ in }
     @State private var text: String
     @State private var copied = false
     @State private var waits: Task<Void, Never>?
@@ -696,41 +699,86 @@ struct MessageCard: View {
 
     /// With its words from the first moment: a card that got them only once it showed grew after
     /// it was laid out, and the thread jumped under the finger.
-    init(id: String, asked: Date, to: String?, words: String, reason: String) {
+    init(id: String, asked: Date, to: String?, words: String, reason: String,
+         dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
         (self.id, self.asked, self.to, self.words, self.reason) = (id, asked, to, words, reason)
+        (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
         _text = State(initialValue: words)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        if dismissed {
+            // As a suggestion put aside: small, on the soft ground, with the way back.
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("You dismissed this message").font(.caption2)
+                    Text(text).font(.footnote).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }
+                .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Button("Show again") { setDismissed(false) }
+                    .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain).fixedSize()
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+        } else {
+            card
+        }
+    }
+
+    private var card: some View {
+        #if os(iOS)
+        let disc: CGFloat = 30
+        #else
+        let disc: CGFloat = 24
+        #endif
+        return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Text(to.map { "Message · for \($0)" } ?? "Message").font(.footnote.weight(.semibold))
+                Text(to.map { "Message · for \($0)" } ?? "Message").font(.caption).foregroundStyle(.secondary)
+                    .padding(.leading, 4)
                 Spacer(minLength: 4)
                 // Always there, seen only for a moment: the line keeps its height.
                 Label("Copied", systemImage: "checkmark").font(.caption.weight(.medium)).foregroundStyle(Theme.done)
                     .opacity(copied ? 1 : 0)
                     .accessibilityHidden(!copied)
+                Button { withAnimation { setDismissed(true) } } label: {
+                    Image(systemName: "xmark").font(.system(size: disc * 0.4, weight: .semibold)).foregroundStyle(.secondary)
+                        .frame(width: disc, height: disc)
+                        .background(Color.primary.opacity(0.08), in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss")
             }
+            // On the soft writing area, as the other cards' words are.
             TextField("", text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...14)
                 // As tall as its words, decided once: not measured again while the thread scrolls.
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 10).padding(.vertical, 8)
-                .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+                .padding(.top, 14)
                 .accessibilityIdentifier("message.text")
-            if !reason.isEmpty {
-                Text(reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Text((reason.isEmpty ? "" : reason + " ") + "On your clipboard: paste it into the chat.")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10).padding(.leading, 4)
+            HStack {
+                Spacer(minLength: 0)
+                #if os(iOS)
+                // The chat is one tap away in the share sheet; the words are on the clipboard as well.
+                ShareLink(item: text.trimmingCharacters(in: .whitespacesAndNewlines)) { Text("Share") }.buttonStyle(.phoneFilled)
+                #else
+                Button("Copy") { copy() }.inkButton()
+                #endif
+                Spacer(minLength: 0)
             }
-            HStack(spacing: 8) {
-                Text("On your clipboard: paste it into the chat.").font(.caption).foregroundStyle(.secondary)
-                Spacer(minLength: 4)
-                Button("Copy") { copy() }.buttonStyle(.gold).font(.footnote.weight(.medium))
-            }
+            .padding(.top, 18)
         }
-        .padding(14)
+        .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 20))
         .onAppear {
             // Landed just now, and not copied yet while the app is open.
             guard !Self.landed.contains(id), Date().timeIntervalSince(asked) < 300 else { return }

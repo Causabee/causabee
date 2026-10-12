@@ -347,14 +347,21 @@ enum DemoData {
         let short = [("The stand-in answers: the key is kept at number 4.", [String]()),
                      ("The assessor comes at 10:00; the physio would overlap, so it is best moved to the afternoon.", [])]
         let more = (1...14).map { ("Point \($0): something more that has to be read, said in a full sentence so that it takes its line and a half.", [String]()) }
+        let long = question.lowercased().contains("long")
+        // Asked for a message in a chat: its card, to see it — nothing of it is real.
+        if AssistantAsk.namesChat(question) {
+            return answer(lines: [("Here is a short message.", [])] + (long ? more : []),
+                          cards: [card("short_message", text: "Hi Sebastian, did everything go well with posting the letters? Thanks!",
+                                       reason: "Asks whether the letters were posted.", cites: [])])
+        }
         // Asked to write a message: a draft, to see its card — nothing of it is real.
         if question.lowercased().contains("message") || question.lowercased().contains("mail") {
             var draft = card("draft_message", text: "Hello Sebastian, did everything go well with posting the letters? Thank you!\nAlex",
                              reason: "Asks whether the letters were posted as planned.", cites: [])
             draft["subject"] = "Letters"
-            return answer(lines: [("Here is a short message.", [])], cards: [draft])
+            return answer(lines: [("Here is a short message.", [])] + (long ? more : []), cards: [draft])
         }
-        return answer(lines: question.lowercased().contains("long") ? short + more : short, cards: [])
+        return answer(lines: long ? short + more : short, cards: [])
     }
 
     nonisolated private static func answer(lines: [(String, [String])], cards: [[String: Any]]) -> AssistantAsk.Answer {

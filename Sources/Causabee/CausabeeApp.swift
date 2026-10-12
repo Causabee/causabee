@@ -293,6 +293,11 @@ final class Navigation {
         var undos: [Int: Undo] = [:]
         /// Cards the owner dismissed, by position: kept, so they stay dismissed after a restart.
         var dismissedCards: Set<Int> = []
+        /// An answer with a card still to decide on: the thread shows its end, where the card is.
+        var waitsWithCard: Bool {
+            guard case .answered(let answer) = state else { return false }
+            return answer.reply.cards.indices.contains { !applied.contains($0) && !dismissedCards.contains($0) }
+        }
         /// While asking: what it is doing now, and since when the question is out. Not kept.
         var step: AssistantAsk.Step?
         var sentAt: Date?
