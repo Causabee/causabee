@@ -492,7 +492,7 @@ struct Composer: View {
                 Button(action: stop ?? send) {
                     // The bee's yellow with a black arrow, drawn light, like the other yellow pills —
                     // and a black square while an answer is on its way.
-                    SendGlyph(stops: stop != nil)
+                    SendGlyph(stops: stop != nil, mayHostBee: draft.isEmpty)
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(stop == nil ? KeyboardShortcut(.return, modifiers: .command) : KeyboardShortcut(".", modifiers: .command))

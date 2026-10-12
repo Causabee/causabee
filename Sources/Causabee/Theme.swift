@@ -267,6 +267,10 @@ extension View {
 /// on the bee's yellow, in a light line — or a black square, to stop an answer on its way.
 struct SendGlyph: View {
     let stops: Bool
+    /// Nothing is written and nothing is on its way: the bee may come out of this yellow, glad of
+    /// a task ticked, when its own button is not in sight.
+    var mayHostBee = false
+    private let joy = BeeJoy.shared
 
     var body: some View {
         ZStack {
@@ -274,9 +278,16 @@ struct SendGlyph: View {
             if stops {
                 RoundedRectangle(cornerRadius: 2).fill(.black).frame(width: 11, height: 11)
             } else {
+                // The arrow and the bee change places softly: one fades as the other comes — cut
+                // from one to the other, the bee's landing was harsh.
+                let bee = mayHostBee && joy.beesInSight == 0 ? joy.beat : nil
                 Image(systemName: "arrow.up").font(.system(size: 16, weight: .regular)).foregroundStyle(.black)
+                    .opacity(bee == nil ? 1 : 0)
+                    .scaleEffect(bee == nil ? 1 : 0.7)
+                if let bee { BeeJoyView(beat: bee, size: 17).transition(.opacity.combined(with: .scale(scale: 0.8))) }
             }
         }
+        .animation(.easeInOut(duration: 0.22), value: joy.beat)
         .frame(width: 34, height: 34)
         .contentShape(Circle())
     }

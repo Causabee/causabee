@@ -1605,10 +1605,18 @@ struct TodoRow: View {
     @Environment(\.undoManager) private var undoManager
     @State private var editing = false
     @State private var deleting = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Button(action: toggle) {
+            Button {
+                let wasOpen = !todo.isDone
+                toggle()
+                // Ticked by hand: the bee is glad — a little more, when it was the matter's last open task.
+                if wasOpen, todo.isDone {
+                    BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: reduceMotion)
+                }
+            } label: {
                 Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")
                     .font(.title3)
                     .symbolRenderingMode(.palette)

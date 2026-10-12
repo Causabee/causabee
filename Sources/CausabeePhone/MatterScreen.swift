@@ -1065,6 +1065,7 @@ struct PhoneTodoRow: View {
     var reminders: [Calendars.Reminder]? = nil
     var calendarTick = 0
     let toggle: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var context
     @Environment(\.undoManager) private var undoManager
     @Environment(Navigation.self) private var navigation
@@ -1079,7 +1080,14 @@ struct PhoneTodoRow: View {
 
     private var row: some View {
         HStack(alignment: .top, spacing: 12) {
-            Button(action: toggle) {
+            Button {
+                let wasOpen = !todo.isDone
+                toggle()
+                // Ticked by hand: the bee is glad — a little more, when it was the matter's last open task.
+                if wasOpen, todo.isDone {
+                    BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: reduceMotion)
+                }
+            } label: {
                 Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")
                     .font(.title3)
                     .symbolRenderingMode(.palette)

@@ -108,8 +108,7 @@ struct AssistantButton: View {
                 .menuSigns()
         } label: {
             // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
-            BeeMark(size: 24, livesNowAndThen: true)
-                .foregroundStyle(.black)
+            BeeAtHome(size: 24, livesNowAndThen: true)
                 .frame(width: 46, height: 46)
         } primaryAction: {
             action()
