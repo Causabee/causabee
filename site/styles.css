@@ -688,3 +688,80 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   .cols--live .point { padding-top: 0; }
   .cols--live .point::before, .cols--live .point::after { display: none; }
 }
+
+/* The bee in the middle: what comes in, the bee on the device, what it keeps with Apple, and the one gate to the AI outside. */
+.bee-still { width: 100%; height: auto; display: block; fill: #000; }
+.bee-still .wl, .bee-still .wr { fill-opacity: 0.5; }
+.beemap__mark { width: 30px; height: 30px; padding: 6px 4px; border-radius: 8px; background: var(--honey); display: inline-flex; align-items: center; }
+.beemap { width: 100%; margin: 0; padding: clamp(18px, 2.6vw, 36px); border-radius: 28px; background: var(--paper); box-shadow: 0 0 0 1px var(--line); display: flex; flex-direction: column; gap: clamp(18px, 2vw, 28px); text-align: left; }
+#bee { background: var(--paper-2); }
+.beemap h3 { font: 600 17px/1.3 var(--sans); letter-spacing: -0.01em; }
+.beemap p { font-size: 13px; line-height: 1.45; color: var(--muted); }
+.beemap__kicker { font: 500 11px/1.4 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; color: var(--quiet); }
+.beemap__kicker--honey { color: var(--honey); margin-top: 6px; }
+.beemap__flow { position: relative; display: grid; align-items: center; grid-template-columns: minmax(0, 0.9fr) 84px minmax(0, 1.1fr) minmax(170px, 0.72fr) 104px minmax(0, 1.2fr); column-gap: 0; padding: 44px 0 20px 20px; }
+.beemap__zone { position: absolute; inset: 0 auto 0 0; width: calc(100% - 52px - (100% - 20px - 84px - 104px) * 1.2 / 3.92); border-radius: 22px; background: var(--paper-2); }
+.beemap__zone span { position: absolute; top: 16px; left: 20px; font: 500 11px/1.4 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; color: var(--quiet); }
+.beemap__flow > :not(.beemap__zone) { position: relative; }
+.beemap__node { display: flex; flex-direction: column; gap: 6px; padding: 18px 20px; border-radius: 16px; background: var(--paper); }
+.beemap__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; padding: 0; list-style: none; }
+.beemap__chips li { padding: 5px 10px; border-radius: 999px; background: var(--paper-2); font-size: 12px; font-weight: 500; }
+.beemap__mid { display: flex; flex-direction: column; align-items: stretch; }
+.beemap__bee { align-self: center; width: clamp(150px, 15vw, 200px); aspect-ratio: 1; border-radius: 50%; background: color-mix(in srgb, var(--honey) 22%, var(--paper-2)); display: grid; place-items: center; }
+.beemap__bee > div { width: 72%; aspect-ratio: 1; border-radius: 50%; background: var(--honey); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.beemap__bee .bee-still { width: 56%; }
+.beemap__bee span { font: 500 10px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+/* A line from one thing to the next, what it does said on it, and the way it goes. */
+.beemap__conn { position: relative; display: flex; align-items: center; justify-content: center; min-height: 30px; color: var(--quiet); }
+.beemap__conn::before { content: ""; position: absolute; inset: 50% 0 auto 0; height: 1.5px; background: rgba(0, 0, 0, 0.16); transform: translateY(-50%); }
+.beemap__pill { position: relative; padding: 5px 11px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.beemap__pill--light { background: var(--paper); color: var(--ink); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14); }
+.beemap__head { position: absolute; right: -2px; top: 50%; width: 12px; height: 12px; margin-top: -6px; }
+.beemap__conn--back .beemap__head { right: auto; left: -2px; transform: scaleX(-1); }
+.beemap__conn--v { min-height: 58px; }
+.beemap__conn--v::before { inset: 0 auto 0 50%; width: 1.5px; height: auto; transform: translateX(-50%); }
+.beemap__out { display: flex; flex-direction: column; gap: 12px; }
+.beemap__note { text-align: right; padding-right: 6px; font-size: 11px !important; }
+.beemap__gate { aspect-ratio: 1; border-radius: 16px; background: var(--honey); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.beemap__gate .beemap__kicker { color: rgba(0, 0, 0, 0.6); }
+.beemap__gate strong { font-size: 16px; font-weight: 600; }
+.beemap__ai { margin-left: 28px; padding: 22px; background: var(--night-2); color: #fff; }
+.beemap__ai::before { content: ""; position: absolute; left: -28px; top: 44%; width: 28px; height: 1.5px; background: rgba(0, 0, 0, 0.16); }
+.beemap__ai h3 { font-size: 21px; }
+.beemap__ai p { color: var(--night-muted); }
+.beemap__ai .beemap__chips li { background: var(--night-3); color: #fff; }
+.beemap__ai code { padding: 10px 12px; border-radius: 10px; background: var(--night-3); font: 500 11px/1.4 ui-monospace, "SF Mono", Menlo, monospace; color: #fff; overflow-wrap: anywhere; }
+.beemap__jobs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.beemap__jobs li { display: flex; flex-direction: column; gap: 6px; padding: 18px; border-radius: 16px; background: var(--paper-2); }
+.beemap__jobs span { font: 500 11px/1.4 ui-monospace, "SF Mono", Menlo, monospace; color: var(--quiet); }
+.beemap__jobs .is-honey { background: var(--honey); }
+.beemap__jobs .is-honey p, .beemap__jobs .is-honey span { color: rgba(0, 0, 0, 0.72); }
+.beeidea { width: 100%; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; padding: clamp(28px, 3.4vw, 44px); border-radius: 28px; background: var(--night-2); color: #fff; text-align: left; }
+.beeidea h3 { margin: 8px 0 10px; font: 600 clamp(20px, 2vw, 26px)/1.25 var(--sans); letter-spacing: -0.01em; max-width: 16em; }
+.beeidea p { font-size: 15px; line-height: 1.5; color: var(--night-muted); max-width: 34em; }
+.beeidea .beemap__kicker { color: var(--night-muted); }
+.beeidea__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding-left: clamp(0px, 3vw, 40px); border-left: 1px solid rgba(255, 255, 255, 0.12); }
+.beeidea__facts dt { font: 600 clamp(34px, 4vw, 52px)/1 var(--sans); }
+.beeidea__facts dd { margin: 10px 0 0; font-size: 13px; color: var(--night-muted); }
+.beeidea__facts .is-honey dt { color: var(--honey); }
+@media (max-width: 1099px) {
+  .beemap__jobs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* One thing under the other: the lines stand, and say which way. */
+  .beemap__flow { grid-template-columns: minmax(0, 1fr); padding: 14px; row-gap: 0; border-radius: 22px; background: var(--paper-2); }
+  /* The zone's own ground would lie under the AI outside too: here the whole column is one ground, and the AI's card says where it is. */
+  .beemap__zone { display: none; }
+  .beemap__conn, .beemap__conn--v { min-height: 56px; }
+  .beemap__conn::before { inset: 0 auto 0 50%; width: 1.5px; height: auto; transform: translateX(-50%); }
+  .beemap__head { display: none; }
+  .beemap__out { gap: 0; }
+  .beemap__conn--out .beemap__pill::after { content: " ↓"; }
+  .beemap__conn--back .beemap__pill::after { content: " ↑"; }
+  .beemap__conn--in .beemap__pill::after { content: " ↓"; }
+  .beemap__note { text-align: center; padding: 0 0 10px; }
+  .beemap__gate { aspect-ratio: auto; width: 150px; padding: 22px 0; justify-self: center; }
+  .beemap__ai { margin: 56px 0 0; }
+  .beemap__ai::before { left: 50%; top: -56px; width: 1.5px; height: 56px; }
+  .beeidea { grid-template-columns: minmax(0, 1fr); }
+  .beeidea__facts { padding-left: 0; padding-top: 24px; border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.12); }
+}
+@media (max-width: 519px) { .beemap__jobs { grid-template-columns: minmax(0, 1fr); } .beemap { border-radius: 22px; } }
