@@ -782,6 +782,72 @@ extension ButtonStyle where Self == PhoneButtonStyle {
 }
 #endif
 
+/// A drafted mail, as a card: what it is, its subject as the title — plain, and still a field —
+/// to whom, the message on a writing area only a touch darker than the card and as tall as its
+/// words, and one button. The × in its corner puts it aside.
+struct DraftCardFace: View {
+    @Binding var subject: String
+    @Binding var text: String
+    /// "To Sebastian"; nil when nobody is known to write to.
+    let to: String?
+    /// The files that go along, when the draft names some.
+    let files: String?
+    let closeLabel: String
+    let close: () -> Void
+    let open: () -> Void
+
+    var body: some View {
+        #if os(iOS)
+        let disc: CGFloat = 30
+        #else
+        let disc: CGFloat = 24
+        #endif
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Draft · Mail").font(.caption).foregroundStyle(.secondary).padding(.bottom, 6)
+                    TextField("Subject", text: $subject, axis: .vertical).textFieldStyle(.plain).font(.headline)
+                    if let to { Text(to).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                }
+                .padding(.leading, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Button(action: close) {
+                    Image(systemName: "xmark").font(.system(size: disc * 0.4, weight: .semibold)).foregroundStyle(.secondary)
+                        .frame(width: disc, height: disc)
+                        .background(Color.primary.opacity(0.08), in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(closeLabel)
+            }
+            // As tall as its words: the same words, unseen, take the room, and the field lies on them.
+            Text(text.isEmpty ? " " : text + (text.hasSuffix("\n") ? " " : ""))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .hidden()
+                .overlay(alignment: .topLeading) { TextField("Message", text: $text, axis: .vertical).textFieldStyle(.plain) }
+                .font(Theme.rowTitleFont)
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+                .padding(.top, 14)
+            if let files {
+                Label(files, systemImage: "paperclip").font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 10).padding(.leading, 4)
+            }
+            HStack {
+                Spacer(minLength: 0)
+                #if os(iOS)
+                Button("Open in Mail", action: open).buttonStyle(.phoneFilled)
+                #else
+                Button("Open in Mail", action: open).inkButton()
+                #endif
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 18)
+        }
+    }
+}
+
 /// The Mac's grey button, drawn by us as the black one is, so the two sit on one line at one height.
 struct QuietButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled

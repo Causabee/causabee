@@ -744,7 +744,32 @@ struct PhoneActionCard: View {
         .onChange(of: done) { if quiet != done { step { quiet = done; editingDraft = false } } }
     }
 
+    /// "To Sebastian": to whom the draft goes, when someone is known.
+    private var draftTo: String? { recipient.map { "To " + $0.name } }
+
+    @ViewBuilder
     private var full: some View {
+        if card.kind == .draftMessage {
+            DraftCardFace(subject: $subject, text: $text, to: draftTo,
+                          files: CardActions.attachmentLine(text: text, question: turn.question, scope: scope),
+                          closeLabel: quiet ? "Cancel" : "Dismiss",
+                          close: {
+                              // Opened in Mail before and unfolded to change: the × folds it again.
+                              if quiet { step { editingDraft = false } }
+                              else { Haptics.tap(); withAnimation { navigation.mark(record, card: index, dismissed: true, context: context) } }
+                          },
+                          open: { take() })
+                .opacity(showsContent ? 1 : 0)
+                .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background { RoundedRectangle(cornerRadius: 20).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
+                .transition(.opacity)
+        } else {
+            fullOther
+        }
+    }
+
+    private var fullOther: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title).font(.footnote.weight(.semibold)).foregroundStyle(.primary)
             if let what { Text(what).fixedSize(horizontal: false, vertical: true) }

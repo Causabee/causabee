@@ -839,6 +839,21 @@ struct ActionCard: View {
             .padding(.horizontal, 12).padding(.vertical, 8)
             .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+        } else if card.kind == .draftMessage {
+            DraftCardFace(subject: $subject, text: $text, to: recipient.map { "To " + $0.name }, files: along(text),
+                          closeLabel: quiet ? "Cancel" : "Dismiss",
+                          close: {
+                              // Opened in Mail before and unfolded to change: the × folds it again.
+                              if quiet { step { editingDraft = false } } else { withAnimation { setDismissed(true) } }
+                          },
+                          open: {
+                              apply(text, subject)
+                              if quiet { step { editingDraft = false } }
+                          })
+                .opacity(showsContent ? 1 : 0)
+                .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 18)
+                .background { RoundedRectangle(cornerRadius: 16).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
+                .transition(.opacity)
         } else {
             VStack(alignment: .leading, spacing: 10) {
                 Text(title).font(.caption.weight(.semibold)).foregroundStyle(.primary)
