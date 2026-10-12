@@ -134,6 +134,8 @@ final class PhoneMailCheck {
         let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
         door.alsoKnown = Set(entries.map(\.messageID))
         door.setAside = Self.setAside
+        // New mail from the people of the matters is found without a label, and offered.
+        door.knownSenders = KnownSenders.addresses(in: (try? context.fetch(FetchDescriptor<Matter>())) ?? [])
         // A Mac that sorted mail before shares what it sorted when the new Causabee starts there.
         // Until it has, every mail it answered would look new here — read again, and offered to
         // be sent again.
@@ -161,8 +163,9 @@ final class PhoneMailCheck {
             return
         }
         // Auto turned on while new mail waited: it is read now.
-        if AutoMode.isOn, case .newMail(let look, let door) = state {
-            classify(look, with: door, context: context, owner: AutoMode.owner(in: context))
+        // Only what is labelled, or follows a labelled thread: mail found by its sender is offered, never read by Auto.
+        if AutoMode.isOn, case .newMail(let look, let door) = state, look.withoutOffered.pending > 0 {
+            classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
             return
         }
         guard let door = door(context: context).door else { return }
@@ -174,7 +177,7 @@ final class PhoneMailCheck {
             lastChecked = Date()
             guard isQuiet else { return }
             // Auto: read at once, and offered to be taken in.
-            if look.pending > 0, AutoMode.isOn { classify(look, with: door, context: context, owner: AutoMode.owner(in: context)) }
+            if look.withoutOffered.pending > 0, AutoMode.isOn { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
             else if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
         }
     }
@@ -183,7 +186,7 @@ final class PhoneMailCheck {
     func autoTurnedOn(context: ModelContext) {
         switch state {
         case .newMail(let look, let door), .ready(let look, let door):
-            classify(look, with: door, context: context, owner: AutoMode.owner(in: context))
+            if look.withoutOffered.pending > 0 { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
         case .demoNew, .demoReady:
             sortInDemo(context: context)
         default:
@@ -249,7 +252,7 @@ final class PhoneMailCheck {
                 guard !Task.isCancelled else { return }
                 lastChecked = Date()
                 if look.pending == 0 { state = .nothingNew(known: look.intake.alreadyKnown) }
-                else if AutoMode.isOn { classify(look, with: door, context: context, owner: AutoMode.owner(in: context)) }
+                else if AutoMode.isOn, look.withoutOffered.pending > 0 { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
                 else { state = .ready(look, door) }
             } catch {
                 guard !Task.isCancelled else { return }
@@ -635,7 +638,7 @@ struct PhoneMailReview: View {
                             Text(outcome.email.subject.isEmpty ? "(no subject)" : outcome.email.subject).font(.subheadline)
                                 .strikethrough(!on).foregroundStyle(on ? .primary : .secondary)
                                 .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
-                            Text(Self.from(outcome.email)).font(.caption).foregroundStyle(.tertiary)
+                            Text(Self.from(outcome.email) + (look.intake.bySender[outcome.judgement.emailID] == nil ? "" : " · no label")).font(.caption).foregroundStyle(.tertiary)
                         }
                         Spacer(minLength: 0)
                     }

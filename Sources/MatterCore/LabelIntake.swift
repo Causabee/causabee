@@ -27,6 +27,12 @@ public struct LabelIntake: Sendable {
     /// about Causabee from anyone else, or to anyone else, is not the owner's paper.
     public var keyword: String?
     public var ownAddresses: [String] = []
+    /// The addresses of the people in the owner's matters. New mail from them in the inbox is
+    /// found without a label — a thread they begin anew has none — and offered beside the labelled
+    /// mail; it is not taken for labelled. Asked of the server by sender: no mail is read for it.
+    public var knownSenders: [String] = []
+    /// How far back such mail is looked for: what is older was seen in the inbox, and left there.
+    public var senderDays = 7
     static let batch = 25
     /// Only the Message-ID: a few bytes a mail, so many at once.
     static let headerBatch = 200
@@ -47,6 +53,9 @@ public struct LabelIntake: Sendable {
         /// Mail that came in by thread, and how it was found.
         public var followed: [String: Way] = [:]
         public var labelFolder: OpenedFolder?
+        /// Mail found by who sent it, with no label and in no labelled thread: by its Message-ID,
+        /// the address it came from.
+        public var bySender: [String: String] = [:]
         /// Where replies were looked for.
         public var searched: [String] = []
         /// Labelled mail that was known already, so not downloaded.
@@ -173,6 +182,23 @@ public struct LabelIntake: Sendable {
             }
         }
         progress("\(everything.joined(separator: ", ")): \(result.followed.count) followed by thread")
+
+        // New mail from the people of the owner's matters, in the inbox: found by its sender.
+        let senders = Array(Set(knownSenders.map { $0.trimmed.lowercased() }.filter { $0.contains("@") }))
+            .filter { address in !ownAddresses.contains { $0.lowercased() == address } }.sorted()
+        if !senders.isEmpty, let inbox = folders.first(where: { $0.name.uppercased() == "INBOX" }), inbox.name != folder.name {
+            let opened = try await mailbox.examine(inbox.name)
+            let from = Calendar.current.date(byAdding: .day, value: -senderDays, to: Date()) ?? Date()
+            let newest = max(from, since ?? from)
+            var candidates: [UInt32] = []
+            for chunk in senders.chunked(Self.searchBatch) {
+                candidates += try await mailbox.search([.since(newest), .any(chunk.map { .from($0) })])
+            }
+            let added = try await fetchNew(candidates, from: mailbox, in: opened, known: &known, tried: &tried[inbox.name, default: []])
+            for email in added { result.bySender[email.id] = Email.address(in: email.from) }
+            result.emails += added
+            if !added.isEmpty { progress("\(inbox.name): \(added.count) from people in your matters, without the label") }
+        }
 
         result.emails.sort { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
         return result

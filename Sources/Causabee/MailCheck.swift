@@ -78,8 +78,9 @@ final class MailCheck {
     func checkQuietly(store: URL, context: ModelContext) {
         guard !DemoData.isRequested, IntroShot.current == nil, !checking else { return }
         // Auto turned on while new mail waited: it is read now.
-        if AutoMode.isOn, case .newMail(let look, let door) = state {
-            classify(look, with: door, context: context, owner: AutoMode.owner(in: context))
+        // Only what is labelled, or follows a labelled thread: mail found by its sender is offered, never read by Auto.
+        if AutoMode.isOn, case .newMail(let look, let door) = state, look.withoutOffered.pending > 0 {
+            classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
             return
         }
         switch state {
@@ -97,8 +98,8 @@ final class MailCheck {
             // Something else began meanwhile — a check by hand, a Sort in: that one decides.
             switch state {
             case .idle, .nothingNew, .done, .failed, .newMail:
-                if look.pending > 0, AutoMode.isOn {
-                    classify(look, with: door, context: context, owner: AutoMode.owner(in: context))
+                if look.withoutOffered.pending > 0, AutoMode.isOn {
+                    classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
                 } else if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
             default: break
             }
@@ -113,6 +114,8 @@ final class MailCheck {
         NameListPublisher.adopt()
         door.earlier = SortedMails.answered(in: context)
         door.setAside = Self.setAside
+        // New mail from the people of the matters is found without a label, and offered.
+        door.knownSenders = KnownSenders.addresses(in: (try? context.fetch(FetchDescriptor<Matter>())) ?? [])
         return door
     }
 
@@ -175,7 +178,7 @@ final class MailCheck {
                 lastChecked = Date()
                 if look.pending == 0 { state = .nothingNew(known: look.intake.alreadyKnown) }
                 // Auto: no list to tick first — read at once, and offered to be taken in.
-                else if AutoMode.isOn { classify(look, with: door, context: context, owner: AutoMode.owner(in: context)) }
+                else if AutoMode.isOn, look.withoutOffered.pending > 0 { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
                 else { state = .ready(look, door) }
             } catch {
                 state = .failed(plainWords(error))
@@ -499,7 +502,7 @@ struct MailReview: View {
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(outcome.email.subject.isEmpty ? "(no subject)" : outcome.email.subject)
                                         .strikethrough(!on).foregroundStyle(on ? .primary : .secondary).lineLimit(2)
-                                    Text(Self.from(outcome.email)).foregroundStyle(.tertiary).lineLimit(1)
+                                    Text(Self.from(outcome.email) + (look.intake.bySender[id] == nil ? "" : " · no label")).foregroundStyle(.tertiary).lineLimit(1)
                                 }
                                 Spacer(minLength: 0)
                             }
