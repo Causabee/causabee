@@ -221,6 +221,23 @@ extension BeeMark {
     .padding(32)
 }
 
+extension BeeLoader {
+    /// The whole bee, its wings beating by how far it is up: at rest the icon's pose.
+    fileprivate static func drawGlad(in context: GraphicsContext, size: CGSize, time: TimeInterval, lift: Double) {
+        var context = context
+        let scale = size.height / box.height
+        context.scaleBy(x: scale, y: scale)
+        context.translateBy(x: -box.minX, y: -box.minY)
+        let beat = 0.5 - 0.5 * cos(2 * .pi * time * 8)
+        let angle = Angle.degrees((-8 + 44 * beat) * lift)
+        fill(leftWing, turned: angle, around: leftRoot, opacity: 0.55, in: context)
+        fill(rightWing, turned: -angle, around: rightRoot, opacity: 0.55, in: context)
+        for bar in bars {
+            context.fill(Path(roundedRect: CGRect(x: bar.x, y: bar.y, width: bar.width, height: 264), cornerRadius: 112), with: .foreground)
+        }
+    }
+}
+
 /// A task ticked by hand: the bee is glad. It comes up out of its yellow round towards the eye —
 /// larger, with a shadow under it on the yellow —, beats its wings a few times, and settles back.
 /// It does not leave its place: no way up or across. A little more of it for a matter's last open
@@ -266,7 +283,12 @@ struct BeeJoyView: View {
             let held = t < up || t > down ? 0 : (t - up) / (down - up)
             let beats = beat.big ? 5.0 : 3.0
             let bob = sin(held * .pi * 2 * beats) * 0.05 * lift
-            BeePulled(pull: 1, size: size)
+            // Its wings beat fast and wide while it is up — eight times a second, as a bee's do to
+            // the eye — and come to rest as it settles; its stripes stay whole.
+            Canvas { context, canvas in
+                BeeLoader.drawGlad(in: context, size: canvas, time: t * beat.length, lift: lift)
+            }
+            .frame(width: size * BeeLoader.aspect, height: size)
                 .foregroundStyle(.black)
                 .rotationEffect(.degrees(sin(held * .pi * 2 * beats / 2) * (beat.big ? 9 : 6) * lift))
                 .scaleEffect(1 + ((beat.big ? 0.5 : 0.34) + bob) * lift)
