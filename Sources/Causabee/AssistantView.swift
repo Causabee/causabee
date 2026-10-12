@@ -837,8 +837,7 @@ struct ActionCard: View {
                 Button("Show again") { setDismissed(false) }.buttonStyle(.gold).font(.caption).fixedSize()
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
         } else {
             let draft = card.kind == .draftMessage
             CardFace(label: draft ? "Draft · Mail" : title,
@@ -895,8 +894,7 @@ struct ActionCard: View {
         }
         .opacity(showsContent ? 1 : 0)
         .padding(.horizontal, 10).padding(.vertical, 8)
-        .background { RoundedRectangle(cornerRadius: 10).fill(Theme.card).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+        .background { RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.05)).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .contentShape(RoundedRectangle(cornerRadius: 10))
         .onTapGesture(perform: openTaken)
         .help("Opens it in its matter")
@@ -954,8 +952,7 @@ struct ActionCard: View {
         }
         .opacity(showsContent ? 1 : 0)
         .padding(.horizontal, 10).padding(.vertical, 8)
-        .background { RoundedRectangle(cornerRadius: 10).fill(Theme.card).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+        .background { RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.05)).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .contentShape(RoundedRectangle(cornerRadius: 10))
         .onTapGesture { apply(text, subject) }
         .help("Opens it in Mail again")

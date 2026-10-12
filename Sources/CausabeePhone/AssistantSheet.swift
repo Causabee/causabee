@@ -732,8 +732,7 @@ struct PhoneActionCard: View {
                         .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain).fixedSize()
                 }
                 .padding(.horizontal, 12).padding(.vertical, 10)
-                .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
             } else {
                 full
             }
@@ -798,8 +797,7 @@ struct PhoneActionCard: View {
         }
         .opacity(showsContent ? 1 : 0)
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.card).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+        .background { RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .transition(.opacity)
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .onTapGesture(perform: openTaken)
@@ -869,8 +867,7 @@ struct PhoneActionCard: View {
         }
         .opacity(showsContent ? 1 : 0)
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.card).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+        .background { RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .transition(.opacity)
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .onTapGesture { take() }
