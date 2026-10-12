@@ -960,8 +960,8 @@ extension View {
 
 /// The parts of a matter as pills, as Mail's categories: a sign each, and the open one filled and
 /// wide with its word — one word in the bar where there were four. The others say theirs when the
-/// pointer rests on them, and to VoiceOver. In the app's ink, like its filled buttons: no colour of
-/// their own. On the iPhone the open pill takes the room that is left, and the pills are a finger high.
+/// pointer rests on them, and to VoiceOver. In greys, the open one a step darker: no colour of
+/// their own, and not the ink of a button. On the iPhone the open pill takes the room that is left, and the pills are a finger high.
 struct PartTabs<Value: Hashable>: View {
     struct Tab {
         let value: Value
@@ -1004,8 +1004,11 @@ struct PartTabs<Value: Hashable>: View {
                     .padding(.horizontal, chosen ? 16 : 14)
                     .frame(maxWidth: chosen && fills ? .infinity : nil)
                     .frame(height: height)
-                    .foregroundStyle(chosen ? Theme.onInk : Color.secondary)
-                    .background(chosen ? Theme.ink : Color.secondary.opacity(0.12), in: Capsule())
+                    // The open part is a grey a step darker with its words in black, not the ink of
+                    // the app's filled buttons: it says where one is, not what to press — and the
+                    // bee stays the strongest thing on the page.
+                    .foregroundStyle(chosen ? Color.primary : Color.secondary)
+                    .background(Color.primary.opacity(chosen ? 0.16 : 0.06), in: Capsule())
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
