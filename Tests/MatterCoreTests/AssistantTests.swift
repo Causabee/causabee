@@ -33,6 +33,32 @@ struct AssistantTests {
         return url
     }
 
+    @Test("A chat named in the question — WhatsApp, SMS, “per Signal” — is told from a mail, in German and in English")
+    func aChatIsNamed() {
+        #expect(AssistantAsk.namesChat("Schreibe eine kurze Nachricht an Sebastian per WhatsApp, ob alles geklappt hat."))
+        #expect(AssistantAsk.namesChat("Text her on Whats App that I am late"))
+        #expect(AssistantAsk.namesChat("als SMS an Karl"))
+        #expect(AssistantAsk.namesChat("Schick ihm das per Signal"))
+        #expect(!AssistantAsk.namesChat("Schreibe Herrn Süß eine Mail wegen der Vollmacht"))
+        #expect(!AssistantAsk.namesChat("Is that a signal that they will pay?"))
+    }
+
+    @Test("A mail drafted where a chat was asked for becomes the chat message: no subject, not signed")
+    func aDraftForAChat() throws {
+        let json = #"{"kind":"draft_message","todo":null,"subject":"Briefe","text":"Hallo Sebastian, hat alles geklappt? Danke dir!\nRalf Chille","owner":"me","due":null,"reason":"Fragt nach.","cites":[]}"#
+        let card = try JSONDecoder().decode(AssistantPrompt.Reply.Card.self, from: Data(json.utf8))
+        let chat = AssistantAsk.asChatMessage(card, owner: "Ralf Chille")
+        #expect(chat.kind == .shortMessage)
+        #expect(chat.subject == nil)
+        #expect(chat.text == "Hallo Sebastian, hat alles geklappt? Danke dir!")
+        // Signed with the first name alone, too; a last line that is not the name stays.
+        var short = card
+        short.text = "Hat alles geklappt?\n\nRalf"
+        #expect(AssistantAsk.asChatMessage(short, owner: "Ralf Chille").text == "Hat alles geklappt?")
+        short.text = "Hat alles geklappt?\nBis morgen"
+        #expect(AssistantAsk.asChatMessage(short, owner: "Ralf Chille").text == "Hat alles geklappt?\nBis morgen")
+    }
+
     @Test("Every fact has an id the answer can cite, and the id leads back to it")
     func ids() throws {
         let (_, matter) = try store()

@@ -255,6 +255,10 @@ public enum AssistantAsk {
         /// How many things were disguised in the owner's question, and in the whole request.
         public var disguisedInQuestion = 0
         public var disguised = 0
+        /// The owner named a chat — "per WhatsApp", "als SMS": what comes back as a mail is a chat message.
+        public var forChat = false
+        /// The owner's name, as a mail is signed with it: a chat message is not.
+        public var owner: String?
 
         /// Originals from the mapping that are still in what would be sent. Should be none.
         public func leaks(_ entries: [Pseudonymizer.Entry]) -> [String] {
@@ -344,7 +348,37 @@ public enum AssistantAsk {
         let disguiser = pseudonymizer.disguiser
         let whole = disguiser.apply(user)
         return Prepared(sent: whole.text, pseudonymizer: pseudonymizer, newNames: newNames, links: links.byStandIn,
-                        disguisedInQuestion: disguiser.apply(question).count, disguised: whole.count)
+                        disguisedInQuestion: disguiser.apply(question).count, disguised: whole.count,
+                        forChat: namesChat(question), owner: owner)
+    }
+
+    /// The question names a chat to send in: WhatsApp, Signal, iMessage, SMS, Telegram, Threema, Slack.
+    /// "Signal" is a word of its own too, and counts only as where to send: "per Signal", "on Signal".
+    public static func namesChat(_ question: String) -> Bool {
+        let apps = #"\b(whats\s?app|imessage|sms|telegram|threema|slack|wechat)\b"#
+        let signal = #"\b(per|via|auf|über|ueber|bei|in|on|by|over|with)\s+signal\b"#
+        return question.range(of: apps, options: [.regularExpression, .caseInsensitive]) != nil
+            || question.range(of: signal, options: [.regularExpression, .caseInsensitive]) != nil
+    }
+
+    /// A mail drafted where a chat was asked for, as the chat message it should have been: no
+    /// subject, and not signed — the last line, when it is the owner's name alone, goes.
+    public static func asChatMessage(_ card: AssistantPrompt.Reply.Card, owner: String?) -> AssistantPrompt.Reply.Card {
+        guard card.kind == .draftMessage else { return card }
+        var card = card
+        card.kind = .shortMessage
+        card.subject = nil
+        var lines = card.text.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "\n")
+        if lines.count > 1, let owner, let last = lines.last?.trimmingCharacters(in: .whitespaces), !last.isEmpty {
+            let names = owner.lowercased().split(separator: " ").map(String.init)
+            let signed = last.lowercased().split(separator: " ").map(String.init)
+            if !signed.isEmpty, signed.allSatisfy(names.contains) {
+                lines.removeLast()
+                while let end = lines.last, end.trimmingCharacters(in: .whitespaces).isEmpty { lines.removeLast() }
+            }
+        }
+        card.text = lines.joined(separator: "\n")
+        return card
     }
 
     public static func ask(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
@@ -387,7 +421,8 @@ public enum AssistantAsk {
             // A phone number in a contact card; a time of day has nothing to restore.
             card.time = card.time.map(real)
             card.reason = real(card.reason)
-            return card
+            // Asked for in a chat and drafted as a mail all the same: it is the chat message.
+            return prepared.forChat ? asChatMessage(card, owner: prepared.owner) : card
         }
         reply.notInFacts = reply.notInFacts.map(real)
         return Answer(reply: reply, sent: sent, cost: answer.cost, seconds: answer.seconds, newNames: newNames,
