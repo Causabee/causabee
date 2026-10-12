@@ -297,7 +297,7 @@ struct BeeJoyView: View {
                 .rotationEffect(.degrees(sin(held * .pi * 2 * beats / 2) * (beat.big ? 9 : 6) * lift))
                 .scaleEffect(1 + ((beat.big ? 0.5 : 0.34) + bob) * lift)
                 // The further up, the softer and the further off its shadow on the yellow.
-                .shadow(color: .black.opacity(0.32 * lift), radius: 1 + 5 * lift, y: 1 + 6 * lift)
+                .shadow(color: .black.opacity(0.16 * lift), radius: 1 + 5 * lift, y: 1 + 5 * lift)
         }
         .accessibilityHidden(true)
     }
