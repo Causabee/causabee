@@ -46,7 +46,7 @@ FULL = {"overview": "intro-1", "matter": "intro-2", "care": "intro-5"}
 # A crop that starts right under the matter's pinned bar still catches its lower edge — a grey strip
 # with the tabs' bottoms. Those rows are painted in the page's own colour, taken from just below them;
 # the crop itself stays, because the animation over the picture is measured from its top.
-CLEAR_TOP = {"files": 46}
+CLEAR_TOP = {"files": 56}
 
 # The icon as Icon Composer draws it: the bee's stripes and wings over the yellow, the wings
 # half see-through. The layers are App/Resources/BeeStripesWings.icon/Assets, moved up 30 points.
@@ -75,7 +75,9 @@ def screenshots():
             over = box[3] - shot.height
             image.paste((255, 255, 255), (0, image.height - over, image.width, image.height))
         if rows := CLEAR_TOP.get(name):
-            image.paste(image.getpixel((image.width // 2, rows + 4)), (0, 0, image.width, rows))
+            # The page's own white, said outright. Taken from the picture a few rows further down,
+            # it was the bar's grey line whenever the bar had grown — a grey strip across the tile.
+            image.paste((255, 255, 255), (0, 0, image.width, rows))
         webp(image, name)
 
 
