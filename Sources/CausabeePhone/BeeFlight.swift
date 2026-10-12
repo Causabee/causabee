@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// A task ticked by hand: the bee leaves its yellow button, flies a round about the box that was
-/// ticked, and goes home — a second, over everything, in nobody's way. A larger round, twice, for
-/// the last open task of a matter. Never with Reduce Motion, and never two bees: while it is out,
-/// the button stands empty.
+/// A task ticked by hand: the bee lifts out of its yellow button, beats its wings a few glad
+/// times over it, and goes back in — a second, in nobody's way. Higher and longer for the last
+/// open task of a matter. Never with Reduce Motion, and never two bees: while it is out, the
+/// button stands empty. (A round about the ticked box was tried first, and was too much.)
 @MainActor
 @Observable
 final class BeeFlight {
@@ -14,8 +14,7 @@ final class BeeFlight {
         let about: CGPoint
         let big: Bool
         let began = Date()
-        var length: TimeInterval { big ? 2.0 : 1.15 }
-        var radius: CGFloat { big ? 62 : 30 }
+        var length: TimeInterval { big ? 1.7 : 1.05 }
         var rounds: Double { big ? 2 : 1 }
     }
 
@@ -37,47 +36,24 @@ final class BeeFlight {
 }
 
 extension BeeFlight.Flight {
-    /// Where the bee is, how large and how far it leans, `t` from 0 to 1 of its way: out to the
-    /// round, about it, and home.
+    /// Where the bee is, how large and how far it leans, `t` from 0 to 1: up out of its button,
+    /// a few happy beats of its wings there, and back in.
     func pose(at t: Double) -> (place: CGPoint, scale: CGFloat, lean: Angle) {
-        // The round begins and ends on the side of it that faces home.
-        let toward = atan2(home.y - about.y, home.x - about.x)
-        func onRound(_ angle: Double) -> CGPoint { CGPoint(x: about.x + radius * cos(angle), y: about.y + radius * sin(angle)) }
-        let gate = onRound(toward)
         func ease(_ x: Double) -> Double { x < 0.5 ? 2 * x * x : 1 - pow(-2 * x + 2, 2) / 2 }
-        func between(_ a: CGPoint, _ b: CGPoint, _ x: Double, lift: CGFloat) -> CGPoint {
-            // A bow, not a line: it rises on its way.
-            let bow = sin(x * .pi) * lift
-            return CGPoint(x: a.x + (b.x - a.x) * x, y: a.y + (b.y - a.y) * x - bow)
-        }
-        let out = 0.26, back = 0.74
-        let place: CGPoint, size: CGFloat
-        if t < out {
-            let x = ease(t / out)
-            place = between(home, gate, x, lift: 26)
-            size = 1 + 0.25 * x
-        } else if t < back {
-            let x = (t - out) / (back - out)
-            place = onRound(toward + ease(x) * 2 * .pi * rounds)
-            size = 1.25
+        let up = 0.24, down = 0.78
+        let height: CGFloat = big ? 78 : 52
+        let lifted: Double, sway: Double
+        if t < up {
+            lifted = ease(t / up); sway = 0
+        } else if t < down {
+            // It bobs and rocks while its wings beat: glad, not busy.
+            let x = (t - up) / (down - up)
+            lifted = 1 + 0.07 * sin(x * .pi * 2 * rounds * 2)
+            sway = sin(x * .pi * 2 * rounds * 1.5) * (big ? 11 : 7)
         } else {
-            let x = ease((t - back) / (1 - back))
-            place = between(gate, home, x, lift: 18)
-            size = 1.25 - 0.25 * x
+            lifted = 1 - ease((t - down) / (1 - down)); sway = 0
         }
-        // It leans the way it goes: by where it will be a moment on.
-        let ahead = t < 0.98 ? poseX(t + 0.02) - place.x : 0
-        return (place, size, .degrees(max(-16, min(16, Double(ahead) * 1.6))))
-    }
-
-    private func poseX(_ t: Double) -> CGFloat {
-        let toward = atan2(home.y - about.y, home.x - about.x)
-        let gateX = about.x + radius * cos(toward)
-        func ease(_ x: Double) -> Double { x < 0.5 ? 2 * x * x : 1 - pow(-2 * x + 2, 2) / 2 }
-        let out = 0.26, back = 0.74
-        if t < out { return home.x + (gateX - home.x) * ease(t / out) }
-        if t < back { return about.x + radius * cos(toward + ease((t - out) / (back - out)) * 2 * .pi * rounds) }
-        return gateX + (home.x - gateX) * ease((t - back) / (1 - back))
+        return (CGPoint(x: home.x, y: home.y - height * lifted), 1 + (big ? 0.5 : 0.3) * min(1, lifted), .degrees(sway))
     }
 }
 
