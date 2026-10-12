@@ -839,81 +839,42 @@ struct ActionCard: View {
             .padding(.horizontal, 12).padding(.vertical, 8)
             .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
-        } else if card.kind == .draftMessage {
-            DraftCardFace(subject: $subject, text: $text, to: recipient.map { "To " + $0.name }, files: along(text),
-                          closeLabel: quiet ? "Cancel" : "Dismiss",
-                          close: {
-                              // Opened in Mail before and unfolded to change: the × folds it again.
-                              if quiet { step { editingDraft = false } } else { withAnimation { setDismissed(true) } }
-                          },
-                          open: {
-                              apply(text, subject)
-                              if quiet { step { editingDraft = false } }
-                          })
+        } else {
+            let draft = card.kind == .draftMessage
+            CardFace(label: draft ? "Draft · Mail" : title,
+                     subject: draft ? $subject : nil,
+                     headline: draft || editable ? nil : what,
+                     sub: draft ? recipient.map { "To " + $0.name } : editable ? what : nil,
+                     text: draft || editable ? $text : nil,
+                     serif: draft,
+                     notes: notes,
+                     verb: verb,
+                     closeLabel: quiet ? "Cancel" : "Dismiss",
+                     close: {
+                         // A draft opened in Mail before and unfolded to change: the × folds it again.
+                         if quiet { step { editingDraft = false } } else { withAnimation { setDismissed(true) } }
+                     },
+                     take: {
+                         apply(text, draft ? subject : nil)
+                         if quiet { step { editingDraft = false } }
+                     })
                 .opacity(showsContent ? 1 : 0)
                 .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 18)
                 .background { RoundedRectangle(cornerRadius: 16).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
                 .transition(.opacity)
-        } else {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(title).font(.caption.weight(.semibold)).foregroundStyle(.primary)
-                if let what = what { Text(what).fixedSize(horizontal: false, vertical: true) }
-                if card.kind == .draftMessage {
-                    TextField("Subject", text: $subject).cardField()
-                    TextEditor(text: $text)
-                        .font(.body)
-                        .scrollContentBackground(.hidden)
-                        .frame(minHeight: 140, maxHeight: 320)
-                        .padding(6)
-                        .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
-                } else if editable {
-                    TextField("", text: $text, axis: .vertical)
-                        .cardField()
-                        .disabled(done)
-                        .help("Change it before taking it in, if it is not quite right")
-                }
-                // A file the draft names goes along: said here, before Mail opens.
-                if card.kind == .draftMessage, let files = along(text) {
-                    Label(files, systemImage: "paperclip").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                }
-                Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                if card.kind == .sameParty, !done {
-                    Text("Later you can only turn merging off for new mail; you cannot split it again.")
-                        .font(.caption2).foregroundStyle(.secondary)
-                }
-                HStack(spacing: 8) {
-                    Spacer()
-                    if quiet, card.kind == .draftMessage {
-                        Button("Cancel") { step { editingDraft = false } }
-                        Button("Open in Mail") {
-                            apply(text, subject)
-                            step { editingDraft = false }
-                        }
-                        .inkButton()
-                    } else if quiet {
-                        Label("Taken in", systemImage: "checkmark")
-                            .font(.callout).foregroundStyle(Theme.done)
-                        if let undo {
-                            Button("Undo", action: undo)
-                                .help(card.kind == .sameParty ? "Turns the rule off: the next mail is not merged any more"
-                                                              : "Puts it back the way it was")
-                        }
-                    } else {
-                        Button("Dismiss") { withAnimation { setDismissed(true) } }
-                        Button(verb) { apply(text, card.kind == .draftMessage ? subject : nil) }
-                            .inkButton()
-                    }
-                }
-                .padding(.top, 10)
-            }
-            .opacity(showsContent ? 1 : 0)
-            .padding(12)
-            .background { RoundedRectangle(cornerRadius: 10).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
-            .transition(.opacity)
             }
         }
         // Undo plays it backwards; with Reduce Motion it is a short cross-fade.
         .onChange(of: done) { if quiet != done { step { quiet = done; editingDraft = false } } }
+    }
+
+    /// The small lines under the card: the files a draft takes along; for the rest, why — and what
+    /// merging two people means.
+    private var notes: [(text: String, symbol: String?)] {
+        if card.kind == .draftMessage { return along(text).map { [($0, "paperclip")] } ?? [] }
+        var notes: [(text: String, symbol: String?)] = card.reason.isEmpty ? [] : [(card.reason, nil)]
+        if card.kind == .sameParty { notes.append(("Later you can only turn merging off for new mail; you cannot split it again.", nil)) }
+        return notes
     }
 
     /// A card taken in, small and quiet: what was done, what kind, and Undo while the app is open.

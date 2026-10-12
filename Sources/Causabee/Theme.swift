@@ -782,19 +782,26 @@ extension ButtonStyle where Self == PhoneButtonStyle {
 }
 #endif
 
-/// A drafted mail, as a card: what it is, its subject as the title — plain, and still a field —
-/// to whom, the message on a writing area only a touch darker than the card and as tall as its
-/// words, and one button. The × in its corner puts it aside.
-struct DraftCardFace: View {
-    @Binding var subject: String
-    @Binding var text: String
-    /// "To Sebastian"; nil when nobody is known to write to.
-    let to: String?
-    /// The files that go along, when the draft names some.
-    let files: String?
+/// What the assistant suggests, as a card: what it is, small; what it is about — a drafted mail's
+/// subject is its title, plain, and still a field —; its words on a writing area only a touch
+/// darker than the card and as tall as they are; and one button. The × in its corner puts it aside.
+struct CardFace: View {
+    let label: String
+    /// A draft's subject: the title, to change.
+    var subject: Binding<String>? = nil
+    /// What the card is about, when that is all it says.
+    var headline: String? = nil
+    var sub: String? = nil
+    /// The words to change before taking it in.
+    var text: Binding<String>? = nil
+    /// A written message stands in the serif; a task or a name in the app's own face.
+    var serif = false
+    /// Small lines under it: why, what goes along. Each with its sign, or none.
+    var notes: [(text: String, symbol: String?)] = []
+    let verb: String
     let closeLabel: String
     let close: () -> Void
-    let open: () -> Void
+    let take: () -> Void
 
     var body: some View {
         #if os(iOS)
@@ -805,12 +812,14 @@ struct DraftCardFace: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Draft · Mail").font(.caption).foregroundStyle(.secondary).padding(.bottom, 6)
-                    TextField("Subject", text: $subject, axis: .vertical).textFieldStyle(.plain).font(.headline)
-                    if let to { Text(to).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                    Text(label).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, subject == nil && headline == nil && sub == nil ? 0 : 6)
+                    if let subject { TextField("Subject", text: subject, axis: .vertical).textFieldStyle(.plain).font(.headline) }
+                    if let headline { Text(headline).font(.headline).fixedSize(horizontal: false, vertical: true) }
+                    if let sub { Text(sub).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
                 }
                 .padding(.leading, 4)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: disc, alignment: .leading)
                 Button(action: close) {
                     Image(systemName: "xmark").font(.system(size: disc * 0.4, weight: .semibold)).foregroundStyle(.secondary)
                         .frame(width: disc, height: disc)
@@ -820,26 +829,32 @@ struct DraftCardFace: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(closeLabel)
             }
-            // As tall as its words: the same words, unseen, take the room, and the field lies on them.
-            Text(text.isEmpty ? " " : text + (text.hasSuffix("\n") ? " " : ""))
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .hidden()
-                .overlay(alignment: .topLeading) { TextField("Message", text: $text, axis: .vertical).textFieldStyle(.plain) }
-                .font(Theme.rowTitleFont)
-                .padding(.horizontal, 16).padding(.vertical, 14)
-                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
-                .padding(.top, 14)
-            if let files {
-                Label(files, systemImage: "paperclip").font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true).padding(.top, 10).padding(.leading, 4)
+            if let text {
+                let words = text.wrappedValue
+                // As tall as its words: the same words, unseen, take the room, and the field lies on them.
+                Text(words.isEmpty ? " " : words + (words.hasSuffix("\n") ? " " : ""))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .hidden()
+                    .overlay(alignment: .topLeading) { TextField("", text: text, axis: .vertical).textFieldStyle(.plain) }
+                    .font(serif ? Theme.rowTitleFont : .body)
+                    .padding(.horizontal, 16).padding(.vertical, 14)
+                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.top, 14)
+            }
+            ForEach(Array(notes.enumerated()), id: \.offset) { _, note in
+                Group {
+                    if let symbol = note.symbol { Label(note.text, systemImage: symbol) } else { Text(note.text) }
+                }
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10).padding(.leading, 4)
             }
             HStack {
                 Spacer(minLength: 0)
                 #if os(iOS)
-                Button("Open in Mail", action: open).buttonStyle(.phoneFilled)
+                Button(verb, action: take).buttonStyle(.phoneFilled)
                 #else
-                Button("Open in Mail", action: open).inkButton()
+                Button(verb, action: take).inkButton()
                 #endif
                 Spacer(minLength: 0)
             }

@@ -747,83 +747,39 @@ struct PhoneActionCard: View {
     /// "To Sebastian": to whom the draft goes, when someone is known.
     private var draftTo: String? { recipient.map { "To " + $0.name } }
 
-    @ViewBuilder
-    private var full: some View {
+    /// The small lines under the card: the files a draft takes along; for the rest, why — and what
+    /// merging two people means.
+    private var notes: [(text: String, symbol: String?)] {
         if card.kind == .draftMessage {
-            DraftCardFace(subject: $subject, text: $text, to: draftTo,
-                          files: CardActions.attachmentLine(text: text, question: turn.question, scope: scope),
-                          closeLabel: quiet ? "Cancel" : "Dismiss",
-                          close: {
-                              // Opened in Mail before and unfolded to change: the × folds it again.
-                              if quiet { step { editingDraft = false } }
-                              else { Haptics.tap(); withAnimation { navigation.mark(record, card: index, dismissed: true, context: context) } }
-                          },
-                          open: { take() })
-                .opacity(showsContent ? 1 : 0)
-                .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 20)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background { RoundedRectangle(cornerRadius: 20).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
-                .transition(.opacity)
-        } else {
-            fullOther
+            return CardActions.attachmentLine(text: text, question: turn.question, scope: scope).map { [($0, "paperclip")] } ?? []
         }
+        var notes: [(text: String, symbol: String?)] = card.reason.isEmpty ? [] : [(card.reason, nil)]
+        if card.kind == .sameParty { notes.append(("Later you can only turn merging off for new mail; you cannot split it again.", nil)) }
+        return notes
     }
 
-    private var fullOther: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.footnote.weight(.semibold)).foregroundStyle(.primary)
-            if let what { Text(what).fixedSize(horizontal: false, vertical: true) }
-            if card.kind == .draftMessage {
-                TextField("Subject", text: $subject)
-                    .padding(.horizontal, 10).padding(.vertical, 8)
-                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
-                TextEditor(text: $text)
-                    .scrollContentBackground(.hidden)
-                    .frame(minHeight: 140, maxHeight: 320)
-                    .padding(6)
-                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
-            } else if editable {
-                // As tall as its words: the same words, unseen, take the room, and the field lies on
-                // them. Left to size itself, the field was cut to half a line under a long answer.
-                Text(text.isEmpty ? " " : text + (text.hasSuffix("\n") ? " " : ""))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .hidden()
-                    .overlay(alignment: .topLeading) { TextField("", text: $text, axis: .vertical) }
-                    .padding(.horizontal, 10).padding(.vertical, 8)
-                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 6))
-                    .disabled(done)
-            }
-            // A file the draft names goes along: said here, before Mail opens.
-            if card.kind == .draftMessage, let files = CardActions.attachmentLine(text: text, question: turn.question, scope: scope) {
-                Label(files, systemImage: "paperclip").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            }
-            Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if card.kind == .sameParty, !done {
-                Text("Later you can only turn merging off for new mail; you cannot split it again.")
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-            HStack(spacing: 8) {
-                if quiet, card.kind == .draftMessage {
-                    Button("Cancel") { step { editingDraft = false } }.buttonStyle(.phone)
-                    Button("Open in Mail") { take() }.buttonStyle(.phoneFilled)
-                } else if quiet {
-                    Label("Taken in", systemImage: "checkmark").font(.footnote.weight(.medium)).foregroundStyle(Theme.done)
-                    Spacer()
-                    if undo != nil { Button("Undo", action: takeBack).buttonStyle(.phone) }
-                } else {
-                    Button("Dismiss") { Haptics.tap(); withAnimation { navigation.mark(record, card: index, dismissed: true, context: context) } }
-                        .buttonStyle(.phone(wide: true))
-                    Button(verb) { take() }.buttonStyle(.phone(filled: true, wide: true))
-                }
-            }
-            .padding(.top, 4)
-        }
-        .opacity(showsContent ? 1 : 0)
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background { RoundedRectangle(cornerRadius: 12).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
-        .transition(.opacity)
+    private var full: some View {
+        let draft = card.kind == .draftMessage
+        return CardFace(label: draft ? "Draft · Mail" : title,
+                        subject: draft ? $subject : nil,
+                        headline: draft || editable ? nil : what,
+                        sub: draft ? draftTo : editable ? what : nil,
+                        text: draft || editable ? $text : nil,
+                        serif: draft,
+                        notes: notes,
+                        verb: verb,
+                        closeLabel: quiet ? "Cancel" : "Dismiss",
+                        close: {
+                            // A draft opened in Mail before and unfolded to change: the × folds it again.
+                            if quiet { step { editingDraft = false } }
+                            else { Haptics.tap(); withAnimation { navigation.mark(record, card: index, dismissed: true, context: context) } }
+                        },
+                        take: { take() })
+            .opacity(showsContent ? 1 : 0)
+            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background { RoundedRectangle(cornerRadius: 20).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
+            .transition(.opacity)
     }
 
     /// A card taken in, small and quiet: what was done, what kind, and Undo while the app is open.
