@@ -258,8 +258,20 @@ final class BeeJoy {
     /// How many of the bee's own buttons are on screen: with one there, the send button stays an arrow.
     var beesInSight = 0
 
+    /// Settings: whether the bee is glad at all. On, until it is turned off.
+    static let key = "bee.celebrates"
+    static var isOn: Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? true }
+    /// Reduce Motion, for where no view is at hand to ask.
+    static var reducesMotion: Bool {
+        #if os(macOS)
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        #else
+        UIAccessibility.isReduceMotionEnabled
+        #endif
+    }
+
     func celebrate(big: Bool, still: Bool) {
-        guard beat == nil, !still else { return }
+        guard beat == nil, !still, Self.isOn else { return }
         let beat = Beat(big: big)
         self.beat = beat
         Task {

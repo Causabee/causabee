@@ -13,6 +13,7 @@ struct SettingsSheet: View {
     @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
     @AppStorage(ModelChoice.strictKey) private var strict = true
     @AppStorage(AutoMode.key) private var auto = false
+    @AppStorage(BeeJoy.key) private var celebrates = true
     @Query(sort: \NameList.updatedAt, order: .reverse) private var lists: [NameList]
     @State private var sync = PhoneCloudStatus.shared
     @State private var accounts = Keychain.accounts().filter { !$0.usesGoogle }
@@ -61,6 +62,10 @@ struct SettingsSheet: View {
                     Text("Answers, summaries and the next step. Under each answer you see which model wrote it.")
                         .font(.footnote).foregroundStyle(.secondary)
                 } header: { Text("Questions") }
+
+                Section {
+                    Toggle("The bee is glad when you tick a task", isOn: $celebrates)
+                } header: { Text("Tasks") }
 
                 Section {
                     if store.isDemo {

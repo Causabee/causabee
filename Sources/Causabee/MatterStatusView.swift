@@ -425,7 +425,13 @@ struct MatterStatusView: View {
             .help("Puts the task into the assistant and writes the request for you. Nothing is sent until you press Return; the draft opens in Mail.")
         }
         if let todo {
-            if !waiting { Button("Done") { withAnimation { toggle(todo) } }.fixedSize() }
+            if !waiting {
+                Button("Done") {
+                    withAnimation { toggle(todo) }
+                    if todo.isDone { BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: BeeJoy.reducesMotion) }
+                }
+                .fixedSize()
+            }
             Button("Show") { navigation.showing = todo.persistentModelID }.fixedSize()
         } else if !waiting, !Todo.isMessage(text) {
             Button("Talk it over") { talk(text, "Step") }

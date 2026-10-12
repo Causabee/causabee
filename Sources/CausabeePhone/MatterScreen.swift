@@ -129,6 +129,8 @@ struct MatterScreen: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            // Pulled down: the next step and the summary are written again — with Auto on, too.
+            .refreshable { writeAnew() }
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentInsets.top } action: { topInset = $1 }
             // Another part chosen from the pinned tabs: it is shown from its start, not from where the last one was read.
@@ -583,6 +585,37 @@ struct MatterScreen: View {
         }
     }
 
+    /// The page pulled down: both asked for at once, each saying in its own box that it is on its
+    /// way. A closed matter has no next step; one being written already is not asked for twice.
+    private func writeAnew() {
+        guard !AutoUpdate.shared.working.contains(matter.key) else { return }
+        Haptics.tap()
+        // The demo sends nothing and costs nothing: after a moment, the step worked out on the
+        // device and the summary as it stands, both of now — to see how it goes.
+        if store.isDemo {
+            guard !askingStep, !writingSummary else { return }
+            askingStep = !matter.isClosed
+            writingSummary = true
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                let now = Date()
+                if !matter.isClosed, let rule = MatterStatus(matter).nextStep {
+                    matter.nextStep = rule.text
+                    matter.nextStepWhy = rule.why
+                    matter.nextStepTodo = rule.todo.flatMap { id in (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+                    matter.nextStepAt = now
+                }
+                if matter.summary != nil { matter.summaryAt = now }
+                try? context.save()
+                askingStep = false
+                writingSummary = false
+            }
+            return
+        }
+        if !matter.isClosed, !askingStep { askStep() }
+        if !writingSummary { writeSummary() }
+    }
+
     private func writeSummary() {
         let model = ModelChoice.assistant
         guard let claude = ModelChoice.client(for: model) else { summaryError = ModelChoice.missingKey(model); return }
@@ -625,7 +658,13 @@ struct MatterScreen: View {
                 .buttonStyle(.phoneFilled)
             }
             if let todo {
-                if !waiting { Button("Done") { withAnimation { toggle(todo) } }.buttonStyle(.phone) }
+                if !waiting {
+                    Button("Done") {
+                        withAnimation { toggle(todo) }
+                        if todo.isDone { BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: BeeJoy.reducesMotion) }
+                    }
+                    .buttonStyle(.phone)
+                }
                 Button("Show") { show(todo.persistentModelID, with: scroller) }.buttonStyle(.phone)
             } else if !waiting, !Todo.isMessage(text) {
                 Button("Talk it over") { navigation.talk(text, kind: "Step", in: matter) }.buttonStyle(.phone)
