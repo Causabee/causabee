@@ -28,15 +28,17 @@ IMG = OUT / "img"
 # The screenshots are 2880 × 1800: a 1440-point window at 2x, every pixel kept, so the website's
 # pictures are as sharp as the app on a Retina screen. Each crop is (left, top, right, bottom); the
 # animations in site/index.html measure the same parts in the older 1800-wide pixels (× 1.6 here).
+# Since Beta 57 the parts are pills, a little taller than the tabs were: 4 lower again, and the
+# care page's 16.
 # Since Beta 53 the matter's name stands 36 points lower at rest, and with it the page: the crops
 # of a page at its top are 36 lower than they were.
 # The matter's column is the window's second, from 542 to 1986 of 2880; the assistant's the third.
 CROPS = {
     "matter-phone": ("intro-2", (568, 0, 1960, 1547)),
-    "tasks": ("intro-3", (544, 496, 1984, 1336)),
-    "calendar": ("intro-3", (552, 1252, 1560, 1836)),
+    "tasks": ("intro-3", (544, 500, 1984, 1340)),
+    "calendar": ("intro-3", (552, 1256, 1560, 1840)),
     "files": ("intro-4", (544, 140, 1984, 820)),
-    "sources": ("intro-5", (544, 1104, 1984, 1800)),
+    "sources": ("intro-5", (544, 1120, 1984, 1816)),
     # From under the day and the ×, which a crop cut through, to under the answer's own line of tools.
     "assistant": ("intro-5", (1990, 100, 2878, 990)),
 }
