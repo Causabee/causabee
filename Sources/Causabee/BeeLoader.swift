@@ -228,8 +228,8 @@ extension BeeLoader {
         let scale = size.height / box.height
         context.scaleBy(x: scale, y: scale)
         context.translateBy(x: -box.minX, y: -box.minY)
-        let beat = 0.5 - 0.5 * cos(2 * .pi * time * 8)
-        let angle = Angle.degrees((-8 + 44 * beat) * lift)
+        let beat = 0.5 - 0.5 * cos(2 * .pi * time * 4.5)
+        let angle = Angle.degrees((-5 + 30 * beat) * lift)
         fill(leftWing, turned: angle, around: leftRoot, opacity: 0.55, in: context)
         fill(rightWing, turned: -angle, around: rightRoot, opacity: 0.55, in: context)
         for bar in bars {
@@ -283,8 +283,9 @@ struct BeeJoyView: View {
             let held = t < up || t > down ? 0 : (t - up) / (down - up)
             let beats = beat.big ? 5.0 : 3.0
             let bob = sin(held * .pi * 2 * beats) * 0.05 * lift
-            // Its wings beat fast and wide while it is up — eight times a second, as a bee's do to
-            // the eye — and come to rest as it settles; its stripes stay whole.
+            // Its wings beat quicker and wider than at work while it is up — four and a half times
+            // a second, out to twenty-five degrees; eight and thirty-six was too much — and come to
+            // rest as it settles; its stripes stay whole.
             Canvas { context, canvas in
                 BeeLoader.drawGlad(in: context, size: canvas, time: t * beat.length, lift: lift)
             }
