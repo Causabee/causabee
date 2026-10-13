@@ -55,7 +55,11 @@ final class ThreadPlacement {
     /// end — the card and its button in sight over the field — not by its beginning with the card
     /// under the edge and the way down offered on top of the card's own button.
     @ObservationIgnored private var endsInCard = false
-    private var byEnd: Bool { showsEnd || (endsInCard && own > viewport) }
+    /// Decided when the card comes — an answer arrived, the thread was opened — and kept: what
+    /// grows under the answer afterwards, its sources unfolded, moves nothing over it.
+    @ObservationIgnored private var cardEnd = false
+    private var byEnd: Bool { showsEnd || cardEnd }
+    private func decide() { cardEnd = endsInCard && viewport > 0 && own > viewport }
     /// A question was just sent and the thread is on its way up to it: until it is there, nothing
     /// puts the thread anywhere at once — that would cut the way short, and the question would
     /// stand at the top from nowhere.
@@ -68,7 +72,10 @@ final class ThreadPlacement {
     /// line, a chip over it: the newest keeps its place, at once.
     func room(_ height: CGFloat, with scroller: ScrollViewProxy) {
         guard abs(height - viewport) > 0.5 else { return }
+        let first = viewport == 0
         viewport = height
+        // Known for the first time: whether the newest stands by its card can be said now.
+        if first { decide() }
         // Standing by its top, the newest stays there by itself as the room changes: put there
         // again on the keyboard's way, it was put by where things stood a moment before, and
         // trailed the keyboard. Only its end over the field has to be kept there.
@@ -94,11 +101,15 @@ final class ThreadPlacement {
     /// answer came, sources unfolded: it is put in its place again. Not so for the room's height:
     /// that changes all the way of the keyboard, and the newest stands through it by itself.
     func own(_ height: CGFloat, card: Bool = false, with scroller: ScrollViewProxy) {
-        let changed = abs(height - own) > 0.5 || card != endsInCard
+        let grew = abs(height - own) > 0.5, cardChanged = card != endsInCard
         own = height
         endsInCard = card
+        if cardChanged { decide() }
         look()
-        if changed, follows, laidOut == newest { place(scroller) }
+        guard grew || cardChanged, follows, laidOut == newest else { return }
+        // Standing by its card, and only taller or shorter under it: it stays where it stands.
+        if cardEnd, !cardChanged, !showsEnd { return }
+        place(scroller)
     }
 
     /// Where the newest's own end is, against the thread's lower edge.
@@ -155,6 +166,7 @@ final class ThreadPlacement {
         follows = true
         showsEnd = false
         newAnswer = nil
+        decide()
         place(scroller)
     }
 
@@ -163,6 +175,7 @@ final class ThreadPlacement {
     /// says something came.
     func arrived(_ id: AnyHashable, newest: AnyHashable?, with scroller: ScrollViewProxy) {
         self.newest = newest
+        decide()
         if follows { place(scroller, animated: true) } else if newAnswer == nil, !answerSeen { newAnswer = id }
     }
 
