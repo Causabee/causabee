@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Causabee in numbers</title>
+<meta name="description" content="How Causabee was built in seventeen days by a designer and Claude Code: the commits, the messages, the decisions, the design review and the privacy count behind the articles.">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/SourceSerif4.woff2" as="font" type="font/woff2" crossorigin>
+<!-- ?v= is the start of styles.css's shasum: change it with the file, or browsers keep the old one for up to 10 minutes. -->
+<link rel="stylesheet" href="styles.css?v=47841aa5">
+<style>
+/* This page's own: the tiles, the charts and their tables. Everything else is styles.css's .legal. */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 40px; }
+.tiles div { padding: 20px 22px; border-radius: 20px; background: var(--paper-2); }
+.tiles b { display: block; font: 400 34px/1.1 var(--serif); letter-spacing: -0.01em; color: var(--ink); }
+.tiles span { display: block; margin-top: 6px; font-size: 14px; line-height: 1.35; color: var(--muted); }
+.figure { margin: 24px 0 0; padding: 22px 22px 14px; border-radius: 24px; background: var(--paper-2); }
+.figure h3 { margin: 0 0 4px; font-size: 17px; font-weight: 600; color: var(--ink); }
+.figure .sub { margin: 0 0 10px; font-size: 14px; line-height: 1.4; color: var(--muted); }
+.figure .scroll { overflow-x: auto; }
+.figure svg { display: block; width: 100%; min-width: 560px; height: auto; font-family: var(--sans); }
+.figure svg .v { font-size: 12px; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.figure svg .a { font-size: 11px; fill: var(--muted); }
+.figure svg .l { font-size: 13px; fill: var(--ink-2); }
+.figure figcaption { margin-top: 10px; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 8px; font-size: 13px; color: var(--ink-2); }
+.key i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.legal table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 16px; line-height: 1.45; color: var(--ink-2); }
+.legal th, .legal td { padding: 10px 12px 10px 0; text-align: left; vertical-align: top; border-bottom: 1px solid #e5e5e3; }
+.legal th { font-size: 13px; font-weight: 600; color: var(--muted); }
+.legal td.n { white-space: nowrap; color: var(--ink); font-variant-numeric: tabular-nums; }
+.legal .small { font-size: 15px; color: var(--muted); }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="nav__inner">
+    <a class="brand" href="./"><img src="assets/icon.svg" alt="" width="28" height="28">Causabee</a>
+    <nav class="nav__links" aria-label="Main">
+      <a class="navlink" href="./#how">Overview</a>
+      <a class="navlink" href="./#privacy">Privacy</a>
+      <a class="navlink" href="https://github.com/causabee/causabee">GitHub</a>
+      <a class="button button--small" href="./#download">Download Beta</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="legal">
+  <h1>Causabee in numbers</h1>
+  <p class="dated">27 September to 13 October 2026</p>
+
+  <p>Causabee was built in seventeen days by one designer working with Claude Code. This page holds the numbers behind the articles about how that went. They are counted from the Git history and from the 27 working sessions, which were kept as text.</p>
+
+  <div class="tiles">
+    <div><b>17</b><span>days from the first commit to 0.5 Beta 68</span></div>
+    <div><b>3</b><span>devices: Mac, iPhone and iPad</span></div>
+    <div><b>670</b><span>commits</span></div>
+    <div><b>1,344</b><span>messages written to Claude</span></div>
+    <div><b>460</b><span>decisions taken</span></div>
+    <div><b>36,400</b><span>lines of Swift in the apps</span></div>
+  </div>
+
+  <h2>The seventeen days</h2>
+  <p>Three days of a command-line spike on real mail, two days of going public, then steady daily use and polish.</p>
+  <figure class="figure">
+    <h3>A three-day spike, two launch days, then about 35 commits a day</h3>
+    <p class="sub">Commits per day. 670 in all.</p>
+    <div class="scroll"><svg viewBox="0 0 720 250" role="img" aria-label="Commits per day, 27 September to 13 October 2026"><desc>670 commits in 17 days. Three spike days in a private history, two launch days, then about 35 a day.</desc>
+<line x1="8" y1="216" x2="712" y2="216" stroke="#d2d2d7"/>
+<path d="M15.5,216 V192.9 Q15.5,188.9 19.5,188.9 H38.0 Q42.0,188.9 42.0,192.9 V216 Z" fill="#d2d2d7"><title>27 Sep: 14 commits</title></path>
+<text x="28.7" y="182.9" text-anchor="middle" class="v">14</text>
+<text x="28.7" y="234" text-anchor="middle" class="a">27</text>
+<path d="M56.9,216 V127.0 Q56.9,123.0 60.9,123.0 H79.4 Q83.4,123.0 83.4,127.0 V216 Z" fill="#d2d2d7"><title>28 Sep: 48 commits</title></path>
+<text x="70.1" y="117.0" text-anchor="middle" class="v">48</text>
+<text x="70.1" y="234" text-anchor="middle" class="a">28</text>
+<path d="M98.3,216 V175.4 Q98.3,171.4 102.3,171.4 H120.8 Q124.8,171.4 124.8,175.4 V216 Z" fill="#d2d2d7"><title>29 Sep: 23 commits</title></path>
+<text x="111.5" y="165.4" text-anchor="middle" class="v">23</text>
+<text x="111.5" y="234" text-anchor="middle" class="a">29</text>
+<path d="M139.7,216 V34.0 Q139.7,30.0 143.7,30.0 H162.2 Q166.2,30.0 166.2,34.0 V216 Z" fill="#f2c200"><title>30 Sep: 96 commits</title></path>
+<text x="152.9" y="24.0" text-anchor="middle" class="v">96</text>
+<text x="152.9" y="234" text-anchor="middle" class="a">30</text>
+<path d="M181.1,216 V55.3 Q181.1,51.3 185.1,51.3 H203.6 Q207.6,51.3 207.6,55.3 V216 Z" fill="#f2c200"><title>1 Oct: 85 commits</title></path>
+<text x="194.4" y="45.3" text-anchor="middle" class="v">85</text>
+<text x="194.4" y="234" text-anchor="middle" class="a">1</text>
+<path d="M222.5,216 V134.8 Q222.5,130.8 226.5,130.8 H245.0 Q249.0,130.8 249.0,134.8 V216 Z" fill="#9a9aa0"><title>2 Oct: 44 commits</title></path>
+<text x="235.8" y="124.8" text-anchor="middle" class="v">44</text>
+<text x="235.8" y="234" text-anchor="middle" class="a">2</text>
+<path d="M263.9,216 V171.6 Q263.9,167.6 267.9,167.6 H286.4 Q290.4,167.6 290.4,171.6 V216 Z" fill="#9a9aa0"><title>3 Oct: 25 commits</title></path>
+<text x="277.2" y="161.6" text-anchor="middle" class="v">25</text>
+<text x="277.2" y="234" text-anchor="middle" class="a">3</text>
+<path d="M305.3,216 V123.1 Q305.3,119.1 309.3,119.1 H327.8 Q331.8,119.1 331.8,123.1 V216 Z" fill="#9a9aa0"><title>4 Oct: 50 commits</title></path>
+<text x="318.6" y="113.1" text-anchor="middle" class="v">50</text>
+<text x="318.6" y="234" text-anchor="middle" class="a">4</text>
+<path d="M346.7,216 V177.4 Q346.7,173.4 350.7,173.4 H369.3 Q373.3,173.4 373.3,177.4 V216 Z" fill="#9a9aa0"><title>5 Oct: 22 commits</title></path>
+<text x="360.0" y="167.4" text-anchor="middle" class="v">22</text>
+<text x="360.0" y="234" text-anchor="middle" class="a">5</text>
+<path d="M388.2,216 V196.8 Q388.2,192.8 392.2,192.8 H410.7 Q414.7,192.8 414.7,196.8 V216 Z" fill="#9a9aa0"><title>6 Oct: 12 commits</title></path>
+<text x="401.4" y="186.8" text-anchor="middle" class="v">12</text>
+<text x="401.4" y="234" text-anchor="middle" class="a">6</text>
+<path d="M429.6,216 V140.6 Q429.6,136.6 433.6,136.6 H452.1 Q456.1,136.6 456.1,140.6 V216 Z" fill="#9a9aa0"><title>7 Oct: 41 commits</title></path>
+<text x="442.8" y="130.6" text-anchor="middle" class="v">41</text>
+<text x="442.8" y="234" text-anchor="middle" class="a">7</text>
+<path d="M471.0,216 V165.8 Q471.0,161.8 475.0,161.8 H493.5 Q497.5,161.8 497.5,165.8 V216 Z" fill="#9a9aa0"><title>8 Oct: 28 commits</title></path>
+<text x="484.2" y="155.8" text-anchor="middle" class="v">28</text>
+<text x="484.2" y="234" text-anchor="middle" class="a">8</text>
+<path d="M512.4,216 V146.4 Q512.4,142.4 516.4,142.4 H534.9 Q538.9,142.4 538.9,146.4 V216 Z" fill="#9a9aa0"><title>9 Oct: 38 commits</title></path>
+<text x="525.6" y="136.4" text-anchor="middle" class="v">38</text>
+<text x="525.6" y="234" text-anchor="middle" class="a">9</text>
+<path d="M553.8,216 V152.2 Q553.8,148.2 557.8,148.2 H576.3 Q580.3,148.2 580.3,152.2 V216 Z" fill="#9a9aa0"><title>10 Oct: 35 commits</title></path>
+<text x="567.1" y="142.2" text-anchor="middle" class="v">35</text>
+<text x="567.1" y="234" text-anchor="middle" class="a">10</text>
+<path d="M595.2,216 V130.9 Q595.2,126.9 599.2,126.9 H617.7 Q621.7,126.9 621.7,130.9 V216 Z" fill="#9a9aa0"><title>11 Oct: 46 commits</title></path>
+<text x="608.5" y="120.9" text-anchor="middle" class="v">46</text>
+<text x="608.5" y="234" text-anchor="middle" class="a">11</text>
+<path d="M636.6,216 V128.9 Q636.6,124.9 640.6,124.9 H659.1 Q663.1,124.9 663.1,128.9 V216 Z" fill="#9a9aa0"><title>12 Oct: 47 commits</title></path>
+<text x="649.9" y="118.9" text-anchor="middle" class="v">47</text>
+<text x="649.9" y="234" text-anchor="middle" class="a">12</text>
+<path d="M678.0,216 V189.0 Q678.0,185.0 682.0,185.0 H700.5 Q704.5,185.0 704.5,189.0 V216 Z" fill="#9a9aa0"><title>13 Oct: 16 commits</title></path>
+<text x="691.3" y="179.0" text-anchor="middle" class="v">16</text>
+<text x="691.3" y="234" text-anchor="middle" class="a">13</text>
+<line x1="132.2" y1="34" x2="132.2" y2="216" stroke="#9a9aa0" stroke-dasharray="3 3"/><text x="10" y="46" class="a">Spike, private history</text>
+<text x="70.1" y="248" text-anchor="middle" class="a">September</text><text x="442.8" y="248" text-anchor="middle" class="a">October</text></svg></div>
+    <figcaption>The public repository began on 30 September with one commit that held everything built until then, because real names were in the earlier history. The 109 earlier commits are kept privately; 24 of them are counted in the 30th. 13 October is a morning only.</figcaption>
+  </figure>
+  <p>From the first beta on, each piece of work ended with a signed build on every device. That was the test bench, not a goal: the demo holds only made-up matters, and real ones live in iCloud across three devices, so testing on real data needed a real build on each.</p>
+
+  <h2>What a designer typed</h2>
+  <p>None of the 1,344 messages was code. The middle one is six words long. One in eight carried a screenshot, 160 in all, and twelve carried a screen recording.</p>
+  <figure class="figure">
+    <h3>More than half of the messages had seven words or fewer</h3>
+    <p class="sub">Messages by their length in words. 772 of 1,344, or 57%, in the two shortest groups.</p>
+    <div class="scroll"><svg viewBox="0 0 720 230" role="img" aria-label="Messages by length in words"><desc>772 of 1,344 messages, 57 percent, had seven words or fewer.</desc>
+<line x1="8" y1="196" x2="712" y2="196" stroke="#d2d2d7"/>
+<path d="M29.1,196 V66.6 Q29.1,62.6 33.1,62.6 H100.2 Q104.2,62.6 104.2,66.6 V196 Z" fill="#f2c200"><title>up to 3 words: 344 messages</title></path>
+<text x="66.7" y="56.6" text-anchor="middle" class="v">344</text>
+<text x="66.7" y="214" text-anchor="middle" class="a">up to 3</text>
+<path d="M146.5,196 V34.0 Q146.5,30.0 150.5,30.0 H217.5 Q221.5,30.0 221.5,34.0 V196 Z" fill="#f2c200"><title>4 to 7 words: 428 messages</title></path>
+<text x="184.0" y="24.0" text-anchor="middle" class="v">428</text>
+<text x="184.0" y="214" text-anchor="middle" class="a">4 to 7</text>
+<path d="M263.8,196 V95.7 Q263.8,91.7 267.8,91.7 H334.9 Q338.9,91.7 338.9,95.7 V196 Z" fill="#9a9aa0"><title>8 to 15 words: 269 messages</title></path>
+<text x="301.3" y="85.7" text-anchor="middle" class="v">269</text>
+<text x="301.3" y="214" text-anchor="middle" class="a">8 to 15</text>
+<path d="M381.1,196 V136.0 Q381.1,132.0 385.1,132.0 H452.2 Q456.2,132.0 456.2,136.0 V196 Z" fill="#9a9aa0"><title>16 to 30 words: 165 messages</title></path>
+<text x="418.7" y="126.0" text-anchor="middle" class="v">165</text>
+<text x="418.7" y="214" text-anchor="middle" class="a">16 to 30</text>
+<path d="M498.5,196 V161.2 Q498.5,157.2 502.5,157.2 H569.5 Q573.5,157.2 573.5,161.2 V196 Z" fill="#9a9aa0"><title>31 to 100 words: 100 messages</title></path>
+<text x="536.0" y="151.2" text-anchor="middle" class="v">100</text>
+<text x="536.0" y="214" text-anchor="middle" class="a">31 to 100</text>
+<path d="M615.8,196 V185.3 Q615.8,181.3 619.8,181.3 H686.9 Q690.9,181.3 690.9,185.3 V196 Z" fill="#9a9aa0"><title>over 100 words: 38 messages</title></path>
+<text x="653.3" y="175.3" text-anchor="middle" class="v">38</text>
+<text x="653.3" y="214" text-anchor="middle" class="a">over 100</text></svg></div>
+  </figure>
+  <figure class="figure">
+    <h3>A third of the messages gave new direction</h3>
+    <p class="sub">Each message sorted into one group by its wording.</p>
+    <div class="scroll"><svg viewBox="0 0 720 216" role="img" aria-label="What the messages were"><desc>A third of the messages gave new direction, a quarter were about getting a build onto the devices.</desc>
+<text x="0" y="21" class="l">New direction</text><rect x="250" y="9" width="410.0" height="16" rx="4" fill="#f2c200"><title>New direction: 440 messages, 33%</title></rect><text x="668.0" y="21" class="v" text-anchor="start">440</text>
+<text x="0" y="51" class="l">Getting a build onto the devices</text><rect x="250" y="39" width="318.7" height="16" rx="4" fill="#9a9aa0"><title>Getting a build onto the devices: 342 messages, 25%</title></rect><text x="576.7" y="51" class="v" text-anchor="start">342</text>
+<text x="0" y="81" class="l">A screenshot or recording</text><rect x="250" y="69" width="156.5" height="16" rx="4" fill="#9a9aa0"><title>A screenshot or recording: 168 messages, 12%</title></rect><text x="414.5" y="81" class="v" text-anchor="start">168</text>
+<text x="0" y="111" class="l">A question</text><rect x="250" y="99" width="156.5" height="16" rx="4" fill="#9a9aa0"><title>A question: 168 messages, 12%</title></rect><text x="414.5" y="111" class="v" text-anchor="start">168</text>
+<text x="0" y="141" class="l">An approval or a pick</text><rect x="250" y="129" width="114.6" height="16" rx="4" fill="#9a9aa0"><title>An approval or a pick: 123 messages, 9%</title></rect><text x="372.6" y="141" class="v" text-anchor="start">123</text>
+<text x="0" y="171" class="l">About Figma</text><rect x="250" y="159" width="64.3" height="16" rx="4" fill="#9a9aa0"><title>About Figma: 69 messages, 5%</title></rect><text x="322.3" y="171" class="v" text-anchor="start">69</text>
+<text x="0" y="201" class="l">Session housekeeping</text><rect x="250" y="189" width="31.7" height="16" rx="4" fill="#9a9aa0"><title>Session housekeeping: 34 messages, 3%</title></rect><text x="289.7" y="201" class="v" text-anchor="start">34</text></svg></div>
+    <figcaption>Pasted shell output and background notifications are left out. The groups are found by wording, so the counts are approximate.</figcaption>
+  </figure>
+  <p>Claude answered with 12,788 tool calls, between five and fourteen for each message depending on the day; 1.8% of them returned an error. Critique outnumbered praise about two to one, 157 messages against 81, counted by wording.</p>
+
+  <h2>Who decided what</h2>
+  <p>A decision is a moment where the designer chose, rejected or redirected. They were written down hour by hour and sorted into three kinds: what the product does, how it looks and reads, and how it is built.</p>
+  <figure class="figure">
+    <h3>Product decisions led the first week, design the last</h3>
+    <p class="sub">Decisions per day by kind. 460 in all.</p>
+    <div class="key"><span><i style="background:#1d1d1f"></i>Engineering 127</span><span><i style="background:#9a9aa0"></i>Product 175</span><span><i style="background:#f2c200"></i>Design 158</span></div>
+    <div class="scroll"><svg viewBox="0 0 720 270" role="img" aria-label="Decisions per day by kind"><desc>460 decisions in 17 days. Decisions about the product lead from 27 September to 2 October, decisions about design on every day from 8 October.</desc><line x1="8" y1="236" x2="712" y2="236" stroke="#d2d2d7"/>
+<rect x="15.5" y="212.8" width="26.5" height="22.2" rx="3" fill="#1d1d1f"><title>27 Sep: Engineering 6 of 19</title></rect>
+<rect x="15.5" y="168.3" width="26.5" height="42.4" rx="3" fill="#9a9aa0"><title>27 Sep: Product 11 of 19</title></rect>
+<rect x="15.5" y="160.3" width="26.5" height="6.1" rx="3" fill="#f2c200"><title>27 Sep: Design 2 of 19</title></rect>
+<text x="28.7" y="153.3" text-anchor="middle" class="v">19</text><text x="28.7" y="254" text-anchor="middle" class="a">27</text>
+<rect x="56.9" y="176.4" width="26.5" height="58.6" rx="3" fill="#1d1d1f"><title>28 Sep: Engineering 15 of 38</title></rect>
+<rect x="56.9" y="91.6" width="26.5" height="82.8" rx="3" fill="#9a9aa0"><title>28 Sep: Product 21 of 38</title></rect>
+<rect x="56.9" y="83.5" width="26.5" height="6.1" rx="3" fill="#f2c200"><title>28 Sep: Design 2 of 38</title></rect>
+<text x="70.1" y="76.5" text-anchor="middle" class="v">38</text><text x="70.1" y="254" text-anchor="middle" class="a">28</text>
+<rect x="98.3" y="204.7" width="26.5" height="30.3" rx="3" fill="#1d1d1f"><title>29 Sep: Engineering 8 of 27</title></rect>
+<rect x="98.3" y="164.3" width="26.5" height="38.4" rx="3" fill="#9a9aa0"><title>29 Sep: Product 10 of 27</title></rect>
+<rect x="98.3" y="127.9" width="26.5" height="34.4" rx="3" fill="#f2c200"><title>29 Sep: Design 9 of 27</title></rect>
+<text x="111.5" y="120.9" text-anchor="middle" class="v">27</text><text x="111.5" y="254" text-anchor="middle" class="a">29</text>
+<rect x="139.7" y="160.3" width="26.5" height="74.7" rx="3" fill="#1d1d1f"><title>30 Sep: Engineering 19 of 51</title></rect>
+<rect x="139.7" y="67.4" width="26.5" height="90.9" rx="3" fill="#9a9aa0"><title>30 Sep: Product 23 of 51</title></rect>
+<rect x="139.7" y="31.0" width="26.5" height="34.4" rx="3" fill="#f2c200"><title>30 Sep: Design 9 of 51</title></rect>
+<text x="152.9" y="24.0" text-anchor="middle" class="v">51</text><text x="152.9" y="254" text-anchor="middle" class="a">30</text>
+<rect x="181.1" y="216.8" width="26.5" height="18.2" rx="3" fill="#1d1d1f"><title>1 Oct: Engineering 5 of 47</title></rect>
+<rect x="181.1" y="119.9" width="26.5" height="94.9" rx="3" fill="#9a9aa0"><title>1 Oct: Product 24 of 47</title></rect>
+<rect x="181.1" y="47.2" width="26.5" height="70.7" rx="3" fill="#f2c200"><title>1 Oct: Design 18 of 47</title></rect>
+<text x="194.4" y="40.2" text-anchor="middle" class="v">47</text><text x="194.4" y="254" text-anchor="middle" class="a">1</text>
+<rect x="222.5" y="196.6" width="26.5" height="38.4" rx="3" fill="#1d1d1f"><title>2 Oct: Engineering 10 of 40</title></rect>
+<rect x="222.5" y="119.9" width="26.5" height="74.7" rx="3" fill="#9a9aa0"><title>2 Oct: Product 19 of 40</title></rect>
+<rect x="222.5" y="75.4" width="26.5" height="42.4" rx="3" fill="#f2c200"><title>2 Oct: Design 11 of 40</title></rect>
+<text x="235.8" y="68.4" text-anchor="middle" class="v">40</text><text x="235.8" y="254" text-anchor="middle" class="a">2</text>
+<rect x="263.9" y="212.8" width="26.5" height="22.2" rx="3" fill="#1d1d1f"><title>3 Oct: Engineering 6 of 27</title></rect>
+<rect x="263.9" y="188.5" width="26.5" height="22.2" rx="3" fill="#9a9aa0"><title>3 Oct: Product 6 of 27</title></rect>
+<rect x="263.9" y="127.9" width="26.5" height="58.6" rx="3" fill="#f2c200"><title>3 Oct: Design 15 of 27</title></rect>
+<text x="277.2" y="120.9" text-anchor="middle" class="v">27</text><text x="277.2" y="254" text-anchor="middle" class="a">3</text>
+<rect x="305.3" y="192.6" width="26.5" height="42.4" rx="3" fill="#1d1d1f"><title>4 Oct: Engineering 11 of 36</title></rect>
+<rect x="305.3" y="140.1" width="26.5" height="50.5" rx="3" fill="#9a9aa0"><title>4 Oct: Product 13 of 36</title></rect>
+<rect x="305.3" y="91.6" width="26.5" height="46.5" rx="3" fill="#f2c200"><title>4 Oct: Design 12 of 36</title></rect>
+<text x="318.6" y="84.6" text-anchor="middle" class="v">36</text><text x="318.6" y="254" text-anchor="middle" class="a">4</text>
+<rect x="346.7" y="208.7" width="26.5" height="26.3" rx="3" fill="#1d1d1f"><title>5 Oct: Engineering 7 of 20</title></rect>
+<rect x="346.7" y="184.5" width="26.5" height="22.2" rx="3" fill="#9a9aa0"><title>5 Oct: Product 6 of 20</title></rect>
+<rect x="346.7" y="156.2" width="26.5" height="26.3" rx="3" fill="#f2c200"><title>5 Oct: Design 7 of 20</title></rect>
+<text x="360.0" y="149.2" text-anchor="middle" class="v">20</text><text x="360.0" y="254" text-anchor="middle" class="a">5</text>
+<rect x="388.2" y="216.8" width="26.5" height="18.2" rx="3" fill="#1d1d1f"><title>6 Oct: Engineering 5 of 13</title></rect>
+<rect x="388.2" y="196.6" width="26.5" height="18.2" rx="3" fill="#9a9aa0"><title>6 Oct: Product 5 of 13</title></rect>
+<rect x="388.2" y="184.5" width="26.5" height="10.1" rx="3" fill="#f2c200"><title>6 Oct: Design 3 of 13</title></rect>
+<text x="401.4" y="177.5" text-anchor="middle" class="v">13</text><text x="401.4" y="254" text-anchor="middle" class="a">6</text>
+<rect x="429.6" y="196.6" width="26.5" height="38.4" rx="3" fill="#1d1d1f"><title>7 Oct: Engineering 10 of 24</title></rect>
+<rect x="429.6" y="176.4" width="26.5" height="18.2" rx="3" fill="#9a9aa0"><title>7 Oct: Product 5 of 24</title></rect>
+<rect x="429.6" y="140.1" width="26.5" height="34.4" rx="3" fill="#f2c200"><title>7 Oct: Design 9 of 24</title></rect>
+<text x="442.8" y="133.1" text-anchor="middle" class="v">24</text><text x="442.8" y="254" text-anchor="middle" class="a">7</text>
+<rect x="471.0" y="224.9" width="26.5" height="10.1" rx="3" fill="#1d1d1f"><title>8 Oct: Engineering 3 of 23</title></rect>
+<rect x="471.0" y="196.6" width="26.5" height="26.3" rx="3" fill="#9a9aa0"><title>8 Oct: Product 7 of 23</title></rect>
+<rect x="471.0" y="144.1" width="26.5" height="50.5" rx="3" fill="#f2c200"><title>8 Oct: Design 13 of 23</title></rect>
+<text x="484.2" y="137.1" text-anchor="middle" class="v">23</text><text x="484.2" y="254" text-anchor="middle" class="a">8</text>
+<rect x="512.4" y="220.8" width="26.5" height="14.2" rx="3" fill="#1d1d1f"><title>9 Oct: Engineering 4 of 23</title></rect>
+<rect x="512.4" y="204.7" width="26.5" height="14.2" rx="3" fill="#9a9aa0"><title>9 Oct: Product 4 of 23</title></rect>
+<rect x="512.4" y="144.1" width="26.5" height="58.6" rx="3" fill="#f2c200"><title>9 Oct: Design 15 of 23</title></rect>
+<text x="525.6" y="137.1" text-anchor="middle" class="v">23</text><text x="525.6" y="254" text-anchor="middle" class="a">9</text>
+<rect x="553.8" y="208.7" width="26.5" height="26.3" rx="3" fill="#1d1d1f"><title>10 Oct: Engineering 7 of 21</title></rect>
+<rect x="553.8" y="188.5" width="26.5" height="18.2" rx="3" fill="#9a9aa0"><title>10 Oct: Product 5 of 21</title></rect>
+<rect x="553.8" y="152.2" width="26.5" height="34.4" rx="3" fill="#f2c200"><title>10 Oct: Design 9 of 21</title></rect>
+<text x="567.1" y="145.2" text-anchor="middle" class="v">21</text><text x="567.1" y="254" text-anchor="middle" class="a">10</text>
+<rect x="595.2" y="208.7" width="26.5" height="26.3" rx="3" fill="#1d1d1f"><title>11 Oct: Engineering 7 of 26</title></rect>
+<rect x="595.2" y="180.5" width="26.5" height="26.3" rx="3" fill="#9a9aa0"><title>11 Oct: Product 7 of 26</title></rect>
+<rect x="595.2" y="132.0" width="26.5" height="46.5" rx="3" fill="#f2c200"><title>11 Oct: Design 12 of 26</title></rect>
+<text x="608.5" y="125.0" text-anchor="middle" class="v">26</text><text x="608.5" y="254" text-anchor="middle" class="a">11</text>
+<rect x="636.6" y="224.9" width="26.5" height="10.1" rx="3" fill="#1d1d1f"><title>12 Oct: Engineering 3 of 20</title></rect>
+<rect x="636.6" y="192.6" width="26.5" height="30.3" rx="3" fill="#9a9aa0"><title>12 Oct: Product 8 of 20</title></rect>
+<rect x="636.6" y="156.2" width="26.5" height="34.4" rx="3" fill="#f2c200"><title>12 Oct: Design 9 of 20</title></rect>
+<text x="649.9" y="149.2" text-anchor="middle" class="v">20</text><text x="649.9" y="254" text-anchor="middle" class="a">12</text>
+<rect x="678.0" y="233.0" width="26.5" height="2.0" rx="3" fill="#1d1d1f"><title>13 Oct: Engineering 1 of 5</title></rect>
+<rect x="678.0" y="228.9" width="26.5" height="2.0" rx="3" fill="#9a9aa0"><title>13 Oct: Product 1 of 5</title></rect>
+<rect x="678.0" y="216.8" width="26.5" height="10.1" rx="3" fill="#f2c200"><title>13 Oct: Design 3 of 5</title></rect>
+<text x="691.3" y="209.8" text-anchor="middle" class="v">5</text><text x="691.3" y="254" text-anchor="middle" class="a">13</text>
+<text x="70.1" y="268" text-anchor="middle" class="a">September</text><text x="442.8" y="268" text-anchor="middle" class="a">October</text></svg></div>
+    <figcaption>The first 341 decisions, to 7 October, were tagged in one reading and the last 119 in a later one. Eleven of the later ones are taken from Claude’s reply, because the message that made them was not kept. Until 1 October single features were tagged separately; they are counted under Product here.</figcaption>
+  </figure>
+  <p>Design moved between Figma and code in both directions, but not equally. Claude wrote to the Figma file 592 times and read a design’s specification from it twice. From 4 October, changes were asked for in words and screenshots against the running app, and Figma was brought in line afterwards.</p>
+
+  <h2>Measured against Apple’s guidelines</h2>
+  <p>On 9 October the three apps were reviewed against Apple’s Human Interface Guidelines. The review found 50 things to change.</p>
+  <table>
+    <tr><th>Platform</th><th>Rating at the review</th><th>Why</th></tr>
+    <tr><td>iPhone</td><td class="n">4 of 5</td><td>System navigation, sheets and text sizes were right; small touch targets and untitled bars were not.</td></tr>
+    <tr><td>Mac</td><td class="n">3 of 5</td><td>Settings, context menus and drag-in were right; the menu bar covered a fraction of the app and there was no undo.</td></tr>
+    <tr><td>iPad</td><td class="n">2 of 5</td><td>It adapted to its size, but had no keyboard shortcuts, no menu commands and no drag and drop.</td></tr>
+  </table>
+  <p>A day later 16 of the 50 were fixed in whole or in part, among them every High finding on the Mac and the iPad. Fourteen were left alone on purpose. The apps have not been rated again since.</p>
+
+  <h2>What reached the AI</h2>
+  <p>Before any text goes to a model, Causabee replaces what identifies a person. This is the count of what was still readable in the 677 mails of the last three test runs from the first three days, when the disguise was new, and after a fix made on the day of the count.</p>
+  <table>
+    <tr><th>Kind of detail</th><th>Readable, first three days</th><th>After the fix of 13 October</th></tr>
+    <tr><td>E-mail addresses</td><td class="n">0</td><td class="n">0</td></tr>
+    <tr><td>IBANs</td><td class="n">0</td><td class="n">0</td></tr>
+    <tr><td>Streets with a house number</td><td class="n">0</td><td class="n">0</td></tr>
+    <tr><td>Postcodes with a town</td><td class="n">0</td><td class="n">0</td></tr>
+    <tr><td>People and companies labelled by hand, first test set</td><td class="n">0 of 18</td><td class="n">0 of 18</td></tr>
+    <tr><td>Numbers of eight or more digits</td><td class="n">53, in 176 mails</td><td class="n">0</td></tr>
+    <tr><td>The tail of a link, with its tracking code</td><td class="n">in 123 mails</td><td class="n">0</td></tr>
+  </table>
+  <p>So names and addresses did not get through, and two things did. Long numbers with no label in front of them were not seen as numbers that point to a person. And a link was sent as “[link]”, but where its address had been disguised first, the part after it stayed. Both were found by this count and fixed the same day; the same mails, run again, show none of either.</p>
+  <p class="small">How this was counted: the sent text was searched for each pattern, and for every original the disguise had recorded. The fixed disguise was run over the already disguised texts, not the original mails. Still readable by design: numbers of six or seven digits with no label, because hiding those would hide amounts and years too. A first name standing alone can stay if the name-finder does not know it. A second, smaller set of labelled people and companies is still being checked. The fix is tested and not yet in a released version.</p>
+
+  <h2>Where the numbers come from</h2>
+  <ul>
+    <li><strong>Commits and lines of code</strong> are read from the <a href="https://github.com/causabee/causabee">public repository</a>; the first three days from the private history’s own counts.</li>
+    <li><strong>Messages and tool calls</strong> are counted from the 27 sessions, each session and each repeated message once.</li>
+    <li><strong>Decisions</strong> are counted from three hourly protocols written from those sessions.</li>
+    <li><strong>The ratings</strong> are from the review in the repository, under <code>docs/hig-review</code>.</li>
+  </ul>
+  <p class="small">Counted on 13 October 2026. The sessions themselves are not public, because they hold personal mail.</p>
+</main>
+
+<footer class="wrap footer">
+  <span>© 2026 Causabee · MIT License</span>
+  <nav aria-label="Footer">
+    <a href="privacy.html">Privacy policy</a>
+    <a href="https://github.com/causabee/causabee">GitHub</a>
+    <a href="https://github.com/causabee/causabee/issues">Support</a>
+  </nav>
+</footer>
+</body>
+</html>
