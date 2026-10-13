@@ -693,7 +693,9 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .bee-still { width: 100%; height: auto; display: block; fill: #000; }
 .bee-still .wl, .bee-still .wr { fill-opacity: 0.5; }
 .beemap__mark { width: 30px; height: 30px; padding: 6px 4px; border-radius: 8px; background: var(--honey); display: inline-flex; align-items: center; }
-.beemap { width: 100%; margin: 0; padding: clamp(18px, 2.6vw, 36px); border-radius: 28px; background: var(--paper); box-shadow: 0 0 0 1px var(--line); display: flex; flex-direction: column; gap: clamp(18px, 2vw, 28px); text-align: left; }
+/* The outer corners run parallel to the corners inside them: each is the inner one's radius and the
+   room between — 22 for the zone on top, 16 for the cards below. */
+.beemap { --room: clamp(18px, 2.6vw, 36px); --top: 22px; width: 100%; margin: 0; padding: var(--room); border-radius: calc(var(--top) + var(--room)) calc(var(--top) + var(--room)) calc(16px + var(--room)) calc(16px + var(--room)); background: var(--paper); box-shadow: 0 0 0 1px var(--line); display: flex; flex-direction: column; gap: clamp(18px, 2vw, 28px); text-align: left; }
 #bee { background: var(--paper-2); }
 .beemap h3 { font: 600 17px/1.3 var(--sans); letter-spacing: -0.01em; }
 .beemap p { font-size: 13px; line-height: 1.45; color: var(--muted); }
@@ -736,7 +738,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .beemap__jobs span { font: 500 11px/1.4 ui-monospace, "SF Mono", Menlo, monospace; color: var(--quiet); }
 .beemap__jobs .is-honey { background: var(--honey); }
 .beemap__jobs .is-honey p, .beemap__jobs .is-honey span { color: rgba(0, 0, 0, 0.72); }
-.beeidea { width: 100%; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; padding: clamp(28px, 3.4vw, 44px); border-radius: 28px; background: var(--night-2); color: #fff; text-align: left; }
+.beeidea { width: 100%; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; padding: clamp(28px, 3.4vw, 44px); border-radius: calc(16px + clamp(18px, 2.6vw, 36px)); background: var(--night-2); color: #fff; text-align: left; }
 .beeidea h3 { margin: 8px 0 10px; font: 600 clamp(20px, 2vw, 26px)/1.25 var(--sans); letter-spacing: -0.01em; max-width: 16em; }
 .beeidea p { font-size: 15px; line-height: 1.5; color: var(--night-muted); max-width: 34em; }
 .beeidea .beemap__kicker { color: var(--night-muted); }
@@ -747,7 +749,9 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 @media (max-width: 1099px) {
   .beemap__jobs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* One thing under the other: the lines stand, and say which way. */
-  .beemap__flow { grid-template-columns: minmax(0, 1fr); padding: 14px; row-gap: 0; border-radius: 22px; background: var(--paper-2); }
+  /* The column's own corner runs parallel to its cards': their 16 and the 14 between. */
+  .beemap { --top: 30px; }
+  .beemap__flow { grid-template-columns: minmax(0, 1fr); padding: 14px; row-gap: 0; border-radius: 30px; background: var(--paper-2); }
   /* The zone's own ground would lie under the AI outside too: here the whole column is one ground, and the AI's card says where it is. */
   .beemap__zone { display: none; }
   .beemap__conn, .beemap__conn--v { min-height: 56px; }
@@ -764,4 +768,4 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
   .beeidea { grid-template-columns: minmax(0, 1fr); }
   .beeidea__facts { padding-left: 0; padding-top: 24px; border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.12); }
 }
-@media (max-width: 519px) { .beemap__jobs { grid-template-columns: minmax(0, 1fr); } .beemap { border-radius: 22px; } }
+@media (max-width: 519px) { .beemap__jobs { grid-template-columns: minmax(0, 1fr); } }
