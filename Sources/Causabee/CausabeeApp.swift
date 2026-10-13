@@ -669,7 +669,9 @@ struct RootView: View {
             MailCheckView(check: mailCheck)
         }
         .frame(width: WindowMetrics.sidebarWidth)
-        .background(SidebarMaterial())
+        // The Mac's own material, and over it a wash of the page's ground: lighter, nearer the page
+        // beside it — as the iPad's sidebar is — and still the desktop showing through a little.
+        .background { ZStack { SidebarMaterial(); Theme.canvas.opacity(0.6) }.ignoresSafeArea() }
     }
 
     var body: some View {
