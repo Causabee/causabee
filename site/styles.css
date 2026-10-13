@@ -377,7 +377,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 /* Every serif line in Source Serif 4 Regular and its text shape (opsz 20), as the app and the design
    draw it — not the thinner headline shape a browser picks for big type by itself. Last, because the
    `font` shorthand above resets it. */
-.display, .title, .statement, .tile h3, .disguise p, .download__name, .legal h1, .legal h2 { font-optical-sizing: none; }
+.display, .title, .statement, .tile h3, .beeidea h3, .disguise p, .download__name, .legal h1, .legal h2 { font-optical-sizing: none; }
 
 /* Live screenshots. Over a screenshot lies a stage of its own size, in the screenshot's own
    pixels: --u is one of them (the stage's width over --W). The stage is built from cuts of the
@@ -739,7 +739,7 @@ a:hover { color: var(--gold-hover); text-decoration: underline; }
 .beemap__jobs .is-honey { background: var(--honey); }
 .beemap__jobs .is-honey p, .beemap__jobs .is-honey span { color: rgba(0, 0, 0, 0.72); }
 .beeidea { width: 100%; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; padding: clamp(28px, 3.4vw, 44px); border-radius: calc(16px + clamp(18px, 2.6vw, 36px)); background: var(--night-2); color: #fff; text-align: left; }
-.beeidea h3 { margin: 8px 0 10px; font: 600 clamp(20px, 2vw, 26px)/1.25 var(--sans); letter-spacing: -0.01em; max-width: 16em; }
+.beeidea h3 { margin: 8px 0 10px; font: 400 clamp(24px, 2.5vw, 32px)/1.2 var(--serif); letter-spacing: -0.015em; max-width: 16em; }
 .beeidea p { font-size: 15px; line-height: 1.5; color: var(--night-muted); max-width: 34em; }
 .beeidea .beemap__kicker { color: var(--night-muted); }
 .beeidea__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding-left: clamp(0px, 3vw, 40px); border-left: 1px solid rgba(255, 255, 255, 0.12); }
