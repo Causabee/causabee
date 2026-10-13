@@ -122,6 +122,10 @@ final class ThreadPlacement {
         if !follows, let top, abs(top) < 8 || (byEnd && abs(top + own - viewport) < 8) { follows = true; newAnswer = nil }
     }
 
+    /// The owner reads further up — asked for the earlier turns: the thread is theirs, as after a
+    /// finger moved it.
+    func read() { follows = false }
+
     /// The owner's own doing — a question sent, a file brought in, the button: the newest goes to
     /// the top, wherever the thread was, and the thread follows again.
     func follow(_ newest: AnyHashable?, with scroller: ScrollViewProxy) {

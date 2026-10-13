@@ -128,7 +128,9 @@ final class Navigation {
 
     func open(_ matter: Matter, showing todo: PersistentIdentifier? = nil) {
         showing = todo
-        showsAssistant = false
+        // A sheet over the page on the iPhone goes for the page it was over. A column beside the
+        // page on the iPad stays, and is about the matter that is open now — as on the Mac.
+        if !isPad { showsAssistant = false }
         RecentMatters.note(matter)
         // On the iPad the sidebar is the way between matters: one page, not a pile of them.
         if isPad { go([matter.persistentModelID]) } else if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }

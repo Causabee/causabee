@@ -13,7 +13,9 @@ struct AssistantSheet: View {
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @Query(sort: \ThreadTurn.date) private var records: [ThreadTurn]
+    /// Only this matter's turns are fetched: a thread about one matter does not read what was
+    /// asked about all the others each time it is drawn. With no matter: all of them.
+    @Query private var records: [ThreadTurn]
     @Query private var matters: [Matter]
     @Query private var profiles: [Profile]
     @Environment(PhoneStore.self) private var store
@@ -43,6 +45,19 @@ struct AssistantSheet: View {
     /// Where the thread stands, and when it moves by itself: `ThreadPlacement` has the rule, for the
     /// iPhone and the Mac.
     @State private var placement = ThreadPlacement()
+    /// The thread opens with its newest turns only; the earlier ones come when asked for. Laid out
+    /// whole at once, a thread of weeks took seconds to open.
+    @State private var showsEarlier = false
+    private static let firstShown = 8
+
+    init(matter: Matter?) {
+        self.matter = matter
+        if let id = matter?.persistentModelID {
+            _records = Query(filter: #Predicate<ThreadTurn> { $0.matter?.persistentModelID == id }, sort: \ThreadTurn.date)
+        } else {
+            _records = Query(sort: \ThreadTurn.date)
+        }
+    }
     /// A turn kept with nothing asked — a task, a note — and the turn an answer just came for.
     @State private var kept: UUID?
     @State private var answered: UUID?
@@ -100,6 +115,11 @@ struct AssistantSheet: View {
     @State private var barHeight = CGFloat.zero
 
     var body: some View {
+        // Worked out once for this drawing: asked for again for every turn in the thread, the list
+        // was read, filtered and sorted as many times as it has turns.
+        let all = entries
+        let newestID = asking?.id ?? all.last?.id
+        let entries = showsEarlier ? all : Array(all.suffix(Self.firstShown))
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
             // The thread is exactly as wide as its scroll view, by the width layout hands down here
@@ -109,7 +129,21 @@ struct AssistantSheet: View {
             ScrollView {
                 // Laid out whole, not lazily: a matter's thread is short enough.
                 VStack(alignment: .leading, spacing: 20) {
-                    let entries = entries
+                    if all.count > entries.count, let first = entries.first?.id {
+                        Button {
+                            // The thread is the owner's from here: it stays where it is read, the
+                            // earlier turns over what was its first.
+                            placement.read()
+                            showsEarlier = true
+                            DispatchQueue.main.async { scroller.scrollTo(first, anchor: .top) }
+                        } label: {
+                            Text("Show \(all.count - entries.count) earlier").font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("thread.earlier")
+                    }
                     if entries.isEmpty {
                         Text(matter == nil ? "Nothing asked yet." : "Nothing asked about this matter yet.")
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 40)
