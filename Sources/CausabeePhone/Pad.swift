@@ -42,7 +42,16 @@ struct PadSidebar: View {
         ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
                     Button { navigation.go([]) } label: {
-                        Text("Overview").font(.headline)
+                        // With a tile of its own, as every matter under it has — and as on the Mac.
+                        // On the sidebar's grey the tile is white; on the mark's white, grey.
+                        HStack(spacing: 12) {
+                            Image(systemName: "square.grid.2x2")
+                                .font(.system(size: 18))
+                                .frame(width: 36, height: 36)
+                                .background(navigation.path.isEmpty ? Theme.box : Theme.card, in: RoundedRectangle(cornerRadius: 36 * 0.27))
+                                .accessibilityHidden(true)
+                            Text("Overview").font(.headline)
+                        }
                             .padding(.horizontal, 14).padding(.vertical, 10)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(navigation.path.isEmpty ? Theme.card : .clear, in: RoundedRectangle(cornerRadius: 12))
