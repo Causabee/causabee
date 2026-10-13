@@ -624,7 +624,7 @@ struct RootView: View {
                     Image(systemName: "square.grid.2x2")
                         .font(.system(size: 13))
                         .frame(width: 26, height: 26)
-                        .background(Theme.box, in: RoundedRectangle(cornerRadius: 7))
+                        .background(Theme.card, in: RoundedRectangle(cornerRadius: 7))
                         .accessibilityHidden(true)
                     Text("Overview").font(.body.weight(.semibold))
                 }
@@ -669,7 +669,9 @@ struct RootView: View {
             MailCheckView(check: mailCheck)
         }
         .frame(width: WindowMetrics.sidebarWidth)
-        .background(SidebarMaterial())
+        // The Mac's own material, and over it a wash of the page's ground: lighter, nearer the page
+        // beside it — as the iPad's sidebar is — and still the desktop showing through a little.
+        .background { ZStack { SidebarMaterial(); Theme.canvas.opacity(0.6) }.ignoresSafeArea() }
     }
 
     var body: some View {
@@ -886,7 +888,8 @@ struct MatterRow: View {
         let _ = StoredChanges.shared.count
         let status = MatterStatus(matter)
         HStack(spacing: 9) {
-        MatterIconTile(matter: matter, size: 26)
+        // White on the sidebar's light ground: the box's grey is nearly that ground, and was gone on it.
+        MatterIconTile(matter: matter, size: 26, ground: Theme.card)
         VStack(alignment: .leading, spacing: 2) {
             Text(matter.name).font(.body).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
             // Only what asks for a look stands under the name: what is overdue, new mail in a
