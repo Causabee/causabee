@@ -282,7 +282,12 @@ public struct Extractor: Sendable {
     public static func text(of disguise: Disguise, body: String? = nil, omitted: Int = 0) -> String {
         // In the subject and the attachments' names too: a shared document's address is as
         // telling there as in the text.
-        func unlinked(_ text: String) -> String { text.replacing(/(?:https?:\/\/|www\.)[^\s)>\]]+/, with: "[link]") }
+        // A link whose address was disguised already — `https://[Domain A]/t?id=…`, or `[Domain A]/t?id=…`
+        // with nothing in front — is a link all the same: stopping at the placeholder left its
+        // tracking code standing after it.
+        func unlinked(_ text: String) -> String {
+            text.replacing(/(?:https?:\/\/|www\.)(?:\[[^\]\n]{1,40}\]|[^\s)>\]])+|\[Domain [A-Z]+\](?:[\/?#](?:\[[^\]\n]{1,40}\]|[^\s)>\]])*)+/, with: "[link]")
+        }
         var body = unlinked(body ?? disguise.body)
         if omitted > 0 {
             body += "\n\n[Earlier messages quoted below this one were left out; they were read when they arrived.]"
