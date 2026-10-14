@@ -29,6 +29,7 @@ enum ModelChoice {
 
     static func missingKey(_ model: Claude.Model) -> String {
         if DemoData.usesReal { return "This is the demo with your real matters: nothing is sent to an AI from it." }
+        if DemoData.isRequested { return "This is the demo: your keys are not used in it, so nothing is sent to an AI from it." }
         #if os(iOS)
         let settings = "Settings (⋯ on the overview) — or on your Mac: a key saved there comes through iCloud Keychain"
         #else

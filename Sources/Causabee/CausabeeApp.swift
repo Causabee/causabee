@@ -15,6 +15,9 @@ struct CausabeeApp: App {
     let opened: Result<ModelContainer, Error>
 
     init() {
+        // The demo never touches the Keychain: no password or key of the owner's is read, so macOS
+        // asks for none, and none is used from it.
+        if DemoData.isRequested { Keychain.isSealed = true }
         // Once, before the schema goes to Production: every record type into Development, then quit.
         if let flag = CommandLine.arguments.firstIndex(of: "--init-cloudkit-schema") {
             let next = CommandLine.arguments.index(after: flag)
@@ -56,6 +59,7 @@ struct CausabeeApp: App {
             UserDefaults.standard.register(defaults: ["ApplePersistenceIgnoreState": "YES"])
         }
         Theme.registerFonts()
+        IntroOpener.renderFramesIfAsked()
         // Started from the terminal with `swift run`, the process is not an app yet until it says so.
         NSApplication.shared.setActivationPolicy(.regular)
         FromMatterbee.settings()

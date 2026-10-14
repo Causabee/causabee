@@ -236,6 +236,32 @@ extension BeeLoader {
             context.fill(Path(roundedRect: CGRect(x: bar.x, y: bar.y, width: bar.width, height: 264), cornerRadius: 112), with: .foreground)
         }
     }
+
+    /// The app icon's bee, where the icon has it on its yellow (`size` is the whole icon's): each
+    /// stripe in by `stripes[i]`, 0 to 1 — dropping in from above and lighting up, as the website's
+    /// icon sorts them —, the wings turned out by `wing` degrees, and the whole bee `grown` and
+    /// `rocked` about its middle while it is glad. For the first start's opener (IntroOpener).
+    static func drawIcon(in context: GraphicsContext, size: CGSize, stripes: [Double], wing: Double,
+                         grown: Double = 1, rocked: Double = 0) {
+        var context = context
+        let unit = size.width / 1024
+        context.translateBy(x: 112 * unit, y: 243.1 * unit)
+        context.scaleBy(x: 800 * unit / 4201, y: 800 * unit / 4201)
+        let middle = CGPoint(x: 2100, y: 1254)
+        context.translateBy(x: middle.x, y: middle.y)
+        context.rotate(by: .degrees(rocked))
+        context.scaleBy(x: grown, y: grown)
+        context.translateBy(x: -middle.x, y: -middle.y)
+        fill(leftWing, turned: .degrees(wing), around: leftRoot, opacity: 0.5, in: context)
+        fill(rightWing, turned: .degrees(-wing), around: rightRoot, opacity: 0.5, in: context)
+        for (index, bar) in bars.enumerated() {
+            let on = index < stripes.count ? stripes[index] : 1
+            var layer = context
+            layer.opacity = 0.14 + 0.86 * on
+            let rect = CGRect(x: bar.x, y: bar.y - 160 * (1 - on), width: bar.width, height: 264)
+            layer.fill(Path(roundedRect: rect, cornerRadius: 112), with: .foreground)
+        }
+    }
 }
 
 /// A task ticked by hand: the bee is glad. It comes up out of its yellow round towards the eye —
