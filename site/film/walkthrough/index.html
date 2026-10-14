@@ -256,7 +256,7 @@ svg.drawn { overflow: visible; fill: #000; }
       <div class="o ring" style="--x:590;--y:893;--w:2240;--h:290;--rr:26;--d:46.26s"></div>
     </div></div>
   </div>
-  <p class="where" style="animation: fade .4s 17.3s both">Mac · in the morning · Auto on</p>
+  <p class="where" style="animation: fade .4s 17.3s both">Mac · in the morning</p>
 </div>
 
 <!-- C · 24.7–39.3 s: "Before anything went to the AI, names and numbers were swapped … Dr. Brandt became Person A, and Helga became Person B." -->
@@ -279,7 +279,7 @@ svg.drawn { overflow: visible; fill: #000; }
   <p class="where" style="animation: fade .4s 48.46s both">Mac · the matter</p>
 </div>
 
-<!-- E · 57.4–70 s: "Tick off what's done — and the bee is glad." Then "… on your iPhone and your Mac as well." -->
+<!-- E · 57.4–70 s: "Tick off what's done." — and the bee is glad, unsaid. Then "… on your iPhone and your Mac as well." -->
 <div class="scene" style="animation: fade .4s 59.66s both, fade .4s 72.16s both reverse">
   <div class="pad" style="left: 120px; top: 110px; animation: rise-far .9s var(--out) 59.86s both"><div class="scr" style="--W:2000;--H:1500;--u:.482">
     <img src="../../assets/img/ipad-matter.webp" alt="">
@@ -294,7 +294,7 @@ svg.drawn { overflow: visible; fill: #000; }
     <div class="o dim" style="--x:540;--y:1130;--w:420;--h:56;--d:65.26s"></div>
     <div class="o strike" style="--x:543;--y:1150;--w:329;--d:65.26s"></div>
   </div></div>
-  <div class="loupe" style="left: 925px; top: 596px; animation: pop .5s var(--spring) 62.66s both, fade .3s 67.06s both reverse"><span class="send"><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg><svg class="glad" data-at="64.06 65.36" viewBox="-500 -500 5201 3509"></svg></span></div>
+  <div class="loupe" style="left: 925px; top: 596px; animation: pop .35s var(--spring) 63.96s both, fade .3s 66.56s both reverse"><span class="send"><svg class="glad" data-at="64.06" data-len="2.4" viewBox="-500 -500 5201 3509"></svg></span></div>
   <div class="phone" style="left: 1330px; top: 120px; animation: slide .8s var(--spring) 60.36s both"><div class="scr" style="--W:804;--H:1748;--u:.4209">
     <img src="../../assets/img/iphone-care.webp" alt="">
     <div class="o check" style="--x:64;--y:1631;--w:35;--h:35;--d:69.61s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -353,7 +353,7 @@ svg.drawn { overflow: visible; fill: #000; }
 <div class="scene" style="animation: fade .4s 89.17s both, fade .4s 97.47s both reverse">
   <div class="phone" style="left: 756px; top: 110px"><div class="scr" id="pullscr" style="--W:804;--H:1748;--u:.48">
     <div class="layer" id="page">
-      <div class="o cut" style="--x:0;--y:185;--w:804;--h:231"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: calc(-185 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:0;--y:230;--w:804;--h:186"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: calc(-230 * var(--u) * 1px)"></div>
       <div class="o cut" id="cardcut" style="--x:0;--y:416;--w:804;--h:620; opacity: 0"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: calc(-416 * var(--u) * 1px)"></div>
       <div class="o fbox" id="fbox" style="--x:32;--y:416;--w:740;--h:110;--fs:30; opacity: 0"><svg class="drawn" id="boxbee" viewBox="-450 -300 5101 2900"></svg><span id="fboxtext">Fetching mail …</span></div>
       <div class="o cut" id="restcut" style="--x:0;--y:1036;--w:804;--h:712"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: calc(-1036 * var(--u) * 1px)"></div>
@@ -366,7 +366,7 @@ svg.drawn { overflow: visible; fill: #000; }
         <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6"/></svg></i><span>Tax return 2025<small>7 open · next Oct 15</small></span></div>
       </div>
     </div>
-    <div class="o cut" style="--x:0;--y:0;--w:804;--h:185; background: #fff"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: 0"></div>
+    <div class="o cut" style="--x:0;--y:0;--w:804;--h:230; background: #fff"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: 0"></div>
     <svg class="o drawn" id="pullbee" viewBox="-450 -300 5101 2900" style="--x:0;--y:0;--w:105;--h:60; opacity: 0"></svg>
     <div class="o finger" id="finger" style="--x:0;--y:0;--w:90;--h:90; opacity: 0"></div>
   </div></div>
@@ -495,10 +495,11 @@ function gladFrames(L = 1.05, beats = 3, grow = .34, rock = 6, n = 64) {
   }
   return { body, wl, wr, L };
 }
-const G = gladFrames();
 for (const s of document.querySelectorAll('svg.glad')) {
+  // data-len: glad for longer, in one go — the loupe's bee flies through both ticks.
+  const L = +s.dataset.len || 1.05, G = gladFrames(L, Math.round(3 * L / 1.05));
   s.innerHTML = BEE.replace(/ class="bar"[^>]*>/g, m => m.replace(/class="bar"/, 'class="still"'));
-  const arrow = s.parentElement.querySelector('.arrow');
+  const arrow = s.parentElement.querySelector('.arrow'); // none in the loupe: there the bee only flies
   for (const at of s.dataset.at.split(' ').map(Number)) {
     const opt = { duration: G.L * 1000, delay: at * 1000, fill: 'none' };
     s.animate(G.body, opt);
@@ -507,7 +508,7 @@ for (const s of document.querySelectorAll('svg.glad')) {
       w.style.transformBox = 'view-box'; w.style.transformOrigin = cls === 'wl' ? '1010px 880px' : '3191px 880px';
       w.animate(f, opt);
     }
-    arrow.animate([{ opacity: 1, scale: 1 }, { opacity: 0, scale: .7, offset: .2 }, { opacity: 0, scale: .7, offset: .8 }, { opacity: 1, scale: 1 }], opt);
+    arrow?.animate([{ opacity: 1, scale: 1 }, { opacity: 0, scale: .7, offset: .2 }, { opacity: 0, scale: .7, offset: .8 }, { opacity: 1, scale: 1 }], opt);
   }
 }
 
@@ -551,7 +552,7 @@ function drawBee(svg, time, pull = null) {
   const page = document.getElementById('page'), rest = document.getElementById('restcut'), card = document.getElementById('cardcut');
   const more = document.getElementById('morerows'), box = document.getElementById('fbox'), boxText = document.getElementById('fboxtext'), boxBee = document.getElementById('boxbee');
   const bee = document.getElementById('pullbee'), finger = document.getElementById('finger');
-  const P0 = 90.67, R = 92.52, SORT = 94.97, DONE = 96.27, TOP = 185, MAX = 120;
+  const P0 = 90.67, R = 92.52, SORT = 94.97, DONE = 96.27, TOP = 230, MAX = 120;
   const pulledAt = t => t < P0 ? 0 : t < R ? MAX * smooth((t - P0) / (R - P0)) : MAX * (1 - easeOut3(clamp((t - R) / .35)));
   const px = n => `${n * u}px`;
   painters.push(t => {

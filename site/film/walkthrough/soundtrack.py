@@ -129,7 +129,7 @@ for at, f in [(49.91, 'F#6'), (55.51, 'A6'), (58.11, 'B6')]:
     add(sfx, pop(hz(f), 0.1), at, 0.14)                      # what lights up
 add(sfx, swoosh(0.7, 200, 1400, shape=0.7), 59.86, 0.04)      # the iPad rises
 add(sfx, pop(hz('F#5'), 0.18), 60.46, 0.28, pan=0.5)         # the iPhone slides in
-add(sfx, pop(hz('D5'), 0.15), 62.71, 0.18)                  # the loupe
+add(sfx, pop(hz("D5"), 0.15), 64.01, 0.18)                  # the loupe
 add(sfx, tick(), 63.86, 0.25, pan=-0.5)                       # first tick on the iPad
 check(63.91, -0.5)
 glad(64.06)
