@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>Video test</title>
+<!-- A test for the walkthrough on a real iPhone: the same film four ways, each with what the player says. Not linked; goes again once the fault is found. -->
+<style>
+body { margin: 0; padding: 16px; font: 15px -apple-system, sans-serif; background: #fff; color: #22211b; }
+h2 { font-size: 17px; margin: 28px 0 8px; }
+video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #eee; border-radius: 12px; }
+.log { font: 12px ui-monospace, monospace; color: #555; margin-top: 6px; white-space: pre-wrap; }
+</style></head><body>
+<p>Tap play on each, one after another. Then send a screenshot of the whole page.</p>
+
+<h2>1 · as on the website</h2>
+<video controls playsinline preload="none" poster="film/walkthrough/poster.webp" src="film/walkthrough/walkthrough-720.mp4?v=3"><track kind="captions" srclang="en" label="English" src="film/walkthrough/walkthrough.vtt"></video>
+<div class="log"></div>
+
+<h2>2 · without captions</h2>
+<video controls playsinline preload="none" poster="film/walkthrough/poster.webp" src="film/walkthrough/walkthrough-720.mp4?v=3"></video>
+<div class="log"></div>
+
+<h2>3 · without the picture before it plays</h2>
+<video controls playsinline preload="metadata" src="film/walkthrough/walkthrough-720.mp4?v=3"></video>
+<div class="log"></div>
+
+<h2>4 · the 1080p film</h2>
+<video controls playsinline preload="none" poster="film/walkthrough/poster.webp" src="film/walkthrough/walkthrough.mp4?v=3"></video>
+<div class="log"></div>
+
+<script>
+const net = ['empty', 'idle', 'loading', 'no source'], ready = ['nothing', 'metadata', 'current', 'future', 'enough'];
+for (const v of document.querySelectorAll('video')) {
+  const log = v.nextElementSibling, seen = [];
+  const show = () => {
+    const b = v.buffered.length ? v.buffered.end(v.buffered.length - 1).toFixed(1) : '0';
+    log.textContent = `net ${net[v.networkState]} · ready ${ready[v.readyState]} · ${v.currentTime.toFixed(1)} / ${isFinite(v.duration) ? v.duration.toFixed(1) : '?'} s · buffered ${b} s`
+      + (v.error ? ` · ERROR ${v.error.code} ${v.error.message || ''}` : '') + `\n${seen.slice(-8).join(' ')}`;
+  };
+  for (const e of ['loadstart', 'loadedmetadata', 'canplay', 'play', 'playing', 'waiting', 'stalled', 'suspend', 'abort', 'error', 'emptied'])
+    v.addEventListener(e, () => { seen.push(e); show(); });
+  setInterval(show, 500); show();
+}
+</script>
+</body></html>
