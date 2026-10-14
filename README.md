@@ -44,8 +44,9 @@ open it, and click **Try the demo** at the end of the introduction: nine made-up
 nothing to set up. For your own mail you need an IMAP account — Gmail needs an app password — and
 an API key from Anthropic, OpenAI or Mistral.
 
-Causabee is in beta. Not in the beta yet: iCloud sync, and Sign in with Google
-([docs/google-sign-in.md](docs/google-sign-in.md)). Bugs and ideas are welcome as
+Causabee is in beta. Your matters sync between your Mac, iPhone and iPad through your own iCloud.
+Not in the beta yet: Sign in with Google ([docs/google-sign-in.md](docs/google-sign-in.md)).
+Bugs and ideas are welcome as
 [issues](https://github.com/causabee/causabee/issues).
 
 ## Building the Mac app
