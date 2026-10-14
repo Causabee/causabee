@@ -28,9 +28,15 @@ struct EntityDetectorTests {
     }
 
     @Test("Phone numbers, German and international",
-          arguments: ["030 0471 2288", "0176 00884410", "+49 30 09778110", "(030) 0471-2288"])
+          arguments: ["030 0471 2288", "0176 00884410", "+49 30 09778110", "(030) 0471-2288", "+ 49 30 - 0977811 - 0"])
     func phones(number: String) {
         #expect(found("Telefon: \(number)").contains { $0.kind == .phone })
+    }
+
+    @Test("A phone number written without spaces is still a phone number, not a reference")
+    func phoneInOnePiece() {
+        let hits = found("mobil 017600884410 oder +4930097781100")
+        #expect(hits.map(\.kind) == [.phone, .phone], "\(hits)")
     }
 
     @Test("A date, an amount and a year are not phone numbers",
@@ -185,12 +191,18 @@ struct ContextRuleTests {
         ("Ust-Idnr. DE123 456 789\n", "DE123 456 789"),
         ("Aktenzeichen 12 O 345/26", "12 O 345/26"),
         ("die Nummer 8200001234567 bitte", "8200001234567"),
+        ("Ihre Sendung 123456789 ist unterwegs", "123456789"),
+        ("Bestellung 12345678, vielen Dank", "12345678"),
+        ("Ref ABC12345678XY bitte angeben", "ABC12345678XY"),
+        ("USt-ID: DE 123456789\n", "DE 123456789"),
+        ("abmelden mit 1a2b3c4d-5e6f-4a7b-8c9d-0123456789ab hier", "1a2b3c4d-5e6f-4a7b-8c9d-0123456789ab"),
     ])
     func references(text: String, number: String) {
         #expect(found(text).contains { $0.0 == .reference && $0.1 == number }, "\(found(text))")
     }
 
-    @Test("Dates and amounts stay", arguments: ["am 22.07.2026 um 10:00", "Kosten 1.234,56 €", "Zimmer 12, 3. Stock"])
+    @Test("Dates and amounts stay", arguments: ["am 22.07.2026 um 10:00", "Kosten 1.234,56 €", "Zimmer 12, 3. Stock",
+                                              "bis 2026-10-13, 18:30 Uhr", "12.500.000,00 EUR", "Rechnung 2025-4471 vom 3.4.26"])
     func notReferences(text: String) {
         #expect(!found(text).contains { $0.0 == .reference }, "\(found(text))")
     }

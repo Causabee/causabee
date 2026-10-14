@@ -88,6 +88,16 @@ struct ExtractorTests {
         #expect(text.contains("( [link] )"))
     }
 
+    @Test("A link whose address is disguised already goes as [link] whole, its code with it")
+    func linksWithADisguisedAddress() {
+        let disguise = Disguise(mode: .placeholder, subject: "s", from: "f", to: [], cc: [],
+                                body: "Hier https://[Domain A]/t?id=12345678&u=[Email B] und [Domain AB]/u/9f8e7d6c5b4a?x=1 – Gruß von [Domain C].",
+                                attachmentNames: [], replacements: 0)
+        let text = Extractor.text(of: disguise)
+        #expect(!text.contains("12345678") && !text.contains("9f8e7d6c5b4a") && !text.contains("x=1"))
+        #expect(text.contains("Hier [link] und [link] – Gruß von [Domain C]."))
+    }
+
     @Test("A link in the subject or an attachment's name goes as [link] too")
     func linksInHeaders() {
         let disguise = Disguise(mode: .placeholder, subject: "Doc https://docs.example/d/1AbCdSECRET/edit", from: "f", to: [], cc: [],

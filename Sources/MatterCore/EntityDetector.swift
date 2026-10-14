@@ -153,8 +153,9 @@ public struct EntityDetector: Sendable {
         // Two shapes, because a country code replaces the leading zero rather than sitting in
         // front of it: `+49 30 09778110` has no 0 anywhere and was missed by a pattern that
         // insisted on one. The leading + or 0 keeps dates and amounts out; the digit count
-        // keeps house numbers and years out.
-        .init(kind: .phone, expression: #"\+\d{1,3}[ \-/]?\(?\d{1,5}\)?[ \-/]?\d[\d \-/]{3,}\d"#,
+        // keeps house numbers and years out. A signature spaces it as it likes — `+ 49 30 - 0977811 - 0` —
+        // so a space may follow the + and a dash may stand between spaces.
+        .init(kind: .phone, expression: #"\+[ ]?\d{1,3}[ \-/]{0,3}\(?\d{1,5}\)?[ \-/]{0,3}\d[\d \-/]{3,}\d"#,
               minimumDigits: 8),
         .init(kind: .phone, expression: #"\(?0\d{1,5}\)?[ \-/]?\d[\d \-/]{3,}\d"#,
               minimumDigits: 8),
@@ -162,16 +163,21 @@ public struct EntityDetector: Sendable {
         // Vorgang-Nr., Aktenzeichen, USt-IdNr. The number is what is replaced; the label stays,
         // so the model still knows what kind of number it was.
         .init(kind: .reference,
-              expression: #"(?i:\b(?:versicherten|versicherungs|kunden|vorgangs?|vertrags|mitglieds|rechnungs|policen|referenz|buchungs|auftrags|schadens?|fall|patienten|akten|steuer|ust[\-. ]?id|mandanten|bestell|antrags)[\- ]?(?:nummer|nr\.?|zeichen)|\baz\.|\bust[\-. ]?id[\-. ]?nr\.?)\s*[:#.]?\s*((?:[A-Z0-9][A-Z0-9./\-]*)(?:\s[A-Z0-9][A-Z0-9./\-]*(?![a-zäöüß]))*)(?<=[A-Z0-9])"#,
+              expression: #"(?i:\b(?:versicherten|versicherungs|kunden|vorgangs?|vertrags|mitglieds|rechnungs|policen|referenz|buchungs|auftrags|schadens?|fall|patienten|akten|steuer|ust[\-. ]?id|mandanten|bestell|antrags)[\- ]?(?:nummer|nr\.?|zeichen)|\baz\.|\bust[\-. ]?id(?:[\-. ]?nr\.?)?)\s*[:#.]?\s*((?:[A-Z0-9][A-Z0-9./\-]*)(?:\s[A-Z0-9][A-Z0-9./\-]*(?![a-zäöüß]))*)(?<=[A-Z0-9])"#,
               minimumDigits: 4, group: 1),
         // A date of birth, found by the word before it — with a name in between, or not: "Geburtsdatum
         // Ulrike Chille, 11.11.1951", "geb. 3.4.62". No other date is disguised: a deadline has to be read.
         .init(kind: .reference,
               expression: #"(?i:\b(?:geburtsdatum|geburtstag|geboren(?:\s+am)?|geb\.|date\s+of\s+birth|born(?:\s+on)?|dob))[^\d\n]{0,40}?(\d{1,2}\.\s?\d{1,2}\.\s?(?:\d{4}|\d{2})|\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{2,4})"#,
               minimumDigits: 4, group: 1),
-        // A code that is plainly an identifier with no label: letters in front of eight digits or
-        // more — X8200001234567 — or ten digits and more in a row. No date or amount looks so.
-        .init(kind: .reference, expression: #"\b[A-Z]{1,3}\d{8,}\b|\b\d{10,}\b"#),
+        // A code that is plainly an identifier with no label: eight digits and more in a row, with
+        // whatever letters and digits stand around them — X8200001234567, 123456789, a token — and
+        // a UUID. No date or amount is written so: theirs have dots, commas, dashes or colons
+        // between. Counted on the spike's own mail, ten digits and letters in front let customer
+        // and tax numbers of eight and nine digits through to the model. Digits alone that begin
+        // with a 0 are left to the phone rules above, so a phone number stays one to the model.
+        .init(kind: .reference,
+              expression: #"(?<![A-Za-z0-9])[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![A-Za-z0-9])|(?<![A-Za-z0-9])(?!0\d+(?![A-Za-z0-9]))[A-Za-z0-9]*\d{8,}[A-Za-z0-9]*(?![A-Za-z0-9])"#),
         // A name found by what comes before it, where the tagger found nothing: "Frau Behrend",
         // "Herrn Dr. Brenner", "Inh. Petra Blume". The title stays in the entity, and the
         // disguise keeps it readable: "Frau [Person A]".
