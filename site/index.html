@@ -236,11 +236,10 @@
       <!-- One day with Causabee: the walkthrough, spoken, on the Mac, the iPad and the iPhone (film/walkthrough) -->
       <figure class="film">
         <div class="film__frame"><video class="film__video" controls playsinline preload="none" poster="film/walkthrough/poster.webp" src="film/walkthrough/walkthrough-720.mp4?v=3" aria-label="One day with Causabee: a spoken walkthrough of one matter, Mum’s care, through one day on the Mac, the iPad and the iPhone">
-          <track kind="captions" srclang="en" label="English" src="film/walkthrough/walkthrough.vtt">
         </video></div>
-        <!-- A plain src, not <source media>: with those, Safari on the iPhone stayed at 00:00 and never started. Wide screens get the 1080p film. -->
+        <!-- A plain src, not <source media>, and no <track>: with either, Safari on a real iPhone never started the film. Wide screens get the 1080p film. -->
         <script>if (matchMedia('(min-width: 901px)').matches) document.querySelector('.film__video').src = 'film/walkthrough/walkthrough.mp4?v=3';</script>
-        <figcaption>One day with Causabee · 2 minutes, with sound · captions in the player</figcaption>
+        <figcaption>One day with Causabee · 2 minutes, with sound</figcaption>
       </figure>
       <div class="matters__text">
         <h2 class="title">What Causabee<br class="br-wide"> does for you.</h2>
