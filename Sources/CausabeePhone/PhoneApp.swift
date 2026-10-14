@@ -14,6 +14,8 @@ struct CausabeePhoneApp: App {
     @Environment(\.scenePhase) private var phase
 
     init() {
+        // The demo never touches the Keychain: no password or key of the owner's is read from it.
+        if DemoData.isRequested { Keychain.isSealed = true }
         Theme.registerFonts()
         // Pulled down, the overview looks for new mail, and says so with its own bee and words in
         // the mail's place. The system's wheel on top of that said it twice, and was gone before

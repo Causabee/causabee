@@ -14,6 +14,11 @@ import Security
 public enum Keychain {
     static let service = "Causabee IMAP"
 
+    /// Sealed for the demo, before anything else at start: nothing is read from the Keychain and
+    /// nothing written to it — no password, no AI key, no Google sign-in — so the demo never makes
+    /// macOS ask for the owner's secrets, and nothing of theirs is used from it.
+    nonisolated(unsafe) public static var isSealed = false
+
     public enum Failure: Error, CustomStringConvertible {
         case status(OSStatus)
         public var description: String {
@@ -26,6 +31,7 @@ public enum Keychain {
     /// A password found only in this device's own place — saved before it was shared — is shared
     /// right then, so the other devices have it from now on without typing it again.
     public static func password(for account: String) throws -> String? {
+        if isSealed { return nil }
         for place in Place.allCases {
             var query = place.base(account)
             query[kSecReturnData as String] = true
@@ -47,6 +53,7 @@ public enum Keychain {
     /// Into iCloud Keychain, so every device has it; on a Mac into the login keychain too. Fails
     /// only when no place took it.
     public static func save(_ password: String, for account: MailAccount) throws {
+        if isSealed { return }
         var failure: OSStatus?
         var saved = false
         for place in Place.allCases {
@@ -58,6 +65,7 @@ public enum Keychain {
 
     /// From every device: the shared item goes, and this Mac's own.
     public static func delete(account: String) throws {
+        if isSealed { return }
         SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: GoogleSignIn.service,
                        kSecAttrAccount as String: account] as CFDictionary)
         for place in Place.allCases {
@@ -71,6 +79,7 @@ public enum Keychain {
     /// with Gmail's server for any domain but iCloud's, so that is its server.
     /// Addresses signed in with Google come first: they need no password.
     public static func accounts() -> [MailAccount] {
+        if isSealed { return [] }
         let google = GoogleSignIn.accounts()
         return google + passwordAccounts().filter { saved in !google.contains { $0.user == saved.user } }
     }
@@ -147,6 +156,7 @@ public enum APIKeys {
     static let service = "Causabee API"
 
     public static func get(_ name: String) -> String? {
+        if Keychain.isSealed { return nil }
         for place in Keychain.Place.allCases {
             var query = place.base(name, service: service)
             query[kSecReturnData as String] = true
@@ -162,6 +172,7 @@ public enum APIKeys {
     }
 
     public static func save(_ key: String, as name: String) throws {
+        if Keychain.isSealed { return }
         var saved = false
         var failure: OSStatus?
         for place in Keychain.Place.allCases {
@@ -173,6 +184,7 @@ public enum APIKeys {
 
     /// From every device.
     public static func delete(_ name: String) {
+        if Keychain.isSealed { return }
         for place in Keychain.Place.allCases { SecItemDelete(place.base(name, service: service) as CFDictionary) }
     }
 
@@ -199,7 +211,8 @@ extension Keychain {
     /// Keychain as always. Returns how many were copied.
     /// The mail passwords, the AI keys and the Google sign-ins, each from its old name.
     public static func takeOverFromMatterbee() -> Int {
-        takeOver(from: "Matterbee IMAP", to: service) + takeOver(from: "Matterbee API", to: APIKeys.service)
+        if isSealed { return 0 }
+        return takeOver(from: "Matterbee IMAP", to: service) + takeOver(from: "Matterbee API", to: APIKeys.service)
             + takeOver(from: "Matterbee Google", to: GoogleSignIn.service)
     }
 

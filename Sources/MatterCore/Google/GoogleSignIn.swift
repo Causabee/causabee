@@ -155,6 +155,7 @@ public enum GoogleSignIn {
     static let service = "Causabee Google"
 
     public static func refreshToken(for user: String) -> String? {
+        if Keychain.isSealed { return nil }
         var query = base(user)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -164,6 +165,7 @@ public enum GoogleSignIn {
     }
 
     static func saveRefreshToken(_ token: String, for user: String) throws {
+        if Keychain.isSealed { return }
         let data = Data(token.utf8)
         let status = SecItemUpdate(base(user) as CFDictionary, [kSecValueData as String: data] as CFDictionary)
         if status == errSecItemNotFound {
@@ -180,12 +182,13 @@ public enum GoogleSignIn {
     /// Signs out on this Mac: the refresh token goes. Google's own list of apps still shows
     /// Causabee until it is removed there.
     public static func signOut(_ user: String) async {
-        SecItemDelete(base(user) as CFDictionary)
+        if !Keychain.isSealed { SecItemDelete(base(user) as CFDictionary) }
         await Cache.shared.put(nil, for: user, expiring: 0)
     }
 
     /// Every address signed in with Google, as mail accounts on Gmail's server.
     public static func accounts() -> [MailAccount] {
+        if Keychain.isSealed { return [] }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
             kSecReturnAttributes as String: true, kSecMatchLimit as String: kSecMatchLimitAll,
