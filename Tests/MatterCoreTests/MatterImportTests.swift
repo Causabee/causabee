@@ -190,6 +190,44 @@ struct MatterImportTests {
         #expect(shared.matter === superhuman)
     }
 
+    @Test("Moved mails take along the people they name by a full name or address — not someone who only shares the owner's surname")
+    func movedMailsTakeTheirPeople() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let mama = try Matter.make(named: "Reha Mama", in: context)
+        let job = try Matter.make(named: "Doctolib interview", in: context)
+        func person(_ name: String, spellings: [String], address: String? = nil) -> Party {
+            let party = Party(name: name)
+            party.spellings = spellings
+            party.address = address
+            context.insert(party)
+            let membership = Membership()
+            context.insert(membership)
+            membership.party = party
+            membership.matter = mama
+            membership.roles = ["Mutter"]
+            return party
+        }
+        let mother = person("Ulrike Linda Chille", spellings: ["Chille", "Frau Chille", "Ulrike Chille"], address: "ulrike@example.org")
+        let recruiter = person("Khadije Chahrour", spellings: ["Khadije"])
+        let source = Source(kind: .mail, pointer: "imap://x/r", messageID: "r@x", date: Date())
+        let mail = Entry(title: "Reminder - Your remote interview: Ralf Chille", from: "Khadije Chahrour <k@doctolib.example>", date: Date(), source: source)
+        mail.digest = "Ralf Chille <ralf@chille.example> is invited."
+        mail.matter = mama
+        context.insert(mail)
+        try context.save()
+
+        try mama.move([mail], into: job, in: context)
+        #expect(job.membership(of: recruiter)?.mentions == 1)
+        #expect(job.membership(of: mother) == nil)
+        // Named by a full name of hers, she does come along.
+        let other = Entry(title: "Ulrike Chille asks about the visit", from: "someone@example.org", date: Date(),
+                          source: Source(kind: .mail, pointer: "imap://x/u", messageID: "u@x", date: Date()))
+        other.matter = mama
+        context.insert(other)
+        try mama.move([other], into: job, in: context)
+        #expect(job.membership(of: mother)?.roles == ["Mutter"])
+    }
+
     @Test("Merging keeps the owner's notes of both matters")
     func mergingKeepsNotes() throws {
         let context = ModelContext(try MatterSchema.container(at: nil))
