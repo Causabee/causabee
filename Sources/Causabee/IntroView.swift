@@ -21,7 +21,7 @@ struct IntroView: View {
              text: "Give Causabee whatever you have: a mail, a PDF, a screenshot. It sorts everything into matters, like a trip, a move or care for a parent, and the overview shows what comes next and what is late.",
              privacy: "Private by design: your mail and files stay on your Mac. Before anything goes to the AI, names, addresses and numbers are replaced."),
         Page(image: "intro-2", title: "One page for each matter",
-             text: "The next step, a short summary, your own notes and every task, all in one place. On the left is the assistant for this matter."),
+             text: "The next step, a short summary, your own notes and every task, all in one place. On the right is the assistant for this matter."),
         Page(image: "intro-3", title: "Who does what, and by when",
              text: "Tasks are yours, shared, or someone else's you wait for, and some can only start after another. Dates and tasks go to Calendar and Reminders with one click."),
         Page(image: "intro-4", title: "Files, links and people",
@@ -38,11 +38,10 @@ struct IntroView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(IntroView.seenKey) private var seen = false
     @State private var index = 0
-    /// The opener plays first (IntroOpener) — on the first start only: not from Help, not in the
-    /// demo, not for the introduction's pictures or the UI tests. The setup's test (--fresh-setup)
-    /// starts as a first start does, so it has the opener too.
+    /// The opener plays first (IntroOpener) whenever the introduction opens — on the first start,
+    /// from Help, in the demo — but not for the introduction's pictures or the UI tests. A click or a
+    /// key goes on to page 1 at once.
     @State private var opening = IntroShot.current == nil && ProcessInfo.processInfo.environment["CAUSABEE_UI_TEST"] == nil
-        && (SetupState.isFresh || (!UserDefaults.standard.bool(forKey: IntroView.seenKey) && !DemoData.isRequested))
 
     var body: some View {
         ZStack {
@@ -102,12 +101,15 @@ struct IntroView: View {
                 Spacer()
                 HStack(spacing: 8) {
                     if index > 0 {
+                        // The grey one beside the black one, drawn alike: one height, one corner, one type size.
                         Button("Back") { withAnimation(.easeOut(duration: 0.2)) { index -= 1 } }
+                            .quietButton()
                             .keyboardShortcut(.leftArrow, modifiers: [])
                     }
                     // A look around first, with nothing to set up: the made-up matters, apart from any real ones.
                     if index == Self.pages.count - 1, !DemoData.isRequested {
                         Button("Try the demo") { seen = true; DemoData.restart(demo: true) }
+                            .quietButton()
                             .help("Starts Causabee again with nine made-up matters, kept apart from your own. The sidebar has the way back.")
                     }
                     Button(index == Self.pages.count - 1 ? "Get started" : "Next") { next() }
