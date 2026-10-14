@@ -235,11 +235,11 @@
     <div class="wrap matters">
       <!-- One day with Causabee: the walkthrough, spoken, on the Mac, the iPad and the iPhone (film/walkthrough) -->
       <figure class="film">
-        <div class="film__frame"><video class="film__video" controls playsinline preload="none" poster="film/walkthrough/poster.webp" aria-label="One day with Causabee: a spoken walkthrough of one matter, Mum’s care, through one day on the Mac, the iPad and the iPhone">
-          <source src="film/walkthrough/walkthrough-720.mp4" type="video/mp4" media="(max-width: 900px)">
-          <source src="film/walkthrough/walkthrough.mp4" type="video/mp4">
+        <div class="film__frame"><video class="film__video" controls playsinline preload="none" poster="film/walkthrough/poster.webp" src="film/walkthrough/walkthrough-720.mp4?v=1" aria-label="One day with Causabee: a spoken walkthrough of one matter, Mum’s care, through one day on the Mac, the iPad and the iPhone">
           <track kind="captions" srclang="en" label="English" src="film/walkthrough/walkthrough.vtt">
         </video></div>
+        <!-- A plain src, not <source media>: with those, Safari on the iPhone stayed at 00:00 and never started. Wide screens get the 1080p film. -->
+        <script>if (matchMedia('(min-width: 901px)').matches) document.querySelector('.film__video').src = 'film/walkthrough/walkthrough.mp4?v=1';</script>
         <figcaption>One day with Causabee · 2 minutes, with sound · captions in the player</figcaption>
       </figure>
       <div class="matters__text">
