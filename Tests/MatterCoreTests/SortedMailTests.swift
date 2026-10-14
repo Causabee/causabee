@@ -27,6 +27,20 @@ struct SortedMailTests {
         try JSONDecoder().decode(Pseudonymizer.Mapping.self, from: Data(contentsOf: url)).placeholder
     }
 
+    @Test("Mail left out on one device is left out on all; sorted after all, its answer takes the mark's place")
+    func leftOutEverywhere() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        SortedMails.setAside(["x", "y"], device: "ipad", in: context)
+        SortedMails.setAside(["x"], device: "mac", in: context)
+        #expect(SortedMails.setAside(in: context) == ["x", "y"])
+        // A mark is no answer: nothing counts as sorted, and nothing is read as an answer.
+        #expect(SortedMails.answered(in: context).isEmpty)
+        #expect(try context.fetchCount(FetchDescriptor<SortedMail>()) == 2)
+        #expect(try SortedMails.record([judgement("x")], device: "mac", in: context) == 1)
+        #expect(SortedMails.setAside(in: context) == ["y"])
+        #expect(Set(SortedMails.answered(in: context).keys) == ["x"])
+    }
+
     @Test("An answer goes into the store once, without the names found in it, and counts as known")
     func record() throws {
         let context = ModelContext(try MatterSchema.container(at: nil))

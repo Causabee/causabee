@@ -920,9 +920,13 @@ enum AutoMode {
     }
 }
 
-/// Mail that was read and found no matter, or that the owner left out: put aside on this device.
+/// Mail that was read and found no matter, or that the owner left out: put aside on this device —
+/// and in the store too (`SortedMails.setAside`), for the others.
 enum UnplacedAside {
     static let key = "unplaced.setAside"
+    static var all: Set<String> {
+        Set((try? JSONDecoder().decode([String].self, from: Data((UserDefaults.standard.string(forKey: key) ?? "[]").utf8))) ?? [])
+    }
     static func add(_ ids: some Sequence<String>) {
         var all = Set((try? JSONDecoder().decode([String].self, from: Data((UserDefaults.standard.string(forKey: key) ?? "[]").utf8))) ?? [])
         all.formUnion(ids)

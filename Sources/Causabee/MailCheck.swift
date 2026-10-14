@@ -113,7 +113,9 @@ final class MailCheck {
         // What the iPhone or the other Mac sorted is known here too, and their names disguised.
         NameListPublisher.adopt()
         door.earlier = SortedMails.answered(in: context)
-        door.setAside = Self.setAside
+        // Left out here or on another device; what this Mac left out before it was shared, shared now.
+        SortedMails.setAside(Self.setAside.union(UnplacedAside.all), device: NameListPublisher.device, in: context)
+        door.setAside = Self.setAside.union(SortedMails.setAside(in: context))
         // New mail from the people of the matters is found without a label, and offered.
         door.knownSenders = KnownSenders.addresses(in: (try? context.fetch(FetchDescriptor<Matter>())) ?? [])
         return door
@@ -153,6 +155,7 @@ final class MailCheck {
     /// ticked, all are left out, and nothing is sent.
     func sortIn(_ chosen: Set<String>, of look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
         Self.setAside.formUnion(Set(look.newIDs).subtracting(chosen))
+        SortedMails.setAside(Set(look.newIDs).subtracting(chosen), device: NameListPublisher.device, in: context)
         guard !chosen.isEmpty else { state = .nothingNew(known: look.intake.alreadyKnown); return }
         classify(look.only(chosen), with: door, context: context, owner: owner)
     }
@@ -223,6 +226,7 @@ final class MailCheck {
                 return judgement
             }
             UnplacedAside.add(answered.judgements.filter { !$0.isBulk && !chosen.contains($0.emailID) }.map(\.emailID))
+            SortedMails.setAside(UnplacedAside.all, device: NameListPublisher.device, in: context)
             let imported = try MatterImport.apply(judgements, to: context, owner: owner)
             // Into the record the other devices read, and the names it learned into the store.
             try SortedMails.record(answered.judgements, device: NameListPublisher.device, in: context)
@@ -302,7 +306,7 @@ struct MailCheckView: View {
 
     private func refresh() {
         let log = navigation.store.deletingLastPathComponent().appendingPathComponent("decisions-fetch.jsonl")
-        unplaced = Unplaced.find(log: log, context: context, setAside: setAside)
+        unplaced = Unplaced.find(log: log, context: context, setAside: setAside.union(SortedMails.setAside(in: context)))
     }
 
     @ViewBuilder
@@ -332,6 +336,7 @@ struct MailCheckView: View {
                                     var ids = setAside
                                     ids.insert(mail.emailID)
                                     setAsideJSON = String(decoding: (try? JSONEncoder().encode(Array(ids))) ?? Data("[]".utf8), as: UTF8.self)
+                                    SortedMails.setAside([mail.emailID], device: NameListPublisher.device, in: context)
                                     refresh()
                                 }
                                 .buttonStyle(.gold).font(.caption)
