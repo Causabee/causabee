@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Causabee teaser with iPhone and iPad</title>
+<!-- The 20.4-second teaser with iPhone and iPad: index.html plus a devices scene at 10.8 s. Plays live in a browser;
+     render.mjs seeks it frame by frame (?render) to make teaser-devices.mp4, with python3 soundtrack.py out.wav --devices. -->
+<style>
+@font-face { font-family: "Source Serif 4"; src: url("../../assets/fonts/SourceSerif4.woff2") format("woff2"); font-weight: 200 900; }
+:root {
+  --ink: #22211b; --grey: #74736e; --line: #e1e1df; --honey: #ffdb0d; --gold: #7f5e00; --night: #141310;
+  --serif: "Source Serif 4", Georgia, serif; --sans: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --out: cubic-bezier(0.2, 0.7, 0.2, 1); --in: cubic-bezier(0.5, 0, 0.8, 0.4); --spring: cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+html, body { margin: 0; background: #fff; overflow: hidden; }
+.stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #fff; font-family: var(--sans); color: var(--ink); transform-origin: 0 0; }
+.stage * { box-sizing: border-box; }
+.render .stage, .render .stage * { animation-play-state: paused !important; }
+.abs { position: absolute; }
+.head { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--serif); font-weight: 600; font-size: 84px; letter-spacing: -0.02em; line-height: 1.05; margin: 0; }
+
+/* Scene 1: the pieces */
+.s1-head { top: 150px; animation: rise .7s var(--out) .15s both, fade .4s var(--in) 3s both reverse; }
+.piece { position: absolute; left: 960px; top: 600px; animation: gather .55s var(--in) 3s both; }
+.piece > div { translate: -50% -50%; animation: drop .75s var(--spring) var(--d) both; rotate: var(--r); }
+.mail, .doc, .chat, .shot { background: #fff; border-radius: 18px; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 30px 60px -20px rgba(0,0,0,.25); font-size: 26px; white-space: nowrap; }
+.mail { padding: 22px 28px; } .mail b { display: block; } .mail span { color: var(--grey); font-size: 21px; }
+.doc { padding: 20px 26px; display: flex; gap: 16px; align-items: center; font-weight: 600; }
+.doc i { width: 44px; height: 54px; border-radius: 6px; background: #e8463a; color: #fff; font: 700 13px var(--sans); display: grid; place-items: end center; padding-bottom: 6px; font-style: normal; }
+.chat { padding: 18px 26px; border-radius: 26px 26px 26px 6px; background: #34c759; color: #fff; box-shadow: 0 30px 60px -20px rgba(0,0,0,.25); }
+.shot { width: 300px; height: 190px; padding: 16px; display: grid; gap: 10px; align-content: start; }
+.shot u { display: block; height: 14px; border-radius: 7px; background: var(--line); } .shot u:first-child { width: 60%; background: var(--honey); }
+@keyframes drop { from { opacity: 0; translate: -50% calc(-50% - 140px); scale: .8; } }
+@keyframes gather { to { transform: translate(var(--gx), var(--gy)) scale(.15); opacity: 0; } }
+
+/* Scene 2: one matter, in its place */
+.bee { position: absolute; left: 860px; top: 470px; width: 200px; height: 200px; animation: pop .6s var(--spring) 3.4s both, lift .8s var(--out) 4.05s both, fade .3s 7s both reverse; }
+.bee .bar { animation: bar .45s var(--out) calc(3.5s + var(--i) * .05s) both; transform-box: fill-box; transform-origin: center; }
+@keyframes pop { from { scale: 0; rotate: -20deg; } }
+@keyframes bar { from { scale: 0 1; } }
+@keyframes lift { to { translate: 0 -380px; scale: .5; } }
+.s2-head { top: 270px; animation: rise .6s var(--out) 4.2s both, fade .3s 7s both reverse; }
+.win { position: absolute; left: 260px; top: 420px; width: 1400px; border-radius: 22px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 60px 120px -30px rgba(0,0,0,.35); }
+.win img { display: block; width: 100%; }
+.w-over { animation: up .9s var(--out) 4.2s both, fade .35s 7.05s both reverse; }
+@keyframes up { from { translate: 0 700px; } }
+
+/* Scene 3: the matter */
+.w-matter { left: 160px; top: 60px; width: 1600px; transform-origin: 30% 20%; animation: fade .4s 7.05s both, zoom 3.8s linear 7.05s both, fade .3s 10.75s both reverse; }
+@keyframes zoom { to { scale: 1.12; translate: 0 -40px; } }
+.s3 { position: absolute; left: 0; right: 0; bottom: 70px; display: flex; justify-content: center; gap: 24px; }
+.s3 span { font: 600 54px/1 var(--serif); background: var(--ink); color: #fff; padding: 22px 34px 26px; border-radius: 999px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.4); animation: pill .5s var(--spring) var(--d) both, fade .3s 10.75s both reverse; }
+.s3 span:last-child { background: var(--honey); color: var(--ink); }
+@keyframes pill { from { opacity: 0; translate: 0 60px; scale: .9; } }
+
+/* Scene 3b: iPhone and iPad, in the website's device frames */
+.s3b-head { top: 90px; animation: rise .6s var(--out) 11s both, fade .2s 14.9s both reverse; }
+.s3b-sub { position: absolute; top: 200px; left: 0; right: 0; text-align: center; font: 500 34px var(--sans); color: var(--grey); animation: rise .6s var(--out) 11.2s both, fade .2s 14.9s both reverse; }
+.pad, .phone { position: absolute; background: var(--ink); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 0 0 1px rgba(0,0,0,.08), 0 60px 120px -30px rgba(0,0,0,.35); }
+.pad { --w: 880px; left: 330px; top: 300px; width: var(--w); padding: calc(var(--w) * .018); border-radius: calc(var(--w) * .045); animation: rise-far .9s var(--out) 10.9s both, fade .2s 14.9s both reverse; }
+.pad img { display: block; width: 100%; border-radius: calc(var(--w) * .028); }
+.phone { --w: 300px; left: 1290px; top: 330px; width: var(--w); padding: calc(var(--w) * .03); border-radius: calc(var(--w) * .167); animation: slide .8s var(--spring) 11.3s both, fade .2s 14.9s both reverse; }
+.phone .screen { position: relative; border-radius: calc(var(--w) * .137); overflow: hidden; aspect-ratio: 804 / 1748; background: #fff; }
+.phone img { position: absolute; inset: 0; width: 100%; }
+.phone .ask { animation: swap .5s var(--out) 12.6s both; }
+@keyframes rise-far { from { opacity: 0; translate: 0 800px; } }
+@keyframes slide { from { opacity: 0; translate: 260px 0; rotate: 8deg; } }
+@keyframes swap { from { opacity: 0; translate: 0 60px; } }
+
+/* Scene 4: the disguise */
+.night { position: absolute; inset: 0; background: var(--night); color: #fff; clip-path: inset(100% 0 0 0); animation: wipe .5s var(--out) 14.4s both, fade .2s 18s both reverse; }
+@keyframes wipe { to { clip-path: inset(0 0 0 0); } }
+.line { position: absolute; top: 380px; left: 0; right: 0; text-align: center; font: 500 50px var(--sans); color: #d9d8d2; }
+.line em { font-style: normal; position: relative; display: inline-block; color: #fff; margin: 0 22px; }
+.line em::after { content: attr(data-as); position: absolute; inset: -6px -12px; border-radius: 12px; background: var(--honey); color: var(--ink); font: 700 40px/1 var(--sans); display: grid; place-items: center; transform-origin: left; animation: mask .4s var(--out) var(--d) both; }
+@keyframes mask { from { scale: 0 1; } }
+.lock { position: absolute; left: 920px; top: 230px; width: 80px; animation: rise .5s var(--out) 14.75s both; }
+.s4-head { top: 560px; color: #fff; font-size: 76px; animation: rise .6s var(--out) 16.5s both; }
+.s4-sub { position: absolute; top: 680px; left: 0; right: 0; text-align: center; font: 400 34px var(--sans); color: #a3a29b; animation: rise .6s var(--out) 16.9s both; }
+
+/* Scene 5: end card — the app icon animates as on the website's hero (icon-sort, icon-wl/wr) */
+.end { position: absolute; inset: 0; background: #fff; clip-path: circle(0 at 50% 50%); animation: iris .6s var(--out) 18s both; }
+@keyframes iris { to { clip-path: circle(1200px at 50% 50%); } }
+.end .icon { position: absolute; left: 820px; top: 150px; width: 280px; height: 280px; overflow: visible; filter: drop-shadow(0 28px 50px rgba(127, 94, 0, 0.32)); animation: pop .6s var(--spring) 18.1s both, hover 1.6s ease-in-out 19.3s both; }
+.end .icon .wl, .end .icon .wr { fill-opacity: 0.5; }
+.end .icon .bar { transform-box: fill-box; transform-origin: 50% 50%; animation: icon-sort .7s var(--out) calc(18.2s + var(--i) * .08s) both; }
+.end .icon .wl { transform-box: view-box; transform-origin: 1010px 880px; animation: icon-wl .6s ease-in-out 18.3s 2; }
+.end .icon .wr { transform-box: view-box; transform-origin: 3191px 880px; animation: icon-wr .6s ease-in-out 18.3s 2; }
+@keyframes icon-sort { from { opacity: 0.14; transform: translateY(-160px); } to { opacity: 1; transform: none; } }
+@keyframes icon-wl { 50% { transform: rotate(16deg); } }
+@keyframes icon-wr { 50% { transform: rotate(-16deg); } }
+@keyframes hover { 50% { translate: 0 -10px; } }
+.end .name { top: 480px; font-size: 130px; animation: rise .6s var(--out) 18.55s both; }
+.end .tag { top: 650px; font-size: 60px; font-weight: 500; animation: rise .6s var(--out) 18.7s both; }
+.end .fine { position: absolute; top: 790px; left: 0; right: 0; text-align: center; font: 500 32px var(--sans); color: var(--grey); animation: rise .6s var(--out) 18.85s both; }
+
+@keyframes rise { from { opacity: 0; translate: 0 40px; } }
+@keyframes fade { from { opacity: 0; } }
+</style></head>
+<body>
+<div class="stage" id="stage">
+  <h1 class="head s1-head">It all arrives in pieces.</h1>
+  <div class="piece" style="--d:.3s;--r:-6deg;--gx:0px;--gy:0px;left:520px;top:470px"><div class="mail"><b>Dr. Brandt</b><span>Prescription for the bath seat is ready</span></div></div>
+  <div class="piece" style="--d:.6s;--r:5deg;--gx:0px;--gy:0px;left:1400px;top:440px"><div class="doc"><i>PDF</i>Care_insurance_claim.pdf</div></div>
+  <div class="piece" style="--d:.9s;--r:4deg;--gx:0px;--gy:0px;left:640px;top:780px"><div class="chat">Nina: Who does what this week?</div></div>
+  <div class="piece" style="--d:1.2s;--r:-5deg;--gx:0px;--gy:0px;left:1330px;top:760px"><div class="shot"><u></u><u></u><u style="width:80%"></u><u style="width:50%"></u></div></div>
+  <div class="piece" style="--d:1.5s;--r:2deg;--gx:0px;--gy:0px;left:980px;top:620px"><div class="mail"><b>Care service Sonnenhof</b><span>Visits from Monday, 8:00</span></div></div>
+
+  <svg class="bee" viewBox="0 0 1024 1024"><defs><linearGradient id="h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE14D"/><stop offset="1" stop-color="#FFC700"/></linearGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#h)"/><svg x="112" y="243.1" width="800" height="477.8" viewBox="0 0 4201 2509" overflow="visible" fill="#22211b"><path d="M840.879 830.165C919.099 742.266 1064.5 797.594 1064.5 915.257V1953.13C1064.83 1960.84 1065 1968.59 1065 1976.37C1065 1984.16 1064.830 1991.9 1064.5 1999.61V2052.87L1059.83 2050.87C1023.6 2309.69 801.309 2508.87 532.5 2508.87C238.408 2508.87 0 2270.46 0 1976.37C0 1829.33 59.598 1696.21 155.956 1599.85L840.879 830.165Z"/><path d="M3360.12 830.165C3281.9 742.267 3136.5 797.594 3136.5 915.257V1953.13C3136.17 1960.84 3136 1968.59 3136 1976.37C3136 1984.16 3136.17 1991.9 3136.5 1999.61V2052.87L3141.17 2050.87C3177.4 2309.69 3399.690 2508.87 3668.5 2508.87C3962.59 2508.87 4201 2270.46 4201 1976.37C4201 1829.33 4141.4 1696.21 4045.04 1599.85L3360.12 830.165Z"/><rect class="bar" style="--i:0" x="1525" y="0" width="1151" height="264" rx="112"/><rect class="bar" style="--i:1" x="1241" y="436" width="1719" height="264" rx="112"/><rect class="bar" style="--i:2" x="1241" y="872" width="1719" height="264" rx="112"/><rect class="bar" style="--i:3" x="1436" y="1308" width="1329" height="264" rx="112"/><rect class="bar" style="--i:4" x="1729.5" y="1744" width="742" height="264" rx="112"/><rect class="bar" style="--i:5" x="1925.5" y="2180" width="350" height="264" rx="112"/></svg></svg>
+  <h1 class="head s2-head">Every matter. In its place.</h1>
+  <div class="win w-over"><img src="../../assets/img/overview-2880.webp" alt=""></div>
+
+  <div class="win w-matter"><img src="../../assets/img/care-2880.webp" alt=""></div>
+  <div class="s3"><span style="--d:7.6s">What comes next.</span><span style="--d:8.4s">Who’s on it.</span><span style="--d:9.2s">By when.</span></div>
+
+  <h1 class="head s3b-head">Also on iPhone and iPad.</h1>
+  <p class="s3b-sub">In beta on TestFlight.</p>
+  <div class="pad"><img src="../../assets/img/ipad-matter.webp" alt=""></div>
+  <div class="phone"><div class="screen"><img src="../../assets/img/iphone-care.webp" alt=""><img class="ask" src="../../assets/img/iphone-assistant.webp" alt=""></div></div>
+
+  <div class="night">
+    <svg class="lock" viewBox="0 0 24 24" fill="none" stroke="#ffdb0d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+    <p class="line">Care for <em data-as="Person 1" style="--d:15.5s">Helga Weber</em> at <em data-as="Address 1" style="--d:15.8s">Lindenstraße 12</em>, policy <em data-as="Number 1" style="--d:16.1s">K-4471-0938</em></p>
+    <h1 class="head s4-head">The AI only sees a disguise.</h1>
+    <p class="s4-sub">Your mail and documents stay on your Mac.</p>
+  </div>
+
+  <div class="end">
+    <svg class="icon" viewBox="0 0 1024 1024"><defs><linearGradient id="h2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE14D"/><stop offset="1" stop-color="#FFC700"/></linearGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#h2)"/><svg x="112" y="243.1" width="800" height="477.8" viewBox="0 0 4201 2509" overflow="visible" fill="#22211b"><path class="wl" d="M840.879 830.165C919.099 742.266 1064.5 797.594 1064.5 915.257V1953.13C1064.83 1960.84 1065 1968.59 1065 1976.37C1065 1984.16 1064.83 1991.9 1064.5 1999.61V2052.87L1059.83 2050.87C1023.6 2309.69 801.309 2508.87 532.5 2508.87C238.408 2508.87 0 2270.46 0 1976.37C0 1829.33 59.598 1696.21 155.956 1599.85L840.879 830.165Z"/><path class="wr" d="M3360.12 830.165C3281.9 742.267 3136.5 797.594 3136.5 915.257V1953.13C3136.17 1960.84 3136 1968.59 3136 1976.37C3136 1984.16 3136.17 1991.9 3136.5 1999.61V2052.87L3141.17 2050.87C3177.4 2309.69 3399.69 2508.87 3668.5 2508.87C3962.59 2508.87 4201 2270.46 4201 1976.37C4201 1829.33 4141.4 1696.21 4045.04 1599.85L3360.12 830.165Z"/><rect class="bar" style="--i:0" x="1525" y="0" width="1151" height="264" rx="112"/><rect class="bar" style="--i:1" x="1241" y="436" width="1719" height="264" rx="112"/><rect class="bar" style="--i:2" x="1241" y="872" width="1719" height="264" rx="112"/><rect class="bar" style="--i:3" x="1436" y="1308" width="1329" height="264" rx="112"/><rect class="bar" style="--i:4" x="1729.5" y="1744" width="742" height="264" rx="112"/><rect class="bar" style="--i:5" x="1925.5" y="2180" width="350" height="264" rx="112"/></svg></svg>
+    <h1 class="head name">Causabee</h1>
+    <h1 class="head tag">Be organized. Be private.</h1>
+    <p class="fine">Free for Mac · iPhone and iPad in beta · causabee.app</p>
+  </div>
+</div>
+<script>
+// Pieces fly to the middle of the stage when they gather.
+for (const p of document.querySelectorAll('.piece')) {
+  p.style.setProperty('--gx', 960 - parseFloat(p.style.left) + 'px');
+  p.style.setProperty('--gy', 570 - parseFloat(p.style.top) + 'px');
+}
+const fit = () => { const s = Math.min(innerWidth / 1920, innerHeight / 1080); stage.style.transform = `scale(${s})`; };
+if (location.search.includes('render')) document.documentElement.classList.add('render');
+else { fit(); addEventListener('resize', fit); setInterval(() => location.reload(), 21900); } // plays without sound; teaser.mp4 has the audio
+window.seek = ms => { for (const a of document.getAnimations()) a.currentTime = ms; };
+</script>
+</body></html>
