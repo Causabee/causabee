@@ -804,7 +804,8 @@ struct RootView: View {
             MirrorRunner.shared.start(context)
             // Not over the demo: it is started to be looked at, and photographed, as it is.
             // The setup's test starts as a first start does: the introduction, then the setup.
-            if SetupState.isFresh { showsIntro = true }
+            // `--intro`: the demo's made-up matters, with the introduction over them first.
+            if SetupState.isFresh || CommandLine.arguments.contains("--intro") { showsIntro = true }
             else if !introSeen, !DemoData.isRequested { showsIntro = true }
             else if !setupLater, !DemoData.isRequested, SetupAssistant.isMissingSomething { showsSetup = true }
         }
