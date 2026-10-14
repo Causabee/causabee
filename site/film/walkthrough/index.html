@@ -3,7 +3,7 @@
 <!-- A 130-second walkthrough, spoken: one day of Mum's care on the Mac, the iPad and the iPhone, in sync,
      with Auto on. The picture follows the voice — voice.mp3, a reading of voiceover.txt — word by word:
      each time below is when its words are said (the phrases' times are in walkthrough.srt). Plays live
-     in a browser, silent; ../teaser/render.mjs seeks it frame by frame (?render) to make walkthrough.mp4,
+     in a browser, silent; ../teaser/render.mjs (or render.py, without Node) seeks it frame by frame (?render) to make walkthrough.mp4,
      and python3 soundtrack.py out.wav voice.wav mixes the voice over the music and the sounds.
      Every overlay sits on the real screenshot at that screenshot's own pixels (--x --y --w --h). -->
 <style>
@@ -20,13 +20,11 @@ html, body { margin: 0; background: #fff; overflow: hidden; }
 .scene { position: absolute; inset: 0; }
 .abs { position: absolute; }
 
-/* Words on the film: a caption at the bottom, where we are at the top. */
+/* Words on the film: a caption at the bottom. */
 .cap { position: absolute; left: 0; right: 0; bottom: 46px; margin: auto; width: fit-content; max-width: 1640px; text-align: center;
   font: 500 44px/1.2 var(--serif); padding: 18px 40px 22px; border-radius: 999px; background: #fff; color: var(--ink);
   box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 24px 50px -18px rgba(0,0,0,.3); }
 .cap.dark { background: #2a2924; color: #fff; box-shadow: none; }
-.where { position: absolute; left: 0; right: 0; top: 22px; margin: auto; width: fit-content; font: 600 22px var(--sans); letter-spacing: .08em; text-transform: uppercase;
-  color: var(--gold); background: #fff8cc; padding: 9px 20px; border-radius: 999px; }
 .title { position: absolute; left: 0; right: 0; text-align: center; font: 600 84px/1.05 var(--serif); letter-spacing: -0.02em; margin: 0; }
 
 /* Devices. A screen (.scr) shows a screenshot at --u screen pixels per screenshot pixel; everything
@@ -200,7 +198,7 @@ svg.drawn { overflow: visible; fill: #000; }
 @keyframes iris { from { clip-path: circle(0 at 50% 50%); } to { clip-path: circle(1200px at 50% 50%); } }
 /* Camera moves, one per scene. */
 @keyframes camB { from { scale: 1; } to { scale: 1.8; } }
-@keyframes camD { 0%, 2% { transform: none; } 10%, 44% { transform: translate(-442px, 7px) scale(1.6); } 54%, 100% { transform: translate(-442px, -618px) scale(1.6); } }
+@keyframes camD { 0%, 2% { transform: none; } 10%, 44% { transform: translate(-442px, 0) scale(1.6); } 54%, 100% { transform: translate(-442px, -618px) scale(1.6); } }
 @keyframes open { from { opacity: 0; scale: .96; } }
 @keyframes nod { 40% { translate: 0 -18px; scale: 1.03; } }
 @keyframes camP { 0% { scale: 1; } 10%, 90% { scale: 1.7; } 100% { scale: 1; } }
@@ -256,7 +254,6 @@ svg.drawn { overflow: visible; fill: #000; }
       <div class="o ring" style="--x:590;--y:893;--w:2240;--h:290;--rr:26;--d:46.26s"></div>
     </div></div>
   </div>
-  <p class="where" style="animation: fade .4s 17.3s both">Mac · in the morning</p>
 </div>
 
 <!-- C · 24.7–39.3 s: "Before anything went to the AI, names and numbers were swapped … Dr. Brandt became Person A, and Helga became Person B." -->
@@ -276,7 +273,6 @@ svg.drawn { overflow: visible; fill: #000; }
       <div class="o ring" style="--x:868;--y:1314;--w:274;--h:34;--rr:10;--d:58.06s"></div>
     </div></div>
   </div>
-  <p class="where" style="animation: fade .4s 48.46s both">Mac · the matter</p>
 </div>
 
 <!-- E · 57.4–70 s: "Tick off what's done." — and the bee is glad, unsaid. Then "… on your iPhone and your Mac as well." -->
@@ -303,7 +299,6 @@ svg.drawn { overflow: visible; fill: #000; }
     <div class="o ring" style="--x:30;--y:1598;--w:744;--h:150;--rr:26;--d:69.66s"></div>
   </div></div>
   <div class="abs fly" style="left: 369px; top: 541px"></div>
-  <p class="where" style="animation: fade .4s 59.96s both">Afternoon · at Mum’s</p>
 </div>
 
 <!-- P · 72.2–89.4 s: "There's paper, too. A letter from Mum's health insurer: her own share of the hospital stay.
@@ -344,7 +339,6 @@ svg.drawn { overflow: visible; fill: #000; }
       </div>
     </div>
   </div></div>
-  <p class="where" style="animation: fade .4s 72.4s both">Afternoon · at Mum’s · a letter</p>
 </div>
 
 <!-- F0 · 70–78.4 s: "On the way home, pull down on your iPhone. The bee flies in, fetches your mail, and sorts each one
@@ -370,7 +364,6 @@ svg.drawn { overflow: visible; fill: #000; }
     <svg class="o drawn" id="pullbee" viewBox="-450 -300 5101 2900" style="--x:0;--y:0;--w:105;--h:60; opacity: 0"></svg>
     <div class="o finger" id="finger" style="--x:0;--y:0;--w:90;--h:90; opacity: 0"></div>
   </div></div>
-  <p class="where" style="animation: fade .4s 89.27s both">iPhone · on the way home</p>
 </div>
 
 <!-- F · 78.4–89.4 s: "Then just ask … The answer comes with its sources. And a good suggestion becomes a task, with one tap." -->
@@ -397,7 +390,6 @@ svg.drawn { overflow: visible; fill: #000; }
       <div class="o ring" style="--x:31;--y:925;--w:742;--h:200;--rr:26;--d:107.72s"></div>
     </div>
   </div></div>
-  <p class="where" style="animation: fade .4s 97.77s both">iPhone · on the way home</p>
 </div>
 
 <!-- G · 89.5–97.4 s: "In the evening, back at the Mac, it's all there …" -->
@@ -421,7 +413,6 @@ svg.drawn { overflow: visible; fill: #000; }
       <div class="o ring" style="--x:2020;--y:585;--w:825;--h:150;--rr:26;--d:114.57s"></div>
     </div></div>
   </div>
-  <p class="where" style="animation: fade .4s 108.87s both">Mac · in the evening</p>
 </div>
 
 <!-- H · 116.4–123.1 s: "Your mail stays in your mail account. Your documents and your matters go with you, through your own iCloud." -->
