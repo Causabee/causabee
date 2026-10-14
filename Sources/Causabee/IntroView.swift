@@ -38,8 +38,27 @@ struct IntroView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(IntroView.seenKey) private var seen = false
     @State private var index = 0
+    /// The opener plays first (IntroOpener) — on the first start only: not from Help, not in the
+    /// demo, not for the introduction's pictures or the UI tests. The setup's test (--fresh-setup)
+    /// starts as a first start does, so it has the opener too.
+    @State private var opening = IntroShot.current == nil && ProcessInfo.processInfo.environment["CAUSABEE_UI_TEST"] == nil
+        && (SetupState.isFresh || (!UserDefaults.standard.bool(forKey: IntroView.seenKey) && !DemoData.isRequested))
 
     var body: some View {
+        ZStack {
+            pageView
+                .opacity(opening ? 0 : 1)
+                .disabled(opening)
+            if opening {
+                IntroOpener { withAnimation(.easeOut(duration: 0.6)) { opening = false } }
+                    .transition(.opacity)
+            }
+        }
+        .frame(width: Self.size.width, height: Self.size.height)
+        .background(Theme.canvas)
+    }
+
+    @ViewBuilder private var pageView: some View {
         let page = Self.pages[index]
         VStack(spacing: 0) {
             picture(page.image)

@@ -59,6 +59,7 @@ struct CausabeeApp: App {
             UserDefaults.standard.register(defaults: ["ApplePersistenceIgnoreState": "YES"])
         }
         Theme.registerFonts()
+        IntroOpener.renderFramesIfAsked()
         // Started from the terminal with `swift run`, the process is not an app yet until it says so.
         NSApplication.shared.setActivationPolicy(.regular)
         FromMatterbee.settings()
