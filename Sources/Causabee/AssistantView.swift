@@ -186,9 +186,15 @@ struct AssistantColumn: View {
                                 .font(.callout).foregroundStyle(.secondary)
                                 .padding(.top, 20)
                         }
-                        let turns = laidOut
-                        if turns.count < shown.count {
-                            Button("Show earlier · \(shown.count - turns.count) more") { showsNewest += Self.page }
+                        // Worked out once for this drawing: asked for again for every turn, the thread was
+                        // filtered as many times as it has turns.
+                        let all = shown
+                        let turns = Array(all.suffix(showsNewest))
+                        let newestID = all.last?.id
+                        let newestQuestion = all.last { $0.note == nil && $0.shot == nil }?.id
+                        let asking = all.last(where: \.isAsking)
+                        if turns.count < all.count {
+                            Button("Show earlier · \(all.count - turns.count) more") { showsNewest += Self.page }
                                 .buttonStyle(.gold).font(.caption)
                                 .frame(maxWidth: .infinity).padding(.top, 16)
                         }
@@ -223,12 +229,12 @@ struct AssistantColumn: View {
                                     .id(turn.id).transition(.opacity)
                             }
                             }
-                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if turn.id == shown.last?.id { placement.own(height, card: turn.waitsWithCard, with: scroller) } }
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in if turn.id == newestID { placement.own(height, card: turn.waitsWithCard, with: scroller) } }
                             // The newest is at least as tall as the column shows: it can stand at the top,
                             // and its answer grows into the room under it.
-                            .modifier(TallAsThread(on: turn.id == shown.last?.id))
+                            .modifier(TallAsThread(on: turn.id == newestID))
                             .onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView(axis: .vertical)) } action: { frame in
-                                placement.laidOut(AnyHashable(turn.id), at: frame, newest: turn.id == shown.last?.id, with: scroller)
+                                placement.laidOut(AnyHashable(turn.id), at: frame, newest: turn.id == newestID, with: scroller)
                             }
                         }
                     }

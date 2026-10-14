@@ -527,7 +527,6 @@ struct MatterScreen: View {
                 Text("Nothing open.").foregroundStyle(.secondary)
             }
             // Asking Claude, below the buttons: apart from what the step itself offers — as on the Mac.
-            let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(summaryFacts, model: ModelChoice.assistant) * 100)
             HStack(spacing: 4) {
                 if askingStep || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 12)
@@ -540,7 +539,7 @@ struct MatterScreen: View {
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
                     }
-                    Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
+                    Button((fresh ? "ask again · " : "Suggest better · ") + PriceEstimates.step(matter), action: askStep)
                         .font(.caption).underline().foregroundStyle(.secondary)
                 }
             }
@@ -678,7 +677,6 @@ struct MatterScreen: View {
     /// Three or four lines on top, written only when asked for, and dated — as on the Mac.
     @ViewBuilder
     private var summary: some View {
-        let cost = String(format: "≈ %.1f cents", AssistantAsk.summaryEstimate(summaryFacts, model: ModelChoice.assistant) * 100)
         // Drawn again when Auto has written it.
         let _ = AutoUpdate.shared.done
         let text = matter.summary ?? ""
@@ -704,11 +702,11 @@ struct MatterScreen: View {
                     AutoLine(matter: matter, size: 11)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    Button("Update · \(cost)", action: writeSummary).font(.caption).underline().foregroundStyle(.secondary)
+                    Button("Update · \(PriceEstimates.summary(matter))", action: writeSummary).font(.caption).underline().foregroundStyle(.secondary)
                     Spacer()
                 } else {
                     Spacer()
-                    Button("Write summary · \(cost)", action: writeSummary).buttonStyle(.phone)
+                    Button("Write summary · \(PriceEstimates.summary(matter))", action: writeSummary).buttonStyle(.phone)
                 }
             }
             .tool()

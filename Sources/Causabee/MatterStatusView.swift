@@ -90,15 +90,13 @@ struct MatterStatusView: View {
         // What came from another device shows at once: an arriving change redraws the page.
         let _ = StoredChanges.shared.count
         let status = MatterStatus(matter)
-        // Read once per drawing, for both cost estimates: the last 40 mails of the matter.
-        let facts = summaryFacts
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
                         closedBanner(status)
-                        if !matter.isClosed { nextStep(status, facts) }
-                        summary(facts)
+                        if !matter.isClosed { nextStep(status) }
+                        summary
                         if find.isActive {
                             // Searching looks into every part, so everything is on the page.
                             todos(status).id("tasks")
@@ -278,9 +276,8 @@ struct MatterStatusView: View {
 
     /// Three or four lines on top, written only when asked for, and dated.
     @ViewBuilder
-    private func summary(_ facts: Facts) -> some View {
+    private var summary: some View {
         let _ = AutoUpdate.shared.done
-        let cost = String(format: "≈ %.1f cents", AssistantAsk.summaryEstimate(facts, model: ModelChoice.assistant) * 100)
         VStack(alignment: .leading, spacing: 10) {
             if let text = matter.summary, !text.isEmpty {
                 HStack(spacing: 8) {
@@ -303,12 +300,12 @@ struct MatterStatusView: View {
                     AutoLine(matter: matter)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    Button("Update · \(cost)", action: writeSummary)
+                    Button("Update · \(PriceEstimates.summary(matter))", action: writeSummary)
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
                     Spacer()
                 } else {
                     Spacer()
-                    Button("Write summary · \(cost)", action: writeSummary)
+                    Button("Write summary · \(PriceEstimates.summary(matter))", action: writeSummary)
                         .help("Causabee writes three or four lines from the facts of this matter, pseudonymised.")
                 }
             }
@@ -347,12 +344,11 @@ struct MatterStatusView: View {
     /// C2 · the one thing to do now, and why. Worked out on the Mac for nothing; Claude's
     /// suggestion, asked for with a click, is shown instead while nothing has changed since.
     @ViewBuilder
-    private func nextStep(_ status: MatterStatus, _ facts: Facts) -> some View {
+    private func nextStep(_ status: MatterStatus) -> some View {
         // Drawn again when Auto has written it.
         let _ = AutoUpdate.shared.done
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
-        let cost = String(format: "≈ %.1f cents", AssistantAsk.nextStepEstimate(facts, model: ModelChoice.assistant) * 100)
         VStack(alignment: .leading, spacing: 10) {
             if fresh, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
@@ -392,7 +388,7 @@ struct MatterStatusView: View {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
                             .help("Causabee suggested this on \(Dates.short(at)); the matter has changed since.")
                     }
-                    Button((fresh ? "ask again · " : "Suggest better · ") + cost, action: askStep)
+                    Button((fresh ? "ask again · " : "Suggest better · ") + PriceEstimates.step(matter), action: askStep)
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
                         .help("Causabee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
                 }

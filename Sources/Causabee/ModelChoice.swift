@@ -232,6 +232,28 @@ struct AutoLine: View {
     }
 }
 
+/// What asking for a matter's next step or summary would cost, as the links beside them say it.
+/// Worked out from the matter's last 40 mails — a hundredth of a second and more — so only where
+/// it is shown, and kept until the matter's record or the model is another.
+@MainActor
+enum PriceEstimates {
+    private static var kept: [PersistentIdentifier: (key: String, step: Double, summary: Double)] = [:]
+
+    static func of(_ matter: Matter) -> (step: Double, summary: Double) {
+        let key = [ModelChoice.assistant.id, "\(matter.entries?.count ?? 0)", "\(matter.todos?.count ?? 0)",
+                   "\(matter.documents?.count ?? 0)", "\(matter.notesText?.count ?? 0)", MatterStatus.day(Date())].joined(separator: "|")
+        if let known = kept[matter.persistentModelID], known.key == key { return (known.step, known.summary) }
+        let facts = FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40)
+        let model = ModelChoice.assistant
+        let found = (key: key, step: AssistantAsk.nextStepEstimate(facts, model: model), summary: AssistantAsk.summaryEstimate(facts, model: model))
+        kept[matter.persistentModelID] = found
+        return (found.step, found.summary)
+    }
+
+    static func step(_ matter: Matter) -> String { String(format: "≈ %.1f cents", of(matter).step * 100) }
+    static func summary(_ matter: Matter) -> String { String(format: "≈ %.1f cents", of(matter).summary * 100) }
+}
+
 /// Auto, the whole circle: when a matter's record has changed, its next step and its summary are
 /// written again by themselves — what "ask again" and "Update" do on a tap.
 ///
@@ -269,6 +291,22 @@ final class AutoUpdate {
     }
 
     @ObservationIgnored private var lastSeen: [String: String] = [:]
+    /// Saves to the store — here or from another device — and how many there had been at the last
+    /// look. A matter's record is read whole for its stamp: every few seconds, for every matter,
+    /// that held the screen up a tenth of a second each time. Now it is read only after a save.
+    @ObservationIgnored private var saves = 0
+    @ObservationIgnored private var savesLooked = -1
+    @ObservationIgnored private var watching = false
+
+    private func watchSaves() {
+        guard !watching else { return }
+        watching = true
+        for name in [ModelContext.didSave, .NSPersistentStoreRemoteChange] {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { AutoUpdate.shared.saves += 1 }
+            }
+        }
+    }
     private static let knownKey = "auto.known", spentKey = "auto.spent"
 
     private static var known: [String: Known] {
@@ -312,9 +350,12 @@ final class AutoUpdate {
     func run(context: ModelContext, names: @escaping () throws -> Names) async {
         // A test starts from nothing known.
         if CommandLine.arguments.contains("--auto-anew") { Self.known = [:] }
+        watchSaves()
         while !Task.isCancelled {
             try? await Task.sleep(for: Self.pace)
             guard AutoMode.isOn else { lastSeen = [:]; if !pending.isEmpty { pending = [] }; continue }
+            // Not even the matters fetched when nothing was saved since the last look.
+            guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { continue }
             let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
             look(matters, context: context, owner: AutoMode.owner(in: context).first, names: names)
         }
@@ -324,6 +365,9 @@ final class AutoUpdate {
     /// unless one has changed and come to rest.
     func look(_ matters: [Matter], context: ModelContext, owner: String?, names: () throws -> Names) {
         guard AutoMode.isOn else { lastSeen = [:]; return }
+        // Nothing saved since the last look, and nothing on its way to rest: nothing can have changed.
+        guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { return }
+        savesLooked = saves
         var known = Self.known
         defer { Self.known = known }
         for matter in matters where !matter.isClosed && !working.contains(matter.key) {
