@@ -22,9 +22,13 @@ enum ModelChoice {
     static var strict: Bool { (mail.isMistral || mail.isOpenAI) && (UserDefaults.standard.object(forKey: strictKey) as? Bool ?? true) }
 
     /// The API client for the model, with the key its API takes; nil when that key is missing.
-    static func client(for model: Claude.Model) -> Claude? { Claude.key(for: model).map(Claude.init) }
+    /// None in the demo with the owner's real matters: from there nothing is sent, whatever is asked.
+    static func client(for model: Claude.Model) -> Claude? {
+        DemoData.usesReal ? nil : Claude.key(for: model).map(Claude.init)
+    }
 
     static func missingKey(_ model: Claude.Model) -> String {
+        if DemoData.usesReal { return "This is the demo with your real matters: nothing is sent to an AI from it." }
         #if os(iOS)
         let settings = "Settings (⋯ on the overview) — or on your Mac: a key saved there comes through iCloud Keychain"
         #else

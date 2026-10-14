@@ -24,6 +24,41 @@ enum DemoData {
             || Bundle.main.bundleIdentifier?.hasSuffix(".demo") == true
     }
 
+    /// The owner's real matters, for the demo to test with — copied one way into the demo's own
+    /// store when it opens, never back, never to iCloud, and nothing in it is sent. On the Mac with
+    /// `--real`, from the owner's store beside it. On an iPhone or iPad, CausabeeDemo takes the copy
+    /// the owner's Causabee left in the shared folder when it last went to the background; with
+    /// none there yet, or with `--made-up`, it has the made-up matters as before.
+    nonisolated static var realSource: URL? {
+        guard isRequested, !CommandLine.arguments.contains("--made-up") else { return nil }
+        #if os(macOS)
+        guard CommandLine.arguments.contains("--real") else { return nil }
+        let real = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Causabee/matters.store")
+        #else
+        guard Bundle.main.bundleIdentifier?.hasSuffix(".demo") == true, let real = realCopyForDemo else { return nil }
+        #endif
+        return FileManager.default.fileExists(atPath: real.path) ? real : nil
+    }
+
+    /// Where the owner's Causabee on an iPhone or iPad leaves its copy for CausabeeDemo: the folder
+    /// the two share with the share extension.
+    nonisolated static var realCopyForDemo: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.de.chille.causabee")?
+            .appendingPathComponent("For the demo/matters.store")
+    }
+
+    /// The demo's store made a copy of the real one: true when it was, and the made-up matters stay out.
+    nonisolated static func copyReal(to store: URL) -> Bool {
+        // Never onto the real store itself: the copy empties its target first.
+        guard let source = realSource, source.standardizedFileURL.resolvingSymlinksInPath().path != store.standardizedFileURL.resolvingSymlinksInPath().path else { return false }
+        do { try StoreCopy.copy(from: source, to: store); usesReal = true; return true } catch { return false }
+    }
+
+    /// The demo has the owner's real matters in it: nothing goes to any AI from it. The demo's own
+    /// list of names is empty — it was made for made-up people — so a real name would have left as itself.
+    nonisolated(unsafe) static var usesReal = false
+
     /// Into the demo, or back to the owner's own matters. A store is opened once, when Causabee
     /// starts, so Causabee starts again: the new one opens, then this one quits.
     #if os(macOS)

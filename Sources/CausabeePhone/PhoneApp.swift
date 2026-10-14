@@ -11,6 +11,7 @@ import SwiftUI
 @main
 struct CausabeePhoneApp: App {
     @State private var store = PhoneStore()
+    @Environment(\.scenePhase) private var phase
 
     init() {
         Theme.registerFonts()
@@ -37,6 +38,27 @@ struct CausabeePhoneApp: App {
             }
         }
         .commands { PhoneCommands() }
+        // Gone to the background: a copy of the owner's matters for CausabeeDemo, to test with.
+        .onChange(of: phase) { if phase == .background { RealCopyForDemo.leave() } }
+    }
+}
+
+/// The owner's Causabee leaves a copy of its store in the folder it shares with CausabeeDemo — when
+/// it goes to the background, at most every few minutes, off the screen's thread. Only the owner's
+/// own store: never the demo's, never a store syncing with Development.
+enum RealCopyForDemo {
+    @MainActor private static var last = Date.distantPast
+
+    @MainActor static func leave() {
+        guard !DemoData.isRequested, PhoneCloud.container != nil, PhoneCloud.isProduction || CommandLine.arguments.contains("--copy-for-demo"),
+              Date().timeIntervalSince(last) > 180, let target = DemoData.realCopyForDemo else { return }
+        last = Date()
+        let source = PhoneCloud.storeLocation()
+        let task = UIApplication.shared.beginBackgroundTask(withName: "Copy for the demo")
+        Task.detached(priority: .utility) {
+            try? StoreCopy.copy(from: source, to: target)
+            await MainActor.run { UIApplication.shared.endBackgroundTask(task) }
+        }
     }
 }
 
@@ -61,11 +83,13 @@ final class PhoneStore {
     private static func open() -> (URL, Result<ModelContainer, Error>) {
         let url = PhoneCloud.storeLocation()
         let cloud = PhoneCloud.container
+        // CausabeeDemo with the owner's real matters, from the copy the owner's Causabee left.
+        let real = DemoData.copyReal(to: url)
         return (url, Result {
             let container = try MatterSchema.container(at: url, cloudKit: cloud)
-            // The demo's made-up dates never go into the owner's calendars.
+            // The demo's made-up dates never go into the owner's calendars — nor the real ones from the demo.
             Calendars.shared.isSealed = DemoData.isRequested
-            if DemoData.isRequested { DemoData.seed(container.mainContext); DemoData.keepTalkBehindTheClock(container.mainContext) }
+            if DemoData.isRequested, !real { DemoData.seed(container.mainContext); DemoData.keepTalkBehindTheClock(container.mainContext) }
             StoredChanges.shared.watch(container.mainContext)
             return container
         })

@@ -65,6 +65,8 @@ struct CausabeeApp: App {
         let cloud = CloudSync.mode
         // Causabee's own folder in iCloud Drive, for the matters' files — not for the demo or the test container.
         if !DemoData.isRequested, cloud != .test { Task { @MainActor in await MatterFolders.useContainer() } }
+        // The demo with the owner's real matters: copied in before the store opens.
+        let real = DemoData.copyReal(to: url)
         opened = Result {
             let container = try MatterSchema.container(at: url, cloudKit: cloud.container)
             if cloud == .test { MainActor.assumeIsolated { CloudSync.seedTest(container.mainContext) } }
@@ -86,7 +88,7 @@ struct CausabeeApp: App {
                 }
             }
             #endif
-            if DemoData.isRequested { MainActor.assumeIsolated { Calendars.shared.isSealed = true; DemoData.seed(container.mainContext); DemoData.keepTalkBehindTheClock(container.mainContext) } }
+            if DemoData.isRequested { MainActor.assumeIsolated { Calendars.shared.isSealed = true; if !real { DemoData.seed(container.mainContext); DemoData.keepTalkBehindTheClock(container.mainContext) } } }
             // Files taken in before they were kept as files of their matter.
             MainActor.assumeIsolated { _ = try? MatterImport.addDroppedFiles(to: container.mainContext) }
             // This Mac's list of names, for the iPhone to ask with: now, and whenever Causabee
