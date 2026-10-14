@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/SourceSerif4.woff2" as="font" type="font/woff2" crossorigin>
 <!-- ?v= is the start of styles.css's shasum: change it with the file, or browsers keep the old one for up to 10 minutes. -->
-<link rel="stylesheet" href="styles.css?v=ed47bd00">
+<link rel="stylesheet" href="styles.css?v=61f19f09">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -233,9 +233,13 @@
   <!-- Other matters -->
   <section id="matters" class="section band-grey">
     <div class="wrap matters">
-      <!-- Causabee in 90 seconds: the film, drawn live, as it goes for Mum's care (scripts/film) -->
-      <figure class="film" aria-label="Causabee in 90 seconds: one matter, from the first mail to the next step, on the Mac and the iPhone">
-        <div class="film__frame"><iframe class="film__page" src="film/index.html" title="Causabee in 90 seconds, with a button for its voice" loading="lazy" allow="autoplay"></iframe></div>
+      <!-- One day with Causabee: the walkthrough, spoken, on the Mac, the iPad and the iPhone (film/walkthrough) -->
+      <figure class="film">
+        <div class="film__frame"><video class="film__video" controls playsinline preload="none" poster="film/walkthrough/poster.webp" aria-label="One day with Causabee: a spoken walkthrough of one matter, Mum’s care, through one day on the Mac, the iPad and the iPhone">
+          <source src="film/walkthrough/walkthrough.mp4" type="video/mp4">
+          <track kind="captions" srclang="en" label="English" src="film/walkthrough/walkthrough.vtt">
+        </video></div>
+        <figcaption>One day with Causabee · 2 minutes, with sound · captions in the player</figcaption>
       </figure>
       <div class="matters__text">
         <h2 class="title">What Causabee<br class="br-wide"> does for you.</h2>
