@@ -292,19 +292,34 @@ extension Matter {
         for item in documents ?? [] where ids.contains(item.messageID) { item.matter = new }
         for item in links ?? [] where ids.contains(item.messageID) { item.matter = new }
         if let since = turnsSince { for turn in turns ?? [] where turn.date > since { turn.matter = new } }
-        // Who the mails name, by any spelling: in the new matter as well, with what they are here.
-        let words = moved.map { [$0.from, $0.title, $0.digest ?? ""].joined(separator: " ").lowercased() }.joined(separator: " ")
+        // Who the mails name: in the new matter as well, with what they are here. Named means by a
+        // full name — two words or more, as words — or by their own address: a surname alone, or a
+        // mail domain, is shared with others. "Chille" took the owner's mother into every matter
+        // whose mails said "Ralf Chille" or came from chille.de.
+        let texts = moved.map { [$0.from, $0.title, $0.digest ?? ""].joined(separator: " ") }
         for membership in memberships ?? [] {
-            guard let party = membership.party, new.membership(of: party) == nil,
-                  ([party.name] + party.spellings).contains(where: { !$0.isEmpty && words.contains($0.lowercased()) }) else { continue }
+            guard let party = membership.party, new.membership(of: party) == nil else { continue }
+            let naming = texts.filter { Self.names(party, in: $0) }.count
+            guard naming > 0 else { continue }
             let copy = Membership()
             context.insert(copy)
             copy.party = party
             copy.matter = new
             copy.roles = membership.roles
-            copy.mentions = moved.filter { [$0.from, $0.title, $0.digest ?? ""].joined(separator: " ").lowercased().contains(party.name.lowercased()) }.count
+            copy.mentions = naming
         }
         try context.save()
+    }
+
+    /// Whether a text names this person: by a full name of theirs, word for word, or by their address.
+    static func names(_ party: Party, in text: String) -> Bool {
+        let words = text.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map { PartyNames.fold(String($0)) }
+        if let address = party.address?.lowercased(), !address.isEmpty, text.lowercased().contains(address) { return true }
+        return ([party.name] + party.spellings).contains { spelling in
+            let name = PartyNames.tokens(spelling)
+            guard name.count >= 2, words.count >= name.count else { return false }
+            return (0...(words.count - name.count)).contains { Array(words[$0..<($0 + name.count)]) == name }
+        }
     }
 
     /// What a file the owner brought in — a scan, a photo, a PDF — brought with it alone: the tasks

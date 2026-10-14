@@ -16,6 +16,24 @@ public enum SortedMails {
         return judgement
     }
 
+    /// Mail the owner left out — "Leave out" on new mail, "Not needed" on mail that found no matter —
+    /// on any device: a record with no answer in it. Kept in the store, not on the device, so the
+    /// other devices do not offer it again. The same record as a sorted mail: nothing new for iCloud.
+    public static func setAside(in context: ModelContext) -> Set<String> {
+        Set(((try? context.fetch(FetchDescriptor<SortedMail>())) ?? []).filter { $0.data.isEmpty }.map(\.messageID))
+    }
+
+    /// Left out on this device: said in the store, for every device. Saved.
+    public static func setAside(_ ids: some Sequence<String>, device: String, in context: ModelContext) {
+        let known = Set(((try? context.fetch(FetchDescriptor<SortedMail>())) ?? []).map(\.messageID))
+        var added = false
+        for id in Set(ids) where !id.isEmpty && !known.contains(id) {
+            context.insert(SortedMail(messageID: id, device: device))
+            added = true
+        }
+        if added { try? context.save() }
+    }
+
     /// Every answer in the store, by Message-ID.
     public static func answered(in context: ModelContext) -> [String: Judgement] {
         let decoder = JSONDecoder()
@@ -40,11 +58,15 @@ public enum SortedMails {
     /// Says how many went in.
     @discardableResult
     public static func record(_ judgements: [Judgement], device: String, in context: ModelContext) throws -> Int {
-        let known = Set(try context.fetch(FetchDescriptor<SortedMail>()).map(\.messageID))
+        let records = try context.fetch(FetchDescriptor<SortedMail>())
+        // A mail left out once and sorted after all: its answer takes the place of the mark.
+        let known = Set(records.filter { !$0.data.isEmpty }.map(\.messageID))
+        let marks = Dictionary(records.filter(\.data.isEmpty).map { ($0.messageID, $0) }, uniquingKeysWith: { first, _ in first })
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         var added = 0
         for judgement in judgements where !known.contains(judgement.emailID) && (Extractor.isSettled(judgement) || judgement.isBulk) {
+            if let mark = marks[judgement.emailID] { context.delete(mark) }
             let record = SortedMail(messageID: judgement.emailID, device: device)
             record.date = judgement.date
             record.data = try (try encoder.encode(slim(judgement)) as NSData).compressed(using: .lzfse) as Data
