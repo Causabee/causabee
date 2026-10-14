@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>One day with Causabee</title>
+<!-- A 130-second walkthrough, spoken: one day of Mum's care on the Mac, the iPad and the iPhone, in sync,
+     with Auto on. The picture follows the voice — voice.mp3, a reading of voiceover.txt — word by word:
+     each time below is when its words are said (the phrases' times are in walkthrough.srt). Plays live
+     in a browser, silent; ../teaser/render.mjs seeks it frame by frame (?render) to make walkthrough.mp4,
+     and python3 soundtrack.py out.wav voice.wav mixes the voice over the music and the sounds.
+     Every overlay sits on the real screenshot at that screenshot's own pixels (--x --y --w --h). -->
+<style>
+@font-face { font-family: "Source Serif 4"; src: url("../../assets/fonts/SourceSerif4.woff2") format("woff2"); font-weight: 200 900; }
+:root {
+  --ink: #22211b; --grey: #74736e; --line: #e3e3e0; --honey: #ffdb0d; --gold: #7f5e00; --night: #141310; --side: #f3f5f7;
+  --serif: "Source Serif 4", Georgia, serif; --sans: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --out: cubic-bezier(0.2, 0.7, 0.2, 1); --in: cubic-bezier(0.5, 0, 0.8, 0.4); --spring: cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+html, body { margin: 0; background: #fff; overflow: hidden; }
+.stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #fff; font-family: var(--sans); color: var(--ink); transform-origin: 0 0; }
+.stage * { box-sizing: border-box; }
+.render .stage, .render .stage * { animation-play-state: paused !important; }
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+
+/* Words on the film: a caption at the bottom, where we are at the top. */
+.cap { position: absolute; left: 0; right: 0; bottom: 46px; margin: auto; width: fit-content; max-width: 1640px; text-align: center;
+  font: 500 44px/1.2 var(--serif); padding: 18px 40px 22px; border-radius: 999px; background: #fff; color: var(--ink);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 24px 50px -18px rgba(0,0,0,.3); }
+.cap.dark { background: #2a2924; color: #fff; box-shadow: none; }
+.where { position: absolute; left: 0; right: 0; top: 22px; margin: auto; width: fit-content; font: 600 22px var(--sans); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--gold); background: #fff8cc; padding: 9px 20px; border-radius: 999px; }
+.title { position: absolute; left: 0; right: 0; text-align: center; font: 600 84px/1.05 var(--serif); letter-spacing: -0.02em; margin: 0; }
+
+/* Devices. A screen (.scr) shows a screenshot at --u screen pixels per screenshot pixel; everything
+   in it (.o) is placed in the screenshot's own pixels. */
+.mac { position: absolute; border-radius: 20px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 60px 120px -30px rgba(0,0,0,.35); }
+.pad, .phone { position: absolute; background: var(--ink); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 0 0 1px rgba(0,0,0,.08), 0 60px 120px -30px rgba(0,0,0,.35); }
+.pad { padding: 18px; border-radius: 45px; } .pad .scr { border-radius: 28px; overflow: hidden; }
+.phone { padding: 11px; border-radius: 62px; } .phone .scr { border-radius: 51px; overflow: hidden; }
+.scr { position: relative; width: calc(var(--W) * var(--u) * 1px); height: calc(var(--H) * var(--u) * 1px); background: #fff; }
+.scr > img, .layer > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+.layer { position: absolute; inset: 0; }
+.o { position: absolute; left: calc(var(--x) * var(--u) * 1px); top: calc(var(--y) * var(--u) * 1px);
+  width: calc(var(--w, 0) * var(--u) * 1px); height: calc(var(--h, 0) * var(--u) * 1px); font-size: calc(var(--fs, 28) * var(--u) * 1px); line-height: 1.3; }
+.cam { position: absolute; inset: 0; transform-origin: 0 0; }
+
+/* What a finger or the pointer does: a honey disc that comes, presses and goes. */
+.tap { left: calc((var(--x) - var(--r)) * var(--u) * 1px); top: calc((var(--y) - var(--r)) * var(--u) * 1px);
+  width: calc(var(--r) * 2 * var(--u) * 1px); height: calc(var(--r) * 2 * var(--u) * 1px); border-radius: 50%;
+  background: rgba(255, 208, 0, .6); box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 4px 14px rgba(0,0,0,.2); animation: tap .8s var(--d) both; }
+@keyframes tap { 0% { opacity: 0; scale: 1.5; } 30% { opacity: 1; scale: 1; } 50% { scale: .72; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1; } }
+.check { border-radius: 22%; background: var(--ink); display: grid; place-items: center; animation: pop .35s var(--spring) var(--d) both; }
+.check svg { width: 70%; height: 70%; }
+.dim { background: rgba(255,255,255,.55); animation: fade .3s var(--d) both; }
+.strike { height: calc(3 * var(--u) * 1px + 1px) !important; background: var(--ink); transform-origin: left; animation: strike .3s var(--out) var(--d) both; }
+@keyframes strike { from { scale: 0 1; } }
+.ring { border-radius: calc(var(--rr, 24) * var(--u) * 1px); box-shadow: 0 0 0 5px var(--honey), 0 0 0 14px rgba(255,219,13,.35); animation: ring 1.4s var(--out) var(--d) both; }
+@keyframes ring { 0% { opacity: 0; scale: 1.06; } 25% { opacity: 1; scale: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+.patch { background: var(--bg, #fff); }
+
+/* The Mac's "new mail" panel, set as the app sets it, in the screenshot's pixels (macOS points × 2). */
+.panel { background: var(--side); border-top: 2px solid #e2e4e6; padding: calc(28 * var(--u) * 1px) calc(26 * var(--u) * 1px); display: flex; flex-direction: column; gap: calc(18 * var(--u) * 1px); }
+.panel b { font-size: calc(32 * var(--u) * 1px); }
+.pick { display: flex; gap: calc(14 * var(--u) * 1px); align-items: flex-start; }
+.pick i { flex: none; width: calc(26 * var(--u) * 1px); height: calc(26 * var(--u) * 1px); border-radius: 50%; background: var(--gold); margin-top: calc(4 * var(--u) * 1px); display: grid; place-items: center; }
+.pick span { display: flex; flex-direction: column; } .pick em { font-style: normal; color: rgba(0,0,0,.4); font-size: calc(24 * var(--u) * 1px); }
+.panel small { color: rgba(0,0,0,.5); font-size: calc(23 * var(--u) * 1px); }
+.btns { display: flex; justify-content: flex-end; gap: calc(14 * var(--u) * 1px); }
+.btns span { padding: calc(8 * var(--u) * 1px) calc(22 * var(--u) * 1px); border-radius: calc(14 * var(--u) * 1px); background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+.btns .ink { background: var(--ink); color: #fff; box-shadow: none; }
+.working { display: flex; align-items: center; gap: calc(16 * var(--u) * 1px); color: rgba(0,0,0,.55); }
+.working svg { width: calc(56 * var(--u) * 1px); fill: var(--ink); overflow: visible; }
+.working .bar { transform-box: fill-box; transform-origin: 50% 50%; animation: work 2.4s ease-out infinite; animation-delay: calc(var(--i) * .16s); }
+@keyframes work { 0% { opacity: .14; transform: translateY(-160px); } 18%, 62% { opacity: 1; transform: none; } 85%, 100% { opacity: .14; transform: none; } }
+.done { display: flex; gap: calc(14 * var(--u) * 1px); align-items: flex-start; color: #53524a; }
+
+/* A task taken in from the assistant: the card closes into a quiet white box. */
+.taken { background: #fff; border-radius: calc(26 * var(--u) * 1px); box-shadow: inset 0 0 0 calc(2.5 * var(--u) * 1px) var(--line); display: flex; gap: calc(22 * var(--u) * 1px); align-items: center; padding: 0 calc(30 * var(--u) * 1px); }
+.taken i { flex: none; width: calc(44 * var(--u) * 1px); height: calc(44 * var(--u) * 1px); border-radius: 50%; background: var(--ink); display: grid; place-items: center; }
+.taken div { display: flex; flex-direction: column; gap: calc(6 * var(--u) * 1px); } .taken small { color: rgba(0,0,0,.5); font-size: .75em; }
+
+/* The assistant's field on the iPad, with its yellow send button — where the bee is glad when the
+   assistant is open beside the page — and a loupe over that button, so it can be seen. */
+.field { display: flex; align-items: center; gap: calc(16 * var(--u) * 1px); padding: 0 calc(10 * var(--u) * 1px) 0 calc(26 * var(--u) * 1px);
+  border-radius: calc(35 * var(--u) * 1px); background: #fff; box-shadow: 0 0 0 calc(2 * var(--u) * 1px) #ececea, 0 calc(4 * var(--u) * 1px) calc(14 * var(--u) * 1px) rgba(0,0,0,.06); color: rgba(0,0,0,.4); }
+.field .plus { font-size: 1.4em; font-weight: 300; } .field > span:nth-child(2) { flex: 1; }
+.field .mic { width: calc(30 * var(--u) * 1px); }
+.send { position: relative; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--honey); }
+.field .send { width: calc(54 * var(--u) * 1px); height: calc(54 * var(--u) * 1px); }
+.send .arrow { width: 55%; height: 55%; }
+.send .glad { position: absolute; left: 50%; top: 50%; width: 82%; translate: -50% -50%; overflow: visible; fill: #000; opacity: 0; }
+.send .glad .wl, .send .glad .wr { fill-opacity: .55; }
+.loupe { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: #fff; display: grid; place-items: center;
+  box-shadow: 0 0 0 8px #fff, 0 0 0 9px rgba(0,0,0,.08), 0 40px 80px -20px rgba(0,0,0,.4); }
+.loupe .send { width: 190px; height: 190px; }
+
+/* The iPhone's overview, pulled down: the page in cuts, the mail's place, the bee drawn each frame. */
+.cut { overflow: hidden; } .cut img { position: absolute; left: 0; width: calc(804 * var(--u) * 1px); height: auto; }
+.fbox { display: flex; align-items: center; justify-content: center; gap: calc(20 * var(--u) * 1px); border-radius: calc(32 * var(--u) * 1px); background: #f5f5f5; color: rgba(60,60,67,.6); }
+.fbox svg { width: calc(53 * var(--u) * 1px); height: calc(30 * var(--u) * 1px); }
+svg.drawn { overflow: visible; fill: #000; }
+.finger { border-radius: 50%; background: rgba(255, 208, 0, .55); box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 4px 14px rgba(0,0,0,.2); }
+
+/* The pieces a matter is made of, as in the teaser: they land, then gather into one place. */
+.piece { position: absolute; }
+.piece > div { translate: -50% -50%; rotate: var(--r); }
+.pmail, .pdoc, .pchat, .pshot { background: #fff; border-radius: 18px; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 30px 60px -20px rgba(0,0,0,.25); font-size: 26px; white-space: nowrap; }
+.pmail { padding: 22px 28px; } .pmail b { display: block; } .pmail span { color: var(--grey); font-size: 21px; }
+.pdoc { padding: 20px 26px; display: flex; gap: 16px; align-items: center; font-weight: 600; }
+.pdoc i { width: 44px; height: 54px; border-radius: 6px; background: #e8463a; color: #fff; font: 700 13px var(--sans); display: grid; place-items: end center; padding-bottom: 6px; font-style: normal; }
+.pchat { padding: 18px 26px; border-radius: 26px 26px 26px 6px; background: #34c759; color: #fff; box-shadow: 0 30px 60px -20px rgba(0,0,0,.25); }
+.pshot { width: 300px; height: 190px; padding: 16px; display: grid; gap: 10px; align-content: start; }
+.pshot u { display: block; height: 14px; border-radius: 7px; background: var(--line); } .pshot u:first-child { width: 60%; background: var(--honey); }
+@keyframes drop { from { opacity: 0; translate: -50% calc(-50% - 140px); scale: .8; } }
+@keyframes gather { to { transform: translate(var(--gx), var(--gy)) scale(.15); opacity: 0; } }
+
+/* Auto on: the round read already, waiting only for "Take in" (MailVerdict). */
+.offer { display: flex; gap: calc(14 * var(--u) * 1px); align-items: flex-start; }
+.offer > i { flex: none; width: calc(26 * var(--u) * 1px); height: calc(26 * var(--u) * 1px); border-radius: 50%; background: var(--gold); margin-top: calc(4 * var(--u) * 1px); display: grid; place-items: center; }
+.offer > div { display: flex; flex-direction: column; gap: calc(4 * var(--u) * 1px); }
+.offer .to { color: rgba(0,0,0,.5); font-size: calc(24 * var(--u) * 1px); display: flex; justify-content: space-between; gap: calc(10 * var(--u) * 1px); }
+.offer .to em { font-style: normal; color: var(--gold); }
+.offer .item { font-size: calc(24 * var(--u) * 1px); display: flex; gap: calc(10 * var(--u) * 1px); align-items: center; }
+.offer .item b { width: calc(22 * var(--u) * 1px); height: calc(22 * var(--u) * 1px); border-radius: calc(5 * var(--u) * 1px); background: var(--gold); display: grid; place-items: center; }
+
+/* The paper letter on the table, and the iPhone's document camera finding it. */
+.table { background: #efece6; }
+.letter { position: absolute; width: 620px; height: 877px; background: #fffefb; box-shadow: 0 2px 4px rgba(0,0,0,.06), 0 40px 80px -30px rgba(0,0,0,.35); rotate: -2deg; padding: 56px 58px; font: 400 17px/1.45 Georgia, var(--serif); color: #2b2a26; }
+.letter.mini { position: relative; left: 0; top: 0; rotate: none; transform: scale(.4737); transform-origin: 0 0; box-shadow: none; }
+.letter .logo { display: flex; justify-content: flex-end; align-items: center; gap: 10px; font: 700 20px var(--sans); color: #1f6f5c; }
+.letter .logo i { width: 34px; height: 34px; border-radius: 50%; background: #1f6f5c; color: #fff; display: grid; place-items: center; font: 700 18px var(--sans); font-style: normal; }
+.letter .from { font: 400 11px var(--sans); color: #8a877f; margin-top: 30px; }
+.letter .to { margin-top: 6px; }
+.letter .date { text-align: right; margin-top: 18px; }
+.letter h4 { font: 700 21px var(--sans); margin: 26px 0 16px; }
+.letter p { margin: 0 0 12px; }
+.letter .sum { font: 700 22px var(--sans); margin: 18px 0; }
+.letter .foot { position: absolute; left: 58px; right: 58px; bottom: 44px; display: grid; gap: 7px; }
+.letter .foot u { display: block; height: 7px; border-radius: 4px; background: #ebe8e1; }
+/* "her own share of the hospital stay": the line is marked on the paper as she says it (77 s). */
+.letter .sum span { position: relative; }
+.letter:not(.mini) .sum span::before { content: ""; position: absolute; inset: -4px -10px; border-radius: 6px; background: rgba(255,219,13,.6); z-index: -1; transform-origin: left; animation: strike .5s var(--out) 77s both; }
+.letter .sum { position: relative; z-index: 0; }
+.cam { background: #0b0b0c; }
+.camtop { color: #fff; text-align: center; font: 600 calc(30 * var(--u) * 1px) var(--sans); }
+.camlabel { color: #fff; font: 400 calc(34 * var(--u) * 1px) var(--sans); }
+.found { position: absolute; inset: 0; background: rgba(10,132,255,.22); box-shadow: inset 0 0 0 calc(6 * var(--u) * 1px) #0a84ff; }
+.shutter { border-radius: 50%; background: #fff; box-shadow: 0 0 0 calc(8 * var(--u) * 1px) #0b0b0c, 0 0 0 calc(14 * var(--u) * 1px) #fff; }
+.flash { background: #fff; opacity: 0; }
+@keyframes flash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+.sheetv { background: #fff; }
+.grab { border-radius: 99px; background: #d4d4d2; }
+.sheethead { text-align: center; color: rgba(0,0,0,.45); }
+.offercard { background: #f5f5f5; border-radius: calc(30 * var(--u) * 1px); padding: calc(36 * var(--u) * 1px); display: flex; flex-direction: column; gap: calc(22 * var(--u) * 1px); }
+.offercard b { font-size: calc(36 * var(--u) * 1px); }
+.offercard .offer > i { width: calc(34 * var(--u) * 1px); height: calc(34 * var(--u) * 1px); }
+.offercard .to { font-size: calc(28 * var(--u) * 1px); }
+.offercard .item { font-size: calc(29 * var(--u) * 1px); }
+.offercard .item b { width: calc(30 * var(--u) * 1px); height: calc(30 * var(--u) * 1px); }
+.offercard small { color: rgba(0,0,0,.5); font-size: calc(25 * var(--u) * 1px); }
+.takein { position: absolute; right: calc(36 * var(--u) * 1px); bottom: calc(36 * var(--u) * 1px); background: var(--ink); color: #fff; border-radius: 999px; padding: calc(14 * var(--u) * 1px) calc(40 * var(--u) * 1px); font-size: calc(32 * var(--u) * 1px); }
+.taken small { display: block; margin-top: calc(6 * var(--u) * 1px); }
+.hl { border-radius: calc(8 * var(--u) * 1px); }
+@keyframes hilite { 0% { background: rgba(255,219,13,0); } 20%, 70% { background: rgba(255,219,13,.5); } 100% { background: rgba(255,219,13,0); } }
+.morerows { background: #fff; border: calc(2 * var(--u) * 1px) solid #e4e4e4; border-top: 0; border-radius: 0 0 calc(28 * var(--u) * 1px) calc(28 * var(--u) * 1px); }
+.morerows > div { display: flex; align-items: center; gap: calc(27 * var(--u) * 1px); height: calc(113 * var(--u) * 1px); padding-left: calc(30 * var(--u) * 1px); }
+.morerows span { border-top: calc(1.5 * var(--u) * 1px) solid #ececea; }
+.morerows em { font-style: normal; color: #c46a00; }
+.morerows i { flex: none; width: calc(68 * var(--u) * 1px); height: calc(68 * var(--u) * 1px); border-radius: calc(16 * var(--u) * 1px); background: #f4f4f4; display: grid; place-items: center; }
+.morerows i svg { width: 60%; }
+.morerows span { flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; }
+.morerows small { color: rgba(0,0,0,.45); font-size: calc(25 * var(--u) * 1px); }
+
+/* The disguise. */
+.night { position: absolute; inset: 0; background: var(--night); color: #fff; }
+.night .small { position: absolute; left: 0; right: 0; text-align: center; font: 600 24px var(--sans); letter-spacing: .1em; color: #a3a29b; }
+.line { position: absolute; left: 0; right: 0; text-align: center; font: 500 54px var(--sans); color: #d9d8d2; }
+.line em { font-style: normal; position: relative; display: inline-block; color: #fff; margin: 0 26px; }
+.line em::after { content: attr(data-as); position: absolute; top: -6px; bottom: -6px; left: 50%; translate: -50% 0; min-width: calc(100% + 24px); padding: 0 12px; white-space: nowrap; border-radius: 12px; background: var(--honey); color: var(--ink); font: 700 36px/1 var(--sans); display: grid; place-items: center; transform-origin: center; animation: strike .4s var(--out) var(--d) both; }
+
+/* The sync: a honey dot flies from the iPad to the iPhone. */
+.fly { width: 26px; height: 26px; border-radius: 50%; background: var(--honey); box-shadow: 0 0 0 6px rgba(255,219,13,.35), 0 0 30px rgba(255,219,13,.9); animation: fly .9s cubic-bezier(.5,0,.3,1) 68.76s both; }
+@keyframes fly { 0% { opacity: 0; translate: 0 0; } 10% { opacity: 1; } 50% { translate: 496px -160px; } 90% { opacity: 1; } 100% { opacity: 0; translate: 993px 284px; } }
+
+/* End card: the app icon animates as on the website's hero. */
+.icon { position: absolute; overflow: visible; filter: drop-shadow(0 28px 50px rgba(127, 94, 0, 0.32)); }
+.icon .wl, .icon .wr { fill-opacity: .5; }
+.icon .bar { transform-box: fill-box; transform-origin: 50% 50%; animation: icon-sort .7s var(--out) calc(var(--t0) + var(--i) * .08s) both; }
+.icon .wl { transform-box: view-box; transform-origin: 1010px 880px; animation: icon-wl .6s ease-in-out calc(var(--t0) + .1s) 2; }
+.icon .wr { transform-box: view-box; transform-origin: 3191px 880px; animation: icon-wr .6s ease-in-out calc(var(--t0) + .1s) 2; }
+@keyframes icon-sort { from { opacity: .14; transform: translateY(-160px); } to { opacity: 1; transform: none; } }
+@keyframes icon-wl { 50% { transform: rotate(16deg); } }
+@keyframes icon-wr { 50% { transform: rotate(-16deg); } }
+
+@keyframes fade { from { opacity: 0; } }
+@keyframes rise { from { opacity: 0; translate: 0 36px; } }
+@keyframes rise-far { from { opacity: 0; translate: 0 700px; } }
+@keyframes slide { from { opacity: 0; translate: 300px 0; rotate: 8deg; } }
+@keyframes sheet { from { translate: 0 100%; } }
+@keyframes pop { from { scale: 0; } }
+@keyframes wipe { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes iris { from { clip-path: circle(0 at 50% 50%); } to { clip-path: circle(1200px at 50% 50%); } }
+/* Camera moves, one per scene. */
+@keyframes camB { from { scale: 1; } to { scale: 1.8; } }
+@keyframes camD { 0%, 2% { transform: none; } 10%, 44% { transform: translate(-442px, 7px) scale(1.6); } 54%, 100% { transform: translate(-442px, -618px) scale(1.6); } }
+@keyframes open { from { opacity: 0; scale: .96; } }
+@keyframes nod { 40% { translate: 0 -18px; scale: 1.03; } }
+@keyframes camP { 0% { scale: 1; } 10%, 90% { scale: 1.7; } 100% { scale: 1; } }
+@keyframes camF { from { scale: 1; } to { scale: 1.3; } }
+@keyframes camG { from { transform: none; } to { transform: translate(-337px, -154px) scale(1.2); } }
+</style></head>
+<body>
+<div class="stage" id="stage">
+
+<!-- A · 0–8.6 s: "This is Causabee. Mail, letters, documents, screenshots — it turns all the pieces into clear matters." -->
+<div class="scene" style="animation: fade .4s 8.3s both reverse">
+  <h1 class="title" style="top: 90px; animation: rise .7s var(--out) .2s both">One day with Causabee.</h1>
+  <div class="piece" style="left:520px;top:470px; animation: gather .55s var(--in) 6s both"><div class="pmail" style="--r:-6deg; animation: drop .75s var(--spring) 1.75s both"><b>Dr. Brandt</b><span>Prescription for the bath seat is ready</span></div></div>
+  <div class="piece" style="left:1400px;top:440px; animation: gather .55s var(--in) 6s both"><div class="pdoc" style="--r:5deg; animation: drop .75s var(--spring) 2.45s both"><i>PDF</i>Care_insurance_letter.pdf</div></div>
+  <div class="piece" style="left:980px;top:640px; animation: gather .55s var(--in) 6s both"><div class="pmail" style="--r:2deg; animation: drop .75s var(--spring) 3.1s both"><b>Care service Sonnenhof</b><span>Contract for the visits, to sign</span></div></div>
+  <div class="piece" style="left:1330px;top:780px; animation: gather .55s var(--in) 6s both"><div class="pshot" style="--r:-5deg; animation: drop .75s var(--spring) 3.85s both"><u></u><u></u><u style="width:80%"></u><u style="width:50%"></u></div></div>
+  <div class="piece" style="left:640px;top:790px; animation: gather .55s var(--in) 6s both"><div class="pchat" style="--r:4deg; animation: drop .75s var(--spring) 4.3s both">Nina: Who does what this week?</div></div>
+  <svg class="icon" style="left: 880px; top: 490px; width: 160px; height: 160px; --t0: 6.6s; animation: pop .6s var(--spring) 6.5s both" viewBox="0 0 1024 1024"></svg>
+</div>
+
+<!-- A2 · 8.6–17 s: "Let's follow one of them … on the Mac, the iPad, and the iPhone." Each nods as it is named. -->
+<div class="scene" style="animation: fade .4s 8.5s both, fade .4s 16.8s both reverse">
+  <div class="mac" style="left: 470px; top: 150px; width: 980px; animation: rise-far 1s var(--out) 8.8s both, nod .6s var(--out) 13.65s"><div class="scr" style="--W:2880;--H:1800;--u:.3403"><img src="../../assets/img/care-2880.webp" alt=""></div></div>
+  <div class="pad" style="left: 190px; top: 360px; animation: rise-far 1s var(--out) 9.1s both, nod .6s var(--out) 14.52s"><div class="scr" style="--W:2000;--H:1500;--u:.29"><img src="../../assets/img/ipad-matter.webp" alt=""></div></div>
+  <div class="phone" style="left: 1450px; top: 290px; animation: slide .9s var(--spring) 9.4s both, nod .6s var(--out) 15.49s"><div class="scr" style="--W:804;--H:1748;--u:.31"><img src="../../assets/img/iphone-care.webp" alt=""></div></div>
+</div>
+
+<!-- B · 17–45.9 s: "In the morning, you open your Mac. With Auto on, Causabee has already fetched the new mail, and read it."
+     (the disguise, C, comes over it) "All that's left for you is the last step: take it in." -->
+<div class="scene" style="animation: fade .5s 16.9s both, fade .4s 48.06s both reverse">
+  <div class="cam" style="transform-origin: 416px 917px; animation: camB 1s var(--out) 22.3s both">
+    <div class="mac" style="left: 290px; top: 80px; animation: open .7s var(--out) 17.9s both"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
+      <img src="../../assets/img/overview-2880.webp" alt="">
+      <div class="o ring" style="--x:322;--y:22;--w:60;--h:60;--rr:30;--d:19.5s"></div>
+      <div class="o panel" style="--x:0;--y:1190;--w:540;--h:610; justify-content: flex-end; animation: rise .45s var(--out) 21s both, fade .25s 42.71s both reverse">
+        <b>2 mails read</b>
+        <div class="offer"><i><svg viewBox="0 0 14 14" width="70%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i><div>
+          <span>Prescription for the bath seat is ready</span>
+          <span class="to"><span>→ Care for Mum (Helga) after her fall</span><em>Change</em></span>
+          <span class="item"><b><svg viewBox="0 0 14 14" width="80%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b>Get the bath seat prescription</span>
+        </div></div>
+        <div class="offer"><i><svg viewBox="0 0 14 14" width="70%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i><div>
+          <span>Re: Who does what this week?</span>
+          <span class="to"><span>→ Care for Mum (Helga) after her fall</span><em>Change</em></span>
+        </div></div>
+        <small>Read for $0.012. Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside.</small>
+        <div class="btns"><span class="ink">Take in</span></div>
+      </div>
+      <div class="o tap" style="--x:452;--y:1745;--r:30;--d:42.06s"></div>
+      <div class="o panel" style="--x:0;--y:1530;--w:540;--h:270; justify-content: center; animation: rise .4s var(--out) 42.96s both">
+        <div class="done"><svg viewBox="0 0 14 14" width="28" style="flex:none;margin-top:3px"><circle cx="7" cy="7" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m4.4 7.2 1.8 1.8 3.5-3.9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>2 mails taken into Care for Mum (Helga) after her fall · 1 new task</span></div>
+      </div>
+      <div class="o ring" style="--x:590;--y:893;--w:2240;--h:290;--rr:26;--d:46.26s"></div>
+    </div></div>
+  </div>
+  <p class="where" style="animation: fade .4s 17.3s both">Mac · in the morning · Auto on</p>
+</div>
+
+<!-- C · 24.7–39.3 s: "Before anything went to the AI, names and numbers were swapped … Dr. Brandt became Person A, and Helga became Person B." -->
+<div class="scene night" style="animation: wipe .5s var(--out) 24.7s both, fade .35s 38.96s both reverse">
+  <p class="small" style="top: 330px; animation: fade .4s 29.9s both">ON YOUR MAC</p>
+  <p class="line" style="top: 400px; animation: rise .5s var(--out) 26.9s both"><em data-as="Person A" style="--d:32.5s">Dr. Brandt</em> has the bath seat prescription for <em data-as="Person B" style="--d:34.75s">Helga</em>.</p>
+  <p class="small" style="top: 550px; color: var(--honey); animation: fade .4s 36s both">WHAT THE AI SEES</p>
+</div>
+
+<!-- D · 46–57.4 s: "Every matter has one next step … which mail it came from." -->
+<div class="scene" style="animation: fade .5s 48.16s both, fade .4s 59.56s both reverse">
+  <div class="cam" style="animation: camD 11.4s var(--out) 48.36s both">
+    <div class="mac" style="left: 290px; top: 80px"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
+      <img src="../../assets/img/care-2880.webp" alt="">
+      <div class="o ring" style="--x:592;--y:310;--w:1344;--h:362;--rr:30;--d:49.86s"></div>
+      <div class="o ring" style="--x:592;--y:1196;--w:1344;--h:170;--rr:20;--d:55.46s"></div>
+      <div class="o ring" style="--x:868;--y:1314;--w:274;--h:34;--rr:10;--d:58.06s"></div>
+    </div></div>
+  </div>
+  <p class="where" style="animation: fade .4s 48.46s both">Mac · the matter</p>
+</div>
+
+<!-- E · 57.4–70 s: "Tick off what's done — and the bee is glad." Then "… on your iPhone and your Mac as well." -->
+<div class="scene" style="animation: fade .4s 59.66s both, fade .4s 72.16s both reverse">
+  <div class="pad" style="left: 120px; top: 110px; animation: rise-far .9s var(--out) 59.86s both"><div class="scr" style="--W:2000;--H:1500;--u:.482">
+    <img src="../../assets/img/ipad-matter.webp" alt="">
+    <div class="o patch" style="--x:1488;--y:1350;--w:500;--h:94"></div>
+    <div class="o field" style="--x:1498;--y:1362;--w:477;--h:70;--fs:26"><span class="plus">+</span><span>Ask about this matter</span><svg class="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span class="send"><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg><svg class="glad" data-at="64.06 65.36" viewBox="-500 -500 5201 3509"></svg></span></div>
+    <div class="o tap" style="--x:507;--y:884;--r:46;--d:63.46s"></div>
+    <div class="o check" style="--x:494;--y:871;--w:27;--h:27;--d:63.86s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="o dim" style="--x:540;--y:855;--w:420;--h:60;--d:63.96s"></div>
+    <div class="o strike" style="--x:543;--y:880;--w:330;--d:63.96s"></div>
+    <div class="o tap" style="--x:507;--y:1154;--r:46;--d:64.76s"></div>
+    <div class="o check" style="--x:494;--y:1141;--w:27;--h:27;--d:65.16s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="o dim" style="--x:540;--y:1130;--w:420;--h:56;--d:65.26s"></div>
+    <div class="o strike" style="--x:543;--y:1150;--w:329;--d:65.26s"></div>
+  </div></div>
+  <div class="loupe" style="left: 925px; top: 596px; animation: pop .5s var(--spring) 62.66s both, fade .3s 67.06s both reverse"><span class="send"><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg><svg class="glad" data-at="64.06 65.36" viewBox="-500 -500 5201 3509"></svg></span></div>
+  <div class="phone" style="left: 1330px; top: 120px; animation: slide .8s var(--spring) 60.36s both"><div class="scr" style="--W:804;--H:1748;--u:.4209">
+    <img src="../../assets/img/iphone-care.webp" alt="">
+    <div class="o check" style="--x:64;--y:1631;--w:35;--h:35;--d:69.61s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="o dim" style="--x:120;--y:1610;--w:520;--h:70;--d:69.71s"></div>
+    <div class="o strike" style="--x:133;--y:1643;--w:452;--d:69.71s"></div>
+    <div class="o ring" style="--x:30;--y:1598;--w:744;--h:150;--rr:26;--d:69.66s"></div>
+  </div></div>
+  <div class="abs fly" style="left: 369px; top: 541px"></div>
+  <p class="where" style="animation: fade .4s 59.96s both">Afternoon · at Mum’s</p>
+</div>
+
+<!-- P · 72.2–89.4 s: "There's paper, too. A letter from Mum's health insurer: her own share of the hospital stay.
+     Scan it with your iPhone. Causabee reads it, files the letter in Mum's matter, and turns it into a task …"
+     The document camera finds the page; the scan is read on the iPhone and, with Auto on, waits only for Take in. -->
+<div class="scene table" style="animation: fade .4s 72.2s both, fade .4s 89s both reverse">
+  <div class="letter" style="left: 210px; top: 100px; animation: rise-far .9s var(--out) 72.6s both"></div>
+  <div class="phone" style="left: 1230px; top: 110px; animation: slide .8s var(--spring) 79.2s both"><div class="scr" style="--W:804;--H:1748;--u:.48">
+    <div class="layer cam" style="animation: fade .3s 81.3s both reverse">
+      <p class="o camtop" style="--x:0;--y:40;--w:804;--h:60">09:41</p>
+      <div class="o" style="--x:96;--y:300;--w:612;--h:866; rotate: -3deg"><div class="letter mini"></div>
+        <div class="found" style="animation: fade .35s 79.9s both"></div></div>
+      <p class="o camlabel" style="--x:40;--y:1560;--w:200;--h:60">Cancel</p>
+      <div class="o shutter" style="--x:337;--y:1520;--w:130;--h:130"></div>
+      <div class="o tap" style="--x:402;--y:1585;--r:60;--d:80.55s"></div>
+      <div class="layer flash" style="animation: flash .45s 80.95s both"></div>
+    </div>
+    <div class="layer sheetv" style="animation: sheet .5s var(--out) 81.3s both">
+      <div class="o grab" style="--x:362;--y:30;--w:80;--h:10"></div>
+      <p class="o sheethead" style="--x:0;--y:70;--w:804;--h:50;--fs:28">Care for Mum (Helga) after her fall</p>
+      <div class="o working" style="--x:60;--y:180;--w:700;--h:60;--fs:30; animation: fade .3s 81.45s both, fade .25s 82.4s both reverse"><svg class="bee" viewBox="-80 -300 4361 2900"></svg>Reading the letter on this iPhone …</div>
+      <div class="o offercard" style="--x:40;--y:160;--w:724;--h:800;--fs:32; animation: rise .4s var(--out) 82.45s both, fade .25s 87s both reverse">
+        <b>1 document read</b>
+        <div class="offer"><i><svg viewBox="0 0 14 14" width="70%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i><div>
+          <span>Your share of the hospital stay</span>
+          <span class="to">Healthbridge Care Fund · letter of Oct 8</span>
+          <span class="to hl" style="animation: hilite 1.6s ease-out 82.95s both"><span>→ Care for Mum (Helga) after her fall</span><em>Change</em></span>
+          <span class="item"><svg viewBox="0 0 24 24" width="1.1em" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>Hospital stay co-payment.pdf</span>
+          <span class="item hl" style="animation: hilite 1.6s ease-out 84.65s both"><b><svg viewBox="0 0 14 14" width="80%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b>Pay Mum’s hospital co-payment, €140 · by Oct 30</span>
+        </div></div>
+        <small>Read on this iPhone for $0.004. Nothing is in a matter yet: tick what you want of it. The rest is put aside.</small>
+        <span class="takein">Take in</span>
+      </div>
+      <div class="o tap" style="--x:620;--y:888;--r:50;--d:86.55s"></div>
+      <div class="o taken" style="--x:40;--y:160;--w:724;--h:230;--fs:30; animation: rise .4s var(--out) 87.05s both">
+        <i><svg viewBox="0 0 14 14" width="62%"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        <div><span>Taken into Care for Mum (Helga) after her fall · 1 new task</span><small>Hospital stay co-payment.pdf is in its files</small></div>
+      </div>
+    </div>
+  </div></div>
+  <p class="where" style="animation: fade .4s 72.4s both">Afternoon · at Mum’s · a letter</p>
+</div>
+
+<!-- F0 · 70–78.4 s: "On the way home, pull down on your iPhone. The bee flies in, fetches your mail, and sorts each one
+     into its matter." The pull as PullsForMail and BeeLoader draw it; the page is cut from the screenshot so the
+     new card can open between its parts. The whole iPhone stays in sight. -->
+<div class="scene" style="animation: fade .4s 89.17s both, fade .4s 97.47s both reverse">
+  <div class="phone" style="left: 756px; top: 110px"><div class="scr" id="pullscr" style="--W:804;--H:1748;--u:.48">
+    <div class="layer" id="page">
+      <div class="o cut" style="--x:0;--y:185;--w:804;--h:231"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: calc(-185 * var(--u) * 1px)"></div>
+      <div class="o cut" id="cardcut" style="--x:0;--y:416;--w:804;--h:620; opacity: 0"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: calc(-416 * var(--u) * 1px)"></div>
+      <div class="o fbox" id="fbox" style="--x:32;--y:416;--w:740;--h:110;--fs:30; opacity: 0"><svg class="drawn" id="boxbee" viewBox="-450 -300 5101 2900"></svg><span id="fboxtext">Fetching mail …</span></div>
+      <div class="o cut" id="restcut" style="--x:0;--y:1036;--w:804;--h:712"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: calc(-1036 * var(--u) * 1px)"></div>
+      <div class="o morerows" id="morerows" style="--x:32;--y:1686;--w:740;--h:700;--fs:34">
+        <div><i><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0v4.9l-8 5v2l8-2.5v5.4l-2 1.5v1.6l3.5-1 3.5 1v-1.6l-2-1.5V13z"/></svg></i><span>Lisbon, 17–24 October (family trip)<small>8 open · next Oct 18 · <em>1 overdue</em></small></span></div>
+        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 11 12 4l8 7v9H4z"/><path d="M10 20v-5h4v5"/></svg></i><span>Buying the flat at Linden Street 8<small>6 open · next Oct 14</small></span></div>
+        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 15l2-6h12l2 6v4H4z"/><circle cx="8" cy="16" r="1.3"/><circle cx="16" cy="16" r="1.3"/></svg></i><span>Parking-lot accident, 14 September<small>5 open · next Oct 14</small></span></div>
+        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/></svg></i><span>Science fair: rainwater filter<small>8 open · next Oct 14</small></span></div>
+        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 12h18v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 12V6a2 2 0 0 1 4 0"/></svg></i><span>Bathroom renovation<small>6 open · next Oct 15</small></span></div>
+        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6"/></svg></i><span>Tax return 2025<small>7 open · next Oct 15</small></span></div>
+      </div>
+    </div>
+    <div class="o cut" style="--x:0;--y:0;--w:804;--h:185; background: #fff"><img src="../../assets/img/iphone-overview.webp" alt="" style="top: 0"></div>
+    <svg class="o drawn" id="pullbee" viewBox="-450 -300 5101 2900" style="--x:0;--y:0;--w:105;--h:60; opacity: 0"></svg>
+    <div class="o finger" id="finger" style="--x:0;--y:0;--w:90;--h:90; opacity: 0"></div>
+  </div></div>
+  <p class="where" style="animation: fade .4s 89.27s both">iPhone · on the way home</p>
+</div>
+
+<!-- F · 78.4–89.4 s: "Then just ask … The answer comes with its sources. And a good suggestion becomes a task, with one tap." -->
+<div class="scene" style="animation: fade .4s 97.57s both, fade .4s 108.57s both reverse">
+  <div class="phone" style="left: 756px; top: 110px"><div class="scr" style="--W:804;--H:1748;--u:.48">
+    <img src="../../assets/img/iphone-care.webp" alt="">
+    <div class="o check" style="--x:64;--y:1631;--w:35;--h:35;--d:0s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="o dim" style="--x:120;--y:1610;--w:520;--h:70;--d:0s"></div>
+    <div class="o strike" style="--x:133;--y:1643;--w:452;--d:0s"></div>
+    <div class="o tap" style="--x:710;--y:1600;--r:60;--d:98.17s"></div>
+    <div class="layer" style="animation: sheet .6s var(--out) 98.67s both">
+      <img src="../../assets/img/iphone-assistant.webp" alt="">
+      <div class="o patch" style="--x:250;--y:340;--w:540;--h:150; animation: fade .3s 99.42s both reverse"></div>
+      <div class="o patch" style="--x:10;--y:495;--w:784;--h:138; animation: fade .35s 102.67s both reverse"></div>
+      <div class="o patch" style="--x:10;--y:633;--w:784;--h:140; animation: fade .35s 103.22s both reverse"></div>
+      <div class="o patch" style="--x:10;--y:773;--w:784;--h:135; animation: fade .35s 103.77s both reverse"></div>
+      <div class="o patch" style="--x:10;--y:908;--w:784;--h:530; animation: fade .35s 104.87s both reverse"></div>
+      <div class="o tap" style="--x:401;--y:1337;--r:50;--d:106.87s"></div>
+      <div class="o patch" style="--x:15;--y:915;--w:775;--h:520; animation: fade .2s 107.37s both"></div>
+      <div class="o taken" style="--x:31;--y:925;--w:742;--h:200;--fs:34; animation: rise .4s var(--out) 107.42s both">
+        <i><svg viewBox="0 0 14 14" width="62%"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        <div><small>Task added · Waiting for · by Oct 16</small><span>Ask a neighbour to be at Mum’s flat by 09:45 on 6 October</span></div>
+      </div>
+      <div class="o ring" style="--x:31;--y:925;--w:742;--h:200;--rr:26;--d:107.72s"></div>
+    </div>
+  </div></div>
+  <p class="where" style="animation: fade .4s 97.77s both">iPhone · on the way home</p>
+</div>
+
+<!-- G · 89.5–97.4 s: "In the evening, back at the Mac, it's all there …" -->
+<div class="scene" style="animation: fade .5s 108.67s both, fade .4s 116.47s both reverse">
+  <div class="cam" style="animation: camG 2s var(--out) 109.67s both">
+    <div class="mac" style="left: 290px; top: 80px"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
+      <img src="../../assets/img/care-2880.webp" alt="">
+      <div class="o check" style="--x:622;--y:1270;--w:34;--h:34;--d:0s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="o dim" style="--x:670;--y:1262;--w:470;--h:46;--d:0s"></div>
+      <div class="o strike" style="--x:683;--y:1285;--w:435;--d:0s"></div>
+      <div class="o check" style="--x:622;--y:1625;--w:34;--h:34;--d:0s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="o dim" style="--x:670;--y:1618;--w:470;--h:46;--d:0s"></div>
+      <div class="o strike" style="--x:683;--y:1641;--w:432;--d:0s"></div>
+      <div class="o ring" style="--x:592;--y:1244;--w:1344;--h:122;--rr:20;--d:112.67s"></div>
+      <div class="o ring" style="--x:592;--y:1600;--w:1344;--h:110;--rr:20;--d:113.27s"></div>
+      <div class="o patch" style="--x:2010;--y:575;--w:850;--h:440"></div>
+      <div class="o taken" style="--x:2020;--y:585;--w:825;--h:150;--fs:28">
+        <i><svg viewBox="0 0 14 14" width="62%"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
+        <div><small>Task added · Waiting for · by Oct 17</small><span>Ask a neighbour to be at Mum’s flat by 09:45 on 6 October</span></div>
+      </div>
+      <div class="o ring" style="--x:2020;--y:585;--w:825;--h:150;--rr:26;--d:114.57s"></div>
+    </div></div>
+  </div>
+  <p class="where" style="animation: fade .4s 108.87s both">Mac · in the evening</p>
+</div>
+
+<!-- H · 116.4–123.1 s: "Your mail stays in your mail account. Your documents and your matters go with you, through your own iCloud." -->
+<div class="scene" style="animation: fade .4s 116.3s both">
+  <div class="mac" style="left: 470px; top: 160px; width: 980px; animation: rise-far 1s var(--out) 116.5s both"><div class="scr" style="--W:2880;--H:1800;--u:.3403"><img src="../../assets/img/care-2880.webp" alt=""></div></div>
+  <div class="pad" style="left: 190px; top: 380px; animation: rise-far 1s var(--out) 119s both"><div class="scr" style="--W:2000;--H:1500;--u:.29"><img src="../../assets/img/ipad-matter.webp" alt=""></div></div>
+  <div class="phone" style="left: 1450px; top: 310px; animation: slide .9s var(--spring) 119.3s both"><div class="scr" style="--W:804;--H:1748;--u:.31"><img src="../../assets/img/iphone-care.webp" alt=""></div></div>
+</div>
+
+<!-- I · 123.1–129.6 s: "Causabee. Be organized. Be private." -->
+<div class="scene" style="background: #fff; animation: iris .7s var(--out) 123.11s both">
+  <svg class="icon" style="left: 820px; top: 150px; width: 280px; height: 280px; --t0: 123.61s; animation: pop .6s var(--spring) 123.31s both" viewBox="0 0 1024 1024"></svg>
+  <h1 class="title" style="top: 480px; font-size: 130px; animation: rise .6s var(--out) 123.56s both">Causabee</h1>
+  <h1 class="title" style="top: 650px; font-size: 60px; font-weight: 500; animation: rise .6s var(--out) 124.71s both">Be organized. Be private.</h1>
+  <p class="abs" style="top: 790px; left: 0; right: 0; text-align: center; font: 500 32px var(--sans); color: var(--grey); margin: 0; animation: rise .6s var(--out) 126.31s both">For Mac · iPad and iPhone in beta · causabee.app</p>
+</div>
+
+</div>
+<script>
+// The bee, once: the website icon's wings and six bars.
+const WL = 'M840.879 830.165C919.099 742.266 1064.5 797.594 1064.5 915.257V1953.13C1064.83 1960.84 1065 1968.59 1065 1976.37C1065 1984.16 1064.83 1991.9 1064.5 1999.61V2052.87L1059.83 2050.87C1023.6 2309.69 801.309 2508.87 532.5 2508.87C238.408 2508.87 0 2270.46 0 1976.37C0 1829.33 59.598 1696.21 155.956 1599.85L840.879 830.165Z';
+const WR = 'M3360.12 830.165C3281.9 742.267 3136.5 797.594 3136.5 915.257V1953.13C3136.17 1960.84 3136 1968.59 3136 1976.37C3136 1984.16 3136.17 1991.9 3136.5 1999.61V2052.87L3141.17 2050.87C3177.4 2309.69 3399.69 2508.87 3668.5 2508.87C3962.59 2508.87 4201 2270.46 4201 1976.37C4201 1829.33 4141.4 1696.21 4045.04 1599.85L3360.12 830.165Z';
+const BARS = [[1525, 0, 1151], [1241, 436, 1719], [1241, 872, 1719], [1436, 1308, 1329], [1729.5, 1744, 742], [1925.5, 2180, 350]]
+  .map(([x, y, w], i) => `<rect class="bar" style="--i:${i}" x="${x}" y="${y}" width="${w}" height="264" rx="112"/>`).join('');
+const BEE = `<path class="wl" d="${WL}"/><path class="wr" d="${WR}"/>${BARS}`;
+for (const s of document.querySelectorAll('svg.bee')) s.innerHTML = `<g fill-opacity=".55">${BEE}</g>`;
+for (const s of document.querySelectorAll('svg.icon')) s.innerHTML = `<defs><linearGradient id="h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE14D"/><stop offset="1" stop-color="#FFC700"/></linearGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#h)"/><svg x="112" y="243.1" width="800" height="477.8" viewBox="0 0 4201 2509" overflow="visible" fill="#22211b">${BEE}</svg>`;
+for (const s of document.querySelectorAll('svg.bee .wl, svg.bee .wr')) s.setAttribute('fill-opacity', '.55');
+
+const LETTER = `<div class="logo"><i>H</i>Healthbridge Care Fund</div>
+  <div class="from">Healthbridge Care Fund · Postfach 1120 · 10115 Berlin</div>
+  <div class="to">Mrs Helga Weber<br>Lindenstraße 12<br>10437 Berlin</div>
+  <div class="date">8 October 2026</div>
+  <h4>Your share of the hospital stay</h4>
+  <p>Dear Mrs Weber,</p>
+  <p>for your stay at St. Anna Hospital from 21 September to 4 October 2026, the law asks for your own share: €10 for each day, for 14 days.</p>
+  <div class="sum"><span>Your share: €140.00</span></div>
+  <p>Please transfer it by 30 October 2026, quoting your member number. If paying it is hard for you, we are happy to help.</p>
+  <p>Kind regards,<br>Your Healthbridge team</p>
+  <div class="foot"><u></u><u style="width:70%"></u><u style="width:85%"></u></div>`;
+for (const l of document.querySelectorAll('.letter')) l.innerHTML = LETTER;
+
+// The pieces fly to the middle of the stage when they gather.
+for (const p of document.querySelectorAll('.piece')) {
+  p.style.setProperty('--gx', 960 - parseFloat(p.style.left) + 'px');
+  p.style.setProperty('--gy', 570 - parseFloat(p.style.top) + 'px');
+}
+
+const fit = () => { const s = Math.min(innerWidth / 1920, innerHeight / 1080); stage.style.transform = `scale(${s})`; };
+if (location.search.includes('render')) document.documentElement.classList.add('render');
+else { fit(); addEventListener('resize', fit); setInterval(() => location.reload(), 131000); } // plays without sound; walkthrough.mp4 has it
+// The glad bee, as BeeJoyView draws it (Sources/Causabee/BeeLoader.swift): up out of its yellow in
+// the first 22 % of 1.05 s, held with a bob and a rock (three beats), down again after 80 %; its
+// wings beat 4.5 times a second, out to 25 degrees, by how far it is up. The send button's arrow
+// gives way to it for that second.
+const ease = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+function gladFrames(L = 1.05, beats = 3, grow = .34, rock = 6, n = 64) {
+  const body = [], wl = [], wr = [];
+  for (let k = 0; k <= n; k++) {
+    const t = k / n, up = .22, down = .8;
+    const lift = t < up ? ease(t / up) : t < down ? 1 : 1 - ease((t - down) / (1 - down));
+    const held = t < up || t > down ? 0 : (t - up) / (down - up);
+    const bob = Math.sin(held * Math.PI * 2 * beats) * .05 * lift;
+    const rot = Math.sin(held * Math.PI * beats) * rock * lift;
+    const sc = 1 + (grow + bob) * lift;
+    const flap = .5 - .5 * Math.cos(2 * Math.PI * t * L * 4.5);
+    const ang = (-5 + 30 * flap) * lift;
+    body.push({ offset: t, opacity: 1, transform: `rotate(${rot}deg) scale(${sc})`, filter: `drop-shadow(0 ${(1 + 5 * lift) * 2}px ${(1 + 5 * lift) * 2}px rgba(0,0,0,${.16 * lift}))` });
+    wl.push({ offset: t, transform: `rotate(${ang}deg)` });
+    wr.push({ offset: t, transform: `rotate(${-ang}deg)` });
+  }
+  return { body, wl, wr, L };
+}
+const G = gladFrames();
+for (const s of document.querySelectorAll('svg.glad')) {
+  s.innerHTML = BEE.replace(/ class="bar"[^>]*>/g, m => m.replace(/class="bar"/, 'class="still"'));
+  const arrow = s.parentElement.querySelector('.arrow');
+  for (const at of s.dataset.at.split(' ').map(Number)) {
+    const opt = { duration: G.L * 1000, delay: at * 1000, fill: 'none' };
+    s.animate(G.body, opt);
+    for (const [cls, f] of [['wl', G.wl], ['wr', G.wr]]) {
+      const w = s.querySelector('.' + cls);
+      w.style.transformBox = 'view-box'; w.style.transformOrigin = cls === 'wl' ? '1010px 880px' : '3191px 880px';
+      w.animate(f, opt);
+    }
+    arrow.animate([{ opacity: 1, scale: 1 }, { opacity: 0, scale: .7, offset: .2 }, { opacity: 0, scale: .7, offset: .8 }, { opacity: 1, scale: 1 }], opt);
+  }
+}
+
+// Painters: what is drawn from the clock itself, frame by frame — the bee as BeeLoader draws it.
+const painters = [];
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const easeOut3 = x => 1 - Math.pow(1 - x, 3), smooth = x => x * x * (3 - 2 * x);
+const frac = x => x - Math.floor(x), tri = x => 1 - Math.abs(2 * frac(x) - 1);
+const BEAT = 2.4;
+function sorting(ph) {
+  if (ph < .18) { const a = easeOut3(ph / .18); return [.14 + .86 * a, -160 * (1 - a)]; }
+  if (ph < .62) return [1, 0];
+  if (ph < .85) return [1 - .86 * smooth((ph - .62) / .23), 0];
+  return [.14, 0];
+}
+function beeParts(svg) {
+  if (!svg._parts) {
+    svg.innerHTML = `<g class="hov"><path class="wl" d="${WL}"/><path class="wr" d="${WR}"/>${BARS}</g>`;
+    svg._parts = { g: svg.querySelector('.hov'), wl: svg.querySelector('.wl'), wr: svg.querySelector('.wr'), bars: [...svg.querySelectorAll('rect')] };
+  }
+  return svg._parts;
+}
+const BAR_Y = [0, 436, 872, 1308, 1744, 2180];
+// pull: null for the bee at work (BeeLoader.draw); 0…1 for the bee over a pulled page (drawPulled).
+function drawBee(svg, time, pull = null) {
+  const P = beeParts(svg);
+  P.g.setAttribute('transform', `translate(0 ${-90 * (1 - Math.cos(2 * Math.PI * time / BEAT)) / 2})`);
+  const wings = pull === null ? 1 : easeOut3(clamp((pull - .35) / .5));
+  const angle = -4 + 20 * smooth(tri(time / (BEAT / 2)));
+  P.wl.setAttribute('transform', `rotate(${angle} 1010 880)`); P.wr.setAttribute('transform', `rotate(${-angle} 3191 880)`);
+  P.wl.setAttribute('fill-opacity', .55 * wings); P.wr.setAttribute('fill-opacity', .55 * wings);
+  P.bars.forEach((r, i) => {
+    const mine = pull === null ? 1 : easeOut3(clamp(pull / .7 * 6 - i));
+    const [op, drop] = pull === null || pull >= .7 ? sorting(frac((time - i * .16) / BEAT)) : [1, 0];
+    r.setAttribute('opacity', (.14 + .86 * mine) * op);
+    r.setAttribute('y', BAR_Y[i] - 160 * (1 - mine) + drop);
+  });
+}
+{ // F0: the pull. Times in seconds of the film; lengths in the screenshot's pixels (2 to a point).
+  const scr = document.getElementById('pullscr'), u = .48;
+  const page = document.getElementById('page'), rest = document.getElementById('restcut'), card = document.getElementById('cardcut');
+  const more = document.getElementById('morerows'), box = document.getElementById('fbox'), boxText = document.getElementById('fboxtext'), boxBee = document.getElementById('boxbee');
+  const bee = document.getElementById('pullbee'), finger = document.getElementById('finger');
+  const P0 = 90.67, R = 92.52, SORT = 94.97, DONE = 96.27, TOP = 185, MAX = 120;
+  const pulledAt = t => t < P0 ? 0 : t < R ? MAX * smooth((t - P0) / (R - P0)) : MAX * (1 - easeOut3(clamp((t - R) / .35)));
+  const px = n => `${n * u}px`;
+  painters.push(t => {
+    const pulled = pulledAt(t);
+    page.style.transform = `translateY(${px(pulled * 2)})`;
+    rest.style.transform = `translateY(${px(t < R ? -620 : t < DONE ? -620 + 134 * easeOut3(clamp((t - R) / .3)) : -486 + 486 * easeOut3(clamp((t - DONE) / .45)))})`;
+    more.style.transform = rest.style.transform;
+    box.style.opacity = t < R ? 0 : t < DONE ? clamp((t - R) / .2) : 1 - clamp((t - DONE) / .25);
+    card.style.opacity = t < DONE ? 0 : clamp((t - DONE - .1) / .35);
+    boxText.textContent = t < SORT ? 'Fetching mail …' : 'Sorting in 3 mails …';
+    // The bee over the page: with the pull, whole from 90 points on; let go, it flies down to the
+    // mail's place, half as big, and goes as the one there comes.
+    const whole = t >= P0 + (R - P0) * .62;
+    const pull = whole ? 1 : pulled / 90;
+    const above = Math.max(10, pulled / 2 - 15);
+    let x = 402, y = TOP + (above + 15) * 2, s = 1;
+    const fly = clamp((t - R - .04) / .34);
+    if (t >= R) {
+      const b = boxBee.getBoundingClientRect(), r = scr.getBoundingClientRect(), k = 804 / r.width;
+      const tx = (b.left + b.width / 2 - r.left) * k, ty = (b.top + b.height / 2 - r.top) * k;
+      const e = smooth(fly); x += (tx - x) * e; y += (ty - y) * e; s = 1 - .5 * e;
+    }
+    const arriving = clamp((t - R - .26) / .12);
+    bee.style.opacity = t < P0 || t > R + .5 ? 0 : (t >= R ? 1 - arriving : whole ? 1 : clamp(pulled / 40));
+    bee.style.left = px(x - 52.5); bee.style.top = px(y - 30); bee.style.transform = `scale(${s})`;
+    if (bee.style.opacity > 0) drawBee(bee, t, pull);
+    boxBee.style.opacity = t < R + .26 ? 0 : 1;
+    drawBee(boxBee, t);
+    finger.style.opacity = t < P0 - .25 || t > R + .2 ? 0 : t < P0 ? (t - P0 + .25) / .25 : t > R ? 1 - (t - R) / .2 : 1;
+    finger.style.left = px(357); finger.style.top = px(600 + pulled * 2);
+  });
+}
+const tick0 = performance.now();
+if (!location.search.includes('render')) (function loop() { const t = (performance.now() - tick0) / 1000; painters.forEach(p => p(t)); requestAnimationFrame(loop); })();
+
+window.seek = ms => { for (const a of document.getAnimations()) a.currentTime = ms; painters.forEach(p => p(ms / 1000)); };
+</script>
+</body></html>
