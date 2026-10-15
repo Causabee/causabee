@@ -12,7 +12,7 @@ what comes next, who does what, and by when.</p>
 <a href="https://causabee.app/privacy.html">Privacy</a>
 </p>
 
-![The Causabee overview: nine matters, each with its next step and what is overdue](site/assets/img/overview-1800.webp)
+![The overview on the Mac: the next seven days across all matters, today’s “2 overdue”, Care for Mum after her fall pinned on top, and every other matter in one line](site/assets/img/overview-1440.webp)
 
 ## What it does
 
