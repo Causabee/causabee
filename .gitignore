@@ -56,3 +56,7 @@ scripts/film/web/film.html
 scripts/film/web/film-web*.html
 scripts/film/web/test.html
 scripts/film/web/assets/
+
+# The spike's runs of late September: logs, mappings, stores and reviews made from real mail,
+# moved out of the root. The app keeps its own in ~/Library/Application Support/Causabee.
+.spike/
