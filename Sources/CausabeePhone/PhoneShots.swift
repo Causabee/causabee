@@ -186,6 +186,25 @@ final class PhoneShots {
             try context.save()
             if !DemoData.isRequested { PhoneNames.publish(in: context) }
             set(id, .taken(taken?.name ?? judgement.matter ?? "", taken?.persistentModelID))
+            // Kept in the thread, as the Mac keeps it: every device shows what became of it, also
+            // after a restart. The card here gives way to it.
+            if !DemoData.isRequested {
+                var turn = Navigation.Turn(question: "", scope: "", inHand: nil, seen: "", refs: [:], matter: taken?.persistentModelID)
+                turn.id = id
+                turn.date = shot.date
+                turn.state = .failed("")
+                turn.shot = .init(file: shot.file, taken: taken?.name ?? judgement.matter ?? "", into: taken?.persistentModelID)
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = .sortedKeys
+                if let payload = try? encoder.encode(turn) {
+                    let record = ThreadTurn(id: id, date: shot.date, payload: payload)
+                    context.insert(record)
+                    // In the thread of the matter it went into: there it is found again.
+                    record.matter = taken
+                    try? context.save()
+                    remove(id)
+                }
+            }
         } catch {
             set(id, .failed(plainWords(error)))
         }
