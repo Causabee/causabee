@@ -47,7 +47,7 @@ struct SettingsSheet: View {
                               : "New mail and files wait until you tap “Sort in”. What is taken in, and into which matter, you decide after. Next steps and summaries are written when you tap for them.")
                         .font(.footnote).foregroundStyle(.secondary)
                     if auto { Text(AutoUpdate.spentWords ?? "Auto has spent nothing today on next steps and summaries").font(.footnote).foregroundStyle(.secondary) }
-                    Text(String(format: "About %.2f cents per mail. A mail is sorted only once — here or on your Mac: what a model sorted in stays that way. Screenshots and files are sorted in on the Mac.",
+                    Text(String(format: "About %.2f cents per mail. A mail is sorted only once — here or on your Mac: what a model sorted in stays that way.",
                                 (Claude.Model.choices.first { $0.id == mail } ?? .opus).perMail * 100))
                         .font(.footnote).foregroundStyle(.secondary)
                 } header: { Text("New mail") }

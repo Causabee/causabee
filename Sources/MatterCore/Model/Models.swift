@@ -357,6 +357,17 @@ public final class Profile {
     /// take it over. Nil until chosen; then each device's own choice, or Opus, stands.
     public var mailModel: String?
     public var assistantModel: String?
+    /// The owner's other choices, the same on every device: nil until chosen on one of them.
+    public var autoOn: Bool?
+    public var strictTasks: Bool?
+    public var beeGlad: Bool?
+    /// The calendar and the list new dates and tasks go into, by name: the same calendar has
+    /// another identifier on each device.
+    public var calendarTitle: String?
+    public var reminderListTitle: String?
+    /// What Auto spent, by device and by day — `[device: [day: dollars]]` as JSON — so each device
+    /// says what all of them spent today.
+    public var autoSpent: Data?
 
     public init(names: [String]) {
         self.names = names

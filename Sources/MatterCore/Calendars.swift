@@ -133,6 +133,16 @@ public final class Calendars {
 
     // MARK: Where new ones go
 
+    /// A calendar's or list's name, by its identifier on this device.
+    public func title(of id: String) -> String? {
+        id.isEmpty ? nil : store.calendar(withIdentifier: id)?.title
+    }
+
+    /// The identifier on this device of the calendar or list with that name.
+    public func identifier(titled title: String, events: Bool) -> String? {
+        store.calendars(for: events ? .event : .reminder).first { $0.title == title && $0.allowsContentModifications }?.calendarIdentifier
+    }
+
     public static let calendarKey = "calendar.events", listKey = "calendar.reminders"
 
     /// The calendar the owner chose, or "Causabee", made the first time it is needed — never one
