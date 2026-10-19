@@ -820,6 +820,10 @@ struct RootView: View {
                 try? await Task.sleep(for: .seconds(600))
             }
         }
+        // Back to the front, as on the iPhone: a look whether new mail came — at most every two minutes.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            mailCheck.checkQuietly(store: navigation.store, context: context, atMostEvery: 120)
+        }
         .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)) { _ in
             Task {
                 // The network needs a moment after sleep.

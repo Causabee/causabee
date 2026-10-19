@@ -456,6 +456,13 @@ struct PhoneMailCheckView: View {
         // Back to the front: a look whether new mail came, by itself — iOS lets no app check
         // reliably while it is away.
         .onChange(of: phase) { _, now in if now == .active { check.checkQuietly(context: context) } }
+        // And every ten minutes while it is open and in front, as on the Mac.
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(600))
+                if phase == .active { check.checkQuietly(context: context) }
+            }
+        }
     }
 
     /// Found by itself: a small capsule in the middle, opened when the owner wants.
