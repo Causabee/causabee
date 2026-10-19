@@ -14,12 +14,24 @@ struct SettingsSheet: View {
     @AppStorage(ModelChoice.strictKey) private var strict = true
     @AppStorage(AutoMode.key) private var auto = false
     @AppStorage(BeeJoy.key) private var celebrates = true
+    @Query private var profiles: [Profile]
+    @Environment(\.modelContext) private var context
+    /// The owner's names, one per line: read from the synced profile when the sheet opens.
+    @State private var ownNames = ""
     @Query(sort: \NameList.updatedAt, order: .reverse) private var lists: [NameList]
     @State private var sync = PhoneCloudStatus.shared
     @State private var accounts = Keychain.accounts().filter { !$0.usesGoogle }
     @State private var addsAccount = false
     /// Counts up when a key may have arrived, so the pickers say "— no key" again or not.
     @State private var tick = 0
+
+    private func saveOwnNames() {
+        guard !store.isDemo else { return }
+        let names = ownNames.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        if let profile = profiles.first { guard profile.names != names else { return }; profile.names = names }
+        else if !names.isEmpty { context.insert(Profile(names: names)) }
+        try? context.save()
+    }
 
     var body: some View {
         NavigationStack {
@@ -62,6 +74,16 @@ struct SettingsSheet: View {
                     Text("Answers, summaries and the next step. Under each answer you see which model wrote it.")
                         .font(.footnote).foregroundStyle(.secondary)
                 } header: { Text("Questions") }
+
+                Section {
+                    // As in the Mac's setup: one per line, saved as typed, the same on every device.
+                    TextField("Your name", text: $ownNames, axis: .vertical)
+                        .lineLimit(2...6)
+                        .textInputAutocapitalization(.never)
+                        .onChange(of: ownNames) { saveOwnNames() }
+                } header: { Text("You") } footer: {
+                    Text("Your name and the email addresses you use, one per line, and a nickname if people write to you by it. Causabee needs them to tell you apart from everyone else: you are never listed as a person in your own matters, and tasks for you are marked “Mine”.")
+                }
 
                 Section {
                     Toggle("The bee is glad when you tick a task", isOn: $celebrates)
@@ -120,6 +142,7 @@ struct SettingsSheet: View {
             .sheet(isPresented: $addsAccount, onDismiss: { accounts = Keychain.accounts().filter { !$0.usesGoogle } }) { MailAccountSheet() }
             // A key or a password saved on a Mac may have arrived meanwhile.
             .onAppear {
+                ownNames = (profiles.first?.names ?? []).joined(separator: "\n")
                 accounts = Keychain.accounts().filter { !$0.usesGoogle }
                 tick += 1
             }
