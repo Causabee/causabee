@@ -96,6 +96,14 @@ final class PhoneStore {
             // The kept words of mails and files, the same on every device.
             KeptTexts.store = url
             KeptTexts.share(besides: url, in: container.mainContext)
+            // Files added on this device before they went into their matter's folder: there now, so every device opens them.
+            if !DemoData.isRequested {
+                let context = container.mainContext
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(8))
+                    MatterFolders.keepOwnFiles(of: (try? context.fetch(FetchDescriptor<MatterCore.Document>())) ?? [])
+                }
+            }
             return container
         })
     }

@@ -115,6 +115,20 @@ public enum MatterFolders {
         return nil
     }
 
+    /// Every file the owner added on this device, into its matter's folder where it is not yet:
+    /// the folder is a file's home on every device, the copy beside the store only this one's.
+    /// Says how many went in.
+    @discardableResult
+    public static func keepOwnFiles(of documents: [Document]) -> Int {
+        guard root != nil else { return 0 }
+        var kept = 0
+        for document in documents where document.isOwnFile && !document.isHidden && document.matter != nil {
+            guard let file = document.source.fileURL, Self.kept(document) == nil else { continue }
+            if keep(file, as: document) != nil { kept += 1 }
+        }
+        return kept
+    }
+
     /// Puts a file brought in on this device into its matter's folder, under the name every
     /// device looks for it by — so the Mac opens what the iPhone photographed, and the other way.
     @discardableResult
