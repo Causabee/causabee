@@ -357,6 +357,17 @@ public final class Profile {
     /// take it over. Nil until chosen; then each device's own choice, or Opus, stands.
     public var mailModel: String?
     public var assistantModel: String?
+    /// The owner's other choices, the same on every device: nil until chosen on one of them.
+    public var autoOn: Bool?
+    public var strictTasks: Bool?
+    public var beeGlad: Bool?
+    /// The calendar and the list new dates and tasks go into, by name: the same calendar has
+    /// another identifier on each device.
+    public var calendarTitle: String?
+    public var reminderListTitle: String?
+    /// What Auto spent, by device and by day — `[device: [day: dollars]]` as JSON — so each device
+    /// says what all of them spent today.
+    public var autoSpent: Data?
 
     public init(names: [String]) {
         self.names = names
@@ -700,11 +711,26 @@ public final class SortedMail {
     }
 }
 
+/// The words of a mail or a scanned file, as kept beside the store on the device that read it —
+/// here for every device: compressed, and end to end encrypted in the owner's iCloud. Each device
+/// keeps its own copy beside its store (`MailText`) and fills it from here.
+@Model
+public final class KeptText {
+    public var messageID: String = ""
+    @Attribute(.allowsCloudEncryption) public var data: Data = Data()
+    public var savedAt: Date = Date()
+
+    public init(messageID: String, data: Data) {
+        self.messageID = messageID
+        self.data = data
+    }
+}
+
 public enum MatterSchema {
     public static let models: [any PersistentModel.Type] = [
         Matter.self, Entry.self, Todo.self, Appointment.self, Deadline.self, Party.self, Membership.self,
         Decision.self, Rule.self, Profile.self, Document.self, WebLink.self, ThreadTurn.self, NameList.self,
-        SortedMail.self, MatterNote.self, MatterDetail.self,
+        SortedMail.self, MatterNote.self, MatterDetail.self, KeptText.self,
     ]
 
     /// A store on disk, or in memory when `url` is nil.

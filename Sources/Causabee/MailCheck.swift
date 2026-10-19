@@ -75,8 +75,9 @@ final class MailCheck {
     /// Checks by itself — on start, every ten minutes, after sleep — and only says something when
     /// there is new mail: "3 new mails · Review". Reading is free; nothing is sent — unless Auto is
     /// on: then what is new is read by the AI at once, and offered to be taken in.
-    func checkQuietly(store: URL, context: ModelContext) {
-        guard !DemoData.isRequested, IntroShot.current == nil, !checking else { return }
+    func checkQuietly(store: URL, context: ModelContext, atMostEvery gap: TimeInterval = 0) {
+        guard !DemoData.isRequested, IntroShot.current == nil, !checking,
+              gap == 0 || lastChecked.map({ Date().timeIntervalSince($0) > gap }) ?? true else { return }
         // Auto turned on while new mail waited: it is read now.
         // Only what is labelled, or follows a labelled thread: mail found by its sender is offered, never read by Auto.
         if AutoMode.isOn, case .newMail(let look, let door) = state, look.withoutOffered.pending > 0 {
@@ -238,9 +239,11 @@ final class MailCheck {
             // Their important links, found on the Mac, offered in their matters.
             let takenIDs = Set(judgements.map(\.emailID))
             for outcome in look.report.outcomes where takenIDs.contains(outcome.judgement.emailID) { _ = MailLinks.suggest(outcome.email, in: context) }
-            // Their words, kept on this Mac only, so they need not be read from the server again.
+            // Their words, kept so they need not be read from the server again — and shared with the
+            // other devices, end to end encrypted.
             for outcome in look.report.outcomes where outcome.judgement.disguise != nil { MailText.save(outcome.email, besides: door.log) }
             try? context.save()
+            KeptTexts.share(besides: door.log, in: context)
             let matters = Set(judgements.compactMap(\.matter))
             let after = try context.fetch(FetchDescriptor<Matter>())
             let names = after.filter { matter in matters.contains { matter.answers(to: $0) } }.map(\.name)

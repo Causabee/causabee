@@ -194,8 +194,16 @@ final class Navigation {
         /// A line Causabee wrote itself — what came in with "Get new mail" — not a question.
         var note: String?
         var readAs: [String] = []
-        /// A screenshot brought in on the Mac: its file stays there.
-        var hasShot = false
+        /// A file or screenshot brought into the assistant, on any device: what became of it.
+        struct ShotOutcome {
+            var file: URL
+            /// The matter's name it was taken into, and the matter.
+            var taken: String?
+            var into: PersistentIdentifier?
+            var dismissed = false
+        }
+        var shot: ShotOutcome?
+        var hasShot: Bool { shot != nil }
 
         init(question: String, scope: String, inHand: Pinned?, seen: String, refs: [String: FactRef], matter: PersistentIdentifier?) {
             self.question = question
@@ -261,7 +269,8 @@ final class Navigation {
 
 extension Navigation.Turn: Codable {
     enum CodingKeys: String, CodingKey {
-        case id, date, question, scope, inHand, seen, refs, keys, matter, answer, failed, applied, readAs, dismissedCards, note, shotFile
+        case id, date, question, scope, inHand, seen, refs, keys, matter, answer, failed, applied, readAs, dismissedCards, note
+        case shotCopied, shotTaken, shotTakenInto, shotDismissed, shotFile
     }
 
     init(from decoder: any Decoder) throws {
@@ -278,7 +287,11 @@ extension Navigation.Turn: Codable {
         readAs = try c.decodeIfPresent([String].self, forKey: .readAs) ?? []
         dismissedCards = try c.decodeIfPresent(Set<Int>.self, forKey: .dismissedCards) ?? []
         note = try c.decodeIfPresent(String.self, forKey: .note)
-        hasShot = c.contains(.shotFile)
+        if let file = try? c.decodeIfPresent(URL.self, forKey: .shotFile) {
+            shot = ShotOutcome(file: file, taken: try? c.decodeIfPresent(String.self, forKey: .shotTaken),
+                               into: (try? c.decodeIfPresent(PersistentIdentifier.self, forKey: .shotTakenInto)) ?? nil,
+                               dismissed: (try? c.decodeIfPresent(Bool.self, forKey: .shotDismissed)) == true)
+        }
         if let answer = try? c.decodeIfPresent(AssistantAsk.Answer.self, forKey: .answer) {
             state = .answered(answer)
         } else {
@@ -305,6 +318,14 @@ extension Navigation.Turn: Codable {
         switch state {
         case .answered(let answer): try c.encode(answer, forKey: .answer)
         case .failed(let message): try c.encode(message, forKey: .failed)
+        }
+        // As the Mac writes a file brought in: what became of it.
+        if let shot {
+            try c.encode(shot.file, forKey: .shotFile)
+            try c.encode(false, forKey: .shotCopied)
+            try c.encodeIfPresent(shot.taken, forKey: .shotTaken)
+            try c.encodeIfPresent(shot.into, forKey: .shotTakenInto)
+            if shot.dismissed { try c.encode(true, forKey: .shotDismissed) }
         }
     }
 }

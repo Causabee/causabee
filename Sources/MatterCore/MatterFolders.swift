@@ -3,7 +3,7 @@ import SwiftData
 
 /// A folder per matter — in iCloud Drive's Causabee, or a folder the owner chose — with the matter's files:
 /// what mails had attached, fetched once and read-only, and what the owner dropped in. The mail
-/// texts are not put there: they stay on this Mac. A file the owner hid is left out.
+/// texts are not put there: they are in the store, end to end encrypted. A file the owner hid is left out.
 @MainActor
 public enum MatterFolders {
     /// iCloud Drive as Finder shows it; nil when it is not switched on for this Mac.
@@ -113,6 +113,20 @@ public enum MatterFolders {
             }
         }
         return nil
+    }
+
+    /// Every file the owner added on this device, into its matter's folder where it is not yet:
+    /// the folder is a file's home on every device, the copy beside the store only this one's.
+    /// Says how many went in.
+    @discardableResult
+    public static func keepOwnFiles(of documents: [Document]) -> Int {
+        guard root != nil else { return 0 }
+        var kept = 0
+        for document in documents where document.isOwnFile && !document.isHidden && document.matter != nil {
+            guard let file = document.source.fileURL, Self.kept(document) == nil else { continue }
+            if keep(file, as: document) != nil { kept += 1 }
+        }
+        return kept
     }
 
     /// Puts a file brought in on this device into its matter's folder, under the name every

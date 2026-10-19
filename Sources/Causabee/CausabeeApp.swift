@@ -99,6 +99,16 @@ struct CausabeeApp: App {
             // goes to the background or quits — by then new mail may have taught it new names.
             MainActor.assumeIsolated { NameListPublisher.start(container.mainContext) }
             MainActor.assumeIsolated { StoredChanges.shared.watch(container.mainContext) }
+            // The kept words of mails and files, the same on every device.
+            MainActor.assumeIsolated { KeptTexts.store = url; KeptTexts.share(besides: url, in: container.mainContext) }
+            // Files added on this device before they went into their matter's folder: there now, so every device opens them.
+            if !DemoData.isRequested {
+                let context = container.mainContext
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(8))
+                    MatterFolders.keepOwnFiles(of: (try? context.fetch(FetchDescriptor<MatterCore.Document>())) ?? [])
+                }
+            }
             return container
         }
         CloudSync.shared.watch()
@@ -817,6 +827,10 @@ struct RootView: View {
                 mailCheck.checkQuietly(store: navigation.store, context: context)
                 try? await Task.sleep(for: .seconds(600))
             }
+        }
+        // Back to the front, as on the iPhone: a look whether new mail came — at most every two minutes.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            mailCheck.checkQuietly(store: navigation.store, context: context, atMostEvery: 120)
         }
         .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)) { _ in
             Task {

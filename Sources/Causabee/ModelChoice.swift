@@ -140,31 +140,81 @@ struct KeyField: View {
     }
 }
 
-/// Keeps the model choice the same on every device. What is chosen here goes into the synced
-/// profile; what was chosen on another device comes from it. A device that never chose — a new
-/// install — takes the profile's and does not overwrite it with Opus.
+/// Keeps the owner's choices the same on every device: the models, Auto, fewer real tasks, the
+/// bee's gladness, and the calendar and list for new entries. What is chosen here goes into the
+/// synced profile; what was chosen on another device comes from it. A device that never chose — a
+/// new install — takes the profile's and does not overwrite it with its own defaults.
 struct ModelChoiceSync: ViewModifier {
     @Query private var profiles: [Profile]
     @Environment(\.modelContext) private var context
     @AppStorage(ModelChoice.mailKey) private var mail = ""
     @AppStorage(ModelChoice.assistantKey) private var assistant = ""
+    @AppStorage(AutoMode.key) private var auto = false
+    @AppStorage(ModelChoice.strictKey) private var strict = true
+    @AppStorage(BeeJoy.key) private var bee = true
+    @AppStorage(Calendars.calendarKey) private var calendar = ""
+    @AppStorage(Calendars.listKey) private var list = ""
 
     func body(content: Content) -> some View {
+        let profile = profiles.first
         content
             .onAppear(perform: takeOver)
-            .onChange(of: profiles.first?.mailModel) { takeOver() }
-            .onChange(of: profiles.first?.assistantModel) { takeOver() }
             .onChange(of: profiles.count) { takeOver() }
+            .onChange(of: profile?.mailModel) { takeOver() }
+            .onChange(of: profile?.assistantModel) { takeOver() }
+            .onChange(of: profile?.autoOn) { takeOver() }
+            .onChange(of: profile?.strictTasks) { takeOver() }
+            .onChange(of: profile?.beeGlad) { takeOver() }
+            .onChange(of: profile?.calendarTitle) { takeOver() }
+            .onChange(of: profile?.reminderListTitle) { takeOver() }
+            .onChange(of: profile?.autoSpent) { AutoUpdate.takeSpending(from: profile) }
             .onChange(of: mail) { pass(on: mail, to: \.mailModel) }
             .onChange(of: assistant) { pass(on: assistant, to: \.assistantModel) }
+            .onChange(of: auto) { pass(auto, to: \.autoOn) }
+            .onChange(of: strict) { pass(strict, to: \.strictTasks) }
+            .onChange(of: bee) { pass(bee, to: \.beeGlad) }
+            .onChange(of: calendar) { pass(Calendars.shared.title(of: calendar), to: \.calendarTitle) }
+            .onChange(of: list) { pass(Calendars.shared.title(of: list), to: \.reminderListTitle) }
     }
 
-    /// The profile's choice becomes this device's; where the profile has none yet, this device's
-    /// own choice — if it ever made one — becomes the profile's.
+    /// The profile's choices become this device's; where the profile has none yet, this device's
+    /// own — if it ever made one — becomes the profile's.
     private func takeOver() {
         guard !DemoData.isRequested, let profile = profiles.first else { return }
         if let chosen = profile.mailModel { if mail != chosen { mail = chosen } } else { pass(on: mail, to: \.mailModel) }
         if let chosen = profile.assistantModel { if assistant != chosen { assistant = chosen } } else { pass(on: assistant, to: \.assistantModel) }
+        take(\.autoOn, key: AutoMode.key, into: $auto)
+        // Turned on on another device: it was agreed to there.
+        if auto { UserDefaults.standard.set(true, forKey: AutoMode.agreedKey) }
+        take(\.strictTasks, key: ModelChoice.strictKey, into: $strict)
+        take(\.beeGlad, key: BeeJoy.key, into: $bee)
+        if let title = profile.calendarTitle, Calendars.shared.title(of: calendar) != title,
+           let id = Calendars.shared.identifier(titled: title, events: true) { calendar = id }
+        else if profile.calendarTitle == nil, !calendar.isEmpty { pass(Calendars.shared.title(of: calendar), to: \.calendarTitle) }
+        if let title = profile.reminderListTitle, Calendars.shared.title(of: list) != title,
+           let id = Calendars.shared.identifier(titled: title, events: false) { list = id }
+        else if profile.reminderListTitle == nil, !list.isEmpty { pass(Calendars.shared.title(of: list), to: \.reminderListTitle) }
+        AutoUpdate.takeSpending(from: profile)
+    }
+
+    /// A yes or no of the profile, here — or, where the profile has none, this device's into it,
+    /// if this device ever chose.
+    private func take(_ field: ReferenceWritableKeyPath<Profile, Bool?>, key: String, into value: Binding<Bool>) {
+        guard let profile = profiles.first else { return }
+        if let chosen = profile[keyPath: field] { if value.wrappedValue != chosen { value.wrappedValue = chosen } }
+        else if UserDefaults.standard.object(forKey: key) != nil { pass(value.wrappedValue, to: field) }
+    }
+
+    private func pass(_ value: Bool, to field: ReferenceWritableKeyPath<Profile, Bool?>) {
+        guard !DemoData.isRequested, let profile = profiles.first, profile[keyPath: field] != value else { return }
+        profile[keyPath: field] = value
+        try? context.save()
+    }
+
+    private func pass(_ title: String?, to field: ReferenceWritableKeyPath<Profile, String?>) {
+        guard !DemoData.isRequested, let title, !title.isEmpty, let profile = profiles.first, profile[keyPath: field] != title else { return }
+        profile[keyPath: field] = title
+        try? context.save()
     }
 
     private func pass(on id: String, to field: ReferenceWritableKeyPath<Profile, String?>) {
@@ -207,6 +257,8 @@ final class StoredChanges {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 if delay == 2 { self.pending = false }
                 self.count += 1
+                // What another device kept of a mail or a file comes beside this store too.
+                if delay == 15, let store = KeptTexts.store, let context = self.context { KeptTexts.share(besides: store, in: context) }
                 #if DEBUG
                 if CommandLine.arguments.contains("--report-changes"), let context = self.context {
                     let todos = (try? context.fetch(FetchDescriptor<Todo>())) ?? []
@@ -321,7 +373,29 @@ final class AutoUpdate {
 
     /// What Auto spent on a day, in dollars.
     static func spent(on day: String = MatterStatus.day(Date())) -> Double {
-        (UserDefaults.standard.dictionary(forKey: spentKey) as? [String: Double])?[day] ?? 0
+        ((UserDefaults.standard.dictionary(forKey: spentKey) as? [String: Double])?[day] ?? 0)
+            + ((UserDefaults.standard.dictionary(forKey: elsewhereKey) as? [String: Double])?[day] ?? 0)
+    }
+
+    /// What the other devices' Auto spent, by day, as the profile says it: kept here for `spent`.
+    private static let elsewhereKey = "auto.spent.elsewhere"
+    private static let deviceKey = "names.device"
+    private static var device: String { UserDefaults.standard.string(forKey: deviceKey) ?? "" }
+
+    static func takeSpending(from profile: Profile?) {
+        guard let data = profile?.autoSpent, let all = try? JSONDecoder().decode([String: [String: Double]].self, from: data) else { return }
+        var elsewhere: [String: Double] = [:]
+        for (id, days) in all where id != device { for (day, dollars) in days { elsewhere[day, default: 0] += dollars } }
+        UserDefaults.standard.set(elsewhere, forKey: elsewhereKey)
+    }
+
+    /// This device's spending into the profile, for the others to say.
+    static func shareSpending(in context: ModelContext) {
+        guard !DemoData.isRequested, !device.isEmpty, let profile = ((try? context.fetch(FetchDescriptor<Profile>())) ?? []).first else { return }
+        var all = profile.autoSpent.flatMap { try? JSONDecoder().decode([String: [String: Double]].self, from: $0) } ?? [:]
+        all[device] = (UserDefaults.standard.dictionary(forKey: spentKey) as? [String: Double]) ?? [:]
+        profile.autoSpent = try? JSONEncoder().encode(all)
+        try? context.save()
     }
 
     /// "Auto · $0.12 today", or nil when it spent nothing today.
@@ -448,6 +522,7 @@ final class AutoUpdate {
                     matter.summaryAt = now
                     try? context.save()
                     Self.add(step.cost + summary.cost)
+                    Self.shareSpending(in: context)
                     var all = Self.known
                     all[key] = Known(stamp: matter.recordStamp, stepAt: now, summaryAt: now)
                     Self.known = all
