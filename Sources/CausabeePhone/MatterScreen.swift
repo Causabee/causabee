@@ -927,6 +927,8 @@ struct MatterScreen: View {
     @ViewBuilder
     private func record(_ status: MatterStatus) -> some View {
         HStack(spacing: 10) {
+            // Which mail answers which, read once from the mailbox — as on the Mac.
+            Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) { await ReplyLinks.fill(in: matter, context: context) }
             // Which kind of it: a slim menu, not a second row of tabs under the parts.
             Menu {
                 Picker("Show", selection: $filter) {
