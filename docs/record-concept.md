@@ -145,6 +145,8 @@ A full check of the code (19 October) found these differences. Data first, becau
 | D7 | **How often mail is checked** | Mac: at start, every 10 minutes, after waking. iPhone: when the overview opens, at most every 2 minutes, and by pulling down. | The same everywhere: at start, when it comes to the front, every 10 minutes while open, and on demand (button and pull-down). |
 | D8 | **Owner's names** | Editable on the Mac only. | Editable in Settings everywhere. |
 
+**Phase 0 status (19 October, branch `phase0-data`):** D1, D2, D3, D5, D6, D7 and D8 are built. D4 turned out not to be a difference today: Sign in with Google isn't switched on in any build yet (it has no Google client), so no device can use such an account; when it is switched on, it has to come to all devices at once.
+
 Already the same everywhere, no change needed: what was sorted, what was left out, the name list for the disguise.
 
 ### Features and actions that differ
