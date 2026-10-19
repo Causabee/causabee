@@ -182,3 +182,8 @@ Already the same everywhere, no change needed: what was sorted, what was left ou
 3. *By person* groups by **everyone named in the mail**.
 4. The assistant knows the **names** of kept-only files, not their contents.
 5. **One app on every device** — see below. This applies to the whole product, not only the record.
+
+## Still open
+
+1. **Kept texts in iCloud (D1).** For the same data on every device, the full texts of mails and scans have to sync — end-to-end encrypted, in your private iCloud. Today the app promises they stay on the device. Is the new promise "they stay in your own iCloud, end-to-end encrypted, and never reach anyone else" acceptable? Without it, *Show the whole mail* and the assistant's knowledge stay per device.
+2. **Sign in with Google on iPhone (D4)** needs Google to accept the iPhone app as a client: a few days of their review, outside our hands.
