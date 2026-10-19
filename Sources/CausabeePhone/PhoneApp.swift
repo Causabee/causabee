@@ -93,6 +93,9 @@ final class PhoneStore {
             Calendars.shared.isSealed = DemoData.isRequested
             if DemoData.isRequested, !real { DemoData.seed(container.mainContext); DemoData.keepTalkBehindTheClock(container.mainContext) }
             StoredChanges.shared.watch(container.mainContext)
+            // The kept words of mails and files, the same on every device.
+            KeptTexts.store = url
+            KeptTexts.share(besides: url, in: container.mainContext)
             return container
         })
     }

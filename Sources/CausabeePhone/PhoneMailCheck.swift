@@ -357,6 +357,11 @@ final class PhoneMailCheck {
             let imported = try MatterImport.apply(judgements, to: context, owner: owner)
             // Into the record the other devices read, and the names it learned into the store.
             try SortedMails.record(answered.judgements, device: PhoneNames.device, in: context)
+            // As on the Mac: their words kept, so they need not be read from the server again, and
+            // shared with the other devices, end to end encrypted.
+            for outcome in look.report.outcomes where outcome.judgement.disguise != nil { MailText.save(outcome.email, besides: door.log) }
+            try? context.save()
+            KeptTexts.share(besides: door.log, in: context)
             PhoneNames.publish(in: context)
             let matters = try context.fetch(FetchDescriptor<Matter>())
             Self.logIntake(judgements, matters: matters, model: door.model.label, in: context)

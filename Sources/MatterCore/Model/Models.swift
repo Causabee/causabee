@@ -700,11 +700,26 @@ public final class SortedMail {
     }
 }
 
+/// The words of a mail or a scanned file, as kept beside the store on the device that read it —
+/// here for every device: compressed, and end to end encrypted in the owner's iCloud. Each device
+/// keeps its own copy beside its store (`MailText`) and fills it from here.
+@Model
+public final class KeptText {
+    public var messageID: String = ""
+    @Attribute(.allowsCloudEncryption) public var data: Data = Data()
+    public var savedAt: Date = Date()
+
+    public init(messageID: String, data: Data) {
+        self.messageID = messageID
+        self.data = data
+    }
+}
+
 public enum MatterSchema {
     public static let models: [any PersistentModel.Type] = [
         Matter.self, Entry.self, Todo.self, Appointment.self, Deadline.self, Party.self, Membership.self,
         Decision.self, Rule.self, Profile.self, Document.self, WebLink.self, ThreadTurn.self, NameList.self,
-        SortedMail.self, MatterNote.self, MatterDetail.self,
+        SortedMail.self, MatterNote.self, MatterDetail.self, KeptText.self,
     ]
 
     /// A store on disk, or in memory when `url` is nil.

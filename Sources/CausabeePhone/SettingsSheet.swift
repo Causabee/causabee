@@ -81,7 +81,7 @@ struct SettingsSheet: View {
                         }
                     }
                 } header: { Text("iCloud") } footer: {
-                    Text("Only the store syncs: matters, tasks, dates, people, digests, what each mail was sorted as, and the assistant's history. Full mail texts and files stay in your mail and on your devices.")
+                    Text("Your matters, tasks, dates, people, digests, what each mail was sorted as, the assistant's history, and the full texts of mails and scans — those end to end encrypted — sync through your private iCloud. Files go into the matters' folders.")
                 }
 
                 Section { FolderSetting() } header: { Text("Files") }

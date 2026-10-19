@@ -83,7 +83,7 @@ struct FolderSettings: View {
             Text("Choose a folder — in Documents, or a synced one like Google Drive or Dropbox. iCloud Drive is not switched on for this Mac.")
                 .font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
         }
-        Text("Files only — the texts of the mails stay on this Mac. New files are saved there by themselves.")
+        Text("Files only — the texts of the mails are in your private iCloud, end to end encrypted, not in this folder. New files are saved there by themselves.")
             .font(.caption).foregroundStyle(.secondary)
     }
 }

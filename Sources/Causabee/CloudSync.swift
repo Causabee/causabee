@@ -208,7 +208,7 @@ struct CloudSettings: View {
                 if let error = sync.lastError { Text(error).font(.caption).foregroundStyle(Theme.warning).textSelection(.enabled) }
             }
         }
-        Text("Only the store syncs: matters, tasks, dates, people, digests and the assistant's history. Full mail texts and files stay on this Mac.")
+        Text("Your matters, tasks, dates, people, digests, the assistant's history, and the full texts of mails and scans — those end to end encrypted — sync through your private iCloud. Files go into the matters' folders.")
             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
     }
 }

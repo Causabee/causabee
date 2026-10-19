@@ -350,6 +350,7 @@ extension Matter {
         for entry in entries ?? [] where entry.messageID == id { context.delete(entry) }
         for other in documents ?? [] where other.messageID == id { context.delete(other) }
         if let store { MailText.forget(id, besides: store) }
+        KeptTexts.forget(id, in: context)
         return true
     }
 

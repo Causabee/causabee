@@ -238,9 +238,11 @@ final class MailCheck {
             // Their important links, found on the Mac, offered in their matters.
             let takenIDs = Set(judgements.map(\.emailID))
             for outcome in look.report.outcomes where takenIDs.contains(outcome.judgement.emailID) { _ = MailLinks.suggest(outcome.email, in: context) }
-            // Their words, kept on this Mac only, so they need not be read from the server again.
+            // Their words, kept so they need not be read from the server again — and shared with the
+            // other devices, end to end encrypted.
             for outcome in look.report.outcomes where outcome.judgement.disguise != nil { MailText.save(outcome.email, besides: door.log) }
             try? context.save()
+            KeptTexts.share(besides: door.log, in: context)
             let matters = Set(judgements.compactMap(\.matter))
             let after = try context.fetch(FetchDescriptor<Matter>())
             let names = after.filter { matter in matters.contains { matter.answers(to: $0) } }.map(\.name)

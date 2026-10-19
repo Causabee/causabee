@@ -207,6 +207,8 @@ final class StoredChanges {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 if delay == 2 { self.pending = false }
                 self.count += 1
+                // What another device kept of a mail or a file comes beside this store too.
+                if delay == 15, let store = KeptTexts.store, let context = self.context { KeptTexts.share(besides: store, in: context) }
                 #if DEBUG
                 if CommandLine.arguments.contains("--report-changes"), let context = self.context {
                     let todos = (try? context.fetch(FetchDescriptor<Todo>())) ?? []

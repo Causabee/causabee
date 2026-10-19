@@ -99,6 +99,8 @@ struct CausabeeApp: App {
             // goes to the background or quits — by then new mail may have taught it new names.
             MainActor.assumeIsolated { NameListPublisher.start(container.mainContext) }
             MainActor.assumeIsolated { StoredChanges.shared.watch(container.mainContext) }
+            // The kept words of mails and files, the same on every device.
+            MainActor.assumeIsolated { KeptTexts.store = url; KeptTexts.share(besides: url, in: container.mainContext) }
             return container
         }
         CloudSync.shared.watch()

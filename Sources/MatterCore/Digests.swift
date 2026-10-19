@@ -3,8 +3,9 @@ import Foundation
 import NaturalLanguage
 import SwiftData
 
-/// A mail's own words, kept on this Mac only, beside the store — never in the store, which is
-/// what will sync. Read once from the mail server, so it need not be read there again.
+/// A mail's own words, or a scanned file's, kept beside the store on each device — and in the store
+/// too (`KeptText`), end to end encrypted, so every device has them. Read once from the mail
+/// server, so it need not be read there again.
 public enum MailText {
     public static func folder(besides store: URL) -> URL {
         store.deletingLastPathComponent().appendingPathComponent("Mail-Text", isDirectory: true)
@@ -49,6 +50,45 @@ public enum MailText {
 
     public static func has(_ messageID: String, besides store: URL) -> Bool {
         FileManager.default.fileExists(atPath: url(for: messageID, besides: store).path)
+    }
+}
+
+/// The kept words, the same on every device: what this device keeps beside its store goes into the
+/// store, and what another device put there comes beside this one's. Only for what the store knows
+/// of — its mails and files — and nothing is read from or written to the mail server.
+@MainActor
+public enum KeptTexts {
+    /// The store whose kept words are shared: set when it opens.
+    public static var store: URL?
+
+    /// Both ways. Says how many went up and how many came down.
+    @discardableResult
+    public static func share(besides store: URL, in context: ModelContext) -> (up: Int, down: Int) {
+        let ids = Set(((try? context.fetch(FetchDescriptor<Entry>())) ?? []).map(\.messageID)
+            + ((try? context.fetch(FetchDescriptor<Document>())) ?? []).map(\.messageID)).filter { !$0.isEmpty }
+        let records = (try? context.fetch(FetchDescriptor<KeptText>())) ?? []
+        let inStore = Dictionary(records.map { ($0.messageID, $0) }, uniquingKeysWith: { first, _ in first })
+        var up = 0, down = 0
+        for id in ids {
+            let file = MailText.url(for: id, besides: store)
+            let here = FileManager.default.fileExists(atPath: file.path)
+            if here, inStore[id] == nil, let text = try? Data(contentsOf: file),
+               let packed = try? (text as NSData).compressed(using: .lzfse) as Data {
+                context.insert(KeptText(messageID: id, data: packed))
+                up += 1
+            } else if !here, let record = inStore[id], let text = try? (record.data as NSData).decompressed(using: .lzfse) as Data {
+                try? FileManager.default.createDirectory(at: MailText.folder(besides: store), withIntermediateDirectories: true)
+                if (try? text.write(to: file, options: .atomic)) != nil { down += 1 }
+            }
+        }
+        if up > 0 { try? context.save() }
+        return (up, down)
+    }
+
+    /// Gone everywhere: the kept words of a mail or file that left its matter.
+    nonisolated public static func forget(_ messageID: String, in context: ModelContext) {
+        let records = (try? context.fetch(FetchDescriptor<KeptText>(predicate: #Predicate { $0.messageID == messageID }))) ?? []
+        for record in records { context.delete(record) }
     }
 }
 
