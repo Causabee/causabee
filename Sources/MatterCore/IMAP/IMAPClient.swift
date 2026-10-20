@@ -51,6 +51,8 @@ public enum SearchKey: Sendable, Equatable {
     case subject(String)
     case from(String)
     case to(String)
+    /// Mail not read yet — the mailbox's own `\Seen` flag, asked about, never changed.
+    case unseen
     /// Mail that fits any of these: many threads or Message-IDs in one question to the server,
     /// not one round trip each.
     case any([SearchKey])
@@ -274,6 +276,7 @@ public actor IMAPClient: ReadOnlyMailbox {
         case .subject(let words): return "SUBJECT \(try quoted(words))"
         case .from(let address): return "FROM \(try quoted(address))"
         case .to(let address): return "TO \(try quoted(address))"
+        case .unseen: return "UNSEEN"
         case .any(let keys):
             guard let first = keys.first else { throw IMAPError.unsafeArgument("an empty OR") }
             guard keys.count > 1 else { return try criterion(first) }

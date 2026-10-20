@@ -243,16 +243,26 @@ enum DemoData {
         func talk() { talking() }
 
         @discardableResult
-        func mail(_ offset: Int, _ from: String, _ title: String, _ digest: String, files: [(String, String, Int)] = []) -> Source {
+        /// `read`: the files of it Causabee has read; the others are kept only.
+        func mail(_ offset: Int, _ from: String, _ title: String, _ digest: String, files: [(String, String, Int)] = [], read: Set<String> = []) -> Source {
             mails += 1
             let id = "demo-\(matter.key)-\(mails)@mail.example"
             let source = Source(kind: .mail, pointer: "imap://demo.example/INBOX;UID=\(mails)", messageID: id, date: DemoData.date(offset, hour: 8 + mails % 9))
             let entry = Entry(title: title, from: from, date: source.date, source: source)
             entry.digest = digest
+            // Yesterday's mail of two matters is still unread in the made-up mailbox.
+            entry.isUnread = offset >= -1 && ["care-for-helga", "lisbon-october"].contains(matter.key)
             entry.matter = matter
             context.insert(entry)
+            // Its own words, kept as a real mail's are, so "Show the whole mail" has them.
+            let name = Email.displayName(in: from) ?? Email.address(in: from)
+            let words = "From: \(from)\nSubject: \(title)\n\nHello,\n\n\(digest)\n\nBest regards,\n\(name)"
+            if let packed = try? (Data(words.utf8) as NSData).compressed(using: .lzfse) as Data {
+                context.insert(KeptText(messageID: id, data: packed))
+            }
             for (name, type, size) in files {
                 let document = Document(name: name, contentType: type, byteCount: size, source: source)
+                if read.contains(name) { document.readAt = DemoData.date(offset + 1) }
                 document.matter = matter
                 context.insert(document)
             }
@@ -611,12 +621,13 @@ enum DemoData {
 
         let discharge = c.mail(-42, gp, "After your mother's hospital stay: what she needs",
             "Helga is recovering well but walks with a rollator and needs help with showering and shopping for about six weeks. Physiotherapy twice a week. A prescription for the rollator is ready.",
-            files: [("Doctors-report.pdf", "application/pdf", 132_000)])
+            files: [("Doctors-report.pdf", "application/pdf", 132_000)], read: ["Doctors-report.pdf"])
         let rota = c.mail(-40, nina, "Who does what this week?",
             "Nina suggests taking Wednesdays and the weekend, since she lives ten minutes from Mum. She asks Mara to cover the start of the week.")
         let social = c.mail(-37, "Ilse Kranz <social@st-elm-hospital.example>", "Discharge and how to apply for a care level",
             "The hospital's social worker recommends applying for a care level at the health insurer now, because the decision takes several weeks. The hospital letter must go with the application.",
-            files: [("Hospital-discharge-letter.pdf", "application/pdf", 174_000)])
+            files: [("Hospital-discharge-letter.pdf", "application/pdf", 174_000), ("Medication-plan.pdf", "application/pdf", 58_000),
+                    ("Care-level-checklist.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 41_000)])
         let received = c.mail(-30, fund, "Application received: care level for Helga Voss",
             "The application arrived. The insurer decides within 25 working days. A visit by the medical service will be arranged.",
             files: [("Care-level-application.pdf", "application/pdf", 205_000)])

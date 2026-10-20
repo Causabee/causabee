@@ -191,6 +191,7 @@ struct OverviewScreen: View {
                 } else {
                     PhoneWeek(matters: matters)
                 }
+                UnreadMatters(matters: matters) { matter, mail in navigation.open(matter, showing: mail) }
                 let pinned = Pins.pinned(matters)
                 if !pinned.isEmpty {
                     SectionHeader(title: "Pinned", detail: nil).padding(.top, 4)
