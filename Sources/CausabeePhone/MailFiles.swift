@@ -48,6 +48,12 @@ struct FilesSection: View {
     var only: MatterCore.Document? = nil
     /// What came from that file, shown under it.
     var made = RecordLinks.Made()
+    /// A mail's files, as cards under it — "Read all" over them when more than one is kept only.
+    var attachments: [MatterCore.Document] = []
+    /// Only the files kept, not read: "Kept only" in the record.
+    var keptOnly = false
+    /// Choosing kept files to read several at once: nil when not choosing.
+    @State private var chosen: Set<PersistentIdentifier>?
     @Environment(\.modelContext) private var context
     @Environment(Navigation.self) private var navigation
     @Query private var profiles: [Profile]
@@ -78,7 +84,35 @@ struct FilesSection: View {
                     row(only)
                     if !made.isEmpty { MadeChips(made: made).padding(.leading, 52).padding(.trailing, 14).padding(.bottom, 12).padding(.top, -6) }
                 }
-                .findable(.model(only.persistentModelID), only.shownName, only.name).phoneCard()
+                .findable(.model(only.persistentModelID), only.shownName, only.name).fileCardFrame(kept: only.reading != .read)
+            } else if !attachments.isEmpty {
+                ReadAllLine(count: attachments.filter { $0.reading == .kept }.count) { readAll(attachments) }
+                ForEach(attachments, id: \.persistentModelID) { document in
+                    row(document).findable(.model(document.persistentModelID), document.shownName, document.name)
+                        .fileCardFrame(kept: document.reading != .read)
+                }
+            } else if keptOnly {
+                let kept = matter.keptFiles
+                let readable = kept.filter { $0.reading == .kept }
+                HStack {
+                    SectionHeader(title: "Kept only", detail: kept.isEmpty ? nil : "\(kept.count) · not read, never sent")
+                    if chosen == nil, readable.count > 1 {
+                        Button("Choose …") { chosen = [] }.font(.caption).foregroundStyle(Theme.gold)
+                    }
+                }
+                if let picked = chosen {
+                    ChooseBar(chosen: picked.count, readable: readable.count,
+                              all: { chosen = Set(readable.map(\.persistentModelID)) },
+                              read: { readAll(readable.filter { picked.contains($0.persistentModelID) }); chosen = nil },
+                              cancel: { chosen = nil })
+                }
+                if kept.isEmpty {
+                    PhoneEmptyBox(text: "Every file of this matter has been read. Files from a folder and files in mail are kept only until you have them read.")
+                }
+                ForEach(kept, id: \.persistentModelID) { document in
+                    row(document).findable(.model(document.persistentModelID), document.shownName, document.name)
+                        .fileCardFrame(kept: true)
+                }
             } else {
             HStack {
                 SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
@@ -148,61 +182,23 @@ struct FilesSection: View {
 
     private func row(_ document: MatterCore.Document) -> some View {
         let id = document.persistentModelID
-        let offersName = document.title == nil && isPDF(document) && DocumentTitle.looksMachineMade(document.name) && !document.isOwnFile
-        return VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .top, spacing: 12) {
-                Button { open(document) } label: {
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: Self.icon(document)).font(.title3).foregroundStyle(.secondary).frame(width: 26)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(document.shownName).foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(2)
-                            // With a name of its own, the file's name is still there to see, small.
-                            // "scanned" in the same line, not beside the name: the name and what it says keep the row's width.
-                            (Text(document.isOwnFile
-                                 ? (document.source.fileURL != nil ? "on this \(ThisDevice.name), in Files › Causabee" : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder" : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
-                                    : "added on \(document.source.addedOn) · not in the matter's folder yet")
-                                 : [document.title == nil ? nil : document.name, Sources.origin(document.source), sender(of: document),
-                                    ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
-                                    .compactMap { $0 }.joined(separator: " · "))
-                             + Text(document.readAt.map { " · scanned \(Dates.short($0))" } ?? "").foregroundStyle(Theme.done))
-                                .font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                            if let says = document.says {
-                                Text(says).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.leading).lineLimit(3).padding(.top, 2)
+        return FileFace(document: document, sender: sender(of: document), state: state[id],
+                        tap: {
+                            if chosen != nil {
+                                guard document.reading == .kept else { return }
+                                if chosen?.remove(id) == nil { chosen?.insert(id) }
+                            } else if !(document.isOwnFile && document.source.fileURL == nil && MatterFolders.kept(document) == nil) {
+                                open(document)
                             }
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(document.isOwnFile && document.source.fileURL == nil && MatterFolders.kept(document) == nil)
-                if state[id]?.hasPrefix("Getting") == true { ProgressView() }
-                // A tap on the row opens the file; scanning and the rest are in ⋯.
-                Menu { items(document) } label: {
-                    Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
-                }
-                .tint(.secondary)
-                .accessibilityLabel("More")
-                // While reading, a long press still has everything.
-                .tool()
-            }
-            Group {
-                if offersName, state[id] == nil {
-                    Button("Name it from its content") { nameFromContent(document) }
-                        .font(.caption).foregroundStyle(Theme.gold)
-                        .tool()
-                }
-                if let message = state[id] {
-                    Text(message).font(.caption)
-                        .foregroundStyle(message.hasPrefix("Getting") ? Color.secondary : Theme.warning)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(.leading, 38)
-        }
-        .padding(14)
-        .opacity(document.isHidden ? 0.55 : 1)
-        .contextMenu { Group { items(document) }.menuSigns() }
+                        },
+                        read: { read(document) }, nameIt: { nameFromContent(document) },
+                        chosen: chosen.map { $0.contains(id) }) { items(document) }
+            .padding(14)
+    }
+
+    /// Into the assistant, one after the other: each read here, nothing sent until "Sort in".
+    private func readAll(_ documents: [MatterCore.Document]) {
+        for document in documents where document.reading == .kept { read(document) }
     }
 
     /// What goes with it, said before it goes.
@@ -217,7 +213,7 @@ struct FilesSection: View {
     @ViewBuilder
     private func items(_ document: MatterCore.Document) -> some View {
         if !document.isOwnFile || document.source.fileURL != nil || MatterFolders.kept(document) != nil { Button("Open", systemImage: "eye") { open(document) } }
-        if document.isReadable, !document.isOwnFile, document.readAt == nil { Button("Scan", systemImage: "text.viewfinder") { read(document) } }
+        if document.reading == .kept { Button("Read", systemImage: "text.viewfinder") { read(document) } }
         AskCausabeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
         Button("Rename", systemImage: "pencil") { newName = document.shownName; renaming = document }
         if isPDF(document), !document.isOwnFile { Button("Name from content", systemImage: "text.magnifyingglass") { nameFromContent(document) } }
@@ -283,14 +279,6 @@ struct FilesSection: View {
                 state[id] = "No heading found in it — give it a name with ⋯ → Rename."
             }
         }
-    }
-
-    static func icon(_ document: MatterCore.Document) -> String {
-        let type = document.contentType.lowercased(), name = document.name.lowercased()
-        if type.hasPrefix("image/") { return "photo" }
-        if type == "application/pdf" || name.hasSuffix(".pdf") { return "doc.richtext" }
-        if name.hasSuffix(".xlsx") || name.hasSuffix(".csv") { return "tablecells" }
-        return "doc"
     }
 }
 

@@ -57,7 +57,7 @@ public enum FactSheet {
         let detailed = matters.count == 1
         var blocks: [String] = []
         var ownerText: [String] = []
-        var mailCount = 0, todos = 0, dates = 0
+        var mailCount = 0, todos = 0, dates = 0, keptCount = 0
         for matter in matters {
             let status = MatterStatus(matter)
             var lines: [String] = []
@@ -139,10 +139,20 @@ public enum FactSheet {
                     if let came = status.entries.first(where: { !file.messageID.isEmpty && $0.messageID == file.messageID }) {
                         line += " — came with the mail of \(came.date.map(MatterStatus.day) ?? "?") from \(Email.displayName(in: came.from) ?? Email.address(in: came.from)): \(came.title)"
                     }
-                    line += file.readAt.map { " — scanned \(MatterStatus.day($0)): what it said is in the to-dos, dates and notes above, with their sources" }
-                        ?? " — not scanned yet: only its name and its mail are known; scanning it would tell more"
+                    line += file.readAt.map { " — read \(MatterStatus.day($0)): what it said is in the to-dos, dates and notes above, with their sources" }
+                        ?? " — kept, not read yet: only its name and its mail are known; reading it (\"Read\" on its card) would tell more"
                     lines.append(line)
                 }
+                // The files only kept: their names, so the assistant can say one is there — never
+                // what is in them, which Causabee has not read.
+                let kept = matter.keptFiles.filter { file in !files.contains { $0 === file } }
+                if !kept.isEmpty {
+                    lines.append("Files kept, not read (names only — the owner can have one read with \"Read\" on its card):")
+                    for file in kept.prefix(40) {
+                        lines.append("- \(file.shownName)" + (file.reading == .unreadable ? " (a kind of file Causabee cannot read yet)" : ""))
+                    }
+                }
+                keptCount += kept.count
                 let fileMails = Set(files.map(\.messageID).filter { !$0.isEmpty })
                 let entries = focused
                     ? Array(status.entries.filter { fileMails.contains($0.messageID) || mentions($0.title) || mentions($0.from) }.prefix(15))
@@ -169,6 +179,7 @@ public enum FactSheet {
         if detailed { seen.append("\(mailCount) \(mailCount == 1 ? "mail" : "mails")") } else { seen.append("\(matters.count) \(matters.count == 1 ? "matter" : "matters")") }
         seen.append("\(todos) open \(todos == 1 ? "task" : "tasks")")
         if dates > 0 { seen.append("\(dates) appointments and deadlines") }
+        if keptCount > 0 { seen.append("the names of \(keptCount) kept-only \(keptCount == 1 ? "file" : "files")") }
         // What the matter is written in: its own words, not the labels above them.
         let words = matters.flatMap { matter in
             [matter.notesText ?? ""] + (matter.todos ?? []).map(\.text) + (matter.entries ?? []).prefix(40).flatMap { [$0.title, $0.digest ?? ""] }

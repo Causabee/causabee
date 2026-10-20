@@ -42,6 +42,8 @@ struct MatterStatusView: View {
     @State private var stepError: String?
     /// Per file: fetching it, or why it could not be.
     @State private var fetching: [PersistentIdentifier: String] = [:]
+    /// Choosing kept files to read several at once: nil when not choosing.
+    @State private var chosen: Set<PersistentIdentifier>?
     @State private var summaryError: String?
     @State private var showsPast = false
     @State private var merging: (Party, Party)?
@@ -65,7 +67,7 @@ struct MatterStatusView: View {
     /// The page under what stands on top: what is to do, the record, or the people.
     enum Part: String { case todo, record, people, notes }
     /// The record, whole or one kind of it.
-    enum RecordFilter: String { case all, mail, files, details, links }
+    enum RecordFilter: String { case all, mail, files, kept, details, links }
     // `--demo --shot lisbon-files`: the picture of the files is of the record's files.
     @State private var part: Part = [.lisbonFiles, .careDetails, .lisbonRecord].contains(IntroShot.current) ? .record : [.carePeople, .careContact].contains(IntroShot.current) ? .people : .todo
     @State private var filter: RecordFilter = IntroShot.current == .lisbonFiles ? .files : IntroShot.current == .careDetails ? .details : .all
@@ -1384,13 +1386,14 @@ struct MatterStatusView: View {
                     Text("All · \(status.mailEntries.count + shownDocuments.count + keptLinks.count)").tag(RecordFilter.all)
                     Text("Mail · \(status.mailEntries.count)").tag(RecordFilter.mail)
                     Text("Files · \(shownDocuments.count)").tag(RecordFilter.files)
+                    Text("Kept only · \(matter.keptFiles.count)").tag(RecordFilter.kept)
                     Text("Details · \((matter.details ?? []).count)").tag(RecordFilter.details)
                     Text("Links · \(keptLinks.count)").tag(RecordFilter.links)
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
             } label: {
-                Text(filter == .all ? "Everything" : filter.rawValue.capitalized).font(.callout)
+                Text(filter == .all ? "Everything" : filter == .kept ? "Kept only" : filter.rawValue.capitalized).font(.callout)
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
@@ -1432,6 +1435,7 @@ struct MatterStatusView: View {
             recordList(status)
         case .mail: history(status)
         case .files: files.id("files")
+        case .kept: keptView.id("kept")
         case .details: DetailsSection(matter: matter, showsEmpty: true).id("details")
         case .links: links.id("links")
         }
@@ -1439,7 +1443,7 @@ struct MatterStatusView: View {
 
     /// One file of the record, as a card.
     private func fileCard(_ document: MatterCore.Document, made: RecordLinks.Made = RecordLinks.Made()) -> some View {
-        Card {
+        VStack(spacing: 0) {
             DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
                         open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
                         read: { fetch(document, then: { conversation.bring($0, document: document) }) },
@@ -1450,6 +1454,55 @@ struct MatterStatusView: View {
             // What came from it — a file on its own; one that came with a mail counts with its mail.
             if !made.isEmpty { MadeChips(made: made).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.bottom, 10) }
         }
+        .fileCardFrame(kept: document.reading != .read)
+    }
+
+    /// Into the assistant, one after the other: each read on this Mac, nothing sent until "Sort in".
+    private func readAll(_ documents: [MatterCore.Document]) {
+        for document in documents where document.reading == .kept {
+            fetch(document, then: { conversation.bring($0, document: document) })
+        }
+    }
+
+    /// The files kept only, not read: each with "Read", and "Choose" to read several at once.
+    @ViewBuilder
+    private var keptView: some View {
+        let kept = matter.keptFiles
+        let readable = kept.filter { $0.reading == .kept }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                SectionHeader(title: "Kept only", detail: kept.isEmpty ? nil : "\(kept.count) · stored, not read, never sent")
+                if chosen == nil, readable.count > 1 {
+                    Button("Choose …") { chosen = [] }.buttonStyle(.gold).font(.caption)
+                        .help("Choose several files and read them at once")
+                }
+            }
+            if let picked = chosen {
+                ChooseBar(chosen: picked.count, readable: readable.count,
+                          all: { chosen = Set(readable.map(\.persistentModelID)) },
+                          read: { readAll(readable.filter { picked.contains($0.persistentModelID) }); chosen = nil },
+                          cancel: { chosen = nil })
+            }
+            if kept.isEmpty {
+                EmptyBox(text: "Every file of this matter has been read. Files from a folder and files in mail are kept only until you have them read.")
+            }
+            ForEach(kept, id: \.persistentModelID) { document in
+                DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
+                            open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
+                            read: { fetch(document, then: { conversation.bring($0, document: document) }) },
+                            hide: { setHidden(document, !document.isHidden) },
+                            nameIt: { nameFromContent(document) },
+                            talk: { talk(document.shownName, "File") },
+                            chosen: chosen.map { _ in chosen?.contains(document.persistentModelID) == true },
+                            choose: {
+                                guard document.reading == .kept else { return }
+                                if chosen?.remove(document.persistentModelID) == nil { chosen?.insert(document.persistentModelID) }
+                            })
+                    .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+                    .fileCardFrame(kept: true)
+            }
+        }
+        .onChange(of: filter) { chosen = nil }
     }
 
     /// One thing of the record, and the day it is sorted by.
@@ -1520,7 +1573,9 @@ struct MatterStatusView: View {
                         // brought in is its entry already — "Open" is on it — and is not listed again.
                         VStack(alignment: .leading, spacing: 4) {
                             ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
-                            ForEach((attached[thread.id] ?? []).filter { !$0.isOwnFile }) { document in fileCard(document) }
+                            let files = (attached[thread.id] ?? []).filter { !$0.isOwnFile }
+                            ReadAllLine(count: files.filter { $0.reading == .kept }.count) { readAll(files) }
+                            ForEach(files) { document in fileCard(document) }
                         }
                     case .document(let document):
                         fileCard(document, made: made.made(from: document))
@@ -2332,6 +2387,9 @@ struct DocumentRow: View {
     /// A name from the file's first page.
     let nameIt: () -> Void
     let talk: () -> Void
+    /// Nil, or whether it is chosen while several are being chosen to be read.
+    var chosen: Bool? = nil
+    var choose: () -> Void = {}
     @Environment(\.modelContext) private var context
     @State private var renaming = false
     @State private var deleting = false
@@ -2341,57 +2399,24 @@ struct DocumentRow: View {
     private var isPDF: Bool { document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf") }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(nsImage: NSWorkspace.shared.icon(for: UTType(filenameExtension: (document.name as NSString).pathExtension) ?? .data))
-                .resizable().frame(width: 28, height: 28)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(document.shownName).lineLimit(2)
-                // With a name of its own, the file's name is still there to see, small.
-                Text([document.title == nil ? nil : document.name, Sources.origin(document.source), sender,
-                      ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
-                    .compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
-                if let says = document.says {
-                    Text(says).font(.callout).foregroundStyle(.secondary).lineLimit(3).fixedSize(horizontal: false, vertical: true).padding(.top, 2)
-                }
-                if document.title == nil, isPDF, DocumentTitle.looksMachineMade(document.name), state == nil {
-                    Button("Name it from its content", action: nameIt)
-                        .buttonStyle(.gold).font(.caption)
-                        .tool()
-                        .help("Scans the first page on the Mac and takes its heading as the name. Costs nothing, sends nothing.")
-                }
-                if let state {
-                    Text(state).font(.caption).foregroundStyle(state.hasPrefix("Getting") ? Color.secondary : Theme.warning).textSelection(.enabled)
-                }
-            }
-            Spacer(minLength: 8)
-            if let read = document.readAt {
-                Label("scanned \(Dates.short(read))", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
-            }
-            MoreMenu { moreItems }
-                .popover(isPresented: $renaming, arrowEdge: .bottom) { renameField }
-                .confirmationDialog("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
-                    Button("Delete", role: .destructive, action: forget)
-                    Button("Cancel", role: .cancel) {}
-                } message: { Text(Self.deleteWords(document)) }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        // A click on the row opens the file; everything else is in ⋯ and the right click.
-        .contentShape(Rectangle())
-        .onTapGesture(perform: open)
-        .help(document.isOwnFile ? "Opens the file." : "Opens the file — only this one mail is read from the mailbox.")
-        .opacity(document.isHidden ? 0.55 : 1)
-        .disabled(state?.hasPrefix("Getting") == true)
-        .contextMenu { moreItems }
+        FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen) { moreItems }
+            .popover(isPresented: $renaming, arrowEdge: .bottom) { renameField }
+            .confirmationDialog("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
+                Button("Delete", role: .destructive, action: forget)
+                Button("Cancel", role: .cancel) {}
+            } message: { Text(Self.deleteWords(document)) }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .help(chosen != nil ? "Click to choose it" : document.isOwnFile ? "Opens the file." : "Opens the file — only this one mail is read from the mailbox.")
+            .disabled(state?.hasPrefix("Getting") == true)
     }
 
     @ViewBuilder
     private var moreItems: some View {
         Button("Open", action: open)
-        if document.isReadable, document.readAt == nil {
-            Button("Scan", action: read)
-                .help("Scans it on the Mac and shows it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
+        if document.reading == .kept {
+            Button("Read", action: read)
+                .help("Reads it on this Mac and shows it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
         }
         Button("Ask Causabee", action: talk)
         Divider()

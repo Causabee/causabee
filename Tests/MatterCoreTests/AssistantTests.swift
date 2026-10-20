@@ -228,9 +228,35 @@ struct AssistantTests {
         let facts = FactSheet.facts(for: [matter], today: "2026-09-28", focus: "Wartungsprotokoll-2026.pdf")
         #expect(facts.text.contains("The file in hand: Wartungsprotokoll-2026.pdf — came with the mail of"))
         #expect(facts.text.contains("from Hausmeister: Heizung"))
-        #expect(facts.text.contains("not scanned yet"))
+        #expect(facts.text.contains("kept, not read yet"))
         #expect(facts.text.contains("Mails, newest first:"))
         #expect(!FactSheet.facts(for: [matter], today: "2026-09-28", focus: "Sebastian Süß").text.contains("file in hand"))
+    }
+
+    @Test("The assistant knows the names of the files kept only, never what is in them; read ones are not among them")
+    func keptFileNames() throws {
+        let (context, matter) = try store()
+        let source = Source(kind: .mail, pointer: "x", messageID: "c@example")
+        let mail = Entry(title: "Vertrag", from: "Pflegedienst <p@example.com>", date: Date(), source: source)
+        mail.matter = matter
+        context.insert(mail)
+        for (name, type, read) in [("Pflegevertrag_Entwurf.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", false),
+                                   ("Preisliste.pdf", "application/pdf", false), ("Bescheid.pdf", "application/pdf", true),
+                                   ("logo.png", "image/png", false)] {
+            let file = Document(name: name, contentType: type, byteCount: name == "logo.png" ? 2000 : 90_000, source: source)
+            if read { file.readAt = Date() }
+            file.matter = matter
+            context.insert(file)
+        }
+        try context.save()
+        #expect(matter.keptFiles.map(\.reading) == [.unreadable, .kept] || matter.keptFiles.map(\.reading) == [.kept, .unreadable])
+        let facts = FactSheet.facts(for: [matter], today: "2026-09-28", focus: "Vertrag")
+        #expect(facts.text.contains("Files kept, not read"))
+        #expect(facts.text.contains("- Pflegevertrag_Entwurf.docx (a kind of file Causabee cannot read yet)"))
+        #expect(facts.text.contains("- Preisliste.pdf"))
+        #expect(!facts.text.contains("- Bescheid.pdf"))
+        #expect(!facts.text.contains("logo.png"))
+        #expect(facts.seen.contains("the names of 2 kept-only files"))
     }
 
     @Test("A name typed a letter short is read as the one person it almost is", arguments: [

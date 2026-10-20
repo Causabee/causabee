@@ -30,7 +30,7 @@ struct MatterScreen: View {
     /// The page under what stands on top: what is to do, the record, or the people.
     enum Part: String { case todo, record, people, notes }
     /// The record, whole or one kind of it.
-    enum RecordFilter: String { case all, mail, files, details, links }
+    enum RecordFilter: String { case all, mail, files, kept, details, links }
     @State private var part: Part = .todo
     @State private var filter: RecordFilter = .all
     /// How much of the page is seen under the bar.
@@ -936,12 +936,13 @@ struct MatterScreen: View {
                     Text("Everything").tag(RecordFilter.all)
                     Text("Mail").tag(RecordFilter.mail)
                     Text("Files").tag(RecordFilter.files)
+                    Text("Kept only · \(matter.keptFiles.count)").tag(RecordFilter.kept)
                     Text("Details").tag(RecordFilter.details)
                     Text("Links").tag(RecordFilter.links)
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Text(filter == .all ? "Everything" : filter.rawValue.capitalized)
+                    Text(filter == .all ? "Everything" : filter == .kept ? "Kept only" : filter.rawValue.capitalized)
                     Image(systemName: "chevron.up.chevron.down").font(.caption2)
                 }
                 .font(.subheadline)
@@ -965,6 +966,7 @@ struct MatterScreen: View {
             recordList(status)
         case .mail: history(status)
         case .files: FilesSection(matter: matter)
+        case .kept: FilesSection(matter: matter, keptOnly: true)
         case .details: DetailsSection(matter: matter, showsEmpty: true)
         case .links: LinksSection(matter: matter)
         }
@@ -1038,7 +1040,8 @@ struct MatterScreen: View {
                         // brought in is its entry already — "Open" is on it — and is not listed again.
                         VStack(alignment: .leading, spacing: 4) {
                             ThreadCard(thread: thread, links: made) { navigation.talk($0.title, kind: "Mail", in: matter) }
-                            ForEach((attached[thread.id] ?? []).filter { !$0.isOwnFile }) { document in FilesSection(matter: matter, only: document) }
+                            let files = (attached[thread.id] ?? []).filter { !$0.isOwnFile }
+                            if !files.isEmpty { FilesSection(matter: matter, attachments: files) }
                         }
                     case .document(let document):
                         FilesSection(matter: matter, only: document, made: made.made(from: document))

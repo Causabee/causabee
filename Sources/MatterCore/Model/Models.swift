@@ -437,6 +437,39 @@ public final class Document {
         contentType == "application/pdf" || name.lowercased().hasSuffix(".pdf")
             || (contentType.hasPrefix("image/") && !isSmallImage)
     }
+
+    /// Whether Causabee has read a file, or only keeps it.
+    public enum Reading: Sendable {
+        /// Read: what it said is in the matter, and the assistant can answer from it.
+        case read
+        /// Kept only — from a folder, or attached to a mail: stored and openable, never read, never sent.
+        case kept
+        /// Kept only, and of a kind Causabee cannot read yet — a Word file, an invitation.
+        case unreadable
+    }
+
+    public var reading: Reading {
+        if readAt != nil || says != nil { return .read }
+        return isReadable ? .kept : .unreadable
+    }
+
+    /// In plain words, for a file that is kept only.
+    public var keptWords: String? {
+        switch reading {
+        case .read: nil
+        case .kept: "Kept only — Causabee hasn't read this."
+        case .unreadable: "Kept only — this kind of file can't be read yet."
+        }
+    }
+}
+
+extension Matter {
+    /// The files kept only, not read — not hidden, no logo out of a signature —, the newest first.
+    /// The assistant knows their names, and never what is in them.
+    public var keptFiles: [Document] {
+        (documents ?? []).filter { $0.reading != .read && !$0.isHidden && !$0.isSmallImage }
+            .sorted { ($0.source.date ?? .distantPast) > ($1.source.date ?? .distantPast) }
+    }
 }
 
 /// A fact to keep at hand in a matter — "Versichertennummer: A 123 456 789" — put in by the owner.

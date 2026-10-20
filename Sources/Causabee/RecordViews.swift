@@ -414,3 +414,172 @@ struct MadeList: View {
         #endif
     }
 }
+
+// MARK: Files — read or kept
+
+/// One file: its sign, its name, where it came from — and either what it says, when Causabee has
+/// read it, or that it is only kept, with "Read" right on it, not in a menu. The same on every
+/// device; what opening and reading do — the file out of its mail, or out of iCloud Drive — each
+/// device does its own way.
+struct FileFace<Items: View>: View {
+    let document: MatterCore.Document
+    let sender: String?
+    /// Getting it, or what went wrong.
+    let state: String?
+    /// A tap on the card: open it, or — while choosing several — choose it.
+    let tap: () -> Void
+    let read: () -> Void
+    let nameIt: () -> Void
+    /// Nil, or whether it is chosen while several are being chosen.
+    var chosen: Bool? = nil
+    @ViewBuilder let items: Items
+
+    static func icon(_ document: MatterCore.Document) -> String {
+        let type = document.contentType.lowercased(), name = document.name.lowercased()
+        if type.hasPrefix("image/") { return "photo" }
+        if type == "application/pdf" || name.hasSuffix(".pdf") { return "doc.richtext" }
+        if name.hasSuffix(".xlsx") || name.hasSuffix(".csv") { return "tablecells" }
+        return "doc"
+    }
+
+    private var isPDF: Bool { document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf") }
+
+    /// Visible on the card, not in a menu: reading is one tap.
+    private var readButton: some View {
+        Button("Read", action: read)
+            .quietButton().fixedSize()
+            .help("Reads it on this device and shows it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
+    }
+
+    /// Where it is and where it came from — its own name too, when it has a name of ours.
+    private var line: String {
+        if document.isOwnFile {
+            let at = document.source.fileURL != nil ? "on this \(ThisDevice.name), in Causabee's folder"
+                : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder"
+                : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
+                : "added on \(document.source.addedOn) · not in the matter's folder yet"
+            return [document.title == nil ? nil : document.name, at].compactMap { $0 }.joined(separator: " · ")
+        }
+        return [document.title == nil ? nil : document.name, Sources.origin(document.source), sender,
+                ByteCountFormatter.string(fromByteCount: Int64(document.byteCount), countStyle: .file)]
+            .compactMap { $0 }.joined(separator: " · ")
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: Self.icon(document)).font(.title3).foregroundStyle(.secondary).frame(width: 26)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(document.shownName).lineLimit(2).multilineTextAlignment(.leading)
+                (Text(line) + Text(document.readAt.map { " · read \(Dates.short($0))" } ?? "").foregroundColor(Theme.done))
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                if let says = document.says {
+                    Text(says)
+                        #if os(macOS)
+                        .font(.callout)
+                        #else
+                        .font(.footnote)
+                        #endif
+                        .foregroundStyle(.secondary).lineLimit(3).fixedSize(horizontal: false, vertical: true).padding(.top, 2)
+                }
+                if let kept = document.keptWords {
+                    Text(kept).font(.caption).foregroundStyle(.secondary).padding(.top, 2)
+                    #if os(iOS)
+                    // Under its words on a narrow screen, so the name keeps the card's width.
+                    if chosen == nil, document.reading == .kept, state == nil { readButton.padding(.top, 6) }
+                    #endif
+                }
+                if document.title == nil, isPDF, !document.isOwnFile, DocumentTitle.looksMachineMade(document.name), state == nil {
+                    Button("Name it from its content", action: nameIt)
+                        .buttonStyle(.gold).font(.caption)
+                        .tool()
+                        .help("Reads the heading of the first page on this device and takes it as the name. Costs nothing, sends nothing.")
+                }
+                if let state {
+                    Text(state).font(.caption).foregroundStyle(state.hasPrefix("Getting") ? Color.secondary : Theme.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 8)
+            if let chosen {
+                Image(systemName: chosen ? "checkmark.circle.fill" : "circle")
+                    .font(.title3).foregroundStyle(chosen ? Theme.ink : Color.secondary)
+                    .accessibilityLabel(chosen ? "Chosen" : "Not chosen")
+            } else {
+                #if os(macOS)
+                if document.reading == .kept, state == nil { readButton }
+                #endif
+                if state?.hasPrefix("Getting") == true { ProgressView().controlSize(.small) }
+                #if os(macOS)
+                MoreMenu { items }
+                #else
+                Menu { items } label: {
+                    Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
+                }
+                .tint(.secondary)
+                .accessibilityLabel("More")
+                .tool()
+                #endif
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: tap)
+        .opacity(document.isHidden ? 0.55 : 1)
+        #if os(macOS)
+        .contextMenu { items }
+        #else
+        .contextMenu { Group { items }.menuSigns() }
+        #endif
+    }
+}
+
+extension View {
+    /// A file as a card of the record. Read: white, with its line. Kept only: no ground, and a
+    /// dashed line — stored, not read, never sent.
+    func fileCardFrame(kept: Bool) -> some View {
+        #if os(macOS)
+        let corner: CGFloat = 10
+        #else
+        let corner: CGFloat = 12
+        #endif
+        return frame(maxWidth: .infinity, alignment: .leading)
+            .background(kept ? Color.clear : Theme.card, in: RoundedRectangle(cornerRadius: corner))
+            .overlay(RoundedRectangle(cornerRadius: corner)
+                .strokeBorder(kept ? Theme.strongLine : Theme.line, style: StrokeStyle(lineWidth: 1, dash: kept ? [5, 4] : [])))
+    }
+}
+
+/// "Read all 3 attachments": over a mail's files that are kept only and can be read.
+struct ReadAllLine: View {
+    let count: Int
+    let read: () -> Void
+
+    var body: some View {
+        if count > 1 {
+            Button("Read all \(count) attachments · ≈ \(count * 4) cents", action: read)
+                .buttonStyle(.gold).font(.caption)
+                .help("Reads each on this device and shows it in the assistant. Nothing is sent until “Sort in”.")
+                .padding(.horizontal, 4)
+        }
+    }
+}
+
+/// While choosing several kept files: how many, what reading them costs, and the button.
+struct ChooseBar: View {
+    let chosen: Int
+    let readable: Int
+    let all: () -> Void
+    let read: () -> Void
+    let cancel: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(chosen == 0 ? "Choose files" : "\(chosen) · ≈ \(chosen * 4) cents")
+                .font(.callout).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+            Spacer(minLength: 8)
+            if chosen < readable { Button("All", action: all).buttonStyle(.gold).font(.callout) }
+            Button("Cancel", action: cancel).quietButton()
+            Button(chosen == 1 ? "Read 1" : "Read \(chosen)", action: read).filledButton().disabled(chosen == 0)
+        }
+        .padding(.horizontal, 4)
+    }
+}
