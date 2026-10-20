@@ -605,7 +605,7 @@ struct FileFace<Items: View>: View {
                     #endif
                 }
                 if document.title == nil, isPDF, DocumentTitle.looksMachineMade(document.name), state == nil {
-                    Button("Name it from its content", action: nameIt)
+                    Button(Say.nameFromContent, action: nameIt)
                         .buttonStyle(.gold).font(.caption)
                         .tool()
                         .help("Reads the heading of the first page on this device and takes it as the name. Costs nothing, sends nothing.")

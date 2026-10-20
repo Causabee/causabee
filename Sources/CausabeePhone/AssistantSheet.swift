@@ -858,7 +858,7 @@ struct PhoneActionCard: View {
                     }
                     .foregroundStyle(.secondary)
                     Spacer(minLength: 0)
-                    Button("Show again") { navigation.mark(record, card: index, dismissed: false, context: context) }
+                    Button(Say.showAgain) { navigation.mark(record, card: index, dismissed: false, context: context) }
                         .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain).fixedSize()
                 }
                 .padding(.horizontal, 12).padding(.vertical, 10)

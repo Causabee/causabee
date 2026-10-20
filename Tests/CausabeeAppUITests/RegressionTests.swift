@@ -141,13 +141,13 @@ final class RegressionTests: XCTestCase {
 
     /// Close sits behind ⋯, asks first, and the same menu opens the matter again.
     func testClosedAndOpenedAgain() {
-        choose("Close Matter…", from: "matter.more")
+        choose("Close Matter …", from: "matter.more")
         press("Leave them open and close")
         // Under the ⋯ itself: the menu bar's Matter menu has entries of the same names.
         choose("Open Again", from: "matter.more")
         let more = element("matter.more")
         more.click()
-        XCTAssertTrue(more.descendants(matching: .menuItem)["Close Matter…"].firstMatch.waitForExistence(timeout: 8), "Opened again, the matter cannot be closed.")
+        XCTAssertTrue(more.descendants(matching: .menuItem)["Close Matter …"].firstMatch.waitForExistence(timeout: 8), "Opened again, the matter cannot be closed.")
         app.typeKey(.escape, modifierFlags: [])
     }
 
@@ -157,11 +157,11 @@ final class RegressionTests: XCTestCase {
         // A click into a submenu that is still opening can miss: asked for a second time, then.
         for _ in 1...2 where !question.exists {
             element("matter.more").click()
-            let merge = app.menuItems["Merge with …"].firstMatch
-            XCTAssertTrue(merge.waitForExistence(timeout: 5), "⋯ has no “Merge with …”.")
+            let merge = app.menuItems["Merge With"].firstMatch
+            XCTAssertTrue(merge.waitForExistence(timeout: 5), "⋯ has no “Merge With”.")
             merge.hover()
             let other = app.menuItems["Tax return 2025"].firstMatch
-            XCTAssertTrue(other.waitForExistence(timeout: 5), "“Merge with …” does not list the other matters.")
+            XCTAssertTrue(other.waitForExistence(timeout: 5), "“Merge With” does not list the other matters.")
             sleep(1)
             other.click()
             if !question.waitForExistence(timeout: 6) { app.typeKey(.escape, modifierFlags: []) }

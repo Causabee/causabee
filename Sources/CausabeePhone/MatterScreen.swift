@@ -309,12 +309,12 @@ struct MatterScreen: View {
                         MatterAddItems(writeAgain: writeAnew)
                         MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
                         // Everything the matter holds, as one document: what is gathered here can leave at any time.
-                        Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
+                        Button(Say.exportRTF, systemImage: "square.and.arrow.up", action: export)
                         Divider()
                         if matter.isClosed {
-                            Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
+                            Button(Say.openAgain, systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
                         } else {
-                            Button("Close", systemImage: "archivebox") { asksToClose = true }
+                            Button(Say.closeMatter, systemImage: "archivebox") { asksToClose = true }
                         }
                     }
                     .menuSigns()
@@ -507,7 +507,7 @@ struct MatterScreen: View {
                     }
                     .buttonStyle(.phoneFilled)
                 }
-                Button("Open again") { matter.reopen(); try? context.save() }.buttonStyle(.phone)
+                Button(Say.openAgain) { matter.reopen(); try? context.save() }.buttonStyle(.phone)
             }
             .padding(.top, 4)
         }
@@ -1226,14 +1226,14 @@ struct PhoneTodoRow: View {
         if let matter = todo.matter {
             AskCausabeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
         }
-        Button("Edit", systemImage: "pencil") { editing = true }
+        Button(Say.edit, systemImage: "pencil") { editing = true }
         if !todo.isDone {
-            Button("Move to Info", systemImage: "info.circle") {
+            Button(Say.moveToInfo, systemImage: "info.circle") {
                 withAnimation { todo.isInfo = true }
                 try? context.save()
             }
             let others = (todo.matter?.openTodos ?? []).filter { $0 !== todo }.sorted { $0.text < $1.text }
-            Menu("Waits for", systemImage: "hourglass") {
+            Menu(Say.waitsFor, systemImage: "hourglass") {
                 ForEach(others, id: \.persistentModelID) { other in
                     Button(other.text) {
                         withAnimation { _ = todo.wait(for: other) }
@@ -1244,14 +1244,14 @@ struct PhoneTodoRow: View {
             }
             .disabled(others.isEmpty)
             if todo.waitsFor != nil {
-                Button("Stop waiting", systemImage: "xmark.circle") {
+                Button(Say.stopWaiting, systemImage: "xmark.circle") {
                     withAnimation { todo.waitsFor = nil }
                     try? context.save()
                 }
             }
         }
         Divider()
-        Button("Delete", systemImage: "trash", role: .destructive) { deleting = true }
+        Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }
 
     /// The addresses in the note become the task's links, and their lines leave the note.
@@ -1527,9 +1527,9 @@ struct PhoneDateRow: View {
     @ViewBuilder
     private var moreItems: some View {
         AskCausabeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
-        Button("Edit", systemImage: "pencil") { editing = true }
+        Button(Say.edit, systemImage: "pencil") { editing = true }
         Divider()
-        Button("Delete", systemImage: "trash", role: .destructive) { deleting = true }
+        Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }
 }
 

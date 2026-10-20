@@ -716,7 +716,7 @@ struct MessageCard: View {
                 }
                 .foregroundStyle(.secondary)
                 Spacer(minLength: 0)
-                Button("Show again") { setDismissed(false) }
+                Button(Say.showAgain) { setDismissed(false) }
                     .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain).fixedSize()
             }
             .padding(.horizontal, 12).padding(.vertical, 10)

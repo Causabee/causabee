@@ -573,11 +573,9 @@ struct OverviewView: View {
                     .onTapGesture { navigation.open(matter) }
                     .help("Open the matter")
                 }
-                let quiet = matters.filter { !$0.isClosed && !$0.isPinned }.count - rest.count
-                if quiet > 0 {
-                    Text("\(quiet) \(quiet == 1 ? "matter is" : "matters are") quiet: nothing open, no date.")
-                        .font(.callout).foregroundStyle(.secondary)
-                }
+                // The quiet and the closed ones, folded away under the cards — named, and each a way
+                // in — as on the iPhone and the iPad.
+                OtherMatters(matters: matters)
             }
             .padding(24)
             // The whole width, up to where lines would get too long to follow.
@@ -598,7 +596,7 @@ struct OverviewView: View {
             LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
                 ForEach(pinned) { matter in
                     MatterCard(matter: matter, open: { navigation.open(matter) }, openTodo: { navigation.open(matter, showing: $0) })
-                        .contextMenu { PinMenuItem(matter: matter, all: matters) }
+                        .contextMenu { MatterMenuItems(matter: matter, all: matters) }
                 }
             }
         }
@@ -847,7 +845,7 @@ struct ActionCard: View {
                 }
                 .foregroundStyle(.secondary)
                 Spacer(minLength: 0)
-                Button("Show again") { setDismissed(false) }.buttonStyle(.gold).font(.caption).fixedSize()
+                Button(Say.showAgain) { setDismissed(false) }.buttonStyle(.gold).font(.caption).fixedSize()
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
             .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
@@ -1196,5 +1194,39 @@ private struct ToNewestButton: View {
             }
         }
         .animation(.easeOut(duration: 0.15), value: placement.offersButton)
+    }
+}
+
+/// Under the overview's cards, what the cards do not show: the quiet matters — nothing open, no
+/// date — and the closed ones, each folded away until opened. The same on every device.
+struct OtherMatters: View {
+    let matters: [Matter]
+    @State private var showsQuiet = false
+    @State private var showsClosed = false
+
+    var body: some View {
+        let sorted = matters.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        let active = Set(activeMatters(matters).map(\.persistentModelID))
+        // A pinned one is on top already, even when it is quiet.
+        let quiet = sorted.filter { !$0.isClosed && !$0.isPinned && !active.contains($0.persistentModelID) }
+        let closed = sorted.filter(\.isClosed)
+        if !quiet.isEmpty || !closed.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                if !quiet.isEmpty {
+                    DisclosureGroup(isExpanded: $showsQuiet) {
+                        OverviewRows(matters: quiet, all: matters).padding(.top, 6)
+                    } label: {
+                        Text("Quiet · \(quiet.count)\(Text("  nothing open, no date").font(.caption).foregroundStyle(.secondary))")
+                    }
+                }
+                if !closed.isEmpty {
+                    DisclosureGroup("Closed · \(closed.count)", isExpanded: $showsClosed) {
+                        OverviewRows(matters: closed, all: matters).padding(.top, 6)
+                    }
+                }
+            }
+            .font(.callout)
+            .padding(.top, 6)
+        }
     }
 }

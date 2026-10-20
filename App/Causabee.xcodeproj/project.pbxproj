@@ -69,6 +69,7 @@
 				CardActions.swift,
 				DemoData.swift,
 				MirrorRunner.swift,
+				MatterMenus.swift,
 				ModelChoice.swift,
 				PageFind.swift,
 				RecordViews.swift,
