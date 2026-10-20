@@ -59,8 +59,9 @@ private struct Findable: ViewModifier {
         let current = hit && find.current == id
         let shown = find.shown.map { id == .model($0) } ?? false
         content
-            .background(shown ? Theme.mark : hit ? Theme.mark.opacity(current ? 1 : 0.45) : .clear, in: RoundedRectangle(cornerRadius: 6))
-            .overlay { if current { RoundedRectangle(cornerRadius: 6).stroke(Theme.gold, lineWidth: 1.5) } }
+            .background(shown ? Theme.mark : hit ? Theme.mark.opacity(current ? 1 : 0.45) : .clear, in: RoundedRectangle(cornerRadius: 8))
+            .overlay { if current { RoundedRectangle(cornerRadius: 8).stroke(Theme.gold, lineWidth: 1.5) } }
+            .animation(.easeOut(duration: 0.35), value: shown)
             .preference(key: PageFindMatches.self, value: hit ? [id] : [])
             .modifier(ScrollTarget(id: id))
     }

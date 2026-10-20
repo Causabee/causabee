@@ -33,7 +33,11 @@ struct ThreadCard: View {
                 ForEach(thread.rows) { row in
                     ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from), subject: thread.subject,
                                   made: links?.made(from: row.entry) ?? RecordLinks.Made(), joinsNext: joined.contains(row.id)) { talk(row.entry) }
+                        // Marked when shown from a task or found: a little room around it, the
+                        // mail itself where it was.
+                        .padding(.horizontal, 10)
                         .findable(.model(row.entry.persistentModelID), row.entry.title, row.entry.from, row.entry.digest)
+                        .padding(.horizontal, -10)
                 }
             }
         }
@@ -158,10 +162,12 @@ struct ThreadMailRow: View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    // Centred on the name, not sat on its baseline: the dot and the arrow are signs
+                    // beside a word, and on the baseline they hung low.
+                    HStack(alignment: .center, spacing: 5) {
                         // Still unread in the mailbox: a gold dot, as Mail has a blue one.
                         if entry.isUnread == true {
-                            Circle().fill(Theme.gold).frame(width: 7, height: 7).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+                            Circle().fill(Theme.gold).frame(width: 7, height: 7)
                                 .accessibilityLabel("unread")
                         }
                         Text(sent ? "You" : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from))
