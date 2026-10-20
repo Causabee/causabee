@@ -378,8 +378,7 @@ struct SourceJump: View {
         #endif
     }
 
-    private var line: AttributedString {
-        let places = places
+    private func line(_ places: [(source: Source, item: PersistentIdentifier?)]) -> AttributedString {
         let reachable = places.contains { $0.item != nil || outside($0.source) != nil }
         var start = AttributedString(before.isEmpty ? "" : before + " · ")
         start.foregroundColor = beforeColor
@@ -390,13 +389,14 @@ struct SourceJump: View {
     }
 
     var body: some View {
-        Text(line)
+        // Looked up once for this drawing: each source's place in the record.
+        let places = places
+        Text(line(places))
             .font(.caption)
             .tint(Theme.gold)
             .fixedSize(horizontal: false, vertical: true)
             .environment(\.openURL, OpenURLAction { url in
                 guard url == Self.jump else { return .systemAction }
-                let places = places
                 if places.count > 1 { choosing = true } else if let place = places.first { go(place) }
                 return .handled
             })
@@ -823,11 +823,25 @@ struct UnreadMatters: View {
     let matters: [Matter]
     let open: (Matter, PersistentIdentifier?) -> Void
     @State private var shown = false
+    /// Only the mails still unread, asked of the store — not every mail of every matter, read again
+    /// each time the overview is drawn.
+    @Query(filter: #Predicate<Entry> { $0.isUnread == true }) private var unreadMails: [Entry]
+
+    /// Each open matter with unread mail, and its newest unread one, the newest first.
+    private var unread: [(Matter, Entry?)] {
+        var newest: [PersistentIdentifier: Entry] = [:]
+        for mail in unreadMails {
+            guard let matter = mail.matter, !matter.isClosed else { continue }
+            if newest[matter.persistentModelID] == nil || (mail.date ?? .distantPast) > (newest[matter.persistentModelID]?.date ?? .distantPast) {
+                newest[matter.persistentModelID] = mail
+            }
+        }
+        return newest.values.compactMap { mail in mail.matter.map { ($0, Optional(mail)) } }
+            .sorted { ($0.1?.date ?? .distantPast) > ($1.1?.date ?? .distantPast) }
+    }
 
     var body: some View {
-        let unread = matters.filter { !$0.isClosed && !$0.unreadMails.isEmpty }
-            .map { matter in (matter, matter.unreadMails.max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }) }
-            .sorted { ($0.1?.date ?? .distantPast) > ($1.1?.date ?? .distantPast) }
+        let unread = unread
         if !unread.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 Button { withAnimation(.snappy) { shown.toggle() } } label: {

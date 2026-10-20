@@ -974,6 +974,9 @@ struct MatterScreen: View {
     /// Everything that came in or was added — mail, files, links — as one list, or one kind of it.
     @ViewBuilder
     private func record(_ status: MatterStatus) -> some View {
+        // Built once for this drawing, for the menus' counts and the list alike.
+        let made = RecordLinks(matter)
+        let threads = MailThreads.build(status.mailEntries)
         HStack(spacing: 10) {
             // Which mail answers which, read once from the mailbox — as on the Mac.
             Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) {
@@ -981,7 +984,7 @@ struct MatterScreen: View {
                 if !store.isDemo { await UnreadMail.refresh(matter, in: context) }
                 await ReplyLinks.fill(in: matter, context: context)
             }
-            RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts(status), person: personParty?.name, clearPerson: { person = nil }) {
+            RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts(threads: threads, made: made), person: personParty?.name, clearPerson: { person = nil }) {
                 // The matter's folder, on the record's own line — as on the Mac. Files are added by the plus.
                 if filter == .everything || filter == .files || filter == .scans {
                     // Not in the demo: its made-up matters have no folder among the owner's own.
@@ -1008,14 +1011,13 @@ struct MatterScreen: View {
         } else {
             // What to have at hand, on top of what came in.
             if filter == .everything, show == .all, personParty == nil { DetailsSection(matter: matter) }
-            recordList(status)
+            recordList(threads: threads, made: made)
         }
     }
 
     /// How many there are for each "Show", of the kind chosen.
-    private func counts(_ status: MatterStatus) -> [RecordBrowse.Show: Int] {
-        let made = RecordLinks(matter), threads = MailThreads.build(status.mailEntries)
-        return Dictionary(uniqueKeysWithValues: RecordBrowse.Show.allCases.map { item in
+    private func counts(threads: [MailThreads.Thread], made: RecordLinks) -> [RecordBrowse.Show: Int] {
+        Dictionary(uniqueKeysWithValues: RecordBrowse.Show.allCases.map { item in
             (item, RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks, kind: filter, show: item, made: made).items.count)
         })
     }
@@ -1023,10 +1025,9 @@ struct MatterScreen: View {
     /// The record as the three menus have it: what kind, which of them, in which order — with
     /// what a person chosen in People wrote or is named in.
     @ViewBuilder
-    private func recordList(_ status: MatterStatus) -> some View {
+    private func recordList(threads: [MailThreads.Thread], made: RecordLinks) -> some View {
         let party = personParty
-        let made = RecordLinks(matter)
-        let picked = RecordBrowse.pick(threads: MailThreads.build(status.mailEntries), documents: shownDocuments,
+        let picked = RecordBrowse.pick(threads: threads, documents: shownDocuments,
                                        links: party == nil ? keptLinks : [], kind: filter, show: show, made: made)
         let all = party.map { party in
             picked.items.filter { item in NamedPeople.of(item, in: matter).contains { $0.id == party.persistentModelID } }
