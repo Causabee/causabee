@@ -26,13 +26,13 @@ struct PhoneWeek: View {
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today
         let late = !overdue.isEmpty
         // On a full day what is done with leaves the list: it stayed as crowded at night as in the morning.
-        let (things, over) = Week.asTheDayGoes(Week.things(on: day, in: matters), on: day, now: now)
+        let (things, over) = Week.asTheDayGoes(StoredChanges.shared.things(on: day, in: matters), on: day, now: now)
         let lateToday = day == today ? overdue : []
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 4) {
                 ForEach(days, id: \.self) { each in
                     cell(each, isToday: each == today, isChosen: each == day,
-                         count: Week.asTheDayGoes(Week.things(on: each, in: matters), on: each, now: now).ahead.count, late: each == today && late)
+                         count: Week.asTheDayGoes(StoredChanges.shared.things(on: each, in: matters), on: each, now: now).ahead.count, late: each == today && late)
                 }
             }
             SectionHeader(title: day == today ? "Today · " + Self.heading(day) : Self.heading(day),
@@ -65,7 +65,8 @@ struct PhoneWeek: View {
 
     /// What is overdue in the open matters, the longest first.
     private var overdue: [Todo] {
-        matters.filter { !$0.isClosed }.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "") < ($1.due ?? "") }
+        // Asked once per change, not by every drawing of the week.
+        StoredChanges.shared.overdue(in: matters)
     }
 
     /// How many are overdue, and the longest since when; a tap opens the list in place, each line
@@ -172,7 +173,7 @@ struct PhoneWeek: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(isToday ? "Nothing today." : "Nothing on \(Self.weekdayWide.string(from: MatterStatus.date(of: day) ?? Date())).")
                 .font(.subheadline).foregroundStyle(.secondary)
-            if let next = Week.next(after: day, in: matters) {
+            if let next = StoredChanges.shared.next(after: day, in: matters) {
                 Button { navigation.open(next.thing.matter, showing: next.thing.todo?.persistentModelID) } label: {
                     Text("Next: \(Self.heading(next.day)) — \((next.thing.time.map { "\($0) · " } ?? "") + next.thing.what) · \(next.thing.matter.name)")
                         .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)

@@ -192,23 +192,23 @@ struct PhoneMatterCard: View {
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
-        let _ = StoredChanges.shared.count
-        let status = MatterStatus(matter)
+        // Prepared once per change, not worked out by every card each time it draws.
+        let summary = StoredChanges.shared.summary(matter)
         VStack(alignment: .leading, spacing: 8) {
-            BeeChip(text: Self.line(mine: status.open(.me).count, ours: status.open(.we).count, waiting: status.open(.other).count))
+            BeeChip(text: Self.line(mine: summary.mine, ours: summary.ours, waiting: summary.waiting))
             HStack(spacing: 10) {
                 MatterIconTile(matter: matter, size: 38)
                 Text(matter.name).font(Theme.phoneCardTitleFont).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
             }
-            if let next = status.next {
+            if let next = summary.next {
                 Text("Next, on \(Dates.short(next.day)): \(next.what)").font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
             }
-            let overdue = status.overdue.sorted { ($0.due ?? "") < ($1.due ?? "") }
-            ForEach(overdue.prefix(3)) { todo in
-                Button { open(todo.persistentModelID) } label: {
+            let overdue = summary.overdue
+            ForEach(overdue.prefix(3), id: \.todo) { todo in
+                Button { open(todo.todo) } label: {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Image(systemName: "exclamationmark.circle").font(.footnote)
-                        Text("Overdue since \(todo.due.map(Dates.short) ?? ""): \(todo.text)").lineLimit(2).multilineTextAlignment(.leading)
+                        Text("Overdue since \(Dates.short(todo.due)): \(todo.text)").lineLimit(2).multilineTextAlignment(.leading)
                     }
                     .font(.subheadline)
                     .foregroundStyle(Theme.warning)
@@ -217,7 +217,7 @@ struct PhoneMatterCard: View {
             }
             // A way to the rest, as on the Mac: the matter opens at the first of them.
             if overdue.count > 3 {
-                Button { open(overdue[3].persistentModelID) } label: {
+                Button { open(overdue[3].todo) } label: {
                     Text("… and \(overdue.count - 3) more overdue").font(.caption).foregroundStyle(Theme.warning)
                 }
                 .buttonStyle(.plain)
@@ -241,22 +241,8 @@ struct PhoneMatterCard: View {
 
 /// The matters that have something going on, late ones first, then by their next day — as on the Mac.
 @MainActor func activeMatters(_ matters: [Matter]) -> [Matter] {
-    Once.worked("active", for: matters) { workOutActiveMatters(matters) }
-}
-
-private func workOutActiveMatters(_ matters: [Matter]) -> [Matter] {
-    return matters.compactMap { matter -> (matter: Matter, late: Bool, next: String)? in
-        guard !matter.isClosed else { return nil }
-        let status = MatterStatus(matter), next = status.next
-        guard !matter.openTodos.isEmpty || next != nil else { return nil }
-        return (matter, !status.overdue.isEmpty, next?.day ?? "9999")
-    }
-    .sorted { a, b in
-        if a.late != b.late { return a.late }
-        if a.next != b.next { return a.next < b.next }
-        return a.matter.name.localizedStandardCompare(b.matter.name) == .orderedAscending
-    }
-    .map(\.matter)
+    // From the prepared overview: worked out once per change to the store, however often asked.
+    OverviewPages.matters(StoredChanges.shared.overview(matters).active, among: matters)
 }
 
 /// What is worked out from all the matters — which are going on, their order — is worked out once

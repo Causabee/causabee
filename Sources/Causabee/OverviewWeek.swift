@@ -27,13 +27,13 @@ struct OverviewWeek: View {
         let today = days[0]
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today
         // On a full day what is done with leaves the tiles: it stayed as crowded at night as in the morning.
-        let (things, over) = Week.asTheDayGoes(Week.things(on: day, in: matters), on: day, now: now)
+        let (things, over) = Week.asTheDayGoes(StoredChanges.shared.things(on: day, in: matters), on: day, now: now)
         return VStack(alignment: .leading, spacing: 10) {
             // As Figma's "Mac · Overview" has them: at most 72 wide each, and from the left.
             HStack(spacing: 6) {
                 ForEach(days, id: \.self) { each in
                     cell(each, isToday: each == today, isChosen: each == day,
-                         count: Week.asTheDayGoes(Week.things(on: each, in: matters), on: each, now: now).ahead.count, late: each == today ? overdue.count : 0)
+                         count: Week.asTheDayGoes(StoredChanges.shared.things(on: each, in: matters), on: each, now: now).ahead.count, late: each == today ? overdue.count : 0)
                         .frame(maxWidth: 72)
                 }
                 Spacer(minLength: 0)
@@ -70,7 +70,7 @@ struct OverviewWeek: View {
     }
 
     private func dayGrid(_ day: String, today: String, isShown: Bool, now: Date) -> some View {
-        let (things, over) = Week.asTheDayGoes(Week.things(on: day, in: matters), on: day, now: now)
+        let (things, over) = Week.asTheDayGoes(StoredChanges.shared.things(on: day, in: matters), on: day, now: now)
         let late = day == today ? overdue : []
         // A day without anything is one tile too, a column wide, saying what comes next. What is
         // over comes after what is ahead, paler, only while it is unfolded.
@@ -158,7 +158,8 @@ struct OverviewWeek: View {
 
     /// What is overdue in the open matters, the longest first.
     private var overdue: [Todo] {
-        matters.filter { !$0.isClosed }.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "") < ($1.due ?? "") }
+        // Asked once per change, not by every drawing of the week.
+        StoredChanges.shared.overdue(in: matters)
     }
 
     /// First on today: how many are overdue — a click lists them, each a door to its task. Only
@@ -206,7 +207,7 @@ struct OverviewWeek: View {
 
     /// A day without anything says so, and what comes next — a click is never a dead end.
     private func nothing(after day: String, isToday: Bool) -> some View {
-        let next = Week.next(after: day, in: matters)
+        let next = StoredChanges.shared.next(after: day, in: matters)
         return Button {
             if let next { navigation.open(next.thing.matter, showing: next.thing.todo?.persistentModelID) }
         } label: {
@@ -272,15 +273,16 @@ struct OverviewRows: View {
     /// The matter's name in the cards' serif, and under it how many are open, the next day and
     /// what is overdue — as the sidebar's row says it.
     private func line(_ matter: Matter) -> some View {
-        let status = MatterStatus(matter)
+        // Prepared once per change, not worked out by every row each time it draws.
+        let summary = StoredChanges.shared.summary(matter)
         return HStack(spacing: 10) {
             MatterIconTile(matter: matter, size: 30)
             VStack(alignment: .leading, spacing: 3) {
                 Text(matter.name).font(Theme.rowTitleFont).lineLimit(1)
                 HStack(spacing: 4) {
-                    Text("\(matter.openTodos.count) open")
-                    if let next = status.next { Text("· next \(Dates.short(next.day))") }
-                    if !status.overdue.isEmpty { Text("· \(status.overdue.count) overdue").foregroundStyle(Theme.warning) }
+                    Text("\(summary.openCount) open")
+                    if let next = summary.next { Text("· next \(Dates.short(next.day))") }
+                    if !summary.overdue.isEmpty { Text("· \(summary.overdue.count) overdue").foregroundStyle(Theme.warning) }
                 }
                 .font(.caption).foregroundStyle(.secondary)
             }

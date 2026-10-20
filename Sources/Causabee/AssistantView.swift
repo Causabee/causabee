@@ -8,19 +8,8 @@ import UniformTypeIdentifiers
 /// then the soonest.
 @MainActor
 func activeMatters(_ matters: [Matter]) -> [Matter] {
-    // Each matter's status read once, not again in every comparison.
-    matters.compactMap { matter -> (matter: Matter, late: Bool, next: String)? in
-        guard !matter.isClosed else { return nil }
-        let status = MatterStatus(matter), next = status.next
-        guard !matter.openTodos.isEmpty || next != nil else { return nil }
-        return (matter, !status.overdue.isEmpty, next?.day ?? "9999")
-    }
-    .sorted { a, b in
-        if a.late != b.late { return a.late }
-        if a.next != b.next { return a.next < b.next }
-        return a.matter.name.localizedStandardCompare(b.matter.name) == .orderedAscending
-    }
-    .map(\.matter)
+    // From the prepared overview: worked out once per change to the store, however often asked.
+    OverviewPages.matters(StoredChanges.shared.overview(matters).active, among: matters)
 }
 
 /// C1 · the assistant, always there on the left: one thread over every matter, cards rather than
@@ -568,8 +557,8 @@ struct OverviewView: View {
                     OverviewRows(matters: rest, all: matters)
                 }
                 // A closed matter is out of the overview, unless mail came for it after it was closed.
-                ForEach(matters.filter { $0.isClosed && !MatterStatus($0).mailsSinceClosed.isEmpty }) { matter in
-                    let new = MatterStatus(matter).mailsSinceClosed.count
+                ForEach(matters.filter { $0.isClosed && StoredChanges.shared.summary($0).newMailsSinceClosed > 0 }) { matter in
+                    let new = StoredChanges.shared.summary(matter).newMailsSinceClosed
                     HStack {
                         Image(systemName: "archivebox").foregroundStyle(.secondary)
                         Text("\(new) new \(new == 1 ? "mail" : "mails") in the closed matter “\(matter.name)”")
@@ -1065,24 +1054,24 @@ struct MatterCard: View {
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
-        let _ = StoredChanges.shared.count
-        let status = MatterStatus(matter)
+        // Prepared once per change, not worked out by every card each time it draws.
+        let summary = StoredChanges.shared.summary(matter)
         VStack(alignment: .leading, spacing: 8) {
-            let mine = status.open(.me).count, ours = status.open(.we).count, waiting = status.open(.other).count
+            let mine = summary.mine, ours = summary.ours, waiting = summary.waiting
             BeeChip(text: line(mine: mine, ours: ours, waiting: waiting))
             HStack(spacing: 10) {
                 MatterIconTile(matter: matter, size: 34)
                 Text(matter.name).font(Theme.cardTitleFont).foregroundStyle(.primary)
             }
-            if let next = status.next {
+            if let next = summary.next {
                 Text("Next, on \(Dates.short(next.day)): \(next.what)").foregroundStyle(.secondary).lineLimit(2)
             }
-            let overdue = status.overdue.sorted { ($0.due ?? "") < ($1.due ?? "") }
-            ForEach(overdue.prefix(3)) { todo in
-                Button { openTodo(todo.persistentModelID) } label: {
+            let overdue = summary.overdue
+            ForEach(overdue.prefix(3), id: \.todo) { todo in
+                Button { openTodo(todo.todo) } label: {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Image(systemName: "exclamationmark.circle")
-                        Text("Overdue since \(todo.due.map(Dates.short) ?? ""): \(todo.text)").lineLimit(2).multilineTextAlignment(.leading)
+                        Text("Overdue since \(Dates.short(todo.due)): \(todo.text)").lineLimit(2).multilineTextAlignment(.leading)
                     }
                     .font(.callout)
                     .foregroundStyle(Theme.warning)
@@ -1092,7 +1081,7 @@ struct MatterCard: View {
             }
             if overdue.count > 3 {
                 // The matter opens at the first of the rest — as on the iPhone and the iPad.
-                Button("… and \(overdue.count - 3) more overdue") { openTodo(overdue[3].persistentModelID) }
+                Button("… and \(overdue.count - 3) more overdue") { openTodo(overdue[3].todo) }
                     .buttonStyle(.plain).font(.caption).foregroundStyle(Theme.warning)
                     .help("Open the matter, at the first of these")
             }

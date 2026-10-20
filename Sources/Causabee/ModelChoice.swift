@@ -232,7 +232,49 @@ struct ModelChoiceSync: ViewModifier {
 @Observable
 final class StoredChanges {
     static let shared = StoredChanges()
-    private(set) var count = 0
+    fileprivate(set) var count = 0
+
+    /// The prepared overview for these matters, as the store is now: prepared once per change,
+    /// however many views ask for it.
+    func overview(_ matters: [Matter]) -> OverviewPage {
+        OverviewPages.shared.page(for: matters, version: count)
+    }
+
+    /// One matter as its card or row shows it, prepared once per change.
+    func summary(_ matter: Matter) -> MatterSummary {
+        OverviewPages.shared.summary(of: matter, version: count)
+    }
+
+    // The week's questions, answered once per change and per day — the week asked them eight or
+    // nine times each time it drew, and it draws every minute.
+    @ObservationIgnored private var weekKept: [String: Any] = [:]
+    @ObservationIgnored private var weekVersion = -1
+
+    private func kept<Value>(_ name: String, for matters: [Matter], _ work: () -> Value) -> Value {
+        if weekVersion != count { weekKept = [:]; weekVersion = count }
+        var hasher = Hasher()
+        for matter in matters { hasher.combine(matter.persistentModelID) }
+        let key = "\(name) \(MatterStatus.day(Date())) \(hasher.finalize())"
+        if let value = weekKept[key] as? Value { return value }
+        let value = work()
+        weekKept[key] = value
+        return value
+    }
+
+    func things(on day: String, in matters: [Matter]) -> [DayThing] {
+        kept("things \(day)", for: matters) { Week.things(on: day, in: matters) }
+    }
+
+    func next(after day: String, in matters: [Matter]) -> (day: String, thing: DayThing)? {
+        kept("next \(day)", for: matters) { Week.next(after: day, in: matters) }
+    }
+
+    /// Every open task past its day, the longest overdue first.
+    func overdue(in matters: [Matter]) -> [Todo] {
+        kept("overdue", for: matters) {
+            matters.filter { !$0.isClosed }.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "") < ($1.due ?? "") }
+        }
+    }
     /// The app's context, for the debug build's report of what it sees.
     @ObservationIgnored var context: ModelContext?
     @ObservationIgnored private var watching = false
@@ -244,6 +286,10 @@ final class StoredChanges {
         watching = true
         NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { StoredChanges.shared.changed() }
+        }
+        // A change saved here is a change too, at once: the prepared overview is made anew from it.
+        NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { StoredChanges.shared.count += 1 }
         }
     }
 
