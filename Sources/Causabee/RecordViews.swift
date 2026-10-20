@@ -156,7 +156,7 @@ struct ThreadMailRow: View {
         // The lines to the mail it answers are drawn behind the row, as tall as the row is: set
         // beside it, the lines asked for all the height there was, and the row grew with them.
         HStack(alignment: .top, spacing: 0) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
                         Text(sent ? "You" : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
@@ -198,11 +198,19 @@ struct ThreadMailRow: View {
                         Button("more") { withAnimation(.snappy) { opened = true } }.buttonStyle(.gold).font(.caption)
                     }
                 }
-                MadeChips(made: made).padding(.top, made.isEmpty ? 0 : 4)
-                // What each of them was read out of, in its own words.
-                ForEach(Array(quotes.enumerated()), id: \.offset) { _, quote in
-                    Label { Text("“\(quote.text)”").italic().lineLimit(2) } icon: { Image(systemName: quote.sign) }
-                        .font(.caption).foregroundStyle(.secondary)
+                MadeChips(made: made).padding(.top, made.isEmpty ? 0 : 2)
+                // What each of them was read out of, in its own words: a quiet quote, a thin line
+                // on its left — the chips above already say what came of it.
+                let quotes = quotes
+                if !quotes.isEmpty {
+                    VStack(alignment: .leading, spacing: 5) {
+                        ForEach(Array(quotes.enumerated()), id: \.offset) { _, quote in
+                            Text("“\(quote.text)”").italic().lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .font(.caption).foregroundStyle(.secondary)
+                    .padding(.leading, 10)
+                    .overlay(alignment: .leading) { Capsule().fill(Theme.line).frame(width: 2) }
                 }
                 if hasText {
                     Button(whole == nil ? (entry.source.kind == .mail ? "Show the whole mail" : "Show the whole text") : "Hide it again") {
@@ -210,7 +218,7 @@ struct ThreadMailRow: View {
                             whole = whole == nil ? KeptTexts.store.flatMap { MailText.load(entry.messageID, besides: $0)?.body } ?? "" : nil
                         }
                     }
-                    .buttonStyle(.gold).font(.caption).padding(.top, 2)
+                    .buttonStyle(.gold).font(.caption)
                     .help("Its own words, kept on this device — without opening Mail")
                 }
                 if let whole {
@@ -225,10 +233,9 @@ struct ThreadMailRow: View {
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Theme.box, in: RoundedRectangle(cornerRadius: 8))
-                        .padding(.top, 4)
                 }
             }
-            .padding(.vertical, 6)
+            .padding(.vertical, 10)
             .padding(.leading, depth > 0 ? 6 : 0)
         }
         .padding(.leading, CGFloat(depth) * Self.step)
@@ -277,7 +284,7 @@ struct ThreadRails: Shape {
             path.move(to: CGPoint(x: x(index + 1), y: rect.minY))
             path.addLine(to: CGPoint(x: x(index + 1), y: rect.maxY))
         }
-        let turn: CGFloat = 16
+        let turn: CGFloat = 20
         path.move(to: CGPoint(x: x(depth), y: rect.minY))
         path.addLine(to: CGPoint(x: x(depth), y: isLast ? turn : rect.maxY))
         path.move(to: CGPoint(x: x(depth), y: turn))
