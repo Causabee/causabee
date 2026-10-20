@@ -85,9 +85,10 @@ public enum AssistantPrompt {
     to, `subject` its subject, `text` the whole message, ready to send: in the language and the \
     tone of the mail with that party, from the facts only, signed with the owner's name. It is \
     opened in the owner's mail program; the owner sends it, never you. When the owner asks for a \
-    mail, this card is the answer, and the lines only say what it contains. A file of the matter \
-    that the owner wants sent along is attached by the app when the draft names it by its exact \
-    file name: name it in `text`, and do not say that it cannot be attached.
+    mail, this card is the answer, and the lines only say what it contains. The files of the matter \
+    to send along — a photo, a scan, a PDF the owner wants with it — go into `attach`, each by its \
+    exact name from the facts' list of files; the app attaches them. `attach` is empty for every \
+    other card, and for a draft that sends nothing along. Never say that a file cannot be attached.
     - `short_message`: the owner asks for a short message to send in a chat — WhatsApp, Signal, \
     iMessage, SMS, Telegram, Threema, Slack, "a short message to …", "text her that …" — in whatever \
     language they ask: "per WhatsApp", "als SMS", "kurze Nachricht an …". `party` is who it goes to, \
@@ -149,6 +150,7 @@ public enum AssistantPrompt {
                 "due": ["anyOf": [["type": "string", "format": "date"], ["type": "null"]]],
                 "reason": string,
                 "cites": ["type": "array", "items": string],
+                "attach": ["type": "array", "items": string],
             ])],
             "not_in_facts": optional,
         ])
@@ -182,6 +184,9 @@ public enum AssistantPrompt {
             public var due: String?
             public var reason: String
             public var cites: [String]
+            /// A draft's files to send along, by their names in the facts. Nil in answers from
+            /// before there was the field.
+            public var attach: [String]? = nil
         }
         public var lines: [Line]
         public var cards: [Card]

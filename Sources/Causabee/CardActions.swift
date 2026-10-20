@@ -57,18 +57,19 @@ enum CardActions {
 
     /// What a draft's card says of its files before it is opened: "Attached: memo.pdf", and what is
     /// named but not on this device. Nil when the draft names no file of the matter.
-    static func attachmentLine(text: String, question: String?, scope: Matter?) -> String? {
-        let along = attachments(text: text, question: question, scope: scope)
+    static func attachmentLine(text: String, question: String?, scope: Matter?, attach: [String] = []) -> String? {
+        let along = attachments(text: text, question: question, scope: scope, attach: attach)
         var parts: [String] = []
         if !along.files.isEmpty { parts.append("Attached: " + along.files.map(\.lastPathComponent).joined(separator: ", ")) }
         if !along.missing.isEmpty { parts.append("Not on this \(ThisDevice.name), attach by hand: " + along.missing.joined(separator: ", ")) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
-    /// The files a draft takes along: the matter's files named in it or in what was asked.
-    static func attachments(text: String, question: String?, scope: Matter?) -> (files: [URL], missing: [String]) {
+    /// The files a draft takes along: those its card lists to attach, and the matter's files named
+    /// in its words or in what was asked.
+    static func attachments(text: String, question: String?, scope: Matter?, attach: [String] = []) -> (files: [URL], missing: [String]) {
         var files: [URL] = [], missing: [String] = []
-        for document in DraftAttachments.named(in: [text, question ?? ""], among: scope?.documents ?? []) {
+        for document in DraftAttachments.named(in: [text, question ?? ""] + attach, among: scope?.documents ?? []) {
             let own = document.source.fileURL.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
             if let file = own ?? MatterFolders.kept(document) { files.append(file) } else { missing.append(document.shownName) }
         }
@@ -309,6 +310,12 @@ enum CardActions {
         return [wrote.first { $0.address == typed } ?? MailAddress(address: typed, last: nil, count: 0)] + wrote.filter { $0.address != typed }
     }
 
+    /// What a draft's card says of whom it goes to: the name and the address — or that none is known,
+    /// so it is not found out only in Mail.
+    static func toLine(_ recipient: (name: String, address: String?)) -> String {
+        "To " + recipient.name + " · " + (recipient.address ?? "no address known — add one under People")
+    }
+
     /// The address a party last wrote from.
     static func address(of party: Party) -> String? { addresses(of: party).first?.address }
 
@@ -417,7 +424,7 @@ enum CardActions {
             parts.path = to
             parts.queryItems = [URLQueryItem(name: "subject", value: subject ?? card.subject ?? ""), URLQueryItem(name: "body", value: text)]
             guard let url = parts.url else { return .nothing }
-            let along = attachments(text: text, question: question, scope: scope)
+            let along = attachments(text: text, question: question, scope: scope, attach: card.attach ?? [])
             return .openMail(url, MailDraft(to: to, subject: subject ?? card.subject ?? "", body: text, files: along.files, missing: along.missing))
         case .newMatter:
             guard !text.isEmpty, let matter = try? Matter.make(named: text, in: context) else { return .nothing }

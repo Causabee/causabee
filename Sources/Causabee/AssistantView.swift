@@ -863,7 +863,7 @@ struct ActionCard: View {
             CardFace(label: draft ? "Draft · Mail" : title,
                      subject: draft ? $subject : nil,
                      headline: draft || editable ? nil : what,
-                     sub: draft ? recipient.map { "To " + $0.name } : editable ? what : nil,
+                     sub: draft ? recipient.map(CardActions.toLine) : editable ? what : nil,
                      text: draft || editable ? $text : nil,
                      serif: draft,
                      notes: notes,
@@ -890,7 +890,8 @@ struct ActionCard: View {
     /// The small lines under the card: the files a draft takes along; for the rest, why — and what
     /// merging two people means.
     private var notes: [(text: String, symbol: String?)] {
-        if card.kind == .draftMessage { return along(text).map { [($0, "paperclip")] } ?? [] }
+        // What it takes along: the files the card lists, and those its words name.
+        if card.kind == .draftMessage { return along(([text] + (card.attach ?? [])).joined(separator: "\n")).map { [($0, "paperclip")] } ?? [] }
         var notes: [(text: String, symbol: String?)] = card.reason.isEmpty ? [] : [(card.reason, nil)]
         if card.kind == .sameParty { notes.append(("Later you can only turn merging off for new mail; you cannot split it again.", nil)) }
         return notes

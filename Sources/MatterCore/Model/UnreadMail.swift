@@ -60,6 +60,15 @@ extension UnreadMail {
 }
 
 extension Matter {
+    /// Where a person of the matter is reached by mail: the address the owner put in by hand, else
+    /// the one they last wrote from here.
+    public func reachAddress(of party: Party) -> String? {
+        if let typed = party.address?.trimmingCharacters(in: .whitespacesAndNewlines), typed.contains("@") { return typed }
+        return (entries ?? []).filter { writer($0.from) === party }
+            .max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
+            .map { Email.address(in: $0.from) }.flatMap { $0.contains("@") ? $0 : nil }
+    }
+
     /// Its mails still unread in the mailbox.
     public var unreadMails: [Entry] { (entries ?? []).filter { $0.isUnread == true } }
 }
