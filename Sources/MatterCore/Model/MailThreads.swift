@@ -115,6 +115,24 @@ public enum MailThreads {
 }
 
 extension MailFetch {
+    /// For each mail, whether the mailbox still has it unread — one `UID SEARCH UNSEEN` per folder,
+    /// read-only: asking changes no flag. Mails of a folder that was renumbered are left out.
+    public static func unread(of mails: [(pointer: String, messageID: String)],
+                              from mailbox: some ReadOnlyMailbox) async throws -> [String: Bool] {
+        var byFolder: [String: (validity: UInt32, uids: [UInt32: String])] = [:]
+        for mail in mails {
+            guard let (folder, validity, uid) = parse(mail.pointer) else { continue }
+            byFolder[folder, default: (validity, [:])].uids[uid] = mail.messageID
+        }
+        var unread: [String: Bool] = [:]
+        for (folder, wanted) in byFolder {
+            guard let opened = try? await mailbox.examine(folder), opened.uidValidity == wanted.validity else { continue }
+            let unseen = Set(try await mailbox.search([.unseen]))
+            for (uid, id) in wanted.uids { unread[id] = unseen.contains(uid) }
+        }
+        return unread
+    }
+
     /// For each mail, the Message-ID it answers ("" for none), read from the headers only —
     /// one fetch per folder, read-only. Mails the folder no longer has are left out.
     public static func replyLinks(of mails: [(pointer: String, messageID: String)],

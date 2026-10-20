@@ -4,7 +4,7 @@ import Testing
 
 /// A mailbox in memory: folders of raw mails, searched the way a server would.
 actor FakeMailbox: ReadOnlyMailbox {
-    struct Stored { var uid: UInt32; var thread: String?; var raw: String }
+    struct Stored { var uid: UInt32; var thread: String?; var raw: String; var seen = true }
     let isGmail: Bool
     let folderList: [MailFolder]
     let content: [String: [Stored]]
@@ -41,6 +41,7 @@ actor FakeMailbox: ReadOnlyMailbox {
                 case .from(let address): (headers["from"]?.first ?? "").lowercased().contains(address.lowercased())
                 case .to(let address): (headers["to"]?.first ?? "").lowercased().contains(address.lowercased())
                 case .any(let keys): keys.contains(where: fits)
+                case .unseen: !stored.seen
                 }
             }
             return keys.allSatisfy(fits)

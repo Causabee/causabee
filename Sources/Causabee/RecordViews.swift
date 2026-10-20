@@ -159,7 +159,13 @@ struct ThreadMailRow: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        Text(sent ? "You" : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
+                        // Still unread in the mailbox: a gold dot, as Mail has a blue one.
+                        if entry.isUnread == true {
+                            Circle().fill(Theme.gold).frame(width: 7, height: 7).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+                                .accessibilityLabel("unread")
+                        }
+                        Text(sent ? "You" : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from))
+                            .fontWeight(entry.isUnread == true ? .semibold : .medium).lineLimit(1)
                         if entry.source.kind == .mail { MailWay(sent: sent) }
                     }
                     .accessibilityElement(children: .combine)
@@ -193,7 +199,7 @@ struct ThreadMailRow: View {
                         #else
                         .font(.subheadline)
                         #endif
-                        .foregroundStyle(.secondary).lineLimit(opened ? nil : 5).fixedSize(horizontal: false, vertical: true)
+                        .foregroundStyle(entry.isUnread == true ? Color.primary : Color.secondary).lineLimit(opened ? nil : 5).fixedSize(horizontal: false, vertical: true)
                     if !opened, digest.count > 320 {
                         Button("more") { withAnimation(.snappy) { opened = true } }.buttonStyle(.gold).font(.caption)
                     }
@@ -761,5 +767,56 @@ enum NamedPeople {
         }
         var seen = Set<PersistentIdentifier>()
         return entries.flatMap { of($0, in: matter) }.filter { seen.insert($0.id).inserted }
+    }
+}
+
+// MARK: Unread
+
+/// "Matters with unread mail": a filter over the overview, not a count on each matter — folded,
+/// one line; open, the matters, each a way to its newest unread mail. Nothing when none has any.
+struct UnreadMatters: View {
+    let matters: [Matter]
+    let open: (Matter, PersistentIdentifier?) -> Void
+    @State private var shown = false
+
+    var body: some View {
+        let unread = matters.filter { !$0.isClosed && !$0.unreadMails.isEmpty }
+            .map { matter in (matter, matter.unreadMails.max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }) }
+            .sorted { ($0.1?.date ?? .distantPast) > ($1.1?.date ?? .distantPast) }
+        if !unread.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Button { withAnimation(.snappy) { shown.toggle() } } label: {
+                    HStack(spacing: 8) {
+                        Circle().fill(Theme.gold).frame(width: 7, height: 7)
+                        Text("Matters with unread mail")
+                        Image(systemName: shown ? "chevron.up" : "chevron.down").font(.caption2)
+                    }
+                    .font(.callout).foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(shown ? "Fold them away" : "Show the matters with mail you haven't read in your mailbox")
+                if shown {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(unread, id: \.0.persistentModelID) { matter, newest in
+                            Button { open(matter, newest?.persistentModelID) } label: {
+                                HStack(spacing: 10) {
+                                    Text(matter.name).foregroundStyle(.primary).lineLimit(1)
+                                    Spacer(minLength: 8)
+                                    if let day = newest?.date {
+                                        Text(Dates.short(day)).font(.caption).foregroundStyle(.secondary).fixedSize()
+                                    }
+                                }
+                                .padding(.vertical, 8).padding(.leading, 15)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .help("Opens the matter at its newest unread mail")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+        }
     }
 }

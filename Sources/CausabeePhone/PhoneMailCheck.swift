@@ -177,6 +177,8 @@ final class PhoneMailCheck {
             guard let password = try? Keychain.password(for: door.account.user),
                   let look = try? await door.look(password: password) else { return }
             lastChecked = Date()
+            // Which mail is still unread in the mailbox — asked, never changed there.
+            Task { await UnreadMail.refresh(account: door.account, password: password, in: context) }
             guard isQuiet else { return }
             // Auto: read at once, and offered to be taken in.
             if look.withoutOffered.pending > 0, AutoMode.isOn { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
@@ -254,6 +256,8 @@ final class PhoneMailCheck {
                 let look = try await door.look(password: password)
                 guard !Task.isCancelled else { return }
                 lastChecked = Date()
+                // Which mail is still unread in the mailbox — asked, never changed there.
+                Task { await UnreadMail.refresh(account: door.account, password: password, in: context) }
                 if look.pending == 0 { state = .nothingNew(known: look.intake.alreadyKnown) }
                 else if AutoMode.isOn, look.withoutOffered.pending > 0 { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
                 else { state = .ready(look, door) }

@@ -250,6 +250,8 @@ enum DemoData {
             let source = Source(kind: .mail, pointer: "imap://demo.example/INBOX;UID=\(mails)", messageID: id, date: DemoData.date(offset, hour: 8 + mails % 9))
             let entry = Entry(title: title, from: from, date: source.date, source: source)
             entry.digest = digest
+            // Yesterday's mail of two matters is still unread in the made-up mailbox.
+            entry.isUnread = offset >= -1 && ["care-for-helga", "lisbon-october"].contains(matter.key)
             entry.matter = matter
             context.insert(entry)
             // Its own words, kept as a real mail's are, so "Show the whole mail" has them.

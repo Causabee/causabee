@@ -96,6 +96,8 @@ final class MailCheck {
             guard let password = try? await MailSecret.secret(for: account),
                   let look = try? await door.look(password: password) else { return }
             lastChecked = Date()
+            // Which mail is still unread in the mailbox — asked, never changed there.
+            Task { await UnreadMail.refresh(account: account, password: password, in: context) }
             // Something else began meanwhile — a check by hand, a Sort in: that one decides.
             switch state {
             case .idle, .nothingNew, .done, .failed, .newMail:
@@ -180,6 +182,8 @@ final class MailCheck {
                 }
                 let look = try await door.look(password: password)
                 lastChecked = Date()
+                // Which mail is still unread in the mailbox — asked, never changed there.
+                Task { await UnreadMail.refresh(account: account, password: password, in: context) }
                 if look.pending == 0 { state = .nothingNew(known: look.intake.alreadyKnown) }
                 // Auto: no list to tick first — read at once, and offered to be taken in.
                 else if AutoMode.isOn, look.withoutOffered.pending > 0 { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }

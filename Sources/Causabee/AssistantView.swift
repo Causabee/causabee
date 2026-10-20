@@ -548,6 +548,7 @@ struct OverviewView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 84).padding(.bottom, 18)
                 if !matters.isEmpty { OverviewWeek(matters: matters) }
+                UnreadMatters(matters: matters) { matter, mail in navigation.open(matter, showing: mail) }
                 let pinned = Pins.pinned(matters)
                 if !pinned.isEmpty { pinnedCards(pinned).padding(.top, 6) }
                 let rest = ordered.filter { !$0.isPinned }

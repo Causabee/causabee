@@ -128,6 +128,9 @@ public final class Entry {
     /// The Message-ID of the mail this one answers: "" when it answers none, nil when not yet
     /// known — mail sorted in before it was kept, read once from the mailbox's headers.
     public var replyTo: String?
+    /// Still unread in the mailbox, as it said at the last mail check: nil where it has no say —
+    /// a scan, a mail dropped in, a mail not looked at yet. Synced, so every device shows the same.
+    public var isUnread: Bool?
     public var matter: Matter?
 
     public init(title: String, from: String, date: Date?, source: Source) {

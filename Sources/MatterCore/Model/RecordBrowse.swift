@@ -20,7 +20,7 @@ public enum RecordBrowse {
     }
 
     public enum Show: String, CaseIterable, Sendable {
-        case all, withFacts, info, kept
+        case all, withFacts, info, kept, unread
 
         public var label: String {
             switch self {
@@ -28,6 +28,7 @@ public enum RecordBrowse {
             case .withFacts: "With tasks or dates"
             case .info: "Information only"
             case .kept: "Kept only"
+            case .unread: "Unread"
             }
         }
     }
@@ -113,6 +114,7 @@ public enum RecordBrowse {
             case .withFacts: !made.made(from: document).isEmpty
             case .info: made.made(from: document).isEmpty
             case .kept: document.reading != .read
+            case .unread: false
             }
         }
         var items: [Item] = []
@@ -122,6 +124,7 @@ public enum RecordBrowse {
                 case .all: items.append(.thread(thread))
                 case .withFacts: if hasFacts(thread) { items.append(.thread(thread)) }
                 case .info: if !hasFacts(thread) { items.append(.thread(thread)) }
+                case .unread: if thread.rows.contains(where: { $0.entry.isUnread == true }) { items.append(.thread(thread)) }
                 case .kept:
                     // The mails whose files are kept only, with only those files under them.
                     let files = (attached[thread.id] ?? []).filter { $0.reading != .read }
@@ -129,7 +132,7 @@ public enum RecordBrowse {
                 }
             }
         }
-        if kind == .everything || kind == .files || kind == .scans {
+        if kind == .everything || kind == .files || kind == .scans, show != .unread {
             for document in loose where (kind != .scans || document.isOwnFile) && keeps(document) { items.append(.document(document)) }
         }
         if (kind == .everything || kind == .links) && (show == .all || show == .info) {
