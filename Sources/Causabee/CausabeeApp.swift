@@ -277,7 +277,7 @@ final class Navigation {
     var prefill: String?
     /// The assistant's one thread, kept beside the store: scrolling up shows everything ever asked,
     /// after a restart too. It holds real names — it is the owner's own record, like the store.
-    var turns: [Turn] = [] { didSet { saveThread() } }
+    var turns: [Turn] = [] { didSet { threadChanged() } }
     /// `mapping.json`: the disguise, read and added to when the assistant asks.
     let mapping = CausabeeApp.mappingLocation()
     /// The store, and beside it the record of what the label has answered.
@@ -364,6 +364,22 @@ final class Navigation {
     @ObservationIgnored private var context: ModelContext?
     @ObservationIgnored private var records: [UUID: ThreadTurn] = [:]
     @ObservationIgnored private var written: [UUID: Data] = [:]
+    /// A question's step on its way is not kept: setting it writes nothing.
+    @ObservationIgnored var stepping = false
+    @ObservationIgnored private var savePending = false
+
+    /// Many changes at once — a question sets five things before it is sent — are written once,
+    /// after them: the whole thread was encoded with each.
+    private func threadChanged() {
+        guard !stepping, !savePending else { return }
+        savePending = true
+        // Navigation lives on the main thread; the write waits there for the changes to end.
+        nonisolated(unsafe) weak var navigation = self
+        DispatchQueue.main.async {
+            navigation?.savePending = false
+            navigation?.saveThread()
+        }
+    }
 
     /// Reads the thread from the store. The first time, the file it was kept in before is moved
     /// in, and left beside the store renamed, as it was.

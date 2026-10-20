@@ -271,7 +271,8 @@ final class StoredChanges {
         var hasher = Hasher()
         for matter in matters { hasher.combine(matter.persistentModelID) }
         let key = "\(name) \(MatterStatus.day(Date())) \(hasher.finalize())"
-        if let value = weekKept[key] as? Value { return value }
+        // Looked up, then cast: an answer that is nil is kept too, and not mistaken for none kept.
+        if let stored = weekKept[key], let value = stored as? Value { return value }
         let value = work()
         weekKept[key] = value
         return value

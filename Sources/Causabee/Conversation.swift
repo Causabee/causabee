@@ -290,6 +290,8 @@ struct Conversation {
     /// The step a question on its way has reached; a turn stopped meanwhile stays as it is.
     static func set(_ id: UUID, _ step: AssistantAsk.Step, in navigation: Navigation) {
         guard let index = navigation.turns.firstIndex(where: { $0.id == id }), navigation.turns[index].isAsking else { return }
+        navigation.stepping = true
+        defer { navigation.stepping = false }
         navigation.turns[index].step = step
         if step == .waiting { navigation.turns[index].sentAt = Date() }
     }
@@ -314,14 +316,20 @@ struct Conversation {
     /// A party's address, from the mail in the store: it only fills the "To" of a draft.
     func address(of party: Party) -> String? { CardActions.address(of: party) }
 
+    /// Worked out once per change — a turn's question, mail in hand and matter do not change.
     func recipient(_ id: String?, in turn: Navigation.Turn) -> (name: String, address: String?)? {
-        CardActions.recipient(id, refs: turn.refs, question: turn.question, mail: turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil },
-                              scope: turn.matter.flatMap { live($0, as: Matter.self) }, in: context)
+        StoredChanges.shared.kept("recipient \(turn.id) \(id ?? "")") {
+            CardActions.recipient(id, refs: turn.refs, question: turn.question, mail: turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil },
+                                  scope: turn.matter.flatMap { live($0, as: Matter.self) }, in: context)
+        }
     }
 
     /// What a draft of this turn would take along, said on its card.
+    /// Once per change and per wording — not with every keystroke's drawing of every card.
     func attachmentLine(_ text: String, in turn: Navigation.Turn) -> String? {
-        CardActions.attachmentLine(text: text, question: turn.question, scope: turn.matter.flatMap { live($0, as: Matter.self) })
+        StoredChanges.shared.kept("along \(turn.id) \(text)") {
+            CardActions.attachmentLine(text: text, question: turn.question, scope: turn.matter.flatMap { live($0, as: Matter.self) })
+        }
     }
 
     /// A card the owner ticked: what it does is CardActions' — the same on the iPhone; the turn
@@ -420,14 +428,19 @@ struct Composer: View {
         if add != nil {
             Button(title, systemImage: symbol) { NotificationCenter.default.post(name: .matterAction, object: action.rawValue) }
         } else if let addTo {
-            let open = matters.filter { !$0.isClosed }
+            // The lists, worked out once per change: six menus each sorted every matter at every keystroke.
+            let (recent, open) = StoredChanges.shared.kept("add menus") {
+                let open = matters.filter { !$0.isClosed }
+                return (Array(RecentMatters.list(in: open, fillingFrom: activeMatters(open)).prefix(RecentMatters.most)),
+                        open.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending })
+            }
             Menu(title, systemImage: symbol) {
-                ForEach(RecentMatters.list(in: open, fillingFrom: activeMatters(open)).prefix(RecentMatters.most)) { matter in
+                ForEach(recent) { matter in
                     Button(matter.name) { addTo(matter, action) }
                 }
                 Divider()
                 Menu("All Matters") {
-                    ForEach(open.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) { matter in
+                    ForEach(open) { matter in
                         Button(matter.name) { addTo(matter, action) }
                     }
                 }

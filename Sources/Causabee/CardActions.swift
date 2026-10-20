@@ -103,7 +103,12 @@ enum CardActions {
     }
 
     /// What a chip says: the kind and its day, or the name — never `T20`.
+    /// Read once per change: every chip of every card asked the store each time the thread drew.
     static func label(_ ref: FactRef, in context: ModelContext) -> String {
+        StoredChanges.shared.kept("label \(ref)") { labelNow(ref, in: context) }
+    }
+
+    private static func labelNow(_ ref: FactRef, in context: ModelContext) -> String {
         switch ref {
         case .matter: return live(ref, as: Matter.self, in: context)?.name ?? "Matter (no longer there)"
         case .entry: return "Mail " + (live(ref, as: Entry.self, in: context)?.date.map(Dates.short) ?? "")
@@ -126,7 +131,12 @@ enum CardActions {
         var isThere = true
     }
 
+    /// Read once per change, as the labels are.
     static func source(_ ref: FactRef, in context: ModelContext) -> SourceLine {
+        StoredChanges.shared.kept("source \(ref)") { sourceNow(ref, in: context) }
+    }
+
+    private static func sourceNow(_ ref: FactRef, in context: ModelContext) -> SourceLine {
         switch ref {
         case .matter:
             guard let matter = live(ref, as: Matter.self, in: context) else { return gone("folder", "A matter", "not found on this \(device)") }

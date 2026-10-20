@@ -148,8 +148,13 @@ struct AssistantColumn: View {
         // question asked there is about every matter with something going on — as on the iPhone.
         let scope = scopeMatter
         return Composer(draft: $draft, focused: $focused, pinned: navigation.pinned,
-                     seen: { FactSheet.facts(for: scope.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date()),
-                                             focus: navigation.pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text }).seen },
+                     // Once per change, not with each keystroke while the footer is open.
+                     seen: {
+                         let focus = navigation.pinned.flatMap { Navigation.Pinned.isMatter($0.kind) ? nil : $0.text }
+                         return StoredChanges.shared.kept("seen \(scope?.persistentModelID.hashValue ?? 0) \(focus ?? "")") {
+                             FactSheet.facts(for: scope.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date()), focus: focus).seen
+                         }
+                     },
                      // A long name does not fit the field, and a placeholder is cut off without a sign.
                      placeholder: scope.map { $0.name.count > 22 ? "Ask about this matter" : "Ask about \($0.name)" } ?? "Ask about your matters",
                      unpin: { navigation.pinned = nil },
@@ -684,7 +689,7 @@ struct TurnView: View {
                 if !reading || card.kind == .draftMessage {
                     ActionCard(card: card, done: turn.applied.contains(index), refs: turn.refs, open: open, label: label,
                                apply: { apply(index, $0, $1) }, undo: turn.undos[index] == nil ? nil : { undo(index) },
-                               recipient: recipient(card.party), along: along,
+                               recipient: card.kind == .draftMessage ? recipient(card.party) : nil, along: along,
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
             }
