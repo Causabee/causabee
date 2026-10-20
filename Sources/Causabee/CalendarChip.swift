@@ -95,8 +95,21 @@ struct CalendarChip: View {
         #endif
     }
 
+    /// What Calendar or Reminders said, kept: asked once per change of the store or the calendars,
+    /// not by every chip each time its page draws — each was a query to the calendars.
+    private struct Asked<Value> { let value: Value }
+
+    private func asked<Value>(_ what: String, _ work: () -> Value) -> Value {
+        let key = "chip \(kind == .event ? "e" : "r") \(tick) \(what)"
+        return StoredChanges.shared.kept(key) { Asked(value: work()) }.value
+    }
+
     /// What the connected entry is called now, or nil when it is gone.
     private func linked(_ id: String) -> String? {
+        asked("linked \(id) \(reminders.count)") { workOutLinked(id) }
+    }
+
+    private func workOutLinked(_ id: String) -> String? {
         switch kind {
         case .event: return calendars.event(id).map { $0.calendar?.title ?? "" }
         case .reminder:
@@ -106,6 +119,10 @@ struct CalendarChip: View {
     }
 
     private func found() -> (id: String, title: String, list: String)? {
+        asked("found \(day ?? "") \(time ?? "") \(title) \(reminders.count)") { workOutFound() }
+    }
+
+    private func workOutFound() -> (id: String, title: String, list: String)? {
         switch kind {
         case .event:
             guard let day, let event = calendars.findEvent(day: day, time: time, what: title) else { return nil }

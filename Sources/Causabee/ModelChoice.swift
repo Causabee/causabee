@@ -250,6 +250,22 @@ final class StoredChanges {
     @ObservationIgnored private var weekKept: [String: Any] = [:]
     @ObservationIgnored private var weekVersion = -1
 
+    /// Anything worked out from the store, kept until the store changes or the day turns.
+    func kept<Value>(_ name: String, _ work: () -> Value) -> Value {
+        kept(name, for: [], work)
+    }
+
+    /// A matter's conversations and what came from each mail and file, prepared once per change —
+    /// the record, its menus' counts and find all draw from it.
+    func record(_ matter: Matter) -> (threads: [MailThreads.Thread], made: RecordLinks) {
+        kept("record \(matter.persistentModelID.hashValue)") { (MailThreads.build(MatterStatus(matter).mailEntries), RecordLinks(matter)) }
+    }
+
+    /// Every rule the owner set, read once per change — not fetched by each drawing of People.
+    func rules(in context: ModelContext) -> [Rule] {
+        kept("rules") { (try? context.fetch(FetchDescriptor<Rule>())) ?? [] }
+    }
+
     private func kept<Value>(_ name: String, for matters: [Matter], _ work: () -> Value) -> Value {
         if weekVersion != count { weekKept = [:]; weekVersion = count }
         var hasher = Hasher()
@@ -340,15 +356,23 @@ struct AutoLine: View {
 /// it is shown, and kept until the matter's record or the model is another.
 @MainActor
 enum PriceEstimates {
-    private static var kept: [PersistentIdentifier: (key: String, step: Double, summary: Double)] = [:]
+    private static var kept: [PersistentIdentifier: (version: Int, key: String, step: Double, summary: Double)] = [:]
 
     static func of(_ matter: Matter) -> (step: Double, summary: Double) {
+        // Unchanged store: as it was. Changed: worked out anew only when this matter's own record
+        // changed — the facts are the heavy part — told by a cheap mark: its counts, and its notes'.
+        let version = StoredChanges.shared.count
+        if let known = kept[matter.persistentModelID], known.version == version { return (known.step, known.summary) }
         let key = [ModelChoice.assistant.id, "\(matter.entries?.count ?? 0)", "\(matter.todos?.count ?? 0)",
-                   "\(matter.documents?.count ?? 0)", "\(matter.notesText?.count ?? 0)", MatterStatus.day(Date())].joined(separator: "|")
-        if let known = kept[matter.persistentModelID], known.key == key { return (known.step, known.summary) }
+                   "\(matter.documents?.count ?? 0)", "\(matter.noteCount)",
+                   "\((matter.noteBlocks ?? []).reduce(0) { $0 + $1.text.count } + (matter.notes?.count ?? 0))", MatterStatus.day(Date())].joined(separator: "|")
+        if let known = kept[matter.persistentModelID], known.key == key {
+            kept[matter.persistentModelID] = (version, key, known.step, known.summary)
+            return (known.step, known.summary)
+        }
         let facts = FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40)
         let model = ModelChoice.assistant
-        let found = (key: key, step: AssistantAsk.nextStepEstimate(facts, model: model), summary: AssistantAsk.summaryEstimate(facts, model: model))
+        let found = (version: version, key: key, step: AssistantAsk.nextStepEstimate(facts, model: model), summary: AssistantAsk.summaryEstimate(facts, model: model))
         kept[matter.persistentModelID] = found
         return (found.step, found.summary)
     }

@@ -84,7 +84,8 @@ struct MatterStatusView: View {
     @State private var addingDetail = false
     /// The parts in the page have scrolled under the title bar, which shows them then.
     @State private var partsUnder = false
-    @State private var partsEdge = CGFloat.infinity
+    /// The parts' lower edge has reached the bar's place for them.
+    @State private var partsReached = false
     /// How much of the page is seen under the title bar.
     @State private var pageHeight = CGFloat.zero
     @State private var barEdge = CGFloat.zero
@@ -114,8 +115,11 @@ struct MatterStatusView: View {
                             parts(status).id("parts")
                                 // Under the title bar the bar has them: these do not show through its glass.
                                 .opacity(partsUnder ? 0 : 1)
-                                // Its lower edge, to know when it has gone under the title bar.
-                                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { partsEdge = $0 }
+                                // Whether its lower edge has reached the place the title bar has for the
+                                // parts — twelve over the bar's lower edge. Only that, not the edge
+                                // itself: kept as a number, it changed with every frame of scrolling,
+                                // and the whole page was worked out again each time.
+                                .onGeometryChange(for: Bool.self) { [limit = barEdge - 11 - given] in $0.frame(in: .global).maxY < limit } action: { partsReached = $0 }
                             // At least as tall as the page shows: a short part does not pull the
                             // page down, and the parts stay where they were clicked.
                             VStack(alignment: .leading, spacing: 22) {
@@ -624,7 +628,7 @@ struct MatterStatusView: View {
                     Card {
                         ForEach(Array(offered.enumerated()), id: \.element.persistentModelID) { index, link in
                             if index > 0 { RowDivider() }
-                            SuggestedLinkRow(link: link, mail: (matter.entries ?? []).first { $0.messageID == link.messageID }) {
+                            SuggestedLinkRow(link: link, mail: matter.entry(messageID: link.messageID)) {
                                 withAnimation { link.isSuggestion = false }
                                 try? context.save()
                             } dismiss: {
@@ -752,7 +756,7 @@ struct MatterStatusView: View {
     }
 
     private func sender(of document: MatterCore.Document) -> String? {
-        (matter.entries ?? []).first { $0.messageID == document.messageID }.map { Email.displayName(in: $0.from) ?? Email.address(in: $0.from) }
+        matter.entry(messageID: document.messageID).map { Email.displayName(in: $0.from) ?? Email.address(in: $0.from) }
     }
 
     /// Takes the file out of its mail — read-only, only this one mail — and hands it on.
@@ -876,13 +880,13 @@ struct MatterStatusView: View {
                     Image(systemName: "archivebox").foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Closed on \(Dates.short(closed))").font(.callout.weight(.semibold))
-                        let new = status.mailsSinceClosed.count
+                        let new = StoredChanges.shared.summary(matter).newMailsSinceClosed
                         if new > 0 {
                             Text("\(new) new \(new == 1 ? "mail" : "mails") since closing").font(.callout).foregroundStyle(Theme.warning)
                         }
                     }
                     Spacer()
-                    if !status.mailsSinceClosed.isEmpty {
+                    if StoredChanges.shared.summary(matter).newMailsSinceClosed > 0 {
                         Button("Start a new matter") {
                             newMatterName = Matter.suggestedName(for: status.mailsSinceClosed)
                             splitting = true
@@ -899,7 +903,7 @@ struct MatterStatusView: View {
 
     /// Mail the model filed under this closed matter, when the owner meant a new one: a name, and it goes.
     private func splitForm(_ status: MatterStatus) -> some View {
-        let count = status.mailsSinceClosed.count
+        let count = StoredChanges.shared.summary(matter).newMailsSinceClosed
         return VStack(alignment: .leading, spacing: 10) {
             Text("A new matter with the \(count) new \(count == 1 ? "mail" : "mails")").font(.headline)
             Text("Their tasks, dates, files and links go with them. “\(matter.name)” stays closed.")
@@ -1081,7 +1085,7 @@ struct MatterStatusView: View {
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { barEdge = $0 }
         // The parts in the page reach the place the bar has for them — twelve over its lower edge —
         // and are in the bar from there: they stay where they have come to.
-        .onChange(of: partsEdge < barEdge - 11 - given) { _, under in
+        .onChange(of: partsReached) { _, under in
             withAnimation(.easeOut(duration: 0.15)) { partsUnder = under && scrolledUnder }
         }
         .onChange(of: scrolledUnder) { _, under in if !under { partsUnder = false } }
@@ -1269,7 +1273,7 @@ struct MatterStatusView: View {
                 HStack {
                     SectionHeader(title: "People", detail: "\(memberships.count) · to merge, drag one name onto another")
                 }
-                let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
+                let rules = StoredChanges.shared.rules(in: context)
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
                     SuggestionCard(suggestions: suggestions) { suggestion in
@@ -1373,8 +1377,7 @@ struct MatterStatusView: View {
     @ViewBuilder
     private func record(_ status: MatterStatus) -> some View {
         // Built once for this drawing, for the menus' counts and the list alike.
-        let made = RecordLinks(matter)
-        let threads = MailThreads.build(status.mailEntries)
+        let (threads, made) = StoredChanges.shared.record(matter)
         let counts = Dictionary(uniqueKeysWithValues: RecordBrowse.Show.allCases.map { item in
             (item, RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks,
                                      kind: filter, show: item, made: made).items.count)
@@ -1539,10 +1542,10 @@ struct MatterStatusView: View {
 
     /// Every conversation, for the page search: it looks into everything.
     private func allMail(_ status: MatterStatus) -> some View {
-        let made = RecordLinks(matter)
+        let made = StoredChanges.shared.record(matter).made
         return VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "Mail", detail: Self.count(status.mailEntries))
-            ForEach(MailThreads.build(status.mailEntries)) { thread in
+            ForEach(StoredChanges.shared.record(matter).threads) { thread in
                 ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
             }
         }

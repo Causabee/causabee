@@ -32,7 +32,7 @@ struct PeopleSection: View {
         } else {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "People", detail: memberships.count == 1 ? "1 name" : "\(memberships.count) names")
-                let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
+                let rules = StoredChanges.shared.rules(in: context)
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
                     PhoneSuggestionCard(suggestions: suggestions) { suggestion in
@@ -283,7 +283,7 @@ struct LinksSection: View {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(offered.enumerated()), id: \.element.persistentModelID) { index, link in
                             if index > 0 { Divider().padding(.leading, 50) }
-                            PhoneSuggestedLinkRow(link: link, mail: (matter.entries ?? []).first { $0.messageID == link.messageID }) {
+                            PhoneSuggestedLinkRow(link: link, mail: matter.entry(messageID: link.messageID)) {
                                 withAnimation { link.isSuggestion = false }
                                 try? context.save()
                             } dismiss: {

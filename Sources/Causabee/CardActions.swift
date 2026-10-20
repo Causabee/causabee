@@ -284,6 +284,12 @@ enum CardActions {
     /// Every address a party wrote from, the one they last used first: from the sender lines of the
     /// mail in the store. They are never sent anywhere; they only fill the "To" of a mail the owner opens.
     static func addresses(of party: Party) -> [MailAddress] {
+        // Read through every mail of every matter the person is in: once per change to the store,
+        // not two or three times per person each time the People part draws.
+        StoredChanges.shared.kept("addresses \(party.persistentModelID.hashValue)") { workOutAddresses(of: party) }
+    }
+
+    private static func workOutAddresses(of party: Party) -> [MailAddress] {
         let keys = Set(([party.name] + party.spellings).map(PartyNames.key))
         var found: [String: (last: Date?, count: Int)] = [:]
         var seen = Set<String>()
