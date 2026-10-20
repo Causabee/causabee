@@ -50,6 +50,8 @@ enum ShareInbox {
 
     static func put(_ data: Data, named name: String, into matterKey: String?) throws {
         guard let inbox else { throw Failure.noGroup }
+        // A big photo goes in at a size to read and send — see `ImageSize`.
+        let (data, name) = ImageSize.kept(data, name: name)
         try FileManager.default.createDirectory(at: inbox, withIntermediateDirectories: true)
         let id = UUID().uuidString
         let ending = (name as NSString).pathExtension

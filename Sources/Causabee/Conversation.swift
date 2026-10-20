@@ -153,6 +153,8 @@ struct Conversation {
     /// Bytes with no file of their own — pasted, or a scan or a photo taken with an iPhone's camera
     /// (Import from iPhone): written beside the store under their name, then brought in.
     func bring(_ data: Data, named name: String) {
+        // A big photo is kept at a size to read and send — see `ImageSize`.
+        let (data, name) = ImageSize.kept(data, name: name)
         let folder = ScreenshotDoor.attachments(besides: navigation.store)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let file = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name.replacingOccurrences(of: "/", with: "-"))
