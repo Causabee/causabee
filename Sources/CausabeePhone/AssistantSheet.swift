@@ -873,14 +873,14 @@ struct PhoneActionCard: View {
         .onChange(of: done) { if quiet != done { step { quiet = done; editingDraft = false } } }
     }
 
-    /// "To Sebastian": to whom the draft goes, when someone is known.
-    private var draftTo: String? { recipient.map { "To " + $0.name } }
+    /// "To Rentscape · info@rentscape.fr": to whom the draft goes, and where, when someone is known.
+    private var draftTo: String? { recipient.map(CardActions.toLine) }
 
     /// The small lines under the card: the files a draft takes along; for the rest, why — and what
     /// merging two people means.
     private var notes: [(text: String, symbol: String?)] {
         if card.kind == .draftMessage {
-            return CardActions.attachmentLine(text: text, question: turn.question, scope: scope).map { [($0, "paperclip")] } ?? []
+            return CardActions.attachmentLine(text: text, question: turn.question, scope: scope, attach: card.attach ?? []).map { [($0, "paperclip")] } ?? []
         }
         var notes: [(text: String, symbol: String?)] = card.reason.isEmpty ? [] : [(card.reason, nil)]
         if card.kind == .sameParty { notes.append(("Later you can only turn merging off for new mail; you cannot split it again.", nil)) }
@@ -1129,13 +1129,25 @@ struct PhoneActionCard: View {
 final class MailSheet: NSObject, MFMailComposeViewControllerDelegate {
     private static let shared = MailSheet()
 
-    /// False when there is nothing to attach, or no mail account is set up in Mail: then the draft
-    /// is opened the old way.
+    /// False when there is nothing to attach: then the draft opens the old way, as a mail link.
     static func open(_ draft: CardActions.MailDraft) -> Bool {
-        guard !draft.files.isEmpty, MFMailComposeViewController.canSendMail() else { return false }
+        guard !draft.files.isEmpty else { return false }
         let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first { $0.activationState == .foregroundActive }
         guard var top = scene?.keyWindow?.rootViewController else { return false }
         while let over = top.presentedViewController { top = over }
+        // No account in Mail — Gmail, Outlook and the like: the share sheet, with the files and the
+        // words, so the files are not lost on the way; the address is said in the words' first line.
+        guard MFMailComposeViewController.canSendMail() else {
+            let words = (draft.to.isEmpty ? "" : "To: \(draft.to)\n\n") + draft.body
+            let share = UIActivityViewController(activityItems: [words] + draft.files, applicationActivities: nil)
+            share.setValue(draft.subject, forKey: "subject")
+            // On the iPad it stands out from the middle of the screen.
+            share.popoverPresentationController?.sourceView = top.view
+            share.popoverPresentationController?.sourceRect = CGRect(x: top.view.bounds.midX, y: top.view.bounds.midY, width: 0, height: 0)
+            share.popoverPresentationController?.permittedArrowDirections = []
+            top.present(share, animated: true)
+            return true
+        }
         let mail = MFMailComposeViewController()
         mail.mailComposeDelegate = shared
         if !draft.to.isEmpty { mail.setToRecipients([draft.to]) }

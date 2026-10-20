@@ -233,7 +233,7 @@ struct AssistantTests {
         #expect(!FactSheet.facts(for: [matter], today: "2026-09-28", focus: "Sebastian Süß").text.contains("file in hand"))
     }
 
-    @Test("The assistant knows the names of the files kept only, never what is in them; read ones are not among them")
+    @Test("The assistant knows every file of the matter by name — read, or kept only and never what is in it")
     func keptFileNames() throws {
         let (context, matter) = try store()
         let source = Source(kind: .mail, pointer: "x", messageID: "c@example")
@@ -251,10 +251,11 @@ struct AssistantTests {
         try context.save()
         #expect(matter.keptFiles.map(\.reading) == [.unreadable, .kept] || matter.keptFiles.map(\.reading) == [.kept, .unreadable])
         let facts = FactSheet.facts(for: [matter], today: "2026-09-28", focus: "Vertrag")
-        #expect(facts.text.contains("Files kept, not read"))
-        #expect(facts.text.contains("- Pflegevertrag_Entwurf.docx (a kind of file Causabee cannot read yet)"))
-        #expect(facts.text.contains("- Preisliste.pdf"))
-        #expect(!facts.text.contains("- Bescheid.pdf"))
+        #expect(facts.text.contains("Files of this matter"))
+        #expect(facts.text.contains("- Pflegevertrag_Entwurf.docx — kept, a kind of file Causabee cannot read yet"))
+        #expect(facts.text.contains("- Preisliste.pdf — kept, not read"))
+        // A read one is named too — so a draft can take it along — and said to be read.
+        #expect(facts.text.contains("- Bescheid.pdf — read"))
         #expect(!facts.text.contains("logo.png"))
         #expect(facts.seen.contains("the names of 2 kept-only files"))
     }
@@ -282,5 +283,24 @@ struct AssistantTests {
         let reply = try JSONDecoder().decode(AssistantPrompt.Reply.self, from: Data(json.utf8))
         #expect(reply.lines.first?.cites == ["T1"])
         #expect(reply.cards.first?.kind == .markDone)
+    }
+
+    @Test("A person of the matter is listed with how to reach them: the address typed in, else the one they last wrote from")
+    func reach() throws {
+        let (context, matter) = try store()
+        let mail = Entry(title: "Kratzer", from: "Rentscape <support@rentscape.example>", date: Date(), source: Source(kind: .mail, pointer: "x", messageID: "r@example"))
+        mail.matter = matter
+        context.insert(mail)
+        let party = Party(name: "Rentscape")
+        context.insert(party)
+        let membership = Membership()
+        membership.party = party
+        membership.matter = matter
+        context.insert(membership)
+        try context.save()
+        #expect(FactSheet.facts(for: [matter], today: "2026-10-20", focus: "Kratzer").text.contains("Rentscape (in 0 mails) — mail: support@rentscape.example"))
+        party.address = "claims@rentscape.example"
+        party.phone = "+33 1 23 45 67 89"
+        #expect(FactSheet.facts(for: [matter], today: "2026-10-20", focus: "Kratzer").text.contains("— mail: claims@rentscape.example — phone: +33 1 23 45 67 89"))
     }
 }

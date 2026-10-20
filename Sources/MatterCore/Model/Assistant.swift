@@ -128,7 +128,12 @@ public enum FactSheet {
                 if !memberships.isEmpty { lines.append("Parties:") }
                 for membership in memberships {
                     guard let party = membership.party else { continue }
-                    lines.append("\(id("P", .party(party.persistentModelID))) \(party.name)\(membership.role.map { " — \($0)" } ?? "") (in \(membership.mentions) mails)")
+                    // How to reach them — disguised on the way out like every address and number,
+                    // and back as written: so a draft can go to them.
+                    var line = "\(id("P", .party(party.persistentModelID))) \(party.name)\(membership.role.map { " — \($0)" } ?? "") (in \(membership.mentions) mails)"
+                    if let mail = matter.reachAddress(of: party) { line += " — mail: \(mail)" }
+                    if let phone = party.phone?.trimmingCharacters(in: .whitespacesAndNewlines), !phone.isEmpty { line += " — phone: \(phone)" }
+                    lines.append(line)
                 }
                 // A file in hand: what is known of it, and the mail it came with — always listed,
                 // whatever its subject says. Its text is not kept; a scanned file's facts are above.
@@ -143,16 +148,23 @@ public enum FactSheet {
                         ?? " — kept, not read yet: only its name and its mail are known; reading it (\"Read\" on its card) would tell more"
                     lines.append(line)
                 }
-                // The files only kept: their names, so the assistant can say one is there — never
-                // what is in them, which Causabee has not read.
-                let kept = matter.keptFiles.filter { file in !files.contains { $0 === file } }
-                if !kept.isEmpty {
-                    lines.append("Files kept, not read (names only — the owner can have one read with \"Read\" on its card):")
-                    for file in kept.prefix(40) {
-                        lines.append("- \(file.shownName)" + (file.reading == .unreadable ? " (a kind of file Causabee cannot read yet)" : ""))
+                // The matter's files by name — read, or only kept: so a draft can take one along by
+                // its name (`attach`), and the assistant can say a kept one is there — never what is
+                // in it, which Causabee has not read.
+                let named = (matter.documents ?? []).filter { file in !file.isHidden && !file.isSmallImage && !files.contains { $0 === file } }
+                    .sorted { ($0.source.date ?? .distantPast) > ($1.source.date ?? .distantPast) }
+                if !named.isEmpty {
+                    lines.append("Files of this matter, newest first (names only; a draft sends one along when `attach` names it):")
+                    for file in named.prefix(40) {
+                        let state = switch file.reading {
+                        case .read: "read"
+                        case .kept: "kept, not read — the owner can have it read with \"Read\" on its card"
+                        case .unreadable: "kept, a kind of file Causabee cannot read yet"
+                        }
+                        lines.append("- \(file.shownName) — \(state)")
                     }
                 }
-                keptCount += kept.count
+                keptCount += named.filter { $0.reading != .read }.count
                 let fileMails = Set(files.map(\.messageID).filter { !$0.isEmpty })
                 let entries = focused
                     ? Array(status.entries.filter { fileMails.contains($0.messageID) || mentions($0.title) || mentions($0.from) }.prefix(15))
