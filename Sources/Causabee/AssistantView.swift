@@ -170,6 +170,15 @@ struct AssistantColumn: View {
                          navigation.pinned = Navigation.Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
                          focused = true
                      } },
+                     matters: matters,
+                     // On the overview: the matter chosen opens, then what adds to it.
+                     addTo: scope == nil ? { matter, action in
+                         RecentMatters.note(matter)
+                         navigation.open(matter)
+                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                             NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
+                         }
+                     } : nil,
                      stop: asking.map { turn in { conversation.stop(turn.id) } },
                      send: send)
     }
@@ -1081,7 +1090,10 @@ struct MatterCard: View {
                 .help("Open the matter, at this task")
             }
             if overdue.count > 3 {
-                Button("… and \(overdue.count - 3) more overdue", action: open).buttonStyle(.plain).font(.caption).foregroundStyle(Theme.warning)
+                // The matter opens at the first of the rest — as on the iPhone and the iPad.
+                Button("… and \(overdue.count - 3) more overdue") { openTodo(overdue[3].persistentModelID) }
+                    .buttonStyle(.plain).font(.caption).foregroundStyle(Theme.warning)
+                    .help("Open the matter, at the first of these")
             }
         }
         .padding(14)
