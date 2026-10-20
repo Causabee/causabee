@@ -822,7 +822,8 @@ struct MatterStatusView: View {
         let today = MatterStatus(matter).today
         if (matter.appointments ?? []).contains(where: { $0.persistentModelID == todo && $0.day < today })
             || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == todo && $0.day < today }) { showsPast = true }
-        if (matter.entries ?? []).contains(where: { $0.persistentModelID == todo }) { showsAllHistory = true }
+        if (matter.entries ?? []).contains(where: { $0.persistentModelID == todo })
+            || (matter.documents ?? []).contains(where: { $0.persistentModelID == todo }) { showsAllHistory = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { withAnimation { scroller.scrollTo(todo, anchor: .center) } }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { withAnimation { if marked == todo { marked = nil }; if find.shown == todo { find.shown = nil } } }
     }
@@ -1437,7 +1438,7 @@ struct MatterStatusView: View {
     }
 
     /// One file of the record, as a card.
-    private func fileCard(_ document: MatterCore.Document) -> some View {
+    private func fileCard(_ document: MatterCore.Document, made: RecordLinks.Made = RecordLinks.Made()) -> some View {
         Card {
             DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
                         open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
@@ -1446,6 +1447,8 @@ struct MatterStatusView: View {
                         nameIt: { nameFromContent(document) },
                         talk: { talk(document.shownName, "File") })
                 .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+            // What came from it — a file on its own; one that came with a mail counts with its mail.
+            if !made.isEmpty { MadeChips(made: made).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.bottom, 10) }
         }
     }
 
@@ -1499,6 +1502,7 @@ struct MatterStatusView: View {
         let loose = documents.filter { mailIDs[$0.messageID] == nil }
         let all = (threads.map(RecordItem.thread) + loose.map(RecordItem.document) + links.map(RecordItem.link)).sorted { $0.date > $1.date }
         let visible = showsAllHistory ? all : Array(all.prefix(60))
+        let made = RecordLinks(matter)
         let months = Dictionary(grouping: visible) { Calendar.current.dateComponents([.year, .month], from: $0.date) }
             .sorted { ($0.key.year ?? 0, $0.key.month ?? 0) > ($1.key.year ?? 0, $1.key.month ?? 0) }
         if all.isEmpty {
@@ -1515,11 +1519,11 @@ struct MatterStatusView: View {
                         // Its files right under it, close: one thing. A scan or a picture the owner
                         // brought in is its entry already — "Open" is on it — and is not listed again.
                         VStack(alignment: .leading, spacing: 4) {
-                            ThreadCard(thread: thread) { entry in talk(entry.title, "Mail") }
+                            ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
                             ForEach((attached[thread.id] ?? []).filter { !$0.isOwnFile }) { document in fileCard(document) }
                         }
                     case .document(let document):
-                        fileCard(document)
+                        fileCard(document, made: made.made(from: document))
                     case .link(let link):
                         Card {
                             LinkRow(link: link, todos: matter.openTodos) { remove(link) }
@@ -1543,6 +1547,7 @@ struct MatterStatusView: View {
         var shown = 0
         let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || find.isActive || showsAllHistory }
         let hidden = threads.count - visible.count
+        let made = RecordLinks(matter)
         return VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "History", detail: Self.count(status.mailEntries)
                           + (threads.count == status.mailEntries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
@@ -1550,7 +1555,7 @@ struct MatterStatusView: View {
                 EmptyBox(text: "Mail sorted into this matter shows here, newest first. It comes from your mailbox, not by hand.")
             }
             ForEach(visible) { thread in
-                ThreadCard(thread: thread) { entry in talk(entry.title, "Mail") }
+                ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
             }
             if hidden > 0 {
                 Text("… and \(hidden) older \(hidden == 1 ? "conversation" : "conversations")").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
@@ -1667,15 +1672,13 @@ struct TodoRow: View {
                             .font(.caption)
                             .foregroundStyle(!todo.isDone && due < today ? Theme.warning : .secondary)
                     }
-                    if todo.sources.count > 1 {
-                        Text("asked \(todo.sources.count)×").font(.caption).foregroundStyle(.secondary)
-                    }
+                    // Where it came from, a way to it in the record; done, the mail that showed it done.
                     if todo.isDone {
-                        SourceLink(source: todo.doneSource,
-                                   label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")")
-                            .foregroundStyle(Theme.done)
+                        SourceJump(sources: todo.doneSource.map { [$0] } ?? [],
+                                   label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")",
+                                   matter: todo.matter, color: Theme.done)
                     } else {
-                        SourceLink(source: todo.sources.first, label: Sources.origin(todo.sources.first))
+                        SourceJump(sources: todo.sources, label: Sources.origin(todo.sources.first), matter: todo.matter)
                     }
                 }
             }
@@ -1984,7 +1987,7 @@ struct InfoRow: View {
             Image(systemName: "info.circle").foregroundStyle(.secondary).font(.title3)
             VStack(alignment: .leading, spacing: 4) {
                 Text(todo.text).fixedSize(horizontal: false, vertical: true)
-                SourceLink(source: todo.sources.first, label: Sources.origin(todo.sources.first))
+                SourceJump(sources: todo.sources, label: Sources.origin(todo.sources.first), matter: todo.matter)
             }
             Spacer(minLength: 8)
             Button(action: back) { Label("Back to tasks", systemImage: "arrow.uturn.backward") }
@@ -2014,7 +2017,7 @@ struct DateRow: View {
         }
         var place: String?
         var kind: String
-        var source: Source?
+        var sources: [Source] = []
         var appointment: Appointment?
         var deadline: Deadline?
 
@@ -2024,12 +2027,12 @@ struct DateRow: View {
         }
 
         init(_ appointment: Appointment) {
-            (day, time, what, place, kind, source) = (appointment.day, appointment.time, appointment.what, appointment.place, "Appointment", appointment.sources.first)
+            (day, time, what, place, kind, sources) = (appointment.day, appointment.time, appointment.what, appointment.place, "Appointment", appointment.sources)
             self.appointment = appointment
         }
 
         init(_ deadline: Deadline) {
-            (day, time, what, place, kind, source) = (deadline.day, nil, deadline.what, nil, "Deadline", deadline.sources.first)
+            (day, time, what, place, kind, sources) = (deadline.day, nil, deadline.what, nil, "Deadline", deadline.sources)
             self.deadline = deadline
         }
 
@@ -2067,7 +2070,7 @@ struct DateRow: View {
                     Text(item.kind).font(.caption.weight(.medium))
                         .foregroundStyle(item.kind == "Deadline" ? Theme.warning : .secondary)
                     if let place = item.place { Text(place).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
-                    SourceLink(source: item.source, label: "Source")
+                    SourceJump(sources: item.sources, label: Sources.origin(item.sources.first), matter: item.appointment?.matter ?? item.deadline?.matter)
                 }
                 if !isPast || item.calendarID != nil {
                     CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time,
@@ -2319,173 +2322,6 @@ struct SuggestionCard: View {
 
 /// One conversation of a matter: its subject once, the first mail on top, and each reply
 /// under the mail it answers, joined by a line.
-struct ThreadCard: View {
-    let thread: MailThreads.Thread
-    let talk: (Entry) -> Void
-    @Query private var profiles: [Profile]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(thread.subject.isEmpty ? "(no subject)" : thread.subject).font(.headline).lineLimit(2)
-                Spacer(minLength: 8)
-                if thread.count > 1 {
-                    Text(span + " · \(thread.senders.count) \(thread.senders.count == 1 ? "person" : "people")")
-                        .font(.caption).foregroundStyle(.secondary).fixedSize()
-                }
-            }
-            VStack(alignment: .leading, spacing: 0) {
-                let me = Me(names: profiles.first?.names ?? [], withAccounts: true)
-                let joined = MailThreads.joined(thread.rows, deepest: ThreadMailRow.deepest)
-                ForEach(thread.rows) { row in
-                    ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from), joinsNext: joined.contains(row.id)) { talk(row.entry) }
-                        .findable(.model(row.entry.persistentModelID), row.entry.title, row.entry.from, row.entry.digest)
-                }
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
-    }
-
-    private var span: String {
-        let first = thread.first.map(Dates.short) ?? "", last = thread.last.map(Dates.short) ?? ""
-        return first == last ? first : "\(first) – \(last)"
-    }
-}
-
-/// One mail in a conversation, set in by how deep it answers, with the lines to the mail it
-/// answers drawn on its left.
-/// Which way a mail went: in to the owner, or out from them.
-struct MailWay: View {
-    let sent: Bool
-
-    var body: some View {
-        Image(systemName: sent ? "arrow.up.right" : "arrow.down.left")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(sent ? Theme.gold : Color.secondary)
-            .help(sent ? "You sent it" : "It came in")
-            .accessibilityLabel(sent ? "sent" : "came in")
-    }
-}
-
-struct ThreadMailRow: View {
-    let row: MailThreads.Row
-    let started: Bool
-    /// The owner wrote it: it went out, the others came in.
-    let sent: Bool
-    /// At the deepest indent and answered: its line goes on down to its answer.
-    var joinsNext = false
-    let talk: () -> Void
-    @Environment(\.modelContext) private var context
-    @State private var naming = false
-    @State private var newName = ""
-
-    nonisolated static let step: CGFloat = 20
-    /// How far in replies go; deeper ones stay at this depth.
-    static let deepest = 4
-
-    /// A letter scanned and taken in is no mail: the button says what it opens.
-    static func openLabel(_ kind: Source.Kind) -> String {
-        switch kind {
-        case .screenshot: "Open screenshot"
-        case .document: "Open document"
-        case .photo: "Open photo"
-        default: "Open mail"
-        }
-    }
-
-    /// What the dots and the right click both bring.
-    @ViewBuilder
-    private var items: some View {
-        // To see the mail itself: first in its menu, as "Open" is for a file.
-        // A letter scanned or a mail dropped in is a file on this Mac; a mail from the label is in Mail.
-        if let url = row.entry.source.fileURL ?? row.entry.mailURL {
-            Button(Self.openLabel(row.entry.source.kind), systemImage: row.entry.source.kind == .mail ? "envelope" : "arrow.up.forward.app") {
-                NSWorkspace.shared.open(url)
-            }
-        }
-        Button("Ask Causabee", action: talk)
-        MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
-    }
-
-    var body: some View {
-        let depth = min(row.depth, Self.deepest)
-        let entry = row.entry
-        // The lines to the mail it answers are drawn behind the row, as tall as the row is: set
-        // beside it, the lines asked for all the height there was, and the row grew with them.
-        HStack(alignment: .top, spacing: 0) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        Text(sent ? "You" : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from)).fontWeight(.medium).lineLimit(1)
-                        if entry.source.kind == .mail { MailWay(sent: sent) }
-                    }
-                    .accessibilityElement(children: .combine)
-                    if started { BeeChip(text: "started") }
-                    Text(entry.date.map(Dates.short) ?? "—").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                    Spacer(minLength: 8)
-                    // As every row has it: what the mail can do, behind its dots — opening it first.
-                    MoreMenu { items }
-                }
-                if let digest = entry.digest, !digest.isEmpty {
-                    Text(digest).font(.callout).foregroundStyle(.secondary).lineLimit(3).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(.vertical, 6)
-            .padding(.leading, depth > 0 ? 6 : 0)
-        }
-        .padding(.leading, CGFloat(depth) * Self.step)
-        .background(alignment: .topLeading) {
-            if depth > 0 {
-                ThreadRails(depth: depth, rails: Array(row.rails.prefix(depth - 1)), isLast: row.isLast && !joinsNext)
-                    .stroke(Theme.strongLine, lineWidth: 1.5)
-                    .frame(width: CGFloat(depth) * Self.step)
-            }
-        }
-        .contentShape(Rectangle())
-        // The same in the right click, as on every row: no button that comes and goes.
-        .contextMenu { items }
-        .alert("Move to a new matter", isPresented: $naming) {
-            TextField("Name", text: $newName)
-            Button("Cancel", role: .cancel) {}
-            Button("Move") {
-                let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !name.isEmpty, let from = row.entry.matter else { return }
-                _ = try? from.split([row.entry], intoNewMatterNamed: name, turnsSince: nil, in: context)
-            }
-        } message: {
-            Text("The mail goes, with the tasks, dates and files only it brought.")
-        }
-    }
-}
-
-/// The lines left of a reply: one down from the mail it answers with a short turn into this
-/// one, and the lines of the levels above that still lead on to later replies.
-struct ThreadRails: Shape {
-    let depth: Int
-    let rails: [Bool]
-    let isLast: Bool
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let step = ThreadMailRow.step
-        // Level by level: the line sits under the first letter of the mail one level up.
-        func x(_ level: Int) -> CGFloat { CGFloat(level - 1) * step + 6 }
-        for (index, goesOn) in rails.enumerated() where goesOn {
-            path.move(to: CGPoint(x: x(index + 1), y: rect.minY))
-            path.addLine(to: CGPoint(x: x(index + 1), y: rect.maxY))
-        }
-        let turn: CGFloat = 16
-        path.move(to: CGPoint(x: x(depth), y: rect.minY))
-        path.addLine(to: CGPoint(x: x(depth), y: isLast ? turn : rect.maxY))
-        path.move(to: CGPoint(x: x(depth), y: turn))
-        path.addLine(to: CGPoint(x: x(depth) + step - 8, y: turn))
-        return path
-    }
-}
-
 struct DocumentRow: View {
     let document: MatterCore.Document
     let sender: String?

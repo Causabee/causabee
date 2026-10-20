@@ -71,6 +71,7 @@
 				MirrorRunner.swift,
 				ModelChoice.swift,
 				PageFind.swift,
+				RecordViews.swift,
 				Theme.swift,
 				ThreadPlacement.swift,
 			);

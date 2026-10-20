@@ -126,6 +126,10 @@ For the record itself: one optional field is added (`Entry.isUnread`); everythin
 
 Each phase is a demo on all three devices before the next. Phases 0 and 5 are the largest; 1–4 are about a phase each.
 
+**Phase 0** shipped in Beta 73 (TestFlight 73), 19 October.
+
+**Phase 1 status (20 October, branch `phase1-links`):** built. `RecordLinks` (MatterCore) files every task, appointment and deadline under the Message-ID and pointer of each source it names — a task a mail showed done counts for that mail too — and finds the record item a source points at. The conversation card is now one shared view for all three devices (`RecordViews.swift`: `ThreadCard`, `ThreadMailRow`, `ThreadRails`, `MailWay`), replacing the Mac's and the iPhone's two copies; only sizes and the menus' look differ by screen. `SourceJump` puts the "from the mail of …" line inside the task's own line, as a link: a tap opens the record at that mail or file and marks it; several sources say "· +2" and a tap asks which; a source not in the record opens in Mail where it can, or stays words. `MadeChips` under each mail and each file of its own (a file that came with a mail counts with its mail) show "1 task · 1 date · 1 deadline"; a tap lists them (a popover on the Mac, a sheet on iPhone and iPad), each with *Show*. Open in Mail stays in each mail's ⋯. File cards themselves are still drawn per platform — they get their one shared look in phase 2, when *read* and *kept* change them anyway.
+
 ## One app on every device
 
 **The rule (decided 19 October):** Causabee is one app. The Mac, the iPhone and the iPad have the same features, the same actions under the same words, and the same data. Only the layout adapts to the screen, and only input that a device physically lacks may differ (a camera, a trackpad drag). Everything below applies to the whole product, and the new record is built this way from its first line.

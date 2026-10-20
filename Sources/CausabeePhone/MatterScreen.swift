@@ -373,7 +373,8 @@ struct MatterScreen: View {
         let today = MatterStatus(matter).today
         if (matter.appointments ?? []).contains(where: { $0.persistentModelID == id && $0.day < today })
             || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == id && $0.day < today }) { showsPast = true }
-        if (matter.entries ?? []).contains(where: { $0.persistentModelID == id }) { showsAllHistory = true }
+        if (matter.entries ?? []).contains(where: { $0.persistentModelID == id })
+            || (matter.documents ?? []).contains(where: { $0.persistentModelID == id }) { showsAllHistory = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation { scroller.scrollTo(id, anchor: .center) }
             marked = id
@@ -795,7 +796,7 @@ struct MatterScreen: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(todo.text).fixedSize(horizontal: false, vertical: true)
                                         .findable(.model(todo.persistentModelID), todo.text)
-                                    Text(Sources.origin(todo.sources.first)).font(.caption).foregroundStyle(.secondary)
+                                    SourceJump(sources: todo.sources, label: Sources.origin(todo.sources.first), matter: matter)
                                     // A task after all: it goes back to the open tasks.
                                     Button("Back to tasks", systemImage: "arrow.uturn.backward") {
                                         withAnimation { todo.isInfo = false }
@@ -1019,6 +1020,7 @@ struct MatterScreen: View {
         let loose = documents.filter { mailIDs[$0.messageID] == nil }
         let all = (threads.map(RecordItem.thread) + loose.map(RecordItem.document) + links.map(RecordItem.link)).sorted { $0.date > $1.date }
         let visible = showsAllHistory ? all : Array(all.prefix(60))
+        let made = RecordLinks(matter)
         let months = Dictionary(grouping: visible) { Calendar.current.dateComponents([.year, .month], from: $0.date) }
             .sorted { ($0.key.year ?? 0, $0.key.month ?? 0) > ($1.key.year ?? 0, $1.key.month ?? 0) }
         if all.isEmpty {
@@ -1035,11 +1037,11 @@ struct MatterScreen: View {
                         // Its files right under it, close: one thing. A scan or a picture the owner
                         // brought in is its entry already — "Open" is on it — and is not listed again.
                         VStack(alignment: .leading, spacing: 4) {
-                            PhoneThreadCard(thread: thread, matter: matter)
+                            ThreadCard(thread: thread, links: made) { navigation.talk($0.title, kind: "Mail", in: matter) }
                             ForEach((attached[thread.id] ?? []).filter { !$0.isOwnFile }) { document in FilesSection(matter: matter, only: document) }
                         }
                     case .document(let document):
-                        FilesSection(matter: matter, only: document)
+                        FilesSection(matter: matter, only: document, made: made.made(from: document))
                     case .link(let link):
                         PhoneLinkRow(link: link, todos: matter.openTodos) {
                             withAnimation { context.deleteByHand([link], undo: undoManager, named: "Remove Link") }
@@ -1065,6 +1067,7 @@ struct MatterScreen: View {
         var shown = 0
         let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || showsAllHistory }
         let hidden = threads.count - visible.count
+        let made = RecordLinks(matter)
         return VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "History", detail: Self.count(status.mailEntries)
                           + (threads.count == status.mailEntries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
@@ -1072,7 +1075,7 @@ struct MatterScreen: View {
                 PhoneEmptyBox(text: "Mail sorted into this matter shows here, newest first. It comes from your mailbox, not by hand.")
             }
             ForEach(visible) { thread in
-                PhoneThreadCard(thread: thread, matter: matter)
+                ThreadCard(thread: thread, links: made) { navigation.talk($0.title, kind: "Mail", in: matter) }
             }
             if hidden > 0 {
                 Text("… and \(hidden) older \(hidden == 1 ? "conversation" : "conversations")").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
@@ -1171,7 +1174,15 @@ struct PhoneTodoRow: View {
                         Link(destination: url) { Label(link.shownName, systemImage: "link").font(.footnote).lineLimit(1) }
                     }
                 }
-                Text(line).font(.caption).foregroundStyle(lineColor)
+                // Whose, by when, and where it came from — that last a way to it in the record.
+                if todo.isDone {
+                    SourceJump(sources: todo.doneSource.map { [$0] } ?? [],
+                               label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")",
+                               matter: todo.matter, color: Theme.done, before: line, beforeColor: lineColor)
+                } else {
+                    SourceJump(sources: todo.sources, label: Sources.origin(todo.sources.first), matter: todo.matter, color: lineColor,
+                               before: line, beforeColor: lineColor)
+                }
             }
             Spacer(minLength: 0)
             // The Mac's ⋯: change it by hand, say it is only worth knowing, what it waits for.
@@ -1253,11 +1264,6 @@ struct PhoneTodoRow: View {
         if showsOwner { parts.append(["me": "Mine", "we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
         if let due = todo.due {
             parts.append((!todo.isDone && due < today ? "Overdue since " : "by ") + Dates.short(due) + (todo.dueTime.map { " at \($0)" } ?? ""))
-        }
-        if todo.isDone {
-            parts.append(todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")")
-        } else {
-            parts.append(Sources.origin(todo.sources.first))
         }
         return parts.joined(separator: " · ")
     }
@@ -1474,6 +1480,8 @@ struct PhoneDateRow: View {
                         .foregroundStyle(item.kind == "Deadline" ? Theme.warning : .secondary)
                     if let place = item.place { Text(place).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
                 }
+                let sources = item.appointment?.sources ?? item.deadline?.sources ?? []
+                SourceJump(sources: sources, label: Sources.origin(sources.first), matter: matter)
                 if !isPast || item.calendarID != nil {
                     CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time,
                                  place: item.place, matterName: matter.name, tick: tick) { id in item.connect(id); try? context.save() }

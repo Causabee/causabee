@@ -46,6 +46,8 @@ struct FilesSection: View {
     let matter: Matter
     /// Only this file, as a card of its own: an entry in the record's one list.
     var only: MatterCore.Document? = nil
+    /// What came from that file, shown under it.
+    var made = RecordLinks.Made()
     @Environment(\.modelContext) private var context
     @Environment(Navigation.self) private var navigation
     @Query private var profiles: [Profile]
@@ -72,7 +74,11 @@ struct FilesSection: View {
         }
         VStack(alignment: .leading, spacing: 10) {
             if let only {
-                row(only).findable(.model(only.persistentModelID), only.shownName, only.name).phoneCard()
+                VStack(alignment: .leading, spacing: 0) {
+                    row(only)
+                    if !made.isEmpty { MadeChips(made: made).padding(.leading, 52).padding(.trailing, 14).padding(.bottom, 12).padding(.top, -6) }
+                }
+                .findable(.model(only.persistentModelID), only.shownName, only.name).phoneCard()
             } else {
             HStack {
                 SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
