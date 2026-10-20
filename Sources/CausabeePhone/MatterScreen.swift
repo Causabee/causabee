@@ -976,7 +976,11 @@ struct MatterScreen: View {
     private func record(_ status: MatterStatus) -> some View {
         HStack(spacing: 10) {
             // Which mail answers which, read once from the mailbox — as on the Mac.
-            Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) { await ReplyLinks.fill(in: matter, context: context) }
+            Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) {
+                // And which is still unread in the inbox, read-only: the dots as the mailbox has them now.
+                if !store.isDemo { await UnreadMail.refresh(matter, in: context) }
+                await ReplyLinks.fill(in: matter, context: context)
+            }
             RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts(status), person: personParty?.name, clearPerson: { person = nil }) {
                 // The matter's folder, on the record's own line — as on the Mac. Files are added by the plus.
                 if filter == .everything || filter == .files || filter == .scans {

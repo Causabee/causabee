@@ -1397,7 +1397,12 @@ struct MatterStatusView: View {
         .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
             if case .success(let files) = result { addFiles(files) }
         }
-        Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) { await linkReplies() }
+        // Which mail answers which, and which is still unread in the inbox — asked as the record
+        // opens, read-only, so the dots are as the mailbox has them now.
+        Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) {
+            if !DemoData.isRequested { await UnreadMail.refresh(matter, in: context) }
+            await linkReplies()
+        }
         if filter == .details {
             DetailsSection(matter: matter, showsEmpty: true).id("details")
         } else if show == .kept, filter != .mail, filter != .links {
