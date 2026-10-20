@@ -136,6 +136,8 @@ Each phase is a demo on all three devices before the next. Phases 0 and 5 are th
 
 **Phase 4 status (20 October, same branch):** built. At every mail check — on start, coming to the front, every ten minutes, by hand, on each device — `UnreadMail.refresh` asks the mailbox, folder by folder, `UID SEARCH UNSEEN`: a search, on the read-only list, that changes no flag (no `FETCH FLAGS` was needed). The answer goes on each mail of the last year as `Entry.isUnread` (synced; nil for scans, files and mail not asked about). An unread mail has a gold dot before its sender, the sender in semibold and its digest in full black. The record's *Show* has *Unread*. The overview has *Matters with unread mail*, folded on one line, no count; open, the matters with the day of their newest unread mail, each opening at that mail. Needs the CloudKit schema deployed (one new field on Entry); Development is done.
 
+**Unread follows the inbox (decided 20 October):** Causabee never marks a mail read — not in the mailbox, not on its own. The dot goes when the mail is read in Mail or any mail app, at the next check; and opening a matter's record asks the mailbox about that matter's mails at once (read-only, at most once a minute per matter), so the dots are as the inbox has them the moment they are looked at.
+
 ## One app on every device
 
 **The rule (decided 19 October):** Causabee is one app. The Mac, the iPhone and the iPad have the same features, the same actions under the same words, and the same data. Only the layout adapts to the screen, and only input that a device physically lacks may differ (a camera, a trackpad drag). Everything below applies to the whole product, and the new record is built this way from its first line.

@@ -42,4 +42,27 @@ struct UnreadMailTests {
         #expect(matter.unreadMails.map(\.title) == ["Mail 1"])
         #expect(await UnreadMail.refresh(from: mailbox, in: context) == 0)
     }
+
+    @Test("A matter opened is asked about alone: another matter's mail keeps what the last check said")
+    func oneMatter() async throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let open = Matter(key: "open"), other = Matter(key: "other")
+        context.insert(open); context.insert(other)
+        func mail(_ uid: Int, in matter: Matter) -> Entry {
+            let entry = Entry(title: "Mail \(uid)", from: "a@example.com", date: Date(),
+                              source: Source(kind: .mail, pointer: "imap://mail.example/INBOX;UIDVALIDITY=7/;UID=\(uid)", messageID: "<\(uid)@x>"))
+            entry.matter = matter
+            context.insert(entry)
+            return entry
+        }
+        let here = mail(1, in: open), there = mail(2, in: other)
+        try context.save()
+        let raw = { (uid: Int) in "Message-ID: <\(uid)@x>\r\nSubject: Mail \(uid)\r\n\r\nHi" }
+        let mailbox = FakeMailbox(gmail: false, folders: [MailFolder(name: "INBOX")], content: ["INBOX": [
+            .init(uid: 1, thread: nil, raw: raw(1), seen: false), .init(uid: 2, thread: nil, raw: raw(2), seen: false),
+        ]])
+        #expect(await UnreadMail.refresh(from: mailbox, in: context, of: open) == 1)
+        #expect(here.isUnread == true)
+        #expect(there.isUnread == nil)
+    }
 }
