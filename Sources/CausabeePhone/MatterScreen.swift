@@ -30,9 +30,12 @@ struct MatterScreen: View {
     /// The page under what stands on top: what is to do, the record, or the people.
     enum Part: String { case todo, record, people, notes }
     /// The record, whole or one kind of it.
-    enum RecordFilter: String { case all, mail, files, kept, details, links }
+
     @State private var part: Part = .todo
-    @State private var filter: RecordFilter = .all
+    @State private var filter: RecordBrowse.Kind = .everything
+    /// Which of them, and in which order: the record's other two menus.
+    @State private var show: RecordBrowse.Show = .all
+    @State private var sort: RecordBrowse.Sort = .newest
     /// How much of the page is seen under the bar.
     @State private var pageHeight = CGFloat.zero
     @State private var choosingIcon = false
@@ -103,7 +106,7 @@ struct MatterScreen: View {
                             case .record:
                                 record(status)
                             case .people:
-                                PeopleSection(matter: matter) { party in person = party.persistentModelID; filter = .all; part = .record }
+                                PeopleSection(matter: matter) { party in person = party.persistentModelID; filter = .everything; part = .record }
                             case .notes:
                                 notesPart
                             }
@@ -367,7 +370,7 @@ struct MatterScreen: View {
         } else if matter.parties.contains(where: { $0.persistentModelID == id }) {
             part = .people
         } else {
-            part = .record; filter = .all; person = nil
+            part = .record; filter = .everything; show = .all; person = nil
         }
         // A source of an answer can be anything on the page: what is folded away is unfolded for it.
         let today = MatterStatus(matter).today
@@ -930,117 +933,65 @@ struct MatterScreen: View {
         HStack(spacing: 10) {
             // Which mail answers which, read once from the mailbox — as on the Mac.
             Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) { await ReplyLinks.fill(in: matter, context: context) }
-            // Which kind of it: a slim menu, not a second row of tabs under the parts.
-            Menu {
-                Picker("Show", selection: $filter) {
-                    Text("Everything").tag(RecordFilter.all)
-                    Text("Mail").tag(RecordFilter.mail)
-                    Text("Files").tag(RecordFilter.files)
-                    Text("Kept only · \(matter.keptFiles.count)").tag(RecordFilter.kept)
-                    Text("Details").tag(RecordFilter.details)
-                    Text("Links").tag(RecordFilter.links)
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Text(filter == .all ? "Everything" : filter == .kept ? "Kept only" : filter.rawValue.capitalized)
-                    Image(systemName: "chevron.up.chevron.down").font(.caption2)
-                }
-                .font(.subheadline)
-                .padding(.vertical, 4).contentShape(Rectangle())
+            RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts(status), person: personParty?.name, clearPerson: { person = nil }) {
+                EmptyView()
             }
-            // Grey, not the gold a menu takes from the app.
-            .tint(Color.secondary)
-            .accessibilityLabel("Show")
-            if let party = personParty, filter == .all {
-                Button { person = nil } label: { Label(party.name, systemImage: "xmark.circle.fill") }
-                    .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small).tint(.primary)
-                    .accessibilityHint("Shows everyone's again")
-            }
-            Spacer(minLength: 0)
         }
         .padding(.horizontal, 4)
-        switch filter {
-        case .all:
+        if filter == .details {
+            DetailsSection(matter: matter, showsEmpty: true)
+        } else if show == .kept, filter != .mail, filter != .links {
+            // The files kept only, to read one or several at once.
+            FilesSection(matter: matter, keptOnly: true)
+        } else if filter == .files, show == .all, sort == .newest, personParty == nil {
+            FilesSection(matter: matter)
+        } else if filter == .links, show == .all, sort == .newest {
+            LinksSection(matter: matter)
+        } else {
             // What to have at hand, on top of what came in.
-            if personParty == nil { DetailsSection(matter: matter) }
+            if filter == .everything, show == .all, personParty == nil { DetailsSection(matter: matter) }
             recordList(status)
-        case .mail: history(status)
-        case .files: FilesSection(matter: matter)
-        case .kept: FilesSection(matter: matter, keptOnly: true)
-        case .details: DetailsSection(matter: matter, showsEmpty: true)
-        case .links: LinksSection(matter: matter)
         }
     }
 
-    /// One thing of the record, and the day it is sorted by.
-    private enum RecordItem: Identifiable {
-        case thread(MailThreads.Thread)
-        case document(MatterCore.Document)
-        case link(WebLink)
-
-        var id: String {
-            switch self {
-            case .thread(let thread): "thread-\(thread.id)"
-            case .document(let document): "file-\(document.persistentModelID.hashValue)"
-            case .link(let link): "link-\(link.persistentModelID.hashValue)"
-            }
-        }
-        var date: Date {
-            switch self {
-            case .thread(let thread): thread.last ?? thread.first ?? .distantPast
-            case .document(let document): document.source.date ?? .distantPast
-            case .link(let link): link.createdAt
-            }
-        }
+    /// How many there are for each "Show", of the kind chosen.
+    private func counts(_ status: MatterStatus) -> [RecordBrowse.Show: Int] {
+        let made = RecordLinks(matter), threads = MailThreads.build(status.mailEntries)
+        return Dictionary(uniqueKeysWithValues: RecordBrowse.Show.allCases.map { item in
+            (item, RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks, kind: filter, show: item, made: made).items.count)
+        })
     }
 
-    private static let month: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "LLLL yyyy"
-        return formatter
-    }()
-
-    /// Mail, files and links together, newest first, month by month.
+    /// The record as the three menus have it: what kind, which of them, in which order — with
+    /// what a person chosen in People wrote or is named in.
     @ViewBuilder
     private func recordList(_ status: MatterStatus) -> some View {
         let party = personParty
-        let threads = MailThreads.build(status.mailEntries).filter { thread in
-            party.map { party in thread.rows.contains { wrote(party, $0.entry.from) } } ?? true
-        }
-        let documents = shownDocuments.filter { document in
-            party.map { party in
-                wrote(party, (matter.entries ?? []).first { $0.messageID == document.messageID }?.from)
-            } ?? true
-        }
-        let links = party == nil ? keptLinks : []
-        // A file that came with a mail — or the scan a file was read into — is one thing with it:
-        // the file stands right under its mail, not as an entry of its own.
-        let mailIDs = Dictionary(threads.flatMap { thread in thread.rows.map { ($0.entry.messageID, thread.id) } }.filter { !$0.0.isEmpty },
-                                 uniquingKeysWith: { first, _ in first })
-        let attached = Dictionary(grouping: documents.filter { mailIDs[$0.messageID] != nil }) { mailIDs[$0.messageID] ?? "" }
-        let loose = documents.filter { mailIDs[$0.messageID] == nil }
-        let all = (threads.map(RecordItem.thread) + loose.map(RecordItem.document) + links.map(RecordItem.link)).sorted { $0.date > $1.date }
-        let visible = showsAllHistory ? all : Array(all.prefix(60))
         let made = RecordLinks(matter)
-        let months = Dictionary(grouping: visible) { Calendar.current.dateComponents([.year, .month], from: $0.date) }
-            .sorted { ($0.key.year ?? 0, $0.key.month ?? 0) > ($1.key.year ?? 0, $1.key.month ?? 0) }
+        let picked = RecordBrowse.pick(threads: MailThreads.build(status.mailEntries), documents: shownDocuments,
+                                       links: party == nil ? keptLinks : [], kind: filter, show: show, made: made)
+        let all = party.map { party in
+            picked.items.filter { item in NamedPeople.of(item, in: matter).contains { $0.id == party.persistentModelID } }
+        } ?? picked.items
+        let ordered = all.sorted { sort == .oldest ? $0.date < $1.date : $0.date > $1.date }
+        let visible = showsAllHistory || sort == .byPerson || sort == .byKind ? ordered : Array(ordered.prefix(60))
+        let groups = RecordBrowse.groups(visible, sort: sort) { item in NamedPeople.of(item, in: matter).map(\.name) }
         if all.isEmpty {
-            PhoneEmptyBox(text: party == nil ? "Mail sorted into this matter, its files and links show here, newest first."
-                                             : "Nothing in this matter was written by \(party?.name ?? "them").")
+            PhoneEmptyBox(text: party != nil ? "Nothing here was written by \(party?.name ?? "them") or names them."
+                              : show != .all ? "Nothing in the record is \(show.label.lowercased()) here."
+                              : "Mail sorted into this matter, its files and links show here, newest first.")
         }
-        ForEach(months, id: \.key) { _, items in
+        ForEach(groups) { group in
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: items.first.map { $0.date == .distantPast ? "Without a day" : Self.month.string(from: $0.date) } ?? "",
-                              detail: items.count == 1 ? "1 entry" : "\(items.count) entries")
-                ForEach(items) { item in
+                SectionHeader(title: group.title, detail: group.items.count == 1 ? "1 entry" : "\(group.items.count) entries")
+                ForEach(group.items) { item in
+                    AlsoUnder(names: group.also[item.id] ?? [])
                     switch item {
                     case .thread(let thread):
-                        // Its files right under it, close: one thing. A scan or a picture the owner
-                        // brought in is its entry already — "Open" is on it — and is not listed again.
+                        // Its files right under it, close: one thing.
                         VStack(alignment: .leading, spacing: 4) {
                             ThreadCard(thread: thread, links: made) { navigation.talk($0.title, kind: "Mail", in: matter) }
-                            let files = (attached[thread.id] ?? []).filter { !$0.isOwnFile }
+                            let files = picked.attached[thread.id] ?? []
                             if !files.isEmpty { FilesSection(matter: matter, attachments: files) }
                         }
                     case .document(let document):

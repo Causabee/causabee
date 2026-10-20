@@ -252,6 +252,12 @@ enum DemoData {
             entry.digest = digest
             entry.matter = matter
             context.insert(entry)
+            // Its own words, kept as a real mail's are, so "Show the whole mail" has them.
+            let name = Email.displayName(in: from) ?? Email.address(in: from)
+            let words = "From: \(from)\nSubject: \(title)\n\nHello,\n\n\(digest)\n\nBest regards,\n\(name)"
+            if let packed = try? (Data(words.utf8) as NSData).compressed(using: .lzfse) as Data {
+                context.insert(KeptText(messageID: id, data: packed))
+            }
             for (name, type, size) in files {
                 let document = Document(name: name, contentType: type, byteCount: size, source: source)
                 if read.contains(name) { document.readAt = DemoData.date(offset + 1) }

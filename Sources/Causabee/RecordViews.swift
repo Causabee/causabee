@@ -31,7 +31,7 @@ struct ThreadCard: View {
                 let me = Me(names: profiles.first?.names ?? [], withAccounts: true)
                 let joined = MailThreads.joined(thread.rows, deepest: ThreadMailRow.deepest)
                 ForEach(thread.rows) { row in
-                    ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from),
+                    ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from), subject: thread.subject,
                                   made: links?.made(from: row.entry) ?? RecordLinks.Made(), joinsNext: joined.contains(row.id)) { talk(row.entry) }
                         .findable(.model(row.entry.persistentModelID), row.entry.title, row.entry.from, row.entry.digest)
                 }
@@ -73,6 +73,8 @@ struct ThreadMailRow: View {
     let started: Bool
     /// The owner wrote it: it went out, the others came in.
     let sent: Bool
+    /// The conversation's subject, on its card: a mail whose own differs says its own.
+    var subject = ""
     var made = RecordLinks.Made()
     /// At the deepest indent and answered: its line goes on down to its answer.
     var joinsNext = false
@@ -81,6 +83,25 @@ struct ThreadMailRow: View {
     @Environment(\.openURL) private var openURL
     @State private var naming = false
     @State private var newName = ""
+    /// The digest whole, not cut at five lines.
+    @State private var opened = false
+    /// Whether its own words are kept on this device — looked at once — and, shown, the words.
+    @State private var hasText = false
+    @State private var whole: String?
+
+    /// The words each task, date or deadline that came from it was read out of.
+    private var quotes: [(sign: String, text: String)] {
+        let id = row.entry.messageID
+        func quote(_ sources: [Source]) -> String? {
+            guard let text = sources.first(where: { $0.messageID == id })?.quote?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+            return text
+        }
+        let all = made.todos.compactMap { todo in quote(todo.sources + [todo.doneSource].compactMap { $0 }).map { ("checklist", $0) } }
+            + made.appointments.compactMap { quote($0.sources).map { ("calendar", $0) } }
+            + made.deadlines.compactMap { quote($0.sources).map { ("flag", $0) } }
+        var seen = Set<String>()
+        return Array(all.filter { seen.insert($0.1).inserted }.prefix(3))
+    }
 
     #if os(macOS)
     nonisolated static let step: CGFloat = 20
@@ -160,6 +181,11 @@ struct ThreadMailRow: View {
                     .tool()
                     #endif
                 }
+                // A reply that changed the subject says its own.
+                if !subject.isEmpty, !entry.title.isEmpty,
+                   MailThreads.clean(entry.title).localizedCaseInsensitiveCompare(MailThreads.clean(subject)) != .orderedSame {
+                    Text(entry.title).font(.callout.weight(.medium)).lineLimit(2)
+                }
                 if let digest = entry.digest, !digest.isEmpty {
                     Text(digest)
                         #if os(macOS)
@@ -167,9 +193,40 @@ struct ThreadMailRow: View {
                         #else
                         .font(.subheadline)
                         #endif
-                        .foregroundStyle(.secondary).lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                        .foregroundStyle(.secondary).lineLimit(opened ? nil : 5).fixedSize(horizontal: false, vertical: true)
+                    if !opened, digest.count > 320 {
+                        Button("more") { withAnimation(.snappy) { opened = true } }.buttonStyle(.gold).font(.caption)
+                    }
                 }
                 MadeChips(made: made).padding(.top, made.isEmpty ? 0 : 4)
+                // What each of them was read out of, in its own words.
+                ForEach(Array(quotes.enumerated()), id: \.offset) { _, quote in
+                    Label { Text("“\(quote.text)”").italic().lineLimit(2) } icon: { Image(systemName: quote.sign) }
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if hasText {
+                    Button(whole == nil ? (entry.source.kind == .mail ? "Show the whole mail" : "Show the whole text") : "Hide it again") {
+                        withAnimation(.snappy) {
+                            whole = whole == nil ? KeptTexts.store.flatMap { MailText.load(entry.messageID, besides: $0)?.body } ?? "" : nil
+                        }
+                    }
+                    .buttonStyle(.gold).font(.caption).padding(.top, 2)
+                    .help("Its own words, kept on this device — without opening Mail")
+                }
+                if let whole {
+                    Text(whole.isEmpty ? "Its words are not on this device yet." : whole)
+                        #if os(macOS)
+                        .font(.callout)
+                        #else
+                        .font(.subheadline)
+                        #endif
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Theme.box, in: RoundedRectangle(cornerRadius: 8))
+                        .padding(.top, 4)
+                }
             }
             .padding(.vertical, 6)
             .padding(.leading, depth > 0 ? 6 : 0)
@@ -183,6 +240,7 @@ struct ThreadMailRow: View {
             }
         }
         .contentShape(Rectangle())
+        .task(id: row.entry.messageID) { hasText = KeptTexts.store.map { MailText.has(row.entry.messageID, besides: $0) } ?? false }
         // The same in the right click, as on every row: no button that comes and goes.
         #if os(macOS)
         .contextMenu { items }
@@ -581,5 +639,120 @@ struct ChooseBar: View {
             Button(chosen == 1 ? "Read 1" : "Read \(chosen)", action: read).filledButton().disabled(chosen == 0)
         }
         .padding(.horizontal, 4)
+    }
+}
+
+// MARK: Browsing
+
+/// The record's line: what kind of thing, which of them, in which order — three small menus, the
+/// same on every device, in the same order. One person chosen in People stands beside them.
+struct RecordBar<Trailing: View>: View {
+    @Binding var kind: RecordBrowse.Kind
+    @Binding var show: RecordBrowse.Show
+    @Binding var sort: RecordBrowse.Sort
+    /// How many there are for each "Show".
+    let counts: [RecordBrowse.Show: Int]
+    var person: String? = nil
+    var clearPerson: () -> Void = {}
+    @ViewBuilder let trailing: Trailing
+
+    var body: some View {
+        HStack(spacing: 12) {
+            menu("Kind", kind.label) {
+                Picker("Kind", selection: $kind) {
+                    ForEach(RecordBrowse.Kind.allCases, id: \.self) { Text($0.label).tag($0) }
+                }
+            }
+            if kind != .details {
+                menu("Show", show.label) {
+                    Picker("Show", selection: $show) {
+                        ForEach(RecordBrowse.Show.allCases, id: \.self) { item in
+                            Text(counts[item].map { "\(item.label) · \($0)" } ?? item.label).tag(item)
+                        }
+                    }
+                }
+                menu("Sort", sort.label) {
+                    Picker("Sort", selection: $sort) {
+                        ForEach(RecordBrowse.Sort.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
+                }
+            }
+            if let person {
+                Button(action: clearPerson) { Label(person, systemImage: "xmark.circle.fill").lineLimit(1) }
+                    #if os(macOS)
+                    .buttonStyle(.bordered).controlSize(.small)
+                    #else
+                    .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small).tint(.primary)
+                    #endif
+                    .help("Only what \(person) wrote or is named in. Click to show everyone's again.")
+            }
+            Spacer(minLength: 0)
+            trailing
+        }
+    }
+
+    @ViewBuilder
+    private func menu(_ name: String, _ value: String, @ViewBuilder picker: () -> some View) -> some View {
+        Menu {
+            picker().pickerStyle(.inline).labelsHidden()
+        } label: {
+            #if os(macOS)
+            Text(value).font(.callout)
+            #else
+            HStack(spacing: 3) {
+                Text(value)
+                Image(systemName: "chevron.up.chevron.down").font(.caption2)
+            }
+            .font(.subheadline)
+            .padding(.vertical, 4).contentShape(Rectangle())
+            #endif
+        }
+        #if os(macOS)
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        #endif
+        .tint(.secondary)
+        .accessibilityLabel("\(name): \(value)")
+        .help(name)
+    }
+}
+
+/// "also under Nina Voss": over a thing that stands under several people.
+struct AlsoUnder: View {
+    let names: [String]
+
+    var body: some View {
+        if !names.isEmpty {
+            Text("also under " + names.joined(separator: ", ")).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+        }
+    }
+}
+
+/// Who each mail names, worked out once per mail and kept while Causabee runs: its kept words are
+/// read from the disk for it. By id and name, not the party itself, which may go.
+@MainActor
+enum NamedPeople {
+    private static var cache: [String: [(id: PersistentIdentifier, name: String)]] = [:]
+
+    static func of(_ entry: Entry, in matter: Matter) -> [(id: PersistentIdentifier, name: String)] {
+        let key = entry.messageID + "|" + matter.parties.map(\.name).joined(separator: ",")
+        if let known = cache[key] { return known }
+        let found = RecordBrowse.people(in: entry, of: matter) { mail in
+            KeptTexts.store.flatMap { MailText.load(mail.messageID, besides: $0) }
+        }.map { (id: $0.persistentModelID, name: $0.name) }
+        cache[key] = found
+        return found
+    }
+
+    /// Everyone a thing of the record names, in order, each once.
+    static func of(_ item: RecordBrowse.Item, in matter: Matter) -> [(id: PersistentIdentifier, name: String)] {
+        let entries: [Entry]
+        switch item {
+        case .thread(let thread): entries = thread.rows.map(\.entry)
+        case .document(let document): entries = (matter.entries ?? []).filter { $0.messageID == document.messageID }
+        case .link: entries = []
+        }
+        var seen = Set<PersistentIdentifier>()
+        return entries.flatMap { of($0, in: matter) }.filter { seen.insert($0.id).inserted }
     }
 }
