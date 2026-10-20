@@ -895,21 +895,17 @@ enum MatterAction: String, CaseIterable {
 }
 
 
-/// The matter's ⋯, its first part: what can be added, and the next step and summary written again.
+/// The matter's ⋯, its first part: the next step and summary written again. What is added to a
+/// matter is added by the plus — the bee held, or beside the assistant's field — not here.
 struct MatterAddItems: View {
-    let run: (MatterAction) -> Void
-    /// Nil where the matter is closed: nothing is written for it.
+    /// Nil where nothing is written: the demo on the Mac.
     let writeAgain: (() -> Void)?
 
     var body: some View {
-        ForEach(MatterAction.allCases, id: \.self) { action in
-            Button(action.title, systemImage: action.symbol) { run(action) }
-        }
         if let writeAgain {
-            Divider()
             // ⌘R in the Matter menu, on the Mac and on the iPad's keyboard.
             Button("Write Next Step and Summary Again", systemImage: "arrow.clockwise", action: writeAgain)
+            Divider()
         }
-        Divider()
     }
 }

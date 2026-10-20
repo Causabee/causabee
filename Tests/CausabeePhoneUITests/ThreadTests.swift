@@ -26,14 +26,8 @@ final class ThreadTests: XCTestCase {
         return single.waitForExistence(timeout: 5) ? single : app.textViews["assistant.field"]
     }
 
-    /// "Task", from the plus, typed and sent: in the demo it is in the thread at once, without a key.
+    /// A question typed and sent: in the demo it is in the thread at once, without a key.
     private func addTask(_ words: String) {
-        let add = app.buttons["assistant.plus"].firstMatch
-        XCTAssertTrue(add.waitForExistence(timeout: 8), "The assistant has no plus.")
-        add.tap()
-        let entry = app.buttons["plus.task"]
-        XCTAssertTrue(entry.waitForExistence(timeout: 5), "The plus has no task.")
-        entry.tap()
         field.tap()
         field.typeText(words)
         app.buttons["Send"].firstMatch.tap()
@@ -156,7 +150,7 @@ final class ThreadTests: XCTestCase {
     func testTheNewestStandsAtTheTopAndStays() {
         let first = "First of \(stamp)", second = "Second of \(stamp)"
         addTask(first)
-        let asked = question("New task: " + first)
+        let asked = question(first)
         XCTAssertTrue(asked.waitForExistence(timeout: 8), "The question is not in the thread.")
         let header = app.buttons["Close"].firstMatch.frame.maxY
         let place = top(of: asked)
@@ -175,7 +169,7 @@ final class ThreadTests: XCTestCase {
 
         // The next question takes that place, and the one before it goes up out of it.
         addTask(second)
-        let next = question("New task: " + second)
+        let next = question(second)
         XCTAssertTrue(next.waitForExistence(timeout: 8), "The second question is not in the thread.")
         XCTAssertEqual(top(of: next), place, accuracy: 1.5, "The next question does not stand where the one before it stood.")
         XCTAssertLessThan(asked.frame.minY, place - 20, "The question before did not make room at the top.")

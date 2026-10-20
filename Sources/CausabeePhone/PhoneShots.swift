@@ -379,28 +379,27 @@ struct PlusItems: View {
     @Environment(Navigation.self) private var navigation
     @Query private var matters: [Matter]
 
+    // The one place things are added, in three parts, the same as the Mac's plus: to do, to keep
+    // at hand, and to bring in — what is read, and what is only kept.
     var body: some View {
+        item("Task", "checklist", .task)
+        item("Note", "note.text", .note)
+        Divider()
+        item("Link", "link", .link)
+        item("Detail", "info.circle", .detail)
+        item("Contact", "person.badge.plus", .contact)
+        Divider()
         Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
-        // Two ways for a file, told apart under their names: this one is read; the other is only kept.
+        // A letter on the table: scanned with the camera, read, and kept among the matter's files.
+        item("Scan a document", "doc.viewfinder", .scan)
+        // Two ways for a file, as the record shows them: read, or only kept.
         Button { picksFile = true } label: {
-            Text("File")
-            // Short enough for one line: on two, the menu grew past its room over the keyboard, and
-            // "Task" at its far end was out of sight.
+            Text("Read a file")
             Text("Read and sorted in")
             Image(systemName: "doc")
         }
-        // A letter on the table: scanned with the camera, named and kept among the matter's files.
-        item("Scan a document", "doc.viewfinder", .scan)
-        // As the Mac's "Add File …": files, or every file of a folder, kept as they are — not read, nothing sent.
-        item("Files or a folder", "folder", .files, saying: "Kept, not read")
-        Divider()
-        item("Contact", "person.badge.plus", .contact)
-        item("Detail", "info.circle", .detail)
-        item("Link", "link", .link)
-        // A line before what is said to the assistant: a note and a task, as in the Mac's plus.
-        Divider()
-        item("Note", "note.text", .note)
-        item("Task", "checklist", .task)
+        // Files, or every file of a folder, kept as they are — not read, nothing sent.
+        item("Keep files", "folder", .files, saying: "Kept only, not read")
     }
 
     /// In a matter, it is for that matter. With none open, it opens onto the matters opened last —
@@ -410,7 +409,6 @@ struct PlusItems: View {
         if let matter {
             Button {
                 navigation.add(plus, to: matter)
-                if plus == .note || plus == .task { picked() }
             } label: {
                 Text(title)
                 if let saying { Text(saying) }

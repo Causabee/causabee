@@ -328,7 +328,7 @@ struct MatterStatusView: View {
     private var matterMenuItems: some View {
             // What can be added, and the next step and summary written again: as the
             // iPhone's and the iPad's ⋯ have them.
-            MatterAddItems(run: postAction, writeAgain: DemoData.isRequested ? nil : { writeAgain() })
+            MatterAddItems(writeAgain: DemoData.isRequested ? nil : { writeAgain() })
             PinMenuItem(matter: matter, all: allMatters)
             Button("Rename …", action: startRenaming)
             Menu("Merge with …") {
@@ -345,10 +345,6 @@ struct MatterStatusView: View {
             } else {
                 Button("Close Matter…", systemImage: "archivebox") { asksToClose = true }
             }
-    }
-
-    private func postAction(_ action: MatterAction) {
-        NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
     }
 
     /// The next step and the summary, both written again — what pulling the page down does on the
@@ -623,12 +619,8 @@ struct MatterStatusView: View {
         let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
+                // Added by the plus — beside the assistant's field — or dragged from the browser.
                 SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
-                if !all.isEmpty {
-                    Button { addingLink = true } label: { Label("Link", systemImage: "plus") }
-                        .buttonStyle(.borderless).font(.caption)
-                        .help("Paste a link — or drag it from the browser onto the matter")
-                }
             }
             .popover(isPresented: $addingLink, arrowEdge: .bottom) {
                 LinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
@@ -1049,7 +1041,7 @@ struct MatterStatusView: View {
                         }
                         .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
                         .onGlass(Circle())
-                        .help("More: add to the matter, write the next step and summary again, pin, rename, merge, export, close")
+                        .help("More: write the next step and summary again, pin, rename, merge, export, close")
                         .accessibilityLabel("More")
                         .accessibilityIdentifier("matter.more")
                         .tool()
@@ -1297,9 +1289,6 @@ struct MatterStatusView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     SectionHeader(title: "People", detail: "\(memberships.count) · to merge, drag one name onto another")
-                    Button { addingContact = true } label: { Label("Contact", systemImage: "plus") }
-                        .buttonStyle(.gold).font(.caption)
-                        .tool()
                 }
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
@@ -1414,10 +1403,6 @@ struct MatterStatusView: View {
             // "Everything" as under "Files", and whether or not there is a file yet.
             if filter == .everything || filter == .files || filter == .scans {
                 if let filesSaid { Text(filesSaid).font(.caption).foregroundStyle(.secondary).transition(.opacity) }
-                Button { addingFile = true } label: { Label("File", systemImage: "plus") }
-                    .buttonStyle(.borderless).font(.caption)
-                    .tool()
-                    .help("Add a PDF, a scan, any file or a whole folder from this Mac — or drag it onto the matter")
                 // Not in the demo: its made-up matters have no folder among the owner's own.
                 if MatterFolders.root != nil, !DemoData.isRequested {
                     Button { if let folder = MatterFolders.folder(for: matter) { try? context.save(); FolderSaver.reveal(folder) } } label: {

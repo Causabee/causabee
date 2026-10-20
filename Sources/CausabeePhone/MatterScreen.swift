@@ -199,6 +199,8 @@ struct MatterScreen: View {
             navigation.adding = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 switch adding {
+                case .task: part = .todo; addTodo()
+                case .note: part = .notes; writingNote = true
                 case .contact: addingContact = true
                 case .detail: addingDetail = true
                 case .link: addingLink = true
@@ -290,7 +292,7 @@ struct MatterScreen: View {
                 Menu {
                     Group {
                         // What can be added, and the next step and summary written again — as the Mac's ⋯ has them.
-                        MatterAddItems(run: run, writeAgain: writeAnew)
+                        MatterAddItems(writeAgain: writeAnew)
                         MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
                         // Everything the matter holds, as one document: what is gathered here can leave at any time.
                         Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
@@ -962,11 +964,8 @@ struct MatterScreen: View {
             // Which mail answers which, read once from the mailbox — as on the Mac.
             Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) { await ReplyLinks.fill(in: matter, context: context) }
             RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts(status), person: personParty?.name, clearPerson: { person = nil }) {
-                // Adding a file and opening the folder, on the record's own line — as on the Mac.
+                // The matter's folder, on the record's own line — as on the Mac. Files are added by the plus.
                 if filter == .everything || filter == .files || filter == .scans {
-                    Button { addingFiles = true } label: { Label("File", systemImage: "plus") }
-                        .buttonStyle(.gold).font(.caption)
-                        .tool()
                     // Not in the demo: its made-up matters have no folder among the owner's own.
                     if MatterFolders.root != nil, !store.isDemo, let folder = MatterFolders.folder(for: matter),
                        let files = URL(string: "shareddocuments://" + folder.path) {

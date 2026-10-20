@@ -91,32 +91,29 @@ final class RegressionTests: XCTestCase {
         shows("Tasks", "Back on To do, the tasks are not shown.")
     }
 
-    /// "Task", said to the assistant before it is typed: sent, it is a task at once, and in the list.
+    /// "Task" from the plus opens the task's own editor: added, it is in the list.
     func testATaskAddedStays() {
         let words = "Call the pharmacy \(stamp)"
         choose("Task", from: "assistant.plus")
-        type(words, into: "assistant.field", "The assistant's field is not there.")
-        app.typeKey(.return, modifierFlags: [])
-        shows("Task added", "“Task” was picked and sent, and the thread does not say it was added.")
+        type(words, into: "task.text", "“Task” was picked and its editor did not open.")
+        press("Add")
         let row = app.staticTexts.matching(NSPredicate(format: "value == %@ OR label == %@", words, words)).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 8), "The task was added and is not in the list.")
     }
 
-    /// The same for a note: kept word for word, with nothing asked.
+    /// The same for a note: its own field, under Notes, kept word for word.
     func testANoteAdded() {
         let words = "Mum prefers mornings \(stamp)"
         choose("Note", from: "assistant.plus")
-        type(words, into: "assistant.field", "The assistant's field is not there.")
-        app.typeKey(.return, modifierFlags: [])
-        shows("Note added", "“Note” was picked and sent, and the thread does not say it was added.")
-        tab("Notes")
+        type(words, into: "note.field", "“Note” was picked and the note's field did not open.")
+        press("Add")
         let note = app.staticTexts.matching(NSPredicate(format: "value == %@ OR label == %@", words, words)).firstMatch
         XCTAssertTrue(note.waitForExistence(timeout: 8), "The note was added and is not among the notes.")
     }
 
     func testADetailAdded() {
         let value = "A 123 \(stamp)"
-        choose("Add Detail …", from: "assistant.plus")
+        choose("Detail", from: "assistant.plus")
         type("Versichertennummer", into: "detail.label", "The detail's editor did not open.")
         type(value, into: "detail.value", "The detail's editor has no value field.")
         press("Add")
@@ -129,7 +126,7 @@ final class RegressionTests: XCTestCase {
         // In letters: a name that differs only in digits is the same contact, and would be found, not made.
         let letters = String(stamp.compactMap { $0.wholeNumberValue.map { Character(UnicodeScalar(UInt8(97 + $0))) } })
         let name = "Kasse " + letters
-        choose("Add Contact …", from: "assistant.plus")
+        choose("Contact", from: "assistant.plus")
         type(name, into: "contact.name", "The contact's editor did not open.")
         type(letters + "@hkk.de", into: "contact.mail", "The contact's editor has no address field.")
         press("Add")

@@ -44,7 +44,7 @@ final class Navigation {
     var prefill: String?
     /// Picked from the assistant's plus, and with an editor of its own on the matter's page: the
     /// assistant steps aside and the page opens it.
-    enum Adding { case contact, detail, link, scan, files }
+    enum Adding { case task, note, contact, detail, link, scan, files }
     var adding: Adding?
     /// What the plus adds to a matter — beside the assistant's field, or held on the yellow button.
     enum Plus: String, Identifiable {
@@ -57,18 +57,14 @@ final class Navigation {
     var choosing: Plus?
     var choosingInAssistant: Plus?
 
-    /// A task or a note is said to the assistant, over the matter; the others have an editor of
-    /// their own on the matter's page, and the assistant steps aside for it.
+    /// Each has an editor of its own on the matter's page — a task and a note too, as on the Mac:
+    /// the assistant steps aside for it. What the assistant would suggest, it is asked for.
     func add(_ plus: Plus, to matter: Matter) {
-        switch plus {
-        case .note, .task:
-            let add: AssistantAdd = plus == .note ? .note : .task
-            pinned = Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
-            showsAssistant = true
-        case .scan, .files, .contact, .detail, .link:
-            adding = switch plus { case .scan: .scan; case .files: .files; case .contact: .contact; case .detail: .detail; default: .link }
-            showsAssistant = false
+        adding = switch plus {
+        case .task: .task; case .note: .note; case .scan: .scan; case .files: .files
+        case .contact: .contact; case .detail: .detail; case .link: .link
         }
+        showsAssistant = false
     }
 
     /// On the iPad another page is simply there: beside a sidebar nothing is pushed on anything,
@@ -103,10 +99,7 @@ final class Navigation {
         RecentMatters.note(matter)
         showing = nil
         if isPad { go([matter.persistentModelID]) } else if path.last != matter.persistentModelID { path.append(matter.persistentModelID) }
-        switch plus {
-        case .note, .task:
-            add(plus, to: matter)
-        case .scan, .files, .contact, .detail, .link:
+        do {
             showsAssistant = false
             // Once its page is there, and the assistant has gone.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self.add(plus, to: matter) }

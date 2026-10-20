@@ -31,13 +31,7 @@ struct PeopleSection: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                // A contact added by hand, beside the heading — as on the Mac.
-                HStack {
-                    SectionHeader(title: "People", detail: memberships.count == 1 ? "1 name" : "\(memberships.count) names")
-                    Button { adding = true } label: { Label("Contact", systemImage: "plus") }
-                        .buttonStyle(.gold).font(.caption)
-                        .tool()
-                }
+                SectionHeader(title: "People", detail: memberships.count == 1 ? "1 name" : "\(memberships.count) names")
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
@@ -269,15 +263,7 @@ struct LinksSection: View {
         let all = (matter.links ?? []).filter(\.isKept).sorted(by: newestFirst)
         let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
-                // A link added by hand, beside the heading — as on the Mac.
-                if !all.isEmpty {
-                    Button { adding = true } label: { Label("Link", systemImage: "plus") }
-                        .buttonStyle(.gold).font(.caption)
-                        .tool()
-                }
-            }
+            SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
             if !all.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(all.enumerated()), id: \.element.persistentModelID) { index, link in

@@ -435,19 +435,29 @@ struct Composer: View {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
               } else {
-                if let attach, let add {
+                if let attach, add != nil {
+                    // The one place things are added, in three parts, the same as the bee held on the
+                    // iPhone and the iPad: to do, to keep at hand, and to bring in — read, or only kept.
+                    // Each opens its editor on the page, by the Matter menu's way in.
                     Menu {
-                        Button("Task", systemImage: "checklist") { add(.task) }
-                        Button("Note", systemImage: "note.text") { add(.note) }
+                        let open = { (action: MatterAction) in NotificationCenter.default.post(name: .matterAction, object: action.rawValue) }
+                        Button("Task", systemImage: "checklist") { open(.newTask) }
+                        Button("Note", systemImage: "note.text") { open(.writeNote) }
                         Divider()
-                        // The page's own editors, by the Matter menu's way in.
-                        ForEach([MatterAction.addLink, .addDetail, .addContact, .addFile], id: \.self) { action in
-                            Button(action.title, systemImage: action.symbol) {
-                                NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
-                            }
+                        Button("Link", systemImage: "link") { open(.addLink) }
+                        Button("Detail", systemImage: "info.circle") { open(.addDetail) }
+                        Button("Contact", systemImage: "person.badge.plus") { open(.addContact) }
+                        Divider()
+                        Button(action: attach) {
+                            Text("Read a File …")
+                            Text("A screenshot, a mail or a PDF — read and sorted in")
+                            Image(systemName: "doc.viewfinder")
                         }
-                        Divider()
-                        Button("Screenshot, Mail or PDF to Read …", systemImage: "doc.viewfinder", action: attach)
+                        Button { open(.addFile) } label: {
+                            Text("Keep Files …")
+                            Text("Kept only, not read")
+                            Image(systemName: "folder")
+                        }
                     } label: {
                         Image(systemName: "plus").font(.system(size: 15)).frame(width: 34, height: 34).contentShape(Rectangle())
                     }

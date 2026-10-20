@@ -73,18 +73,13 @@ final class RegressionTests: XCTestCase {
 
     func testATaskAddedStays() {
         let words = "Call the pharmacy \(stamp)"
-        // "Task", said to the assistant before it is typed: sent, it is a task at once.
+        // "Task" from the plus opens the task's own editor: added, it is in the list.
         plus("task")
-        let text = field("assistant.field")
-        XCTAssertTrue(text.waitForExistence(timeout: 5), "The assistant's field is not there.")
+        let text = field("task.text")
+        XCTAssertTrue(text.waitForExistence(timeout: 5), "“Task” was picked and its editor did not open.")
         text.tap()
         text.typeText(words)
-        app.buttons["Send"].firstMatch.tap()
-        // Its card in the thread is one thing to the screen reader: the words and "Task added".
-        let card = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Task added")).firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 8), "“Task” was picked and sent, and the thread does not say it was added.")
-        // And it is in the matter's list, under the assistant's sheet.
-        app.buttons["Close"].firstMatch.tap()
+        app.buttons["Add"].firstMatch.tap()
         let row = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", words)).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 8), "The task was added and is not in the list.")
     }

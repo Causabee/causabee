@@ -518,10 +518,6 @@ struct DetailsSection: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     SectionHeader(title: "Details", detail: details.isEmpty ? nil : "\(details.count)")
-                    // A detail added by hand, beside the heading — on every device.
-                    Button { adding = true } label: { Label("Detail", systemImage: "plus") }
-                        .buttonStyle(.gold).font(.caption)
-                        .accessibilityIdentifier("detail.add")
                 }
                 if details.isEmpty {
                     Text("A membership number, a file number, a ward and room: what you need on the phone with them.")
