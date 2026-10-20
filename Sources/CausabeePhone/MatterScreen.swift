@@ -188,6 +188,20 @@ struct MatterScreen: View {
                 }
             }
         }
+        // As on the Mac: a link dragged from the browser onto the matter is kept in it, and files
+        // dragged from Files become its files — kept, not read. What is to be read goes to the assistant.
+        .dropDestination(for: URL.self) { urls, _ in
+            let files = urls.filter(\.isFileURL)
+            if !files.isEmpty { bring(files) }
+            let web = urls.filter { !$0.isFileURL }.compactMap { WebLink.address(in: $0.absoluteString) }
+            for address in web where !(matter.links ?? []).contains(where: { $0.address == address && $0.todo == nil }) {
+                let link = WebLink(address: address, title: "")
+                context.insert(link)
+                link.matter = matter
+            }
+            if !web.isEmpty { try? context.save() }
+            return !web.isEmpty || !files.isEmpty
+        }
         // The keyboard's Matter menu, on the iPad.
         .onReceive(NotificationCenter.default.publisher(for: .phoneMatterAction)) { note in
             guard let name = note.object as? String else { return }

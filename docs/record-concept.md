@@ -199,3 +199,7 @@ Already the same everywhere, no change needed: what was sorted, what was left ou
 
 1. **Kept texts in iCloud (D1).** For the same data on every device, the full texts of mails and scans have to sync — end-to-end encrypted, in your private iCloud. Today the app promises they stay on the device. Is the new promise "they stay in your own iCloud, end-to-end encrypted, and never reach anyone else" acceptable? Without it, *Show the whole mail* and the assistant's knowledge stay per device.
 2. **Sign in with Google on iPhone (D4)** needs the iPhone app registered with Google as a client of its own. Whether Google wants to review the mail access again for it is not known yet; if so, that time is outside our hands.
+
+## Noted for later
+
+- **Demo: "what was sent" is an empty box.** Tapping an answer's price opens who answered and what was sent; the demo's made-up answers send nothing, so the box under the model's name is empty. Say "Nothing was sent for this answer." instead, on the Mac and the iPhone/iPad (`AssistantView.swift` and `AssistantSheet.swift`, where `answer.sent` is shown). Cosmetic, demo only — the owner said to skip it for now and not forget it (20 October).

@@ -143,6 +143,8 @@ struct CausabeeApp: App {
                     .keyboardShortcut("n", modifiers: .command)
             }
             MatterCommands()
+            // Scan a document or take a photo with the iPhone, from the Mac (Continuity Camera).
+            ImportFromDevicesCommands()
             WindowCommands()
             FindCommands()
             // The About panel names the release as it went out: "Version Beta 0.5 (19)".
@@ -735,6 +737,14 @@ struct RootView: View {
                 let conversation = Conversation(context: context, navigation: navigation, owner: profiles.first?.names.first)
                 for url in files { conversation.bring(url) }
                 return !files.isEmpty
+            }
+            // File ▸ Import from iPhone or iPad — or a right click: a document scanned or a photo taken
+            // with the iPhone's camera, read as a file is, as the iPhone's "Scan a document" reads it.
+            .importableFromServices(for: BroughtFile.self) { items in
+                let conversation = Conversation(context: context, navigation: navigation, owner: profiles.first?.names.first)
+                for item in items { conversation.bring(item.data, named: item.name) }
+                if !items.isEmpty { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } }
+                return !items.isEmpty
             }
         }
         .ignoresSafeArea()

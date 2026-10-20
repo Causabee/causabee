@@ -145,13 +145,19 @@ struct Conversation {
 
     /// An image on the pasteboard has no home: it is written beside the store, then brought in.
     func bringPasted(_ data: Data) {
-        let folder = ScreenshotDoor.attachments(besides: navigation.store)
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd-HHmmss"
-        let file = folder.appendingPathComponent("Pasted-\(formatter.string(from: Date())).png")
+        bring(data, named: "Pasted-\(formatter.string(from: Date())).png")
+    }
+
+    /// Bytes with no file of their own — pasted, or a scan or a photo taken with an iPhone's camera
+    /// (Import from iPhone): written beside the store under their name, then brought in.
+    func bring(_ data: Data, named name: String) {
+        let folder = ScreenshotDoor.attachments(besides: navigation.store)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name.replacingOccurrences(of: "/", with: "-"))
         guard (try? data.write(to: file)) != nil else { return }
-        var turn = Navigation.Turn(question: file.lastPathComponent, scope: "Screenshot", inHand: nil, seen: "", refs: [:], matter: nil)
+        var turn = Navigation.Turn(question: Document.ownName(of: file), scope: "Screenshot", inHand: nil, seen: "", refs: [:], matter: nil)
         turn.shot = Navigation.Shot(file: file, copied: true)
         if case .matter(let open) = navigation.place { turn.matter = open }
         navigation.turns.append(turn)

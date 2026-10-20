@@ -1,5 +1,6 @@
 import MatterCore
 import SwiftData
+import UniformTypeIdentifiers
 import SwiftUI
 #if os(iOS)
 import QuickLook
@@ -907,5 +908,37 @@ struct MatterAddItems: View {
             Button("Write Next Step and Summary Again", systemImage: "arrow.clockwise", action: writeAgain)
             Divider()
         }
+    }
+}
+
+/// How much of the assistant's thread is shown at first, and how many more each "Show earlier"
+/// brings: the same on every device.
+enum AssistantPage {
+    static let size = 20
+}
+
+// MARK: Brought in by drop, paste or camera
+
+/// A screenshot, a picture, a scan or a PDF dropped, pasted, or taken with an iPhone's camera
+/// from the Mac: its bytes, and a name to keep it under. The same way in on every device.
+struct BroughtFile: Transferable {
+    let data: Data
+    let name: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(importedContentType: .pdf) { BroughtFile(data: try Data(contentsOf: $0.file), name: $0.file.lastPathComponent) }
+        FileRepresentation(importedContentType: .image) { BroughtFile(data: try Data(contentsOf: $0.file), name: $0.file.lastPathComponent) }
+        DataRepresentation(importedContentType: .pdf) { BroughtFile(data: $0, name: named("Scan", "pdf")) }
+        DataRepresentation(importedContentType: .png) { BroughtFile(data: $0, name: named("Screenshot", "png")) }
+        DataRepresentation(importedContentType: .jpeg) { BroughtFile(data: $0, name: named("Photo", "jpg")) }
+        DataRepresentation(importedContentType: .heic) { BroughtFile(data: $0, name: named("Photo", "heic")) }
+    }
+
+    /// As the devices name their own: "Screenshot 2026-10-20 at 09.41.00.png", in local time.
+    static func named(_ kind: String, _ ending: String) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        return "\(kind) \(formatter.string(from: Date())).\(ending)"
     }
 }

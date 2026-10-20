@@ -47,8 +47,8 @@ struct AssistantSheet: View {
     @State private var placement = ThreadPlacement()
     /// The thread opens with its newest turns only; the earlier ones come when asked for. Laid out
     /// whole at once, a thread of weeks took seconds to open.
-    @State private var showsEarlier = false
-    private static let firstShown = 8
+    /// How many of the newest are shown: twenty, and twenty more at a time — as on the Mac.
+    @State private var showsNewest = AssistantPage.size
 
     init(matter: Matter?) {
         self.matter = matter
@@ -119,7 +119,7 @@ struct AssistantSheet: View {
         // was read, filtered and sorted as many times as it has turns.
         let all = entries
         let newestID = asking?.id ?? all.last?.id
-        let entries = showsEarlier ? all : Array(all.suffix(Self.firstShown))
+        let entries = Array(all.suffix(showsNewest))
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
             // The thread is exactly as wide as its scroll view, by the width layout hands down here
@@ -134,10 +134,10 @@ struct AssistantSheet: View {
                             // The thread is the owner's from here: it stays where it is read, the
                             // earlier turns over what was its first.
                             placement.read()
-                            showsEarlier = true
+                            showsNewest += AssistantPage.size
                             DispatchQueue.main.async { scroller.scrollTo(first, anchor: .top) }
                         } label: {
-                            Text("Show \(all.count - entries.count) earlier").font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
+                            Text("Show earlier · \(all.count - entries.count) more").font(.footnote.weight(.medium)).foregroundStyle(Theme.gold)
                                 .frame(maxWidth: .infinity, minHeight: 44)
                                 .contentShape(Rectangle())
                         }
@@ -160,7 +160,10 @@ struct AssistantSheet: View {
                                     .padding(.top, index == 0 ? 0 : 4)
                             }
                             switch entry {
-                            case .turn(let record, let turn): PhoneTurnView(record: record, turn: turn, matter: record.matter)
+                            case .turn(let record, let turn):
+                                // The newest question can be asked once more, for another answer — as on the Mac.
+                                PhoneTurnView(record: record, turn: turn, matter: record.matter,
+                                              again: newest && asking == nil ? { again(record, turn) } : nil)
                             // A file brought in here: read on the iPhone, sorted in on a yes.
                             case .shot(let shot): PhoneShotCard(shot: shot)
                             case .pending(_, let question, _): PendingTurn(question: question, step: step, sentAt: sentAt)
@@ -229,6 +232,8 @@ struct AssistantSheet: View {
             }
         }
         .background(Theme.canvas)
+        // A screenshot or a PDF dragged here, or pasted: read, as on the Mac.
+        .receivesFiles(matter: matter)
         .onAppear {
             // What was in hand from another matter is put down; words to send go into the field.
             if let pinned = navigation.pinned, pinned.matter != matter?.persistentModelID { navigation.pinned = nil }
@@ -237,6 +242,15 @@ struct AssistantSheet: View {
             // written down without waiting for it.
             Task { await Transcriber.shared.warmUp() }
         }
+    }
+
+    /// The same question once more: the answer it had goes, and the new one takes its place.
+    private func again(_ record: ThreadTurn, _ turn: Navigation.Turn) {
+        guard asking == nil else { return }
+        context.delete(record)
+        try? context.save()
+        draft = turn.question
+        send()
     }
 
     /// The question is back in the field: sending it is trying again.
@@ -560,6 +574,12 @@ struct PhoneTurnView: View {
     let record: ThreadTurn
     let turn: Navigation.Turn
     let matter: Matter?
+    /// The newest question only: asked once more, for another answer.
+    var again: (() -> Void)? = nil
+    /// Who answered and what went out, disguised: behind what it cost, as on the Mac.
+    @State private var showsSent = false
+    /// Reading mode, from the window: the sheet is not always under the page that has it.
+    private var reading: Bool { navigation.reading }
     /// Just copied: the button says so for a moment.
     @State private var copied = false
     /// Kept as a note of its matter: the button says so, and does not keep it twice.
@@ -596,7 +616,13 @@ struct PhoneTurnView: View {
             .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
         } else {
             VStack(alignment: .leading, spacing: 16) {
-                question
+                VStack(alignment: .trailing, spacing: 6) {
+                    question
+                    // A name typed a letter short, read as the person it almost is — said, as on the Mac.
+                    ForEach(turn.readAs, id: \.self) { note in
+                        Label(note, systemImage: "character.cursor.ibeam").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
                 switch turn.state {
                 case .answered(let answer): answered(answer)
                 case .failed(let message):
@@ -605,6 +631,10 @@ struct PhoneTurnView: View {
                         Text(message).font(.footnote).foregroundStyle(.secondary)
                     } else {
                         Label(message, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.warning)
+                    }
+                    if let again {
+                        Button(action: again) { Label("Try again", systemImage: "arrow.clockwise") }
+                            .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain)
                     }
                 }
             }
@@ -643,7 +673,8 @@ struct PhoneTurnView: View {
                                     Haptics.tap()
                                     withAnimation { navigation.mark(record, card: index, dismissed: put, context: context) }
                                 })
-                } else {
+                } else if !reading || card.kind == .draftMessage {
+                    // While reading, what is suggested waits: a drafted mail stays, as on the Mac.
                     PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
                 }
             }
@@ -674,6 +705,15 @@ struct PhoneTurnView: View {
                     .disabled(savedNote)
                     .accessibilityLabel(savedNote ? "Saved as note" : "Save as note")
                 }
+                // Another answer would take the place of this one: not once a card of it is taken in.
+                if let again, turn.applied.isEmpty {
+                    Button(action: again) {
+                        Image(systemName: "arrow.clockwise").font(.footnote).foregroundStyle(.secondary)
+                            .frame(width: 32, height: 32).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Try again")
+                }
                 if !cites.isEmpty {
                     Button { withAnimation(.snappy) { showsSources.toggle() } } label: {
                         HStack(spacing: 4) {
@@ -687,12 +727,38 @@ struct PhoneTurnView: View {
                 }
                 Spacer(minLength: 8)
                 // What the disguise found in the question — so it is seen that it looked — and what it cost.
-                Text((answer.disguiseLine.map { $0 + " · " } ?? "") + "$\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
-                    .lineLimit(1).minimumScaleFactor(0.8)
-                    .accessibilityLabel("\(answer.disguiseSentence ?? "") \(answer.modelLabel), $\(String(format: "%.3f", answer.cost))")
+                // A tap shows who answered and what went out, disguised — as on the Mac.
+                Button { withAnimation(.snappy) { showsSent.toggle() } } label: {
+                    Text((answer.disguiseLine.map { $0 + " · " } ?? "") + "$\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .frame(minHeight: 32).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(answer.disguiseSentence ?? "") \(answer.modelLabel), $\(String(format: "%.3f", answer.cost))")
+                .accessibilityHint(showsSent ? "Hides what was sent" : "Shows what was sent, pseudonymised")
             }
             .padding(.leading, -8)
             .padding(.vertical, -6)
+            if showsSent {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(answer.modelLabel).font(.caption2).foregroundStyle(.secondary)
+                    if let sentence = answer.disguiseSentence {
+                        Text(sentence).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    // Nothing went out for a made-up answer — the demo's: said, not an empty box.
+                    if answer.sent.isEmpty {
+                        Text("Nothing was sent for this answer.").font(.caption2).foregroundStyle(.secondary)
+                    } else {
+                    ScrollView {
+                        Text(answer.sent).font(.caption.monospaced()).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 260)
+                    .padding(8)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
             if showsSources, !cites.isEmpty {
                 // A tap closes the assistant and shows that very mail, task or date in its matter.
                 SourceList(cites: cites, refs: turn.refs) { ref in

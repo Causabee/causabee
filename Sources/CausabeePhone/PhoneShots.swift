@@ -391,6 +391,10 @@ struct PlusItems: View {
         // What is brought in, under what becomes of it — said once, over the part, as the record
         // shows a file read or only kept.
         Section("Read and sorted in") {
+            // A screenshot copied a moment ago: in, without the photo library — as ⌘V on the Mac.
+            if UIPasteboard.general.hasImages {
+                Button("Paste screenshot", systemImage: "doc.on.clipboard") { pasteImage() }
+            }
             Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
             // A letter on the table: scanned with the camera, read, and kept among the matter's files.
             item("Scan a document", "doc.viewfinder", .scan)
@@ -400,6 +404,16 @@ struct PlusItems: View {
             // Files, or every file of a folder, kept as they are — nothing sent.
             item("Files or a folder", "folder", .files)
         }
+    }
+
+    @Query private var profiles: [Profile]
+    @Environment(\.modelContext) private var context
+
+    private func pasteImage() {
+        guard let data = UIPasteboard.general.image?.pngData(),
+              let file = PhoneShots.shared.keep(data, named: BroughtFile.named("Screenshot", "png")) else { return }
+        PhoneShots.shared.bring(file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first)
+        navigation.showsAssistant = true
     }
 
     /// In a matter, it is for that matter. With none open, it opens onto the matters opened last —
@@ -613,4 +627,38 @@ enum LetterShot {
         guard let data = image.pngData() else { return nil }
         return PhoneShots.shared.keep(data, named: "Letter from the insurer.png")
     }
+}
+
+/// A screenshot, a picture or a PDF dragged onto the page or the assistant — from another app on
+/// the iPad — or pasted with the keyboard: kept, read, and shown in the assistant, as the Mac takes
+/// what is dropped or pasted on it.
+private struct ReceivesFiles: ViewModifier {
+    let matter: Matter?
+    @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
+    @Query private var profiles: [Profile]
+
+    func body(content: Content) -> some View {
+        let received = content.dropDestination(for: BroughtFile.self) { items, _ in
+            bring(items)
+            return !items.isEmpty
+        }
+        if #available(iOS 27, *) {
+            received.pasteDestination(for: BroughtFile.self) { items in bring(items) }
+        } else {
+            received
+        }
+    }
+
+    private func bring(_ items: [BroughtFile]) {
+        for item in items {
+            guard let file = PhoneShots.shared.keep(item.data, named: item.name) else { continue }
+            PhoneShots.shared.bring(file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first)
+        }
+        if !items.isEmpty { navigation.showsAssistant = true }
+    }
+}
+
+extension View {
+    func receivesFiles(matter: Matter?) -> some View { modifier(ReceivesFiles(matter: matter)) }
 }

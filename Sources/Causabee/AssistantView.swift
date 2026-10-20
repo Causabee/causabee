@@ -80,7 +80,7 @@ struct AssistantColumn: View {
     /// How many of the newest turns are laid out: a long thread, all of it at once, kept the column
     /// from coming up for seconds. The older ones are a click away, on top.
     @State private var showsNewest = AssistantColumn.page
-    private static let page = 30
+    private static let page = AssistantPage.size
     private var laidOut: [Navigation.Turn] { Array(shown.suffix(showsNewest)) }
 
     /// The bar on top of the thread: frosted glass that stays put; the thread scrolls under it
@@ -758,6 +758,10 @@ struct TurnView: View {
                     if let sentence = answer.disguiseSentence {
                         Text(sentence).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
+                    // Nothing went out for a made-up answer — the demo's: said, not an empty box.
+                    if answer.sent.isEmpty {
+                        Text("Nothing was sent for this answer.").font(.caption2).foregroundStyle(.secondary)
+                    } else {
                     ScrollView {
                         Text(answer.sent).font(.caption.monospaced()).textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -765,6 +769,7 @@ struct TurnView: View {
                     .frame(maxHeight: 260)
                     .padding(8)
                     .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                    }
                 }
                 .explanation()
             }
