@@ -67,7 +67,9 @@ final class PhoneShots {
     func keep(_ data: Data, named name: String) -> URL? { Self.keep(data, named: name, in: Self.folder) }
 
     /// The same from any thread, for many files at once: the folder is asked for beforehand.
+    /// A big photo is kept at a size to read and send — see `ImageSize`.
     nonisolated static func keep(_ data: Data, named name: String, in folder: URL) -> URL? {
+        let (data, name) = ImageSize.kept(data, name: name)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let safe = name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
         let base = (safe as NSString).deletingPathExtension, ending = (safe as NSString).pathExtension
