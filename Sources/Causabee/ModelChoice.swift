@@ -232,7 +232,66 @@ struct ModelChoiceSync: ViewModifier {
 @Observable
 final class StoredChanges {
     static let shared = StoredChanges()
-    private(set) var count = 0
+    fileprivate(set) var count = 0
+
+    /// The prepared overview for these matters, as the store is now: prepared once per change,
+    /// however many views ask for it.
+    func overview(_ matters: [Matter]) -> OverviewPage {
+        OverviewPages.shared.page(for: matters, version: count)
+    }
+
+    /// One matter as its card or row shows it, prepared once per change.
+    func summary(_ matter: Matter) -> MatterSummary {
+        OverviewPages.shared.summary(of: matter, version: count)
+    }
+
+    // The week's questions, answered once per change and per day — the week asked them eight or
+    // nine times each time it drew, and it draws every minute.
+    @ObservationIgnored private var weekKept: [String: Any] = [:]
+    @ObservationIgnored private var weekVersion = -1
+
+    /// Anything worked out from the store, kept until the store changes or the day turns.
+    func kept<Value>(_ name: String, _ work: () -> Value) -> Value {
+        kept(name, for: [], work)
+    }
+
+    /// A matter's conversations and what came from each mail and file, prepared once per change —
+    /// the record, its menus' counts and find all draw from it.
+    func record(_ matter: Matter) -> (threads: [MailThreads.Thread], made: RecordLinks) {
+        kept("record \(matter.persistentModelID.hashValue)") { (MailThreads.build(MatterStatus(matter).mailEntries), RecordLinks(matter)) }
+    }
+
+    /// Every rule the owner set, read once per change — not fetched by each drawing of People.
+    func rules(in context: ModelContext) -> [Rule] {
+        kept("rules") { (try? context.fetch(FetchDescriptor<Rule>())) ?? [] }
+    }
+
+    private func kept<Value>(_ name: String, for matters: [Matter], _ work: () -> Value) -> Value {
+        if weekVersion != count { weekKept = [:]; weekVersion = count }
+        var hasher = Hasher()
+        for matter in matters { hasher.combine(matter.persistentModelID) }
+        let key = "\(name) \(MatterStatus.day(Date())) \(hasher.finalize())"
+        // Looked up, then cast: an answer that is nil is kept too, and not mistaken for none kept.
+        if let stored = weekKept[key], let value = stored as? Value { return value }
+        let value = work()
+        weekKept[key] = value
+        return value
+    }
+
+    func things(on day: String, in matters: [Matter]) -> [DayThing] {
+        kept("things \(day)", for: matters) { Week.things(on: day, in: matters) }
+    }
+
+    func next(after day: String, in matters: [Matter]) -> (day: String, thing: DayThing)? {
+        kept("next \(day)", for: matters) { Week.next(after: day, in: matters) }
+    }
+
+    /// Every open task past its day, the longest overdue first.
+    func overdue(in matters: [Matter]) -> [Todo] {
+        kept("overdue", for: matters) {
+            matters.filter { !$0.isClosed }.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "") < ($1.due ?? "") }
+        }
+    }
     /// The app's context, for the debug build's report of what it sees.
     @ObservationIgnored var context: ModelContext?
     @ObservationIgnored private var watching = false
@@ -244,6 +303,10 @@ final class StoredChanges {
         watching = true
         NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { StoredChanges.shared.changed() }
+        }
+        // A change saved here is a change too, at once: the prepared overview is made anew from it.
+        NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { StoredChanges.shared.count += 1 }
         }
     }
 
@@ -294,15 +357,23 @@ struct AutoLine: View {
 /// it is shown, and kept until the matter's record or the model is another.
 @MainActor
 enum PriceEstimates {
-    private static var kept: [PersistentIdentifier: (key: String, step: Double, summary: Double)] = [:]
+    private static var kept: [PersistentIdentifier: (version: Int, key: String, step: Double, summary: Double)] = [:]
 
     static func of(_ matter: Matter) -> (step: Double, summary: Double) {
+        // Unchanged store: as it was. Changed: worked out anew only when this matter's own record
+        // changed — the facts are the heavy part — told by a cheap mark: its counts, and its notes'.
+        let version = StoredChanges.shared.count
+        if let known = kept[matter.persistentModelID], known.version == version { return (known.step, known.summary) }
         let key = [ModelChoice.assistant.id, "\(matter.entries?.count ?? 0)", "\(matter.todos?.count ?? 0)",
-                   "\(matter.documents?.count ?? 0)", "\(matter.notesText?.count ?? 0)", MatterStatus.day(Date())].joined(separator: "|")
-        if let known = kept[matter.persistentModelID], known.key == key { return (known.step, known.summary) }
+                   "\(matter.documents?.count ?? 0)", "\(matter.noteCount)",
+                   "\((matter.noteBlocks ?? []).reduce(0) { $0 + $1.text.count } + (matter.notes?.count ?? 0))", MatterStatus.day(Date())].joined(separator: "|")
+        if let known = kept[matter.persistentModelID], known.key == key {
+            kept[matter.persistentModelID] = (version, key, known.step, known.summary)
+            return (known.step, known.summary)
+        }
         let facts = FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40)
         let model = ModelChoice.assistant
-        let found = (key: key, step: AssistantAsk.nextStepEstimate(facts, model: model), summary: AssistantAsk.summaryEstimate(facts, model: model))
+        let found = (version: version, key: key, step: AssistantAsk.nextStepEstimate(facts, model: model), summary: AssistantAsk.summaryEstimate(facts, model: model))
         kept[matter.persistentModelID] = found
         return (found.step, found.summary)
     }

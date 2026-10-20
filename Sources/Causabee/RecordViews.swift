@@ -807,7 +807,7 @@ enum NamedPeople {
         let entries: [Entry]
         switch item {
         case .thread(let thread): entries = thread.rows.map(\.entry)
-        case .document(let document): entries = (matter.entries ?? []).filter { $0.messageID == document.messageID }
+        case .document(let document): entries = matter.entry(messageID: document.messageID).map { [$0] } ?? []
         case .link: entries = []
         }
         var seen = Set<PersistentIdentifier>()

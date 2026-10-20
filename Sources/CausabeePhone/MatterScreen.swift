@@ -495,7 +495,7 @@ struct MatterScreen: View {
     private func closedBanner(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Closed on \(matter.closedAt.map(Dates.short) ?? "")", systemImage: "archivebox").font(.headline)
-            let new = status.mailsSinceClosed.count
+            let new = StoredChanges.shared.summary(matter).newMailsSinceClosed
             Text(new == 0 ? "Nothing new since." : "\(new) new \(new == 1 ? "mail" : "mails") came after it was closed.")
                 .foregroundStyle(new == 0 ? Color.secondary : Theme.warning)
             HStack(spacing: 10) {
@@ -512,7 +512,7 @@ struct MatterScreen: View {
             .padding(.top, 4)
         }
         .phoneBox()
-        .alert("A new matter with the \(status.mailsSinceClosed.count) new \(status.mailsSinceClosed.count == 1 ? "mail" : "mails")", isPresented: $splitting) {
+        .alert("A new matter with the \(StoredChanges.shared.summary(matter).newMailsSinceClosed) new \(StoredChanges.shared.summary(matter).newMailsSinceClosed == 1 ? "mail" : "mails")", isPresented: $splitting) {
             TextField("Name", text: $newMatterName)
             Button("Cancel", role: .cancel) {}
             Button("Start", action: startNewMatter)
@@ -975,8 +975,7 @@ struct MatterScreen: View {
     @ViewBuilder
     private func record(_ status: MatterStatus) -> some View {
         // Built once for this drawing, for the menus' counts and the list alike.
-        let made = RecordLinks(matter)
-        let threads = MailThreads.build(status.mailEntries)
+        let (threads, made) = StoredChanges.shared.record(matter)
         HStack(spacing: 10) {
             // Which mail answers which, read once from the mailbox — as on the Mac.
             Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) {
@@ -1076,12 +1075,12 @@ struct MatterScreen: View {
     /// The mail, as the Mac shows it: conversation by conversation, the newest first, each reply
     /// under the mail it answers — until about 60 mails are shown.
     private func history(_ status: MatterStatus) -> some View {
-        let threads = MailThreads.build(status.mailEntries)
+        let threads = StoredChanges.shared.record(matter).threads
         var shown = 0
         // Searching looks into all of it, as on the Mac.
         let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || showsAllHistory || find.isActive }
         let hidden = threads.count - visible.count
-        let made = RecordLinks(matter)
+        let made = StoredChanges.shared.record(matter).made
         return VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "History", detail: Self.count(status.mailEntries)
                           + (threads.count == status.mailEntries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))

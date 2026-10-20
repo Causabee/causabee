@@ -313,10 +313,13 @@ struct NotesPart: View {
         return Dates.short(date)
     }
 
+    /// Made once: making one is slow, and each note asked for its own every time it was drawn.
+    private static let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+
     /// Web addresses in a note can be clicked.
     private static func linked(_ text: String) -> AttributedString {
         var result = AttributedString(text)
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else { return result }
+        guard let detector = Self.detector else { return result }
         for match in detector.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
             guard let url = match.url, let range = Range(match.range, in: text),
                   let lower = AttributedString.Index(range.lowerBound, within: result),

@@ -277,7 +277,7 @@ final class Navigation {
     var prefill: String?
     /// The assistant's one thread, kept beside the store: scrolling up shows everything ever asked,
     /// after a restart too. It holds real names — it is the owner's own record, like the store.
-    var turns: [Turn] = [] { didSet { saveThread() } }
+    var turns: [Turn] = [] { didSet { threadChanged() } }
     /// `mapping.json`: the disguise, read and added to when the assistant asks.
     let mapping = CausabeeApp.mappingLocation()
     /// The store, and beside it the record of what the label has answered.
@@ -364,6 +364,22 @@ final class Navigation {
     @ObservationIgnored private var context: ModelContext?
     @ObservationIgnored private var records: [UUID: ThreadTurn] = [:]
     @ObservationIgnored private var written: [UUID: Data] = [:]
+    /// A question's step on its way is not kept: setting it writes nothing.
+    @ObservationIgnored var stepping = false
+    @ObservationIgnored private var savePending = false
+
+    /// Many changes at once — a question sets five things before it is sent — are written once,
+    /// after them: the whole thread was encoded with each.
+    private func threadChanged() {
+        guard !stepping, !savePending else { return }
+        savePending = true
+        // Navigation lives on the main thread; the write waits there for the changes to end.
+        nonisolated(unsafe) weak var navigation = self
+        DispatchQueue.main.async {
+            navigation?.savePending = false
+            navigation?.saveThread()
+        }
+    }
 
     /// Reads the thread from the store. The first time, the file it was kept in before is moved
     /// in, and left beside the store renamed, as it was.
@@ -555,14 +571,8 @@ struct RootView: View {
     /// ones — nothing open, no date — after them by their newest mail; closed ones last, the
     /// most recently closed first. Sorted once per drawing and handed on.
     private func sidebarOrder() -> [Matter] {
-        let active = activeMatters(matters)
-        let shown = Set(active.map(\.persistentModelID))
-        let byNewestMail = { (list: [Matter]) in
-            list.map { ($0, MatterStatus($0).lastDate ?? .distantPast) }.sorted { $0.1 > $1.1 }.map(\.0)
-        }
-        let quiet = byNewestMail(matters.filter { !$0.isClosed && !shown.contains($0.persistentModelID) })
-        let closed = matters.filter(\.isClosed).sorted { ($0.closedAt ?? .distantPast) > ($1.closedAt ?? .distantPast) }
-        return active + quiet + closed
+        // From the prepared overview: worked out once per change to the store, however often asked.
+        OverviewPages.matters(StoredChanges.shared.overview(matters).ordered, among: matters)
     }
 
     /// With a matter open, unless the owner put it away; on the overview when asked for with its
@@ -910,8 +920,8 @@ struct MatterRow: View {
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
-        let _ = StoredChanges.shared.count
-        let status = MatterStatus(matter)
+        // Prepared once per change, not worked out by every row each time it draws.
+        let summary = StoredChanges.shared.summary(matter)
         HStack(spacing: 9) {
         // White on the sidebar's light ground: the box's grey is nearly that ground, and was gone on it.
         MatterIconTile(matter: matter, size: 26, ground: Theme.card)
@@ -919,8 +929,8 @@ struct MatterRow: View {
             Text(matter.name).font(.body).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
             // Only what asks for a look stands under the name: what is overdue, new mail in a
             // closed matter. How many are open and the next day are on the matter's own page.
-            let new = matter.isClosed ? status.mailsSinceClosed.count : 0
-            let late = matter.isClosed ? 0 : status.overdue.count
+            let new = matter.isClosed ? summary.newMailsSinceClosed : 0
+            let late = matter.isClosed ? 0 : summary.overdue.count
             if new > 0 { Text("\(new) new \(new == 1 ? "mail" : "mails")").font(.caption).foregroundStyle(Theme.warning) }
             if late > 0 { Text("\(late) overdue").font(.caption).foregroundStyle(Theme.warning) }
         }

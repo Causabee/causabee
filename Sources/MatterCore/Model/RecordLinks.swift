@@ -73,7 +73,7 @@ public struct RecordLinks {
         guard let source, source.kind != .conversation else { return nil }
         let entries = matter.entries ?? [], documents = matter.documents ?? []
         if let id = source.messageID, !id.isEmpty {
-            if let entry = entries.first(where: { $0.messageID == id }) { return entry.persistentModelID }
+            if let entry = matter.entry(messageID: id) { return entry.persistentModelID }
             if let document = documents.first(where: { $0.messageID == id }) { return document.persistentModelID }
         }
         guard !source.pointer.isEmpty else { return nil }

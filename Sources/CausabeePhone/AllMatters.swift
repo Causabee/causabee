@@ -5,18 +5,8 @@ import SwiftUI
 /// The Mac's sidebar order: what is going on, then the quiet ones by their newest mail, then the
 /// closed ones, the last closed first.
 @MainActor func sidebarOrder(_ matters: [Matter]) -> [Matter] {
-    Once.worked("order", for: matters) { workOutSidebarOrder(matters) }
-}
-
-@MainActor private func workOutSidebarOrder(_ matters: [Matter]) -> [Matter] {
-    let active = activeMatters(matters)
-    let shown = Set(active.map(\.persistentModelID))
-    let byNewestMail = { (list: [Matter]) in
-        list.map { ($0, MatterStatus($0).lastDate ?? .distantPast) }.sorted { $0.1 > $1.1 }.map(\.0)
-    }
-    let quiet = byNewestMail(matters.filter { !$0.isClosed && !shown.contains($0.persistentModelID) })
-    let closed = matters.filter(\.isClosed).sorted { ($0.closedAt ?? .distantPast) > ($1.closedAt ?? .distantPast) }
-    return active + quiet + closed
+    // From the prepared overview: worked out once per change to the store, however often asked.
+    OverviewPages.matters(StoredChanges.shared.overview(matters).ordered, among: matters)
 }
 
 /// Under the overview's cards, only what the cards do not show: the quiet matters — nothing open,
@@ -104,26 +94,27 @@ struct PhoneMatterRow: View {
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
         let _ = StoredChanges.shared.count
-        let status = MatterStatus(matter)
+        // Prepared once per change, not worked out by every row each time it draws.
+        let summary = StoredChanges.shared.summary(matter)
         HStack(spacing: 12) {
         MatterIconTile(matter: matter, size: 36, ground: tile)
         VStack(alignment: .leading, spacing: 2) {
             Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
             if brief {
-                let new = matter.isClosed ? status.mailsSinceClosed.count : 0
-                let late = matter.isClosed ? 0 : status.overdue.count
+                let new = matter.isClosed ? summary.newMailsSinceClosed : 0
+                let late = matter.isClosed ? 0 : summary.overdue.count
                 if new > 0 { Text("\(new) new \(new == 1 ? "mail" : "mails")").font(.caption).foregroundStyle(Theme.warning) }
                 if late > 0 { Text("\(late) overdue").font(.caption).foregroundStyle(Theme.warning) }
             } else {
             HStack(spacing: 4) {
                 if matter.isClosed {
                     Text("closed \(matter.closedAt.map(Dates.short) ?? "")")
-                    let new = status.mailsSinceClosed.count
+                    let new = summary.newMailsSinceClosed
                     if new > 0 { Text("· \(new) new \(new == 1 ? "mail" : "mails")").foregroundStyle(Theme.warning) }
                 } else {
-                    Text("\(matter.openTodos.count) open")
-                    if let next = status.next { Text("· \(Dates.short(next.day))") }
-                    if !status.overdue.isEmpty { Text("· \(status.overdue.count) overdue").foregroundStyle(Theme.warning) }
+                    Text("\(summary.openCount) open")
+                    if let next = summary.next { Text("· \(Dates.short(next.day))") }
+                    if !summary.overdue.isEmpty { Text("· \(summary.overdue.count) overdue").foregroundStyle(Theme.warning) }
                 }
             }
             .font(.caption).foregroundStyle(.secondary)

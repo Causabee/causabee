@@ -66,16 +66,21 @@ struct AssistantSheet: View {
     private static let padding: CGFloat = 16
     /// What a question here would take along: worked out only when the footer is opened.
     private var seen: String {
-        FactSheet.facts(for: matter.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date())).seen
+        StoredChanges.shared.kept("seen \(matter?.persistentModelID.hashValue ?? 0)") {
+            FactSheet.facts(for: matter.map { [$0] } ?? activeMatters(matters), today: MatterStatus.day(Date())).seen
+        }
     }
 
+    /// Read once per change to the store — every turn is saved at once — not compared and read
+    /// again with each keystroke's drawing. The query already holds only this matter's turns.
     private var shown: [(record: ThreadTurn, turn: Navigation.Turn)] {
-        records
-            .filter { matter == nil || $0.matter?.persistentModelID == matter?.persistentModelID }
-            .compactMap { record in navigation.turn(record).map { (record, $0) } }
-            // Only what was asked and brought in. That mail was taken in is said on the overview, and
-            // the mail is in its matter: a line for it here, too, said it a third time.
-            .filter { $0.1.note == nil }
+        StoredChanges.shared.kept("thread \(matter?.persistentModelID.hashValue ?? 0) \(records.count)") {
+            records
+                .compactMap { record in navigation.turn(record).map { (record, $0) } }
+                // Only what was asked and brought in. That mail was taken in is said on the overview, and
+                // the mail is in its matter: a line for it here, too, said it a third time.
+                .filter { $0.1.note == nil }
+        }
     }
 
     /// What the thread holds, in the order it happened.
@@ -106,7 +111,8 @@ struct AssistantSheet: View {
         // The question on its way, until its turn is there under the same id.
         if let asking, !all.contains(where: { $0.id == asking.id }) { all.append(.pending(asking.id, asking.question, asking.date)) }
         // By their time, and two of the same moment always the same way round.
-        return all.sorted { ($0.date, $0.id.uuidString) < ($1.date, $1.id.uuidString) }
+        // The ids as text once each, not twice in every comparison.
+        return all.map { ($0, $0.id.uuidString) }.sorted { ($0.0.date, $0.1) < ($1.0.date, $1.1) }.map(\.0)
     }
 
     /// The newest: the question on its way, else the thread's last.
@@ -837,8 +843,11 @@ struct PhoneActionCard: View {
     private var undo: CardActions.Undo? { navigation.undos[turn.id]?[index] }
     private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
     private var mailInHand: String? { turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil } }
+    /// Once per change: the draft's card asked for it three times each time it drew.
     private var recipient: (name: String, address: String?)? {
-        CardActions.recipient(card.party, refs: turn.refs, question: turn.question, mail: mailInHand, scope: scope, in: context)
+        StoredChanges.shared.kept("recipient \(turn.id) \(index)") {
+            CardActions.recipient(card.party, refs: turn.refs, question: turn.question, mail: mailInHand, scope: scope, in: context)
+        }
     }
 
     var body: some View {
@@ -880,7 +889,10 @@ struct PhoneActionCard: View {
     /// merging two people means.
     private var notes: [(text: String, symbol: String?)] {
         if card.kind == .draftMessage {
-            return CardActions.attachmentLine(text: text, question: turn.question, scope: scope, attach: card.attach ?? []).map { [($0, "paperclip")] } ?? []
+            let line = StoredChanges.shared.kept("along \(turn.id) \(index) \(text)") {
+                CardActions.attachmentLine(text: text, question: turn.question, scope: scope, attach: card.attach ?? [])
+            }
+            return line.map { [($0, "paperclip")] } ?? []
         }
         var notes: [(text: String, symbol: String?)] = card.reason.isEmpty ? [] : [(card.reason, nil)]
         if card.kind == .sameParty { notes.append(("Later you can only turn merging off for new mail; you cannot split it again.", nil)) }
@@ -1008,9 +1020,9 @@ struct PhoneActionCard: View {
     /// The answer's matter: one a card beside this one made, the one it was asked in, or the one
     /// its facts come from — as on the Mac.
     private var scope: Matter? {
-        let made = navigation.madeMatter[turn.id].flatMap { CardActions.live($0, as: Matter.self, in: context) }
-        let cited = card.cites.compactMap { turn.refs[$0] }.compactMap { CardActions.matter(of: $0, in: context) }.first
-        return made ?? matter ?? cited
+        if let made = navigation.madeMatter[turn.id].flatMap({ CardActions.live($0, as: Matter.self, in: context) }) { return made }
+        if let matter { return matter }
+        return card.cites.lazy.compactMap { turn.refs[$0] }.compactMap { CardActions.matter(of: $0, in: context) }.first
     }
 
     private func take() {

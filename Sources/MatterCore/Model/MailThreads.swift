@@ -6,7 +6,9 @@ import Foundation
 public enum MailThreads {
     public struct Thread: Identifiable {
         public var id: String { root.entry.messageID.isEmpty ? "\(ObjectIdentifier(root.entry))" : root.entry.messageID }
-        public var root: Node
+        public var root: Node {
+            didSet { rows = Self.rows(of: root) }
+        }
         /// The subject without "Re:" and "AW:".
         public var subject: String
         public var count: Int
@@ -14,8 +16,25 @@ public enum MailThreads {
         public var last: Date?
         /// Everyone who wrote in it, in the order they first did.
         public var senders: [String]
-        /// The mails top to bottom, each with how far in it goes and which lines lead past it.
-        public var rows: [Row] { var rows: [Row] = []; Self.flatten(root, depth: 0, rails: [], isLast: true, into: &rows); return rows }
+        /// The mails top to bottom, each with how far in it goes and which lines lead past it —
+        /// worked out once, when the conversation is: it was asked for a dozen times per drawing.
+        public private(set) var rows: [Row]
+
+        public init(root: Node, subject: String, count: Int, first: Date?, last: Date?, senders: [String]) {
+            self.root = root
+            self.subject = subject
+            self.count = count
+            self.first = first
+            self.last = last
+            self.senders = senders
+            rows = Self.rows(of: root)
+        }
+
+        static func rows(of root: Node) -> [Row] {
+            var rows: [Row] = []
+            flatten(root, depth: 0, rails: [], isLast: true, into: &rows)
+            return rows
+        }
 
         static func flatten(_ node: Node, depth: Int, rails: [Bool], isLast: Bool, into rows: inout [Row]) {
             rows.append(Row(entry: node.entry, depth: depth, rails: rails, isLast: isLast))

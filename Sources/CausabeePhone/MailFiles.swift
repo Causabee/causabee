@@ -68,8 +68,10 @@ struct FilesSection: View {
     @State private var newName = ""
 
     var body: some View {
-        // As on the Mac: newest first; a logo in a signature is not a file anyone attached.
-        let all = (matter.documents ?? []).sorted {
+        // As on the Mac: newest first; a logo in a signature is not a file anyone attached. Only for
+        // the list of all files: a single file's card, or a mail's, does not sort them all.
+        let listsAll = only == nil && attachments.isEmpty && !keptOnly
+        let all = !listsAll ? [] : (matter.documents ?? []).sorted {
             let (a, b) = ($0.source.date ?? .distantPast, $1.source.date ?? .distantPast)
             return a != b ? a > b : $0.name.localizedStandardCompare($1.name) == .orderedAscending
         }
@@ -177,7 +179,7 @@ struct FilesSection: View {
     }
 
     private func sender(of document: MatterCore.Document) -> String? {
-        (matter.entries ?? []).first { $0.messageID == document.messageID }.map { Email.displayName(in: $0.from) ?? Email.address(in: $0.from) }
+        matter.entry(messageID: document.messageID).map { Email.displayName(in: $0.from) ?? Email.address(in: $0.from) }
     }
 
     private func row(_ document: MatterCore.Document) -> some View {

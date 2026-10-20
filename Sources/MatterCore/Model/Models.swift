@@ -418,7 +418,7 @@ public final class Document {
     /// What a file the owner brought in says, in two or three sentences: read when it was sorted in.
     public var says: String? {
         guard isOwnFile else { return nil }
-        return (matter?.entries ?? []).first { $0.messageID == messageID }?.digest.flatMap { $0.isEmpty ? nil : $0 }
+        return matter?.entry(messageID: messageID)?.digest.flatMap { $0.isEmpty ? nil : $0 }
     }
 
     /// A logo in a signature, a spacer: an image small enough to be nothing anyone attached. A file

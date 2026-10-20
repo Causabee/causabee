@@ -220,8 +220,8 @@ struct OverviewScreen: View {
                         }
                     }
                 }
-                ForEach(matters.filter { $0.isClosed && !MatterStatus($0).mailsSinceClosed.isEmpty }) { matter in
-                    let new = MatterStatus(matter).mailsSinceClosed.count
+                ForEach(matters.filter { $0.isClosed && StoredChanges.shared.summary($0).newMailsSinceClosed > 0 }) { matter in
+                    let new = StoredChanges.shared.summary(matter).newMailsSinceClosed
                     Button { navigation.open(matter) } label: {
                         HStack {
                             Image(systemName: "archivebox").foregroundStyle(.secondary)
