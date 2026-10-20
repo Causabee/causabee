@@ -66,6 +66,7 @@ IDENTITY=${CAUSABEE_DEVELOPER_ID:-$(security find-identity -v -p codesigning | s
 [[ -d App/Causabee.xcodeproj ]] || fail "No App/Causabee.xcodeproj on this Mac."
 
 # Before building: the release is made from main as it is on GitHub, under a tag that is still free.
+print "  One app on every device: docs/parity-checklist.md is ticked on the Mac and the iPhone before this goes out."
 step "Checking git, GitHub and the notary login"
 git fetch -q origin
 BRANCH=$(git rev-parse --abbrev-ref HEAD)

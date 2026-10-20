@@ -264,7 +264,7 @@ struct OverviewRows: View {
                         .contentShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
-                .contextMenu { PinMenuItem(matter: matter, all: all) }
+                .contextMenu { MatterMenuItems(matter: matter, all: all) }
             }
         }
     }
@@ -288,26 +288,6 @@ struct OverviewRows: View {
     }
 }
 
-/// "Pin to Top", or "Unpin": first in the right-click menu of a card, a line or a sidebar row.
-struct PinMenuItem: View {
-    let matter: Matter
-    /// Every matter, to count the pinned ones.
-    let all: [Matter]
-    @Environment(Navigation.self) private var navigation
-    @Environment(\.modelContext) private var context
-
-    var body: some View {
-        if matter.isPinned {
-            Button("Unpin") { matter.pinnedAt = nil; try? context.save() }
-        } else if !matter.isClosed {
-            Button("Pin to Top") {
-                // Full: which one it replaces is asked.
-                if Pins.pinned(all).count >= Pins.most { navigation.pinning = matter } else { matter.pinnedAt = Date(); try? context.save() }
-            }
-        }
-        MatterIconMenu(matter: matter)
-    }
-}
 
 /// Which pinned matter makes room, when as many as fit are pinned — as on the iPhone.
 struct PinQuestion: ViewModifier {

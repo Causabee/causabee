@@ -202,6 +202,18 @@ struct PhoneCommands: Commands {
             Button("New Matter …") { post(.phoneNewMatter) }.keyboardShortcut("n", modifiers: .command)
             Button("Get New Mail") { post(.phoneGetMail) }
         }
+        // The Mac's Matter menu: the same six, in the same words, for the matter that is open.
+        CommandMenu("Matter") {
+            ForEach(MatterAction.allCases, id: \.self) { action in
+                if action == .newTask {
+                    Button(action.title) { post(.phoneMatterAction, action.rawValue) }.keyboardShortcut("t", modifiers: [.command, .shift])
+                } else {
+                    Button(action.title) { post(.phoneMatterAction, action.rawValue) }
+                }
+            }
+            Divider()
+            Button("Write Next Step and Summary Again") { post(.phoneMatterAction, "writeAgain") }.keyboardShortcut("r", modifiers: .command)
+        }
         CommandGroup(replacing: .appSettings) {
             Button("Settings …") { post(.phoneSettings) }.keyboardShortcut(",", modifiers: .command)
         }
@@ -219,7 +231,7 @@ struct PhoneCommands: Commands {
         }
     }
 
-    private func post(_ name: Notification.Name) { NotificationCenter.default.post(name: name, object: nil) }
+    private func post(_ name: Notification.Name, _ object: String? = nil) { NotificationCenter.default.post(name: name, object: object) }
 }
 
 /// What the window shows, for the menu bar's words.
@@ -242,4 +254,6 @@ extension Notification.Name {
     static let phoneSidebar = Notification.Name("causabee.phone.sidebar")
     static let phoneAssistant = Notification.Name("causabee.phone.assistant")
     static let phoneReading = Notification.Name("causabee.phone.reading")
+    /// An action of the Matter menu, for the matter that is open: a `MatterAction`, or "writeAgain".
+    static let phoneMatterAction = Notification.Name("causabee.phone.matterAction")
 }

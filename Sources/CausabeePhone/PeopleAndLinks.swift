@@ -16,6 +16,12 @@ struct PeopleSection: View {
     private var origin: String { "you, in \(matter.name), \(Dates.short(Date()))" }
 
     var body: some View {
+        // Added from the empty box or from beside the heading: one sheet for both.
+        content.sheet(isPresented: $adding) { ContactEditor(matter: matter) }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         let memberships = MatterStatus(matter).memberships
         if memberships.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
@@ -23,7 +29,6 @@ struct PeopleSection: View {
                 PhoneEmptyBox(text: "Who writes and who is named come in with mail and screenshots — or add a contact yourself.",
                               action: "Add Contact", symbol: "person.badge.plus") { adding = true }
             }
-            .sheet(isPresented: $adding) { ContactEditor(matter: matter) }
         } else {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "People", detail: memberships.count == 1 ? "1 name" : "\(memberships.count) names")
@@ -147,14 +152,14 @@ struct PhonePartyRow: View {
         MailAddressItems(addresses: CardActions.addresses(of: party))
         ContactItems(party: party)
         AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
-        Button("Edit", systemImage: "pencil") { editing = true }
-        Menu("Merge with", systemImage: "arrow.triangle.merge") {
+        Button(Say.edit, systemImage: "pencil") { editing = true }
+        Menu(Say.mergeWith, systemImage: "arrow.triangle.merge") {
             ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
                 Button(other.name) { merge(other) }
             }
         }
         Divider()
-        Button("Remove", systemImage: "person.badge.minus", role: .destructive, action: remove)
+        Button(Say.removeFromMatter, systemImage: "person.badge.minus", role: .destructive, action: remove)
     }
 }
 
@@ -185,7 +190,7 @@ struct PartyEditor: View {
                     TextField("Phone", text: $phone).keyboardType(.phonePad)
                 }
                 Section {
-                    Button("Remove from this matter", role: .destructive) { dismiss(); remove() }
+                    Button(Say.removeFromMatter, role: .destructive) { dismiss(); remove() }
                 } footer: {
                     Text("Only from this matter. A later mail naming them will not put them back.")
                 }
@@ -418,9 +423,9 @@ struct PhoneLinkRow: View {
     @ViewBuilder
     private var items: some View {
         LinkItems(link: link)
-        Button("Edit", systemImage: "pencil") { editing = true }
+        Button(Say.edit, systemImage: "pencil") { editing = true }
         Divider()
-        Button("Remove", systemImage: "trash", role: .destructive, action: remove)
+        Button(Say.removeLink, systemImage: "trash", role: .destructive, action: remove)
     }
 }
 

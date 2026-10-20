@@ -145,13 +145,19 @@ struct Conversation {
 
     /// An image on the pasteboard has no home: it is written beside the store, then brought in.
     func bringPasted(_ data: Data) {
-        let folder = ScreenshotDoor.attachments(besides: navigation.store)
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd-HHmmss"
-        let file = folder.appendingPathComponent("Pasted-\(formatter.string(from: Date())).png")
+        bring(data, named: "Pasted-\(formatter.string(from: Date())).png")
+    }
+
+    /// Bytes with no file of their own — pasted, or a scan or a photo taken with an iPhone's camera
+    /// (Import from iPhone): written beside the store under their name, then brought in.
+    func bring(_ data: Data, named name: String) {
+        let folder = ScreenshotDoor.attachments(besides: navigation.store)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name.replacingOccurrences(of: "/", with: "-"))
         guard (try? data.write(to: file)) != nil else { return }
-        var turn = Navigation.Turn(question: file.lastPathComponent, scope: "Screenshot", inHand: nil, seen: "", refs: [:], matter: nil)
+        var turn = Navigation.Turn(question: Document.ownName(of: file), scope: "Screenshot", inHand: nil, seen: "", refs: [:], matter: nil)
         turn.shot = Navigation.Shot(file: file, copied: true)
         if case .matter(let open) = navigation.place { turn.matter = open }
         navigation.turns.append(turn)
@@ -395,6 +401,10 @@ struct Composer: View {
     /// Inside a matter, the plus is a menu of everything that can be added to it: a task or a note,
     /// said to the assistant before it is typed, and what has an editor of its own on the page.
     var add: ((AssistantAdd) -> Void)? = nil
+    /// On the overview, with no matter open: the same list, each asking which matter it is for —
+    /// those opened last, then all — as the bee held on the iPhone and the iPad does.
+    var matters: [Matter] = []
+    var addTo: ((Matter, MatterAction) -> Void)? = nil
     /// Set while an answer is on its way: one question at a time, and the send button stops it.
     var stop: (() -> Void)? = nil
     let send: () -> Void
@@ -403,6 +413,27 @@ struct Composer: View {
     @State private var voice = VoiceInput()
     @State private var cursor: TextSelection?
     @State private var fieldHeight: CGFloat = 0
+
+    /// In a matter, for that matter; on the overview, the matters to choose from.
+    @ViewBuilder
+    private func addItem(_ title: String, _ symbol: String, _ action: MatterAction) -> some View {
+        if add != nil {
+            Button(title, systemImage: symbol) { NotificationCenter.default.post(name: .matterAction, object: action.rawValue) }
+        } else if let addTo {
+            let open = matters.filter { !$0.isClosed }
+            Menu(title, systemImage: symbol) {
+                ForEach(RecentMatters.list(in: open, fillingFrom: activeMatters(open)).prefix(RecentMatters.most)) { matter in
+                    Button(matter.name) { addTo(matter, action) }
+                }
+                Divider()
+                Menu("All Matters") {
+                    ForEach(open.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) { matter in
+                        Button(matter.name) { addTo(matter, action) }
+                    }
+                }
+            }
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -435,25 +466,32 @@ struct Composer: View {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
               } else {
-                if let attach, let add {
+                if let attach, add != nil || addTo != nil {
+                    // The one place things are added, in three parts, the same as the bee held on the
+                    // iPhone and the iPad: to do, to keep at hand, and to bring in — read, or only kept.
+                    // Each opens its editor on the page, by the Matter menu's way in.
                     Menu {
-                        Button("Task", systemImage: "checklist") { add(.task) }
-                        Button("Note", systemImage: "note.text") { add(.note) }
+                        addItem("Task", "checklist", .newTask)
+                        addItem("Note", "note.text", .writeNote)
                         Divider()
-                        // The page's own editors, by the Matter menu's way in.
-                        ForEach([MatterAction.addLink, .addDetail, .addContact, .addFile], id: \.self) { action in
-                            Button(action.title, systemImage: action.symbol) {
-                                NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
-                            }
+                        addItem("Link", "link", .addLink)
+                        addItem("Detail", "info.circle", .addDetail)
+                        addItem("Contact", "person.badge.plus", .addContact)
+                        // What is brought in, under what becomes of it — said once, over the part.
+                        // What is read finds its matter itself.
+                        Section("Read and sorted in") {
+                            Button("Screenshot, Mail or PDF …", systemImage: "doc.viewfinder", action: attach)
                         }
-                        Divider()
-                        Button("Screenshot, Mail or PDF to Read …", systemImage: "doc.viewfinder", action: attach)
+                        Section("Kept only, not read") {
+                            addItem("Files or a Folder …", "folder", .addFile)
+                        }
                     } label: {
                         Image(systemName: "plus").font(.system(size: 15)).frame(width: 34, height: 34).contentShape(Rectangle())
                     }
                     .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
                     .foregroundStyle(.secondary)
-                    .help("Add to this matter: a task, a note, a link, a detail, a contact, a file — or something for Causabee to read")
+                    .help(add != nil ? "Add to this matter: a task, a note, a link, a detail, a contact, a file — or something for Causabee to read"
+                                     : "Add to a matter: a task, a note, a link, a detail, a contact, files — or something for Causabee to read")
                     .accessibilityLabel("Add to this matter")
                     .accessibilityIdentifier("assistant.plus")
                 } else if let attach {

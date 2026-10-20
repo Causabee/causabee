@@ -188,12 +188,33 @@ struct MatterScreen: View {
                 }
             }
         }
+        // As on the Mac: a link dragged from the browser onto the matter is kept in it, and files
+        // dragged from Files become its files — kept, not read. What is to be read goes to the assistant.
+        .dropDestination(for: URL.self) { urls, _ in
+            let files = urls.filter(\.isFileURL)
+            if !files.isEmpty { bring(files) }
+            let web = urls.filter { !$0.isFileURL }.compactMap { WebLink.address(in: $0.absoluteString) }
+            for address in web where !(matter.links ?? []).contains(where: { $0.address == address && $0.todo == nil }) {
+                let link = WebLink(address: address, title: "")
+                context.insert(link)
+                link.matter = matter
+            }
+            if !web.isEmpty { try? context.save() }
+            return !web.isEmpty || !files.isEmpty
+        }
+        // The keyboard's Matter menu, on the iPad.
+        .onReceive(NotificationCenter.default.publisher(for: .phoneMatterAction)) { note in
+            guard let name = note.object as? String else { return }
+            if name == "writeAgain" { writeAnew() } else if let action = MatterAction(rawValue: name) { run(action) }
+        }
         // Picked from the assistant's plus: once its sheet has gone, the editor comes.
         .onChange(of: navigation.adding) {
             guard let adding = navigation.adding else { return }
             navigation.adding = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 switch adding {
+                case .task: part = .todo; addTodo()
+                case .note: part = .notes; writingNote = true
                 case .contact: addingContact = true
                 case .detail: addingDetail = true
                 case .link: addingLink = true
@@ -284,14 +305,16 @@ struct MatterScreen: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Group {
+                        // What can be added, and the next step and summary written again — as the Mac's ⋯ has them.
+                        MatterAddItems(writeAgain: writeAnew)
                         MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
                         // Everything the matter holds, as one document: what is gathered here can leave at any time.
-                        Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
+                        Button(Say.exportRTF, systemImage: "square.and.arrow.up", action: export)
                         Divider()
                         if matter.isClosed {
-                            Button("Open again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
+                            Button(Say.openAgain, systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
                         } else {
-                            Button("Close", systemImage: "archivebox") { asksToClose = true }
+                            Button(Say.closeMatter, systemImage: "archivebox") { asksToClose = true }
                         }
                     }
                     .menuSigns()
@@ -391,13 +414,21 @@ struct MatterScreen: View {
 
     // MARK: Header
 
+    /// "12 mails · since Sep 8": as the Mac's title bar says it.
+    @ViewBuilder
+    private func countLine(_ status: MatterStatus) -> some View {
+        if !(matter.entries ?? []).isEmpty {
+            Text(Self.count(matter.entries ?? []) + (status.firstDate.map { " · since \(Dates.short($0))" } ?? ""))
+                .font(.subheadline).foregroundStyle(.secondary)
+        }
+    }
+
     private func header(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            // On the iPad the icon and the name stand in the bar, beside find and ⋯, and stay there.
-            // No count of the mails under it there, nor on the iPhone: how many came, and since when,
-            // is what the record shows.
+            // On the iPad the icon and the name stand in the bar, beside find and ⋯, and stay there;
+            // under it, as under the name on the iPhone and in the Mac's title bar: how many came, since when.
             if navigation.isPad {
-                Color.clear.frame(height: 0)
+                countLine(status)
             } else {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 // The matter's icon in front of its name, level with the first line: a tap chooses another.
@@ -408,6 +439,7 @@ struct MatterScreen: View {
                 // The count under the name, on the name's left edge — not under the icon.
                 VStack(alignment: .leading, spacing: 4) {
                     Text(matter.name).font(Theme.phoneTitleFont).fixedSize(horizontal: false, vertical: true)
+                    countLine(status)
                 }
             }
             }
@@ -475,7 +507,7 @@ struct MatterScreen: View {
                     }
                     .buttonStyle(.phoneFilled)
                 }
-                Button("Open again") { matter.reopen(); try? context.save() }.buttonStyle(.phone)
+                Button(Say.openAgain) { matter.reopen(); try? context.save() }.buttonStyle(.phone)
             }
             .padding(.top, 4)
         }
@@ -590,6 +622,18 @@ struct MatterScreen: View {
 
     /// The page pulled down: both asked for at once, each saying in its own box that it is on its
     /// way. A closed matter has no next step; one being written already is not asked for twice.
+    /// An action of the ⋯ — or of the iPad's keyboard: the part it belongs to, then its editor.
+    private func run(_ action: MatterAction) {
+        switch action {
+        case .newTask: part = .todo; addTodo()
+        case .writeNote: part = .notes; writingNote = true
+        case .addFile: addingFiles = true
+        case .addContact: addingContact = true
+        case .addDetail: addingDetail = true
+        case .addLink: addingLink = true
+        }
+    }
+
     private func writeAnew() {
         guard !AutoUpdate.shared.working.contains(matter.key) else { return }
         Haptics.tap()
@@ -770,7 +814,7 @@ struct MatterScreen: View {
 
     private func todos(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open" : nil)
+            SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open · \(status.done.count) done" : nil)
             if !hasTodos {
                 PhoneEmptyBox(text: "What is to do, and whose. Tasks in mail are found when it is sorted in.",
                               action: "Add Task", symbol: "checklist", run: addTodo)
@@ -934,7 +978,17 @@ struct MatterScreen: View {
             // Which mail answers which, read once from the mailbox — as on the Mac.
             Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) { await ReplyLinks.fill(in: matter, context: context) }
             RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts(status), person: personParty?.name, clearPerson: { person = nil }) {
-                EmptyView()
+                // The matter's folder, on the record's own line — as on the Mac. Files are added by the plus.
+                if filter == .everything || filter == .files || filter == .scans {
+                    // Not in the demo: its made-up matters have no folder among the owner's own.
+                    if MatterFolders.root != nil, !store.isDemo, let folder = MatterFolders.folder(for: matter),
+                       let files = URL(string: "shareddocuments://" + folder.path) {
+                        Button { UIApplication.shared.open(files) } label: { Label("Show in Files", systemImage: "folder") }
+                            .labelStyle(.iconOnly).buttonStyle(.gold).font(.callout)
+                            .accessibilityHint("Opens this matter's folder in iCloud Drive → Causabee, in Files")
+                            .tool()
+                    }
+                }
             }
         }
         .padding(.horizontal, 4)
@@ -1019,7 +1073,8 @@ struct MatterScreen: View {
     private func history(_ status: MatterStatus) -> some View {
         let threads = MailThreads.build(status.mailEntries)
         var shown = 0
-        let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || showsAllHistory }
+        // Searching looks into all of it, as on the Mac.
+        let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || showsAllHistory || find.isActive }
         let hidden = threads.count - visible.count
         let made = RecordLinks(matter)
         return VStack(alignment: .leading, spacing: 10) {
@@ -1171,14 +1226,14 @@ struct PhoneTodoRow: View {
         if let matter = todo.matter {
             AskCausabeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
         }
-        Button("Edit", systemImage: "pencil") { editing = true }
+        Button(Say.edit, systemImage: "pencil") { editing = true }
         if !todo.isDone {
-            Button("Move to Info", systemImage: "info.circle") {
+            Button(Say.moveToInfo, systemImage: "info.circle") {
                 withAnimation { todo.isInfo = true }
                 try? context.save()
             }
             let others = (todo.matter?.openTodos ?? []).filter { $0 !== todo }.sorted { $0.text < $1.text }
-            Menu("Waits for", systemImage: "hourglass") {
+            Menu(Say.waitsFor, systemImage: "hourglass") {
                 ForEach(others, id: \.persistentModelID) { other in
                     Button(other.text) {
                         withAnimation { _ = todo.wait(for: other) }
@@ -1189,14 +1244,14 @@ struct PhoneTodoRow: View {
             }
             .disabled(others.isEmpty)
             if todo.waitsFor != nil {
-                Button("Stop waiting", systemImage: "xmark.circle") {
+                Button(Say.stopWaiting, systemImage: "xmark.circle") {
                     withAnimation { todo.waitsFor = nil }
                     try? context.save()
                 }
             }
         }
         Divider()
-        Button("Delete", systemImage: "trash", role: .destructive) { deleting = true }
+        Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }
 
     /// The addresses in the note become the task's links, and their lines leave the note.
@@ -1472,9 +1527,9 @@ struct PhoneDateRow: View {
     @ViewBuilder
     private var moreItems: some View {
         AskCausabeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
-        Button("Edit", systemImage: "pencil") { editing = true }
+        Button(Say.edit, systemImage: "pencil") { editing = true }
         Divider()
-        Button("Delete", systemImage: "trash", role: .destructive) { deleting = true }
+        Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }
 }
 

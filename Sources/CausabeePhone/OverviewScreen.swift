@@ -247,6 +247,9 @@ struct OverviewScreen: View {
         .dismissesKeyboard()
         // Pulled down: new mail is read — free — and waits for "Sort in"; in the demo, its three.
         .modifier(PullsForMail())
+        // A screenshot or a PDF dragged onto the overview, or pasted: read, and its matter found —
+        // as the Mac reads what is dropped on its window.
+        .receivesFiles(matter: nil)
         .background(Theme.canvas)
         // The assistant about every matter, as on a matter's page; held, its plus for any matter.
         .overlay(alignment: .bottomTrailing) {

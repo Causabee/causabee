@@ -215,8 +215,12 @@ struct PhoneMatterCard: View {
                 }
                 .buttonStyle(.plain)
             }
+            // A way to the rest, as on the Mac: the matter opens at the first of them.
             if overdue.count > 3 {
-                Text("… and \(overdue.count - 3) more overdue").font(.caption).foregroundStyle(Theme.warning)
+                Button { open(overdue[3].persistentModelID) } label: {
+                    Text("… and \(overdue.count - 3) more overdue").font(.caption).foregroundStyle(Theme.warning)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(16)

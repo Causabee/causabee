@@ -48,7 +48,6 @@ struct MatterStatusView: View {
     @State private var showsPast = false
     @State private var merging: (Party, Party)?
     /// This matter and the one it is to go into, from the bar's ⋯.
-    @State private var mergingMatter: (Matter, Matter)?
     @Query(sort: \Matter.name) private var allMatters: [Matter]
     /// Why the matter could not be written out, said once.
     @State private var exportFailure: String?
@@ -187,6 +186,7 @@ struct MatterStatusView: View {
                 .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
                 // The Matter menu: the section scrolled to, then what adds to it opened.
                 .onReceive(NotificationCenter.default.publisher(for: .matterAction)) { note in
+                    if note.object as? String == "writeAgain" { if !DemoData.isRequested { writeAgain() }; return }
                     guard let action = (note.object as? String).flatMap(MatterAction.init) else { return }
                     let section = switch action {
                     case .newTask: "tasks"; case .writeNote: "notes"; case .addFile: "files"; case .addLink: "links"
@@ -244,20 +244,6 @@ struct MatterStatusView: View {
             Button("Cancel", role: .cancel) { merging = nil }
         } message: {
             Text("This also counts for the next mail. You can undo it in the rules.")
-        }
-        .confirmationDialog(mergingMatter.map { "Merge “\($0.0.name)” into “\($0.1.name)”?" } ?? "",
-                            isPresented: Binding(get: { mergingMatter != nil }, set: { if !$0 { mergingMatter = nil } })) {
-            Button("Merge") {
-                if let (from, into) = mergingMatter {
-                    into.absorb(from, in: context)
-                    try? context.save()
-                    navigation.open(into)
-                }
-                mergingMatter = nil
-            }
-            Button("Cancel", role: .cancel) { mergingMatter = nil }
-        } message: {
-            Text("All mails, tasks, appointments and people come along. The old name stays as an alias, so new mail still arrives. You cannot split it again later.")
         }
         .alert("The matter could not be exported", isPresented: Binding(get: { exportFailure != nil }, set: { if !$0 { exportFailure = nil } })) {
             Button("OK") { exportFailure = nil }
@@ -320,6 +306,32 @@ struct MatterStatusView: View {
         .padding(matter.summary == nil ? 0 : 20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(matter.summary == nil ? Color.clear : Theme.box, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// The matter's ⋯: what can be added and written again, then the matter itself.
+    @ViewBuilder
+    private var matterMenuItems: some View {
+            // What can be added, and the next step and summary written again: as the
+            // iPhone's and the iPad's ⋯ have them.
+            MatterAddItems(writeAgain: DemoData.isRequested ? nil : { writeAgain() })
+            // The same menu as on the matter's card and in the sidebar, on every device.
+            MatterMenuItems(matter: matter, all: allMatters)
+            // Everything the matter holds, as one document: what is gathered here can leave at any time.
+            Button(Say.exportRTF, systemImage: "square.and.arrow.up", action: export)
+            Divider()
+            if matter.isClosed {
+                Button(Say.openAgain, systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
+            } else {
+                Button(Say.closeMatter, systemImage: "archivebox") { asksToClose = true }
+            }
+    }
+
+    /// The next step and the summary, both written again — what pulling the page down does on the
+    /// iPhone and the iPad (⌘R).
+    private func writeAgain() {
+        guard !AutoUpdate.shared.working.contains(matter.key) else { return }
+        if !matter.isClosed, !askingStep { askStep() }
+        if !writingSummary { writeSummary() }
     }
 
     private func writeSummary() {
@@ -586,12 +598,8 @@ struct MatterStatusView: View {
         let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
+                // Added by the plus — beside the assistant's field — or dragged from the browser.
                 SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
-                if !all.isEmpty {
-                    Button { addingLink = true } label: { Label("Link", systemImage: "plus") }
-                        .buttonStyle(.borderless).font(.caption)
-                        .help("Paste a link — or drag it from the browser onto the matter")
-                }
             }
             .popover(isPresented: $addingLink, arrowEdge: .bottom) {
                 LinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
@@ -882,7 +890,7 @@ struct MatterStatusView: View {
                         .help("The new mails, with what they brought, become a matter of their own; this one stays closed")
                         .popover(isPresented: $splitting, arrowEdge: .bottom) { splitForm(status) }
                     }
-                    Button("Open again") { matter.reopen(); try? context.save() }
+                    Button(Say.openAgain) { matter.reopen(); try? context.save() }
                 }
                 .padding(20)
                 .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
@@ -1006,28 +1014,13 @@ struct MatterStatusView: View {
                         // What is seldom needed sits behind the dots, not in the bar: what the sidebar's
                         // menu has for the matter, as the iPhone's ⋯ has it, and closing it.
                         Menu {
-                            PinMenuItem(matter: matter, all: allMatters)
-                            Button("Rename …", action: startRenaming)
-                            Menu("Merge with …") {
-                                // Only into a matter that is going on: a closed one is opened again first.
-                                ForEach(allMatters.filter { $0 !== matter && !$0.isClosed }) { other in
-                                    Button(other.name) { mergingMatter = (matter, other) }
-                                }
-                            }
-                            // Everything the matter holds, as one document: what is gathered here can leave at any time.
-                            Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
-                            Divider()
-                            if matter.isClosed {
-                                Button("Open Again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
-                            } else {
-                                Button("Close Matter…", systemImage: "archivebox") { asksToClose = true }
-                            }
+                            matterMenuItems
                         } label: {
                             Image(systemName: "ellipsis").frame(width: 30, height: 30).contentShape(Circle())
                         }
                         .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
                         .onGlass(Circle())
-                        .help("More: pin, rename, merge with another matter, export, close")
+                        .help("More: write the next step and summary again, pin, rename, merge, export, close")
                         .accessibilityLabel("More")
                         .accessibilityIdentifier("matter.more")
                         .tool()
@@ -1275,9 +1268,6 @@ struct MatterStatusView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     SectionHeader(title: "People", detail: "\(memberships.count) · to merge, drag one name onto another")
-                    Button { addingContact = true } label: { Label("Contact", systemImage: "plus") }
-                        .buttonStyle(.gold).font(.caption)
-                        .tool()
                 }
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
@@ -1309,14 +1299,14 @@ struct MatterStatusView: View {
                             .draggable(party.name)
                             .contextMenu {
                                 MailAddressItems(addresses: CardActions.addresses(of: party))
-                                Menu("Merge with …") {
+                                Menu(Say.mergeWith, systemImage: "arrow.triangle.merge") {
                                     ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
                                         Button(other.name) { merging = (party, other) }
                                     }
                                 }
                                 Button("Ask Causabee") { talk(party.name, "Person") }
                                 Divider()
-                                Button("Remove from this matter", role: .destructive) {
+                                Button(Say.removeFromMatter, role: .destructive) {
                                     withAnimation { membership.removeByHand(in: context, origin: origin, undo: undoManager) }
                                     try? context.save()
                                 }
@@ -1392,10 +1382,6 @@ struct MatterStatusView: View {
             // "Everything" as under "Files", and whether or not there is a file yet.
             if filter == .everything || filter == .files || filter == .scans {
                 if let filesSaid { Text(filesSaid).font(.caption).foregroundStyle(.secondary).transition(.opacity) }
-                Button { addingFile = true } label: { Label("File", systemImage: "plus") }
-                    .buttonStyle(.borderless).font(.caption)
-                    .tool()
-                    .help("Add a PDF, a scan, any file or a whole folder from this Mac — or drag it onto the matter")
                 // Not in the demo: its made-up matters have no folder among the owner's own.
                 if MatterFolders.root != nil, !DemoData.isRequested {
                     Button { if let folder = MatterFolders.folder(for: matter) { try? context.save(); FolderSaver.reveal(folder) } } label: {
@@ -1724,23 +1710,23 @@ struct TodoRow: View {
     @ViewBuilder
     private var moreItems: some View {
         Button("Ask Causabee", action: talk)
-        Button("Edit …") { editing = true }
+        Button(Say.edit, systemImage: "pencil") { editing = true }
         if let info {
-            Button("Not a task — move to Info", action: info)
+            Button(Say.moveToInfo, systemImage: "info.circle", action: info)
         }
         if !todo.isDone {
             Divider()
             waitMenu
         }
         Divider()
-        Button("Delete …", role: .destructive) { deleting = true }
+        Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }
 
     /// The other open to-dos of the matter, to pick the one this one needs first.
     @ViewBuilder
     private var waitMenu: some View {
         let others = (todo.matter?.openTodos ?? []).filter { $0 !== todo }.sorted { $0.text < $1.text }
-        Menu("Waits for …") {
+        Menu(Say.waitsFor, systemImage: "hourglass") {
             ForEach(others, id: \.persistentModelID) { other in
                 Button(other.text) {
                     withAnimation { _ = todo.wait(for: other) }
@@ -1751,7 +1737,7 @@ struct TodoRow: View {
         }
         .disabled(others.isEmpty)
         if todo.waitsFor != nil {
-            Button("Waits for nothing any more") {
+            Button(Say.stopWaiting, systemImage: "xmark.circle") {
                 withAnimation { todo.waitsFor = nil }
                 try? context.save()
             }
@@ -2099,9 +2085,9 @@ struct DateRow: View {
     @ViewBuilder
     private var moreItems: some View {
         Button("Ask Causabee", action: talk)
-        Button("Edit …") { editing = true }
+        Button(Say.edit, systemImage: "pencil") { editing = true }
         Divider()
-        Button("Delete …", role: .destructive) { deleting = true }
+        Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }
 }
 
@@ -2230,7 +2216,7 @@ struct PartyRow: View {
                 MailAddressItems(addresses: addresses)
                 ContactItems(party: party)
                 Button("Ask Causabee", action: talk)
-                Button("Edit name and role …") {
+                Button(Say.edit, systemImage: "pencil") {
                     name = party.name
                     role = membership.role ?? ""
                     address = party.address ?? ""
@@ -2238,7 +2224,7 @@ struct PartyRow: View {
                     editing = true
                 }
                 if let remove {
-                    Button("Remove from this matter", role: .destructive, action: remove)
+                    Button(Say.removeFromMatter, role: .destructive, action: remove)
                 }
             }
                 .popover(isPresented: $editing, arrowEdge: .bottom) {
@@ -2252,7 +2238,7 @@ struct PartyRow: View {
                             .font(.caption).foregroundStyle(.secondary).frame(width: 300, alignment: .leading)
                         HStack {
                             if let remove {
-                                Button("Remove from this matter", role: .destructive) { editing = false; remove() }
+                                Button(Say.removeFromMatter, role: .destructive) { editing = false; remove() }
                                     .help("Only from this matter. A later mail naming them will not put them back.")
                             }
                             Spacer()
@@ -2357,15 +2343,15 @@ struct DocumentRow: View {
         }
         Button("Ask Causabee", action: talk)
         Divider()
-        Button("Rename …") { newName = document.shownName; renaming = true }
-        if isPDF { Button("Name it from its content", action: nameIt) }
+        Button(Say.rename, systemImage: "pencil") { newName = document.shownName; renaming = true }
+        if isPDF { Button(Say.nameFromContent, systemImage: "text.magnifyingglass", action: nameIt) }
         if document.title != nil {
-            Button("Use the file's own name") { document.title = nil; try? context.save() }
+            Button(Say.useFileName, systemImage: "arrow.uturn.backward") { document.title = nil; try? context.save() }
         }
         Divider()
-        Button(document.isHidden ? "Show again" : "Hide", action: hide)
+        Button(document.isHidden ? Say.showAgain : Say.hide, systemImage: document.isHidden ? "eye" : "eye.slash", action: hide)
         // One the owner brought in can go for good — an outdated letter; a mail's file would come back with its mail.
-        if document.isOwnFile { Button("Delete …", role: .destructive) { deleting = true } }
+        if document.isOwnFile { Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true } }
     }
 
     /// What goes with it, said before it goes.
@@ -2445,8 +2431,8 @@ struct LinkRow: View {
             Spacer(minLength: 8)
             MoreMenu {
                 LinkItems(link: link)
-                Button("Edit name, address, task …") { editing = true }
-                Button("Remove link", role: .destructive, action: remove)
+                Button(Say.edit, systemImage: "pencil") { editing = true }
+                Button(Say.removeLink, systemImage: "trash", role: .destructive, action: remove)
                     .help("Take the link out of the matter. The document itself stays where it is.")
             }
                 .popover(isPresented: $editing, arrowEdge: .bottom) {

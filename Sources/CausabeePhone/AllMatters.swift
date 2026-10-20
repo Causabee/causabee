@@ -133,34 +133,6 @@ struct PhoneMatterRow: View {
     }
 }
 
-/// "Pin to top", then "Rename …" and "Merge with …", as the Mac's sidebar menu has them; the
-/// questions they ask are the root's, so they are asked the same way from wherever the menu is.
-struct MatterMenuItems: View {
-    let matter: Matter
-    let all: [Matter]
-    @Environment(Navigation.self) private var navigation
-    @Environment(\.modelContext) private var context
-
-    var body: some View {
-        if matter.isPinned {
-            Button("Unpin", systemImage: "pin.slash") { matter.pinnedAt = nil; try? context.save() }
-        } else if !matter.isClosed {
-            Button("Pin to top", systemImage: "pin") {
-                // Full: which one it replaces is asked.
-                if Pins.pinned(all).count >= Pins.most { navigation.pinning = matter } else { matter.pinnedAt = Date(); try? context.save() }
-            }
-        }
-        Button("Rename", systemImage: "pencil") { navigation.renaming = matter }
-        MatterIconMenu(matter: matter)
-        Menu("Merge with", systemImage: "arrow.triangle.merge") {
-            // Only into a matter that is going on: a closed one is opened again first.
-            ForEach(all.filter { $0 !== matter && !$0.isClosed }) { other in
-                Button(other.name) { navigation.merging = (matter, other) }
-            }
-        }
-    }
-}
-
 /// The Mac's two questions: a new name, and whether to merge — with its words. And which pinned
 /// matter makes room when as many as fit are pinned.
 struct MatterQuestions: ViewModifier {

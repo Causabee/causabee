@@ -143,6 +143,8 @@ struct CausabeeApp: App {
                     .keyboardShortcut("n", modifiers: .command)
             }
             MatterCommands()
+            // Scan a document or take a photo with the iPhone, from the Mac (Continuity Camera).
+            ImportFromDevicesCommands()
             WindowCommands()
             FindCommands()
             // The About panel names the release as it went out: "Version Beta 0.5 (19)".
@@ -235,6 +237,9 @@ final class Navigation {
     /// A matter to pin to the overview's top while as many as fit are pinned already: which one
     /// it replaces is asked.
     var pinning: Matter?
+    /// A matter to rename, and one to fold into another: asked by the window, from whichever menu.
+    var renaming: Matter?
+    var merging: (from: Matter, into: Matter)?
     /// The assistant beside the overview: asked for with its button there, about all matters.
     var assistantOnOverview = false
     /// The assistant's column put away while a matter is open; remembered.
@@ -529,7 +534,6 @@ struct RootView: View {
     @Query private var matters: [Matter]
     @State private var navigation = Navigation()
     @Environment(\.modelContext) private var context
-    @State private var renaming: Matter?
     @State private var mailCheck = MailCheck()
     /// The closed matters in the sidebar, folded away until opened; remembered on this Mac.
     @AppStorage("sidebar.showsClosed") private var showsClosed = false
@@ -543,8 +547,6 @@ struct RootView: View {
     /// File → New Matter …: its name asked for, then the matter opened.
     @State private var startsMatter = false
     @State private var newMatterName = ""
-    /// The matter to fold in, and the one it goes into.
-    @State private var merging: (Matter, Matter)?
     /// The sidebar's search: a matter found by its name, a task or a mail — on the Mac.
     @State private var search = ""
     @Query private var profiles: [Profile]
@@ -585,7 +587,7 @@ struct RootView: View {
     }
 
     private var mergeQuestion: String {
-        guard let (from, into) = merging else { return "" }
+        guard let (from, into) = navigation.merging else { return "" }
         return "Merge “\(from.name)” into “\(into.name)”?"
     }
 
@@ -599,14 +601,7 @@ struct RootView: View {
         MatterRow(matter: matter)
             .sidebarRow(selected: navigation.place == .matter(matter.persistentModelID)) { navigation.open(matter); keysInSidebar = true }
             .contextMenu {
-                PinMenuItem(matter: matter, all: sorted)
-                Button("Rename …") { newName = matter.name; renaming = matter }
-                Menu("Merge with …") {
-                    // Only into a matter that is going on: a closed one is opened again first.
-                    ForEach(sorted.filter { $0 !== matter && !$0.isClosed }) { other in
-                        Button(other.name) { merging = (matter, other) }
-                    }
-                }
+                MatterMenuItems(matter: matter, all: sorted)
             }
     }
 
@@ -736,6 +731,14 @@ struct RootView: View {
                 for url in files { conversation.bring(url) }
                 return !files.isEmpty
             }
+            // File ▸ Import from iPhone or iPad — or a right click: a document scanned or a photo taken
+            // with the iPhone's camera, read as a file is, as the iPhone's "Scan a document" reads it.
+            .importableFromServices(for: BroughtFile.self) { items in
+                let conversation = Conversation(context: context, navigation: navigation, owner: profiles.first?.names.first)
+                for item in items { conversation.bring(item.data, named: item.name) }
+                if !items.isEmpty { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } }
+                return !items.isEmpty
+            }
         }
         .ignoresSafeArea()
         .environment(\.reading, navigation.reading)
@@ -850,16 +853,16 @@ struct RootView: View {
             SetupAssistant { mailCheck.look(store: navigation.store, context: context) }
         }
         .modifier(PinQuestion(matters: matters, navigation: navigation))
-        .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
+        .confirmationDialog(mergeQuestion, isPresented: Binding(get: { navigation.merging != nil }, set: { if !$0 { navigation.merging = nil } })) {
             Button("Merge") {
-                if let (from, into) = merging {
+                if let (from, into) = navigation.merging {
                     into.absorb(from, in: context)
                     try? context.save()
                     navigation.open(into)
                 }
-                merging = nil
+                navigation.merging = nil
             }
-            Button("Cancel", role: .cancel) { merging = nil }
+            Button("Cancel", role: .cancel) { navigation.merging = nil }
         } message: {
             Text("All mails, tasks, appointments and people come along. The old name stays as an alias, so new mail still arrives. You cannot split it again later.")
         }
@@ -873,14 +876,15 @@ struct RootView: View {
         } message: {
             Text("Mail, files and tasks can be put into it afterwards.")
         }
-        .alert("Rename matter", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+        .onChange(of: navigation.renaming) { newName = navigation.renaming?.name ?? "" }
+        .alert("Rename matter", isPresented: Binding(get: { navigation.renaming != nil }, set: { if !$0 { navigation.renaming = nil } })) {
             TextField("Name", text: $newName)
             Button("Save") {
                 let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-                if let matter = renaming, !name.isEmpty, name != matter.name { matter.rename(to: name); try? context.save() }
-                renaming = nil
+                if let matter = navigation.renaming, !name.isEmpty, name != matter.name { matter.rename(to: name); try? context.save() }
+                navigation.renaming = nil
             }
-            Button("Cancel", role: .cancel) { renaming = nil }
+            Button("Cancel", role: .cancel) { navigation.renaming = nil }
         } message: {
             Text("The old name stays as an alias, so new mail still finds the matter.")
         }
@@ -1017,14 +1021,18 @@ struct MatterCommands: Commands {
             ForEach(MatterAction.allCases, id: \.self) { action in
                 if action == .newTask { item(action.title, action).keyboardShortcut("t", modifiers: [.command, .shift]) } else { item(action.title, action) }
             }
+            Divider()
+            Button("Write Next Step and Summary Again") { NotificationCenter.default.post(name: .matterAction, object: "writeAgain") }
+                .keyboardShortcut("r", modifiers: .command)
+                .disabled(open == nil || state?.isClosed == true)
             // And what the matter's ⋯ does with the matter itself — in the menu bar too, with the
             // words for what it would do now. Merging stays in the ⋯: it needs the list of matters.
             Divider()
-            command(state?.isPinned == true ? "Unpin" : "Pin to Top", .pin).disabled(state?.isClosed == true && state?.isPinned != true)
-            command("Rename …", .rename)
-            command("Export as RTF", .export)
+            command(state?.isPinned == true ? Say.unpin : Say.pinToTop, .pin).disabled(state?.isClosed == true && state?.isPinned != true)
+            command(Say.rename, .rename)
+            command(Say.exportRTF, .export)
             Divider()
-            command(state?.isClosed == true ? "Open Again" : "Close Matter…", .close)
+            command(state?.isClosed == true ? Say.openAgain : Say.closeMatter, .close)
         }
     }
 
@@ -1141,32 +1149,6 @@ enum MatterCommand: String { case pin, rename, export, close }
 struct MatterState: Equatable {
     var isPinned: Bool
     var isClosed: Bool
-}
-
-/// An action of the Matter menu, for the matter that is open.
-enum MatterAction: String, CaseIterable {
-    case newTask, writeNote, addFile, addContact, addDetail, addLink
-
-    var title: String {
-        switch self {
-        case .newTask: "New Task …"
-        case .writeNote: "Add Note …"
-        case .addFile: "Add File …"
-        case .addContact: "Add Contact …"
-        case .addDetail: "Add Detail …"
-        case .addLink: "Add Link …"
-        }
-    }
-    var symbol: String {
-        switch self {
-        case .newTask: "checklist"
-        case .writeNote: "note.text"
-        case .addFile: "doc"
-        case .addContact: "person.badge.plus"
-        case .addDetail: "info.circle"
-        case .addLink: "link"
-        }
-    }
 }
 
 extension FocusedValues {
