@@ -841,7 +841,7 @@ struct PhoneActionCard: View {
     private var done: Bool { turn.applied.contains(index) }
     private var dismissed: Bool { turn.dismissedCards.contains(index) }
     private var undo: CardActions.Undo? { navigation.undos[turn.id]?[index] }
-    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
+    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .correctBrief, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
     private var mailInHand: String? { turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil } }
     /// Once per change: the draft's card asked for it three times each time it drew.
     private var recipient: (name: String, address: String?)? {
@@ -965,6 +965,7 @@ struct PhoneActionCard: View {
         case .renameParty: return "Name changed"
         case .changeRole: return "Role changed · " + name(card.party)
         case .addNote: return card.todo == nil ? "Note added" : "Note added · " + name(card.todo)
+        case .correctBrief: return "Brief corrected"
         case .changeDate: return "Date changed"
         case .newMatter: return "Matter started"
         case .waitsFor: return "Now waits for " + name(card.into)
@@ -1071,6 +1072,7 @@ struct PhoneActionCard: View {
         case .newTodo: "Add"
         case .sameParty: "Merge"
         case .addNote: "Save note"
+        case .correctBrief: "Correct the brief"
         case .draftMessage: "Open in Mail"
         case .shortMessage: "Copy"
         case .changeDate: "Change date"
@@ -1092,6 +1094,7 @@ struct PhoneActionCard: View {
         case .renameParty: return "Change name?"
         case .changeRole: return "Change role?"
         case .addNote: return card.todo == nil ? "Note for the matter?" : "Note for the task?"
+        case .correctBrief: return "Correct the brief?"
         case .draftMessage: return "Draft"
         case .shortMessage: return "Message"
         case .changeDate: return "Change date?"
@@ -1116,6 +1119,7 @@ struct PhoneActionCard: View {
         case .renameParty: return "\(name(card.party))  is called:"
         case .changeRole: return "\(name(card.party))  is here:"
         case .addNote: return card.todo == nil ? nil : name(card.todo)
+        case .correctBrief: return nil
         case .shortMessage: return nil
         case .draftMessage:
             guard let recipient else { return "To: (fill in in Mail)" }

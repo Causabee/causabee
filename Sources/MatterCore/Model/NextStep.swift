@@ -58,6 +58,8 @@ extension Matter {
         parts += (appointments ?? []).map { "a|\($0.what)|\($0.day)|\($0.time ?? "")|\($0.place ?? "")" }
         parts += (deadlines ?? []).map { "d|\($0.what)|\($0.day)" }
         parts.append("n|" + (notesText ?? ""))
+        // What the owner said of the matter: the brief is written again around it.
+        parts += (shownBrief?.said ?? []).map { "s|" + $0.text }
         let digest = SHA256.hash(data: Data(parts.sorted().joined(separator: "\n").utf8))
         return digest.prefix(8).map { String(format: "%02x", $0) }.joined()
     }

@@ -8,7 +8,11 @@ public enum Unplaced {
     /// The open matters, as a sorting run is told about them.
     public static func matters(in context: ModelContext) -> [(key: String, about: String)] {
         ((try? context.fetch(FetchDescriptor<Matter>())) ?? []).filter { !$0.isClosed }.map { matter in
-            (matter.key, [matter.name, matter.summary?.split(separator: "\n").first.map(String.init)].compactMap { $0 }.joined(separator: " — "))
+            // What it is about from its brief, and what the owner said of it: a new mail is read knowing it.
+            let brief = matter.shownBrief
+            let about = brief?.gist ?? matter.summary?.split(separator: "\n").first.map(String.init)
+            let said = brief?.said.suffix(3).map { "the owner says: \($0.text)" } ?? []
+            return (matter.key, ([matter.name, about].compactMap { $0 } + said).joined(separator: " — "))
         }
     }
 

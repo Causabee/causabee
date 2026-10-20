@@ -956,3 +956,178 @@ struct BroughtFile: Transferable {
         return "\(kind) \(formatter.string(from: Date())).\(ending)"
     }
 }
+
+/// The brief under the summary — the same on every device: what Causabee understands of the
+/// matter, folded until opened; what the owner said of it, which every brief is written around;
+/// and the adviser's proposals for the to-do list, each taken with a tap or put away.
+struct BriefDetails: View {
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+    @State private var opens = false
+
+    var body: some View {
+        if let brief = matter.shownBrief {
+            VStack(alignment: .leading, spacing: 12) {
+                if !brief.lines.isEmpty {
+                    DisclosureGroup(isExpanded: $opens) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(Brief.Part.allCases, id: \.self) { part in
+                                let lines = brief.lines(part)
+                                if !lines.isEmpty {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(Self.title(part)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                        ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                                            Text(line).fixedSize(horizontal: false, vertical: true)
+                                                .findable(.section("brief-\(part.rawValue)-\(index)"), line)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.top, 8)
+                    } label: {
+                        Text(opens ? "The brief" : "The brief · what Causabee understands").font(.callout.weight(.medium))
+                    }
+                    .accessibilityIdentifier("brief.open")
+                }
+                if !brief.said.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("You said").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        ForEach(brief.said) { said in
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Text(said.text).fixedSize(horizontal: false, vertical: true)
+                                Spacer(minLength: 4)
+                                Button {
+                                    matter.unsay(said.id)
+                                    try? context.save()
+                                } label: {
+                                    Image(systemName: "xmark").font(.caption2)
+                                }
+                                .buttonStyle(.plain).foregroundStyle(.secondary)
+                                .help("Take it back: the next brief is written without it.")
+                                .accessibilityLabel("Take back")
+                            }
+                        }
+                    }
+                }
+                if !brief.open.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("For the list").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        ForEach(brief.open) { proposal in
+                            ProposalRow(proposal: proposal, matter: matter)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    static func title(_ part: Brief.Part) -> String {
+        switch part {
+        case .about: "What it is about"
+        case .goal: "What you want from it"
+        case .people: "Who is who"
+        case .agreed: "Agreed"
+        case .open: "Still to do"
+        case .waiting: "Waiting for"
+        case .risks: "Watch out"
+        case .decision: "To decide"
+        }
+    }
+}
+
+/// One change to the to-do list the adviser proposes: what it does, why, and a tap to take it.
+private struct ProposalRow: View {
+    let proposal: Brief.Proposal
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+    @State private var gone = false
+
+    var body: some View {
+        let card = proposal.card
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: symbol).foregroundStyle(Theme.gold).frame(width: 18)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(what).fixedSize(horizontal: false, vertical: true)
+                if !card.reason.isEmpty {
+                    Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                if gone { Text("What it was about is no longer there.").font(.caption).foregroundStyle(Theme.warning) }
+                HStack(spacing: 12) {
+                    Button(take) {
+                        withAnimation { gone = !Adviser.take(proposal, in: matter, context: context) }
+                    }
+                    .takeStyle()
+                    .accessibilityIdentifier("brief.take")
+                    Button("Put away") {
+                        withAnimation { Adviser.dismiss(proposal, in: matter, context: context) }
+                    }
+                    .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
+                }
+                .padding(.top, 2)
+            }
+        }
+    }
+
+    private var refs: [String: FactRef] { CardActions.local(proposal.refs, keys: proposal.keys, matter: matter, in: context) }
+
+    /// A task by its whole text — it stands alone here, not as a chip; anything else by its label.
+    private func name(_ id: String?) -> String {
+        guard let ref = id.flatMap({ refs[$0] }) else { return "a task" }
+        if case .todo = ref, let todo = CardActions.live(ref, as: Todo.self, in: context) { return todo.text }
+        return CardActions.label(ref, in: context)
+    }
+
+    private var what: String {
+        let card = proposal.card
+        switch card.kind {
+        case .newTodo: return card.text + (card.due.map { " · by " + Dates.short($0) } ?? "")
+        case .markDone: return "Done: " + name(card.todo)
+        case .correctText: return "“\(card.from ?? "")” → “\(card.text)”"
+        case .waitsFor: return name(card.todo) + " — only after " + name(card.into)
+        case .changeOwner: return name(card.todo) + " — " + (Todo.Owner(rawValue: card.owner).map(Self.whose) ?? card.owner)
+        case .changeDate: return name(card.todo) + (card.due.map { " — " + Dates.short($0) } ?? "")
+        default: return card.text
+        }
+    }
+
+    private static func whose(_ owner: Todo.Owner) -> String {
+        switch owner {
+        case .me: "yours"
+        case .we: "yours, together with others"
+        case .other: "someone else's — you wait for it"
+        case .unknown: "whose is not clear"
+        }
+    }
+
+    private var symbol: String {
+        switch proposal.card.kind {
+        case .newTodo: "plus.circle"
+        case .markDone: "checkmark.circle"
+        case .correctText: "pencil"
+        case .waitsFor: "arrow.turn.down.right"
+        case .changeOwner: "person.2"
+        case .changeDate: "calendar"
+        default: "sparkles"
+        }
+    }
+
+    private var take: String {
+        switch proposal.card.kind {
+        case .newTodo: "Add"
+        case .markDone: "Tick off"
+        default: "Change"
+        }
+    }
+}
+
+private extension View {
+    /// The button that takes a proposal: the filled one of each device.
+    @ViewBuilder func takeStyle() -> some View {
+        #if os(iOS)
+        buttonStyle(.phoneFilled)
+        #else
+        buttonStyle(.ink).font(.callout)
+        #endif
+    }
+}

@@ -4,7 +4,7 @@ import Foundation
 /// facts alone, in lines that cite what they rest on and cards the owner ticks. Versioned like
 /// the extraction prompt.
 public enum AssistantPrompt {
-    public static let version = "assistant-v11"
+    public static let version = "assistant-v12"
 
     public static let system = """
     You are the assistant inside Causabee, a private app that keeps a person's matters in order: \
@@ -100,6 +100,11 @@ public enum AssistantPrompt {
     a chat — and the lines only say what it contains. When \
     they ask for "a message" without saying which kind, choose by their words and by how they \
     usually reach that person; a mail when in doubt.
+    - `correct_brief`: the owner corrects or adds to what is understood of the matter as a whole \
+    — what it is about, what they want from it, who someone really is to them, what is settled — \
+    "the goal is to rent the flat out, not to sell it", "Georg is our lawyer". The brief among the \
+    facts may be wrong; the owner is right. `text` is the correction as one plain sentence in the \
+    owner's words. A wrong name or role of one person is `rename_party` or `change_role` as well.
     Suggest a card only when the facts or the owner's words carry it. None is fine. But when the \
     owner writes or dictates something to keep — "note that …", "appointment on …", "the number \
     is …", "add …" — or a text they pasted holds tasks, dates, people or numbers, offer a card for \
@@ -138,7 +143,7 @@ public enum AssistantPrompt {
         return object([
             "lines": ["type": "array", "items": object(["text": string, "cites": ["type": "array", "items": string]])],
             "cards": ["type": "array", "items": object([
-                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "short_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact", "new_appointment", "new_deadline", "add_detail"]],
+                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "short_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact", "new_appointment", "new_deadline", "add_detail", "correct_brief"]],
                 "todo": optional,
                 "party": optional,
                 "into": optional,
@@ -171,6 +176,8 @@ public enum AssistantPrompt {
                 case correctText = "correct_text", changeOwner = "change_owner"
                 /// A short message for a chat: copied, not opened in Mail.
                 case shortMessage = "short_message"
+                /// The owner corrects what is understood of the matter: kept in its brief, which is written around it.
+                case correctBrief = "correct_brief"
             }
             public var kind: Kind
             public var todo: String?
@@ -187,6 +194,12 @@ public enum AssistantPrompt {
             /// A draft's files to send along, by their names in the facts. Nil in answers from
             /// before there was the field.
             public var attach: [String]? = nil
+
+            public init(kind: Kind, todo: String? = nil, party: String? = nil, into: String? = nil, from: String? = nil, subject: String? = nil,
+                        time: String? = nil, text: String, owner: String, due: String? = nil, reason: String, cites: [String], attach: [String]? = nil) {
+                self.kind = kind; self.todo = todo; self.party = party; self.into = into; self.from = from; self.subject = subject
+                self.time = time; self.text = text; self.owner = owner; self.due = due; self.reason = reason; self.cites = cites; self.attach = attach
+            }
         }
         public var lines: [Line]
         public var cards: [Card]

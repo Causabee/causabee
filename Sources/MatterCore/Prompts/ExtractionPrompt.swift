@@ -7,7 +7,7 @@ import Foundation
 /// prompt that asks for something different from what the labels mean would measure the
 /// difference between two definitions, not how good the model is.
 public enum ExtractionPrompt {
-    public static let version = "extract-v13"
+    public static let version = "extract-v14"
 
     /// Added for a model that writes a to-do for everything a mail touches — Mistral wrote half
     /// again as many as Opus, most of them "confirm the appointment" and "prepare for it". Opus
@@ -90,7 +90,10 @@ public enum ExtractionPrompt {
     ## todos
 
     Something that has to be done, as the email says it — never something the email only \
-    implies. Write it short. `owner` says whose it is:
+    implies. Write it short, as the next thing to do, starting with what to do: whom to answer, \
+    send or call, about what — "Unterschriebenes Formular an [Company B] schicken", not "Formular" \
+    or the email's sentence copied. Read it in the light of what the matter is about, as its \
+    summary says; what the owner says of a matter there is right. `owner` says whose it is:
 
     - `me` — the mailbox owner has to do it.
     - `we` — the mailbox owner does it together with others, as one of a group: the owners of a \

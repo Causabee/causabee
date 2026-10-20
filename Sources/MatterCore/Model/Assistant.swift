@@ -67,6 +67,11 @@ public enum FactSheet {
                 lines.append("The owner's notes on this matter:\n\(notes)")
                 ownerText.append(notes)
             }
+            // What is understood of it, and what the owner said: the owner's words read like the notes.
+            if let brief = matter.shownBrief, let text = detailed ? brief.forFacts : brief.gist.map({ "In short: \($0)" }) {
+                lines.append(text)
+                ownerText += brief.said.map(\.text)
+            }
             ownerText += (matter.todos ?? []).compactMap(\.note)
             // Of the details only that they are kept, by their label: never a value.
             let labels = matter.sortedDetails.map { $0.label + ($0.party.map { " (\($0.name))" } ?? "") }

@@ -75,7 +75,7 @@ enum DemoData {
     /// Counts up whenever the demo's words or matters change: a demo store filled with an older
     /// version is emptied and filled again — with today's dates too. Two things are overdue in it, in
     /// the care matter and the trip: enough to show what overdue looks like, not a page of it. Only ever the demo's own store.
-    static let contentVersion = 3
+    static let contentVersion = 5
     private static let seededKey = "demo.filled"
 
     /// The demo's own talk, where it stands ahead of the clock, is put an hour behind it — in the
@@ -339,6 +339,27 @@ enum DemoData {
             matter.nextStepWhy = why
             matter.nextStepAt = DemoData.date(0, hour: 8)
             matter.nextStepTodo = todos[handle]?.origin
+        }
+
+        /// The adviser's brief, as if written this morning: what is understood, what the owner said,
+        /// and its proposals for the list — each a card about the to-dos by their handles.
+        func brief(_ lines: [(Brief.Part, String)], said: [String], proposals: [(kind: String, text: String, todo: String?, owner: String, reason: String)]) {
+            var brief = Brief(lines: lines.map { Brief.Line(part: $0.0, text: $0.1) }, said: said.map { Brief.Said(text: $0) },
+                              writtenAt: DemoData.date(0, hour: 8))
+            brief.proposals = proposals.map { item in
+                var refs: [String: FactRef] = [:], keys: [String: String] = [:]
+                if let handle = item.todo, let todo = todos[handle] {
+                    refs["T1"] = .todo(todo.persistentModelID)
+                    // By its key as well, as `CardActions.key` writes it: the id of what was only just
+                    // inserted changes when it is saved.
+                    keys["T1"] = "T\u{1F}" + todo.text
+                }
+                let card = AssistantPrompt.Reply.Card(kind: AssistantPrompt.Reply.Card.Kind(rawValue: item.kind) ?? .newTodo,
+                                                      todo: item.todo == nil ? nil : "T1", text: item.text, owner: item.owner,
+                                                      due: nil, reason: item.reason, cites: [])
+                return Brief.Proposal(card: card, refs: refs, keys: keys)
+            }
+            matter.shownBrief = brief
         }
 
         // MARK: The assistant's thread
@@ -694,6 +715,20 @@ enum DemoData {
         c.summarise("Mum is home again. Assessment on 6 October; Sunrise starts on 7 October if the contract is back by 2 October.",
                     next: "Read and sign the Sunrise contract",
                     why: "It has to be back by 2 October.", todo: "sign")
+        c.brief([(.about, "Mum is home again after her fall and needs help for about six weeks."),
+                 (.goal, "Mum safe at home, with the home care paid in part by a care level."),
+                 (.people, "Nina shares the care; Sunrise Home Care visits from 7 October; Healthbridge decides the care level."),
+                 (.agreed, "Mara takes Monday, Tuesday and Thursday; Nina Wednesday and the weekend."),
+                 (.agreed, "Sunrise comes Monday, Wednesday and Friday at 08:00, 45 minutes each."),
+                 (.open, "The signed contract back to Sunrise, and the papers for the assessment."),
+                 (.waiting, "Healthbridge's decision on the care level, expected by mid-October."),
+                 (.risks, "Without the signed contract by 2 October, Sunrise cannot start on 7 October."),
+                 (.decision, "Whether Karl takes Monday mornings, or Sunrise comes on Mondays too.")],
+                said: ["Nina and I decide together; Karl only helps out."],
+                proposals: [(kind: "new_todo", text: "Ask Healthbridge which home-care costs they cover before the decision", todo: nil, owner: "me",
+                             reason: "Sunrise is paid in part only once a care level is granted."),
+                            (kind: "mark_done", text: "", todo: "plan", owner: "me",
+                             reason: "Nina's mail of 10 days ago splits the week, and you agreed.")])
 
         c.talking = {
             c.cite("T1", "papers"); c.cite("T2", "physio"); c.cite("T3", "sign"); c.cite("T4", "bathseat")

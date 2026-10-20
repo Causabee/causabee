@@ -373,7 +373,7 @@ enum PriceEstimates {
         }
         let facts = FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40)
         let model = ModelChoice.assistant
-        let found = (version: version, key: key, step: AssistantAsk.nextStepEstimate(facts, model: model), summary: AssistantAsk.summaryEstimate(facts, model: model))
+        let found = (version: version, key: key, step: AssistantAsk.nextStepEstimate(facts, model: model), summary: AssistantAsk.adviceEstimate(facts, model: model))
         kept[matter.persistentModelID] = found
         return (found.step, found.summary)
     }
@@ -560,42 +560,22 @@ final class AutoUpdate {
                 continue
             }
             guard let names = try? names() else { continue }
-            let model = ModelChoice.assistant
-            guard let claude = ModelChoice.client(for: model) else { continue }
+            guard ModelChoice.client(for: ModelChoice.assistant) != nil else { continue }
             // Its stamp is kept before anything is sent: an update that fails is not tried again
             // and again, each time for money — the next change tries the next.
             known[key] = Known(stamp: stamp, stepAt: before.stepAt, summaryAt: before.summaryAt)
             working.insert(key)
-            let facts = FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40)
-            let today = MatterStatus.day(Date())
             Task {
                 defer { working.remove(key); done += 1 }
                 do {
-                    let step: (step: String, why: String, todo: FactRef?, cost: Double)
-                    let summary: (lines: [String], cost: Double)
-                    switch names {
-                    case .file(let url):
-                        step = try await AssistantAsk.nextStep(facts: facts, owner: owner, today: today, mapping: url, claude: claude, model: model)
-                        summary = try await AssistantAsk.summarize(facts: facts, owner: owner, today: today, mapping: url, claude: claude, model: model)
-                    case .list(let mapping, let others):
-                        step = try await AssistantAsk.nextStep(facts: facts, owner: owner, today: today, mapping: mapping, others: others, claude: claude, model: model)
-                        summary = try await AssistantAsk.summarize(facts: facts, owner: owner, today: today, mapping: mapping, others: others, claude: claude, model: model)
-                    }
-                    // Turned off while it was on its way: what came back is not put in.
+                    // One request — the brief, the summary and the step, and what to change in the list.
                     guard AutoMode.isOn else { return }
-                    let now = Date()
-                    matter.nextStep = step.step
-                    matter.nextStepWhy = step.why
-                    if case .todo(let id) = step.todo { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
-                    else { matter.nextStepTodo = nil }
-                    matter.nextStepAt = now
-                    matter.summary = summary.lines.joined(separator: "\n")
-                    matter.summaryAt = now
-                    try? context.save()
-                    Self.add(step.cost + summary.cost)
+                    let cost = try await Adviser.write(matter, names: names, owner: owner, in: context)
+                    let now = matter.nextStepAt ?? Date()
+                    Self.add(cost)
                     Self.shareSpending(in: context)
                     var all = Self.known
-                    all[key] = Known(stamp: matter.recordStamp, stepAt: now, summaryAt: now)
+                    all[key] = Known(stamp: matter.recordStamp, stepAt: now, summaryAt: matter.summaryAt)
                     Self.known = all
                 } catch {}
             }

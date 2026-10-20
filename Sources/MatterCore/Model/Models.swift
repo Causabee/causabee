@@ -74,6 +74,10 @@ public final class Matter {
     public var linksSearchedAt: Date?
     /// The `origin` of the to-do Claude's step is about, to find it again for its buttons.
     public var nextStepTodo: String?
+    /// What Causabee understands of the matter, the owner's corrections and the adviser's proposals:
+    /// a `Brief` as JSON. Nil until one is written or said.
+    public var brief: String?
+    public var briefAt: Date?
 
     @Relationship(deleteRule: .cascade, inverse: \Entry.matter) public var entries: [Entry]? = []
     @Relationship(deleteRule: .cascade, inverse: \Todo.matter) public var todos: [Todo]? = []

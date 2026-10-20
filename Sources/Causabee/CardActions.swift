@@ -21,6 +21,8 @@ enum CardActions {
         case madeMatter(PersistentIdentifier)
         /// A link a card kept, to take out again.
         case removeLink(PersistentIdentifier)
+        /// What the owner said of a matter, kept in its brief.
+        case said(PersistentIdentifier, UUID)
         /// A contact a card added or completed: its membership when the card made it, and how it was reached before.
         /// A date, a detail or a matter's note a card added, to take out again.
         case added(PersistentIdentifier)
@@ -460,6 +462,12 @@ enum CardActions {
                 undo = .date(deadline.persistentModelID, day: deadline.day, time: nil)
                 deadline.day = day
             } else { return .nothing }
+        case .correctBrief:
+            guard !text.isEmpty, let matter = scope else { return .nothing }
+            matter.say(text)
+            try? context.save()
+            guard let said = matter.shownBrief?.said.last else { return .nothing }
+            return .taken(.said(matter.persistentModelID, said.id))
         case .addNote:
             guard !text.isEmpty else { return .nothing }
             // With no to-do it is one of the matter's own notes.
@@ -555,6 +563,8 @@ enum CardActions {
             live(id, as: Todo.self, in: context)?.note = note
         case .removeLink(let id):
             if let link = live(id, as: WebLink.self, in: context) { context.delete(link) }
+        case .said(let id, let said):
+            live(id, as: Matter.self, in: context)?.unsay(said)
         case .added(let id):
             if let item = live(id, as: Appointment.self, in: context) { context.delete(item) }
             else if let item = live(id, as: Deadline.self, in: context) { context.delete(item) }
@@ -868,5 +878,88 @@ enum Receipt {
         default:
             return nil
         }
+    }
+}
+
+/// The adviser's brief for a matter: written in one request, in place of the summary and the step,
+/// put into the matter, and its proposals taken one by one — the same on every device.
+@MainActor
+enum Adviser {
+    /// The whole request: the facts, disguised, sent, and the answer put into the matter. Returns its cost.
+    @discardableResult
+    static func write(_ matter: Matter, names: AutoUpdate.Names, owner: String?, in context: ModelContext) async throws -> Double {
+        let model = ModelChoice.assistant
+        guard let claude = ModelChoice.client(for: model) else { throw Missing.key }
+        let today = MatterStatus.day(Date())
+        let facts = FactSheet.facts(for: [matter], today: today, mails: 40)
+        let dismissed = self.dismissed(in: matter)
+        let advice: AssistantAsk.Advice
+        switch names {
+        case .file(let url):
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, owner: owner, today: today, mapping: url, claude: claude, model: model)
+        case .list(let mapping, let others):
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, owner: owner, today: today, mapping: mapping,
+                                                   others: others, claude: claude, model: model)
+        }
+        put(advice, facts: facts, into: matter, in: context)
+        return advice.cost
+    }
+
+    enum Missing: LocalizedError {
+        case key
+        var errorDescription: String? { "No key for the assistant's model is saved." }
+    }
+
+    /// What the owner put away, said to the adviser so it is not proposed again.
+    static func dismissed(in matter: Matter) -> [String] {
+        (matter.shownBrief?.dismissed ?? []).suffix(15).map { "\($0.card.kind.rawValue): \($0.card.text)" }
+    }
+
+    /// The summary, the step and the brief, with its proposals — each with the facts its ids stand
+    /// for, and their keys, so another device finds them.
+    static func put(_ advice: AssistantAsk.Advice, facts: Facts, into matter: Matter, in context: ModelContext, at now: Date = Date()) {
+        matter.nextStep = advice.step
+        matter.nextStepWhy = advice.why
+        if case .todo(let id) = advice.todo { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+        else { matter.nextStepTodo = nil }
+        matter.nextStepAt = now
+        if !advice.summary.isEmpty {
+            matter.summary = advice.summary.joined(separator: "\n")
+            matter.summaryAt = now
+        }
+        let proposals = advice.proposals.map { card in
+            let ids = Set([card.todo, card.into].compactMap { $0 } + card.cites)
+            let refs = facts.refs.filter { ids.contains($0.key) }
+            return Brief.Proposal(card: card, refs: refs, keys: CardActions.keys(of: refs, in: context))
+        }
+        matter.shownBrief = (matter.shownBrief ?? Brief()).rewritten(lines: advice.lines, proposals: proposals, at: now)
+        try? context.save()
+    }
+
+    /// A proposal ticked: done as the assistant's card would be. False when what it names is gone.
+    @discardableResult
+    static func take(_ proposal: Brief.Proposal, text: String? = nil, in matter: Matter, context: ModelContext) -> Bool {
+        let refs = CardActions.local(proposal.refs, keys: proposal.keys, matter: matter, in: context)
+        switch CardActions.apply(proposal.card, text: text ?? proposal.card.text, subject: nil, refs: refs, links: nil, scope: matter, in: context) {
+        case .taken(let undo):
+            // A task it added says where it came from: the brief, not a question in the assistant.
+            if case .remove(let id) = undo, let todo = CardActions.live(id, as: Todo.self, in: context) {
+                todo.sources = todo.sources.map { var source = $0; source.pointer = "brief"; return source }
+            }
+            matter.decide(proposal.id, .taken)
+            try? context.save()
+            return true
+        case .madeMatter:
+            matter.decide(proposal.id, .taken)
+            try? context.save()
+            return true
+        default:
+            return false
+        }
+    }
+
+    static func dismiss(_ proposal: Brief.Proposal, in matter: Matter, context: ModelContext) {
+        matter.decide(proposal.id, .dismissed)
+        try? context.save()
     }
 }

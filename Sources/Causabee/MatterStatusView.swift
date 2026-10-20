@@ -269,7 +269,10 @@ struct MatterStatusView: View {
 
     private var summaryFacts: Facts { FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40) }
 
-    /// Three or four lines on top, written only when asked for, and dated.
+    /// A box once there is something in it: a summary, or a brief — written, or only said.
+    private var boxed: Bool { matter.summary?.isEmpty == false || matter.brief != nil }
+
+    /// Three or four lines on top, written only when asked for, and dated — and the brief under them.
     @ViewBuilder
     private var summary: some View {
         let _ = AutoUpdate.shared.done
@@ -285,11 +288,12 @@ struct MatterStatusView: View {
                         .findable(.section("summary-\(index)"), String(line))
                 }
             }
+            BriefDetails(matter: matter)
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 10) {
                 if writingSummary || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 10)
-                    Text("Writing the summary …").font(.caption).foregroundStyle(.secondary)
+                    Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
                 } else if matter.summaryAt != nil, auto {
                     AutoLine(matter: matter)
@@ -300,16 +304,16 @@ struct MatterStatusView: View {
                     Spacer()
                 } else {
                     Spacer()
-                    Button("Write summary · \(PriceEstimates.summary(matter))", action: writeSummary)
-                        .help("Causabee writes three or four lines from the facts of this matter, pseudonymised.")
+                    Button("Write the brief · \(PriceEstimates.summary(matter))", action: writeSummary)
+                        .help("Causabee's adviser writes what it understands of this matter, the summary and the next step, and proposes changes to the list — from the facts, pseudonymised.")
                 }
             }
             .tool()
             if let summaryError { Text(summaryError).font(.caption).foregroundStyle(Theme.warning).textSelection(.enabled) }
         }
-        .padding(matter.summary == nil ? 0 : 20)
+        .padding(boxed ? 20 : 0)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(matter.summary == nil ? Color.clear : Theme.box, in: RoundedRectangle(cornerRadius: 10))
+        .background(boxed ? Theme.box : Color.clear, in: RoundedRectangle(cornerRadius: 10))
     }
 
     /// The matter's ⋯: what can be added and written again, then the matter itself.
@@ -334,25 +338,21 @@ struct MatterStatusView: View {
     /// iPhone and the iPad (⌘R).
     private func writeAgain() {
         guard !AutoUpdate.shared.working.contains(matter.key) else { return }
-        if !matter.isClosed, !askingStep { askStep() }
+        // The adviser writes the step with the brief: one request.
         if !writingSummary { writeSummary() }
     }
 
+    /// The adviser: the brief, the summary and the step, and its proposals for the list — one request.
     private func writeSummary() {
         let model = ModelChoice.assistant
-        guard let claude = ModelChoice.client(for: model) else { summaryError = ModelChoice.missingKey(model); return }
+        guard ModelChoice.client(for: model) != nil else { summaryError = ModelChoice.missingKey(model); return }
         writingSummary = true
         summaryError = nil
-        let facts = summaryFacts
         let owner = profiles.first?.names.first
         let mapping = navigation.mapping
         Task {
             do {
-                let (lines, _) = try await AssistantAsk.summarize(facts: facts, owner: owner, today: MatterStatus.day(Date()),
-                                                                  mapping: mapping, claude: claude, model: model)
-                matter.summary = lines.joined(separator: "\n")
-                matter.summaryAt = Date()
-                try? context.save()
+                try await Adviser.write(matter, names: .file(mapping), owner: owner, in: context)
             } catch {
                 summaryError = plainWords(error)
             }
