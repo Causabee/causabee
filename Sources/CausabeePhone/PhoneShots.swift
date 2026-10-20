@@ -388,18 +388,18 @@ struct PlusItems: View {
         item("Link", "link", .link)
         item("Detail", "info.circle", .detail)
         item("Contact", "person.badge.plus", .contact)
-        Divider()
-        Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
-        // A letter on the table: scanned with the camera, read, and kept among the matter's files.
-        item("Scan a document", "doc.viewfinder", .scan)
-        // Two ways for a file, as the record shows them: read, or only kept.
-        Button { picksFile = true } label: {
-            Text("Read a file")
-            Text("Read and sorted in")
-            Image(systemName: "doc")
+        // What is brought in, under what becomes of it — said once, over the part, as the record
+        // shows a file read or only kept.
+        Section("Read and sorted in") {
+            Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
+            // A letter on the table: scanned with the camera, read, and kept among the matter's files.
+            item("Scan a document", "doc.viewfinder", .scan)
+            Button("File", systemImage: "doc") { picksFile = true }
         }
-        // Files, or every file of a folder, kept as they are — not read, nothing sent.
-        item("Keep files", "folder", .files, saying: "Kept only, not read")
+        Section("Kept only, not read") {
+            // Files, or every file of a folder, kept as they are — nothing sent.
+            item("Files or a folder", "folder", .files)
+        }
     }
 
     /// In a matter, it is for that matter. With none open, it opens onto the matters opened last —

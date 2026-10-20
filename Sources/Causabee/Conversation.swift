@@ -447,16 +447,12 @@ struct Composer: View {
                         Button("Link", systemImage: "link") { open(.addLink) }
                         Button("Detail", systemImage: "info.circle") { open(.addDetail) }
                         Button("Contact", systemImage: "person.badge.plus") { open(.addContact) }
-                        Divider()
-                        Button(action: attach) {
-                            Text("Read a File …")
-                            Text("A screenshot, a mail or a PDF — read and sorted in")
-                            Image(systemName: "doc.viewfinder")
+                        // What is brought in, under what becomes of it — said once, over the part.
+                        Section("Read and sorted in") {
+                            Button("Screenshot, Mail or PDF …", systemImage: "doc.viewfinder", action: attach)
                         }
-                        Button { open(.addFile) } label: {
-                            Text("Keep Files …")
-                            Text("Kept only, not read")
-                            Image(systemName: "folder")
+                        Section("Kept only, not read") {
+                            Button("Files or a Folder …", systemImage: "folder") { open(.addFile) }
                         }
                     } label: {
                         Image(systemName: "plus").font(.system(size: 15)).frame(width: 34, height: 34).contentShape(Rectangle())
