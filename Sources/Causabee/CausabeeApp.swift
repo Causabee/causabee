@@ -1017,6 +1017,10 @@ struct MatterCommands: Commands {
             ForEach(MatterAction.allCases, id: \.self) { action in
                 if action == .newTask { item(action.title, action).keyboardShortcut("t", modifiers: [.command, .shift]) } else { item(action.title, action) }
             }
+            Divider()
+            Button("Write Next Step and Summary Again") { NotificationCenter.default.post(name: .matterAction, object: "writeAgain") }
+                .keyboardShortcut("r", modifiers: .command)
+                .disabled(open == nil || state?.isClosed == true)
             // And what the matter's ⋯ does with the matter itself — in the menu bar too, with the
             // words for what it would do now. Merging stays in the ⋯: it needs the list of matters.
             Divider()
@@ -1141,32 +1145,6 @@ enum MatterCommand: String { case pin, rename, export, close }
 struct MatterState: Equatable {
     var isPinned: Bool
     var isClosed: Bool
-}
-
-/// An action of the Matter menu, for the matter that is open.
-enum MatterAction: String, CaseIterable {
-    case newTask, writeNote, addFile, addContact, addDetail, addLink
-
-    var title: String {
-        switch self {
-        case .newTask: "New Task …"
-        case .writeNote: "Add Note …"
-        case .addFile: "Add File …"
-        case .addContact: "Add Contact …"
-        case .addDetail: "Add Detail …"
-        case .addLink: "Add Link …"
-        }
-    }
-    var symbol: String {
-        switch self {
-        case .newTask: "checklist"
-        case .writeNote: "note.text"
-        case .addFile: "doc"
-        case .addContact: "person.badge.plus"
-        case .addDetail: "info.circle"
-        case .addLink: "link"
-        }
-    }
 }
 
 extension FocusedValues {

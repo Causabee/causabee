@@ -187,6 +187,7 @@ struct MatterStatusView: View {
                 .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
                 // The Matter menu: the section scrolled to, then what adds to it opened.
                 .onReceive(NotificationCenter.default.publisher(for: .matterAction)) { note in
+                    if note.object as? String == "writeAgain" { if !DemoData.isRequested { writeAgain() }; return }
                     guard let action = (note.object as? String).flatMap(MatterAction.init) else { return }
                     let section = switch action {
                     case .newTask: "tasks"; case .writeNote: "notes"; case .addFile: "files"; case .addLink: "links"
@@ -320,6 +321,42 @@ struct MatterStatusView: View {
         .padding(matter.summary == nil ? 0 : 20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(matter.summary == nil ? Color.clear : Theme.box, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// The matter's ⋯: what can be added and written again, then the matter itself.
+    @ViewBuilder
+    private var matterMenuItems: some View {
+            // What can be added, and the next step and summary written again: as the
+            // iPhone's and the iPad's ⋯ have them.
+            MatterAddItems(run: postAction, writeAgain: DemoData.isRequested ? nil : { writeAgain() })
+            PinMenuItem(matter: matter, all: allMatters)
+            Button("Rename …", action: startRenaming)
+            Menu("Merge with …") {
+                // Only into a matter that is going on: a closed one is opened again first.
+                ForEach(allMatters.filter { $0 !== matter && !$0.isClosed }) { other in
+                    Button(other.name) { mergingMatter = (matter, other) }
+                }
+            }
+            // Everything the matter holds, as one document: what is gathered here can leave at any time.
+            Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
+            Divider()
+            if matter.isClosed {
+                Button("Open Again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
+            } else {
+                Button("Close Matter…", systemImage: "archivebox") { asksToClose = true }
+            }
+    }
+
+    private func postAction(_ action: MatterAction) {
+        NotificationCenter.default.post(name: .matterAction, object: action.rawValue)
+    }
+
+    /// The next step and the summary, both written again — what pulling the page down does on the
+    /// iPhone and the iPad (⌘R).
+    private func writeAgain() {
+        guard !AutoUpdate.shared.working.contains(matter.key) else { return }
+        if !matter.isClosed, !askingStep { askStep() }
+        if !writingSummary { writeSummary() }
     }
 
     private func writeSummary() {
@@ -1006,28 +1043,13 @@ struct MatterStatusView: View {
                         // What is seldom needed sits behind the dots, not in the bar: what the sidebar's
                         // menu has for the matter, as the iPhone's ⋯ has it, and closing it.
                         Menu {
-                            PinMenuItem(matter: matter, all: allMatters)
-                            Button("Rename …", action: startRenaming)
-                            Menu("Merge with …") {
-                                // Only into a matter that is going on: a closed one is opened again first.
-                                ForEach(allMatters.filter { $0 !== matter && !$0.isClosed }) { other in
-                                    Button(other.name) { mergingMatter = (matter, other) }
-                                }
-                            }
-                            // Everything the matter holds, as one document: what is gathered here can leave at any time.
-                            Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
-                            Divider()
-                            if matter.isClosed {
-                                Button("Open Again", systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
-                            } else {
-                                Button("Close Matter…", systemImage: "archivebox") { asksToClose = true }
-                            }
+                            matterMenuItems
                         } label: {
                             Image(systemName: "ellipsis").frame(width: 30, height: 30).contentShape(Circle())
                         }
                         .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
                         .onGlass(Circle())
-                        .help("More: pin, rename, merge with another matter, export, close")
+                        .help("More: add to the matter, write the next step and summary again, pin, rename, merge, export, close")
                         .accessibilityLabel("More")
                         .accessibilityIdentifier("matter.more")
                         .tool()

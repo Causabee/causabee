@@ -16,6 +16,12 @@ struct PeopleSection: View {
     private var origin: String { "you, in \(matter.name), \(Dates.short(Date()))" }
 
     var body: some View {
+        // Added from the empty box or from beside the heading: one sheet for both.
+        content.sheet(isPresented: $adding) { ContactEditor(matter: matter) }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         let memberships = MatterStatus(matter).memberships
         if memberships.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
@@ -23,10 +29,15 @@ struct PeopleSection: View {
                 PhoneEmptyBox(text: "Who writes and who is named come in with mail and screenshots — or add a contact yourself.",
                               action: "Add Contact", symbol: "person.badge.plus") { adding = true }
             }
-            .sheet(isPresented: $adding) { ContactEditor(matter: matter) }
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "People", detail: memberships.count == 1 ? "1 name" : "\(memberships.count) names")
+                // A contact added by hand, beside the heading — as on the Mac.
+                HStack {
+                    SectionHeader(title: "People", detail: memberships.count == 1 ? "1 name" : "\(memberships.count) names")
+                    Button { adding = true } label: { Label("Contact", systemImage: "plus") }
+                        .buttonStyle(.gold).font(.caption)
+                        .tool()
+                }
                 let rules = (try? context.fetch(FetchDescriptor<Rule>())) ?? []
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
@@ -258,7 +269,15 @@ struct LinksSection: View {
         let all = (matter.links ?? []).filter(\.isKept).sorted(by: newestFirst)
         let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
+            HStack {
+                SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
+                // A link added by hand, beside the heading — as on the Mac.
+                if !all.isEmpty {
+                    Button { adding = true } label: { Label("Link", systemImage: "plus") }
+                        .buttonStyle(.gold).font(.caption)
+                        .tool()
+                }
+            }
             if !all.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(all.enumerated()), id: \.element.persistentModelID) { index, link in

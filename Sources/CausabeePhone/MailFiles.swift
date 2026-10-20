@@ -216,7 +216,7 @@ struct FilesSection: View {
         if document.reading == .kept { Button("Read", systemImage: "text.viewfinder") { read(document) } }
         AskCausabeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
         Button("Rename", systemImage: "pencil") { newName = document.shownName; renaming = document }
-        if isPDF(document), !document.isOwnFile { Button("Name from content", systemImage: "text.magnifyingglass") { nameFromContent(document) } }
+        if isPDF(document) { Button("Name from content", systemImage: "text.magnifyingglass") { nameFromContent(document) } }
         if document.title != nil {
             Button("Use file name", systemImage: "arrow.uturn.backward") { document.title = nil; try? context.save() }
         }

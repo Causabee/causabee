@@ -1,6 +1,9 @@
 import MatterCore
 import SwiftData
 import SwiftUI
+#if os(iOS)
+import QuickLook
+#endif
 #if os(macOS)
 import AppKit
 #endif
@@ -92,6 +95,30 @@ struct ThreadMailRow: View {
     /// Whether its own words are kept on this device — looked at once — and, shown, the words.
     @State private var hasText = false
     @State private var whole: String?
+    /// A scan or a file brought in, opened here: shown in place on the iPhone and iPad.
+    @State private var preview: URL?
+    @State private var cannotOpen = false
+
+    /// The file a scan or a dropped mail is, when it is an entry of its own: the same on every device —
+    /// here, or in the matter's folder in iCloud Drive.
+    private var ownFile: MatterCore.Document? {
+        guard row.entry.source.kind != .mail || row.entry.source.fileURL != nil else { return nil }
+        return (row.entry.matter?.documents ?? []).first { $0.messageID == row.entry.messageID && $0.isOwnFile }
+    }
+
+    private func openOwn(_ document: MatterCore.Document) {
+        Task {
+            var url: URL?
+            if let file = document.source.fileURL, FileManager.default.fileExists(atPath: file.path) { url = file }
+            else if let kept = MatterFolders.kept(document) { url = try? await MatterFolders.fetched(kept) }
+            guard let url else { cannotOpen = true; return }
+            #if os(macOS)
+            openURL(url)
+            #else
+            preview = url
+            #endif
+        }
+    }
 
     /// The words each task, date or deadline that came from it was read out of.
     private var quotes: [(sign: String, text: String)] {
@@ -139,8 +166,11 @@ struct ThreadMailRow: View {
     /// What the dots and the right click or a long press both bring.
     @ViewBuilder
     private var items: some View {
-        // To see the mail itself: first in its menu, as "Open" is for a file.
-        if let url = outside {
+        // To see the mail itself: first in its menu, as "Open" is for a file. A scan or a file
+        // brought in opens as the file, on every device.
+        if let document = ownFile {
+            Button(Self.openLabel(row.entry.source.kind), systemImage: "arrow.up.forward.app") { openOwn(document) }
+        } else if let url = outside {
             Button(Self.openLabel(row.entry.source.kind), systemImage: row.entry.source.kind == .mail ? "envelope" : "arrow.up.forward.app") {
                 openURL(url)
             }
@@ -260,6 +290,14 @@ struct ThreadMailRow: View {
         }
         .contentShape(Rectangle())
         .task(id: row.entry.messageID) { hasText = KeptTexts.store.map { MailText.has(row.entry.messageID, besides: $0) } ?? false }
+        #if os(iOS)
+        .quickLookPreview($preview)
+        #endif
+        .alert("The file is not here", isPresented: $cannotOpen) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("It is neither on this device nor in the matter's folder in iCloud Drive yet. What it said is here.")
+        }
         // The same in the right click, as on every row: no button that comes and goes.
         #if os(macOS)
         .contextMenu { items }
@@ -565,7 +603,7 @@ struct FileFace<Items: View>: View {
                     if chosen == nil, document.reading == .kept, state == nil { readButton.padding(.top, 6) }
                     #endif
                 }
-                if document.title == nil, isPDF, !document.isOwnFile, DocumentTitle.looksMachineMade(document.name), state == nil {
+                if document.title == nil, isPDF, DocumentTitle.looksMachineMade(document.name), state == nil {
                     Button("Name it from its content", action: nameIt)
                         .buttonStyle(.gold).font(.caption)
                         .tool()
@@ -824,5 +862,54 @@ struct UnreadMatters: View {
             }
             .padding(.horizontal, 4)
         }
+    }
+}
+
+// MARK: Adding to a matter
+
+/// What can be added to the open matter: the same six, in the same words and order, in the
+/// matter's ⋯ on every device and in the Mac's Matter menu.
+enum MatterAction: String, CaseIterable {
+    case newTask, writeNote, addFile, addContact, addDetail, addLink
+
+    var title: String {
+        switch self {
+        case .newTask: "New Task …"
+        case .writeNote: "Add Note …"
+        case .addFile: "Add File …"
+        case .addContact: "Add Contact …"
+        case .addDetail: "Add Detail …"
+        case .addLink: "Add Link …"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .newTask: "checklist"
+        case .writeNote: "note.text"
+        case .addFile: "doc"
+        case .addContact: "person.badge.plus"
+        case .addDetail: "info.circle"
+        case .addLink: "link"
+        }
+    }
+}
+
+
+/// The matter's ⋯, its first part: what can be added, and the next step and summary written again.
+struct MatterAddItems: View {
+    let run: (MatterAction) -> Void
+    /// Nil where the matter is closed: nothing is written for it.
+    let writeAgain: (() -> Void)?
+
+    var body: some View {
+        ForEach(MatterAction.allCases, id: \.self) { action in
+            Button(action.title, systemImage: action.symbol) { run(action) }
+        }
+        if let writeAgain {
+            Divider()
+            // ⌘R in the Matter menu, on the Mac and on the iPad's keyboard.
+            Button("Write Next Step and Summary Again", systemImage: "arrow.clockwise", action: writeAgain)
+        }
+        Divider()
     }
 }

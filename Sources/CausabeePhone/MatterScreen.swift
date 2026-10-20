@@ -188,6 +188,11 @@ struct MatterScreen: View {
                 }
             }
         }
+        // The keyboard's Matter menu, on the iPad.
+        .onReceive(NotificationCenter.default.publisher(for: .phoneMatterAction)) { note in
+            guard let name = note.object as? String else { return }
+            if name == "writeAgain" { writeAnew() } else if let action = MatterAction(rawValue: name) { run(action) }
+        }
         // Picked from the assistant's plus: once its sheet has gone, the editor comes.
         .onChange(of: navigation.adding) {
             guard let adding = navigation.adding else { return }
@@ -284,6 +289,8 @@ struct MatterScreen: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Group {
+                        // What can be added, and the next step and summary written again — as the Mac's ⋯ has them.
+                        MatterAddItems(run: run, writeAgain: writeAnew)
                         MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
                         // Everything the matter holds, as one document: what is gathered here can leave at any time.
                         Button("Export as RTF", systemImage: "square.and.arrow.up", action: export)
@@ -391,13 +398,21 @@ struct MatterScreen: View {
 
     // MARK: Header
 
+    /// "12 mails · since Sep 8": as the Mac's title bar says it.
+    @ViewBuilder
+    private func countLine(_ status: MatterStatus) -> some View {
+        if !(matter.entries ?? []).isEmpty {
+            Text(Self.count(matter.entries ?? []) + (status.firstDate.map { " · since \(Dates.short($0))" } ?? ""))
+                .font(.subheadline).foregroundStyle(.secondary)
+        }
+    }
+
     private func header(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            // On the iPad the icon and the name stand in the bar, beside find and ⋯, and stay there.
-            // No count of the mails under it there, nor on the iPhone: how many came, and since when,
-            // is what the record shows.
+            // On the iPad the icon and the name stand in the bar, beside find and ⋯, and stay there;
+            // under it, as under the name on the iPhone and in the Mac's title bar: how many came, since when.
             if navigation.isPad {
-                Color.clear.frame(height: 0)
+                countLine(status)
             } else {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 // The matter's icon in front of its name, level with the first line: a tap chooses another.
@@ -408,6 +423,7 @@ struct MatterScreen: View {
                 // The count under the name, on the name's left edge — not under the icon.
                 VStack(alignment: .leading, spacing: 4) {
                     Text(matter.name).font(Theme.phoneTitleFont).fixedSize(horizontal: false, vertical: true)
+                    countLine(status)
                 }
             }
             }
@@ -590,6 +606,18 @@ struct MatterScreen: View {
 
     /// The page pulled down: both asked for at once, each saying in its own box that it is on its
     /// way. A closed matter has no next step; one being written already is not asked for twice.
+    /// An action of the ⋯ — or of the iPad's keyboard: the part it belongs to, then its editor.
+    private func run(_ action: MatterAction) {
+        switch action {
+        case .newTask: part = .todo; addTodo()
+        case .writeNote: part = .notes; writingNote = true
+        case .addFile: addingFiles = true
+        case .addContact: addingContact = true
+        case .addDetail: addingDetail = true
+        case .addLink: addingLink = true
+        }
+    }
+
     private func writeAnew() {
         guard !AutoUpdate.shared.working.contains(matter.key) else { return }
         Haptics.tap()
@@ -770,7 +798,7 @@ struct MatterScreen: View {
 
     private func todos(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open" : nil)
+            SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open · \(status.done.count) done" : nil)
             if !hasTodos {
                 PhoneEmptyBox(text: "What is to do, and whose. Tasks in mail are found when it is sorted in.",
                               action: "Add Task", symbol: "checklist", run: addTodo)
@@ -934,7 +962,20 @@ struct MatterScreen: View {
             // Which mail answers which, read once from the mailbox — as on the Mac.
             Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) { await ReplyLinks.fill(in: matter, context: context) }
             RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts(status), person: personParty?.name, clearPerson: { person = nil }) {
-                EmptyView()
+                // Adding a file and opening the folder, on the record's own line — as on the Mac.
+                if filter == .everything || filter == .files || filter == .scans {
+                    Button { addingFiles = true } label: { Label("File", systemImage: "plus") }
+                        .buttonStyle(.gold).font(.caption)
+                        .tool()
+                    // Not in the demo: its made-up matters have no folder among the owner's own.
+                    if MatterFolders.root != nil, !store.isDemo, let folder = MatterFolders.folder(for: matter),
+                       let files = URL(string: "shareddocuments://" + folder.path) {
+                        Button { UIApplication.shared.open(files) } label: { Label("Show in Files", systemImage: "folder") }
+                            .labelStyle(.iconOnly).buttonStyle(.gold).font(.callout)
+                            .accessibilityHint("Opens this matter's folder in iCloud Drive → Causabee, in Files")
+                            .tool()
+                    }
+                }
             }
         }
         .padding(.horizontal, 4)
@@ -1019,7 +1060,8 @@ struct MatterScreen: View {
     private func history(_ status: MatterStatus) -> some View {
         let threads = MailThreads.build(status.mailEntries)
         var shown = 0
-        let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || showsAllHistory }
+        // Searching looks into all of it, as on the Mac.
+        let visible = threads.prefix { thread in defer { shown += thread.count }; return shown < 60 || showsAllHistory || find.isActive }
         let hidden = threads.count - visible.count
         let made = RecordLinks(matter)
         return VStack(alignment: .leading, spacing: 10) {
