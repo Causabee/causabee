@@ -210,25 +210,12 @@ extension Matter {
     /// Who of the matter's people wrote a mail, by its sender line. By the name in it, in any way
     /// it is written; a line that is an address alone — `lutz.barbara@gmx.net` — is the person who
     /// has that address, or the one person here whose whole name is in it. Two it could be is nobody.
-    public func writer(_ from: String) -> Party? {
-        if let name = Email.displayName(in: from) {
-            let key = PartyNames.key(name)
-            return parties.first { ([$0.name] + $0.spellings).contains { PartyNames.key($0) == key } }
-        }
-        let address = Email.address(in: from)
-        guard address.contains("@") else { return nil }
-        if let known = parties.first(where: { $0.address?.lowercased() == address }) { return known }
-        // The words before the @ and the domain's own name; not its ending.
-        let parts = address.split(separator: "@")
-        let domain = parts.last.map { $0.split(separator: ".").dropLast().joined(separator: ".") } ?? ""
-        let words = Set(((parts.first.map(String.init) ?? "") + " " + domain).split { !$0.isLetter }
-            .map { PartyNames.fold(String($0)) }.filter { $0.count >= 3 })
-        let fits = parties.filter { party in
-            let tokens = PartyNames.tokens(party.name)
-            return !tokens.isEmpty && tokens.allSatisfy(words.contains)
-        }
-        return fits.count == 1 ? fits[0] : nil
-    }
+    public func writer(_ from: String) -> Party? { Writers.of(self).writer(from) }
+
+    /// The address each of its people last wrote from here, all at once: the mails are gone through
+    /// once, newest first — not once for each person.
+    public func lastAddresses() -> [PersistentIdentifier: String] { Writers.of(self).lastAddresses(in: self) }
+
 
     /// The name a mail's sender is shown by: the one in its sender line; for an address alone, the
     /// person of the matter it is, and only failing that the address.
@@ -317,5 +304,94 @@ extension Membership {
             }
         }
         undo?.setActionName("Remove Person")
+    }
+}
+
+/// A matter's people as senders are matched to them: each one's name keys and name words worked
+/// out once, and each sender line's answer remembered — kept until the people or the mails change.
+/// Matching was the most of opening a matter: every mail's sender, against every person's every
+/// spelling, made anew each time.
+final class Writers: @unchecked Sendable {
+    private let parties: [Party]
+    private let byKey: [String: Party]
+    private let byAddress: [String: Party]
+    private let tokens: [(party: Party, tokens: [String])]
+    private let lock = NSLock()
+    private var answers: [String: Party?] = [:]
+    private var addresses: (count: Int, byParty: [PersistentIdentifier: String])?
+
+    private init(_ parties: [Party]) {
+        self.parties = parties
+        var byKey: [String: Party] = [:]
+        for party in parties {
+            for name in [party.name] + party.spellings {
+                let key = PartyNames.key(name)
+                if byKey[key] == nil { byKey[key] = party }
+            }
+        }
+        self.byKey = byKey
+        var byAddress: [String: Party] = [:]
+        for party in parties { if let address = party.address?.lowercased(), byAddress[address] == nil { byAddress[address] = party } }
+        self.byAddress = byAddress
+        tokens = parties.map { ($0, PartyNames.tokens($0.name)) }
+    }
+
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var kept: [PersistentIdentifier: (signature: String, writers: Writers)] = [:]
+
+    /// The matter's book, as its people are now: made anew when one is added, renamed or merged.
+    static func of(_ matter: Matter) -> Writers {
+        let parties = matter.parties
+        let signature = parties.map { "\($0.persistentModelID.hashValue)|\($0.name)|\($0.spellings.joined(separator: ","))|\($0.address ?? "")" }
+            .joined(separator: "\u{1F}")
+        let id = matter.persistentModelID
+        lock.lock()
+        defer { lock.unlock() }
+        if let known = kept[id], known.signature == signature { return known.writers }
+        let made = Writers(parties)
+        kept[id] = (signature, made)
+        return made
+    }
+
+    func writer(_ from: String) -> Party? {
+        lock.lock()
+        if let known = answers[from] { lock.unlock(); return known }
+        lock.unlock()
+        let found = match(from)
+        lock.lock()
+        answers[from] = .some(found)
+        lock.unlock()
+        return found
+    }
+
+    private func match(_ from: String) -> Party? {
+        if let name = Email.displayName(in: from) { return byKey[PartyNames.key(name)] }
+        let address = Email.address(in: from)
+        guard address.contains("@") else { return nil }
+        if let known = byAddress[address] { return known }
+        // The words before the @ and the domain's own name; not its ending.
+        let parts = address.split(separator: "@")
+        let domain = parts.last.map { $0.split(separator: ".").dropLast().joined(separator: ".") } ?? ""
+        let words = Set(((parts.first.map(String.init) ?? "") + " " + domain).split { !$0.isLetter }
+            .map { PartyNames.fold(String($0)) }.filter { $0.count >= 3 })
+        let fits = tokens.filter { !$0.tokens.isEmpty && $0.tokens.allSatisfy(words.contains) }
+        return fits.count == 1 ? fits[0].party : nil
+    }
+
+    func lastAddresses(in matter: Matter) -> [PersistentIdentifier: String] {
+        let entries = matter.entries ?? []
+        lock.lock()
+        if let addresses, addresses.count == entries.count { lock.unlock(); return addresses.byParty }
+        lock.unlock()
+        var byParty: [PersistentIdentifier: String] = [:]
+        for entry in entries.sorted(by: { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }) {
+            guard byParty.count < parties.count, let party = writer(entry.from), byParty[party.persistentModelID] == nil else { continue }
+            let address = Email.address(in: entry.from)
+            if address.contains("@") { byParty[party.persistentModelID] = address }
+        }
+        lock.lock()
+        addresses = (entries.count, byParty)
+        lock.unlock()
+        return byParty
     }
 }

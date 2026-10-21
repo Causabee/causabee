@@ -240,6 +240,9 @@ final class Navigation {
     /// A matter to rename, and one to fold into another: asked by the window, from whichever menu.
     var renaming: Matter?
     var merging: (from: Matter, into: Matter)?
+    /// From a matter's menu: its icon to choose, or the matter to merge it with.
+    var choosingIcon: Matter?
+    var choosingMerge: Matter?
     /// The assistant beside the overview: asked for with its button there, about all matters.
     var assistantOnOverview = false
     /// The assistant's column put away while a matter is open; remembered.
@@ -863,6 +866,7 @@ struct RootView: View {
             SetupAssistant { mailCheck.look(store: navigation.store, context: context) }
         }
         .modifier(PinQuestion(matters: matters, navigation: navigation))
+        .matterChoosers(all: matters, navigation: navigation)
         .confirmationDialog(mergeQuestion, isPresented: Binding(get: { navigation.merging != nil }, set: { if !$0 { navigation.merging = nil } })) {
             Button("Merge") {
                 if let (from, into) = navigation.merging {

@@ -41,6 +41,8 @@ public struct MatterSummary: Identifiable, Equatable {
     public let overdue: [Overdue]
     public let newMailsSinceClosed: Int
     public let lastDate: Date?
+    /// Its first mail's day: "since …" under its name.
+    public let firstDate: Date?
     public let dated: [Dated]
 
     public var isPinned: Bool { pinnedAt != nil }
@@ -72,9 +74,10 @@ public struct MatterSummary: Identifiable, Equatable {
         overdue = open.filter { !$0.isBlocked && ($0.due ?? "9999") < today }
             .map { Overdue(todo: $0.persistentModelID, due: $0.due ?? "", text: $0.text) }
             .sorted { $0.due < $1.due }
-        let dates = entries.compactMap(\.date)
-        lastDate = dates.max()
-        newMailsSinceClosed = matter.closedAt.map { closed in dates.filter { $0 > closed }.count } ?? 0
+        let dates = MailDates.of(matter, entries: entries)
+        lastDate = dates.last
+        firstDate = dates.first
+        newMailsSinceClosed = matter.closedAt.map { closed in dates.count - (dates.firstIndex { $0 > closed } ?? dates.count) } ?? 0
     }
 }
 
@@ -166,7 +169,9 @@ public final class OverviewPages {
         let day = MatterStatus.day(now)
         let ids = matters.map(\.persistentModelID)
         if let found = kept.first(where: { $0.version == version && $0.day == day && $0.ids == ids }) { return found.page }
+        let started = Date()
         let page = OverviewPage(matters, today: now)
+        if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] overview prepared %d ms", Int(Date().timeIntervalSince(started) * 1000)) }
         kept.removeAll { $0.version != version || $0.day != day }
         kept.append((version, day, ids, page))
         if kept.count > 4 { kept.removeFirst() }
@@ -198,4 +203,25 @@ public final class OverviewPages {
 
     /// Forgets the pages: the next one asked for is prepared anew.
     public func forget() { kept = []; single = (-1, "", [:]) }
+}
+
+/// Each matter's mail dates, in order, kept until its number of mails changes: a mail keeps its
+/// day, and reading every mail's date of every matter — thousands — was most of preparing the
+/// overview again after any change at all, a task ticked or a brief written.
+enum MailDates {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var kept: [PersistentIdentifier: (count: Int, dates: [Date])] = [:]
+
+    static func of(_ matter: Matter, entries: [Entry]) -> [Date] {
+        let id = matter.persistentModelID
+        lock.lock()
+        let known = kept[id]
+        lock.unlock()
+        if let known, known.count == entries.count { return known.dates }
+        let dates = entries.compactMap(\.date).sorted()
+        lock.lock()
+        kept[id] = (entries.count, dates)
+        lock.unlock()
+        return dates
+    }
 }

@@ -1040,7 +1040,7 @@ struct MatterStatusView: View {
             }
             ZStack(alignment: .leading) {
                 HStack(spacing: 6) {
-                    Text(Self.count(matter.entries ?? []))
+                    Text(StoredChanges.shared.kept("count \(matter.persistentModelID.hashValue)") { Self.count(matter.entries ?? []) })
                     if let first = status.firstDate { Text("· since \(Dates.short(first))") }
                 }
                 .font(.callout)
@@ -1546,7 +1546,7 @@ struct MatterStatusView: View {
     private func allMail(_ status: MatterStatus) -> some View {
         let made = StoredChanges.shared.record(matter).made
         return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Mail", detail: Self.count(status.mailEntries))
+            SectionHeader(title: "Mail", detail: StoredChanges.shared.kept("count mail \(matter.persistentModelID.hashValue)") { Self.count(status.mailEntries) })
             ForEach(StoredChanges.shared.record(matter).threads) { thread in
                 ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
             }
@@ -1560,8 +1560,11 @@ struct MatterStatusView: View {
             (.photo, "photo", "photos"), (.spokenNote, "spoken note", "spoken notes"), (.phoneCall, "call", "calls"),
             (.conversation, "from the assistant", "from the assistant"),
         ]
+        // Each mail's kind read once — a mail's source is not cheap to read — not once per kind.
+        var counts: [Source.Kind: Int] = [:]
+        for entry in entries { counts[entry.source.kind, default: 0] += 1 }
         let parts = names.compactMap { kind, one, many -> String? in
-            let n = entries.filter { $0.source.kind == kind }.count
+            let n = counts[kind] ?? 0
             return n == 0 ? nil : "\(n) \(n == 1 ? one : many)"
         }
         return parts.isEmpty ? "No mails yet" : parts.joined(separator: " · ")
@@ -1585,6 +1588,7 @@ struct TodoRow: View {
     let talk: () -> Void
     @Environment(\.modelContext) private var context
     @Environment(\.undoManager) private var undoManager
+    @State private var choosingWait = false
     @State private var editing = false
     @State private var deleting = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -1689,6 +1693,7 @@ struct TodoRow: View {
             try? await Task.sleep(for: .seconds(2.5))
             editing = true
         }
+        .sheet(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
         .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting) {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
@@ -1736,17 +1741,8 @@ struct TodoRow: View {
     /// The other open to-dos of the matter, to pick the one this one needs first.
     @ViewBuilder
     private var waitMenu: some View {
-        let others = (todo.matter?.openTodos ?? []).filter { $0 !== todo }.sorted { $0.text < $1.text }
-        Menu(Say.waitsFor, systemImage: "hourglass") {
-            ForEach(others, id: \.persistentModelID) { other in
-                Button(other.text) {
-                    withAnimation { _ = todo.wait(for: other) }
-                    try? context.save()
-                }
-                .disabled(other === todo.waitsFor)
-            }
-        }
-        .disabled(others.isEmpty)
+        Button(Say.waitsForChoose, systemImage: "hourglass") { choosingWait = true }
+            .disabled((todo.matter?.openTodos.count ?? 0) < 2)
         if todo.waitsFor != nil {
             Button(Say.stopWaiting, systemImage: "xmark.circle") {
                 withAnimation { todo.waitsFor = nil }
