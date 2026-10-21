@@ -116,6 +116,56 @@ enum DemoData {
         try? context.save()
         for made in cases { made.talk() }
         try? context.save()
+        if CommandLine.arguments.contains("--big") { big(context) }
+    }
+
+    /// `--demo --big`: forty more matters with a hundred mails each, tasks, dates and people, and
+    /// three hundred more mails in the care matter — a store larger than the owner's, to measure on.
+    private static func big(_ context: ModelContext) {
+        let now = Date()
+        func day(_ offset: Int) -> String { MatterStatus.day(now.addingTimeInterval(Double(offset) * 86_400)) }
+        func mails(_ count: Int, into matter: Matter, tag: String) {
+            for e in 0..<count {
+                let date = now.addingTimeInterval(-Double(e) * 43_200)
+                let source = Source(kind: .mail, pointer: "imap://x/INBOX;UIDVALIDITY=1/;UID=\(e)", messageID: "\(tag)-\(e)@big.example", date: date)
+                let entry = Entry(title: "Re: Update \(e) on \(matter.name)", from: "Person \(e % 7) <p\(e % 7)@big.example>", date: date, source: source)
+                entry.digest = "Mail \(e): a short digest of what this mail says, two sentences long. It names an amount and a date."
+                entry.matter = matter
+                context.insert(entry)
+            }
+        }
+        for m in 0..<40 {
+            let matter = Matter(key: "big-\(m)", name: "Matter \(m) with a longer name")
+            context.insert(matter)
+            if m % 10 == 0 { matter.closedAt = now.addingTimeInterval(-Double(m) * 3600) }
+            mails(100, into: matter, tag: "big\(m)")
+            let source = Source(kind: .mail, pointer: "p", messageID: "big\(m)-0@big.example", date: now)
+            for t in 0..<12 {
+                let todo = Todo(text: "Task \(t) of matter \(m), said in a few words", owner: [.me, .we, .other][t % 3],
+                                due: day(t - 3 - (m % 4)), source: source, origin: "big\(m)#\(t)")
+                if t % 4 == 3 { todo.isDone = true }
+                todo.matter = matter
+                context.insert(todo)
+            }
+            for a in 0..<4 {
+                let appointment = Appointment(what: "Visit \(a)", day: day(a * 2), time: "1\(a):00", place: nil, source: source)
+                appointment.matter = matter
+                context.insert(appointment)
+            }
+            for p in 0..<5 {
+                let party = Party(name: "Person \(p) of \(m)")
+                context.insert(party)
+                let membership = Membership()
+                membership.roles = ["Role"]
+                membership.party = party
+                membership.matter = matter
+                context.insert(membership)
+            }
+        }
+        if let care = try? context.fetch(FetchDescriptor<Matter>(predicate: #Predicate { $0.key == "care-for-helga" })).first {
+            mails(300, into: care, tag: "care")
+        }
+        try? context.save()
     }
 
     // MARK: New mail, for "Get new mail" in the demo

@@ -154,18 +154,15 @@ final class RegressionTests: XCTestCase {
     /// Merging asks before it merges; "Cancel" leaves both matters as they were.
     func testMergeAsksFirst() {
         let question = app.staticTexts.matching(NSPredicate(format: "value CONTAINS %@ OR label CONTAINS %@", "into “Tax return 2025”", "into “Tax return 2025”")).firstMatch
-        // A click into a submenu that is still opening can miss: asked for a second time, then.
-        for _ in 1...2 where !question.exists {
-            element("matter.more").click()
-            let merge = app.menuItems["Merge With"].firstMatch
-            XCTAssertTrue(merge.waitForExistence(timeout: 5), "⋯ has no “Merge With”.")
-            merge.hover()
-            let other = app.menuItems["Tax return 2025"].firstMatch
-            XCTAssertTrue(other.waitForExistence(timeout: 5), "“Merge With” does not list the other matters.")
-            sleep(1)
-            other.click()
-            if !question.waitForExistence(timeout: 6) { app.typeKey(.escape, modifierFlags: []) }
-        }
+        // "Merge With …" opens a window with the matters going on; the one chosen is asked about.
+        element("matter.more").click()
+        let merge = app.menuItems["Merge With …"].firstMatch
+        XCTAssertTrue(merge.waitForExistence(timeout: 5), "⋯ has no “Merge With …”.")
+        merge.click()
+        let other = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Tax return 2025")).firstMatch
+        XCTAssertTrue(other.waitForExistence(timeout: 5), "“Merge With …” does not list the other matters.")
+        other.click()
+        _ = question.waitForExistence(timeout: 6)
         XCTAssertTrue(question.exists, "Merging did not ask first.")
         press("Cancel")
         XCTAssertTrue(app.staticTexts[matter].firstMatch.exists, "After “Cancel”, the matter is gone.")

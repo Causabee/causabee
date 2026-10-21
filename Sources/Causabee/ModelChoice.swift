@@ -306,7 +306,10 @@ final class StoredChanges {
         }
         // A change saved here is a change too, at once: the prepared overview is made anew from it.
         NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { StoredChanges.shared.count += 1 }
+            MainActor.assumeIsolated {
+                StoredChanges.shared.count += 1
+                if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] saved, change %d", StoredChanges.shared.count) }
+            }
         }
     }
 
@@ -371,11 +374,26 @@ enum PriceEstimates {
             kept[matter.persistentModelID] = (version, key, known.step, known.summary)
             return (known.step, known.summary)
         }
-        let facts = FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40)
+        // What the facts would come to, told from what goes into them — the whole sheet was made
+        // just to be measured, and was most of opening a matter with many people and mails.
+        let length = Self.factsLength(matter)
         let model = ModelChoice.assistant
-        let found = (version: version, key: key, step: AssistantAsk.nextStepEstimate(facts, model: model), summary: AssistantAsk.adviceEstimate(facts, model: model))
+        let found = (version: version, key: key, step: AssistantAsk.nextStepEstimate(length: length, model: model),
+                     summary: AssistantAsk.adviceEstimate(length: length, model: model))
         kept[matter.persistentModelID] = found
         return (found.step, found.summary)
+    }
+
+    /// About as many characters as the matter's facts have: its open tasks, the newest forty mails,
+    /// the notes, the people, the dates and the files, each about as long as the sheet writes it.
+    static func factsLength(_ matter: Matter) -> Int {
+        let mails = (matter.entries ?? []).sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }.prefix(40)
+        let mailText = mails.reduce(0) { $0 + $1.title.count + $1.from.count + ($1.digest?.count ?? 0) + 30 }
+        let todos = (matter.todos ?? []).reduce(0) { $0 + $1.text.count + 60 }
+        let notes = (matter.notesText?.count ?? 0) + (matter.shownBrief?.forFacts?.count ?? 0)
+        let rest = matter.parties.count * 80 + ((matter.appointments ?? []).count + (matter.deadlines ?? []).count) * 60
+            + (matter.documents ?? []).count * 50
+        return 600 + mailText + todos + notes + rest
     }
 
     static func step(_ matter: Matter) -> String { String(format: "≈ %.1f cents", of(matter).step * 100) }

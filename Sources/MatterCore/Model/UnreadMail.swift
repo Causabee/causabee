@@ -64,9 +64,7 @@ extension Matter {
     /// the one they last wrote from here.
     public func reachAddress(of party: Party) -> String? {
         if let typed = party.address?.trimmingCharacters(in: .whitespacesAndNewlines), typed.contains("@") { return typed }
-        return (entries ?? []).filter { writer($0.from) === party }
-            .max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
-            .map { Email.address(in: $0.from) }.flatMap { $0.contains("@") ? $0 : nil }
+        return lastAddresses()[party.persistentModelID]
     }
 
     /// Its mails still unread in the mailbox.

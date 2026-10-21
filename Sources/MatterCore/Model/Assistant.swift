@@ -506,7 +506,12 @@ extension AssistantAsk {
 
     /// About what asking for the next step costs: the facts in, two sentences out.
     public static func nextStepEstimate(_ facts: Facts, model: Claude.Model = .opus) -> Double {
-        model.cost(input: Int(Double(facts.text.count) / 3.2) + 1_200, output: 400)
+        nextStepEstimate(length: facts.text.count, model: model)
+    }
+
+    /// The same from about how long the facts are, without making them.
+    public static func nextStepEstimate(length: Int, model: Claude.Model = .opus) -> Double {
+        model.cost(input: Int(Double(length) / 3.2) + 1_200, output: 400)
     }
 
     /// The one next step and why, from the matter's facts, pseudonymised like every question.

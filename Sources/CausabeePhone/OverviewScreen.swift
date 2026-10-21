@@ -87,17 +87,7 @@ struct RootView: View {
 
     private var page: some View {
         @Bindable var navigation = navigation
-        return NavigationStack(path: $navigation.path) {
-            OverviewScreen(matters: matters)
-                .navigationDestination(for: PersistentIdentifier.self) { id in
-                    if let matter = matters.first(where: { $0.persistentModelID == id }) {
-                        MatterScreen(matter: matter)
-                    } else {
-                        ContentUnavailableView("This matter is gone", systemImage: "folder.badge.questionmark",
-                                               description: Text("It was merged or removed on another device."))
-                    }
-                }
-        }
+        return stack
         .tint(Theme.gold)
         // Auto, the whole circle, as on the Mac: a matter whose record has changed and come to rest
         // gets its next step and its summary written again — while Causabee is open.
@@ -107,6 +97,16 @@ struct RootView: View {
                 let names = try PhoneNames.current(in: context)
                 return .list(names.mapping, names.others)
             }
+        }
+        // `--timing-tour`: ten matters opened one after another, each said how long it took.
+        .task {
+            guard CommandLine.arguments.contains("--timing-tour") else { return }
+            try? await Task.sleep(for: .seconds(4))
+            for matter in matters.filter({ !$0.isClosed }).sorted(by: { $0.name < $1.name }).prefix(10) {
+                navigation.go([matter.persistentModelID])
+                try? await Task.sleep(for: .seconds(1.5))
+            }
+            NSLog("[timing] tour done")
         }
         // `--demo --shot listening`: the care matter open, the assistant over it.
         .task {
@@ -128,6 +128,7 @@ struct RootView: View {
         // Picked from the plus with no matter open: which one it is for.
         .sheet(item: $navigation.choosing) { plus in MatterChooser(plus: plus) }
         .modifier(MatterQuestions())
+        .matterChoosers(all: matters, navigation: navigation)
         // The share sheet's matters, and what was shared to Causabee meanwhile.
         .modifier(SharedIn(matters: matters))
         // What is connected to Calendar and Reminders is kept in step both ways, as on the Mac.
@@ -151,6 +152,38 @@ struct RootView: View {
                                                           showsAssistant: navigation.showsAssistant, reading: navigation.reading))
         .environment(\.reading, navigation.reading)
         .environment(navigation)
+    }
+
+    @ViewBuilder
+    private var stack: some View {
+        @Bindable var navigation = navigation
+        if navigation.isPad {
+            // On the iPad the sidebar is the way between matters: one page, its matter changed — not a
+            // page pushed for each, with a bar and a controller of its own made and the last one taken
+            // down. That was most of the moment a matter took to come up.
+            NavigationStack {
+                if let id = navigation.path.last {
+                    matterPage(id).id(id)
+                } else {
+                    OverviewScreen(matters: matters)
+                }
+            }
+        } else {
+            NavigationStack(path: $navigation.path) {
+                OverviewScreen(matters: matters)
+                    .navigationDestination(for: PersistentIdentifier.self) { id in matterPage(id) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func matterPage(_ id: PersistentIdentifier) -> some View {
+        if let matter = matters.first(where: { $0.persistentModelID == id }) {
+            MatterScreen(matter: matter)
+        } else {
+            ContentUnavailableView("This matter is gone", systemImage: "folder.badge.questionmark",
+                                   description: Text("It was merged or removed on another device."))
+        }
     }
 }
 

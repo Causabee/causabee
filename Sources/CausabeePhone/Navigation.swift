@@ -69,8 +69,12 @@ final class Navigation {
 
     /// On the iPad another page is simply there: beside a sidebar nothing is pushed on anything,
     /// and the push's own transition made the matter's name fly or fade into the bar.
+    /// `--timing`: when a matter was asked for, to say how long its page took to come.
+    @ObservationIgnored static var askedAt: Date?
+
     func go(_ pages: [PersistentIdentifier]) {
         guard pages != path else { return }
+        if CommandLine.arguments.contains("--timing") || CommandLine.arguments.contains("--timing-tour") { Self.askedAt = Date() }
         var now = Transaction()
         now.disablesAnimations = true
         withTransaction(now) { path = pages }
@@ -116,6 +120,9 @@ final class Navigation {
     /// Asked from a matter's menu, wherever it is: a new name, or merging one into another.
     var renaming: Matter?
     var merging: (from: Matter, into: Matter)?
+    /// From a matter's menu: its icon to choose, or the matter to merge it with.
+    var choosingIcon: Matter?
+    var choosingMerge: Matter?
     /// A matter to pin while as many as fit are pinned already: which one it replaces is asked.
     var pinning: Matter?
 

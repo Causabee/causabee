@@ -442,7 +442,12 @@ struct PhoneMailCheckView: View {
     private var setAside: Set<String> { Set((try? JSONDecoder().decode([String].self, from: Data(setAsideJSON.utf8))) ?? []) }
 
     private func refresh() {
-        unplaced = Unplaced.find(log: PhoneMailCheck.log, context: context, setAside: setAside.union(SortedMails.setAside(in: context)))
+        // Read once per change and per state of the check: the overview comes back to it often, and
+        // each time the whole record of mail was read again.
+        let aside = setAside.union(SortedMails.setAside(in: context))
+        unplaced = StoredChanges.shared.kept("unplaced \(check.stateKey) \(aside.sorted().joined(separator: ",").hashValue)") {
+            Unplaced.find(log: PhoneMailCheck.log, context: context, setAside: aside)
+        }
     }
 
     var body: some View {

@@ -13,6 +13,8 @@ struct MatterScreen: View {
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
+    /// "32 mails · 3 screenshots", counted away from the screen, and for which change of the store.
+    @State private var counted: (version: Int, line: String)?
     @Environment(\.undoManager) private var undoManager
     @State private var showsDone = false
     @State private var showsPast = false
@@ -57,7 +59,6 @@ struct MatterScreen: View {
     @State private var person: PersistentIdentifier?
     /// Every conversation shown, not only the newest: a source pointed at an older mail.
     @State private var showsAllHistory = false
-    @Query private var allMatters: [Matter]
     @Query private var profiles: [Profile]
     @Environment(PhoneStore.self) private var store
     @State private var askingStep = false
@@ -155,7 +156,13 @@ struct MatterScreen: View {
                         .overlay(alignment: .bottom) { Divider() }
                 }
             }
-            .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
+            .onAppear {
+                show(navigation.showing, with: scroller); loadCalendars()
+                // `--timing`: from the tap to the page drawn — said after the frame it came in.
+                if let asked = Navigation.askedAt {
+                    DispatchQueue.main.async { NSLog("[timing] matter page %d ms", Int(Date().timeIntervalSince(asked) * 1000)); Navigation.askedAt = nil }
+                }
+            }
             // Asked to show a task while the page is open already — from a card in the assistant.
             .onChange(of: navigation.showing) { if navigation.showing != nil { show(navigation.showing, with: scroller) } }
             .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
@@ -307,7 +314,8 @@ struct MatterScreen: View {
                     Group {
                         // What can be added, and the next step and summary written again — as the Mac's ⋯ has them.
                         MatterAddItems(writeAgain: writeAnew)
-                        MatterMenuItems(matter: matter, all: sidebarOrder(allMatters))
+                        // The other matters are fetched when the menu needs them: not with every page.
+                        MatterMenuItems(matter: matter, all: nil)
                         // Everything the matter holds, as one document: what is gathered here can leave at any time.
                         Button(Say.exportRTF, systemImage: "square.and.arrow.up", action: export)
                         Divider()
@@ -418,7 +426,19 @@ struct MatterScreen: View {
     @ViewBuilder
     private func countLine(_ status: MatterStatus) -> some View {
         if !(matter.entries ?? []).isEmpty {
-            Text(Self.count(matter.entries ?? []) + (status.firstDate.map { " · since \(Dates.short($0))" } ?? ""))
+            // The kinds counted away from the screen, once per change; meanwhile how many there are.
+            let total = (matter.entries ?? []).count
+            // The day of its first mail, as the overview's summary has it: not every mail read again.
+            let since = StoredChanges.shared.summary(matter).firstDate.map { " · since \(Dates.short($0))" } ?? ""
+            Text((counted?.line ?? (total == 1 ? "1 mail" : "\(total) mails")) + since)
+                .task(id: StoredChanges.shared.count) {
+                    let id = matter.persistentModelID
+                    guard counted?.version != StoredChanges.shared.count else { return }
+                    let container = context.container
+                    let version = StoredChanges.shared.count
+                    let kinds = await Task.detached { RecordKinds.count(of: id, in: container) }.value
+                    counted = (version, Self.count(kinds: kinds))
+                }
                 .font(.subheadline).foregroundStyle(.secondary)
         }
     }
@@ -1098,13 +1118,19 @@ struct MatterScreen: View {
 
     /// "32 mails · 3 screenshots · 1 document": each kind counted as what it is.
     static func count(_ entries: [Entry]) -> String {
+        var counts: [Source.Kind: Int] = [:]
+        for entry in entries { counts[entry.source.kind, default: 0] += 1 }
+        return count(kinds: counts)
+    }
+
+    static func count(kinds counts: [Source.Kind: Int]) -> String {
         let names: [(Source.Kind, String, String)] = [
             (.mail, "mail", "mails"), (.screenshot, "screenshot", "screenshots"), (.document, "document", "documents"),
             (.photo, "photo", "photos"), (.spokenNote, "spoken note", "spoken notes"), (.phoneCall, "call", "calls"),
             (.conversation, "from the assistant", "from the assistant"),
         ]
         let parts = names.compactMap { kind, one, many -> String? in
-            let n = entries.filter { $0.source.kind == kind }.count
+            let n = counts[kind] ?? 0
             return n == 0 ? nil : "\(n) \(n == 1 ? one : many)"
         }
         return parts.isEmpty ? "No mails yet" : parts.joined(separator: " · ")
@@ -1126,6 +1152,7 @@ struct PhoneTodoRow: View {
     @Environment(Navigation.self) private var navigation
     @State private var editing = false
     @State private var deleting = false
+    @State private var choosingWait = false
 
     var body: some View {
         // Taken back with Undo in the assistant, the task is gone while this row is drawn once more:
@@ -1211,6 +1238,7 @@ struct PhoneTodoRow: View {
         .contentShape(Rectangle())
         .contextMenu { Group { moreItems }.menuSigns() }
         .sheet(isPresented: $editing) { PhoneTodoEditor(todo: todo) }
+        .sheet(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
         .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
@@ -1236,17 +1264,8 @@ struct PhoneTodoRow: View {
                 withAnimation { todo.isInfo = true }
                 try? context.save()
             }
-            let others = (todo.matter?.openTodos ?? []).filter { $0 !== todo }.sorted { $0.text < $1.text }
-            Menu(Say.waitsFor, systemImage: "hourglass") {
-                ForEach(others, id: \.persistentModelID) { other in
-                    Button(other.text) {
-                        withAnimation { _ = todo.wait(for: other) }
-                        try? context.save()
-                    }
-                    .disabled(other === todo.waitsFor)
-                }
-            }
-            .disabled(others.isEmpty)
+            Button(Say.waitsForChoose, systemImage: "hourglass") { choosingWait = true }
+                .disabled((todo.matter?.openTodos.count ?? 0) < 2)
             if todo.waitsFor != nil {
                 Button(Say.stopWaiting, systemImage: "xmark.circle") {
                     withAnimation { todo.waitsFor = nil }

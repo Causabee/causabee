@@ -169,7 +169,12 @@ extension AssistantAsk {
 
     /// About what it costs: the facts in, the brief, the summary and a few cards out.
     public static func adviceEstimate(_ facts: Facts, model: Claude.Model = .opus) -> Double {
-        model.cost(input: Int(Double(facts.text.count) / 3.2) + 2_400, output: 1_600)
+        adviceEstimate(length: facts.text.count, model: model)
+    }
+
+    /// The same from about how long the facts are, without making them.
+    public static func adviceEstimate(length: Int, model: Claude.Model = .opus) -> Double {
+        model.cost(input: Int(Double(length) / 3.2) + 2_400, output: 1_600)
     }
 
     public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], owner: String?, today: String, mapping url: URL, claude: Claude,

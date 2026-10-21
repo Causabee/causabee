@@ -101,6 +101,27 @@ struct OverviewPageTests {
         let again = clock.measure { for _ in 0..<1000 { _ = pages.page(for: matters, version: 1) } }
         #expect(again < .milliseconds(50), "Asking 1,000 times for the same page took \(again)")
     }
+
+    @Test("After a change with no new mail — a task ticked — the overview is prepared again without reading every mail's date, and a new mail still counts")
+    func againAfterAChange() throws {
+        let (context, matters) = try Self.bigStore()
+        let clock = ContinuousClock()
+        let pages = OverviewPages()
+        _ = pages.page(for: matters, version: 1)
+        let first = clock.measure { _ = OverviewPage(matters) }
+        let todo = try #require(matters.first { !($0.todos ?? []).isEmpty }?.todos?.first)
+        todo.isDone.toggle()
+        let again = clock.measure { _ = pages.page(for: matters, version: 2) }
+        print("Prepared again after a change: \(again), the first time \(first)")
+        #expect(again < .milliseconds(120), "Preparing again after a change took \(again)")
+        // A new mail, a day ahead of all: the matter's newest date follows.
+        let matter = matters[0]
+        let source = Source(kind: .mail, pointer: "p", messageID: "<new@x>", date: Date().addingTimeInterval(86_400))
+        let entry = Entry(title: "New", from: "a@example.com", date: source.date, source: source)
+        context.insert(entry)
+        entry.matter = matter
+        #expect(pages.page(for: matters, version: 3)[matter.persistentModelID]?.lastDate == source.date)
+    }
 }
 
 extension OverviewPageTests {

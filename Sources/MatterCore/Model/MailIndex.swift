@@ -34,3 +34,16 @@ extension Matter {
     /// Its mail with this Message-ID.
     public func entry(messageID: String) -> Entry? { MailIndex.entry(messageID, in: self) }
 }
+
+/// How many of a matter's records are of each kind — mails, screenshots, documents — counted away
+/// from the screen: each one's source has to be read for it, and with a few hundred that held the
+/// matter's page for a tenth of a second each time it came up.
+public enum RecordKinds {
+    public static func count(of matter: PersistentIdentifier, in container: ModelContainer) -> [Source.Kind: Int] {
+        let context = ModelContext(container)
+        let entries = (try? context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { $0.matter?.persistentModelID == matter }))) ?? []
+        var counts: [Source.Kind: Int] = [:]
+        for entry in entries { counts[entry.source.kind, default: 0] += 1 }
+        return counts
+    }
+}
