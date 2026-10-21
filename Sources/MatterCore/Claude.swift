@@ -241,7 +241,7 @@ public struct Claude: Sendable {
             // Rate limits, overload and server errors are worth waiting out; anything else is a
             // mistake in the request and will not get better by being sent again.
             let retryable = status == 429 || status == 529 || status >= 500
-            guard retryable, attempt < 6 else {
+            guard retryable, attempt < 6, !Self.isOutOfCredit(data) else {
                 throw Failure.http(status: status, body: String(decoding: data, as: UTF8.self))
             }
             let told = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "retry-after").flatMap(Double.init)
@@ -292,7 +292,7 @@ public struct Claude: Sendable {
                               inputTokens: usage["prompt_tokens"] as? Int ?? 0, outputTokens: usage["completion_tokens"] as? Int ?? 0,
                               seconds: Date().timeIntervalSince(started))
             }
-            guard status == 429 || status >= 500, attempt < 6 else {
+            guard status == 429 || status >= 500, attempt < 6, !Self.isOutOfCredit(data) else {
                 throw Failure.http(status: status, body: String(decoding: data, as: UTF8.self))
             }
             try await Task.sleep(for: .seconds(min(pow(2, Double(attempt)), 60)))
@@ -344,7 +344,7 @@ public struct Claude: Sendable {
                               inputTokens: usage["input_tokens"] as? Int ?? 0, outputTokens: usage["output_tokens"] as? Int ?? 0,
                               seconds: Date().timeIntervalSince(started))
             }
-            guard status == 429 || status >= 500, attempt < 6 else {
+            guard status == 429 || status >= 500, attempt < 6, !Self.isOutOfCredit(data) else {
                 throw Failure.http(status: status, body: String(decoding: data, as: UTF8.self))
             }
             try await Task.sleep(for: .seconds(min(pow(2, Double(attempt)), 60)))
@@ -388,13 +388,15 @@ public extension Claude.Failure {
         switch self {
         case .noKey:
             return "No API key for this AI model yet. Add one in Settings."
-        case .http(let status, _):
+        case .http(let status, let body):
             switch status {
             case 401, 403: return "The AI service did not accept the API key. Check it in Settings."
             case 402: return "The AI service says the account has no credit left. Top it up with the provider, then try again."
             case 404: return "The AI service does not know this model. Choose another in Settings."
             case 408, 504: return "The AI service took too long to answer. Try again."
             case 413: return "This is too much text for the AI model at once. Try with less, or choose another model in Settings."
+            case 429 where Claude.isOutOfCredit(Data(body.utf8)):
+                return "The AI service says the account has no credit left. Top it up with the provider, then try again."
             case 429: return "Too many requests to the AI service just now. Wait a minute, then try again."
             case 529, 503, 502: return "The AI service is busy right now. Try again in a minute."
             case 500...599: return "The AI service had a problem of its own. Try again in a minute."
@@ -411,6 +413,15 @@ public extension Claude.Failure {
 }
 
 /// An error in words a person reads — "The connection was lost." — not the system's own dump of it.
+extension Claude {
+    /// A 429 that is no rate limit: the account has nothing left — OpenAI's `insufficient_quota`,
+    /// Mistral's and Anthropic's words for it. Waiting does not help; it is said at once.
+    static func isOutOfCredit(_ data: Data) -> Bool {
+        let body = String(decoding: data, as: UTF8.self).lowercased()
+        return ["insufficient_quota", "credit_balance", "no credits", "credit balance is too low", "exceeded your current quota"].contains { body.contains($0) }
+    }
+}
+
 public func plainWords(_ error: Error) -> String {
     if let error = error as? URLError {
         switch error.code {

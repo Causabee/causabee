@@ -27,6 +27,8 @@ public struct DailyDoor: Sendable {
     public var setAside: Set<String> = []
     /// The addresses of the people in the owner's matters: their new mail is offered without a label.
     public var knownSenders: [String] = []
+    /// Drafts opened from a matter: their mail, once sent, goes into that matter.
+    public var sentDrafts: [LabelIntake.SentDraft] = []
 
     public init(account: MailAccount, label: String = "Causabee", log: URL, mapping: URL, cache: URL, model: Claude.Model = .opus) {
         self.account = account
@@ -57,7 +59,7 @@ public struct DailyDoor: Sendable {
 
         /// Of the new mails, those with no label: found by who sent them, and only offered. They
         /// are sorted in when the owner says so — never by Auto.
-        public var offeredIDs: Set<String> { Set(newIDs.filter { intake.bySender[$0] != nil }) }
+        public var offeredIDs: Set<String> { Set(newIDs.filter { intake.bySender[$0] != nil || intake.toKnown[$0] != nil }) }
         /// The new mails the owner labelled, or that follow a labelled thread: what Auto may read.
         public var withoutOffered: Look { offeredIDs.isEmpty ? self : only(Set(newIDs).subtracting(offeredIDs)) }
 
@@ -112,6 +114,7 @@ public struct DailyDoor: Sendable {
             reading.keyword = label
             reading.ownAddresses = [account.user]
             reading.knownSenders = knownSenders
+            reading.sentDrafts = sentDrafts
             intake = try await reading.run(client, progress: progress)
         } catch {
             await client.logout()
@@ -148,6 +151,8 @@ public struct DailyDoor: Sendable {
             var extractor = Extractor(model: model, claude: claude, cache: cache)
             extractor.strict = strict
             extractor.storeMatters = matters
+            // A mail sent from a draft Causabee opened goes into the draft's matter.
+            extractor.assigned = look.intake.fromDraft
             var known = look.answered
             for (id, key) in placed where known[id] != nil && known[id]?.matter != key { known[id]?.matter = key }
             summary = try await extractor

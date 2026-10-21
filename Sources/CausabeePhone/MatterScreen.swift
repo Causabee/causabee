@@ -659,26 +659,24 @@ struct MatterScreen: View {
             }
             return
         }
-        if !matter.isClosed, !askingStep { askStep() }
+        // The adviser writes the step with the brief: one request.
         if !writingSummary { writeSummary() }
     }
 
+    /// The adviser: the brief, the summary and the step, and its proposals for the list — one request, as on the Mac.
     private func writeSummary() {
         let model = ModelChoice.assistant
-        guard let claude = ModelChoice.client(for: model) else { summaryError = ModelChoice.missingKey(model); return }
+        guard ModelChoice.client(for: model) != nil else { summaryError = ModelChoice.missingKey(model); return }
+        // Auto is writing it already: a second request would only cost twice, and count against the limit.
+        guard !AutoUpdate.shared.working.contains(matter.key) else { return }
         let list: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])
         do { list = try names() } catch { summaryError = error.localizedDescription; return }
         writingSummary = true
         summaryError = nil
-        let facts = summaryFacts
         let owner = profiles.first?.names.first
         Task {
             do {
-                let (lines, _) = try await AssistantAsk.summarize(facts: facts, owner: owner, today: MatterStatus.day(Date()),
-                                                                  mapping: list.mapping, others: list.others, claude: claude, model: model)
-                matter.summary = lines.joined(separator: "\n")
-                matter.summaryAt = Date()
-                try? context.save()
+                try await Adviser.write(matter, names: .list(list.mapping, list.others), owner: owner, in: context)
             } catch {
                 summaryError = plainWords(error)
             }
@@ -740,11 +738,12 @@ struct MatterScreen: View {
                         .findable(.section("summary-\(index)"), String(line))
                 }
             }
+            BriefDetails(matter: matter)
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 8) {
                 if writingSummary || AutoUpdate.shared.working.contains(matter.key) {
                     BeeLoader(size: 12)
-                    Text("Writing the summary …").font(.caption).foregroundStyle(.secondary)
+                    Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
                 } else if matter.summaryAt != nil, auto {
                     AutoLine(matter: matter, size: 11)
@@ -754,15 +753,16 @@ struct MatterScreen: View {
                     Spacer()
                 } else {
                     Spacer()
-                    Button("Write summary · \(PriceEstimates.summary(matter))", action: writeSummary).buttonStyle(.phone)
+                    Button("Write the brief · \(PriceEstimates.summary(matter))", action: writeSummary).buttonStyle(.phone)
                 }
             }
             .tool()
             if let summaryError { Text(summaryError).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
         }
-        .padding(text.isEmpty ? 0 : 16)
+        // A box once there is something in it: a summary, or a brief — written, or only said.
+        .padding(text.isEmpty && matter.brief == nil ? 0 : 16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(text.isEmpty ? Color.clear : Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .background(text.isEmpty && matter.brief == nil ? Color.clear : Theme.box, in: RoundedRectangle(cornerRadius: 12))
     }
 
     /// The owner's own words on the matter: small dated blocks, read by the assistant too.

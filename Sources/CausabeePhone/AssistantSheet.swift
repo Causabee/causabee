@@ -19,7 +19,13 @@ struct AssistantSheet: View {
     @Query private var matters: [Matter]
     @Query private var profiles: [Profile]
     @Environment(PhoneStore.self) private var store
-    @State private var draft = ""
+    /// What is typed, and where the cursor is: read only by the field, so a keystroke redraws the
+    /// field — not the whole sheet, with every answer and card of a long thread.
+    @State private var typed = TypedWords()
+    private var draft: String {
+        get { typed.text }
+        nonmutating set { typed.text = newValue }
+    }
     /// How wide the thread's scroll view is, measured: it follows an iPad's window as it is resized.
     /// A new field after each send. Emptying the words is not enough while the keyboard still
     /// holds some of them — dictation, a word being autocorrected: the old field kept showing
@@ -41,7 +47,6 @@ struct AssistantSheet: View {
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
     @State private var voice = VoiceInput()
-    @State private var cursor: TextSelection?
     /// Where the thread stands, and when it moves by itself: `ThreadPlacement` has the rule, for the
     /// iPhone and the Mac.
     @State private var placement = ThreadPlacement()
@@ -192,8 +197,12 @@ struct AssistantSheet: View {
                 }
                 .padding(Self.padding)
                 .asWide(as: room.size.width)
-                .environment(\.threadRoom, placement.viewport)
+                .environment(\.threadPlacement, placement)
             }
+            // The keyboard goes when the thread is scrolled or tapped, to see all of it — the thread
+            // only: put after the bars, a tap into the field itself, for the cursor or the menu to
+            // copy and paste, sent the keyboard away too.
+            .dismissesKeyboard()
             // The thread's top stands a little under the edge: what is put "at the top" keeps that room.
             .safeAreaPadding(.top, Self.topRoom)
             // The name on top and the field below are bars over the thread, not rows beside it: the
@@ -215,8 +224,6 @@ struct AssistantSheet: View {
             // Below, the system's blur began a hand's breadth over the field. There the glass is the
             // field's own: the thread is sharp down to it, seen through it, and gone under its lower half.
             .scrollEdgeEffectHidden(true, for: .bottom)
-            // The keyboard goes when the thread is scrolled or tapped, to see all of it.
-            .dismissesKeyboard()
             // What happens to the thread is told to the placement, which decides where it goes.
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in placement.room(height, with: scroller) }
             .onScrollPhaseChange { old, new, context in placement.finger(from: old, to: new, at: context.geometry.contentOffset.y) }
@@ -330,28 +337,9 @@ struct AssistantSheet: View {
                         TextField("", text: .constant("")).focused($keepsKeyboard)
                             .frame(width: 1, height: 1).opacity(0).allowsHitTesting(false).accessibilityHidden(true)
                     }
-                TextField(voice.phase == .writing ? voice.writingWords : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, selection: $cursor, axis: .vertical)
-                    .lineLimit(1...5)
-                    // The keyboard's Return starts a new line; the button sends. With a keyboard
-                    // of keys, Return sends and Shift-Return starts a new line, as on the Mac.
-                    .onKeyPress(.return, phases: .down) { press in
-                        if press.modifiers.contains(.shift) || press.modifiers.contains(.option) { return .ignored }
-                        send()
-                        return .handled
-                    }
-                    .focused($typing)
-                    .id(fieldKey)
-                    .accessibilityIdentifier("assistant.field")
-                    // One line sits in the middle of the send button; more lines grow upwards.
-                    .frame(minHeight: 34)
-                MicButton(voice: voice, text: $draft, selection: $cursor) { typing = false }
-                Button { if asking == nil { send() } else { stop() } } label: {
-                    // A black arrow on the bee's yellow, drawn light, as every yellow thing has black
-                    // on it — and a black square while an answer is on its way: one question at a time.
-                    SendGlyph(stops: asking != nil, mayHostBee: draft.isEmpty)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(asking == nil ? "Send" : "Stop")
+                TypingField(typed: typed, voice: voice, typing: $typing, fieldKey: fieldKey, asking: asking != nil,
+                            placeholder: voice.phase == .writing ? voice.writingWords : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters",
+                            send: send, stop: stop)
               }
             }
             .padding(.leading, 7).padding(.trailing, 7).padding(.vertical, 7)
@@ -841,7 +829,7 @@ struct PhoneActionCard: View {
     private var done: Bool { turn.applied.contains(index) }
     private var dismissed: Bool { turn.dismissedCards.contains(index) }
     private var undo: CardActions.Undo? { navigation.undos[turn.id]?[index] }
-    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
+    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .correctBrief, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
     private var mailInHand: String? { turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil } }
     /// Once per change: the draft's card asked for it three times each time it drew.
     private var recipient: (name: String, address: String?)? {
@@ -854,7 +842,8 @@ struct PhoneActionCard: View {
         Group {
             if card.kind == .draftMessage, quiet, !editingDraft {
                 sentDraft
-            } else if quiet {
+            } else if quiet, !(card.kind == .draftMessage && editingDraft) {
+                // An opened draft unfolded with Edit is the whole card again, not the small ticked one.
                 taken
             } else if dismissed, !done {
                 // Put aside, not gone: a small white card — nothing waits in it — that says what was
@@ -965,6 +954,7 @@ struct PhoneActionCard: View {
         case .renameParty: return "Name changed"
         case .changeRole: return "Role changed · " + name(card.party)
         case .addNote: return card.todo == nil ? "Note added" : "Note added · " + name(card.todo)
+        case .correctBrief: return "Brief corrected"
         case .changeDate: return "Date changed"
         case .newMatter: return "Matter started"
         case .waitsFor: return "Now waits for " + name(card.into)
@@ -1001,7 +991,15 @@ struct PhoneActionCard: View {
             Image(systemName: "envelope").font(.footnote).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(subject.isEmpty ? text : subject).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2)
-                Text("Draft opened in Mail · To: \(recipient?.name ?? "—")").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                if let preparing = MailPreparing.shared.notes[MailPreparing.key(turn.id, index)] {
+                    // Before the mail opens: a file fetched from iCloud, a picture made smaller.
+                    HStack(spacing: 6) {
+                        BeeLoader(size: 9)
+                        Text(preparing).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                } else {
+                    Text("Draft opened in Mail · To: \(recipient?.name ?? "—")").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Button("Edit") { step { editingDraft = true } }
@@ -1033,7 +1031,7 @@ struct PhoneActionCard: View {
         case .openMail(let url, let draft):
             Haptics.tap()
             // With a file to take along, the system's own mail sheet: it attaches what it is handed.
-            if !MailSheet.open(draft) { openURL(url) }
+            if !MailSheet.open(draft, card: MailPreparing.key(turn.id, index)) { openURL(url) }
             // Opened again from the small box: it stays small. Edited and opened: it folds.
             if editingDraft { step { editingDraft = false } }
             // The version opened is the one kept: the thread remembers what went to Mail.
@@ -1071,6 +1069,7 @@ struct PhoneActionCard: View {
         case .newTodo: "Add"
         case .sameParty: "Merge"
         case .addNote: "Save note"
+        case .correctBrief: "Correct the brief"
         case .draftMessage: "Open in Mail"
         case .shortMessage: "Copy"
         case .changeDate: "Change date"
@@ -1092,6 +1091,7 @@ struct PhoneActionCard: View {
         case .renameParty: return "Change name?"
         case .changeRole: return "Change role?"
         case .addNote: return card.todo == nil ? "Note for the matter?" : "Note for the task?"
+        case .correctBrief: return "Correct the brief?"
         case .draftMessage: return "Draft"
         case .shortMessage: return "Message"
         case .changeDate: return "Change date?"
@@ -1116,6 +1116,7 @@ struct PhoneActionCard: View {
         case .renameParty: return "\(name(card.party))  is called:"
         case .changeRole: return "\(name(card.party))  is here:"
         case .addNote: return card.todo == nil ? nil : name(card.todo)
+        case .correctBrief: return nil
         case .shortMessage: return nil
         case .draftMessage:
             guard let recipient else { return "To: (fill in in Mail)" }
@@ -1142,36 +1143,58 @@ final class MailSheet: NSObject, MFMailComposeViewControllerDelegate {
     private static let shared = MailSheet()
 
     /// False when there is nothing to attach: then the draft opens the old way, as a mail link.
-    static func open(_ draft: CardActions.MailDraft) -> Bool {
+    static func open(_ draft: CardActions.MailDraft, card key: String) -> Bool {
         guard !draft.files.isEmpty else { return false }
+        Task {
+            // Read, and a big picture made smaller, away from the screen: done while it drew, a large
+            // photo — perhaps still on its way from iCloud — held the app until iOS closed it. The
+            // card says meanwhile what it waits for.
+            let pieces = await MailPreparing.shared.prepare(key, files: draft.files) { files in
+                files.map(ImageSize.attachable).compactMap { file in FolderImport.data(of: file).map { (file, $0) } }
+            }
+            // The screen may still be moving — the card turning, a sheet going: shown once it rests, not
+            // dropped. Dropped, the first tap did nothing, and the mail had to be written again.
+            for _ in 0..<40 {
+                if let top = restingTop() { show(draft, pieces: pieces, over: top); return }
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+        }
+        return true
+    }
+
+    /// What is on top of the screen, when nothing is coming or going; nil while something moves.
+    private static func restingTop() -> UIViewController? {
         let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first { $0.activationState == .foregroundActive }
-        guard var top = scene?.keyWindow?.rootViewController else { return false }
-        while let over = top.presentedViewController { top = over }
+        guard var top = scene?.keyWindow?.rootViewController else { return nil }
+        while let over = top.presentedViewController, !over.isBeingDismissed { top = over }
+        guard !top.isBeingPresented, !top.isBeingDismissed, top.presentedViewController == nil, top.view.window != nil else { return nil }
+        return top
+    }
+
+    private static func show(_ draft: CardActions.MailDraft, pieces: [(file: URL, data: Data)], over top: UIViewController) {
         // No account in Mail — Gmail, Outlook and the like: the share sheet, with the files and the
         // words, so the files are not lost on the way; the address is said in the words' first line.
         guard MFMailComposeViewController.canSendMail() else {
             let words = (draft.to.isEmpty ? "" : "To: \(draft.to)\n\n") + draft.body
-            let share = UIActivityViewController(activityItems: [words] + draft.files, applicationActivities: nil)
+            let share = UIActivityViewController(activityItems: [words] + pieces.map(\.file), applicationActivities: nil)
             share.setValue(draft.subject, forKey: "subject")
             // On the iPad it stands out from the middle of the screen.
             share.popoverPresentationController?.sourceView = top.view
             share.popoverPresentationController?.sourceRect = CGRect(x: top.view.bounds.midX, y: top.view.bounds.midY, width: 0, height: 0)
             share.popoverPresentationController?.permittedArrowDirections = []
             top.present(share, animated: true)
-            return true
+            return
         }
         let mail = MFMailComposeViewController()
         mail.mailComposeDelegate = shared
         if !draft.to.isEmpty { mail.setToRecipients([draft.to]) }
         mail.setSubject(draft.subject)
         mail.setMessageBody(draft.body, isHTML: false)
-        for file in draft.files {
-            guard let data = FolderImport.data(of: file) else { continue }
+        for (file, data) in pieces {
             let type = UTType(filenameExtension: file.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
             mail.addAttachmentData(data, mimeType: type, fileName: file.lastPathComponent)
         }
         top.present(mail, animated: true)
-        return true
     }
 
     nonisolated func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
@@ -1208,5 +1231,51 @@ private struct PhoneToNewestButton: View {
             }
         }
         .animation(.easeOut(duration: 0.15), value: placement.offersButton)
+    }
+}
+
+/// What is typed in the assistant's field, and the cursor in it.
+@MainActor
+@Observable
+final class TypedWords {
+    var text = ""
+    var cursor: TextSelection?
+}
+
+/// The assistant's field, the microphone and the send button: the only views that read what is
+/// typed, so each keystroke redraws them alone.
+private struct TypingField: View {
+    @Bindable var typed: TypedWords
+    let voice: VoiceInput
+    var typing: FocusState<Bool>.Binding
+    let fieldKey: Int
+    let asking: Bool
+    let placeholder: String
+    let send: () -> Void
+    let stop: () -> Void
+
+    var body: some View {
+        TextField(placeholder, text: $typed.text, selection: $typed.cursor, axis: .vertical)
+            .lineLimit(1...5)
+            // The keyboard's Return starts a new line; the button sends. With a keyboard
+            // of keys, Return sends and Shift-Return starts a new line, as on the Mac.
+            .onKeyPress(.return, phases: .down) { press in
+                if press.modifiers.contains(.shift) || press.modifiers.contains(.option) { return .ignored }
+                send()
+                return .handled
+            }
+            .focused(typing)
+            .id(fieldKey)
+            .accessibilityIdentifier("assistant.field")
+            // One line sits in the middle of the send button; more lines grow upwards.
+            .frame(minHeight: 34)
+        MicButton(voice: voice, text: $typed.text, selection: $typed.cursor) { typing.wrappedValue = false }
+        Button { if asking { stop() } else { send() } } label: {
+            // A black arrow on the bee's yellow, drawn light, as every yellow thing has black
+            // on it — and a black square while an answer is on its way: one question at a time.
+            SendGlyph(stops: asking, mayHostBee: typed.text.isEmpty)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(asking ? "Stop" : "Send")
     }
 }

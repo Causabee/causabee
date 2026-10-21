@@ -184,6 +184,7 @@ enum Sources {
             switch source.pointer {
             case "matter-closed": return "marked done when closing, \(day)"
             case "you": return "added by you, \(day)"
+            case "brief": return "proposed in the brief, \(day)"
             default: return "from you in the assistant, \(day)"
             }
         case .spokenNote: return "spoken on \(day)"

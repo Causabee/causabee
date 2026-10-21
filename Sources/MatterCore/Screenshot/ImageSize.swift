@@ -35,7 +35,7 @@ public enum ImageSize {
     /// of it in the temporary folder. The file kept in the matter stays as it is.
     public static func attachable(_ file: URL) -> URL {
         guard let size = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > limit,
-              let data = try? Data(contentsOf: file) else { return file }
+              let data = FolderImport.data(of: file) else { return file }
         let smaller = kept(data, name: file.lastPathComponent)
         guard smaller.data.count < data.count else { return file }
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("causabee-attach-" + UUID().uuidString.prefix(8), isDirectory: true)

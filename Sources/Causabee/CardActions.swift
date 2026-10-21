@@ -2,6 +2,9 @@ import Foundation
 import MatterCore
 import SwiftData
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 /// What a card the owner ticks does to the store, and how to take it back — the same on the Mac and
 /// the iPhone: both apps take this file in. What each app does around it — keeping the turn, opening
@@ -21,6 +24,8 @@ enum CardActions {
         case madeMatter(PersistentIdentifier)
         /// A link a card kept, to take out again.
         case removeLink(PersistentIdentifier)
+        /// What the owner said of a matter, kept in its brief.
+        case said(PersistentIdentifier, UUID)
         /// A contact a card added or completed: its membership when the card made it, and how it was reached before.
         /// A date, a detail or a matter's note a card added, to take out again.
         case added(PersistentIdentifier)
@@ -71,8 +76,9 @@ enum CardActions {
         var files: [URL] = [], missing: [String] = []
         for document in DraftAttachments.named(in: [text, question ?? ""] + attach, among: scope?.documents ?? []) {
             let own = document.source.fileURL.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
-            // A picture too big for a mail goes as a smaller copy; the kept one stays as it is.
-            if let file = own ?? MatterFolders.kept(document) { files.append(ImageSize.attachable(file)) } else { missing.append(document.shownName) }
+            // The file as kept: a picture too big for a mail is made smaller only when the mail is
+            // opened, away from the screen — never while a card draws.
+            if let file = own ?? MatterFolders.kept(document) { files.append(file) } else { missing.append(document.shownName) }
         }
         return (files, missing)
     }
@@ -460,6 +466,12 @@ enum CardActions {
                 undo = .date(deadline.persistentModelID, day: deadline.day, time: nil)
                 deadline.day = day
             } else { return .nothing }
+        case .correctBrief:
+            guard !text.isEmpty, let matter = scope else { return .nothing }
+            matter.say(text)
+            try? context.save()
+            guard let said = matter.shownBrief?.said.last else { return .nothing }
+            return .taken(.said(matter.persistentModelID, said.id))
         case .addNote:
             guard !text.isEmpty else { return .nothing }
             // With no to-do it is one of the matter's own notes.
@@ -555,6 +567,8 @@ enum CardActions {
             live(id, as: Todo.self, in: context)?.note = note
         case .removeLink(let id):
             if let link = live(id, as: WebLink.self, in: context) { context.delete(link) }
+        case .said(let id, let said):
+            live(id, as: Matter.self, in: context)?.unsay(said)
         case .added(let id):
             if let item = live(id, as: Appointment.self, in: context) { context.delete(item) }
             else if let item = live(id, as: Deadline.self, in: context) { context.delete(item) }
@@ -868,5 +882,154 @@ enum Receipt {
         default:
             return nil
         }
+    }
+}
+
+/// The adviser's brief for a matter: written in one request, in place of the summary and the step,
+/// put into the matter, and its proposals taken one by one — the same on every device.
+@MainActor
+enum Adviser {
+    /// The whole request: the facts, disguised, sent, and the answer put into the matter. Returns its cost.
+    @discardableResult
+    static func write(_ matter: Matter, names: AutoUpdate.Names, owner: String?, in context: ModelContext) async throws -> Double {
+        let model = ModelChoice.assistant
+        guard let claude = ModelChoice.client(for: model) else { throw Missing.key }
+        let today = MatterStatus.day(Date())
+        let facts = FactSheet.facts(for: [matter], today: today, mails: 40)
+        let dismissed = self.dismissed(in: matter)
+        let asked = (matter.shownBrief?.lookups ?? []).map(\.question)
+        // The mails since the brief before, as the facts list them: what its news is to be about.
+        let new = matter.mailsSinceBrief
+        let since = new.map { "\($0.date.map(MatterStatus.day) ?? "") \($0.from) — \($0.title)" }
+        #if os(iOS)
+        // Switched away or locked meanwhile, the answer still comes: iOS gives the app time to finish
+        // it — without, the request was cut off, and the brief said "Stopped."
+        let background = UIApplication.shared.beginBackgroundTask(withName: "brief")
+        defer { UIApplication.shared.endBackgroundTask(background) }
+        #endif
+        let advice: AssistantAsk.Advice
+        switch names {
+        case .file(let url):
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, since: since, owner: owner, today: today, mapping: url, claude: claude, model: model)
+        case .list(let mapping, let others):
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, since: since, owner: owner, today: today, mapping: mapping,
+                                                   others: others, claude: claude, model: model)
+        }
+        let before = matter.shownBrief?.writtenAt
+        put(advice, facts: facts, into: matter, owner: owner,
+            news: advice.news.isEmpty || new.isEmpty ? nil : Brief.News(lines: advice.news, mails: new.count, since: before ?? Date()), in: context)
+        return advice.cost
+    }
+
+    enum Missing: LocalizedError {
+        case key
+        var errorDescription: String? { "No key for the assistant's model is saved." }
+    }
+
+    /// What the owner put away, said to the adviser so it is not proposed again.
+    static func dismissed(in matter: Matter) -> [String] {
+        (matter.shownBrief?.dismissed ?? []).suffix(15).map { "\($0.card.kind.rawValue): \($0.card.text)" }
+    }
+
+    /// The summary, the step and the brief, with its proposals — each with the facts its ids stand
+    /// for, and their keys, so another device finds them.
+    static func put(_ advice: AssistantAsk.Advice, facts: Facts, into matter: Matter, owner: String? = nil, news: Brief.News? = nil,
+                    in context: ModelContext, at now: Date = Date()) {
+        matter.nextStep = advice.step
+        matter.nextStepWhy = advice.why
+        if case .todo(let id) = advice.todo { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+        else { matter.nextStepTodo = nil }
+        matter.nextStepAt = now
+        if !advice.summary.isEmpty {
+            matter.summary = advice.summary.joined(separator: "\n")
+            matter.summaryAt = now
+        }
+        let proposals = advice.proposals.map { card in
+            let ids = Set([card.todo, card.into].compactMap { $0 } + card.cites)
+            let refs = facts.refs.filter { ids.contains($0.key) }
+            return Brief.Proposal(card: card, refs: refs, keys: CardActions.keys(of: refs, in: context))
+        }
+        // A question to look up is shown only when it names no one of the matter, and not the owner.
+        let personal = WebLookup.personal(matter.parties.flatMap { [$0.name] + $0.spellings } + [owner].compactMap { $0 })
+        let questions = advice.research.filter { WebLookup.refusal($0, personal: personal) == nil }
+        matter.shownBrief = (matter.shownBrief ?? Brief()).rewritten(lines: advice.lines, proposals: proposals, questions: questions, news: news, at: now)
+        try? context.save()
+    }
+
+    /// A question the owner chose to have looked up: it alone goes out, checked once more, in a
+    /// request of its own; the answer and its sources are kept under the brief. Returns its cost.
+    @discardableResult
+    static func lookUp(_ lookup: WebLookup.Lookup, in matter: Matter, context: ModelContext) async throws -> Double {
+        let model = ModelChoice.assistant
+        guard let claude = ModelChoice.client(for: model) else { throw Missing.key }
+        let language = AssistantAsk.language(of: [lookup.question])
+        let found = try await WebLookup.ask(lookup.question, language: language, country: Locale.current.region?.identifier,
+                                            claude: claude, model: model)
+        matter.settle(lookup.id, answer: found.answer, sources: found.sources)
+        try? context.save()
+        return found.cost
+    }
+
+    /// A proposal ticked: done as the assistant's card would be. False when what it names is gone.
+    @discardableResult
+    static func take(_ proposal: Brief.Proposal, text: String? = nil, in matter: Matter, context: ModelContext) -> Bool {
+        let refs = CardActions.local(proposal.refs, keys: proposal.keys, matter: matter, in: context)
+        switch CardActions.apply(proposal.card, text: text ?? proposal.card.text, subject: nil, refs: refs, links: nil, scope: matter, in: context) {
+        case .taken(let undo):
+            // A task it added says where it came from: the brief, not a question in the assistant.
+            if case .remove(let id) = undo, let todo = CardActions.live(id, as: Todo.self, in: context) {
+                todo.sources = todo.sources.map { var source = $0; source.pointer = "brief"; return source }
+            }
+            matter.decide(proposal.id, .taken)
+            try? context.save()
+            return true
+        case .madeMatter:
+            matter.decide(proposal.id, .taken)
+            try? context.save()
+            return true
+        default:
+            return false
+        }
+    }
+
+    static func dismiss(_ proposal: Brief.Proposal, in matter: Matter, context: ModelContext) {
+        matter.decide(proposal.id, .dismissed)
+        try? context.save()
+    }
+}
+
+/// What a draft's files wait for before its mail opens, said on its card: a file still in iCloud
+/// is fetched first, a picture too big for a mail is made smaller — each can take a moment, and the
+/// card said nothing meanwhile. The same on every device.
+@MainActor
+@Observable
+final class MailPreparing {
+    static let shared = MailPreparing()
+    /// By card: "<turn id>-<card index>".
+    private(set) var notes: [String: String] = [:]
+
+    static func key(_ turn: UUID, _ index: Int) -> String { "\(turn)-\(index)" }
+
+    /// The files' work, done away from the screen, with what it waits for said on the card meanwhile.
+    func prepare<Result: Sendable>(_ key: String, files: [URL], _ work: @escaping @Sendable ([URL]) -> Result) async -> Result {
+        notes[key] = Self.note(for: files)
+        defer { notes[key] = nil }
+        return await Task.detached { work(files) }.value
+    }
+
+    /// "Getting photo.jpg from iCloud …" for a file not on this device yet; "Making photo.jpg
+    /// smaller for the mail …" for a big picture; nil when nothing takes a moment.
+    static func note(for files: [URL]) -> String? {
+        if let away = files.first(where: { !isHere($0) }) { return "Getting \(away.lastPathComponent) from iCloud …" }
+        if let big = files.first(where: { (try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap { $0 } ?? 0 > ImageSize.limit }) {
+            return "Making \(big.lastPathComponent) smaller for the mail …"
+        }
+        return nil
+    }
+
+    /// On this device, whole: not a file of iCloud Drive that is only listed here.
+    private static func isHere(_ file: URL) -> Bool {
+        guard let status = try? file.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]).ubiquitousItemDownloadingStatus else { return true }
+        return status == .current
     }
 }

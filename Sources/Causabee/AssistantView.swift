@@ -242,7 +242,7 @@ struct AssistantColumn: View {
                         }
                     }
                     .padding(16)
-                    .environment(\.threadRoom, placement.viewport)
+                    .environment(\.threadPlacement, placement)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .safeAreaInset(edge: .top, spacing: 0) { header }
@@ -690,6 +690,7 @@ struct TurnView: View {
                     ActionCard(card: card, done: turn.applied.contains(index), refs: turn.refs, open: open, label: label,
                                apply: { apply(index, $0, $1) }, undo: turn.undos[index] == nil ? nil : { undo(index) },
                                recipient: card.kind == .draftMessage ? recipient(card.party) : nil, along: along,
+                               preparing: card.kind == .draftMessage ? MailPreparing.shared.notes[MailPreparing.key(turn.id, index)] : nil,
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
             }
@@ -791,6 +792,8 @@ struct ActionCard: View {
     let undo: (() -> Void)?
     var recipient: (name: String, address: String?)? = nil
     var along: (String) -> String? = { _ in nil }
+    /// What its files wait for before the mail opens: fetched from iCloud, made smaller.
+    var preparing: String? = nil
     @State private var text: String
     @State private var subject: String
     /// Dismissed, as the thread keeps it.
@@ -818,10 +821,11 @@ struct ActionCard: View {
     init(card: AssistantPrompt.Reply.Card, done: Bool, refs: [String: FactRef], open: @escaping (FactRef) -> Void,
          label: @escaping (FactRef) -> String, apply: @escaping (String, String?) -> Void, undo: (() -> Void)?,
          recipient: (name: String, address: String?)? = nil, along: @escaping (String) -> String? = { _ in nil },
-         dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
+         preparing: String? = nil, dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
         (self.card, self.done, self.refs, self.open, self.label, self.apply, self.undo) = (card, done, refs, open, label, apply, undo)
         self.recipient = recipient
         self.along = along
+        self.preparing = preparing
         (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
         _text = State(initialValue: card.text)
         _subject = State(initialValue: card.subject ?? "")
@@ -829,13 +833,14 @@ struct ActionCard: View {
         _quiet = State(initialValue: done)
     }
 
-    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
+    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .correctBrief, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
 
     var body: some View {
         Group {
             if card.kind == .draftMessage, quiet, !editingDraft {
                 sentDraft
-            } else if quiet {
+            } else if quiet, !(card.kind == .draftMessage && editingDraft) {
+                // An opened draft unfolded with Edit is the whole card again, not the small ticked one.
                 taken
             } else if dismissed, !done {
             // Put aside, not gone: a small white card — nothing waits in it — that says what was
@@ -932,6 +937,7 @@ struct ActionCard: View {
         case .renameParty: return "Name changed"
         case .changeRole: return "Role changed · " + name(card.party)
         case .addNote: return card.todo == nil ? "Note added" : "Note added · " + name(card.todo)
+        case .correctBrief: return "Brief corrected"
         case .changeDate: return "Date changed"
         case .newMatter: return "Matter started"
         case .waitsFor: return "Now waits for " + name(card.into)
@@ -960,7 +966,15 @@ struct ActionCard: View {
             Image(systemName: "envelope").font(.caption).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 1) {
                 Text(subject.isEmpty ? text : subject).fontWeight(.medium).lineLimit(2)
-                Text("Draft opened in Mail · To: \(recipient?.name ?? "—")").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                if let preparing {
+                    // Before the mail opens: a file fetched from iCloud, a picture made smaller.
+                    HStack(spacing: 6) {
+                        BeeLoader(size: 8)
+                        Text(preparing).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                } else {
+                    Text("Draft opened in Mail · To: \(recipient?.name ?? "—")").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Button("Edit") { step { editingDraft = true } }.buttonStyle(.gold).font(.caption)
@@ -985,6 +999,7 @@ struct ActionCard: View {
         case .newTodo: "Add"
         case .sameParty: "Merge"
         case .addNote: "Save note"
+        case .correctBrief: "Correct the brief"
         case .draftMessage: "Open in Mail"
         case .shortMessage: "Copy"
         case .changeDate: "Change date"
@@ -1006,6 +1021,7 @@ struct ActionCard: View {
         case .renameParty: return "Change name?"
         case .changeRole: return "Change role?"
         case .addNote: return card.todo == nil ? "Note for the matter?" : "Note for the task?"
+        case .correctBrief: return "Correct the brief?"
         case .draftMessage: return "Draft"
         case .shortMessage: return "Message"
         case .changeDate: return "Change date?"
@@ -1030,6 +1046,7 @@ struct ActionCard: View {
         case .renameParty: return "\(name(card.party))  is called:"
         case .changeRole: return "\(name(card.party))  is here:"
         case .addNote: return card.todo == nil ? nil : name(card.todo)
+        case .correctBrief: return nil
         case .shortMessage: return nil
         case .draftMessage:
             guard let recipient else { return "To: (fill in in Mail)" }

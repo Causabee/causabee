@@ -221,10 +221,13 @@ final class ThreadPlacement {
 /// either alone the thread was, for that moment, too short for where it stood, and jumped.
 struct TallAsThread: ViewModifier {
     let on: Bool
-    @Environment(\.threadRoom) private var room
+    @Environment(\.threadPlacement) private var placement
 
     func body(content: Content) -> some View {
-        ZStack(alignment: .topLeading) {
+        // Read here, not by the thread: as the keyboard moves the room changes with every frame,
+        // and only the newest, which this is on, has to follow it.
+        let room = placement?.viewport ?? 0
+        return ZStack(alignment: .topLeading) {
             if on {
                 Color.clear.containerRelativeFrame(.vertical)
                 Color.clear.frame(height: room)
@@ -235,8 +238,9 @@ struct TallAsThread: ViewModifier {
 }
 
 extension EnvironmentValues {
-    /// How tall the thread's part of the screen is, for what in it starts from the field under it.
-    @Entry var threadRoom: CGFloat = 0
+    /// The thread's placement, for what in it starts from the field under it: how tall the
+    /// thread's part of the screen is is read by those views alone, not by the whole thread.
+    @Entry var threadPlacement: ThreadPlacement? = nil
 }
 
 /// A question just sent comes out of the field it was written in: small, from the thread's lower
@@ -244,7 +248,8 @@ extension EnvironmentValues {
 /// place in the thread is its own from the start, and nothing around it moves for it.
 struct Lands: ViewModifier {
     let fresh: Bool
-    @Environment(\.threadRoom) private var room
+    @Environment(\.threadPlacement) private var placement
+    private var room: CGFloat { placement?.viewport ?? 0 }
     /// How far under its place the field is; nil until the question has been laid out.
     @State private var from: CGFloat?
     @State private var landed = false

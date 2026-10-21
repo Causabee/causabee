@@ -40,6 +40,7 @@ actor FakeMailbox: ReadOnlyMailbox {
                 case .subject(let words): (headers["subject"]?.first ?? "").lowercased().contains(words.lowercased())
                 case .from(let address): (headers["from"]?.first ?? "").lowercased().contains(address.lowercased())
                 case .to(let address): (headers["to"]?.first ?? "").lowercased().contains(address.lowercased())
+                case .cc(let address): (headers["cc"]?.first ?? "").lowercased().contains(address.lowercased())
                 case .any(let keys): keys.contains(where: fits)
                 case .unseen: !stored.seen
                 }
@@ -127,6 +128,45 @@ struct LabelIntakeTests {
         #expect(result.searched == ["[Gmail]/All Mail"])
         #expect(await mailbox.wholeFetches["[Gmail]/All Mail"] == [11])
         #expect(result.emails[0].source.absoluteString == "imap://imap.gmail.com/Causabee;UIDVALIDITY=7/;UID=1")
+    }
+
+    @Test("A mail the owner sent from a draft Causabee opened comes in for its matter, label or not; mail sent to someone of the matters is offered; anything else the owner sent stays out")
+    func sentByTheOwner() async throws {
+        let recent = "Date: \(Self.rfc(Date()))"
+        func mail(_ id: String, to: String, cc: String = "", _ subject: String) -> String {
+            "Message-ID: <\(id)>\nFrom: Owner <owner@owner.example>\nTo: \(to)\n\(cc.isEmpty ? "" : "Cc: \(cc)\n")\(recent)\nSubject: \(subject)\n\nText"
+        }
+        let mailbox = FakeMailbox(gmail: false, folders: [
+            MailFolder(name: "INBOX"), MailFolder(name: "Causabee"), MailFolder(name: "Sent", attributes: ["\\Sent"]),
+        ], content: [
+            "Causabee": [.init(uid: 1, thread: "100", raw: Self.first)],
+            "Sent": [.init(uid: 30, thread: "", raw: mail("draft@owner.example", to: "info@rentscape.example", "Rückfrage zur Nebenkostenabrechnung")),
+                     .init(uid: 31, thread: "", raw: mail("known@owner.example", to: "someone@else.example", cc: "tanguy@berger-hv.example", "Kurze Frage")),
+                     .init(uid: 32, thread: "", raw: mail("private@owner.example", to: "friend@else.example", "Kino heute?"))],
+        ])
+        var intake = LabelIntake(label: "Causabee", host: "imap.example")
+        intake.ownAddresses = ["owner@owner.example"]
+        intake.knownSenders = ["tanguy@berger-hv.example"]
+        intake.sentDrafts = [.init(subject: "Rückfrage zur Nebenkostenabrechnung", matterKey: "nebenkosten", date: Date())]
+        let result = try await intake.run(mailbox)
+
+        #expect(result.fromDraft == ["draft@owner.example": "nebenkosten"])
+        #expect(result.toKnown == ["known@owner.example": "tanguy@berger-hv.example"])
+        #expect(!result.emails.contains { $0.id == "private@owner.example" })
+        #expect(result.way("draft@owner.example") == " · written from Causabee")
+    }
+
+    @Test("A draft's subject is compared without Re: and case")
+    func draftSubjects() {
+        #expect(LabelIntake.SentDraft.plain("AW: Re:  Rückfrage zur  Abrechnung") == "rückfrage zur abrechnung")
+        #expect(LabelIntake.SentDraft(subject: "Rückfrage zur Abrechnung", matterKey: "x", date: Date()).searchWord == "Abrechnung")
+    }
+
+    static func rfc(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "EEE, d MMM yyyy HH:mm:ss Z"
+        return formatter.string(from: date)
     }
 
     @Test("A new thread from someone in the owner's matters is found in the inbox without a label, and only offered; mail from anyone else is not")

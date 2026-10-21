@@ -28,6 +28,9 @@ public struct Extractor: Sendable {
     /// The owner's matters as the store has them — also those made in the app, which no mail
     /// named yet: by the key a mail is filed under, and a line on what each is about.
     public var storeMatters: [(key: String, about: String)] = []
+    /// Mails whose matter is known before they are read — sent by the owner from a draft Causabee
+    /// opened in that matter — by Message-ID: the matter's key.
+    public var assigned: [String: String] = [:]
 
     var system: String { strict ? ExtractionPrompt.system + ExtractionPrompt.strict : ExtractionPrompt.system }
     var promptVersion: String { strict ? ExtractionPrompt.strictVersion : ExtractionPrompt.version }
@@ -183,7 +186,8 @@ public struct Extractor: Sendable {
             guard let disguise = outcomes[index].judgement.disguise else { continue }
 
             let sender = Self.senderKey(outcomes[index].email.fromAddress, own: ownDomains)
-            if quietAfter > 0, emptyInARow[sender, default: 0] >= quietAfter, dryRun == nil {
+            let assignedTo = assigned[outcomes[index].judgement.emailID]
+            if assignedTo == nil, quietAfter > 0, emptyInARow[sender, default: 0] >= quietAfter, dryRun == nil {
                 var record = Judgement.Extraction(model: model.id, servedBy: "", mode: disguise.mode.rawValue,
                                                  prompt: promptVersion)
                 record.skipped = "\(sender) sent nothing to act on the last \(quietAfter) times"
@@ -198,7 +202,8 @@ public struct Extractor: Sendable {
             let history = newestOnly ? Quotes.newest(of: disguise.body, subject: disguise.subject)
                                      : Quotes.Split(newest: disguise.body, omitted: 0, reason: "whole thread sent")
             if history.omitted > 0 { summary.historyLeftOut += 1 }
-            let thread = threads.matter(for: outcomes[index].email)
+            // Written in a matter: told as its thread is, so the to-dos are read in its light.
+            let thread = assignedTo.map { disguiser.apply($0).text } ?? threads.matter(for: outcomes[index].email)
             let user = ExtractionPrompt.user(mail: Self.text(of: disguise, body: history.newest, omitted: history.omitted),
                                              sent: outcomes[index].email.date, owner: disguisedOwner, matters: matters,
                                              thread: thread, open: book.open(for: thread, matters: matters.map(\.name)))
@@ -242,6 +247,13 @@ public struct Extractor: Sendable {
                     matters.append((name, found.matterSummary ?? found.matterReason))
                 }
                 apply(found, to: &outcomes[index].judgement, restorer: restorer)
+                if let assignedTo {
+                    // The owner wrote it in this matter: there it goes, whatever the model thought.
+                    outcomes[index].judgement.matter = assignedTo
+                    outcomes[index].judgement.matterTitle = nil
+                    outcomes[index].judgement.matterReason = "Written from this matter in Causabee"
+                    threads.remember(outcomes[index].email, matter: disguiser.apply(assignedTo).text)
+                }
 
                 if wasCached { summary.cached += 1 } else { summary.sent += 1 }
                 summary.inputTokens += answer.inputTokens + answer.cacheWriteTokens + answer.cacheReadTokens
