@@ -33,6 +33,37 @@ public struct LabelIntake: Sendable {
     public var knownSenders: [String] = []
     /// How far back such mail is looked for: what is older was seen in the inbox, and left there.
     public var senderDays = 7
+    /// Drafts the owner opened from a matter in Causabee: the mail sent from one goes into that
+    /// matter, label or not — the owner wrote it there.
+    public var sentDrafts: [SentDraft] = []
+
+    /// A draft opened from a matter: its subject, the matter's key, and when.
+    public struct SentDraft: Sendable, Equatable {
+        public var subject: String
+        public var matterKey: String
+        public var date: Date
+        public init(subject: String, matterKey: String, date: Date) { self.subject = subject; self.matterKey = matterKey; self.date = date }
+
+        /// How long a draft waits to be sent: one sent later is taken for another mail.
+        public static let days = 14
+
+        /// The subject as compared: without "Re:" and "AW:", without case and extra spaces.
+        public static func plain(_ subject: String) -> String {
+            var text = subject.trimmingCharacters(in: .whitespaces)
+            while let range = text.range(of: #"^(re|aw|wg|fw|fwd|antw)\s*:\s*"#, options: [.regularExpression, .caseInsensitive]) {
+                text.removeSubrange(range)
+            }
+            return text.lowercased().split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        }
+
+        /// A word of the subject to ask the server for: a search takes ASCII only, so the longest
+        /// word without umlauts — the subject itself is compared once the mail is here.
+        var searchWord: String? {
+            subject.split { !$0.isLetter && !$0.isNumber }.map(String.init)
+                .filter { $0.count >= 4 && $0.unicodeScalars.allSatisfy { $0.isASCII } }
+                .max { $0.count < $1.count }
+        }
+    }
     static let batch = 25
     /// Only the Message-ID: a few bytes a mail, so many at once.
     static let headerBatch = 200
@@ -56,10 +87,23 @@ public struct LabelIntake: Sendable {
         /// Mail found by who sent it, with no label and in no labelled thread: by its Message-ID,
         /// the address it came from.
         public var bySender: [String: String] = [:]
+        /// Mail the owner sent from a draft Causabee opened: by its Message-ID, the matter it goes to.
+        public var fromDraft: [String: String] = [:]
+        /// Mail the owner sent to someone of their matters, label or not: by its Message-ID, to whom.
+        /// Offered, as mail from them is.
+        public var toKnown: [String: String] = [:]
         /// Where replies were looked for.
         public var searched: [String] = []
         /// Labelled mail that was known already, so not downloaded.
         public var alreadyKnown = 0
+
+        /// How a mail without the label came in, said after its sender in the list: "" for one labelled.
+        public func way(_ id: String) -> String {
+            if fromDraft[id] != nil { return " · written from Causabee" }
+            if toKnown[id] != nil { return " · sent by you, no label" }
+            if bySender[id] != nil { return " · no label" }
+            return ""
+        }
     }
 
     public enum Way: String, Sendable {
@@ -200,8 +244,54 @@ public struct LabelIntake: Sendable {
             if !added.isEmpty { progress("\(inbox.name): \(added.count) from people in your matters, without the label") }
         }
 
+        // What the owner sent: on Gmail in All Mail, elsewhere in the sent folder.
+        let own = ownAddresses.map { $0.trimmed.lowercased() }.filter { $0.contains("@") }
+        let sentFolders = gmail ? everything : folders.filter { $0.attributes.contains("\\sent") }.map(\.name)
+        if !own.isEmpty, !sentFolders.isEmpty, !sentDrafts.isEmpty || !senders.isEmpty {
+            let fromOwner = SearchKey.any(own.map { .from($0) })
+            let drafts = sentDrafts.filter { $0.date > Calendar.current.date(byAdding: .day, value: -SentDraft.days, to: Date()) ?? .distantPast }
+            for name in sentFolders {
+                let opened = try await mailbox.examine(name)
+                // A draft opened from a matter, sent: found by a word of its subject, then compared whole.
+                for draft in drafts {
+                    guard let word = draft.searchWord else { continue }
+                    let day = Calendar.current.date(byAdding: .day, value: -1, to: draft.date) ?? draft.date
+                    let candidates = try await mailbox.search([.since(day), fromOwner, .subject(word)])
+                    let added = try await fetchNew(candidates, from: mailbox, in: opened, known: &known, tried: &tried[name, default: []])
+                    for email in added {
+                        if SentDraft.plain(email.subject) == SentDraft.plain(draft.subject) {
+                            result.fromDraft[email.id] = draft.matterKey
+                            result.emails.append(email)
+                        } else if let to = knownRecipient(of: email, among: senders) {
+                            // Another mail, found by the same word: offered, if it went to someone known.
+                            result.toKnown[email.id] = to
+                            result.emails.append(email)
+                        }
+                    }
+                    if added.contains(where: { result.fromDraft[$0.id] != nil }) { progress("\(name): a mail written from Causabee") }
+                }
+                // Anything else the owner sent to the people of the matters: offered.
+                guard !senders.isEmpty else { continue }
+                let from = Calendar.current.date(byAdding: .day, value: -senderDays, to: Date()) ?? Date()
+                let newest = max(from, since ?? from)
+                var candidates: [UInt32] = []
+                for chunk in senders.chunked(Self.searchBatch / 2) {
+                    candidates += try await mailbox.search([.since(newest), fromOwner, .any(chunk.flatMap { [.to($0), .cc($0)] })])
+                }
+                let added = try await fetchNew(candidates, from: mailbox, in: opened, known: &known, tried: &tried[name, default: []])
+                for email in added { result.toKnown[email.id] = knownRecipient(of: email, among: senders) ?? "" }
+                result.emails += added
+                if !added.isEmpty { progress("\(name): \(added.count) sent to people in your matters, without the label") }
+            }
+        }
+
         result.emails.sort { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
         return result
+    }
+
+    /// The first of a mail's recipients who is one of the people of the matters.
+    private func knownRecipient(of email: Email, among senders: [String]) -> String? {
+        (email.to + email.cc).map { Email.address(in: $0).lowercased() }.first { senders.contains($0) }
     }
 
     /// Asks for the Message-ID first and the whole mail only when it is one not yet read: All

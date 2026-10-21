@@ -138,6 +138,8 @@ final class PhoneMailCheck {
         door.setAside = Self.setAside.union(SortedMails.setAside(in: context))
         // New mail from the people of the matters is found without a label, and offered.
         door.knownSenders = KnownSenders.addresses(in: (try? context.fetch(FetchDescriptor<Matter>())) ?? [])
+        // A mail sent from a draft opened in a matter goes into it, label or not.
+        door.sentDrafts = LabelIntake.SentDraft.recent(in: context)
         // A Mac that sorted mail before shares what it sorted when the new Causabee starts there.
         // Until it has, every mail it answered would look new here — read again, and offered to
         // be sent again.
@@ -659,7 +661,7 @@ struct PhoneMailReview: View {
                             Text(outcome.email.subject.isEmpty ? "(no subject)" : outcome.email.subject).font(.subheadline)
                                 .strikethrough(!on).foregroundStyle(on ? .primary : .secondary)
                                 .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
-                            Text(Self.from(outcome.email) + (look.intake.bySender[outcome.judgement.emailID] == nil ? "" : " · no label")).font(.caption).foregroundStyle(.tertiary)
+                            Text(Self.from(outcome.email) + look.intake.way(outcome.judgement.emailID)).font(.caption).foregroundStyle(.tertiary)
                         }
                         Spacer(minLength: 0)
                     }

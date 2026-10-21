@@ -121,6 +121,8 @@ final class MailCheck {
         door.setAside = Self.setAside.union(SortedMails.setAside(in: context))
         // New mail from the people of the matters is found without a label, and offered.
         door.knownSenders = KnownSenders.addresses(in: (try? context.fetch(FetchDescriptor<Matter>())) ?? [])
+        // A mail sent from a draft opened in a matter goes into it, label or not.
+        door.sentDrafts = LabelIntake.SentDraft.recent(in: context)
         return door
     }
 
@@ -514,7 +516,7 @@ struct MailReview: View {
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(outcome.email.subject.isEmpty ? "(no subject)" : outcome.email.subject)
                                         .strikethrough(!on).foregroundStyle(on ? .primary : .secondary).lineLimit(2)
-                                    Text(Self.from(outcome.email) + (look.intake.bySender[id] == nil ? "" : " · no label")).foregroundStyle(.tertiary).lineLimit(1)
+                                    Text(Self.from(outcome.email) + look.intake.way(id)).foregroundStyle(.tertiary).lineLimit(1)
                                 }
                                 Spacer(minLength: 0)
                             }

@@ -90,3 +90,15 @@ struct OutOfCreditTests {
         #expect(Claude.Failure.http(status: 429, body: #"{"error":{"type":"rate_limit_error"}}"#).forPeople.contains("Too many requests"))
     }
 }
+
+struct SentDraftTests {
+    @Test func aDraftOpenedFromATurnIsRemembered() throws {
+        let payload: [String: Any] = ["applied": [1], "answer": ["reply": ["cards": [
+            ["kind": "new_todo", "subject": NSNull(), "text": "x"],
+            ["kind": "draft_message", "subject": "Rückfrage zur Abrechnung", "text": "Hallo"],
+            ["kind": "draft_message", "subject": "Nicht geöffnet", "text": "Hallo"],
+        ]]]]
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        #expect(LabelIntake.SentDraft.opened(in: data) == ["Rückfrage zur Abrechnung"])
+    }
+}
