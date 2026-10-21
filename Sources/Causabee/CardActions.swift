@@ -898,6 +898,9 @@ enum Adviser {
         let facts = FactSheet.facts(for: [matter], today: today, mails: 40)
         let dismissed = self.dismissed(in: matter)
         let asked = (matter.shownBrief?.lookups ?? []).map(\.question)
+        // The mails since the brief before, as the facts list them: what its news is to be about.
+        let new = matter.mailsSinceBrief
+        let since = new.map { "\($0.date.map(MatterStatus.day) ?? "") \($0.from) — \($0.title)" }
         #if os(iOS)
         // Switched away or locked meanwhile, the answer still comes: iOS gives the app time to finish
         // it — without, the request was cut off, and the brief said "Stopped."
@@ -907,12 +910,14 @@ enum Adviser {
         let advice: AssistantAsk.Advice
         switch names {
         case .file(let url):
-            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, owner: owner, today: today, mapping: url, claude: claude, model: model)
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, since: since, owner: owner, today: today, mapping: url, claude: claude, model: model)
         case .list(let mapping, let others):
-            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, owner: owner, today: today, mapping: mapping,
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, since: since, owner: owner, today: today, mapping: mapping,
                                                    others: others, claude: claude, model: model)
         }
-        put(advice, facts: facts, into: matter, owner: owner, in: context)
+        let before = matter.shownBrief?.writtenAt
+        put(advice, facts: facts, into: matter, owner: owner,
+            news: advice.news.isEmpty || new.isEmpty ? nil : Brief.News(lines: advice.news, mails: new.count, since: before ?? Date()), in: context)
         return advice.cost
     }
 
@@ -928,7 +933,8 @@ enum Adviser {
 
     /// The summary, the step and the brief, with its proposals — each with the facts its ids stand
     /// for, and their keys, so another device finds them.
-    static func put(_ advice: AssistantAsk.Advice, facts: Facts, into matter: Matter, owner: String? = nil, in context: ModelContext, at now: Date = Date()) {
+    static func put(_ advice: AssistantAsk.Advice, facts: Facts, into matter: Matter, owner: String? = nil, news: Brief.News? = nil,
+                    in context: ModelContext, at now: Date = Date()) {
         matter.nextStep = advice.step
         matter.nextStepWhy = advice.why
         if case .todo(let id) = advice.todo { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
@@ -946,7 +952,7 @@ enum Adviser {
         // A question to look up is shown only when it names no one of the matter, and not the owner.
         let personal = WebLookup.personal(matter.parties.flatMap { [$0.name] + $0.spellings } + [owner].compactMap { $0 })
         let questions = advice.research.filter { WebLookup.refusal($0, personal: personal) == nil }
-        matter.shownBrief = (matter.shownBrief ?? Brief()).rewritten(lines: advice.lines, proposals: proposals, questions: questions, at: now)
+        matter.shownBrief = (matter.shownBrief ?? Brief()).rewritten(lines: advice.lines, proposals: proposals, questions: questions, news: news, at: now)
         try? context.save()
     }
 

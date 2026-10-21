@@ -4,7 +4,7 @@ import Foundation
 /// summary and the next step that come from it, and the changes to the to-do list it proposes.
 /// One request, where there were two for the summary and the step.
 public enum AdviserPrompt {
-    public static let version = "adviser-v2"
+    public static let version = "adviser-v3"
 
     public static let system = """
     You are the adviser for one matter in Causabee, a private app that keeps a person's matters \
@@ -67,6 +67,12 @@ public enum AdviserPrompt {
     question). Every card has a one-line `reason` citing its ids. Unused fields are null; \
     `attach` is empty.
 
+    ## news
+
+    When the question lists mails that came since the brief before, `news` says in one or two \
+    short lines what they change — what is new, and what the owner should do now because of it — \
+    citing those mails. Not a summary of them: only what matters. Empty when the question lists none.
+
     ## research
 
     General questions worth looking up on the web, when the answer would change what the owner \
@@ -97,6 +103,7 @@ public enum AdviserPrompt {
             "summary": ["type": "array", "items": object(["text": string, "cites": cites])],
             "step": string, "why": string, "todo": optional, "step_cites": cites,
             "research": ["type": "array", "items": string],
+            "news": ["type": "array", "items": object(["text": string, "cites": cites])],
             "proposals": ["type": "array", "items": object([
                 "kind": ["type": "string", "enum": ["new_todo", "mark_done", "correct_text", "waits_for", "change_owner", "change_date"]],
                 "todo": optional, "party": optional, "into": optional, "from": optional, "subject": optional, "time": optional,
@@ -122,13 +129,17 @@ public enum AdviserPrompt {
         public var stepCites: [String]
         public var proposals: [AssistantPrompt.Reply.Card]
         public var research: [String]?
+        public var news: [AssistantPrompt.Reply.Line]?
 
-        enum CodingKeys: String, CodingKey { case brief, summary, step, why, todo, proposals, research, stepCites = "step_cites" }
+        enum CodingKeys: String, CodingKey { case brief, summary, step, why, todo, proposals, research, news, stepCites = "step_cites" }
     }
 
     /// The question, in the matter's language, with what the owner put away.
-    public static func question(_ facts: Facts, dismissed: [String], asked: [String] = []) -> String {
+    public static func question(_ facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = []) -> String {
         var question = facts.language == "German" ? "Schreibe den Überblick dieser Sache." : "Write the brief of this matter."
+        if !since.isEmpty {
+            question += "\n\nCame since the brief before:\n" + since.map { "- \($0)" }.joined(separator: "\n")
+        }
         if !dismissed.isEmpty {
             question += "\n\nPut away by the owner, not to be proposed again:\n" + dismissed.map { "- \($0)" }.joined(separator: "\n")
         }
@@ -151,6 +162,8 @@ extension AssistantAsk {
         public var proposals: [AssistantPrompt.Reply.Card]
         /// General questions to look up, as asked: checked for anything personal before they are shown.
         public var research: [String] = []
+        /// What the mail since the brief before changes; empty when none came.
+        public var news: [String] = []
         public var cost: Double
     }
 
@@ -159,17 +172,17 @@ extension AssistantAsk {
         model.cost(input: Int(Double(facts.text.count) / 3.2) + 2_400, output: 1_600)
     }
 
-    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], owner: String?, today: String, mapping url: URL, claude: Claude,
+    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], owner: String?, today: String, mapping url: URL, claude: Claude,
                               model: Claude.Model = .opus) async throws -> Advice {
-        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked), inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked, since: since), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
         return try await advise(prepared, facts: facts, claude: claude, model: model)
     }
 
     /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
-    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], owner: String?, today: String, mapping: Pseudonymizer.Mapping,
+    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], owner: String?, today: String, mapping: Pseudonymizer.Mapping,
                               others: [Pseudonymizer.Entry], claude: Claude, model: Claude.Model = .opus) async throws -> Advice {
-        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked), inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked, since: since), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: mapping, others: others, save: nil)
         return try await advise(prepared, facts: facts, claude: claude, model: model)
     }
@@ -202,6 +215,7 @@ extension AssistantAsk {
                       summary: reply.summary.map { real($0.text) }, step: real(reply.step), why: real(reply.why),
                       todo: reply.todo.flatMap { refs[$0] }, proposals: proposals,
                       // Checked as they came, disguised: a question with a placeholder in it named someone.
-                      research: (reply.research ?? []).filter { WebLookup.refusal($0) == nil }, cost: cost)
+                      research: (reply.research ?? []).filter { WebLookup.refusal($0) == nil },
+                      news: (reply.news ?? []).map { real($0.text) }, cost: cost)
     }
 }

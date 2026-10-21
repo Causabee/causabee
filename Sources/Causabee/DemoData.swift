@@ -75,7 +75,7 @@ enum DemoData {
     /// Counts up whenever the demo's words or matters change: a demo store filled with an older
     /// version is emptied and filled again — with today's dates too. Two things are overdue in it, in
     /// the care matter and the trip: enough to show what overdue looks like, not a page of it. Only ever the demo's own store.
-    static let contentVersion = 6
+    static let contentVersion = 7
     private static let seededKey = "demo.filled"
 
     /// The demo's own talk, where it stands ahead of the clock, is put an hour behind it — in the
@@ -344,7 +344,7 @@ enum DemoData {
         /// The adviser's brief, as if written this morning: what is understood, what the owner said,
         /// and its proposals for the list — each a card about the to-dos by their handles.
         func brief(_ lines: [(Brief.Part, String)], said: [String], proposals: [(kind: String, text: String, todo: String?, owner: String, reason: String)],
-                   lookups: [(question: String, answer: String?, source: (String, String)?)] = []) {
+                   lookups: [(question: String, answer: String?, source: (String, String)?)] = [], news: [String]? = nil) {
             var brief = Brief(lines: lines.map { Brief.Line(part: $0.0, text: $0.1) }, said: said.map { Brief.Said(text: $0) },
                               writtenAt: DemoData.date(0, hour: 8))
             brief.proposals = proposals.map { item in
@@ -370,6 +370,7 @@ enum DemoData {
                 }
                 return lookup
             }
+            if let news { brief.news = Brief.News(lines: news, mails: 2, since: DemoData.date(-2)) }
             matter.shownBrief = brief
         }
 
@@ -743,7 +744,9 @@ enum DemoData {
                 lookups: [(question: "How long does a German long-term care insurer have to decide on an application for a care level?",
                            answer: "Within 25 working days of receiving the application (§ 18c SGB XI). If it is late without a reason it is not responsible for, it pays 70 euros for each week begun.",
                            source: ("§ 18c SGB XI — gesetze-im-internet.de", "https://www.gesetze-im-internet.de/sgb_11/__18c.html")),
-                          (question: "What does German long-term care insurance pay towards home care visits at care level 2?", answer: nil, source: nil)])
+                          (question: "What does German long-term care insurance pay towards home care visits at care level 2?", answer: nil, source: nil)],
+                news: ["The insurer wants the medication list, the doctor's report and the hospital letter ready for the visit — gather them before Tuesday.",
+                       "The bath seat prescription is ready at the practice: the supply store needs it before it delivers."])
 
         c.talking = {
             c.cite("T1", "papers"); c.cite("T2", "physio"); c.cite("T3", "sign"); c.cite("T4", "bathseat")

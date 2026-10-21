@@ -102,3 +102,17 @@ struct SentDraftTests {
         #expect(LabelIntake.SentDraft.opened(in: data) == ["Rückfrage zur Abrechnung"])
     }
 }
+
+struct BriefNewsTests {
+    @Test func newsStaysUntilSeenAndGoesWithTheNextBrief() {
+        var brief = Brief(writtenAt: Date())
+        brief.news = Brief.News(lines: ["Neu: der Bescheid ist da."], mails: 1, since: Date())
+        let kept = brief.rewritten(lines: [], proposals: [])
+        #expect(kept.news?.lines == ["Neu: der Bescheid ist da."])
+        var seen = kept
+        seen.news?.seen = true
+        #expect(seen.rewritten(lines: [], proposals: []).news == nil)
+        let fresh = seen.rewritten(lines: [], proposals: [], news: Brief.News(lines: ["Noch neuer."], mails: 2, since: Date()))
+        #expect(fresh.news?.lines == ["Noch neuer."])
+    }
+}

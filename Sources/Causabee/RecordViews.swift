@@ -968,6 +968,26 @@ struct BriefDetails: View {
     var body: some View {
         if let brief = matter.shownBrief {
             VStack(alignment: .leading, spacing: 12) {
+                if let news = brief.news, !news.seen {
+                    // What the new mail changes, first: on a pale honey, until it is seen.
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 8) {
+                            BeeChip(text: "NEW")
+                            Text("\(news.mails == 1 ? "1 mail" : "\(news.mails) mails") since \(Dates.short(news.since))")
+                                .font(.caption).foregroundStyle(.secondary)
+                            Spacer(minLength: 4)
+                            Button("Seen") { withAnimation { matter.sawNews(); try? context.save() } }
+                                .buttonStyle(.plain).font(.caption.weight(.medium)).foregroundStyle(Theme.gold)
+                                .accessibilityIdentifier("brief.seen")
+                        }
+                        ForEach(Array(news.lines.enumerated()), id: \.offset) { _, line in
+                            Text(line).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
+                }
                 if !brief.lines.isEmpty {
                     DisclosureGroup(isExpanded: $opens) {
                         VStack(alignment: .leading, spacing: 10) {
