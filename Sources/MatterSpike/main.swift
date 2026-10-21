@@ -1170,6 +1170,7 @@ func rules() throws {
         case .notSameParty: "\(rule.subject) is not \(rule.object)"
         case .partyName: "\(rule.subject) is called \(rule.object)"
         case .notInMatter: "\(rule.subject) is not part of \(rule.matterKey ?? "the matter")"
+        case .publicName: "\(rule.subject) is public: never disguised"
         case nil: "a rule of a newer Causabee (\(rule.kindRaw)), left alone"
         }
         print("  \(number + 1). \(rule.isOn ? "on " : "off") \(what)")

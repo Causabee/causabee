@@ -4,7 +4,7 @@ import Foundation
 /// facts alone, in lines that cite what they rest on and cards the owner ticks. Versioned like
 /// the extraction prompt.
 public enum AssistantPrompt {
-    public static let version = "assistant-v13"
+    public static let version = "assistant-v14"
 
     public static let system = """
     You are the assistant inside Causabee, a private app that keeps a person's matters in order: \
@@ -110,7 +110,9 @@ public enum AssistantPrompt {
     facts allow in the lines, say in `not_in_facts` what they do not, and offer this card: `text` \
     is one general question that can go out on its own, without the facts — no names or \
     placeholders, no places, no dates, amounts or numbers of this case; name the country or the \
-    law when it matters ("in Germany", "§ 18c SGB XI"). The owner decides whether it is looked \
+    law when it matters ("in Germany", "§ 18c SGB XI"); a big company or brand that stands in the \
+    facts under its real name, not as a placeholder, the owner marked as public and may be named. \
+    The owner decides whether it is looked \
     up. At most one; never for what the facts answer.
     Suggest a card only when the facts or the owner's words carry it. None is fine. But when the \
     owner writes or dictates something to keep — "note that …", "appointment on …", "the number \

@@ -4,7 +4,7 @@ import Foundation
 /// summary and the next step that come from it, and the changes to the to-do list it proposes.
 /// One request, where there were two for the summary and the step.
 public enum AdviserPrompt {
-    public static let version = "adviser-v3"
+    public static let version = "adviser-v4"
 
     public static let system = """
     You are the adviser for one matter in Causabee, a private app that keeps a person's matters \
@@ -80,7 +80,9 @@ public enum AdviserPrompt {
     procedure goes, what a term in a contract usually means. They go out on their own, without \
     the facts, so each must be understandable alone and say nothing about the owner or the \
     matter: no names or placeholders, no places, no dates or amounts of this case, no numbers. \
-    Name the country or the law when it matters ("in Germany", "§ 18c SGB XI"). At most two; none \
+    Name the country or the law when it matters ("in Germany", "§ 18c SGB XI"). A big company or \
+    brand that stands in the facts under its real name — not as a placeholder — the owner marked \
+    as public: it may be named. At most two; none \
     is fine and usual. Never ask what was looked up already, or was asked before (in the question).
     """
 

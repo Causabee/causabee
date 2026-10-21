@@ -152,6 +152,7 @@ struct PhonePartyRow: View {
         MailAddressItems(addresses: CardActions.addresses(of: party))
         ContactItems(party: party)
         AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
+        PublicNameItem(party: party)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         Menu(Say.mergeWith, systemImage: "arrow.triangle.merge") {
             ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in

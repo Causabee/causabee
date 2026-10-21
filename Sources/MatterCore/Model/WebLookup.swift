@@ -46,7 +46,8 @@ public enum WebLookup {
     /// longer name — a company's, "Healthbridge Care Fund" — its first word only: "Care" and "Fund"
     /// are words anyone asks about.
     public static func personal(_ names: [String]) -> [String] {
-        Array(Set(names.flatMap { name -> [String] in
+        // A name the owner marked as public may be asked about: it says nothing about anyone.
+        Array(Set(names.filter { !PublicNames.covers($0) }.flatMap { name -> [String] in
             let words = name.split { !$0.isLetter }.map(String.init)
             return [name] + (words.count <= 2 ? words : Array(words.prefix(1)))
         }.filter { $0.count >= 3 }))
