@@ -81,3 +81,12 @@ struct BriefTests {
         #expect(about.contains("Kein Verkauf."))
     }
 }
+
+struct OutOfCreditTests {
+    @Test func anAccountWithNoCreditSaysSoAndIsNotTriedAgain() {
+        let body = #"{"error":{"message":"You have no credits remaining.","type":"insufficient_quota","code":"credit_balance_exhausted"}}"#
+        #expect(Claude.isOutOfCredit(Data(body.utf8)))
+        #expect(Claude.Failure.http(status: 429, body: body).forPeople.contains("no credit left"))
+        #expect(Claude.Failure.http(status: 429, body: #"{"error":{"type":"rate_limit_error"}}"#).forPeople.contains("Too many requests"))
+    }
+}
