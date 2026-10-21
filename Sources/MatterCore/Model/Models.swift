@@ -326,6 +326,9 @@ public final class Rule {
         case partyName = "party_name"
         /// The party called `subject` is not part of the matter `matterKey`: the owner took them out.
         case notInMatter = "not_in_matter"
+        /// `subject` is a public name — a big company, a brand: never disguised, and allowed in a
+        /// question looked up on the web. Everywhere, whatever the matter.
+        case publicName = "public_name"
     }
     public var kindRaw: String = Kind.sameParty.rawValue
     public var subject: String = ""

@@ -1311,6 +1311,7 @@ struct MatterStatusView: View {
                                     }
                                 }
                                 Button("Ask Causabee") { talk(party.name, "Person") }
+                                PublicNameItem(party: party)
                                 Divider()
                                 Button(Say.removeFromMatter, role: .destructive) {
                                     withAnimation { membership.removeByHand(in: context, origin: origin, undo: undoManager) }
@@ -2223,6 +2224,7 @@ struct PartyRow: View {
                 MailAddressItems(addresses: addresses)
                 ContactItems(party: party)
                 Button("Ask Causabee", action: talk)
+                PublicNameItem(party: party)
                 Button(Say.edit, systemImage: "pencil") {
                     name = party.name
                     role = membership.role ?? ""

@@ -161,6 +161,10 @@ public struct Pseudonymizer: Sendable {
                 skipped.append(.init(text: entity.text, reason: reason))
                 continue
             }
+            if [.organization, .person, .place].contains(entity.kind), PublicNames.covers(entity.text) {
+                skipped.append(.init(text: entity.text, reason: "public, as you marked it"))
+                continue
+            }
             if entity.source == .onDevice {
                 switch trimmed(entity.text) {
                 case .success(let text): entity.text = text
@@ -819,6 +823,9 @@ public struct Pseudonymizer: Sendable {
     /// the mapping knew `Süß` and `Mühlberger`, and `Herrn Süss` and `Herr Muehlberger` went out in
     /// the clear.
     public var disguiser: Replacer {
+        // What the owner marked as public is left as it is: a big company, a brand — and every
+        // entry learned from it, "Expedia" out of "Expedia Inc.".
+        let entries = entries.filter { !PublicNames.covers($0.original) && !($0.partOf.map(PublicNames.covers) ?? false) }
         let exact = entries.map { ($0.original, $0.standIn) }
         let variants = entries.filter { [.person, .organization, .street, .place, .postalCity].contains($0.kind) }
             .flatMap { entry in Self.spellings(of: entry.original).map { ($0, entry.standIn) } }

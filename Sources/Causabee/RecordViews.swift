@@ -1282,8 +1282,19 @@ struct LookUpCard: View {
     @State private var problem: String?
     @State private var found: WebLookup.Lookup?
 
+    /// Counted up when a name is marked public here: the card looks again.
+    @State private var marked = 0
+
+    /// The person or company of the matter the question names, when that is what stopped it.
+    private var namedParty: String? {
+        let lower = question.lowercased()
+        return (matter?.parties ?? []).map(\.name).filter { $0.count >= 3 }.sorted { $0.count > $1.count }
+            .first { lower.contains($0.lowercased()) }
+    }
+
     /// Why it may not go out: a name of the matter or the owner in it, a number, an address.
     private var refusal: String? {
+        _ = marked
         let owner = ((try? context.fetch(FetchDescriptor<Profile>())) ?? []).flatMap(\.names)
         let people = (matter?.parties ?? []).flatMap { [$0.name] + $0.spellings }
         return WebLookup.refusal(question, personal: WebLookup.personal(people + owner.filter { !$0.contains("@") }))
@@ -1314,6 +1325,11 @@ struct LookUpCard: View {
                     if let refusal {
                         // Said, not sent: the check on the device found something personal in it.
                         Text("Not sent: \(refusal)").font(.caption).foregroundStyle(Theme.warning)
+                        // A big company or a brand is nothing personal: marked public, the question may go.
+                        if let name = namedParty {
+                            Button("“\(name)” is a public name — not disguised") { PublicNames.mark(name, public: true, in: context); marked += 1 }
+                                .buttonStyle(.plain).font(.caption.weight(.medium)).foregroundStyle(Theme.gold)
+                        }
                     } else {
                         Text("Only this question goes to the web — nothing of the matter.").font(.caption).foregroundStyle(.secondary)
                         if let problem { Text(problem).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
@@ -1354,4 +1370,55 @@ struct LookUpCard: View {
             looking = false
         }
     }
+}
+
+/// "Public name": a big company or a brand, never disguised, and allowed in a question looked up on
+/// the web — in a person's or a company's menu, ticked when it is so. The same on every device.
+struct PublicNameItem: View {
+    let party: Party
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        let isPublic = PublicNames.covers(party.name)
+        Toggle(isOn: Binding(get: { isPublic }, set: { PublicNames.mark(party.name, public: $0, in: context) })) {
+            Label("Public Name — Not Disguised", systemImage: "globe")
+        }
+        .help("For a big company or a brand: its name goes to the AI as it is, and may be named in a question looked up on the web.")
+    }
+}
+
+/// Settings › Public names: every name marked as public, to take back, and one to add by hand —
+/// the same list on every device.
+struct PublicNamesSettings: View {
+    @Environment(\.modelContext) private var context
+    @State private var names: [String] = []
+    @State private var typed = ""
+
+    var body: some View {
+        ForEach(names, id: \.self) { name in
+            HStack {
+                Text(name)
+                Spacer()
+                Button { PublicNames.mark(name, public: false, in: context); load() } label: { Image(systemName: "xmark.circle.fill") }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                    .accessibilityLabel("Disguise “\(name)” again")
+            }
+        }
+        HStack {
+            TextField("Add a company or brand", text: $typed)
+                .onSubmit(add)
+            Button("Add", action: add).disabled(typed.trimmingCharacters(in: .whitespaces).count < 2)
+        }
+        .onAppear(perform: load)
+    }
+
+    private func add() {
+        let name = typed.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard name.count >= 2 else { return }
+        PublicNames.mark(name, public: true, in: context)
+        typed = ""
+        load()
+    }
+
+    private func load() { names = PublicNames.names(in: context) }
 }

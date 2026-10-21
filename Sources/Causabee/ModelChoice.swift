@@ -70,6 +70,10 @@ struct ModelSettingsView: View {
             Section { CloudSettings() } header: { Text("iCloud") }
             Section { CalendarSettings() } header: { Text("Calendar and Reminders") }
             Section { FolderSettings() } header: { Text("Matter folders in iCloud Drive") }
+            Section { PublicNamesSettings() } header: { Text("Public names") } footer: {
+                Text("Big companies and brands — Expedia, Lufthansa — are not disguised: the AI reads them as they are, and a question looked up on the web may name them. Mark one here, or in a person's menu.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section {
                 KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
                 KeyField(title: "Mistral", name: "MISTRAL_API_KEY")
@@ -299,6 +303,8 @@ final class StoredChanges {
 
     func watch(_ context: ModelContext) {
         self.context = context
+        // The names the owner marked as public, read before anything is disguised.
+        PublicNames.refresh(in: context)
         guard !watching else { return }
         watching = true
         NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main) { _ in
@@ -308,6 +314,7 @@ final class StoredChanges {
         NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
                 StoredChanges.shared.count += 1
+                if let context = StoredChanges.shared.context { PublicNames.refresh(in: context) }
                 if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] saved, change %d", StoredChanges.shared.count) }
             }
         }
@@ -323,6 +330,8 @@ final class StoredChanges {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 if delay == 2 { self.pending = false }
                 self.count += 1
+                // A name marked public on another device counts here too.
+                if let context = self.context { PublicNames.refresh(in: context) }
                 // What another device kept of a mail or a file comes beside this store too.
                 if delay == 15, let store = KeptTexts.store, let context = self.context { KeptTexts.share(besides: store, in: context) }
                 #if DEBUG

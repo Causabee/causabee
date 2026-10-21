@@ -110,6 +110,10 @@ struct SettingsSheet: View {
 
                 Section { CalendarSettings() } header: { Text("Calendar and Reminders") }
 
+                Section { PublicNamesSettings() } header: { Text("Public names") } footer: {
+                    Text("Big companies and brands — Expedia, Lufthansa — are not disguised: the AI reads them as they are, and a question looked up on the web may name them. Mark one here, or in a person's menu.")
+                }
+
                 Section {
                     if lists.isEmpty { Label("Not here yet", systemImage: "hourglass").foregroundStyle(Theme.warning) }
                     ForEach(lists) { list in
