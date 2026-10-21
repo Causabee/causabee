@@ -30,4 +30,25 @@ struct AdviserLiveTests {
             throw error
         }
     }
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["CAUSABEE_LIVE_KEY"] != nil))
+    func theAssistantOffersALookUp() async throws {
+        let env = ProcessInfo.processInfo.environment
+        let model = Claude.Model.choices.first { $0.id == env["CAUSABEE_LIVE_MODEL"] } ?? .opus
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "pflege", name: "Pflege für Mama")
+        context.insert(matter)
+        let todo = Todo(text: "Auf den Bescheid der Pflegekasse warten", owner: .other, due: nil,
+                        source: Source(kind: .mail, pointer: "x", date: Date()), origin: "a")
+        context.insert(todo)
+        todo.matter = matter
+        let facts = FactSheet.facts(for: [matter], today: MatterStatus.day(Date()))
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("live-mapping-\(UUID().uuidString).json")
+        let answer = try await AssistantAsk.ask(question: "Wie lange darf sich die Pflegekasse mit dem Bescheid Zeit lassen?", inHand: nil, earlier: [],
+                                                facts: facts, owner: "Mara", today: MatterStatus.day(Date()), mapping: url,
+                                                claude: Claude(key: env["CAUSABEE_LIVE_KEY"]!), model: model)
+        let lookUps = answer.reply.cards.filter { $0.kind == .lookUp }
+        print("LIVE ASK lines=\(answer.reply.lines.map(\.text)) lookUp=\(lookUps.map(\.text)) refusal=\(lookUps.map { WebLookup.refusal($0.text) ?? "none" })")
+        #expect(!lookUps.isEmpty)
+    }
 }

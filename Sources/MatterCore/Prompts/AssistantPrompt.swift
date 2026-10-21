@@ -4,7 +4,7 @@ import Foundation
 /// facts alone, in lines that cite what they rest on and cards the owner ticks. Versioned like
 /// the extraction prompt.
 public enum AssistantPrompt {
-    public static let version = "assistant-v12"
+    public static let version = "assistant-v13"
 
     public static let system = """
     You are the assistant inside Causabee, a private app that keeps a person's matters in order: \
@@ -105,6 +105,13 @@ public enum AssistantPrompt {
     "the goal is to rent the flat out, not to sell it", "Georg is our lawyer". The brief among the \
     facts may be wrong; the owner is right. `text` is the correction as one plain sentence in the \
     owner's words. A wrong name or role of one person is `rename_party` or `change_role` as well.
+    - `look_up`: the question needs general knowledge the facts do not hold — a legal period, \
+    what an insurer usually pays, how a procedure goes, what a term usually means. Answer what the \
+    facts allow in the lines, say in `not_in_facts` what they do not, and offer this card: `text` \
+    is one general question that can go out on its own, without the facts — no names or \
+    placeholders, no places, no dates, amounts or numbers of this case; name the country or the \
+    law when it matters ("in Germany", "§ 18c SGB XI"). The owner decides whether it is looked \
+    up. At most one; never for what the facts answer.
     Suggest a card only when the facts or the owner's words carry it. None is fine. But when the \
     owner writes or dictates something to keep — "note that …", "appointment on …", "the number \
     is …", "add …" — or a text they pasted holds tasks, dates, people or numbers, offer a card for \
@@ -143,7 +150,7 @@ public enum AssistantPrompt {
         return object([
             "lines": ["type": "array", "items": object(["text": string, "cites": ["type": "array", "items": string]])],
             "cards": ["type": "array", "items": object([
-                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "short_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact", "new_appointment", "new_deadline", "add_detail", "correct_brief"]],
+                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "short_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact", "new_appointment", "new_deadline", "add_detail", "correct_brief", "look_up"]],
                 "todo": optional,
                 "party": optional,
                 "into": optional,
@@ -178,6 +185,8 @@ public enum AssistantPrompt {
                 case shortMessage = "short_message"
                 /// The owner corrects what is understood of the matter: kept in its brief, which is written around it.
                 case correctBrief = "correct_brief"
+                /// A general question to look up on the web — sent alone, only when the owner taps.
+                case lookUp = "look_up"
             }
             public var kind: Kind
             public var todo: String?
