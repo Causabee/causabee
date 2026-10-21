@@ -1155,15 +1155,26 @@ final class MailSheet: NSObject, MFMailComposeViewControllerDelegate {
             let pieces = await Task.detached {
                 originals.map(ImageSize.attachable).compactMap { file in FolderImport.data(of: file).map { (file, $0) } }
             }.value
-            show(draft, pieces: pieces)
+            // The screen may still be moving — the card turning, a sheet going: shown once it rests, not
+            // dropped. Dropped, the first tap did nothing, and the mail had to be written again.
+            for _ in 0..<40 {
+                if let top = restingTop() { show(draft, pieces: pieces, over: top); return }
+                try? await Task.sleep(for: .milliseconds(250))
+            }
         }
         return true
     }
 
-    private static func show(_ draft: CardActions.MailDraft, pieces: [(file: URL, data: Data)]) {
+    /// What is on top of the screen, when nothing is coming or going; nil while something moves.
+    private static func restingTop() -> UIViewController? {
         let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first { $0.activationState == .foregroundActive }
-        guard var top = scene?.keyWindow?.rootViewController else { return }
-        while let over = top.presentedViewController { top = over }
+        guard var top = scene?.keyWindow?.rootViewController else { return nil }
+        while let over = top.presentedViewController, !over.isBeingDismissed { top = over }
+        guard !top.isBeingPresented, !top.isBeingDismissed, top.presentedViewController == nil, top.view.window != nil else { return nil }
+        return top
+    }
+
+    private static func show(_ draft: CardActions.MailDraft, pieces: [(file: URL, data: Data)], over top: UIViewController) {
         // No account in Mail — Gmail, Outlook and the like: the share sheet, with the files and the
         // words, so the files are not lost on the way; the address is said in the words' first line.
         guard MFMailComposeViewController.canSendMail() else {
