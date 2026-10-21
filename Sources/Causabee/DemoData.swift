@@ -482,6 +482,12 @@ enum DemoData {
                           cards: [card("short_message", text: "Hi Sebastian, did everything go well with posting the letters? Thanks!",
                                        reason: "Asks whether the letters were posted.", cites: [])])
         }
+        // Asked how long something may take: what the facts say, and a question to look up on the web.
+        if question.lowercased().contains("how long") || question.lowercased().contains("wie lange") {
+            return answer(lines: [("The insurer’s letter says it decides “within 25 working days”; the facts do not say what happens if it is late.", [])],
+                          cards: [card("look_up", text: "How long does a German long-term care insurer have to decide on an application for a care level, and what if it is late?",
+                                       reason: "The rule is not in your mails.", cites: [])])
+        }
         // Asked to write a message: a draft, to see its card — nothing of it is real.
         if question.lowercased().contains("message") || question.lowercased().contains("mail") {
             var draft = card("draft_message", text: "Hello Sebastian, did everything go well with posting the letters? Thank you!\nAlex",

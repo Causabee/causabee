@@ -467,6 +467,9 @@ enum CardActions {
                 undo = .date(deadline.persistentModelID, day: deadline.day, time: nil)
                 deadline.day = day
             } else { return .nothing }
+        case .lookUp:
+            // Looked up by its own card, on a tap, away from here: it changes nothing in the store.
+            return .nothing
         case .correctBrief:
             guard !text.isEmpty, let matter = scope else { return .nothing }
             matter.say(text)
@@ -955,6 +958,21 @@ enum Adviser {
         let questions = advice.research.filter { WebLookup.refusal($0, personal: personal) == nil }
         matter.shownBrief = (matter.shownBrief ?? Brief()).rewritten(lines: advice.lines, proposals: proposals, questions: questions, news: news, at: now)
         try? context.save()
+    }
+
+    /// A question from the assistant, looked up: kept with the matter's lookups, so its brief knows
+    /// it; without a matter, only answered. Returns what was found.
+    static func lookUp(question: String, in matter: Matter?, context: ModelContext) async throws -> (answer: String, sources: [WebLookup.Source]) {
+        let model = ModelChoice.assistant
+        guard let claude = ModelChoice.client(for: model) else { throw Missing.key }
+        let found = try await WebLookup.ask(question, language: AssistantAsk.language(of: [question]),
+                                            country: Locale.current.region?.identifier, claude: claude, model: model)
+        if let matter {
+            let id = matter.ask(question)
+            matter.settle(id, answer: found.answer, sources: found.sources)
+            try? context.save()
+        }
+        return (found.answer, found.sources)
     }
 
     /// A question the owner chose to have looked up: it alone goes out, checked once more, in a

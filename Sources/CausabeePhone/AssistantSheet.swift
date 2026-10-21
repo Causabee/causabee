@@ -667,6 +667,11 @@ struct PhoneTurnView: View {
                                     Haptics.tap()
                                     withAnimation { navigation.mark(record, card: index, dismissed: put, context: context) }
                                 })
+                } else if card.kind == .lookUp {
+                    // A question for the web: sent alone, only on a tap — as on the Mac.
+                    LookUpCard(question: card.text, reason: card.reason, matter: record.matter ?? matter,
+                               dismissed: turn.dismissedCards.contains(index),
+                               setDismissed: { put in withAnimation { navigation.mark(record, card: index, dismissed: put, context: context) } })
                 } else if !reading || card.kind == .draftMessage {
                     // While reading, what is suggested waits: a drafted mail stays, as on the Mac.
                     PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
@@ -955,6 +960,7 @@ struct PhoneActionCard: View {
         case .changeRole: return "Role changed · " + name(card.party)
         case .addNote: return card.todo == nil ? "Note added" : "Note added · " + name(card.todo)
         case .correctBrief: return "Brief corrected"
+        case .lookUp: return "Looked up"
         case .changeDate: return "Date changed"
         case .newMatter: return "Matter started"
         case .waitsFor: return "Now waits for " + name(card.into)
@@ -1070,6 +1076,7 @@ struct PhoneActionCard: View {
         case .sameParty: "Merge"
         case .addNote: "Save note"
         case .correctBrief: "Correct the brief"
+        case .lookUp: "Look up"
         case .draftMessage: "Open in Mail"
         case .shortMessage: "Copy"
         case .changeDate: "Change date"
@@ -1092,6 +1099,7 @@ struct PhoneActionCard: View {
         case .changeRole: return "Change role?"
         case .addNote: return card.todo == nil ? "Note for the matter?" : "Note for the task?"
         case .correctBrief: return "Correct the brief?"
+        case .lookUp: return "Look up on the web?"
         case .draftMessage: return "Draft"
         case .shortMessage: return "Message"
         case .changeDate: return "Change date?"
@@ -1117,6 +1125,7 @@ struct PhoneActionCard: View {
         case .changeRole: return "\(name(card.party))  is here:"
         case .addNote: return card.todo == nil ? nil : name(card.todo)
         case .correctBrief: return nil
+        case .lookUp: return nil
         case .shortMessage: return nil
         case .draftMessage:
             guard let recipient else { return "To: (fill in in Mail)" }

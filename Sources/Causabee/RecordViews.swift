@@ -1160,7 +1160,7 @@ private struct ProposalRow: View {
     }
 }
 
-private extension View {
+extension View {
     /// The button that takes a proposal: the filled one of each device.
     @ViewBuilder func takeStyle() -> some View {
         #if os(iOS)
@@ -1217,7 +1217,7 @@ private struct LookupRow: View {
 }
 
 /// What was found: the question, the answer, and where it comes from — to check before relying on it.
-private struct FoundRow: View {
+struct FoundRow: View {
     let lookup: WebLookup.Lookup
 
     var body: some View {
@@ -1265,5 +1265,93 @@ struct NewsLine: View {
         }
         .font(.callout)
         .foregroundStyle(.primary)
+    }
+}
+
+/// The assistant's "Look up on the web?": the general question, word for word, as it would go out —
+/// checked on the device for anything personal first — and a tap to send it, alone, without the
+/// matter. What is found stands in the card, and with the matter's brief. The same on every device.
+struct LookUpCard: View {
+    let question: String
+    let reason: String
+    let matter: Matter?
+    var dismissed = false
+    var setDismissed: (Bool) -> Void = { _ in }
+    @Environment(\.modelContext) private var context
+    @State private var looking = false
+    @State private var problem: String?
+    @State private var found: WebLookup.Lookup?
+
+    /// Why it may not go out: a name of the matter or the owner in it, a number, an address.
+    private var refusal: String? {
+        let owner = ((try? context.fetch(FetchDescriptor<Profile>())) ?? []).flatMap(\.names)
+        let people = (matter?.parties ?? []).flatMap { [$0.name] + $0.spellings }
+        return WebLookup.refusal(question, personal: WebLookup.personal(people + owner.filter { !$0.contains("@") }))
+    }
+
+    var body: some View {
+        let shown = found ?? matter?.found(for: question)
+        if dismissed, shown == nil {
+            HStack(spacing: 8) {
+                Text("You put away a question to look up").font(.caption).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Button(Say.showAgain) { setDismissed(false) }.buttonStyle(.plain).font(.caption.weight(.medium)).foregroundStyle(Theme.gold)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    Image(systemName: "globe").foregroundStyle(Theme.gold)
+                    Text(shown == nil ? "Look up on the web?" : "Looked up on the web").font(.caption).foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                }
+                if let shown {
+                    FoundRow(lookup: shown)
+                } else {
+                    Text("“\(question)”").fixedSize(horizontal: false, vertical: true)
+                    if !reason.isEmpty { Text(reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                    if let refusal {
+                        // Said, not sent: the check on the device found something personal in it.
+                        Text("Not sent: \(refusal)").font(.caption).foregroundStyle(Theme.warning)
+                    } else {
+                        Text("Only this question goes to the web — nothing of the matter.").font(.caption).foregroundStyle(.secondary)
+                        if let problem { Text(problem).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
+                        HStack(spacing: 12) {
+                            if looking {
+                                BeeLoader(size: 9)
+                                Text("Looking it up …").font(.caption).foregroundStyle(.secondary)
+                            } else {
+                                Button("Look up") { look() }.takeStyle().accessibilityIdentifier("assistant.lookup")
+                                Button("Put away") { setDismissed(true) }
+                                    .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.box, in: RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private func look() {
+        looking = true
+        problem = nil
+        Task {
+            do {
+                let result = try await Adviser.lookUp(question: question, in: matter, context: context)
+                var lookup = WebLookup.Lookup(question: question)
+                lookup.state = .answered
+                lookup.answer = result.answer
+                lookup.sources = result.sources
+                lookup.date = Date()
+                found = lookup
+            } catch {
+                problem = plainWords(error)
+            }
+            looking = false
+        }
     }
 }

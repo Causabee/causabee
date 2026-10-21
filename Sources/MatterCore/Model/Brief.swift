@@ -163,6 +163,22 @@ extension Matter {
         return (entries ?? []).filter { ($0.date ?? .distantPast) > written }
     }
 
+    /// A question to look up, kept with the others — the one already there when it was asked before.
+    @discardableResult
+    public func ask(_ question: String) -> UUID {
+        var brief = shownBrief ?? Brief()
+        if let known = brief.lookups.first(where: { $0.question.lowercased() == question.lowercased() }) { return known.id }
+        let lookup = WebLookup.Lookup(question: question)
+        brief.lookups.append(lookup)
+        shownBrief = brief
+        return lookup.id
+    }
+
+    /// What was found for a question, when it was looked up.
+    public func found(for question: String) -> WebLookup.Lookup? {
+        shownBrief?.lookups.first { $0.state == .answered && $0.question.lowercased() == question.lowercased() }
+    }
+
     /// A question looked up, with what was found — or put away.
     public func settle(_ lookup: UUID, answer: String? = nil, sources: [WebLookup.Source] = [], dismissed: Bool = false) {
         guard var brief = shownBrief, let index = brief.lookups.firstIndex(where: { $0.id == lookup }) else { return }
