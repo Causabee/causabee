@@ -855,6 +855,10 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .showIntro)) { _ in showsIntro = true }
         .onReceive(NotificationCenter.default.publisher(for: .showSetup)) { _ in showsSetup = true }
         .onReceive(NotificationCenter.default.publisher(for: .newMatter)) { _ in newMatterName = ""; startsMatter = true }
+        // A notification of news tapped: its matter opens.
+        .onReceive(NotificationCenter.default.publisher(for: .openMatterKey)) { note in
+            if let key = note.object as? String, let matter = matters.first(where: { $0.key == key }) { navigation.open(matter) }
+        }
         // After the introduction, the setup — when something Causabee needs is still missing.
         .sheet(isPresented: $showsIntro, onDismiss: {
             if SetupState.isFresh || (!setupLater && !DemoData.isRequested && SetupAssistant.isMissingSomething) { showsSetup = true }
@@ -926,7 +930,10 @@ struct MatterRow: View {
         // White on the sidebar's light ground: the box's grey is nearly that ground, and was gone on it.
         MatterIconTile(matter: matter, size: 26, ground: Theme.card)
         VStack(alignment: .leading, spacing: 2) {
-            Text(matter.name).font(.body).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
+            HStack(spacing: 6) {
+                Text(matter.name).font(.body).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
+                if summary.news != nil { NewsDot() }
+            }
             // Only what asks for a look stands under the name: what is overdue, new mail in a
             // closed matter. How many are open and the next day are on the matter's own page.
             let new = matter.isClosed ? summary.newMailsSinceClosed : 0

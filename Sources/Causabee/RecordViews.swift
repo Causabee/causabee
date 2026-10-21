@@ -1243,3 +1243,27 @@ private struct FoundRow: View {
         }
     }
 }
+
+/// A matter with news the owner has not seen: a small honey dot beside its name — the same in the
+/// sidebar, on the overview's cards and rows, on every device.
+struct NewsDot: View {
+    var body: some View {
+        Circle().fill(Theme.bee).frame(width: 8, height: 8)
+            .overlay(Circle().stroke(Theme.gold.opacity(0.6), lineWidth: 0.5))
+            .accessibilityLabel("New")
+    }
+}
+
+/// On a card: the dot, and the first line of what is new.
+struct NewsLine: View {
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            NewsDot().alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+            Text(text).lineLimit(2).multilineTextAlignment(.leading)
+        }
+        .font(.callout)
+        .foregroundStyle(.primary)
+    }
+}

@@ -99,7 +99,10 @@ struct PhoneMatterRow: View {
         HStack(spacing: 12) {
         MatterIconTile(matter: matter, size: 36, ground: tile)
         VStack(alignment: .leading, spacing: 2) {
-            Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
+            HStack(spacing: 6) {
+                Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
+                if summary.news != nil { NewsDot() }
+            }
             if brief {
                 let new = matter.isClosed ? summary.newMailsSinceClosed : 0
                 let late = matter.isClosed ? 0 : summary.overdue.count

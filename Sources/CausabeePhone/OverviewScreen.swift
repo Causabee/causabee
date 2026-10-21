@@ -101,6 +101,10 @@ struct RootView: View {
         .tint(Theme.gold)
         // Auto, the whole circle, as on the Mac: a matter whose record has changed and come to rest
         // gets its next step and its summary written again — while Causabee is open.
+        // A notification of news tapped: its matter opens.
+        .onReceive(NotificationCenter.default.publisher(for: .openMatterKey)) { note in
+            if let key = note.object as? String, let matter = matters.first(where: { $0.key == key }) { navigation.open(matter) }
+        }
         .task {
             let context = context
             await AutoUpdate.shared.run(context: context) {

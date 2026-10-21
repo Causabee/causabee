@@ -2,6 +2,7 @@ import Foundation
 import MatterCore
 import SwiftData
 import SwiftUI
+import UserNotifications
 #if os(iOS)
 import UIKit
 #endif
@@ -1031,5 +1032,67 @@ final class MailPreparing {
     private static func isHere(_ file: URL) -> Bool {
         guard let status = try? file.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]).ubiquitousItemDownloadingStatus else { return true }
         return status == .current
+    }
+}
+
+extension Notification.Name {
+    /// Open the matter of this key — from a notification tapped.
+    static let openMatterKey = Notification.Name("causabee.openMatterKey")
+}
+
+/// What new mail changes in a matter, told as a notification — once, on whichever device sees the
+/// news first, Auto's or a sync's. Allowed by the owner when the first news comes; nothing without.
+@MainActor
+enum NewsNotice {
+    private static let toldKey = "news.told"
+    private static var looked = -1
+
+    /// Each matter's news not told yet, as a notification: looked at once per change to the store.
+    static func tell(_ matters: () -> [Matter]) {
+        guard !DemoData.isRequested, looked != StoredChanges.shared.count else { return }
+        looked = StoredChanges.shared.count
+        var told = UserDefaults.standard.stringArray(forKey: toldKey) ?? []
+        for matter in matters() where !matter.isClosed && matter.brief != nil {
+            guard let news = matter.shownBrief?.news, !news.seen, let line = news.lines.first else { continue }
+            let mark = "\(matter.key)|\(Int(news.since.timeIntervalSince1970))|\(news.mails)"
+            guard !told.contains(mark) else { continue }
+            told.append(mark)
+            post(title: matter.name, body: line, mails: news.mails, key: matter.key)
+        }
+        UserDefaults.standard.set(Array(told.suffix(200)), forKey: toldKey)
+    }
+
+    private static func post(title: String, body: String, mails: Int, key: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.subtitle = mails == 1 ? "1 new mail" : "\(mails) new mails"
+        content.body = body
+        content.sound = .default
+        content.threadIdentifier = key
+        content.userInfo = ["matter": key]
+        let request = UNNotificationRequest(identifier: "news-\(key)", content: content, trigger: nil)
+        let center = UNUserNotificationCenter.current()
+        Task {
+            if await center.notificationSettings().authorizationStatus == .notDetermined {
+                _ = try? await center.requestAuthorization(options: [.alert, .sound])
+            }
+            try? await center.add(request)
+        }
+    }
+
+    /// Notifications show while Causabee is open too, and a tap opens the matter.
+    static func listen() { UNUserNotificationCenter.current().delegate = Listener.shared }
+
+    final class Listener: NSObject, UNUserNotificationCenterDelegate, Sendable {
+        static let shared = Listener()
+
+        func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+            [.banner, .list, .sound]
+        }
+
+        func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+            guard let key = response.notification.request.content.userInfo["matter"] as? String else { return }
+            await MainActor.run { NotificationCenter.default.post(name: .openMatterKey, object: key) }
+        }
     }
 }

@@ -200,6 +200,8 @@ struct PhoneMatterCard: View {
                 MatterIconTile(matter: matter, size: 38)
                 Text(matter.name).font(Theme.phoneCardTitleFont).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
             }
+            // What new mail changes, first: the brief's news, until it is seen.
+            if let news = summary.news { NewsLine(text: news).font(.subheadline) }
             if let next = summary.next {
                 Text("Next, on \(Dates.short(next.day)): \(next.what)").font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
             }

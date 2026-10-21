@@ -1085,6 +1085,8 @@ struct MatterCard: View {
                 MatterIconTile(matter: matter, size: 34)
                 Text(matter.name).font(Theme.cardTitleFont).foregroundStyle(.primary)
             }
+            // What new mail changes, first: the brief's news, until it is seen.
+            if let news = summary.news { NewsLine(text: news) }
             if let next = summary.next {
                 Text("Next, on \(Dates.short(next.day)): \(next.what)").foregroundStyle(.secondary).lineLimit(2)
             }

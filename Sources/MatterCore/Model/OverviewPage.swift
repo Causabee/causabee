@@ -42,6 +42,8 @@ public struct MatterSummary: Identifiable, Equatable {
     public let newMailsSinceClosed: Int
     public let lastDate: Date?
     public let dated: [Dated]
+    /// What new mail changes, as the brief says, until the owner has seen it: its first line.
+    public let news: String?
 
     public var isPinned: Bool { pinnedAt != nil }
     /// Something going on: an open task, or a day ahead.
@@ -75,6 +77,7 @@ public struct MatterSummary: Identifiable, Equatable {
         let dates = entries.compactMap(\.date)
         lastDate = dates.max()
         newMailsSinceClosed = matter.closedAt.map { closed in dates.filter { $0 > closed }.count } ?? 0
+        news = matter.brief == nil ? nil : matter.shownBrief?.news.flatMap { $0.seen ? nil : $0.lines.first }
     }
 }
 
