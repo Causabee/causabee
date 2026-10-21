@@ -897,6 +897,7 @@ enum Adviser {
         let today = MatterStatus.day(Date())
         let facts = FactSheet.facts(for: [matter], today: today, mails: 40)
         let dismissed = self.dismissed(in: matter)
+        let asked = (matter.shownBrief?.lookups ?? []).map(\.question)
         #if os(iOS)
         // Switched away or locked meanwhile, the answer still comes: iOS gives the app time to finish
         // it — without, the request was cut off, and the brief said "Stopped."
@@ -906,12 +907,12 @@ enum Adviser {
         let advice: AssistantAsk.Advice
         switch names {
         case .file(let url):
-            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, owner: owner, today: today, mapping: url, claude: claude, model: model)
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, owner: owner, today: today, mapping: url, claude: claude, model: model)
         case .list(let mapping, let others):
-            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, owner: owner, today: today, mapping: mapping,
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, owner: owner, today: today, mapping: mapping,
                                                    others: others, claude: claude, model: model)
         }
-        put(advice, facts: facts, into: matter, in: context)
+        put(advice, facts: facts, into: matter, owner: owner, in: context)
         return advice.cost
     }
 
@@ -927,7 +928,7 @@ enum Adviser {
 
     /// The summary, the step and the brief, with its proposals — each with the facts its ids stand
     /// for, and their keys, so another device finds them.
-    static func put(_ advice: AssistantAsk.Advice, facts: Facts, into matter: Matter, in context: ModelContext, at now: Date = Date()) {
+    static func put(_ advice: AssistantAsk.Advice, facts: Facts, into matter: Matter, owner: String? = nil, in context: ModelContext, at now: Date = Date()) {
         matter.nextStep = advice.step
         matter.nextStepWhy = advice.why
         if case .todo(let id) = advice.todo { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
@@ -942,8 +943,25 @@ enum Adviser {
             let refs = facts.refs.filter { ids.contains($0.key) }
             return Brief.Proposal(card: card, refs: refs, keys: CardActions.keys(of: refs, in: context))
         }
-        matter.shownBrief = (matter.shownBrief ?? Brief()).rewritten(lines: advice.lines, proposals: proposals, at: now)
+        // A question to look up is shown only when it names no one of the matter, and not the owner.
+        let personal = WebLookup.personal(matter.parties.flatMap { [$0.name] + $0.spellings } + [owner].compactMap { $0 })
+        let questions = advice.research.filter { WebLookup.refusal($0, personal: personal) == nil }
+        matter.shownBrief = (matter.shownBrief ?? Brief()).rewritten(lines: advice.lines, proposals: proposals, questions: questions, at: now)
         try? context.save()
+    }
+
+    /// A question the owner chose to have looked up: it alone goes out, checked once more, in a
+    /// request of its own; the answer and its sources are kept under the brief. Returns its cost.
+    @discardableResult
+    static func lookUp(_ lookup: WebLookup.Lookup, in matter: Matter, context: ModelContext) async throws -> Double {
+        let model = ModelChoice.assistant
+        guard let claude = ModelChoice.client(for: model) else { throw Missing.key }
+        let language = AssistantAsk.language(of: [lookup.question])
+        let found = try await WebLookup.ask(lookup.question, language: language, country: Locale.current.region?.identifier,
+                                            claude: claude, model: model)
+        matter.settle(lookup.id, answer: found.answer, sources: found.sources)
+        try? context.save()
+        return found.cost
     }
 
     /// A proposal ticked: done as the assistant's card would be. False when what it names is gone.

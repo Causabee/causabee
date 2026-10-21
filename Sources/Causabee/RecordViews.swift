@@ -1018,6 +1018,25 @@ struct BriefDetails: View {
                         }
                     }
                 }
+                if !brief.openLookups.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Look up?").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        // Said once, over them: what goes out, and what does not.
+                        Text("Only this question goes to the web — nothing of the matter.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        ForEach(brief.openLookups) { lookup in
+                            LookupRow(lookup: lookup, matter: matter)
+                        }
+                    }
+                }
+                if !brief.answered.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Looked up").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        ForEach(brief.answered) { lookup in
+                            FoundRow(lookup: lookup)
+                        }
+                    }
+                }
             }
         }
     }
@@ -1129,5 +1148,78 @@ private extension View {
         #else
         buttonStyle(.ink).font(.callout)
         #endif
+    }
+}
+
+/// A general question the adviser would like looked up: word for word what would go out, and a
+/// tap to send it — alone, without the matter.
+private struct LookupRow: View {
+    let lookup: WebLookup.Lookup
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+    @State private var looking = false
+    @State private var problem: String?
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "globe").foregroundStyle(Theme.gold).frame(width: 18)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("“\(lookup.question)”").fixedSize(horizontal: false, vertical: true)
+                if let problem { Text(problem).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
+                HStack(spacing: 12) {
+                    if looking {
+                        BeeLoader(size: 9)
+                        Text("Looking it up …").font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        Button("Look up") { look() }
+                            .takeStyle()
+                            .accessibilityIdentifier("brief.lookup")
+                        Button("Put away") {
+                            withAnimation { matter.settle(lookup.id, dismissed: true); try? context.save() }
+                        }
+                        .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.top, 2)
+            }
+        }
+    }
+
+    private func look() {
+        looking = true
+        problem = nil
+        Task {
+            do { try await Adviser.lookUp(lookup, in: matter, context: context) }
+            catch { problem = plainWords(error) }
+            looking = false
+        }
+    }
+}
+
+/// What was found: the question, the answer, and where it comes from — to check before relying on it.
+private struct FoundRow: View {
+    let lookup: WebLookup.Lookup
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(lookup.question).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            // The services mark what matters in bold, as Markdown: shown bold, not as stars.
+            Text((try? AttributedString(markdown: lookup.answer ?? "", options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+                 ?? AttributedString(lookup.answer ?? ""))
+                .fixedSize(horizontal: false, vertical: true)
+                .findable(.section("lookup-\(lookup.id)"), lookup.answer ?? "")
+            ForEach(Array(lookup.sources.enumerated()), id: \.offset) { _, source in
+                if let url = URL(string: source.url) {
+                    Link(destination: url) {
+                        Label(source.title, systemImage: "link").font(.caption).lineLimit(1)
+                    }
+                    .tint(Theme.gold)
+                }
+            }
+            if let date = lookup.date {
+                Text("From the web, \(Dates.short(date)) · general, not about this matter — check the source")
+                    .font(.caption2).foregroundStyle(.tertiary)
+            }
+        }
     }
 }

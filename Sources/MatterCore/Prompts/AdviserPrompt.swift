@@ -4,7 +4,7 @@ import Foundation
 /// summary and the next step that come from it, and the changes to the to-do list it proposes.
 /// One request, where there were two for the summary and the step.
 public enum AdviserPrompt {
-    public static let version = "adviser-v1"
+    public static let version = "adviser-v2"
 
     public static let system = """
     You are the adviser for one matter in Causabee, a private app that keeps a person's matters \
@@ -66,6 +66,16 @@ public enum AdviserPrompt {
     Never propose what is on the list already, and nothing the owner put away (listed in the \
     question). Every card has a one-line `reason` citing its ids. Unused fields are null; \
     `attach` is empty.
+
+    ## research
+
+    General questions worth looking up on the web, when the answer would change what the owner \
+    should do or by when: a legal period to object, what an insurer usually pays for, how a \
+    procedure goes, what a term in a contract usually means. They go out on their own, without \
+    the facts, so each must be understandable alone and say nothing about the owner or the \
+    matter: no names or placeholders, no places, no dates or amounts of this case, no numbers. \
+    Name the country or the law when it matters ("in Germany", "§ 18c SGB XI"). At most two; none \
+    is fine and usual. Never ask what was looked up already, or was asked before (in the question).
     """
 
     /// With the language to write in: the facts', never these instructions'.
@@ -86,6 +96,7 @@ public enum AdviserPrompt {
             ])],
             "summary": ["type": "array", "items": object(["text": string, "cites": cites])],
             "step": string, "why": string, "todo": optional, "step_cites": cites,
+            "research": ["type": "array", "items": string],
             "proposals": ["type": "array", "items": object([
                 "kind": ["type": "string", "enum": ["new_todo", "mark_done", "correct_text", "waits_for", "change_owner", "change_date"]],
                 "todo": optional, "party": optional, "into": optional, "from": optional, "subject": optional, "time": optional,
@@ -110,15 +121,19 @@ public enum AdviserPrompt {
         public var todo: String?
         public var stepCites: [String]
         public var proposals: [AssistantPrompt.Reply.Card]
+        public var research: [String]?
 
-        enum CodingKeys: String, CodingKey { case brief, summary, step, why, todo, proposals, stepCites = "step_cites" }
+        enum CodingKeys: String, CodingKey { case brief, summary, step, why, todo, proposals, research, stepCites = "step_cites" }
     }
 
     /// The question, in the matter's language, with what the owner put away.
-    public static func question(_ facts: Facts, dismissed: [String]) -> String {
+    public static func question(_ facts: Facts, dismissed: [String], asked: [String] = []) -> String {
         var question = facts.language == "German" ? "Schreibe den Überblick dieser Sache." : "Write the brief of this matter."
         if !dismissed.isEmpty {
             question += "\n\nPut away by the owner, not to be proposed again:\n" + dismissed.map { "- \($0)" }.joined(separator: "\n")
+        }
+        if !asked.isEmpty {
+            question += "\n\nAsked to look up before, not to ask again:\n" + asked.map { "- \($0)" }.joined(separator: "\n")
         }
         return question
     }
@@ -134,6 +149,8 @@ extension AssistantAsk {
         public var why: String
         public var todo: FactRef?
         public var proposals: [AssistantPrompt.Reply.Card]
+        /// General questions to look up, as asked: checked for anything personal before they are shown.
+        public var research: [String] = []
         public var cost: Double
     }
 
@@ -142,17 +159,17 @@ extension AssistantAsk {
         model.cost(input: Int(Double(facts.text.count) / 3.2) + 2_400, output: 1_600)
     }
 
-    public static func advise(facts: Facts, dismissed: [String], owner: String?, today: String, mapping url: URL, claude: Claude,
+    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], owner: String?, today: String, mapping url: URL, claude: Claude,
                               model: Claude.Model = .opus) async throws -> Advice {
-        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed), inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
         return try await advise(prepared, facts: facts, claude: claude, model: model)
     }
 
     /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
-    public static func advise(facts: Facts, dismissed: [String], owner: String?, today: String, mapping: Pseudonymizer.Mapping,
+    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], owner: String?, today: String, mapping: Pseudonymizer.Mapping,
                               others: [Pseudonymizer.Entry], claude: Claude, model: Claude.Model = .opus) async throws -> Advice {
-        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed), inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: mapping, others: others, save: nil)
         return try await advise(prepared, facts: facts, claude: claude, model: model)
     }
@@ -183,6 +200,8 @@ extension AssistantAsk {
         .filter { card in [card.todo, card.into].compactMap { $0 }.allSatisfy { refs[$0] != nil } }
         return Advice(lines: reply.brief.map { Brief.Line(part: $0.part, text: real($0.text)) },
                       summary: reply.summary.map { real($0.text) }, step: real(reply.step), why: real(reply.why),
-                      todo: reply.todo.flatMap { refs[$0] }, proposals: proposals, cost: cost)
+                      todo: reply.todo.flatMap { refs[$0] }, proposals: proposals,
+                      // Checked as they came, disguised: a question with a placeholder in it named someone.
+                      research: (reply.research ?? []).filter { WebLookup.refusal($0) == nil }, cost: cost)
     }
 }

@@ -24,7 +24,7 @@ struct AdviserLiveTests {
         do {
             let advice = try await AssistantAsk.advise(facts: facts, dismissed: [], owner: "Mara", today: MatterStatus.day(Date()),
                                                        mapping: url, claude: Claude(key: env["CAUSABEE_LIVE_KEY"]!), model: model)
-            print("LIVE OK lines=\(advice.lines.count) proposals=\(advice.proposals.count) step=\(advice.step) cost=\(advice.cost)")
+            print("LIVE OK lines=\(advice.lines.count) proposals=\(advice.proposals.count) step=\(advice.step) research=\(advice.research) cost=\(advice.cost)")
         } catch {
             print("LIVE ERROR \(error)")
             throw error

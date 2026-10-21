@@ -41,10 +41,24 @@ public struct Brief: Codable, Equatable, Sendable {
     public var lines: [Line] = []
     public var said: [Said] = []
     public var proposals: [Proposal] = []
+    /// General questions the adviser would like looked up on the web, and what was found.
+    public var lookups: [WebLookup.Lookup] = []
     public var writtenAt: Date?
 
-    public init(lines: [Line] = [], said: [Said] = [], proposals: [Proposal] = [], writtenAt: Date? = nil) {
-        self.lines = lines; self.said = said; self.proposals = proposals; self.writtenAt = writtenAt
+    public init(lines: [Line] = [], said: [Said] = [], proposals: [Proposal] = [], lookups: [WebLookup.Lookup] = [], writtenAt: Date? = nil) {
+        self.lines = lines; self.said = said; self.proposals = proposals; self.lookups = lookups; self.writtenAt = writtenAt
+    }
+
+    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, writtenAt }
+
+    /// A brief kept before there were lookups reads as one without any.
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        lines = try c.decodeIfPresent([Line].self, forKey: .lines) ?? []
+        said = try c.decodeIfPresent([Said].self, forKey: .said) ?? []
+        proposals = try c.decodeIfPresent([Proposal].self, forKey: .proposals) ?? []
+        lookups = try c.decodeIfPresent([WebLookup.Lookup].self, forKey: .lookups) ?? []
+        writtenAt = try c.decodeIfPresent(Date.self, forKey: .writtenAt)
     }
 
     public func lines(_ part: Part) -> [String] { lines.filter { $0.part == part }.map(\.text) }
@@ -57,16 +71,28 @@ public struct Brief: Codable, Equatable, Sendable {
 
     /// Written anew: the owner's words stay, and what the owner decided on stays known — the
     /// newest few — while what was only proposed gives way to what is proposed now.
-    public func rewritten(lines: [Line], proposals new: [Proposal], at date: Date = Date()) -> Brief {
+    public func rewritten(lines: [Line], proposals new: [Proposal], questions: [String] = [], at date: Date = Date()) -> Brief {
         let decided = proposals.filter { $0.state != .open }.suffix(30)
-        return Brief(lines: lines, said: said, proposals: Array(decided) + new, writtenAt: date)
+        // What was looked up or put away stays; a question asked before is not asked again.
+        let kept = lookups.filter { $0.state != .open }.suffix(20)
+        let known = Set(kept.map { $0.question.lowercased() })
+        let asked = questions.filter { !known.contains($0.lowercased()) }.prefix(2).map(WebLookup.Lookup.init(question:))
+        return Brief(lines: lines, said: said, proposals: Array(decided) + new, lookups: Array(kept) + asked, writtenAt: date)
     }
+
+    /// Asked, and waiting for the owner's tap.
+    public var openLookups: [WebLookup.Lookup] { lookups.filter { $0.state == .open } }
+    public var answered: [WebLookup.Lookup] { lookups.filter { $0.state == .answered } }
 
     /// For the facts sheet: what is understood, and what the owner said — the owner's words first.
     public var forFacts: String? {
         var parts: [String] = []
         if !said.isEmpty {
             parts.append("What the owner said about this matter (always right):\n" + said.map { "- \($0.text)" }.joined(separator: "\n"))
+        }
+        if !answered.isEmpty {
+            parts.append("Looked up on the web, general knowledge (check the sources before relying on it):\n"
+                         + answered.map { "- \($0.question) — \($0.answer ?? "")" }.joined(separator: "\n"))
         }
         if !lines.isEmpty {
             parts.append("The brief written before (may be out of date; the facts and the owner's words win):\n"
@@ -105,6 +131,16 @@ extension Matter {
     public func unsay(_ id: UUID) {
         guard var brief = shownBrief else { return }
         brief.said.removeAll { $0.id == id }
+        shownBrief = brief
+    }
+
+    /// A question looked up, with what was found — or put away.
+    public func settle(_ lookup: UUID, answer: String? = nil, sources: [WebLookup.Source] = [], dismissed: Bool = false) {
+        guard var brief = shownBrief, let index = brief.lookups.firstIndex(where: { $0.id == lookup }) else { return }
+        brief.lookups[index].state = dismissed ? .dismissed : .answered
+        brief.lookups[index].answer = answer
+        brief.lookups[index].sources = sources
+        brief.lookups[index].date = Date()
         shownBrief = brief
     }
 
