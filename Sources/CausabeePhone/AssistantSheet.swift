@@ -854,7 +854,8 @@ struct PhoneActionCard: View {
         Group {
             if card.kind == .draftMessage, quiet, !editingDraft {
                 sentDraft
-            } else if quiet {
+            } else if quiet, !(card.kind == .draftMessage && editingDraft) {
+                // An opened draft unfolded with Edit is the whole card again, not the small ticked one.
                 taken
             } else if dismissed, !done {
                 // Put aside, not gone: a small white card — nothing waits in it — that says what was
@@ -1002,7 +1003,15 @@ struct PhoneActionCard: View {
             Image(systemName: "envelope").font(.footnote).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(subject.isEmpty ? text : subject).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2)
-                Text("Draft opened in Mail · To: \(recipient?.name ?? "—")").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                if let preparing = MailPreparing.shared.notes[MailPreparing.key(turn.id, index)] {
+                    // Before the mail opens: a file fetched from iCloud, a picture made smaller.
+                    HStack(spacing: 6) {
+                        BeeLoader(size: 9)
+                        Text(preparing).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                } else {
+                    Text("Draft opened in Mail · To: \(recipient?.name ?? "—")").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Button("Edit") { step { editingDraft = true } }
@@ -1034,7 +1043,7 @@ struct PhoneActionCard: View {
         case .openMail(let url, let draft):
             Haptics.tap()
             // With a file to take along, the system's own mail sheet: it attaches what it is handed.
-            if !MailSheet.open(draft) { openURL(url) }
+            if !MailSheet.open(draft, card: MailPreparing.key(turn.id, index)) { openURL(url) }
             // Opened again from the small box: it stays small. Edited and opened: it folds.
             if editingDraft { step { editingDraft = false } }
             // The version opened is the one kept: the thread remembers what went to Mail.
@@ -1146,15 +1155,15 @@ final class MailSheet: NSObject, MFMailComposeViewControllerDelegate {
     private static let shared = MailSheet()
 
     /// False when there is nothing to attach: then the draft opens the old way, as a mail link.
-    static func open(_ draft: CardActions.MailDraft) -> Bool {
+    static func open(_ draft: CardActions.MailDraft, card key: String) -> Bool {
         guard !draft.files.isEmpty else { return false }
-        let originals = draft.files
         Task {
             // Read, and a big picture made smaller, away from the screen: done while it drew, a large
-            // photo — perhaps still on its way from iCloud — held the app until iOS closed it.
-            let pieces = await Task.detached {
-                originals.map(ImageSize.attachable).compactMap { file in FolderImport.data(of: file).map { (file, $0) } }
-            }.value
+            // photo — perhaps still on its way from iCloud — held the app until iOS closed it. The
+            // card says meanwhile what it waits for.
+            let pieces = await MailPreparing.shared.prepare(key, files: draft.files) { files in
+                files.map(ImageSize.attachable).compactMap { file in FolderImport.data(of: file).map { (file, $0) } }
+            }
             // The screen may still be moving — the card turning, a sheet going: shown once it rests, not
             // dropped. Dropped, the first tap did nothing, and the mail had to be written again.
             for _ in 0..<40 {

@@ -973,3 +973,39 @@ enum Adviser {
         try? context.save()
     }
 }
+
+/// What a draft's files wait for before its mail opens, said on its card: a file still in iCloud
+/// is fetched first, a picture too big for a mail is made smaller — each can take a moment, and the
+/// card said nothing meanwhile. The same on every device.
+@MainActor
+@Observable
+final class MailPreparing {
+    static let shared = MailPreparing()
+    /// By card: "<turn id>-<card index>".
+    private(set) var notes: [String: String] = [:]
+
+    static func key(_ turn: UUID, _ index: Int) -> String { "\(turn)-\(index)" }
+
+    /// The files' work, done away from the screen, with what it waits for said on the card meanwhile.
+    func prepare<Result: Sendable>(_ key: String, files: [URL], _ work: @escaping @Sendable ([URL]) -> Result) async -> Result {
+        notes[key] = Self.note(for: files)
+        defer { notes[key] = nil }
+        return await Task.detached { work(files) }.value
+    }
+
+    /// "Getting photo.jpg from iCloud …" for a file not on this device yet; "Making photo.jpg
+    /// smaller for the mail …" for a big picture; nil when nothing takes a moment.
+    static func note(for files: [URL]) -> String? {
+        if let away = files.first(where: { !isHere($0) }) { return "Getting \(away.lastPathComponent) from iCloud …" }
+        if let big = files.first(where: { (try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap { $0 } ?? 0 > ImageSize.limit }) {
+            return "Making \(big.lastPathComponent) smaller for the mail …"
+        }
+        return nil
+    }
+
+    /// On this device, whole: not a file of iCloud Drive that is only listed here.
+    private static func isHere(_ file: URL) -> Bool {
+        guard let status = try? file.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]).ubiquitousItemDownloadingStatus else { return true }
+        return status == .current
+    }
+}
