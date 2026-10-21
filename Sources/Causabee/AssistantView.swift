@@ -242,7 +242,7 @@ struct AssistantColumn: View {
                         }
                     }
                     .padding(16)
-                    .environment(\.threadRoom, placement.viewport)
+                    .environment(\.threadPlacement, placement)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .safeAreaInset(edge: .top, spacing: 0) { header }

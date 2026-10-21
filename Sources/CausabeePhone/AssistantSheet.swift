@@ -19,7 +19,13 @@ struct AssistantSheet: View {
     @Query private var matters: [Matter]
     @Query private var profiles: [Profile]
     @Environment(PhoneStore.self) private var store
-    @State private var draft = ""
+    /// What is typed, and where the cursor is: read only by the field, so a keystroke redraws the
+    /// field — not the whole sheet, with every answer and card of a long thread.
+    @State private var typed = TypedWords()
+    private var draft: String {
+        get { typed.text }
+        nonmutating set { typed.text = newValue }
+    }
     /// How wide the thread's scroll view is, measured: it follows an iPad's window as it is resized.
     /// A new field after each send. Emptying the words is not enough while the keyboard still
     /// holds some of them — dictation, a word being autocorrected: the old field kept showing
@@ -41,7 +47,6 @@ struct AssistantSheet: View {
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
     @State private var voice = VoiceInput()
-    @State private var cursor: TextSelection?
     /// Where the thread stands, and when it moves by itself: `ThreadPlacement` has the rule, for the
     /// iPhone and the Mac.
     @State private var placement = ThreadPlacement()
@@ -192,8 +197,12 @@ struct AssistantSheet: View {
                 }
                 .padding(Self.padding)
                 .asWide(as: room.size.width)
-                .environment(\.threadRoom, placement.viewport)
+                .environment(\.threadPlacement, placement)
             }
+            // The keyboard goes when the thread is scrolled or tapped, to see all of it — the thread
+            // only: put after the bars, a tap into the field itself, for the cursor or the menu to
+            // copy and paste, sent the keyboard away too.
+            .dismissesKeyboard()
             // The thread's top stands a little under the edge: what is put "at the top" keeps that room.
             .safeAreaPadding(.top, Self.topRoom)
             // The name on top and the field below are bars over the thread, not rows beside it: the
@@ -215,8 +224,6 @@ struct AssistantSheet: View {
             // Below, the system's blur began a hand's breadth over the field. There the glass is the
             // field's own: the thread is sharp down to it, seen through it, and gone under its lower half.
             .scrollEdgeEffectHidden(true, for: .bottom)
-            // The keyboard goes when the thread is scrolled or tapped, to see all of it.
-            .dismissesKeyboard()
             // What happens to the thread is told to the placement, which decides where it goes.
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in placement.room(height, with: scroller) }
             .onScrollPhaseChange { old, new, context in placement.finger(from: old, to: new, at: context.geometry.contentOffset.y) }
@@ -330,28 +337,9 @@ struct AssistantSheet: View {
                         TextField("", text: .constant("")).focused($keepsKeyboard)
                             .frame(width: 1, height: 1).opacity(0).allowsHitTesting(false).accessibilityHidden(true)
                     }
-                TextField(voice.phase == .writing ? voice.writingWords : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters", text: $draft, selection: $cursor, axis: .vertical)
-                    .lineLimit(1...5)
-                    // The keyboard's Return starts a new line; the button sends. With a keyboard
-                    // of keys, Return sends and Shift-Return starts a new line, as on the Mac.
-                    .onKeyPress(.return, phases: .down) { press in
-                        if press.modifiers.contains(.shift) || press.modifiers.contains(.option) { return .ignored }
-                        send()
-                        return .handled
-                    }
-                    .focused($typing)
-                    .id(fieldKey)
-                    .accessibilityIdentifier("assistant.field")
-                    // One line sits in the middle of the send button; more lines grow upwards.
-                    .frame(minHeight: 34)
-                MicButton(voice: voice, text: $draft, selection: $cursor) { typing = false }
-                Button { if asking == nil { send() } else { stop() } } label: {
-                    // A black arrow on the bee's yellow, drawn light, as every yellow thing has black
-                    // on it — and a black square while an answer is on its way: one question at a time.
-                    SendGlyph(stops: asking != nil, mayHostBee: draft.isEmpty)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(asking == nil ? "Send" : "Stop")
+                TypingField(typed: typed, voice: voice, typing: $typing, fieldKey: fieldKey, asking: asking != nil,
+                            placeholder: voice.phase == .writing ? voice.writingWords : matter.map { "Ask about \($0.name)" } ?? "Ask about your matters",
+                            send: send, stop: stop)
               }
             }
             .padding(.leading, 7).padding(.trailing, 7).padding(.vertical, 7)
@@ -1243,5 +1231,51 @@ private struct PhoneToNewestButton: View {
             }
         }
         .animation(.easeOut(duration: 0.15), value: placement.offersButton)
+    }
+}
+
+/// What is typed in the assistant's field, and the cursor in it.
+@MainActor
+@Observable
+final class TypedWords {
+    var text = ""
+    var cursor: TextSelection?
+}
+
+/// The assistant's field, the microphone and the send button: the only views that read what is
+/// typed, so each keystroke redraws them alone.
+private struct TypingField: View {
+    @Bindable var typed: TypedWords
+    let voice: VoiceInput
+    var typing: FocusState<Bool>.Binding
+    let fieldKey: Int
+    let asking: Bool
+    let placeholder: String
+    let send: () -> Void
+    let stop: () -> Void
+
+    var body: some View {
+        TextField(placeholder, text: $typed.text, selection: $typed.cursor, axis: .vertical)
+            .lineLimit(1...5)
+            // The keyboard's Return starts a new line; the button sends. With a keyboard
+            // of keys, Return sends and Shift-Return starts a new line, as on the Mac.
+            .onKeyPress(.return, phases: .down) { press in
+                if press.modifiers.contains(.shift) || press.modifiers.contains(.option) { return .ignored }
+                send()
+                return .handled
+            }
+            .focused(typing)
+            .id(fieldKey)
+            .accessibilityIdentifier("assistant.field")
+            // One line sits in the middle of the send button; more lines grow upwards.
+            .frame(minHeight: 34)
+        MicButton(voice: voice, text: $typed.text, selection: $typed.cursor) { typing.wrappedValue = false }
+        Button { if asking { stop() } else { send() } } label: {
+            // A black arrow on the bee's yellow, drawn light, as every yellow thing has black
+            // on it — and a black square while an answer is on its way: one question at a time.
+            SendGlyph(stops: asking, mayHostBee: typed.text.isEmpty)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(asking ? "Stop" : "Send")
     }
 }
