@@ -76,8 +76,9 @@ enum CardActions {
         var files: [URL] = [], missing: [String] = []
         for document in DraftAttachments.named(in: [text, question ?? ""] + attach, among: scope?.documents ?? []) {
             let own = document.source.fileURL.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
-            // A picture too big for a mail goes as a smaller copy; the kept one stays as it is.
-            if let file = own ?? MatterFolders.kept(document) { files.append(ImageSize.attachable(file)) } else { missing.append(document.shownName) }
+            // The file as kept: a picture too big for a mail is made smaller only when the mail is
+            // opened, away from the screen — never while a card draws.
+            if let file = own ?? MatterFolders.kept(document) { files.append(file) } else { missing.append(document.shownName) }
         }
         return (files, missing)
     }

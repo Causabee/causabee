@@ -354,7 +354,12 @@ struct Conversation {
             if !draft.files.isEmpty, let mail = NSSharingService(named: .composeEmail) {
                 if !draft.to.isEmpty { mail.recipients = [draft.to] }
                 mail.subject = draft.subject
-                mail.perform(withItems: [draft.body as NSString] + draft.files.map { $0 as NSURL })
+                // A big picture goes as a smaller copy, made away from the screen.
+                let originals = draft.files, body = draft.body
+                Task {
+                    let files = await Task.detached { originals.map(ImageSize.attachable) }.value
+                    mail.perform(withItems: [body as NSString] + files.map { $0 as NSURL })
+                }
             } else {
                 NSWorkspace.shared.open(url)
             }

@@ -1148,34 +1148,45 @@ final class MailSheet: NSObject, MFMailComposeViewControllerDelegate {
     /// False when there is nothing to attach: then the draft opens the old way, as a mail link.
     static func open(_ draft: CardActions.MailDraft) -> Bool {
         guard !draft.files.isEmpty else { return false }
+        let originals = draft.files
+        Task {
+            // Read, and a big picture made smaller, away from the screen: done while it drew, a large
+            // photo — perhaps still on its way from iCloud — held the app until iOS closed it.
+            let pieces = await Task.detached {
+                originals.map(ImageSize.attachable).compactMap { file in FolderImport.data(of: file).map { (file, $0) } }
+            }.value
+            show(draft, pieces: pieces)
+        }
+        return true
+    }
+
+    private static func show(_ draft: CardActions.MailDraft, pieces: [(file: URL, data: Data)]) {
         let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first { $0.activationState == .foregroundActive }
-        guard var top = scene?.keyWindow?.rootViewController else { return false }
+        guard var top = scene?.keyWindow?.rootViewController else { return }
         while let over = top.presentedViewController { top = over }
         // No account in Mail — Gmail, Outlook and the like: the share sheet, with the files and the
         // words, so the files are not lost on the way; the address is said in the words' first line.
         guard MFMailComposeViewController.canSendMail() else {
             let words = (draft.to.isEmpty ? "" : "To: \(draft.to)\n\n") + draft.body
-            let share = UIActivityViewController(activityItems: [words] + draft.files, applicationActivities: nil)
+            let share = UIActivityViewController(activityItems: [words] + pieces.map(\.file), applicationActivities: nil)
             share.setValue(draft.subject, forKey: "subject")
             // On the iPad it stands out from the middle of the screen.
             share.popoverPresentationController?.sourceView = top.view
             share.popoverPresentationController?.sourceRect = CGRect(x: top.view.bounds.midX, y: top.view.bounds.midY, width: 0, height: 0)
             share.popoverPresentationController?.permittedArrowDirections = []
             top.present(share, animated: true)
-            return true
+            return
         }
         let mail = MFMailComposeViewController()
         mail.mailComposeDelegate = shared
         if !draft.to.isEmpty { mail.setToRecipients([draft.to]) }
         mail.setSubject(draft.subject)
         mail.setMessageBody(draft.body, isHTML: false)
-        for file in draft.files {
-            guard let data = FolderImport.data(of: file) else { continue }
+        for (file, data) in pieces {
             let type = UTType(filenameExtension: file.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
             mail.addAttachmentData(data, mimeType: type, fileName: file.lastPathComponent)
         }
         top.present(mail, animated: true)
-        return true
     }
 
     nonisolated func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
