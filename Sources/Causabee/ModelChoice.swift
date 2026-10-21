@@ -522,8 +522,11 @@ final class AutoUpdate {
         // A test starts from nothing known.
         if CommandLine.arguments.contains("--auto-anew") { Self.known = [:] }
         watchSaves()
+        NewsNotice.listen()
         while !Task.isCancelled {
             try? await Task.sleep(for: Self.pace)
+            // News written here, or come from another device: told once, Auto or not.
+            NewsNotice.tell { (try? context.fetch(FetchDescriptor<Matter>())) ?? [] }
             guard AutoMode.isOn else { lastSeen = [:]; if !pending.isEmpty { pending = [] }; continue }
             // Not even the matters fetched when nothing was saved since the last look.
             guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { continue }
