@@ -159,7 +159,7 @@ extension AssistantAsk {
 
     static func advise(_ prepared: Prepared, facts: Facts, claude: Claude, model: Claude.Model) async throws -> Advice {
         let body = Claude.body(model: model, system: AdviserPrompt.system(writingIn: facts.language), user: prepared.sent,
-                               schema: AdviserPrompt.schema, effort: "medium")
+                               schema: AdviserPrompt.schema, effort: "low")
         let answer = try await claude.send(body, model: model)
         let reply = try JSONDecoder().decode(AdviserPrompt.Reply.self, from: answer.json)
         return advice(from: reply, restorer: prepared.pseudonymizer.restorer, links: prepared.links, refs: facts.refs, cost: answer.cost)

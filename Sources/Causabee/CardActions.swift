@@ -2,6 +2,9 @@ import Foundation
 import MatterCore
 import SwiftData
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 /// What a card the owner ticks does to the store, and how to take it back — the same on the Mac and
 /// the iPhone: both apps take this file in. What each app does around it — keeping the turn, opening
@@ -893,6 +896,12 @@ enum Adviser {
         let today = MatterStatus.day(Date())
         let facts = FactSheet.facts(for: [matter], today: today, mails: 40)
         let dismissed = self.dismissed(in: matter)
+        #if os(iOS)
+        // Switched away or locked meanwhile, the answer still comes: iOS gives the app time to finish
+        // it — without, the request was cut off, and the brief said "Stopped."
+        let background = UIApplication.shared.beginBackgroundTask(withName: "brief")
+        defer { UIApplication.shared.endBackgroundTask(background) }
+        #endif
         let advice: AssistantAsk.Advice
         switch names {
         case .file(let url):

@@ -667,6 +667,8 @@ struct MatterScreen: View {
     private func writeSummary() {
         let model = ModelChoice.assistant
         guard ModelChoice.client(for: model) != nil else { summaryError = ModelChoice.missingKey(model); return }
+        // Auto is writing it already: a second request would only cost twice, and count against the limit.
+        guard !AutoUpdate.shared.working.contains(matter.key) else { return }
         let list: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])
         do { list = try names() } catch { summaryError = error.localizedDescription; return }
         writingSummary = true

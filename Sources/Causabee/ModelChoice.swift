@@ -404,6 +404,9 @@ final class AutoUpdate {
 
     /// The matters being written right now: their boxes say so.
     private(set) var working: Set<String> = []
+    /// Auto's requests, one after another: all at once — every matter changed by a sync, on every
+    /// device — they ran into the AI service's limit per minute ("Too many requests").
+    @ObservationIgnored private var queue: Task<Void, Never>?
     /// Counts up with every update done, so that what is shown of it is drawn again.
     private(set) var done = 0
     /// The matters whose record has changed and is coming to rest: written in a moment, and said so.
@@ -565,7 +568,9 @@ final class AutoUpdate {
             // and again, each time for money — the next change tries the next.
             known[key] = Known(stamp: stamp, stepAt: before.stepAt, summaryAt: before.summaryAt)
             working.insert(key)
-            Task {
+            let ahead = queue
+            queue = Task {
+                await ahead?.value
                 defer { working.remove(key); done += 1 }
                 do {
                     // One request — the brief, the summary and the step, and what to change in the list.
