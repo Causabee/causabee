@@ -15,7 +15,8 @@ struct OpenAITests {
         let format = try #require((body["text"] as? [String: Any])?["format"] as? [String: Any])
         #expect(format["type"] as? String == "json_schema" && format["strict"] as? Bool == true)
         #expect((format["schema"] as? [String: Any])?["required"] as? [String] == ["digest"])
-        #expect(claude["output_config"].flatMap { ($0 as? [String: Any])?["effort"] } == nil)
+        // The effort reaches OpenAI as its reasoning effort: without it every request thought at length.
+        #expect((body["reasoning"] as? [String: Any])?["effort"] as? String == "low")
         #expect(Claude.Model.gptSol.keyName == "OPENAI_API_KEY" && Claude.Model.mistralLarge.keyName == "MISTRAL_API_KEY")
         #expect(Claude.Model.gptSol.isServing("gpt-6.1-sol-2026-09-01") && !Claude.Model.gptSol.isServing("gpt-6-astra"))
     }

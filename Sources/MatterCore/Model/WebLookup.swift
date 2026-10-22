@@ -100,7 +100,8 @@ public enum WebLookup {
 
     static func anthropic(_ question: String, instructions: String, country: String?, claude: Claude,
                           model: Claude.Model) async throws -> (answer: String, sources: [Source], cost: Double) {
-        var tool: [String: Any] = ["type": "web_search_20260209", "name": "web_search", "max_uses": 3]
+        // Two searches and a short think: a general question, and three searches took forty seconds.
+        var tool: [String: Any] = ["type": "web_search_20260209", "name": "web_search", "max_uses": 2]
         if let country { tool["user_location"] = ["type": "approximate", "country": country] }
         var messages: [[String: Any]] = [["role": "user", "content": question]]
         var request = URLRequest(url: claude.endpoint)
@@ -112,7 +113,8 @@ public enum WebLookup {
         var texts: [String] = [], sources: [Source] = [], cost = 0.0
         // A long search can pause its turn: it is handed back as it stands, to go on — a few times at most.
         for _ in 0..<3 {
-            let body: [String: Any] = ["model": model.id, "max_tokens": 2000, "system": instructions, "messages": messages, "tools": [tool]]
+            var body: [String: Any] = ["model": model.id, "max_tokens": 2000, "system": instructions, "messages": messages, "tools": [tool]]
+            if model.takesEffort { body["output_config"] = ["effort": "low"] }
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
             let (data, response) = try await Claude.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
@@ -146,6 +148,8 @@ public enum WebLookup {
         request.setValue("Bearer \(key)", forHTTPHeaderField: "authorization")
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "model": model.id, "instructions": instructions, "input": question, "tools": [tool], "max_output_tokens": 2000,
+            // A general question, answered from what the search finds: no need to think long.
+            "reasoning": ["effort": "low"],
         ] as [String: Any])
         let (data, response) = try await Claude.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
