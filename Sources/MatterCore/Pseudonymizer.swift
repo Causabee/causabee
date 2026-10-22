@@ -458,7 +458,31 @@ public struct Pseudonymizer: Sendable {
 
     /// `[Person F]` out of `Frau [Person F]`.
     static func personTag(_ standIn: String) -> String? {
-        standIn.firstMatch(of: /\[Person [A-Z]+\]/).map { String($0.output) }
+        tags(in: standIn).first { $0.hasPrefix("[Person ") }
+    }
+
+    /// Every tag in a stand-in — `[Person F]`, `[Company AB]`: a bracket, letters, one space, capitals,
+    /// a bracket. Read by hand, not by a pattern: asked for each of thousands of names whenever a
+    /// question is disguised, the pattern alone took a third of a second.
+    static func tags(in standIn: String) -> [String] {
+        guard standIn.contains("[") else { return [] }
+        var out: [String] = []
+        let chars = Array(standIn.unicodeScalars)
+        var i = 0
+        while i < chars.count {
+            guard chars[i] == "[" else { i += 1; continue }
+            var j = i + 1
+            while j < chars.count, (65...90).contains(chars[j].value) || (97...122).contains(chars[j].value) { j += 1 }
+            guard j > i + 1, j < chars.count, chars[j] == " " else { i += 1; continue }
+            var k = j + 1
+            while k < chars.count, (65...90).contains(chars[k].value) { k += 1 }
+            guard k > j + 1, k < chars.count, chars[k] == "]" else { i += 1; continue }
+            var tag = String.UnicodeScalarView()
+            tag.append(contentsOf: chars[i...k])
+            out.append(String(tag))
+            i = k + 1
+        }
+        return out
     }
 
     static func personKey(_ given: String, _ family: String) -> String { key(given) + "|" + key(family) }
@@ -775,7 +799,7 @@ public struct Pseudonymizer: Sendable {
         index[key] = entries.count
         entries.append(entry)
         forbidden.insert(key)
-        for match in entry.standIn.matches(of: /\[[A-Za-z]+ [A-Z]+\]/) { use(String(match.output)) }
+        for tag in Self.tags(in: entry.standIn) { use(tag) }
         if mode == .placeholder, entry.kind == .person, entry.partOf == nil,
            case let name = Self.nameParts(entry.original), let given = name.given, let family = name.family,
            let tag = Self.personTag(entry.standIn) {
@@ -889,17 +913,26 @@ public struct Pseudonymizer: Sendable {
             return (Self.endsOnContactWord(entry.original) ? 1 : 0,
                     words.count - titles < 2 ? 1 : 0, titles > 0 ? 1 : 0, entry.partOf != nil ? 1 : 0, words.count)
         }
+        // Worked out once for each name, not again in every comparison.
+        let plain = entries.map(plainness)
         var best: [String: Int] = [:]
         for (index, entry) in entries.enumerated() {
             let key = Self.key(entry.standIn)
-            if let current = best[key], plainness(entries[current]) <= plainness(entry) { continue }
+            if let current = best[key], plain[current] <= plain[index] { continue }
             best[key] = index
         }
         // "Lindner, Petra", as an insurer's mail writes it, comes back as "Petra Lindner": beside
         // her surname's own tag it is then one name, written once.
         func natural(_ entry: Entry) -> String {
-            guard entry.kind == .person, let match = entry.original.wholeMatch(of: /([\p{L}\-]+),\s+([\p{L}\-]+(?:\s[\p{L}\-]+)?)/) else { return entry.original }
-            return "\(match.output.2) \(match.output.1)"
+            guard entry.kind == .person, entry.original.contains(",") else { return entry.original }
+            // `Family, Given` or `Family, Given Middle`: letters and hyphens only, read by hand.
+            func isName(_ word: Substring) -> Bool { !word.isEmpty && word.allSatisfy { $0.isLetter || $0 == "-" } }
+            let halves = entry.original.split(separator: ",", maxSplits: 1, omittingEmptySubsequences: false)
+            guard halves.count == 2, isName(halves[0]), halves[1].first?.isWhitespace == true else { return entry.original }
+            let given = halves[1].drop { $0.isWhitespace }
+            let words = given.split(separator: " ", omittingEmptySubsequences: false)
+            guard (1...2).contains(words.count), words.allSatisfy(isName) else { return entry.original }
+            return "\(given) \(halves[0])"
         }
         var replacer = Replacer(best.values.sorted().map { (entries[$0].standIn, natural(entries[$0])) })
         replacer.joinsNames = true

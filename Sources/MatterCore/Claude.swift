@@ -169,7 +169,9 @@ public struct Claude: Sendable {
     public static func body(model: Model, system: String, user: String, schema: [String: Any],
                             effort: String?) -> [String: Any] {
         var outputConfig: [String: Any] = ["format": ["type": "json_schema", "schema": schema]]
-        if let effort, model.takesEffort { outputConfig["effort"] = effort }
+        // OpenAI takes it too, as its reasoning effort (see `openAIBody`): without it every request
+        // thought as long as the model likes — a brief took forty seconds.
+        if let effort, model.takesEffort || model.isOpenAI { outputConfig["effort"] = effort }
         var body: [String: Any] = [
             "model": model.id,
             "max_tokens": 16000,
@@ -306,14 +308,17 @@ public struct Claude: Sendable {
     static func openAIBody(_ body: [String: Any], model: Model) -> [String: Any] {
         let system = (body["system"] as? [[String: Any]])?.compactMap { $0["text"] as? String }.joined() ?? (body["system"] as? String ?? "")
         let user = ((body["messages"] as? [[String: Any]]) ?? []).compactMap { $0["content"] as? String }.joined(separator: "\n\n")
-        let schema = ((body["output_config"] as? [String: Any])?["format"] as? [String: Any])?["schema"] ?? [:]
-        return [
+        let config = body["output_config"] as? [String: Any]
+        let schema = (config?["format"] as? [String: Any])?["schema"] ?? [:]
+        var out: [String: Any] = [
             "model": model.id,
             "instructions": system,
             "input": user,
             "max_output_tokens": 8000,
             "text": ["format": ["type": "json_schema", "name": "answer", "schema": schema, "strict": true]],
         ]
+        if let effort = config?["effort"] as? String { out["reasoning"] = ["effort": effort] }
+        return out
     }
 
     func sendOpenAI(_ body: [String: Any], model: Model) async throws -> Answer {
