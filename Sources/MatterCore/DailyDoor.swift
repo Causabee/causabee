@@ -108,7 +108,16 @@ public struct DailyDoor: Sendable {
         Set(answered.values.filter { Extractor.isSettled($0) || $0.isBulk }.map(\.emailID))
     }
 
+    /// A connection that drops under the read is opened once more: on the iPhone the network
+    /// changes often, and the second try usually goes through.
     public func look(password: String, progress: @Sendable (String) -> Void = { _ in }) async throws -> Look {
+        do { return try await lookOnce(password: password, progress: progress) } catch where isDroppedConnection(error) {
+            try await Task.sleep(for: .seconds(1.5))
+            return try await lookOnce(password: password, progress: progress)
+        }
+    }
+
+    private func lookOnce(password: String, progress: @Sendable (String) -> Void) async throws -> Look {
         let answered = earlier.merging(Self.readLog(log)) { _, own in own }
         let settled = Self.done(in: answered).union(alsoKnown)
 

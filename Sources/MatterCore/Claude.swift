@@ -440,6 +440,7 @@ public func plainWords(_ error: Error) -> String {
         }
     }
     if error is CancellationError { return "Stopped." }
+    if isDroppedConnection(error) { return "The connection to the mail server dropped on the way — the network may have changed." }
     // What the AI service answered, in words with what to do — not "HTTP 529" and its raw answer.
     if let failure = error as? Claude.Failure { return failure.forPeople }
     let words = "\(error)"

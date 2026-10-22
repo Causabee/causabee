@@ -173,8 +173,9 @@ final class PhoneMailCheck {
             return
         }
         checking = true
+        let keep = UIApplication.shared.beginBackgroundTask(withName: "Looking for mail")
         Task {
-            defer { checking = false }
+            defer { checking = false; UIApplication.shared.endBackgroundTask(keep) }
             // What the other devices sorted meanwhile, in from iCloud first: otherwise it looks new.
             await CloudCatchUp.shared.caughtUp()
             guard let door = door(context: context).door else { return }
@@ -268,7 +269,10 @@ final class PhoneMailCheck {
         if case .answered = state { return }
         if DemoData.isRequested { lookInDemo(context: context); return }
         state = .reading("Fetching mail …")
+        // Locked or left while it reads: iOS gives it time to finish rather than cutting the connection.
+        let keep = UIApplication.shared.beginBackgroundTask(withName: "Fetching mail")
         running = Task {
+            defer { UIApplication.shared.endBackgroundTask(keep) }
             // What the other devices sorted meanwhile, in from iCloud first — a short wait, asked for by hand.
             await CloudCatchUp.shared.caughtUp(limit: .seconds(8))
             let (found, why) = door(context: context)
