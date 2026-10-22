@@ -50,7 +50,9 @@ public enum WebLookup {
         Array(Set(names.filter { !PublicNames.covers($0) }.flatMap { name -> [String] in
             let words = name.split { !$0.isLetter }.map(String.init)
             return [name] + (words.count <= 2 ? words : Array(words.prefix(1)))
-        }.filter { $0.count >= 3 }))
+        // And a public word stays public out of any other spelling: "Expedia/Rentscape" brought
+        // "Rentscape" back as a word of its own, and held the question back after all.
+        }.filter { $0.count >= 3 && !PublicNames.covers($0) }))
     }
 
     /// The question, looked up: a short answer in `language`, with its sources, and what it cost.
