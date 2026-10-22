@@ -75,7 +75,7 @@ enum DemoData {
     /// Counts up whenever the demo's words or matters change: a demo store filled with an older
     /// version is emptied and filled again — with today's dates too. Two things are overdue in it, in
     /// the care matter and the trip: enough to show what overdue looks like, not a page of it. Only ever the demo's own store.
-    static let contentVersion = 8
+    static let contentVersion = 9
     private static let seededKey = "demo.filled"
 
     /// The demo's own talk, where it stands ahead of the clock, is put an hour behind it — in the
