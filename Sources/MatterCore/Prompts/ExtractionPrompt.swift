@@ -7,7 +7,7 @@ import Foundation
 /// prompt that asks for something different from what the labels mean would measure the
 /// difference between two definitions, not how good the model is.
 public enum ExtractionPrompt {
-    public static let version = "extract-v14"
+    public static let version = "extract-v15"
 
     /// Added for a model that writes a to-do for everything a mail touches — Mistral wrote half
     /// again as many as Opus, most of them "confirm the appointment" and "prepare for it". Opus
@@ -104,8 +104,25 @@ public enum ExtractionPrompt {
     - `unknown` — the email does not make clear whose it is.
 
     A task of someone else's that the mailbox owner is not waiting for is not a to-do here: \
-    "the property manager prepares the annual accounts", said in passing, is left out. \
-    `due` is a date only when the email gives one, otherwise null.
+    "the property manager prepares the annual accounts", said in passing, is left out. So is \
+    what others do in their own process, even when it is about the owner: an employer calling \
+    the references, a company deciding internally, an office checking the papers. The owner \
+    waits for the outcome, not for each step of it.
+
+    `due` is a date only when the email gives one for this very thing, otherwise null. A to-do \
+    that can only be done once something else has happened — "send the certificate as soon as \
+    you have it" — has `due` null, whatever date the email mentions near it.
+
+    ## Few, and only what matters
+
+    The owner reads every to-do you write on their list for the day. Write at most two new \
+    to-dos for an email — the ones that matter most to the owner — and none when nothing has to \
+    be done. A to-do is only what the email actually asks of someone, or what plainly has to \
+    happen because of it. No to-do to attend, join, confirm or prepare for a meeting, a call or \
+    an invitation unless the email asks for exactly that: the appointment itself is enough. What \
+    anyone would do anyway — read the attachment, keep the date free, think about questions — is \
+    not a to-do. When unsure, leave it out: a missing small to-do costs less than a list full \
+    of obvious ones.
 
     ## To-dos already on file
 
@@ -122,9 +139,22 @@ public enum ExtractionPrompt {
 
     A meeting, call or visit at a set time: the site visit on 9 September at 10, the interview \
     on Wednesday, a doctor's appointment. `what` says what it is, `date` is the day, `time` is \
-    `HH:MM` or null, `place` is where or null. An appointment is not a to-do: the to-do is only \
-    what has to be done for it — confirm it, prepare for it, book a slot. A calendar invitation \
-    is an appointment.
+    `HH:MM` or null, `place` is where or null. An appointment is not a to-do. A calendar \
+    invitation is an appointment.
+
+    Only an appointment that is settled: agreed, booked or invited to. Times that are only \
+    proposed or offered to choose from — "would 11:00 or 14:00 suit you?", "we suggest Friday" — \
+    are no appointment yet; the reply that settles one is.
+
+    You may be given the appointments a matter already has. When the email moves one of them, \
+    settles it at another time, or says again what it is, set `replaces` to it exactly as it \
+    was listed — `2026-10-23 11:00` — and give the date and time as they are now. An \
+    appointment that is new has `replaces` null.
+
+    ## What the owner took out
+
+    You may be given what the owner removed before from a matter, of what earlier emails \
+    brought. The owner did not want those: write nothing of that kind again for that matter.
 
     ## deadlines
 
@@ -158,7 +188,8 @@ public enum ExtractionPrompt {
     }
 
     public static func user(mail: String, sent: Date?, owner: [String], matters: [(name: String, summary: String)],
-                            thread: String? = nil, open: [(matter: String, todos: [OpenTodo])] = []) -> String {
+                            thread: String? = nil, open: [(matter: String, todos: [OpenTodo])] = [],
+                            onFile: [(matter: String, appointments: [String], unwanted: [String])] = []) -> String {
         var parts: [String] = []
         if owner.isEmpty {
             parts.append("The mailbox owner is not known.")
@@ -183,6 +214,18 @@ public enum ExtractionPrompt {
         if !listed.isEmpty {
             parts.append("Open to-dos already on file:\n" + listed.map { matter in
                 "\(matter.matter):\n" + matter.todos.map { "  \($0.id) (\($0.owner)): \($0.text)" }.joined(separator: "\n")
+            }.joined(separator: "\n"))
+        }
+        let dated = onFile.filter { !$0.appointments.isEmpty }
+        if !dated.isEmpty {
+            parts.append("Appointments already on file:\n" + dated.map { matter in
+                "\(matter.matter):\n" + matter.appointments.map { "  \($0)" }.joined(separator: "\n")
+            }.joined(separator: "\n"))
+        }
+        let taken = onFile.filter { !$0.unwanted.isEmpty }
+        if !taken.isEmpty {
+            parts.append("What the owner took out before — write nothing of this kind again:\n" + taken.map { matter in
+                "\(matter.matter):\n" + matter.unwanted.map { "  - \($0)" }.joined(separator: "\n")
             }.joined(separator: "\n"))
         }
         parts.append("<email>\n\(mail)\n</email>")
@@ -221,6 +264,7 @@ public enum ExtractionPrompt {
                 "time": ["anyOf": [string, ["type": "null"]]],
                 "place": ["anyOf": [string, ["type": "null"]]],
                 "source_quote": string,
+                "replaces": ["anyOf": [string, ["type": "null"]]],
             ])],
             "deadlines": ["type": "array", "items": object(["what": string, "date": date, "source_quote": string])],
         ])

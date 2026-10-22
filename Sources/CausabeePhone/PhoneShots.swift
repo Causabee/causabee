@@ -125,7 +125,7 @@ final class PhoneShots {
         let matters = Unplaced.matters(in: context)
         Task {
             do {
-                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters)
+                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context))
                 set(id, .answered(look, judgement))
             } catch {
                 set(id, .failed(plainWords(error)))

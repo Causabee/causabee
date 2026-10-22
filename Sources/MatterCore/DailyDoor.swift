@@ -108,7 +108,16 @@ public struct DailyDoor: Sendable {
         Set(answered.values.filter { Extractor.isSettled($0) || $0.isBulk }.map(\.emailID))
     }
 
+    /// A connection that drops under the read is opened once more: on the iPhone the network
+    /// changes often, and the second try usually goes through.
     public func look(password: String, progress: @Sendable (String) -> Void = { _ in }) async throws -> Look {
+        do { return try await lookOnce(password: password, progress: progress) } catch where isDroppedConnection(error) {
+            try await Task.sleep(for: .seconds(1.5))
+            return try await lookOnce(password: password, progress: progress)
+        }
+    }
+
+    private func lookOnce(password: String, progress: @Sendable (String) -> Void) async throws -> Look {
         let answered = earlier.merging(Self.readLog(log)) { _, own in own }
         let settled = Self.done(in: answered).union(alsoKnown)
 
@@ -149,7 +158,7 @@ public struct DailyDoor: Sendable {
     /// `placed`: the matter each earlier mail is in now. A mail the owner moved counts as that
     /// matter's, so the replies in its thread follow it there.
     public func classify(_ look: Look, claude: Claude, owner: [String], matters: [(key: String, about: String)] = [],
-                         placed: [String: String] = [:],
+                         placed: [String: String] = [:], onFile: [String: Extractor.OnFile] = [:],
                          progress: @Sendable (Int, Int, String) -> Void = { _, _, _ in }) async throws -> (judgements: [Judgement], summary: Extractor.Summary) {
         var outcomes = look.report.outcomes
         var summary = Extractor.Summary()
@@ -157,6 +166,7 @@ public struct DailyDoor: Sendable {
             var extractor = Extractor(model: model, claude: claude, cache: cache)
             extractor.strict = strict
             extractor.storeMatters = matters
+            extractor.onFile = onFile
             // A mail sent from a draft Causabee opened goes into the draft's matter.
             extractor.assigned = look.intake.fromDraft
             var known = look.answered

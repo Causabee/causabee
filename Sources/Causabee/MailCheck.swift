@@ -105,7 +105,11 @@ final class MailCheck {
             case .idle, .nothingNew, .done, .failed, .newMail:
                 if look.withoutOffered.pending > 0, AutoMode.isOn {
                     classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
-                } else if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
+                } else if look.pending > 0 {
+                    state = .newMail(look, door)
+                    // Behind other windows: said as a notification too, as on the iPhone.
+                    if NSApp.isActive { NewsNotice.ask() } else { MailNotice.tell(look) }
+                } else if case .newMail = state { state = .idle }
             default: break
             }
         }
@@ -214,7 +218,7 @@ final class MailCheck {
         state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
         Task {
             do {
-                let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), placed: Unplaced.placed(in: context))
+                let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), placed: Unplaced.placed(in: context), onFile: Unplaced.onFile(in: context))
                 let answered = Answered(judgements: judgements, cost: summary.cost, failed: summary.failed.count, look: look, door: door)
                 // Only newsletters: nothing to decide on.
                 if judgements.allSatisfy(\.isBulk) { take(answered, chosen: [], moved: [:], context: context, owner: owner) }
@@ -243,6 +247,14 @@ final class MailCheck {
             UnplacedAside.add(answered.judgements.filter { !$0.isBulk && !chosen.contains($0.emailID) }.map(\.emailID))
             SortedMails.setAside(UnplacedAside.all, device: NameListPublisher.device, in: context)
             let imported = try MatterImport.apply(judgements, to: context, owner: owner)
+            // What the owner unticked is not suggested again in its matter.
+            let afterImport = try context.fetch(FetchDescriptor<Matter>())
+            for judgement in judgements {
+                guard let key = judgement.matter, let matter = afterImport.first(where: { $0.answers(to: key) }) else { continue }
+                for text in IntakeSummary.unticked(skipped[judgement.emailID] ?? [], of: answered.judgements.first { $0.emailID == judgement.emailID } ?? judgement) {
+                    matter.notWanted(text)
+                }
+            }
             // Into the record the other devices read, and the names it learned into the store.
             try SortedMails.record(answered.judgements, device: NameListPublisher.device, in: context)
             NameListPublisher.publish()

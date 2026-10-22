@@ -114,6 +114,7 @@ enum Say {
     static let edit = "Edit …"
     static let delete = "Delete …"
     static let moveToInfo = "Move to Info"
+    static let notNeeded = "Not Needed"
     static let waitsFor = "Waits For"
     static let waitsForChoose = "Waits For …"
     static let stopWaiting = "Stop Waiting"
@@ -162,5 +163,21 @@ struct WaitsForChooser: View {
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 360)
         #endif
+    }
+}
+
+/// A task that was never needed: it goes — Undo brings it back — and, when mail brought it, the
+/// matter's next mails are read knowing the owner does not want such things. Done stays done:
+/// what the owner really did teaches nothing.
+@MainActor
+enum NotNeeded {
+    static func drop(_ todo: Todo, in context: ModelContext, undo: UndoManager?) {
+        Calendars.shared.removeReminder(todo.reminderID)
+        withAnimation { context.deleteByHand([todo], undo: undo, named: "Not Needed") }
+    }
+
+    /// In a task's menu, above Delete.
+    static func button(_ todo: Todo, in context: ModelContext, undo: UndoManager?) -> some View {
+        Button(Say.notNeeded, systemImage: "minus.circle") { drop(todo, in: context, undo: undo) }
     }
 }

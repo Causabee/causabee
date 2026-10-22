@@ -196,7 +196,8 @@ public struct ScreenshotDoor: Sendable {
 
     /// Sends it, pseudonymised, with the matters and open to-dos as context, and keeps the answer in
     /// the record. What comes back is a judgement for the owner to look at before it goes in.
-    public func classify(_ look: Look, claude: Claude, owner: [String], matters: [(key: String, about: String)] = []) async throws -> Judgement {
+    public func classify(_ look: Look, claude: Claude, owner: [String], matters: [(key: String, about: String)] = [],
+                         onFile: [String: Extractor.OnFile] = [:]) async throws -> Judgement {
         if let earlier = look.earlier { return earlier }
         var outcomes = look.report.outcomes
         guard let pseudonymizer = look.report.pseudonymizer else { throw Claude.Failure.unreadable("nothing to send") }
@@ -204,6 +205,7 @@ public struct ScreenshotDoor: Sendable {
         var extractor = Extractor(model: model, claude: claude, cache: cache, newestOnly: look.kind == .mail, quietAfter: 0)
         extractor.strict = strict
         extractor.storeMatters = matters
+        extractor.onFile = onFile
         let summary = try await extractor
             .run(&outcomes, pseudonymizer: pseudonymizer, owner: owner, known: look.answered)
         if let failure = summary.failed.first { throw Claude.Failure.unreadable(failure.error) }

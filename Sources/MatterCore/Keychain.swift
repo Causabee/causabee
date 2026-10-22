@@ -42,6 +42,7 @@ public enum Keychain {
                 if place == .own, let saved = Place.own.accounts().first(where: { $0.user == account }) {
                     _ = Place.shared.write(password, for: saved)
                 }
+                if place == .shared { Place.shared.openAfterFirstUnlock(account) }
                 return password
             }
             // A build that may not use the shared place is told so; it looks in the next one.
@@ -118,15 +119,27 @@ public enum Keychain {
             // The iPhone keeps only the shared one.
             if self == .own { return errSecMissingEntitlement }
             #endif
-            let status = SecItemUpdate(base(account.user) as CFDictionary,
-                                       [kSecValueData as String: data, kSecAttrGeneric as String: server] as CFDictionary)
+            var change: [String: Any] = [kSecValueData as String: data, kSecAttrGeneric as String: server]
+            if self == .shared { change[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock }
+            let status = SecItemUpdate(base(account.user) as CFDictionary, change as CFDictionary)
             guard status == errSecItemNotFound else { return status }
             var item = base(account.user)
             item[kSecValueData as String] = data
             item[kSecAttrGeneric as String] = server
+            if self == .shared { item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock }
             item[kSecAttrLabel as String] = "Causabee — \(account.user)"
             return SecItemAdd(item as CFDictionary, nil)
         }
+
+        /// Readable while the iPhone is locked, once it was unlocked after starting: the look for new
+        /// mail in the background needs it, as Apple's Mail does. A password saved before is changed
+        /// so the first time it is read — the change goes to every device with it.
+        func openAfterFirstUnlock(_ account: String) {
+            guard self == .shared, !Self.opened.contains(account) else { return }
+            Self.opened.insert(account)
+            SecItemUpdate(base(account) as CFDictionary, [kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock] as CFDictionary)
+        }
+        nonisolated(unsafe) static var opened: Set<String> = []
 
         func accounts() -> [MailAccount] {
             var query = base()

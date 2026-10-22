@@ -122,3 +122,14 @@ public struct MailAccount: Sendable, Equatable {
         }
     }
 }
+
+/// The connection went away under the read — the network changed, the iPhone slept, the server
+/// hung up — rather than the server saying no: worth one more try.
+public func isDroppedConnection(_ error: Error) -> Bool {
+    let dropped: Set<POSIXErrorCode> = [.ENOTCONN, .ECONNRESET, .ECONNABORTED, .EPIPE, .ETIMEDOUT, .ENETDOWN, .ENETUNREACH, .ENETRESET, .EHOSTUNREACH]
+    if let error = error as? NWError, case .posix(let code) = error { return dropped.contains(code) }
+    if let error = error as? POSIXError { return dropped.contains(error.code) }
+    if let error = error as? IMAPError { return error == .closed }
+    if let error = error as? URLError { return error.code == .networkConnectionLost || error.code == .timedOut }
+    return false
+}

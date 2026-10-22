@@ -196,7 +196,7 @@ struct Conversation {
         let navigation = self.navigation
         Task {
             do {
-                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters)
+                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context))
                 Conversation.set(shot: id, .answered(look, judgement), in: navigation)
             } catch {
                 Conversation.set(shot: id, .failed(plainWords(error)), in: navigation)

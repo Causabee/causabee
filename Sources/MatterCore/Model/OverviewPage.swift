@@ -68,7 +68,9 @@ public struct MatterSummary: Identifiable, Equatable {
         mine = open.filter { $0.owner == .me }.count
         ours = open.filter { $0.owner == .we }.count
         waiting = open.filter { $0.owner == .other }.count
-        var dated = open.compactMap { todo in todo.due.map { Dated(day: $0, time: nil, what: todo.text, todo: todo.persistentModelID) } }
+        // The owner's own on the days; what others do waits in the matter, as the week has it.
+        let own = open.filter { $0.owner != .other }
+        var dated = own.compactMap { todo in todo.due.map { Dated(day: $0, time: nil, what: todo.text, todo: todo.persistentModelID) } }
         dated += deadlines.map { Dated(day: $0.day, time: nil, what: $0.what, todo: nil) }
         dated += appointments.map { Dated(day: $0.day, time: $0.time, what: $0.what, todo: nil) }
         self.dated = dated

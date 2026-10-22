@@ -1736,6 +1736,7 @@ struct TodoRow: View {
             waitMenu
         }
         Divider()
+        if !todo.isDone { NotNeeded.button(todo, in: context, undo: undoManager) }
         Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }
 

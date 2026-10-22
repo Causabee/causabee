@@ -16,6 +16,19 @@ public enum Unplaced {
         }
     }
 
+    /// What each open matter has on file, by its key: its appointments, and what the owner took out.
+    public static func onFile(in context: ModelContext) -> [String: Extractor.OnFile] {
+        var files: [String: Extractor.OnFile] = [:]
+        let today = MatterStatus.day(Date().addingTimeInterval(-7 * 86_400))
+        for matter in ((try? context.fetch(FetchDescriptor<Matter>())) ?? []) where !matter.isClosed {
+            let coming = (matter.appointments ?? []).filter { $0.day >= today }.sorted { ($0.day, $0.time ?? "") < ($1.day, $1.time ?? "") }
+            let unwanted = matter.shownBrief?.unwanted ?? []
+            guard !coming.isEmpty || !unwanted.isEmpty else { continue }
+            files[matter.key] = .init(appointments: coming.map { Extractor.line(day: $0.day, time: $0.time, what: $0.what) }, unwanted: unwanted)
+        }
+        return files
+    }
+
     /// Where each mail is now, by its id: the matter the owner left it in or moved it to. A reply
     /// in its thread is sorted by this, not by where the mail was put first.
     public static func placed(in context: ModelContext) -> [String: String] {

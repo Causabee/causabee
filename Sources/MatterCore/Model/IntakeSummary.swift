@@ -60,6 +60,13 @@ public enum IntakeSummary {
     }
 
     /// The answer without what the owner left out, by the keys of `found(in:)`.
+    /// What the owner unticked of a mail's tasks and dates, in its words: not wanted in that matter.
+    public static func unticked(_ skipped: Set<String>, of judgement: Judgement) -> [String] {
+        judgement.todos.enumerated().filter { skipped.contains("t\($0.offset)") }.map(\.element.text)
+            + judgement.appointments.enumerated().filter { skipped.contains("a\($0.offset)") }.map(\.element.what)
+            + judgement.deadlines.enumerated().filter { skipped.contains("d\($0.offset)") }.map(\.element.what)
+    }
+
     public static func leaving(out skipped: Set<String>, of judgement: Judgement) -> Judgement {
         guard !skipped.isEmpty else { return judgement }
         var judgement = judgement

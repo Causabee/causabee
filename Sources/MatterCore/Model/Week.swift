@@ -22,7 +22,8 @@ public enum Week {
     /// matter by matter.
     public static func things(on day: String, in matters: [Matter]) -> [DayThing] {
         matters.filter { !$0.isClosed }.flatMap { matter -> [DayThing] in
-            var things = matter.openTodos.filter { $0.due == day }.map { DayThing(matter: matter, what: $0.text, time: nil, todo: $0) }
+            // The owner's own: what others do — "waiting for" — is in its matter, not on the day.
+            var things = matter.openTodos.filter { $0.due == day && $0.owner != .other }.map { DayThing(matter: matter, what: $0.text, time: nil, todo: $0) }
             things += (matter.deadlines ?? []).filter { $0.day == day }.map { DayThing(matter: matter, what: $0.what, time: nil, todo: nil) }
             things += (matter.appointments ?? []).filter { $0.day == day }.map { DayThing(matter: matter, what: $0.what, time: $0.time, todo: nil) }
             return things
@@ -48,8 +49,9 @@ public enum Week {
     /// The first day after `day` with anything on it, and its first thing: what an empty day
     /// says comes next.
     public static func next(after day: String, in matters: [Matter]) -> (day: String, thing: DayThing)? {
-        let later = matters.filter { !$0.isClosed }.flatMap { matter in
-            matter.openTodos.compactMap(\.due) + (matter.deadlines ?? []).map(\.day) + (matter.appointments ?? []).map(\.day)
+        let later = matters.filter { !$0.isClosed }.flatMap { matter -> [String] in
+            let todos: [String] = matter.openTodos.filter { $0.owner != .other }.compactMap(\.due)
+            return todos + (matter.deadlines ?? []).map(\.day) + (matter.appointments ?? []).map(\.day)
         }
         guard let first = later.filter({ $0 > day }).min(), let thing = things(on: first, in: matters).first else { return nil }
         return (first, thing)
