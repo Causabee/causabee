@@ -45,6 +45,9 @@ public struct Brief: Codable, Equatable, Sendable {
     public var lookups: [WebLookup.Lookup] = []
     /// What the mail since the brief before changes, and what to do now — until the owner has seen it.
     public var news: News?
+    /// What the owner removed of what mail brought — a task, a date — in their words: the next
+    /// mails of the matter are read knowing the owner does not want things of that kind.
+    public var unwanted: [String] = []
     public var writtenAt: Date?
 
     public struct News: Codable, Equatable, Sendable {
@@ -60,7 +63,7 @@ public struct Brief: Codable, Equatable, Sendable {
         self.lines = lines; self.said = said; self.proposals = proposals; self.lookups = lookups; self.writtenAt = writtenAt
     }
 
-    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, writtenAt }
+    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, unwanted, writtenAt }
 
     /// A brief kept before there were lookups reads as one without any.
     public init(from decoder: any Decoder) throws {
@@ -70,6 +73,7 @@ public struct Brief: Codable, Equatable, Sendable {
         proposals = try c.decodeIfPresent([Proposal].self, forKey: .proposals) ?? []
         lookups = try c.decodeIfPresent([WebLookup.Lookup].self, forKey: .lookups) ?? []
         news = try c.decodeIfPresent(News.self, forKey: .news)
+        unwanted = try c.decodeIfPresent([String].self, forKey: .unwanted) ?? []
         writtenAt = try c.decodeIfPresent(Date.self, forKey: .writtenAt)
     }
 
@@ -93,6 +97,7 @@ public struct Brief: Codable, Equatable, Sendable {
         let asked = questions.filter { !known.contains($0.lowercased()) }.prefix(2).map { WebLookup.Lookup(question: $0) }
         var brief = Brief(lines: lines, said: said, proposals: Array(decided) + new, lookups: Array(kept) + asked, writtenAt: date)
         brief.news = fresh ?? (news?.seen == false ? news : nil)
+        brief.unwanted = unwanted
         return brief
     }
 
@@ -142,6 +147,16 @@ extension Matter {
         guard !words.isEmpty else { return }
         var brief = shownBrief ?? Brief()
         brief.said.append(Brief.Said(text: words))
+        shownBrief = brief
+    }
+
+    /// Something mail brought that the owner removed: not suggested again in that kind.
+    public func notWanted(_ text: String) {
+        let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !words.isEmpty else { return }
+        var brief = shownBrief ?? Brief()
+        guard !brief.unwanted.contains(words) else { return }
+        brief.unwanted = Array((brief.unwanted + [words]).suffix(20))
         shownBrief = brief
     }
 

@@ -28,6 +28,17 @@ public struct Extractor: Sendable {
     /// The owner's matters as the store has them — also those made in the app, which no mail
     /// named yet: by the key a mail is filed under, and a line on what each is about.
     public var storeMatters: [(key: String, about: String)] = []
+    /// What each matter has on file, by its key: its appointments, so a mail that moves one
+    /// changes it rather than adding another, and what the owner took out of what mail brought.
+    public var onFile: [String: OnFile] = [:]
+    public struct OnFile: Sendable {
+        /// "2026-10-23 10:00 — Call with …", as the model is shown them and names one it replaces.
+        public var appointments: [String]
+        public var unwanted: [String]
+        public init(appointments: [String], unwanted: [String]) { self.appointments = appointments; self.unwanted = unwanted }
+    }
+    /// The most new to-dos one mail may bring: the model chooses the ones that matter most.
+    static let mostNewTodos = 2
     /// Mails whose matter is known before they are read — sent by the owner from a draft Causabee
     /// opened in that matter — by Message-ID: the matter's key.
     public var assigned: [String: String] = [:]
@@ -163,6 +174,12 @@ public struct Extractor: Sendable {
                 matters.append((name, disguiser.apply(earlier.matterReason).text))
             }
         }
+        // In disguise, and kept up to date as the run finds appointments.
+        var files: [String: OnFile] = [:]
+        for (key, file) in onFile {
+            files[disguiser.apply(key).text] = OnFile(appointments: file.appointments.map { disguiser.apply($0).text },
+                                                     unwanted: file.unwanted.suffix(10).map { disguiser.apply($0).text })
+        }
         for matter in storeMatters {
             let name = disguiser.apply(matter.key).text
             if !matters.contains(where: { $0.name == name }) { matters.append((name, disguiser.apply(matter.about).text)) }
@@ -206,7 +223,8 @@ public struct Extractor: Sendable {
             let thread = assignedTo.map { disguiser.apply($0).text } ?? threads.matter(for: outcomes[index].email)
             let user = ExtractionPrompt.user(mail: Self.text(of: disguise, body: history.newest, omitted: history.omitted),
                                              sent: outcomes[index].email.date, owner: disguisedOwner, matters: matters,
-                                             thread: thread, open: book.open(for: thread, matters: matters.map(\.name)))
+                                             thread: thread, open: book.open(for: thread, matters: matters.map(\.name)),
+                                             onFile: Self.shown(files, for: thread, from: outcomes[index].email.date))
             let body = Claude.body(model: model, system: system, user: user,
                                    schema: ExtractionPrompt.schema, effort: effort)
 
@@ -220,6 +238,9 @@ public struct Extractor: Sendable {
             do {
                 let (answer, wasCached) = try await answer(for: body)
                 var found = try JSONDecoder().decode(Found.self, from: answer.json)
+                // However many the model wrote, a mail brings at most the few that matter most.
+                found.todos = found.todos.filter { $0.sameAs != nil } + found.todos.filter { $0.sameAs == nil }.prefix(Self.mostNewTodos)
+                if let name = found.matter { Self.remember(found.appointments ?? [], in: name, files: &files) }
                 record.servedBy = answer.servedBy
                 record.inputTokens = answer.inputTokens + answer.cacheWriteTokens + answer.cacheReadTokens
                 record.cacheReadTokens = answer.cacheReadTokens
@@ -278,6 +299,33 @@ public struct Extractor: Sendable {
         return summary
     }
 
+    /// What the model is shown on file: the thread's matter when it is known, else every matter's —
+    /// appointments from the day before the mail on, the newest few things taken out.
+    static func shown(_ files: [String: OnFile], for thread: String?, from sent: Date?) -> [(matter: String, appointments: [String], unwanted: [String])] {
+        let since = sent.map { MatterStatus.day($0.addingTimeInterval(-86_400)) } ?? ""
+        let names = thread.map { [$0] } ?? files.keys.sorted()
+        return names.compactMap { name in
+            guard let file = files[name] else { return nil }
+            let coming = file.appointments.filter { String($0.prefix(10)) >= since }.suffix(8)
+            return coming.isEmpty && file.unwanted.isEmpty ? nil : (name, Array(coming), file.unwanted)
+        }
+    }
+
+    /// The appointments a mail brought, on file for the next mails: one it replaces goes.
+    static func remember(_ found: [Judgement.Appointment], in matter: String, files: inout [String: OnFile]) {
+        var file = files[matter] ?? OnFile(appointments: [], unwanted: [])
+        for appointment in found {
+            if let old = appointment.replaces { file.appointments.removeAll { $0.hasPrefix(old) } }
+            file.appointments.append(Self.line(day: appointment.date, time: appointment.time, what: appointment.what))
+        }
+        files[matter] = file
+    }
+
+    /// "2026-10-23 10:00 — Call with …"; without a time, the day alone.
+    public static func line(day: String, time: String?, what: String) -> String {
+        [day, time].compactMap { $0 }.joined(separator: " ") + " — " + what
+    }
+
     /// Who a sender is, for learning that they have gone quiet. A company's mass mailer writes
     /// from a new random address every time — CHECK24 does — so a company is its domain. A person
     /// at Gmail or web.de is their address, because the domain there is millions of people; so is
@@ -329,7 +377,8 @@ public struct Extractor: Sendable {
         }
         decision.done = (found.done ?? []).map { .init(todo: $0.todo, sourceQuote: real($0.sourceQuote)) }
         decision.appointments = (found.appointments ?? []).map {
-            .init(what: real($0.what), date: $0.date, time: $0.time, place: $0.place.map(real), sourceQuote: real($0.sourceQuote))
+            .init(what: real($0.what), date: $0.date, time: $0.time, place: $0.place.map(real), sourceQuote: real($0.sourceQuote),
+                  replaces: $0.replaces)
         }
         decision.deadlines = found.deadlines.map {
             .init(what: real($0.what), date: $0.date, sourceQuote: real($0.sourceQuote))

@@ -157,6 +157,17 @@ public enum MatterImport {
             }
 
             for found in judgement.appointments {
+                // Moved or settled at another time: the one on file changes, no second one comes.
+                if let old = found.replaces, let same = (matter.appointments ?? []).first(where: {
+                    Extractor.line(day: $0.day, time: $0.time, what: "").hasPrefix(old.trimmingCharacters(in: .whitespaces))
+                }) {
+                    same.day = found.date
+                    same.time = found.time
+                    same.what = found.what
+                    if let place = found.place { same.place = place }
+                    same.sources.append(source.quoting(found.sourceQuote))
+                    continue
+                }
                 // The same visit is mentioned in three mails, worded three ways; the day and the
                 // hour are what make it the same.
                 if let same = (matter.appointments ?? []).first(where: {

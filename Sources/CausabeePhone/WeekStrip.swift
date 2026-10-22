@@ -8,6 +8,8 @@ import SwiftUI
 struct PhoneWeek: View {
     let matters: [Matter]
     @Environment(Navigation.self) private var navigation
+    @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var chosen: String?
     @State private var showsOverdue = false
     /// What is over today, unfolded.
@@ -164,6 +166,8 @@ struct PhoneWeek: View {
                     .contentShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
+                // A task of the day that was never needed goes from here, without opening its matter.
+                .contextMenu { if let todo = thing.todo { NotNeeded.button(todo, in: context, undo: undoManager) } }
             }
         }
     }

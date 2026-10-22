@@ -12,6 +12,12 @@ public extension ModelContext {
     @MainActor
     func deleteByHand(_ models: [any PersistentModel], undo: UndoManager?, named name: String) {
         let kept = models.compactMap(Kept.init)
+        // What mail brought and the owner took out: the matter's next mails are read knowing it.
+        for model in models {
+            if let todo = model as? Todo, !todo.sources.isEmpty { todo.matter?.notWanted(todo.text) }
+            if let item = model as? Appointment, !item.sources.isEmpty { item.matter?.notWanted(item.what) }
+            if let item = model as? Deadline, !item.sources.isEmpty { item.matter?.notWanted(item.what) }
+        }
         for model in models { delete(model) }
         try? save()
         guard let undo, !kept.isEmpty else { return }

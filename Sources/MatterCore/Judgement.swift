@@ -160,7 +160,9 @@ public struct Judgement: Codable, Sendable {
         public var time: String?
         public var place: String?
         public var sourceQuote: String
-        enum CodingKeys: String, CodingKey { case what, date, time, place, sourceQuote = "source_quote" }
+        /// The appointment on file this one moves or settles, as it was listed: "2026-10-23 11:00".
+        public var replaces: String? = nil
+        enum CodingKeys: String, CodingKey { case what, date, time, place, sourceQuote = "source_quote", replaces }
 
         public func encode(to encoder: any Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
@@ -169,6 +171,7 @@ public struct Judgement: Codable, Sendable {
             try container.always(time, forKey: .time)
             try container.always(place, forKey: .place)
             try container.encode(sourceQuote, forKey: .sourceQuote)
+            try container.encodeIfPresent(replaces, forKey: .replaces)
         }
     }
 

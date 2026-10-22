@@ -8,6 +8,8 @@ import SwiftUI
 struct OverviewWeek: View {
     let matters: [Matter]
     @Environment(Navigation.self) private var navigation
+    @Environment(\.modelContext) private var context
+    @Environment(\.undoManager) private var undoManager
     @State private var chosen: String?
     @State private var showsOverdue = false
     /// What is over today, unfolded.
@@ -154,6 +156,8 @@ struct OverviewWeek: View {
         }
         .buttonStyle(.plain)
         .help("\(thing.what) — \(thing.matter.name)")
+        // A task of the day that was never needed goes from here, without opening its matter.
+        .contextMenu { if let todo = thing.todo { NotNeeded.button(todo, in: context, undo: undoManager) } }
     }
 
     /// What is overdue in the open matters, the longest first.
