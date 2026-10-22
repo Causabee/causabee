@@ -52,12 +52,14 @@ extension View {
 private struct Findable: ViewModifier {
     let id: PageFind.ID
     let texts: [String?]
-    @Environment(PageFind.self) private var find
+    /// Nil outside a matter's page — in the assistant, a lookup's answer is shown with the same
+    /// view: then there is nothing to find in, and asking for it closed the app.
+    @Environment(PageFind.self) private var find: PageFind?
 
     func body(content: Content) -> some View {
-        let hit = find.has(texts)
-        let current = hit && find.current == id
-        let shown = find.shown.map { id == .model($0) } ?? false
+        let hit = find?.has(texts) ?? false
+        let current = hit && find?.current == id
+        let shown = find?.shown.map { id == .model($0) } ?? false
         content
             .background(shown ? Theme.mark : hit ? Theme.mark.opacity(current ? 1 : 0.45) : .clear, in: RoundedRectangle(cornerRadius: 8))
             .overlay { if current { RoundedRectangle(cornerRadius: 8).stroke(Theme.gold, lineWidth: 1.5) } }
