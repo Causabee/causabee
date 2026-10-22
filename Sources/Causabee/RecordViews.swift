@@ -988,7 +988,7 @@ struct BriefDetails: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
                 }
-                if !brief.lines.isEmpty || !brief.answered.isEmpty {
+                if !brief.lines.isEmpty || !brief.answeredHere.isEmpty {
                     DisclosureGroup(isExpanded: $opens) {
                         VStack(alignment: .leading, spacing: 10) {
                             ForEach(Brief.Part.allCases, id: \.self) { part in
@@ -1005,10 +1005,10 @@ struct BriefDetails: View {
                             }
                             // What was looked up on the web: kept to read, folded with the rest — it
                             // waits for nothing, and under the brief it stood in the way.
-                            if !brief.answered.isEmpty {
+                            if !brief.answeredHere.isEmpty {
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text("Looked up").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                                    ForEach(brief.answered) { lookup in FoundRow(lookup: lookup) }
+                                    ForEach(brief.answeredHere) { lookup in FoundRow(lookup: lookup) }
                                 }
                             }
                         }
