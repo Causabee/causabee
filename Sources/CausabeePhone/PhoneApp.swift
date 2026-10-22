@@ -1,3 +1,4 @@
+import BackgroundTasks
 import CloudKit
 import CoreData
 import MatterCore
@@ -40,8 +41,31 @@ struct CausabeePhoneApp: App {
             }
         }
         .commands { PhoneCommands() }
-        // Gone to the background: a copy of the owner's matters for CausabeeDemo, to test with.
-        .onChange(of: phase) { if phase == .background { RealCopyForDemo.leave() } }
+        // Gone to the background: a copy of the owner's matters for CausabeeDemo, to test with —
+        // and a look for new mail asked for, in half an hour.
+        .onChange(of: phase) { if phase == .background { RealCopyForDemo.leave(); BackgroundMailCheck.ask() } }
+        .backgroundTask(.appRefresh(BackgroundMailCheck.id)) { await BackgroundMailCheck.run() }
+    }
+}
+
+/// New mail looked for while Causabee is away: asked of iOS for every half hour. iOS decides when
+/// it really comes — sooner for an app opened often, later or not at all for one left alone — and
+/// gives it some thirty seconds. Each run asks for the next.
+enum BackgroundMailCheck {
+    static let id = "de.chille.causabee.mailcheck"
+    @MainActor static var container: ModelContainer?
+
+    static func ask() {
+        guard !DemoData.isRequested else { return }
+        let request = BGAppRefreshTaskRequest(identifier: id)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 30 * 60)
+        try? BGTaskScheduler.shared.submit(request)
+    }
+
+    @MainActor static func run() async {
+        ask()
+        guard let container else { return }
+        await PhoneMailCheck.shared.checkInBackground(context: container.mainContext)
     }
 }
 
@@ -93,6 +117,7 @@ final class PhoneStore {
             Calendars.shared.isSealed = DemoData.isRequested
             if DemoData.isRequested, !real { DemoData.seed(container.mainContext); DemoData.keepTalkBehindTheClock(container.mainContext) }
             StoredChanges.shared.watch(container.mainContext)
+            if !DemoData.isRequested { BackgroundMailCheck.container = container }
             // The kept words of mails and files, the same on every device.
             KeptTexts.store = url
             KeptTexts.share(besides: url, in: container.mainContext)

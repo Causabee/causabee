@@ -105,7 +105,11 @@ final class MailCheck {
             case .idle, .nothingNew, .done, .failed, .newMail:
                 if look.withoutOffered.pending > 0, AutoMode.isOn {
                     classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
-                } else if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
+                } else if look.pending > 0 {
+                    state = .newMail(look, door)
+                    // Behind other windows: said as a notification too, as on the iPhone.
+                    if NSApp.isActive { NewsNotice.ask() } else { MailNotice.tell(look) }
+                } else if case .newMail = state { state = .idle }
             default: break
             }
         }

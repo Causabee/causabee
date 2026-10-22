@@ -1098,6 +1098,16 @@ enum NewsNotice {
         }
     }
 
+    /// Asked once, while Causabee is in front: from the background, iOS shows no question.
+    static func ask() {
+        let center = UNUserNotificationCenter.current()
+        Task {
+            if await center.notificationSettings().authorizationStatus == .notDetermined {
+                _ = try? await center.requestAuthorization(options: [.alert, .sound])
+            }
+        }
+    }
+
     /// Notifications show while Causabee is open too, and a tap opens the matter.
     static func listen() { UNUserNotificationCenter.current().delegate = Listener.shared }
 
@@ -1112,5 +1122,42 @@ enum NewsNotice {
             guard let key = response.notification.request.content.userInfo["matter"] as? String else { return }
             await MainActor.run { NotificationCenter.default.post(name: .openMatterKey, object: key) }
         }
+    }
+}
+
+/// New mail found while Causabee was away — in the background on the iPhone and the iPad, behind
+/// other windows on the Mac: "3 new mails", once per mail, on the device that found it. Only how
+/// many and who from; nothing of what they say. Nothing is read or sent: that waits for the owner.
+@MainActor
+enum MailNotice {
+    private static let toldKey = "mail.told"
+
+    static func tell(_ look: DailyDoor.Look) {
+        guard !DemoData.isRequested else { return }
+        var told = UserDefaults.standard.stringArray(forKey: toldKey) ?? []
+        let fresh = look.newMails.filter { !told.contains($0.judgement.emailID) }
+        guard !fresh.isEmpty else { return }
+        told.append(contentsOf: fresh.map(\.judgement.emailID))
+        UserDefaults.standard.set(Array(told.suffix(500)), forKey: toldKey)
+
+        let all = look.newIDs.count
+        let content = UNMutableNotificationContent()
+        content.title = all == 1 ? "1 new mail" : "\(all) new mails"
+        let senders = Array(NSOrderedSet(array: look.newMails.map { MailNotice.name($0.email.from) })) as? [String] ?? []
+        content.body = senders.prefix(3).joined(separator: ", ") + (senders.count > 3 ? " and \(senders.count - 3) more" : "")
+        content.sound = .default
+        content.threadIdentifier = "new-mail"
+        let request = UNNotificationRequest(identifier: "new-mail", content: content, trigger: nil)
+        let center = UNUserNotificationCenter.current()
+        Task {
+            guard await center.notificationSettings().authorizationStatus == .authorized else { return }
+            try? await center.add(request)
+        }
+    }
+
+    /// "Bernd Berger <b@x.de>" → "Bernd Berger"; the address when there is no name.
+    private static func name(_ from: String) -> String {
+        let plain = from.split(separator: "<").first.map { $0.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "\"")) } ?? ""
+        return plain.isEmpty ? Email.address(in: from) : plain
     }
 }

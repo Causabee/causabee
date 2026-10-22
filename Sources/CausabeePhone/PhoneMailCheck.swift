@@ -186,8 +186,29 @@ final class PhoneMailCheck {
             guard isQuiet else { return }
             // Auto: read at once, and offered to be taken in.
             if look.withoutOffered.pending > 0, AutoMode.isOn { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
-            else if look.pending > 0 { state = .newMail(look, door) } else if case .newMail = state { state = .idle }
+            else if look.pending > 0 { state = .newMail(look, door); NewsNotice.ask() } else if case .newMail = state { state = .idle }
         }
+    }
+
+    /// Looks for new mail while Causabee is in the background, when iOS lets it — some thirty
+    /// seconds, so nothing is read by the AI: what is new waits as the quiet line, and a
+    /// notification says so. Auto reads it when Causabee comes to the front.
+    func checkInBackground(context: ModelContext) async {
+        guard !DemoData.isRequested, isQuiet, !checking else { return }
+        checking = true
+        defer { checking = false }
+        // What the other devices sorted meanwhile — not waited for long, there is little time.
+        await CloudCatchUp.shared.caughtUp(limit: .seconds(6))
+        guard let door = door(context: context).door,
+              let password = try? Keychain.password(for: door.account.user),
+              var look = try? await door.look(password: password) else { return }
+        lastChecked = Date()
+        // Sorted on another device right before: not new here.
+        let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
+        look = look.without(Set(SortedMails.answered(in: context).keys).union(entries.map(\.messageID)))
+        guard isQuiet, look.pending > 0, !look.newIDs.isEmpty else { return }
+        state = .newMail(look, door)
+        MailNotice.tell(look)
     }
 
     /// Auto was turned on: mail that waits is read now, and what is new is looked for.
