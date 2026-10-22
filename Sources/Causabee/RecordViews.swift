@@ -1422,3 +1422,19 @@ struct PublicNamesSettings: View {
 
     private func load() { names = PublicNames.names(in: context) }
 }
+
+/// After a public name in People: a small globe — not disguised, and may be named in a question
+/// looked up on the web. The same on every device.
+struct PublicNameMark: View {
+    let party: Party
+
+    var body: some View {
+        // Drawn again when a name is marked or unmarked, here or on another device.
+        let _ = StoredChanges.shared.count
+        if PublicNames.covers(party.name) {
+            Image(systemName: "globe").font(.caption).foregroundStyle(Theme.gold)
+                .help("Public name — not disguised")
+                .accessibilityLabel("Public name — not disguised")
+        }
+    }
+}
