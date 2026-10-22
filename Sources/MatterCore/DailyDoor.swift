@@ -68,6 +68,12 @@ public struct DailyDoor: Sendable {
             return report.outcomes.filter { ids.contains($0.judgement.emailID) }
         }
 
+        /// Without what another device dealt with meanwhile.
+        public func without(_ known: Set<String>) -> Look {
+            let left = Set(newIDs).subtracting(known)
+            return left.count == newIDs.count ? self : only(left)
+        }
+
         /// Only these of the new mails, to be sent: the others stay out of this run. What was
         /// answered before stays in, as it is never sent again anyway.
         public func only(_ chosen: Set<String>) -> Look {

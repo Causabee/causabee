@@ -1151,9 +1151,10 @@ struct PhoneActionCard: View {
 final class MailSheet: NSObject, MFMailComposeViewControllerDelegate {
     private static let shared = MailSheet()
 
-    /// False when there is nothing to attach: then the draft opens the old way, as a mail link.
+    /// Every draft, with files or without, as Mail's own sheet over Causabee. False only with no
+    /// account in Mail and nothing to attach: then it opens as a mail link, in whichever mail app there is.
     static func open(_ draft: CardActions.MailDraft, card key: String) -> Bool {
-        guard !draft.files.isEmpty else { return false }
+        guard !draft.files.isEmpty || MFMailComposeViewController.canSendMail() else { return false }
         Task {
             // Read, and a big picture made smaller, away from the screen: done while it drew, a large
             // photo — perhaps still on its way from iCloud — held the app until iOS closed it. The

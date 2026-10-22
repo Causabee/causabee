@@ -90,7 +90,7 @@ public struct Brief: Codable, Equatable, Sendable {
         // What was looked up or put away stays; a question asked before is not asked again.
         let kept = lookups.filter { $0.state != .open }.suffix(20)
         let known = Set(kept.map { $0.question.lowercased() })
-        let asked = questions.filter { !known.contains($0.lowercased()) }.prefix(2).map(WebLookup.Lookup.init(question:))
+        let asked = questions.filter { !known.contains($0.lowercased()) }.prefix(2).map { WebLookup.Lookup(question: $0) }
         var brief = Brief(lines: lines, said: said, proposals: Array(decided) + new, lookups: Array(kept) + asked, writtenAt: date)
         brief.news = fresh ?? (news?.seen == false ? news : nil)
         return brief
@@ -99,6 +99,8 @@ public struct Brief: Codable, Equatable, Sendable {
     /// Asked, and waiting for the owner's tap.
     public var openLookups: [WebLookup.Lookup] { lookups.filter { $0.state == .open } }
     public var answered: [WebLookup.Lookup] { lookups.filter { $0.state == .answered } }
+    /// What the brief asked and was looked up: shown in it. What the assistant asked stays in its thread.
+    public var answeredHere: [WebLookup.Lookup] { answered.filter { !$0.fromAssistant } }
 
     /// For the facts sheet: what is understood, and what the owner said — the owner's words first.
     public var forFacts: String? {
@@ -165,10 +167,10 @@ extension Matter {
 
     /// A question to look up, kept with the others — the one already there when it was asked before.
     @discardableResult
-    public func ask(_ question: String) -> UUID {
+    public func ask(_ question: String, fromAssistant: Bool = false) -> UUID {
         var brief = shownBrief ?? Brief()
         if let known = brief.lookups.first(where: { $0.question.lowercased() == question.lowercased() }) { return known.id }
-        let lookup = WebLookup.Lookup(question: question)
+        let lookup = WebLookup.Lookup(question: question, fromAssistant: fromAssistant)
         brief.lookups.append(lookup)
         shownBrief = brief
         return lookup.id

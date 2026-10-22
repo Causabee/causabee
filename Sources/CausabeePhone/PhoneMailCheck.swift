@@ -172,10 +172,12 @@ final class PhoneMailCheck {
             classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
             return
         }
-        guard let door = door(context: context).door else { return }
         checking = true
         Task {
             defer { checking = false }
+            // What the other devices sorted meanwhile, in from iCloud first: otherwise it looks new.
+            await CloudCatchUp.shared.caughtUp()
+            guard let door = door(context: context).door else { return }
             guard let password = try? Keychain.password(for: door.account.user),
                   let look = try? await door.look(password: password) else { return }
             lastChecked = Date()
@@ -244,12 +246,13 @@ final class PhoneMailCheck {
         // A round that was read waits for its answer first.
         if case .answered = state { return }
         if DemoData.isRequested { lookInDemo(context: context); return }
-        let (found, why) = door(context: context)
-        guard let door = found else { state = .failed(why ?? "Mail cannot be read."); return }
-        let account = door.account
-        // Only that it is at it: how many mails the label holds is nothing to worry about.
         state = .reading("Fetching mail …")
         running = Task {
+            // What the other devices sorted meanwhile, in from iCloud first — a short wait, asked for by hand.
+            await CloudCatchUp.shared.caughtUp(limit: .seconds(8))
+            let (found, why) = door(context: context)
+            guard let door = found else { state = .failed(why ?? "Mail cannot be read."); return }
+            let account = door.account
             do {
                 guard let password = try Keychain.password(for: account.user) else {
                     state = .failed("No password for \(account.user) on this \(ThisDevice.name): add it in Settings (⋯ above).")
@@ -321,6 +324,10 @@ final class PhoneMailCheck {
     /// Sends what is new, pseudonymised, and keeps what came back as an offer: nothing is in a
     /// matter until the owner takes it in.
     func classify(_ look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
+        // Asked once more right before anything is sent: another device may have sorted some of it
+        // while this one looked — read twice, its tasks came twice.
+        let look = look.without(SortedMails.known(in: context))
+        guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
         guard let claude = ModelChoice.client(for: door.model) else {
             state = .failed(ModelChoice.missingKey(door.model))
             return

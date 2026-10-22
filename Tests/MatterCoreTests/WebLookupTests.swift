@@ -36,6 +36,19 @@ struct WebLookupTests {
         #expect(next.forFacts?.contains("Ein Monat.") == true)
     }
 
+    @Test func whatTheAssistantLookedUpIsKnownToTheBriefButNotShownInIt() {
+        let matter = Matter(key: "x")
+        let fromBrief = matter.ask("Frist für den Widerspruch?")
+        matter.settle(fromBrief, answer: "Ein Monat.")
+        let fromAssistant = matter.ask("Wo hat Wanderlustia Stationen?", fromAssistant: true)
+        matter.settle(fromAssistant, answer: "Am Flughafen.")
+        let brief = matter.shownBrief!
+        #expect(brief.answeredHere.map(\.answer) == ["Ein Monat."])
+        #expect(brief.forFacts?.contains("Am Flughafen.") == true)
+        // Kept as it was when the brief is written again.
+        #expect(brief.rewritten(lines: [], proposals: []).answeredHere.count == 1)
+    }
+
     @Test func theInlineLinksAndTrackersGo() {
         #expect(WebLookup.answer(["Es sind 25 Arbeitstage. ([gesetze-im-internet.de](https://x.de/a?utm_source=openai))"]) == "Es sind 25 Arbeitstage.")
         let sources = WebLookup.unique([.init(title: "a", url: "https://x.de/a?utm_source=openai"), .init(title: "a", url: "https://x.de/a")])

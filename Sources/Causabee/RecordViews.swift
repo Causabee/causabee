@@ -988,7 +988,7 @@ struct BriefDetails: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
                 }
-                if !brief.lines.isEmpty {
+                if !brief.lines.isEmpty || !brief.answeredHere.isEmpty {
                     DisclosureGroup(isExpanded: $opens) {
                         VStack(alignment: .leading, spacing: 10) {
                             ForEach(Brief.Part.allCases, id: \.self) { part in
@@ -1001,6 +1001,14 @@ struct BriefDetails: View {
                                                 .findable(.section("brief-\(part.rawValue)-\(index)"), line)
                                         }
                                     }
+                                }
+                            }
+                            // What was looked up on the web: kept to read, folded with the rest — it
+                            // waits for nothing, and under the brief it stood in the way.
+                            if !brief.answeredHere.isEmpty {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("Looked up").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                    ForEach(brief.answeredHere) { lookup in FoundRow(lookup: lookup) }
                                 }
                             }
                         }
@@ -1049,14 +1057,7 @@ struct BriefDetails: View {
                         }
                     }
                 }
-                if !brief.answered.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Looked up").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        ForEach(brief.answered) { lookup in
-                            FoundRow(lookup: lookup)
-                        }
-                    }
-                }
+
             }
         }
     }
@@ -1421,4 +1422,20 @@ struct PublicNamesSettings: View {
     }
 
     private func load() { names = PublicNames.names(in: context) }
+}
+
+/// After a public name in People: a small globe — not disguised, and may be named in a question
+/// looked up on the web. The same on every device.
+struct PublicNameMark: View {
+    let party: Party
+
+    var body: some View {
+        // Drawn again when a name is marked or unmarked, here or on another device.
+        let _ = StoredChanges.shared.count
+        if PublicNames.covers(party.name) {
+            Image(systemName: "globe").font(.caption).foregroundStyle(Theme.gold)
+                .help("Public name — not disguised")
+                .accessibilityLabel("Public name — not disguised")
+        }
+    }
 }

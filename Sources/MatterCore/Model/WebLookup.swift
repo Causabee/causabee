@@ -21,7 +21,23 @@ public enum WebLookup {
         public var answer: String?
         public var sources: [Source] = []
         public var date: Date?
-        public init(question: String) { self.question = question }
+        /// Asked in the assistant: its answer stands in the thread, and the brief only knows it —
+        /// it is not shown under the brief. False for what the brief asked, and in lookups kept before.
+        public var fromAssistant = false
+        public init(question: String, fromAssistant: Bool = false) { self.question = question; self.fromAssistant = fromAssistant }
+
+        enum CodingKeys: String, CodingKey { case id, question, state, answer, sources, date, fromAssistant }
+
+        public init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decode(UUID.self, forKey: .id)
+            question = try c.decode(String.self, forKey: .question)
+            state = try c.decode(State.self, forKey: .state)
+            answer = try c.decodeIfPresent(String.self, forKey: .answer)
+            sources = try c.decodeIfPresent([Source].self, forKey: .sources) ?? []
+            date = try c.decodeIfPresent(Date.self, forKey: .date)
+            fromAssistant = try c.decodeIfPresent(Bool.self, forKey: .fromAssistant) ?? false
+        }
     }
 
     /// Why a question may not go out, or nil when it may: anything that could say whose matter it
@@ -50,7 +66,9 @@ public enum WebLookup {
         Array(Set(names.filter { !PublicNames.covers($0) }.flatMap { name -> [String] in
             let words = name.split { !$0.isLetter }.map(String.init)
             return [name] + (words.count <= 2 ? words : Array(words.prefix(1)))
-        }.filter { $0.count >= 3 }))
+        // And a public word stays public out of any other spelling: "Expedia/Rentscape" brought
+        // "Rentscape" back as a word of its own, and held the question back after all.
+        }.filter { $0.count >= 3 && !PublicNames.covers($0) }))
     }
 
     /// The question, looked up: a short answer in `language`, with its sources, and what it cost.

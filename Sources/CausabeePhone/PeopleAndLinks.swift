@@ -110,8 +110,11 @@ struct PhonePartyRow: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "person.crop.circle").font(.title2).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 3) {
-                Text("\(Text(party.name).fontWeight(.medium))\(Text(membership.role.map { " · \($0)" } ?? "").foregroundStyle(.secondary))")
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("\(Text(party.name).fontWeight(.medium))\(Text(membership.role.map { " · \($0)" } ?? "").foregroundStyle(.secondary))")
+                        .fixedSize(horizontal: false, vertical: true)
+                    PublicNameMark(party: party)
+                }
                 // How much they are in the matter — the one named most in gold.
                 if let share = membership.share {
                     Text(share.isMost ? share.text + " · the most" : share.text).font(.caption)

@@ -968,7 +968,7 @@ enum Adviser {
         let found = try await WebLookup.ask(question, language: AssistantAsk.language(of: [question]),
                                             country: Locale.current.region?.identifier, claude: claude, model: model)
         if let matter {
-            let id = matter.ask(question)
+            let id = matter.ask(question, fromAssistant: true)
             matter.settle(id, answer: found.answer, sources: found.sources)
             try? context.save()
         }

@@ -37,4 +37,13 @@ struct PublicNamesTests {
         #expect(WebLookup.refusal("How long does Wanderlustia take to refund a cancelled hotel?", personal: WebLookup.personal(people)) == nil)
         #expect(WebLookup.refusal("Does Helga get the refund?", personal: WebLookup.personal(people)) != nil)
     }
+
+    @Test func aPublicNameStaysPublicInAnotherSpelling() {
+        PublicNames.set(["Wanderlustia"])
+        defer { PublicNames.set([]) }
+        // As a company is kept: its name, and how a booking site wrote it.
+        let people = ["Wanderlustia", "Tripvista", "Tripvista/Wanderlustia"]
+        #expect(WebLookup.refusal("Where are Wanderlustia car rental stations located?", personal: WebLookup.personal(people)) == nil)
+        #expect(WebLookup.refusal("Does Tripvista refund it?", personal: WebLookup.personal(people)) != nil)
+    }
 }

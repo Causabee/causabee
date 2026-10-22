@@ -2200,6 +2200,7 @@ struct PartyRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(party.name).font(.body.weight(.medium))
+                    PublicNameMark(party: party)
                     if let role = membership.role { Text("· \(role)").foregroundStyle(.secondary).lineLimit(1) }
                 }
                 // How much they are in the matter — the one named most in gold.
