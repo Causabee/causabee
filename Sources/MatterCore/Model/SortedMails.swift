@@ -34,6 +34,15 @@ public enum SortedMails {
         if added { try? context.save() }
     }
 
+    /// Every mail some device has already dealt with, as the store has it now: sorted, stopped as
+    /// bulk, in a matter, or left out. Asked again right before mail is sent to be read — iCloud may
+    /// have brought another device's work in while this one was looking.
+    public static func known(in context: ModelContext) -> Set<String> {
+        let sorted = answered(in: context).values.filter { Extractor.isSettled($0) || $0.isBulk }.map(\.emailID)
+        let entries = ((try? context.fetch(FetchDescriptor<Entry>())) ?? []).map(\.messageID)
+        return Set(sorted).union(entries).union(setAside(in: context)).subtracting([""])
+    }
+
     /// Every answer in the store, by Message-ID.
     public static func answered(in context: ModelContext) -> [String: Judgement] {
         let decoder = JSONDecoder()

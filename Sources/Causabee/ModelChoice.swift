@@ -305,6 +305,8 @@ final class StoredChanges {
         self.context = context
         // The names the owner marked as public, read before anything is disguised.
         PublicNames.refresh(in: context)
+        // From the start: what iCloud brings in, so the mail check can wait for it.
+        CloudCatchUp.shared.watch()
         guard !watching else { return }
         watching = true
         NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main) { _ in
@@ -644,5 +646,55 @@ extension View {
     /// The question before Auto is turned on for the first time.
     func asksBeforeAuto(_ asks: Binding<Bool>, turnOn: @escaping () -> Void) -> some View {
         modifier(AutoQuestion(asks: asks, turnOn: turnOn))
+    }
+}
+
+/// Waits for iCloud before mail is looked at: opened after a while, Causabee checked the mailbox
+/// within seconds, before iCloud had brought what the other devices sorted meanwhile — and mail
+/// already taken in looked new, was read again, and its tasks came twice.
+@MainActor
+final class CloudCatchUp {
+    static let shared = CloudCatchUp()
+    private var activeSince = Date()
+    private var lastImport: Date?
+    private var watching = false
+
+    /// Whether this store syncs at all: without iCloud there is nothing to wait for.
+    private var syncs: Bool {
+        guard !DemoData.isRequested else { return false }
+        #if os(iOS)
+        return PhoneCloud.container != nil
+        #else
+        return CloudSync.mode == .on
+        #endif
+    }
+
+    func watch() {
+        guard !watching else { return }
+        watching = true
+        NotificationCenter.default.addObserver(forName: NSPersistentCloudKitContainer.eventChangedNotification, object: nil, queue: .main) { note in
+            guard let event = note.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event,
+                  event.type == .import, let ended = event.endDate, event.succeeded else { return }
+            MainActor.assumeIsolated { CloudCatchUp.shared.lastImport = ended }
+        }
+        #if os(iOS)
+        let active = UIApplication.didBecomeActiveNotification
+        #else
+        let active = NSApplication.didBecomeActiveNotification
+        #endif
+        NotificationCenter.default.addObserver(forName: active, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { CloudCatchUp.shared.activeSince = Date() }
+        }
+    }
+
+    /// Until iCloud has brought in what came since Causabee came to the front — at most `limit`:
+    /// with nothing new, iCloud may not say so at all.
+    func caughtUp(limit: Duration = .seconds(25)) async {
+        watch()
+        guard syncs else { return }
+        let start = ContinuousClock.now
+        while (lastImport ?? .distantPast) < activeSince, ContinuousClock.now - start < limit {
+            try? await Task.sleep(for: .milliseconds(400))
+        }
     }
 }

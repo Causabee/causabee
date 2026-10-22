@@ -89,10 +89,12 @@ final class MailCheck {
         default: return
         }
         guard let account = Keychain.accounts().first else { return }
-        let door = door(for: account, store: store, context: context)
         checking = true
         Task {
             defer { checking = false }
+            // What the other devices sorted meanwhile, in from iCloud first: otherwise it looks new.
+            await CloudCatchUp.shared.caughtUp()
+            let door = door(for: account, store: store, context: context)
             guard let password = try? await MailSecret.secret(for: account),
                   let look = try? await door.look(password: password) else { return }
             lastChecked = Date()
@@ -173,10 +175,12 @@ final class MailCheck {
             state = .failed("No mail account yet. Choose Causabee → Set Up Causabee … to log in.")
             return
         }
-        let door = door(for: account, store: store, context: context)
         // Only that it is at it: how many mails the label holds is nothing to worry about.
         state = .reading("Fetching mail …")
         Task {
+            // What the other devices sorted meanwhile, in from iCloud first — a short wait, asked for by hand.
+            await CloudCatchUp.shared.caughtUp(limit: .seconds(8))
+            let door = door(for: account, store: store, context: context)
             do {
                 guard let password = try await MailSecret.secret(for: account) else {
                     state = .failed("No password for \(account.user) in the Keychain. Choose Causabee → Set Up Causabee … to log in again.")
@@ -199,6 +203,10 @@ final class MailCheck {
     /// Sends what is new, pseudonymised, and keeps what came back as an offer: nothing is in a
     /// matter until the owner takes it in.
     func classify(_ look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
+        // Asked once more right before anything is sent: another device may have sorted some of it
+        // while this one looked — read twice, its tasks came twice.
+        let look = look.without(SortedMails.known(in: context))
+        guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
         guard let claude = ModelChoice.client(for: door.model) else {
             state = .failed(ModelChoice.missingKey(door.model))
             return
