@@ -349,9 +349,9 @@ struct Conversation {
         case .nothing:
             return
         case .openMail(let url, let draft):
-            // With a file to take along, the draft goes to the mail program as a whole — it attaches
-            // what it is handed; a `mailto:` cannot. Without one, as before.
-            if !draft.files.isEmpty, let mail = NSSharingService(named: .composeEmail) {
+            // Every draft goes to the mail program as a whole, files or not — as on the iPhone and
+            // the iPad, where it is Mail's own sheet. The `mailto:` is only for when that cannot be.
+            if let mail = NSSharingService(named: .composeEmail) {
                 if !draft.to.isEmpty { mail.recipients = [draft.to] }
                 mail.subject = draft.subject
                 // A big picture goes as a smaller copy, made away from the screen.
