@@ -208,7 +208,13 @@ struct NotesPart: View {
                     .onSubmit(add)
                     #endif
                 if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Button("Add", action: add).filledButton().padding(.bottom, 4).accessibilityIdentifier("note.add")
+                    // The assistant's round send button: the words keep the field's width — the
+                    // "Add" pill took a quarter of it, and a dictated note stood in a narrow column.
+                    Button(action: add) { SendGlyph(stops: false) }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Add note")
+                        .help("Add note")
+                        .accessibilityIdentifier("note.add")
                 }
                 MicButton(voice: voice, text: $draft, selection: $cursor) { focused = false }
               }
