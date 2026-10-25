@@ -24,6 +24,8 @@ struct CausabeePhoneApp: App {
         UIRefreshControl.appearance().tintColor = .clear
         PhoneCloudStatus.shared.watch()
         PhoneFolder.restore()
+        // Before anything shows: a notification tapped on the lock screen starts Causabee with it.
+        NewsNotice.listen()
     }
 
     var body: some Scene {

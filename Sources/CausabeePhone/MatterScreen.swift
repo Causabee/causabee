@@ -157,7 +157,7 @@ struct MatterScreen: View {
                 }
             }
             .onAppear {
-                show(navigation.showing, with: scroller); loadCalendars()
+                show(navigation.showing, with: scroller); showNews(with: scroller); loadCalendars()
                 // `--timing`: from the tap to the page drawn — said after the frame it came in.
                 if let asked = Navigation.askedAt {
                     DispatchQueue.main.async { NSLog("[timing] matter page %d ms", Int(Date().timeIntervalSince(asked) * 1000)); Navigation.askedAt = nil }
@@ -165,6 +165,7 @@ struct MatterScreen: View {
             }
             // Asked to show a task while the page is open already — from a card in the assistant.
             .onChange(of: navigation.showing) { if navigation.showing != nil { show(navigation.showing, with: scroller) } }
+            .onChange(of: navigation.showsNews) { showNews(with: scroller) }
             .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
             .onPreferenceChange(PageFindMatches.self) { found in
                 MainActor.assumeIsolated {
@@ -386,6 +387,18 @@ struct MatterScreen: View {
     private func close(markingOpenDone: Bool) {
         matter.close(markingOpenDone: markingOpenDone)
         try? context.save()
+    }
+
+    /// From a notification of news: what is new, whole, under the bar at the top — with room above
+    /// it for the tabs that pin there once the page has moved.
+    private func showNews(with scroller: ScrollViewProxy) {
+        guard navigation.showsNews else { return }
+        navigation.showsNews = false
+        guard matter.shownBrief?.news?.seen == false else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            withAnimation(.snappy) { scroller.scrollTo("news", anchor: UnitPoint(x: 0.5, y: 72 / max(pageHeight, 200))) }
+            Haptics.landed()
+        }
     }
 
     /// The task an overdue line pointed at: scrolled to and marked for a moment.

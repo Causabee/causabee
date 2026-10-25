@@ -360,6 +360,8 @@ final class Navigation {
 
     /// A to-do to scroll to and mark when a matter opens: the one "überfällig" pointed at.
     var showing: PersistentIdentifier?
+    /// Opened from a notification of news: the page goes to what is new in the brief.
+    var showsNews = false
 
     private var threadURL: URL { store.deletingLastPathComponent().appendingPathComponent("assistant-thread.json") }
     @ObservationIgnored private var loading = false
@@ -860,7 +862,10 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .newMatter)) { _ in newMatterName = ""; startsMatter = true }
         // A notification of news tapped: its matter opens.
         .onReceive(NotificationCenter.default.publisher(for: .openMatterKey)) { note in
-            if let key = note.object as? String, let matter = matters.first(where: { $0.key == key }) { navigation.open(matter) }
+            if let key = note.object as? String, let matter = matters.first(where: { $0.key == key }) {
+                navigation.showsNews = true
+                navigation.open(matter)
+            }
         }
         // After the introduction, the setup — when something Causabee needs is still missing.
         .sheet(isPresented: $showsIntro, onDismiss: {

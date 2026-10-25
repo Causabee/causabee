@@ -93,7 +93,10 @@ struct RootView: View {
         // gets its next step and its summary written again — while Causabee is open.
         // A notification of news tapped: its matter opens.
         .onReceive(NotificationCenter.default.publisher(for: .openMatterKey)) { note in
-            if let key = note.object as? String, let matter = matters.first(where: { $0.key == key }) { navigation.open(matter) }
+            if let key = note.object as? String, let matter = matters.first(where: { $0.key == key }) {
+                navigation.showsNews = true
+                navigation.open(matter)
+            }
         }
         .task {
             let context = context

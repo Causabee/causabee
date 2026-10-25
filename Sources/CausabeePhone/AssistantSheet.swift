@@ -573,7 +573,6 @@ struct PhoneTurnView: View {
     /// Who answered and what went out, disguised: behind what it cost, as on the Mac.
     @State private var showsSent = false
     /// Reading mode, from the window: the sheet is not always under the page that has it.
-    private var reading: Bool { navigation.reading }
     /// Just copied: the button says so for a moment.
     @State private var copied = false
     /// Kept as a note of its matter: the button says so, and does not keep it twice.
@@ -672,8 +671,8 @@ struct PhoneTurnView: View {
                     LookUpCard(question: card.text, reason: card.reason, matter: record.matter ?? matter,
                                dismissed: turn.dismissedCards.contains(index),
                                setDismissed: { put in withAnimation { navigation.mark(record, card: index, dismissed: put, context: context) } })
-                } else if !reading || card.kind == .draftMessage {
-                    // While reading, what is suggested waits: a drafted mail stays, as on the Mac.
+                } else {
+                    // Asked for, so it stays while reading too: an answer that is only a card showed nothing.
                     PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
                 }
             }
@@ -1031,7 +1030,8 @@ struct PhoneActionCard: View {
 
     private func take() {
         switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: turn.answer?.links, scope: scope,
-                                 question: turn.question, mail: mailInHand, in: context) {
+                                 question: turn.question, mail: mailInHand,
+                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, in: context) {
         case .nothing:
             return
         case .openMail(let url, let draft):

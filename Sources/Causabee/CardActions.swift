@@ -371,9 +371,37 @@ enum CardActions {
     /// A card the owner ticked, with its text as the owner left it. Only now does anything change
     /// in the store. `scope` is the matter the answer is about: one made by a card of the same
     /// answer, the one it was asked in, or the one its facts come from.
+    /// The records a new task or date was asked about: the file or mail in hand, the mails and
+    /// tasks the card cites — each once, as where it comes from. Their own way back, so a tap on
+    /// the task's source opens the screenshot or the mail.
+    static func used(_ card: AssistantPrompt.Reply.Card, inHand: (kind: String, text: String)?, refs: [String: FactRef],
+                     in matter: Matter, context: ModelContext) -> [Source] {
+        var found: [Source] = []
+        if let inHand {
+            switch inHand.kind {
+            case "File":
+                if let document = (matter.documents ?? []).first(where: { $0.shownName == inHand.text || $0.name == inHand.text }) { found.append(document.source) }
+            case "Mail":
+                if let entry = (matter.entries ?? []).first(where: { $0.title == inHand.text }) { found.append(entry.source) }
+            case "Task", "Info":
+                if let todo = (matter.todos ?? []).first(where: { $0.text == inHand.text }), let first = todo.sources.first { found.append(first) }
+            default: break
+            }
+        }
+        for id in card.cites {
+            switch refs[id] {
+            case .entry(let row): if let entry = live(row, as: Entry.self, in: context) { found.append(entry.source) }
+            case .todo(let row): if let first = live(row, as: Todo.self, in: context)?.sources.first, first.kind != .conversation { found.append(first) }
+            default: break
+            }
+        }
+        var seen = Set<String>()
+        return found.filter { seen.insert(($0.messageID ?? "") + "|" + $0.pointer).inserted }.prefix(3).map { $0.quoting(card.reason) }
+    }
+
     static func apply(_ card: AssistantPrompt.Reply.Card, text: String, subject: String?, refs: [String: FactRef],
                       links: [String: String]?, scope: Matter?, question: String = "", mail: String? = nil,
-                      in context: ModelContext) -> Outcome {
+                      inHand: (kind: String, text: String)? = nil, in context: ModelContext) -> Outcome {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let source = Source(kind: .conversation, pointer: "assistant", date: Date(), quote: card.reason)
         func model<T: PersistentModel>(_ id: String?, as type: T.Type) -> T? {
@@ -396,6 +424,8 @@ enum CardActions {
                             origin: "assistant#" + text.lowercased())
             // A time of day counts only with its day, and only as HH:MM.
             if card.due != nil, let time = card.time, time.wholeMatch(of: /\d{2}:\d{2}/) != nil { todo.dueTime = time }
+            // What it was asked with and rests on — the screenshot in hand, the mails cited: the task comes from them, and opens them.
+            todo.sources = used(card, inHand: inHand, refs: refs, in: matter, context: context) + todo.sources
             context.insert(todo)
             todo.matter = matter
             try? context.save()
@@ -502,6 +532,7 @@ enum CardActions {
         case .newAppointment:
             guard let matter = scope, !text.isEmpty, let day = card.due else { return .nothing }
             let item = Appointment(what: text, day: day, time: card.time, place: nil, source: source)
+            item.sources = used(card, inHand: inHand, refs: refs, in: matter, context: context) + item.sources
             context.insert(item)
             item.matter = matter
             try? context.save()
@@ -509,6 +540,7 @@ enum CardActions {
         case .newDeadline:
             guard let matter = scope, !text.isEmpty, let day = card.due else { return .nothing }
             let item = Deadline(what: text, day: day, source: source)
+            item.sources = used(card, inHand: inHand, refs: refs, in: matter, context: context) + item.sources
             context.insert(item)
             item.matter = matter
             try? context.save()
@@ -1111,16 +1143,23 @@ enum NewsNotice {
     /// Notifications show while Causabee is open too, and a tap opens the matter.
     static func listen() { UNUserNotificationCenter.current().delegate = Listener.shared }
 
+    /// Answered on the main thread: the `async` way answered iOS from elsewhere, and a tap on a
+    /// notification — from the lock screen above all — ended Causabee.
     final class Listener: NSObject, UNUserNotificationCenterDelegate, Sendable {
         static let shared = Listener()
 
-        func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-            [.banner, .list, .sound]
+        func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                    withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void) {
+            DispatchQueue.main.async { completionHandler([.banner, .list, .sound]) }
         }
 
-        func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-            guard let key = response.notification.request.content.userInfo["matter"] as? String else { return }
-            await MainActor.run { NotificationCenter.default.post(name: .openMatterKey, object: key) }
+        func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                    withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
+            let key = response.notification.request.content.userInfo["matter"] as? String
+            DispatchQueue.main.async {
+                if let key { NotificationCenter.default.post(name: .openMatterKey, object: key) }
+                completionHandler()
+            }
         }
     }
 }

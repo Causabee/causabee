@@ -987,6 +987,8 @@ struct BriefDetails: View {
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
+                    // A notification of news tapped goes here.
+                    .id("news")
                 }
                 if !brief.lines.isEmpty || !brief.answeredHere.isEmpty {
                     DisclosureGroup(isExpanded: $opens) {

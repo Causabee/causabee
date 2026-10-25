@@ -38,6 +38,8 @@ final class Navigation {
     }
     /// A task to scroll to when its matter opens: the one an overdue line pointed at.
     var showing: PersistentIdentifier?
+    /// Opened from a notification of news: the page goes to what is new in the brief.
+    var showsNews = false
     /// The item "Talk about it" put into the assistant: shown above the field, taken off with ×.
     var pinned: Pinned?
     /// Words to put in the assistant's field, for the owner to send or change.
