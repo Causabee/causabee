@@ -627,7 +627,6 @@ struct TurnView: View {
     /// Kept as a note of its matter: the button says so, and does not keep it twice.
     @State private var savedNote = false
     @Environment(\.modelContext) private var context
-    @Environment(\.reading) private var reading
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -689,9 +688,8 @@ struct TurnView: View {
                     LookUpCard(question: card.text, reason: card.reason,
                                matter: turn.matter.flatMap { CardActions.live($0, as: Matter.self, in: context) },
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
-                } else
-                // While reading, a draft asked for stays; the other suggestions are put away.
-                if !reading || card.kind == .draftMessage {
+                } else {
+                    // Asked for, so it stays while reading too: an answer that is only a card showed nothing.
                     ActionCard(card: card, done: turn.applied.contains(index), refs: turn.refs, open: open, label: label,
                                apply: { apply(index, $0, $1) }, undo: turn.undos[index] == nil ? nil : { undo(index) },
                                recipient: card.kind == .draftMessage ? recipient(card.party) : nil, along: along,
