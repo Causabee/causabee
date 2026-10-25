@@ -1111,16 +1111,23 @@ enum NewsNotice {
     /// Notifications show while Causabee is open too, and a tap opens the matter.
     static func listen() { UNUserNotificationCenter.current().delegate = Listener.shared }
 
+    /// Answered on the main thread: the `async` way answered iOS from elsewhere, and a tap on a
+    /// notification — from the lock screen above all — ended Causabee.
     final class Listener: NSObject, UNUserNotificationCenterDelegate, Sendable {
         static let shared = Listener()
 
-        func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-            [.banner, .list, .sound]
+        func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                    withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void) {
+            DispatchQueue.main.async { completionHandler([.banner, .list, .sound]) }
         }
 
-        func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-            guard let key = response.notification.request.content.userInfo["matter"] as? String else { return }
-            await MainActor.run { NotificationCenter.default.post(name: .openMatterKey, object: key) }
+        func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                    withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
+            let key = response.notification.request.content.userInfo["matter"] as? String
+            DispatchQueue.main.async {
+                if let key { NotificationCenter.default.post(name: .openMatterKey, object: key) }
+                completionHandler()
+            }
         }
     }
 }
