@@ -457,6 +457,7 @@ final class VoiceInput {
                 try await recorder.start()
                 withAnimation(.snappy) { phase = .listening }
                 feel()
+                PlainWords.prepare()
             } catch {
                 say(error.localizedDescription)
             }
@@ -482,7 +483,9 @@ final class VoiceInput {
         withAnimation(.snappy) { phase = .writing }
         Task {
             do {
-                let words = try await Transcriber.shared.words(in: recording)
+                // Written down by Whisper, then set right on the device as Utterclip does: "äh" and
+                // the mishearings gone, the words kept. Where that cannot be done, Whisper's words.
+                let words = await PlainWords.corrected(try await Transcriber.shared.words(in: recording))
                 if words.isEmpty { say(VoiceError.heardNothing.localizedDescription) } else { deliver?(words); feel() }
             } catch {
                 say(error.localizedDescription)
