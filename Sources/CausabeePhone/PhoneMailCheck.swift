@@ -159,6 +159,9 @@ final class PhoneMailCheck {
     /// Checks by itself when Causabee opens or comes back to the front — not more than every two
     /// minutes — and only says something when there is new mail. Reading is free; nothing is sent.
     func checkQuietly(context: ModelContext) {
+        // Only in front: started in the background — iOS draws the screens then too — the look of
+        // its own runs (`checkInBackground`), and nothing is read by the AI.
+        guard UIApplication.shared.applicationState == .active else { return }
         guard isQuiet, !checking, lastChecked.map({ Date().timeIntervalSince($0) > 120 }) ?? true else { return }
         if DemoData.isRequested {
             // The demo's three are always new: the quiet line, ready to be looked at.
@@ -185,8 +188,10 @@ final class PhoneMailCheck {
             // Which mail is still unread in the mailbox — asked, never changed there.
             Task { await UnreadMail.refresh(account: door.account, password: password, in: context) }
             guard isQuiet else { return }
-            // Auto: read at once, and offered to be taken in.
-            if look.withoutOffered.pending > 0, AutoMode.isOn { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
+            // A failure said before is over: the mailbox answered.
+            if case .failed = state { state = .idle }
+            // Auto: read at once, and offered to be taken in — while Causabee is in front.
+            if look.withoutOffered.pending > 0, AutoMode.isOn, UIApplication.shared.applicationState == .active { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
             else if look.pending > 0 { state = .newMail(look, door); NewsNotice.ask() } else if case .newMail = state { state = .idle }
         }
     }
@@ -354,6 +359,8 @@ final class PhoneMailCheck {
         let look = look.without(SortedMails.known(in: context))
         guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
         guard let claude = ModelChoice.client(for: door.model) else {
+            // Locked, the key cannot be read — it is there all the same: the mail waits to be read.
+            if !UIApplication.shared.isProtectedDataAvailable { state = .newMail(look, door); return }
             state = .failed(ModelChoice.missingKey(door.model))
             return
         }
