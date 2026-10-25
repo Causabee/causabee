@@ -122,6 +122,25 @@ public final class Calendars {
             ?? reminders.first { !ownLists.contains($0.list) && Duplicates.same($0.title, text) }
     }
 
+    /// Tasks whose reminder is no longer found by its id — iCloud can give a reminder a new one
+    /// once it has it — found again by their words, and connected anew. Says how many. A reminder
+    /// another task is connected with already is not taken.
+    @discardableResult
+    public func relink(_ todos: [Todo]) async -> Int {
+        let lost = todos.filter { !$0.isDone && $0.reminderID != nil && reminder($0.reminderID) == nil }
+        guard !lost.isEmpty, canReadReminders, !isSealed else { return 0 }
+        let all = await allReminders()
+        var taken = Set(todos.compactMap(\.reminderID))
+        var found = 0
+        for todo in lost {
+            guard let match = Self.findReminder(todo.text, in: all.filter { !taken.contains($0.id) }, ownLists: ownLists) else { continue }
+            todo.reminderID = match.id
+            taken.insert(match.id)
+            found += 1
+        }
+        return found
+    }
+
     /// The names of the lists Causabee adds to: its own, and the one chosen in Settings.
     public var ownLists: Set<String> {
         var names: Set<String> = [Self.ownName]
