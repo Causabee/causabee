@@ -345,7 +345,8 @@ struct Conversation {
         let made = navigation.turns[position].madeMatter.flatMap { live($0, as: Matter.self) }
         let scope = made ?? turn.matter.flatMap { live($0, as: Matter.self) } ?? cited
         switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: answer.links, scope: scope,
-                                 question: turn.question, mail: turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil }, in: context) {
+                                 question: turn.question, mail: turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil },
+                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, in: context) {
         case .nothing:
             return
         case .openMail(let url, let draft):

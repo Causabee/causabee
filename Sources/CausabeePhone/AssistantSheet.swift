@@ -1030,7 +1030,8 @@ struct PhoneActionCard: View {
 
     private func take() {
         switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: turn.answer?.links, scope: scope,
-                                 question: turn.question, mail: mailInHand, in: context) {
+                                 question: turn.question, mail: mailInHand,
+                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, in: context) {
         case .nothing:
             return
         case .openMail(let url, let draft):
