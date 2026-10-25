@@ -155,9 +155,9 @@ struct PhoneAutoButton: View {
                 .frame(width: 44, height: 44).contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Auto")
+        .accessibilityLabel("Pro")
         .accessibilityValue(auto ? "On" : "Off")
-        .accessibilityHint("New mail and files are read at once, or only when you say so")
+        .accessibilityHint("Pro: the bigger AI reads new mail and files at once. Normal: only when you say so")
         .accessibilityIdentifier("auto.toggle")
         .asksBeforeAuto($asks) {
             auto = true

@@ -133,10 +133,10 @@ struct AutoButton: View {
         }
         .buttonStyle(.plain)
         // Short, as the glasses': what Auto does is said in Settings and where it works.
-        .quickLabel(auto ? "Turn Auto Off" : "Turn Auto On: the AI reads and updates by itself")
+        .quickLabel(auto ? "Turn Pro Off" : "Turn Pro On: the bigger AI reads and updates by itself")
         // What it has spent today, for the asking.
-        .help(AutoUpdate.spentWords ?? (auto ? "Auto has spent nothing today on next steps and summaries" : "Auto is off"))
-        .accessibilityLabel("Auto")
+        .help(AutoUpdate.spentWords ?? (auto ? "Pro has spent nothing today on next steps and summaries" : "Normal: nothing is read by the AI by itself"))
+        .accessibilityLabel("Pro")
         .accessibilityValue(auto ? "On" : "Off")
         .accessibilityIdentifier("window.auto")
         .asksBeforeAuto($asks) { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }

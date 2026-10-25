@@ -358,7 +358,7 @@ struct AutoLine: View {
         let soon = AutoUpdate.shared.pending.contains(matter.key)
         HStack(spacing: 5) {
             Image(systemName: "bolt.fill").font(.system(size: size))
-            Text(soon ? "Changed · Auto updates this in a moment" : "Auto mode")
+            Text(soon ? "Changed · Pro updates this in a moment" : "Pro")
         }
         .font(.caption).foregroundStyle(.secondary)
         .accessibilityElement(children: .combine)
@@ -504,7 +504,7 @@ final class AutoUpdate {
     /// "Auto · $0.12 today", or nil when it spent nothing today.
     static var spentWords: String? {
         let spent = spent()
-        return spent > 0 ? String(format: "Auto has spent $%.2f today on next steps and summaries", spent) : nil
+        return spent > 0 ? String(format: "Pro has spent $%.2f today on next steps and summaries", spent) : nil
     }
 
     private static func add(_ cost: Double) {
@@ -631,13 +631,14 @@ struct AutoQuestion: ViewModifier {
 
     func body(content: Content) -> some View {
         let model = Claude.Model.choices.first { $0.id == mail } ?? .opus
-        content.confirmationDialog("Turn Auto on?", isPresented: $asks, titleVisibility: .visible) {
-            Button("Turn Auto On") { agreed = true; turnOn() }
+        content.confirmationDialog("Turn on Pro?", isPresented: $asks, titleVisibility: .visible) {
+            Button("Turn Pro On") { agreed = true; turnOn() }
             Button("Cancel", role: .cancel) { }
         } message: {
             // Short, and by name: which model reads, that names are disguised, who decides, what it costs.
-            Text("Causabee then reads new mail and files for you as they arrive — names disguised, with \(model.label). " +
-                 "You still decide what goes into a matter. " + String(format: "About %.1f cents a mail.", model.perMail * 100))
+            Text("Pro reads new mail and files for you as they arrive, with \(model.label) — names disguised. " +
+                 "You still decide what goes into a matter. " + String(format: "About %.1f cents a mail. ", model.perMail * 100) +
+                 "In Normal, nothing is read by the AI until you tap.")
         }
     }
 }

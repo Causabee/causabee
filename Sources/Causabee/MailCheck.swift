@@ -487,7 +487,7 @@ struct MailCheckView: View {
     private var checkedLine: some View {
         if let at = check.lastChecked {
             TimelineView(.periodic(from: .now, by: 60)) { _ in
-                Text("Checked \(MailReview.ago(at)) · " + (AutoMode.isOn ? "Auto is on" : "nothing is sent until Sort in")).font(.caption).foregroundStyle(.tertiary)
+                Text("Checked \(MailReview.ago(at)) · " + (AutoMode.isOn ? "Pro is on" : "nothing is sent until Sort in")).font(.caption).foregroundStyle(.tertiary)
             }
         }
     }
@@ -499,7 +499,7 @@ struct MailCheckView: View {
         }
         // In the demo too: its round is made up, and the way back is Causabee → Leave the Demo.
         .help(DemoData.isRequested ? "Fetches the demo's three made-up mails. Nothing is read or sent."
-                                   : AutoMode.isOn ? "Auto is on: new mail with the label is read by the AI at once. You decide what is taken in."
+                                   : AutoMode.isOn ? "Pro is on: new mail with the label is read by the bigger AI at once. You decide what is taken in."
                                    : "Reads only new mail with the label. Nothing is sent until you click “Sort in”.")
     }
 }
