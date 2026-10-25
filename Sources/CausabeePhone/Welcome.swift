@@ -2,44 +2,58 @@ import MatterCore
 import SwiftData
 import SwiftUI
 
-/// The first start on the iPhone (Figma "Welcome 1"): a promise in the website's voice, care first;
-/// one matter as it looks; what this iPhone has as ticks — a button only where something is
-/// missing, since most of it comes from the Mac by itself; privacy in one line; and the demo as
-/// the first thing to try. Again from ⋯ on the overview, where everything there puts the owner's
-/// own matters first.
+/// The first start on the iPhone and the iPad, and again from ⋯ on the overview: the Mac's
+/// introduction, page by page — the promise; four pictures of the demo's matters, each with what
+/// it shows; and what this device has, as ticks, with the way in: the demo first on a first start,
+/// the owner's own matters first once everything is there.
 struct WelcomeSheet: View {
     static let seenKey = "intro.seen"
 
+    struct Page {
+        let image: String
+        let title: String
+        let text: String
+        /// A line of its own under the text, with a lock: what stays private.
+        var privacy: String? = nil
+    }
+
+    /// The Mac's pages, said for a touch screen; its files-and-people page goes into the third.
+    static let pages = [
+        Page(image: "phone-intro-1.jpg", title: "Mail, files, screenshots: sorted into matters",
+             text: "Give Causabee whatever you have: a mail, a PDF, a screenshot. It sorts everything into matters — a trip, a move, care for a parent — and the overview shows what comes next and what is late.",
+             privacy: "Your mail and files stay with you. Before anything goes to the AI, names, addresses and numbers are replaced."),
+        Page(image: "phone-intro-2.jpg", title: "One page for each matter",
+             text: "The next step, a short summary, your own notes and every task, all in one place. The bee opens the assistant for this matter."),
+        Page(image: "phone-intro-3.jpg", title: "Who does what, and by when",
+             text: "Tasks are yours, shared, or someone else’s you wait for. Dates and tasks go to Calendar and Reminders with a tap, and every fact leads back to the mail it came from."),
+        Page(image: "phone-intro-4.jpg", title: "Ask about a matter",
+             text: "Ask, or speak, and get an answer with its sources. A suggestion becomes a task with one tap. Your question goes out disguised, like everything else."),
+    ]
+    /// The promise, the pictures, and what this device has.
+    private static let count = pages.count + 2
+
     @Environment(\.dismiss) private var dismiss
     @Environment(PhoneStore.self) private var store
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sync = PhoneCloudStatus.shared
     @State private var addsAccount = false
     @State private var opensSettings = false
-    /// How wide the sheet's page is, measured: it follows an iPad's window as it is resized.
-    @State private var pageWidth = CGFloat.zero
+    @State private var index = 0
     /// Counts up when something may have come in meanwhile — a password, a key.
     @State private var tick = 0
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    promise
-                    sample
-                    checks.id(tick)
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Image(systemName: "eyeglasses").font(.footnote)
-                        Text("Names are disguised before anything is sent — and only when you tap.")
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .font(.footnote).foregroundStyle(.secondary)
+            TabView(selection: $index) {
+                page { promise }.tag(0)
+                ForEach(Array(Self.pages.enumerated()), id: \.offset) { offset, item in
+                    page { picturePage(item) }.tag(offset + 1)
                 }
-                .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 20)
-                .asWide(as: pageWidth)
+                page { ready }.tag(Self.count - 1)
             }
-            .tellsItsWidth($pageWidth)
-            // The buttons stay at the foot, whatever the length of the page.
-            .safeAreaInset(edge: .bottom) { buttons }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            // The dots and the buttons stay at the foot, whatever the page.
+            .safeAreaInset(edge: .bottom) { foot }
             .background(Theme.canvas)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { finish() } } }
             .sheet(isPresented: $addsAccount, onDismiss: { tick += 1 }) { MailAccountSheet() }
@@ -48,13 +62,27 @@ struct WelcomeSheet: View {
         }
     }
 
+    /// One page: as wide as the sheet, its words in a column a person reads comfortably — on an
+    /// iPad's wide sheet too — and scrolling when a large type size needs more than the screen.
+    private func page<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ScrollView {
+            content()
+                .frame(maxWidth: 520, alignment: .leading)
+                .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 16)
+                .frame(maxWidth: .infinity)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+    }
+
     private var promise: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             BeeMark(size: 44, livesNowAndThen: true).foregroundStyle(Theme.beeMark)
             Text("Every matter.\nIn its place.").font(Theme.phoneTitleFont).fixedSize(horizontal: false, vertical: true)
             Text("Mum’s care, a claim, a move: each in its own place — with what comes next, and who does what by when.")
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .font(.title3).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            sample.padding(.top, 8)
         }
+        .padding(.top, 24)
     }
 
     /// One matter as the overview shows it — a picture of what is to come, not a real one.
@@ -65,9 +93,60 @@ struct WelcomeSheet: View {
             Text("Next, on Oct 6: The medical service visits").font(.subheadline).foregroundStyle(.secondary)
         }
         .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .phoneCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("An example: Care for Mum after her fall. Next, on October 6, the medical service visits.")
+    }
+
+    /// A picture of the demo on this device, its title and what it shows.
+    private func picturePage(_ item: Page) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            picture(item.image)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 8)
+            Text(item.title).font(Theme.phoneCardTitleFont).fixedSize(horizontal: false, vertical: true)
+            Text(item.text).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if let privacy = item.privacy {
+                Label(privacy, systemImage: "lock.fill")
+                    .font(.footnote)
+                    .padding(.horizontal, 12).padding(.vertical, 9)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// The screenshot as a small phone screen: rounded, framed, about half the height it has.
+    private func picture(_ name: String) -> some View {
+        Group {
+            if let image = UIImage(named: name) {
+                Image(uiImage: image).resizable().aspectRatio(contentMode: .fit)
+            } else {
+                Theme.box.aspectRatio(0.46, contentMode: .fit)
+            }
+        }
+        .frame(height: 380)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .overlay(RoundedRectangle(cornerRadius: 22).stroke(Theme.line))
+        .shadow(color: .black.opacity(0.10), radius: 12, y: 4)
+        .accessibilityHidden(true)
+    }
+
+    /// What this device has, and that names are disguised.
+    private var ready: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Ready when you are").font(Theme.phoneCardTitleFont)
+            checks.id(tick)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "eyeglasses").font(.footnote)
+                Text("Names are disguised before anything is sent — and only when you tap.")
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .font(.footnote).foregroundStyle(.secondary)
+        }
+        .padding(.top, 24)
     }
 
     private var signedIn: Bool { sync.account == "signed in to iCloud" }
@@ -110,22 +189,40 @@ struct WelcomeSheet: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// First start: the demo first. Everything there — the usual case on a second device — and
-    /// the owner's own matters come first.
-    private var buttons: some View {
-        VStack(spacing: 8) {
-            if store.isDemo {
-                Button("Start") { finish() }.buttonStyle(.phone(filled: true, wide: true))
-            } else if allThere {
-                Button("Open my matters") { finish() }.buttonStyle(.phone(filled: true, wide: true))
-                Button("Try the demo") { finish(); store.switchDemo(true) }.buttonStyle(.phone(wide: true))
-            } else {
-                Button("Try the demo") { finish(); store.switchDemo(true) }.buttonStyle(.phone(filled: true, wide: true))
-                Button("Start with my matters") { finish() }.buttonStyle(.phone(wide: true))
+    /// The dots, and the way on: Next through the pages — Skip goes to the last — and on the last,
+    /// the demo first on a first start, the owner's own matters first once everything is there.
+    private var foot: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 8) {
+                ForEach(0..<Self.count, id: \.self) { dot in
+                    Circle().fill(dot == index ? Theme.ink : Theme.strongLine).frame(width: 7, height: 7)
+                }
             }
+            .accessibilityElement()
+            .accessibilityLabel("Page \(index + 1) of \(Self.count)")
+            VStack(spacing: 8) {
+                if index < Self.count - 1 {
+                    Button("Next") { go(index + 1) }.buttonStyle(.phone(filled: true, wide: true))
+                    Button("Skip") { go(Self.count - 1) }.buttonStyle(.phone(wide: true))
+                } else if store.isDemo {
+                    Button("Start") { finish() }.buttonStyle(.phone(filled: true, wide: true))
+                } else if allThere {
+                    Button("Open my matters") { finish() }.buttonStyle(.phone(filled: true, wide: true))
+                    Button("Try the demo") { finish(); store.switchDemo(true) }.buttonStyle(.phone(wide: true))
+                } else {
+                    Button("Try the demo") { finish(); store.switchDemo(true) }.buttonStyle(.phone(filled: true, wide: true))
+                    Button("Start with my matters") { finish() }.buttonStyle(.phone(wide: true))
+                }
+            }
+            .frame(maxWidth: 520)
         }
         .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 8)
+        .frame(maxWidth: .infinity)
         .background(Theme.canvas)
+    }
+
+    private func go(_ page: Int) {
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) { index = page }
     }
 
     private func finish() {
