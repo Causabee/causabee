@@ -187,7 +187,7 @@ struct MatterStatusView: View {
                     for address in web { addLink(address, title: "", todo: nil) }
                     return !web.isEmpty || !files.isEmpty
                 }
-                .onAppear { show(navigation.showing, with: scroller); loadCalendars() }
+                .onAppear { show(navigation.showing, with: scroller); showNews(with: scroller); loadCalendars() }
                 // The Matter menu: the section scrolled to, then what adds to it opened.
                 .onReceive(NotificationCenter.default.publisher(for: .matterAction)) { note in
                     if note.object as? String == "writeAgain" { if !DemoData.isRequested { writeAgain() }; return }
@@ -218,6 +218,7 @@ struct MatterStatusView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
                 .onChange(of: navigation.showing) { show(navigation.showing, with: scroller) }
+                .onChange(of: navigation.showsNews) { showNews(with: scroller) }
                 .sheet(isPresented: $addingContact) { ContactEditor(matter: matter) }
                 .sheet(isPresented: $addingDetail) { DetailEditor(matter: matter) }
             }
@@ -817,6 +818,16 @@ struct MatterStatusView: View {
     private func talk(_ text: String, _ kind: String) {
         navigation.pin(text, kind: kind, in: matter)
         navigation.focusRequest += 1
+    }
+
+    /// From a notification of news: what is new, at the top of the page.
+    private func showNews(with scroller: ScrollViewProxy) {
+        guard navigation.showsNews else { return }
+        navigation.showsNews = false
+        guard matter.shownBrief?.news?.seen == false else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            withAnimation(.snappy) { scroller.scrollTo("news", anchor: UnitPoint(x: 0.5, y: 0.08)) }
+        }
     }
 
     /// Scrolls to the to-do "überfällig" pointed at, and marks it for a moment.
