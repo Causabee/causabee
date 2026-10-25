@@ -4,6 +4,7 @@ import SwiftUI
 
 /// The overview, with each matter pushed on it, and the assistant as a sheet over both.
 struct RootView: View {
+    @State private var plans = Store.shared
     @State private var navigation = Navigation()
     @Environment(\.modelContext) private var context
     @Query private var matters: [Matter]
@@ -139,7 +140,10 @@ struct RootView: View {
         // The share sheet's matters, and what was shared to Causabee meanwhile.
         .modifier(SharedIn(matters: matters))
         // What is connected to Calendar and Reminders is kept in step both ways, as on the Mac.
-        .onAppear { MirrorRunner.shared.start(context) }
+        .onAppear { MirrorRunner.shared.start(context); Store.shared.start(context) }
+        // The plans, wherever a fourth matter or Pro asks for them; a plan bought on another device, in.
+        .sheet(item: $plans.asks) { reason in PlanSheet(reason: reason) }
+        .onChange(of: StoredChanges.shared.count) { Store.shared.readShared() }
         // This iPhone's list of names into the store when it goes to the background, as the Mac's.
         .onChange(of: phase) { _, now in if now == .background { PhoneNames.publish(in: context) } }
         // The menu bar's commands, and their keys.
@@ -409,7 +413,8 @@ struct OverviewScreen: View {
     }
 
     private func start(_ name: String) {
-        guard let matter = try? Matter.make(named: name, in: context) else { return }
+        // A fourth open matter, on Normal: the plans first.
+        guard Store.shared.mayStartMatter(in: context), let matter = try? Matter.make(named: name, in: context) else { return }
         search = ""
         navigation.open(matter)
     }

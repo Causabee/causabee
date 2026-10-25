@@ -378,6 +378,10 @@ public final class Profile {
     /// What Auto spent, by device and by day — `[device: [day: dollars]]` as JSON — so each device
     /// says what all of them spent today.
     public var autoSpent: Data?
+    /// The plan bought in the App Store on an iPhone or an iPad, and until when — so the Mac, which
+    /// has no App Store purchases of its own, has the same plan. Nil until something is bought.
+    public var plan: String?
+    public var planUntil: Date?
 
     public init(names: [String]) {
         self.names = names

@@ -311,6 +311,7 @@ struct ThreadMailRow: View {
             Button("Move") {
                 let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !name.isEmpty, let from = row.entry.matter else { return }
+                guard Store.shared.mayStartMatter(in: context) else { return }
                 _ = try? from.split([row.entry], intoNewMatterNamed: name, turnsSince: nil, in: context)
             }
         } message: {

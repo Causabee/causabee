@@ -118,26 +118,31 @@ private struct QuickLabel: ViewModifier {
 struct AutoButton: View {
     @AppStorage(AutoMode.key) private var auto = false
     @State private var asks = false
+    /// On, and Pro bought.
+    private var pro: Bool { auto && Store.shared.plan == .pro }
 
     var body: some View {
         Button {
             // The first time it is turned on, what it does is said and asked.
-            if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto.toggle() } }
+            if pro { withAnimation(.easeInOut(duration: 0.2)) { auto = false }; return }
+            // Without Pro bought: the plans first. The first time it is turned on, what it does is said and asked.
+            guard Store.shared.mayTurnOnPro() else { return }
+            if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
         } label: {
             // On: a black bolt on the bee's yellow, round, as the glasses while reading.
-            Image(systemName: auto ? "bolt.fill" : "bolt").font(.body)
-                .foregroundStyle(auto ? Color.black : Color.secondary)
+            Image(systemName: pro ? "bolt.fill" : "bolt").font(.body)
+                .foregroundStyle(pro ? Color.black : Color.secondary)
                 .frame(width: 26, height: 26)
-                .background { if auto { Circle().fill(Theme.bee) } }
+                .background { if pro { Circle().fill(Theme.bee) } }
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
         // Short, as the glasses': what Auto does is said in Settings and where it works.
-        .quickLabel(auto ? "Turn Pro Off" : "Turn Pro On: the bigger AI reads and updates by itself")
+        .quickLabel(pro ? "Turn Pro Off" : "Turn Pro On: the bigger AI reads and updates by itself")
         // What it has spent today, for the asking.
-        .help(AutoUpdate.spentWords ?? (auto ? "Pro has spent nothing today on next steps and summaries" : "Normal: nothing is read by the AI by itself"))
+        .help(AutoUpdate.spentWords ?? (pro ? "Pro has spent nothing today on next steps and summaries" : "Normal: nothing is read by the AI by itself"))
         .accessibilityLabel("Pro")
-        .accessibilityValue(auto ? "On" : "Off")
+        .accessibilityValue(pro ? "On" : "Off")
         .accessibilityIdentifier("window.auto")
         .asksBeforeAuto($asks) { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
     }

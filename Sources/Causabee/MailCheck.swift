@@ -246,7 +246,10 @@ final class MailCheck {
             }
             UnplacedAside.add(answered.judgements.filter { !$0.isBulk && !chosen.contains($0.emailID) }.map(\.emailID))
             SortedMails.setAside(UnplacedAside.all, device: NameListPublisher.device, in: context)
-            let imported = try MatterImport.apply(judgements, to: context, owner: owner)
+            // On Normal, a fourth open matter has no room: its mail waits among the mail without a matter.
+            let imported = try MatterImport.apply(judgements, to: context, owner: owner, room: Store.shared.room(in: context))
+            let held = Set(imported.held)
+            if !held.isEmpty { Store.shared.asks = .matters }
             // What the owner unticked is not suggested again in its matter.
             let afterImport = try context.fetch(FetchDescriptor<Matter>())
             for judgement in judgements {
@@ -256,7 +259,7 @@ final class MailCheck {
                 }
             }
             // Into the record the other devices read, and the names it learned into the store.
-            try SortedMails.record(answered.judgements, device: NameListPublisher.device, in: context)
+            try SortedMails.record(answered.judgements.map { held.contains($0.emailID) ? $0.waitingForRoom() : $0 }, device: NameListPublisher.device, in: context)
             NameListPublisher.publish()
             taken?(judgements, door.model.label)
             // Their attachments into the matters' folders, by themselves.
@@ -278,6 +281,7 @@ final class MailCheck {
             var text = IntakeSummary.line(mails: imported.mails, matters: names, tasks: imported.todosNew,
                                           dates: imported.appointments + imported.deadlines, unplaced: unplaced, cost: answered.cost)
             if answered.failed > 0 { text += " · \(answered.failed) failed" }
+            if !held.isEmpty { text += " · \(held.count) \(held.count == 1 ? "waits" : "wait") for room for a new matter" }
             // Each mail with the matter it went into: a wrong one is moved from here.
             let mails = IntakeSummary.mails(judgements) { key in after.first { $0.answers(to: key) }?.name }
             state = .done(text, IntakeSummary.items(judgements), mails)

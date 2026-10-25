@@ -152,7 +152,9 @@ final class PhoneShots {
         }
         judgement.decidedBy = .claude
         do {
-            _ = try MatterImport.apply([judgement], to: context, owner: owner)
+            // On Normal, a file that would start a fourth open matter waits: the plans first.
+            let imported = try MatterImport.apply([judgement], to: context, owner: owner, room: Store.shared.room(in: context))
+            if !imported.held.isEmpty { Store.shared.asks = .matters }
             let taken = (try? context.fetch(FetchDescriptor<Matter>()))?.first { $0.answers(to: judgement.matter ?? "") }
             // The people in a chat are its parties, read from who spoke — the owner left out.
             if let taken, !look.transcript.people.isEmpty {

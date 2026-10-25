@@ -54,7 +54,9 @@ struct SettingsSheet: View {
                     if mail.hasPrefix("mistral") || mail.hasPrefix("gpt-") {
                         Toggle("Fewer, real tasks", isOn: $strict)
                     }
-                    Toggle("Pro: the bigger AI reads mail and files at once", isOn: $auto)
+                    Toggle("Pro: the bigger AI reads mail and files at once", isOn: Binding(
+                        get: { auto && Store.shared.plan == .pro },
+                        set: { on in if !on { auto = false } else if Store.shared.mayTurnOnPro() { auto = true } }))
                     Text(auto ? "New mail and files are read by the AI as soon as they are there — sent pseudonymised, without asking first. What is taken in, and into which matter, you still decide. When a matter’s record changes, its next step and its summary are written again — a few cents each time."
                               : "New mail and files wait until you tap “Sort in”. What is taken in, and into which matter, you decide after. Next steps and summaries are written when you tap for them.")
                         .font(.footnote).foregroundStyle(.secondary)

@@ -23,6 +23,9 @@ public enum MatterImport {
         public var deadlines = 0
         public var parties = 0
         public var documents = 0
+        /// Mails that would have started a matter the plan has no room for: not taken in — they
+        /// wait among the mail without a matter.
+        public var held: [String] = []
     }
 
     /// `owner` is the names the owner goes by; they are never made a party.
@@ -57,8 +60,10 @@ public enum MatterImport {
         return added
     }
 
-    public static func apply(_ judgements: [Judgement], to context: ModelContext, owner: [String] = []) throws -> Summary {
+    /// `room`: how many new matters may start — nil for no limit (`Plan.room`).
+    public static func apply(_ judgements: [Judgement], to context: ModelContext, owner: [String] = [], room: Int? = nil) throws -> Summary {
         var summary = Summary()
+        var room = room
         var matters = try context.fetch(FetchDescriptor<Matter>())
         let partiesBefore = try context.fetchCount(FetchDescriptor<Party>())
         var book = try PartyBook(context: context, owner: OwnerNames(owner))
@@ -91,6 +96,11 @@ public enum MatterImport {
                 matter = known
             } else {
                 guard isNew else { continue }
+                // No room for one more: the mail waits without a matter, read and kept.
+                if let left = room {
+                    guard left > 0 else { summary.held.append(judgement.emailID); continue }
+                    room = left - 1
+                }
                 // Shown by the name the model wrote for people, kept by the key it files mail under.
                 matter = Matter(key: key, name: judgement.matterTitle ?? Matter.readable(key))
                 context.insert(matter)
