@@ -116,7 +116,7 @@ struct PadControls: View {
             round("eyeglasses", on: navigation.reading, label: navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode") {
                 withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
             }
-            round(auto ? "bolt.fill" : "bolt", on: auto, label: "Auto") {
+            round(auto ? "bolt.fill" : "bolt", on: auto, label: "Pro") {
                 // The first time it is turned on, what it does is said and asked.
                 if AutoMode.asksFirst { asksAuto = true; return }
                 auto.toggle()

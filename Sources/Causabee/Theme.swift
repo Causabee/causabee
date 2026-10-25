@@ -906,7 +906,7 @@ enum AppRelease {
     static var label: String { "\(name) (\(number ?? "development build"))" }
 }
 
-/// Auto: the two steps that only wait for a yes are done by themselves — new mail and files are
+/// Pro, the ⚡ button (Auto before): the bigger AI. For now, as Auto was: the two steps that only wait for a yes are done by themselves — new mail and files are
 /// loaded, and read by the AI, as soon as they are there. The third stays the owner's: what of it
 /// is taken in, and into which matter. The same on every device (through the profile), off until the owner turns it on:
 /// reading sends the mail, pseudonymised, and costs what it costs.
