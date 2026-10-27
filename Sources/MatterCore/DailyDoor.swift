@@ -92,7 +92,25 @@ public struct DailyDoor: Sendable {
         model.perMail
     }
 
+    /// The log as last read, by its path, size and date: read again only when it changed.
+    nonisolated(unsafe) private static var logs: [String: (stamp: String, answers: [String: Judgement])] = [:]
+    private static let logsLock = NSLock()
+
     public static func readLog(_ url: URL) -> [String: Judgement] {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+        let stamp = "\((attributes?[.size] as? Int) ?? -1) \(((attributes?[.modificationDate] as? Date)?.timeIntervalSince1970) ?? 0)"
+        logsLock.lock()
+        let kept = logs[url.path]
+        logsLock.unlock()
+        if let kept, kept.stamp == stamp { return kept.answers }
+        let answers = readLogAnew(url)
+        logsLock.lock()
+        logs[url.path] = (stamp, answers)
+        logsLock.unlock()
+        return answers
+    }
+
+    private static func readLogAnew(_ url: URL) -> [String: Judgement] {
         guard let data = try? Data(contentsOf: url) else { return [:] }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
