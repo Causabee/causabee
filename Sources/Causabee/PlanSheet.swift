@@ -13,16 +13,16 @@ struct PlanSheet: View {
     private var title: String {
         switch reason {
         case .matters: "Room for a fourth matter"
-        case .pro: "Pro"
+        case .pro: "Causabee Pro"
         case .choose: "Your plan"
         }
     }
 
     private var lead: String {
         switch reason {
-        case .matters: "Normal holds \(Plan.freeMatters) open matters for free. Close one — or make room for all of them. Nothing you have is ever locked."
+        case .matters: "Causabee holds \(Plan.freeMatters) open matters for free. Close one — or make room for all of them. Nothing you have is ever locked."
         case .pro: "The bigger AI reads new mail as it comes, writes each matter's brief and answers about everything — names always disguised."
-        case .choose: "Normal is free and stays on your device. More matters, or Pro, when you need them."
+        case .choose: "Causabee is free and stays on your device. Plus for every matter, Pro for the bigger AI — when you need them."
         }
     }
 
@@ -34,11 +34,11 @@ struct PlanSheet: View {
                     Text(title).font(Theme.titleFont)
                     Text(lead).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
-                plan("Normal", "\(Plan.freeMatters) open matters · Apple Intelligence on your device · nothing leaves it",
+                plan("Causabee", "\(Plan.freeMatters) open matters · Apple Intelligence on your device · nothing leaves it",
                      price: "Free", current: store.plan == .free, products: [])
-                plan("More matters", "Every matter you need · still Normal, on your device",
+                plan("Causabee Plus", "Every matter you need · on your device, nothing leaves it",
                      price: nil, current: store.plan == .matters, products: store.products.filter { Store.mattersIDs.contains($0.id) })
-                plan("Pro", "The bigger AI, up to a monthly limit · every matter · names always disguised",
+                plan("Causabee Pro", "The bigger AI, up to a monthly limit · every matter · names always disguised",
                      price: nil, current: store.plan == .pro, products: store.products.filter { Store.proIDs.contains($0.id) })
                 if store.products.isEmpty {
                     Text(Self.noStoreWords).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
