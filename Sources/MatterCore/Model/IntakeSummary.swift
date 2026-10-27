@@ -102,7 +102,7 @@ public enum IntakeSummary {
         if tasks > 0 { text += " · \(tasks) new \(tasks == 1 ? "task" : "tasks")" }
         if dates > 0 { text += " · \(dates) \(dates == 1 ? "date" : "dates")" }
         if unplaced > 0 { text += " · \(unplaced) without a matter, below" }
-        if let cost { text += String(format: " · $%.3f", cost) }
+        if let cost, !Money.hidden { text += String(format: " · $%.3f", cost) }
         return text
     }
 

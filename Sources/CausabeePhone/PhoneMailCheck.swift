@@ -772,7 +772,7 @@ struct PhoneMailVerdict: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("\(offers.count) \(offers.count == 1 ? "mail" : "mails") read").font(.headline)
             MailOffers(offers: offers, chosen: $chosen, moved: $moved, skipped: $skipped)
-            Text(String(format: "Read for $%.3f. Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside.", answered.cost)
+            Text((Money.hidden ? "Read. " : String(format: "Read for $%.3f. ", answered.cost)) + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
                  + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, skipped) }

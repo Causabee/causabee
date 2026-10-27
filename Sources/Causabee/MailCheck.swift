@@ -605,7 +605,7 @@ struct MailVerdict: View {
             ScrollView { MailOffers(offers: offers, chosen: $chosen, moved: $moved, skipped: $skipped, small: true) }
                 .frame(maxHeight: 320)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(String(format: "Read for $%.3f. Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside.", answered.cost)
+            Text((Money.hidden ? "Read. " : String(format: "Read for $%.3f. ", answered.cost)) + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
                  + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, skipped) }

@@ -26,6 +26,7 @@ struct CausabeePhoneApp: App {
         PhoneFolder.restore()
         // Before anything shows: a notification tapped on the lock screen starts Causabee with it.
         NewsNotice.listen()
+        BeeServer.listen()
     }
 
     var body: some Scene {

@@ -126,6 +126,10 @@ struct SettingsSheet: View {
                     Text("Names are disguised before anything is sent. Each device keeps its own list — this \(ThisDevice.name) once it gets new mail — and puts it into iCloud, end-to-end encrypted, when you switch away from Causabee; a name one device learned, the others disguise too. Without any list, the assistant sends nothing.")
                 }
 
+                if BeeServerSettings.shows {
+                    Section { BeeServerSettings() } header: { Text("Causabee Pro") }
+                }
+
                 Section {
                     KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
                     KeyField(title: "Mistral", name: "MISTRAL_API_KEY")

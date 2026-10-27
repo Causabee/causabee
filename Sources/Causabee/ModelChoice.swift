@@ -24,7 +24,7 @@ enum ModelChoice {
     /// The API client for the model, with the key its API takes; nil when that key is missing.
     /// None in the demo with the owner's real matters: from there nothing is sent, whatever is asked.
     static func client(for model: Claude.Model) -> Claude? {
-        DemoData.usesReal ? nil : Claude.key(for: model).map(Claude.init)
+        DemoData.usesReal ? nil : BeeServer.client(for: model) ?? Claude.key(for: model).map { Claude(key: $0) }
     }
 
     static func missingKey(_ model: Claude.Model) -> String {
@@ -73,6 +73,9 @@ struct ModelSettingsView: View {
             Section { PublicNamesSettings() } header: { Text("Public names") } footer: {
                 Text("Big companies and brands — Expedia, Lufthansa — are not disguised: the AI reads them as they are, and a question looked up on the web may name them. Mark one here, or in a person's menu.")
                     .font(.caption).foregroundStyle(.secondary)
+            }
+            if BeeServerSettings.shows {
+                Section { BeeServerSettings() } header: { Text("Causabee Pro") }
             }
             Section {
                 KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
@@ -407,8 +410,9 @@ enum PriceEstimates {
         return 600 + mailText + todos + notes + rest
     }
 
-    static func step(_ matter: Matter) -> String { String(format: "≈ %.1f cents", of(matter).step * 100) }
-    static func summary(_ matter: Matter) -> String { String(format: "≈ %.1f cents", of(matter).summary * 100) }
+    /// " · ≈ 2.4 cents" after a button's words — nothing with Pro, where the plan holds the AI.
+    static func step(_ matter: Matter) -> String { Money.hidden ? "" : String(format: " · ≈ %.1f cents", of(matter).step * 100) }
+    static func summary(_ matter: Matter) -> String { Money.hidden ? "" : String(format: " · ≈ %.1f cents", of(matter).summary * 100) }
 }
 
 /// Auto, the whole circle: when a matter's record has changed, its next step and its summary are
@@ -534,6 +538,7 @@ final class AutoUpdate {
         if CommandLine.arguments.contains("--auto-anew") { Self.known = [:] }
         watchSaves()
         NewsNotice.listen()
+        BeeServer.listen()
         while !Task.isCancelled {
             try? await Task.sleep(for: Self.pace)
             // News written here, or come from another device: told once, Auto or not.
