@@ -32,6 +32,12 @@ final class BeeServer {
 
     nonisolated static var storedToken: String? { APIKeys.get(tokenName) }
 
+    /// On, as stored: readable from anywhere.
+    nonisolated static var isOnStored: Bool {
+        let defaults = UserDefaults.standard
+        return relay(on: defaults.bool(forKey: onKey), address: defaults.string(forKey: addressKey) ?? "") != nil
+    }
+
     nonisolated static func relay(on: Bool, address: String) -> URL? {
         guard on, storedToken != nil, let url = URL(string: address.trimmingCharacters(in: .whitespaces)), url.scheme == "https" else { return nil }
         return url
