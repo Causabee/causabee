@@ -157,7 +157,8 @@ public struct DailyDoor: Sendable {
     /// written back with them.
     /// `placed`: the matter each earlier mail is in now. A mail the owner moved counts as that
     /// matter's, so the replies in its thread follow it there.
-    public func classify(_ look: Look, claude: Claude, owner: [String], matters: [(key: String, about: String)] = [],
+    /// `claude` nil: read by Apple's model on this device.
+    public func classify(_ look: Look, claude: Claude?, owner: [String], matters: [(key: String, about: String)] = [],
                          placed: [String: String] = [:], onFile: [String: Extractor.OnFile] = [:],
                          progress: @Sendable (Int, Int, String) -> Void = { _, _, _ in }) async throws -> (judgements: [Judgement], summary: Extractor.Summary) {
         var outcomes = look.report.outcomes
@@ -165,6 +166,7 @@ public struct DailyDoor: Sendable {
         if let pseudonymizer = look.report.pseudonymizer {
             var extractor = Extractor(model: model, claude: claude, cache: cache)
             extractor.strict = strict
+            extractor.onDevice = claude == nil
             extractor.storeMatters = matters
             extractor.onFile = onFile
             // A mail sent from a draft Causabee opened goes into the draft's matter.

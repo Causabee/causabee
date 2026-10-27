@@ -128,6 +128,7 @@ struct ProBar: View {
 struct BeeServerSettings: View {
     @State private var server = BeeServer.shared
     @State private var pastedToken = ""
+    @AppStorage(ModelChoice.deviceOnlyKey) private var deviceOnly = false
 
     static let revealedKey = "beeserver.revealed"
 
@@ -137,7 +138,12 @@ struct BeeServerSettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            Toggle("Only Apple's model on this device (test)", isOn: $deviceOnly)
+            Text(deviceOnly ? "As Causabee is without a key or Pro: new mail is read here, nothing leaves the device. The assistant and Update wait for it."
+                 : "Without a key or Pro, new mail is read by Apple's model on this device.")
+                .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Toggle("Pro through the beeserver (test)", isOn: $server.isOn)
+                .disabled(deviceOnly)
             TextField("https://beeserver…", text: $server.address)
                 .textFieldStyle(.roundedBorder)
                 #if os(iOS)

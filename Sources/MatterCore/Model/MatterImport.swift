@@ -86,7 +86,7 @@ public enum MatterImport {
 
         let ordered = judgements.sorted { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
         for judgement in ordered {
-            guard !judgement.isBulk, let key = judgement.matter, judgement.decidedBy == .claude else {
+            guard !judgement.isBulk, let key = judgement.matter, judgement.decidedBy == .claude || judgement.decidedBy == .onDevice else {
                 summary.notImported += 1
                 continue
             }

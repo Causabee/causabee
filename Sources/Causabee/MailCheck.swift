@@ -211,10 +211,9 @@ final class MailCheck {
         // while this one looked — read twice, its tasks came twice.
         let look = look.without(SortedMails.known(in: context))
         guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
-        guard let claude = ModelChoice.client(for: door.model) else {
-            state = .failed(ModelChoice.missingKey(door.model))
-            return
-        }
+        let reader = ModelChoice.mailReader(for: door.model)
+        if case .none(let why) = reader { state = .failed(why); return }
+        let claude = reader.client
         state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
         Task {
             do {
@@ -261,7 +260,7 @@ final class MailCheck {
             // Into the record the other devices read, and the names it learned into the store.
             try SortedMails.record(answered.judgements.map { held.contains($0.emailID) ? $0.waitingForRoom() : $0 }, device: NameListPublisher.device, in: context)
             NameListPublisher.publish()
-            taken?(judgements, door.model.label)
+            taken?(judgements, judgements.contains { $0.decidedBy == .onDevice } ? "Apple's model on this device" : door.model.label)
             // Their attachments into the matters' folders, by themselves.
             let withFiles = Set(judgements.filter { !$0.attachments.isEmpty }.compactMap(\.matter))
             FolderSaver.shared.save(try context.fetch(FetchDescriptor<Matter>()).filter { matter in withFiles.contains { matter.answers(to: $0) } })
@@ -555,8 +554,7 @@ struct MailReview: View {
             .frame(maxHeight: 260)
             .fixedSize(horizontal: false, vertical: true)
             Text(chosen.isEmpty ? "None ticked: “Leave out” puts \(look.pending == 1 ? "it" : "them") aside, and \(look.pending == 1 ? "it is" : "they are") not offered again. “Later” keeps \(look.pending == 1 ? "it" : "them") for the next time."
-                 : String(format: "Sorting in %d %@ costs about $%.2f. Sent pseudonymised to %@.", chosen.count, chosen.count == 1 ? "mail" : "mails",
-                          look.only(chosen).estimate, door.model.label))
+                 : ModelChoice.sortingWords(chosen.count, estimate: look.only(chosen).estimate, model: door.model))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button("Later", action: later)
@@ -605,7 +603,7 @@ struct MailVerdict: View {
             ScrollView { MailOffers(offers: offers, chosen: $chosen, moved: $moved, skipped: $skipped, small: true) }
                 .frame(maxHeight: 320)
                 .fixedSize(horizontal: false, vertical: true)
-            Text((Money.hidden ? "Read. " : String(format: "Read for $%.3f. ", answered.cost)) + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
+            Text((Money.hidden || answered.cost == 0 ? "Read. " : String(format: "Read for $%.3f. ", answered.cost)) + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
                  + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, skipped) }

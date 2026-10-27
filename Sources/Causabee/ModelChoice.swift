@@ -24,12 +24,41 @@ enum ModelChoice {
     /// The API client for the model, with the key its API takes; nil when that key is missing.
     /// None in the demo with the owner's real matters: from there nothing is sent, whatever is asked.
     static func client(for model: Claude.Model) -> Claude? {
-        DemoData.usesReal ? nil : BeeServer.client(for: model) ?? Claude.key(for: model).map { Claude(key: $0) }
+        DemoData.usesReal || deviceOnly ? nil : BeeServer.client(for: model) ?? Claude.key(for: model).map { Claude(key: $0) }
+    }
+
+    /// For testing Causabee as it is without a key or Pro: only Apple's model on this device.
+    static let deviceOnlyKey = "reading.deviceOnly"
+    static var deviceOnly: Bool { UserDefaults.standard.bool(forKey: deviceOnlyKey) }
+
+    /// Who reads new mail: the chosen model with its key or Pro; without either, Apple's model on
+    /// this device — nothing leaves it, nothing is paid.
+    enum Reader {
+        case cloud(Claude)
+        case device
+        case none(String)
+
+        var client: Claude? { if case .cloud(let claude) = self { claude } else { nil } }
+    }
+
+    static func mailReader(for model: Claude.Model) -> Reader {
+        if let claude = client(for: model) { return .cloud(claude) }
+        if DemoData.isRequested || DemoData.usesReal { return .none(missingKey(model)) }
+        return DeviceReader.isAvailable ? .device : .none(deviceOnly ? DeviceReader.Unavailable().errorDescription ?? "" : missingKey(model))
+    }
+
+    /// Under the mails ticked to be sorted in: who reads them, and — with your own keys — about what it costs.
+    static func sortingWords(_ count: Int, estimate: Double, model: Claude.Model) -> String {
+        let mails = count == 1 ? "mail" : "mails"
+        if case .device = mailReader(for: model) { return "Sorting in \(count) \(mails) on this device, with Apple's model: nothing leaves it." }
+        if Money.hidden { return "Sorting in \(count) \(mails) with Causabee Pro. Sent pseudonymised to \(model.label)." }
+        return String(format: "Sorting in %d %@ costs about $%.2f. Sent pseudonymised to %@.", count, mails, estimate, model.label)
     }
 
     static func missingKey(_ model: Claude.Model) -> String {
         if DemoData.usesReal { return "This is the demo with your real matters: nothing is sent to an AI from it." }
         if DemoData.isRequested { return "This is the demo: your keys are not used in it, so nothing is sent to an AI from it." }
+        if deviceOnly { return "Only Apple's model on this device is on (Settings → Causabee Pro). It reads new mail; this comes to it later." }
         #if os(iOS)
         let settings = "Settings (⋯ on the overview) — or on your Mac: a key saved there comes through iCloud Keychain"
         #else
