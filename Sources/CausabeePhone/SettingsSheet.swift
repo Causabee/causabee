@@ -66,7 +66,7 @@ struct SettingsSheet: View {
                               : "New mail and files wait until you tap “Sort in”. What is taken in, and into which matter, you decide after. Next steps and summaries are written when you tap for them.")
                         .font(.footnote).foregroundStyle(.secondary)
                     if auto { Text(AutoUpdate.spentWords ?? "Pro has spent nothing today on next steps and summaries").font(.footnote).foregroundStyle(.secondary) }
-                    Text((ModelChoice.proPicks ? "Causabee Pro picks the model: Sol reads mail, Opus answers. " : String(format: "About %.2f cents per mail. ",
+                    Text((ModelChoice.proPicks ? "Causabee Pro picks the model: GPT-6.1 Sol, for mail and answers. " : String(format: "About %.2f cents per mail. ",
                                 (Claude.Model.choices.first { $0.id == mail } ?? .opus).perMail * 100))
                          + "A mail is sorted only once — here or on your Mac: what a model sorted in stays that way.")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -74,7 +74,7 @@ struct SettingsSheet: View {
 
                 Section {
                     if ModelChoice.proPicks {
-                        LabeledContent("Assistant", value: Claude.Model.opus.label)
+                        LabeledContent("Assistant", value: Claude.Model.gptSol.label)
                     } else {
                         Picker("Assistant", selection: $assistant) {
                             ForEach(Claude.Model.choices, id: \.id) { model in

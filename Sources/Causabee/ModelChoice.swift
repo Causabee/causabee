@@ -16,9 +16,9 @@ enum ModelChoice {
     /// Sorting new mail, screenshots and files into matters.
     static var mail: Claude.Model { proPicks ? .gptSol : model(mailKey) }
     /// Answers, summaries, the next step.
-    static var assistant: Claude.Model { proPicks ? .opus : model(assistantKey) }
-    /// With Pro the plan picks, so the month goes furthest where it is used most: GPT-6.1 Sol reads
-    /// the mail — sorting nearly as well as Opus at two fifths of the price — and Opus answers.
+    static var assistant: Claude.Model { proPicks ? .gptSol : model(assistantKey) }
+    /// With Pro the plan picks, so the month goes furthest: GPT-6.1 Sol for everything — it sorts
+    /// nearly as well as Opus at two fifths of the price.
     static var proPicks: Bool { BeeServer.isOnStored && !deviceOnly }
     /// Fewer, real to-dos — on by default, and only ever given to Mistral or OpenAI: Opus's
     /// instructions stay as its answers were made with.
@@ -88,11 +88,11 @@ struct ModelSettingsView: View {
                     Toggle("Fewer, real tasks", isOn: $strict)
                         .help("The rule from the test: no task for saying yes or getting ready, unless the mail asks for it.")
                 }
-                Text((ModelChoice.proPicks ? "Causabee Pro picks the model: Sol reads mail, Opus answers." : estimate(mail)) + " A mail is sorted only once: what a model sorted in stays that way.")
+                Text((ModelChoice.proPicks ? "Causabee Pro picks the model: GPT-6.1 Sol, for mail and answers." : estimate(mail)) + " A mail is sorted only once: what a model sorted in stays that way.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             } header: { Text("New mail, screenshots, files") }
             Section {
-                if ModelChoice.proPicks { LabeledContent("Assistant", value: Claude.Model.opus.label) } else { picker("Assistant", selection: $assistant) }
+                if ModelChoice.proPicks { LabeledContent("Assistant", value: Claude.Model.gptSol.label) } else { picker("Assistant", selection: $assistant) }
                 Text("Answers, summaries and the next step. Under each answer you see which model wrote it.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             } header: { Text("Questions") }
