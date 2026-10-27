@@ -3,6 +3,7 @@ name = "beeserver"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 workers_dev = true
+preview_urls = false
 
 # Request bodies are never logged: only the Worker's own short errors.
 [observability]
@@ -12,8 +13,7 @@ head_sampling_rate = 1
 [[d1_databases]]
 binding = "DB"
 database_name = "beeserver"
-# Filled in once the database exists: `npx wrangler d1 create beeserver --location=weur`.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "6274e1e2-edc2-49d0-b4cb-3ddd327d5677"
 
 # Secrets, never in this file — set once with `npx wrangler secret put <NAME>`:
 #   OPENAI_API_KEY, ANTHROPIC_API_KEY  — Causabee's own keys, made for the server alone
