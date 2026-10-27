@@ -12,13 +12,11 @@ import SwiftUI
 final class BeeServer {
     static let shared = BeeServer()
 
-    nonisolated static let onKey = "beeserver.on"
     nonisolated static let addressKey = "beeserver.address"
     nonisolated static let tokenName = "CAUSABEE_PRO_TOKEN"
+    /// Until subscriptions hand out tokens and the server has its own name.
+    nonisolated static let defaultAddress = "https://beeserver.ralf-e2a.workers.dev"
 
-    var isOn: Bool = UserDefaults.standard.bool(forKey: onKey) {
-        didSet { UserDefaults.standard.set(isOn, forKey: Self.onKey); Money.hidden = isOn }
-    }
     var address: String = UserDefaults.standard.string(forKey: addressKey) ?? "" {
         didSet { UserDefaults.standard.set(address, forKey: Self.addressKey) }
     }
@@ -28,37 +26,39 @@ final class BeeServer {
     var problem: String?
 
     var token: String? { Self.storedToken }
-    var relay: URL? { Self.relay(on: isOn, address: address) }
+    var relay: URL? { Self.relay }
 
     nonisolated static var storedToken: String? { APIKeys.get(tokenName) }
 
-    /// On, as stored: readable from anywhere.
-    nonisolated static var isOnStored: Bool {
-        let defaults = UserDefaults.standard
-        return relay(on: defaults.bool(forKey: onKey), address: defaults.string(forKey: addressKey) ?? "") != nil
-    }
+    /// A token is kept: Pro goes through the beeserver, and the bolt turns it on and off.
+    nonisolated static var isSetUp: Bool { relay != nil }
 
-    nonisolated static func relay(on: Bool, address: String) -> URL? {
-        guard on, storedToken != nil, let url = URL(string: address.trimmingCharacters(in: .whitespaces)), url.scheme == "https" else { return nil }
+    nonisolated static var relay: URL? {
+        guard storedToken != nil else { return nil }
+        let typed = (UserDefaults.standard.string(forKey: addressKey) ?? "").trimmingCharacters(in: .whitespaces)
+        guard let url = URL(string: typed.isEmpty ? defaultAddress : typed), url.scheme == "https" else { return nil }
         return url
     }
 
-    /// The client for a model through the beeserver; nil when it is off, or for Mistral, which
-    /// Pro does not offer. Read from what is stored, so it can be asked from anywhere.
+    /// The client for a model through the beeserver; nil when none is set up, or for Mistral,
+    /// which Pro does not offer. Read from what is stored, so it can be asked from anywhere.
     nonisolated static func client(for model: Claude.Model) -> Claude? {
-        let defaults = UserDefaults.standard
-        guard !model.isMistral, let relay = relay(on: defaults.bool(forKey: onKey), address: defaults.string(forKey: addressKey) ?? ""),
-              let token = storedToken else { return nil }
+        guard !model.isMistral, let relay, let token = storedToken else { return nil }
         return Claude(key: token, relay: relay)
     }
 
     /// Hears what the server says after each answer.
     static func listen() {
-        Money.hidden = shared.isOn
+        Money.hidden = isSetUp
         Claude.allowanceSeen = { used, renews in
             Task { @MainActor in
                 BeeServer.shared.monthUsed = used
                 if !renews.isEmpty { BeeServer.shared.renewsOn = renews }
+                // Used up: the bolt goes off by itself, and Apple's model on the device takes over.
+                if used >= 1, UserDefaults.standard.bool(forKey: AutoMode.key) {
+                    UserDefaults.standard.set(false, forKey: AutoMode.key)
+                    BeeServer.shared.problem = "This month's Pro is used up, so Pro is off until it starts anew. Apple's model on this device reads new mail meanwhile."
+                }
             }
         }
     }
@@ -97,11 +97,11 @@ struct ProBar: View {
     var body: some View {
         Group { bar }
             // Shown before any answer came this time: asked of the server once.
-            .task { if server.isOn, server.monthUsed == nil { await server.refresh() } }
+            .task { if BeeServer.isSetUp, server.monthUsed == nil { await server.refresh() } }
     }
 
     @ViewBuilder private var bar: some View {
-        if server.isOn, let used = server.monthUsed {
+        if BeeServer.isSetUp, let used = server.monthUsed {
             let left = max(0, 1 - used)
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
@@ -128,13 +128,13 @@ struct ProBar: View {
     }
 }
 
-/// The hidden switch, for testing Pro through the beeserver: the address, the token, on or off.
+/// Where Pro's token is kept until subscriptions hand them out, and the address it goes to. The
+/// bolt turns Pro on and off.
 /// Shown in Settings only once a token is kept, after the version line is tapped five times, or
 /// while `--beeserver` is given at start.
 struct BeeServerSettings: View {
     @State private var server = BeeServer.shared
     @State private var pastedToken = ""
-    @AppStorage(ModelChoice.deviceOnlyKey) private var deviceOnly = false
 
     static let revealedKey = "beeserver.revealed"
 
@@ -144,13 +144,9 @@ struct BeeServerSettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Toggle("Only Apple's model on this device (test)", isOn: $deviceOnly)
-            Text(deviceOnly ? "As Causabee is without a key or Pro: new mail is read here, nothing leaves the device. The assistant and Update wait for it."
-                 : "Without a key or Pro, new mail is read by Apple's model on this device.")
+            Text("The bolt turns Pro on and off. On: GPT-6.1 Sol reads new mail as it comes and answers, sent pseudonymised. Off: Apple's model on this device reads new mail — nothing leaves it.")
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Toggle("Pro through the beeserver (test)", isOn: $server.isOn)
-                .disabled(deviceOnly)
-            TextField("https://beeserver…", text: $server.address)
+            TextField(BeeServer.defaultAddress, text: $server.address)
                 .textFieldStyle(.roundedBorder)
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
@@ -166,8 +162,8 @@ struct BeeServerSettings: View {
                 }
                 .disabled(!pastedToken.hasPrefix("bee_"))
             }
-            if server.isOn, server.relay == nil {
-                Text("Needs an https address and a token.").font(.footnote).foregroundStyle(Theme.warning)
+            if server.token != nil, server.relay == nil {
+                Text("The address must start with https://").font(.footnote).foregroundStyle(Theme.warning)
             }
             if let problem = server.problem { Text(problem).font(.footnote).foregroundStyle(Theme.warning) }
             ProBar()

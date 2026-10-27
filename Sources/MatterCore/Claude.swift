@@ -173,8 +173,10 @@ public struct Claude: Sendable {
     nonisolated(unsafe) public static var allowanceSeen: (@Sendable (_ used: Double, _ renewsOn: String) -> Void)?
 
     static func noteAllowance(_ response: URLResponse) {
-        guard let http = response as? HTTPURLResponse,
-              let used = http.value(forHTTPHeaderField: "causabee-month-used").flatMap(Double.init) else { return }
+        guard let http = response as? HTTPURLResponse else { return }
+        // The beeserver's "used up": the month and every top-up.
+        if http.statusCode == 402, http.url?.path.contains("/v1/ai/") == true { allowanceSeen?(1, ""); return }
+        guard let used = http.value(forHTTPHeaderField: "causabee-month-used").flatMap(Double.init) else { return }
         allowanceSeen?(used, http.value(forHTTPHeaderField: "causabee-renews-on") ?? "")
     }
 
@@ -428,6 +430,10 @@ public extension Claude.Failure {
         case .http(let status, let body):
             switch status {
             case 401, 403: return "The AI service did not accept the API key. Check it in Settings."
+            case 402 where body.contains("allowance_used"):
+                return "This month's Pro is used up. Apple's model on this device reads new mail until it starts anew."
+            case 429 where body.contains("daily_limit"):
+                return "Today's share of Pro is used. It goes on tomorrow; Apple's model on this device reads new mail meanwhile."
             case 402: return "The AI service says the account has no credit left. Top it up with the provider, then try again."
             case 404: return "The AI service does not know this model. Choose another in Settings."
             case 408, 504: return "The AI service took too long to answer. Try again."

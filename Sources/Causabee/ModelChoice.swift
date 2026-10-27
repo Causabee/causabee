@@ -19,7 +19,7 @@ enum ModelChoice {
     static var assistant: Claude.Model { proPicks ? .gptSol : model(assistantKey) }
     /// With Pro the plan picks, so the month goes furthest: GPT-6.1 Sol for everything — it sorts
     /// nearly as well as Opus at two fifths of the price.
-    static var proPicks: Bool { BeeServer.isOnStored && !deviceOnly }
+    static var proPicks: Bool { BeeServer.isSetUp && AutoMode.isOn }
     /// Fewer, real to-dos — on by default, and only ever given to Mistral or OpenAI: Opus's
     /// instructions stay as its answers were made with.
     static var strict: Bool { (mail.isMistral || mail.isOpenAI) && (UserDefaults.standard.object(forKey: strictKey) as? Bool ?? true) }
@@ -27,12 +27,15 @@ enum ModelChoice {
     /// The API client for the model, with the key its API takes; nil when that key is missing.
     /// None in the demo with the owner's real matters: from there nothing is sent, whatever is asked.
     static func client(for model: Claude.Model) -> Claude? {
-        DemoData.usesReal || deviceOnly ? nil : BeeServer.client(for: model) ?? Claude.key(for: model).map { Claude(key: $0) }
+        if DemoData.usesReal { return nil }
+        // With Pro set up, the bolt decides: on, through the beeserver; off, nothing leaves the device.
+        if BeeServer.isSetUp { return AutoMode.isOn ? BeeServer.client(for: model) : nil }
+        // Without it, the developer's own keys, as before.
+        return Claude.key(for: model).map { Claude(key: $0) }
     }
 
-    /// For testing Causabee as it is without a key or Pro: only Apple's model on this device.
-    static let deviceOnlyKey = "reading.deviceOnly"
-    static var deviceOnly: Bool { UserDefaults.standard.bool(forKey: deviceOnlyKey) }
+    /// Pro set up and the bolt off: only Apple's model on this device.
+    static var deviceOnly: Bool { BeeServer.isSetUp && !AutoMode.isOn }
 
     /// Who reads new mail: the chosen model with its key or Pro; without either, Apple's model on
     /// this device — nothing leaves it, nothing is paid.
@@ -61,7 +64,7 @@ enum ModelChoice {
     static func missingKey(_ model: Claude.Model) -> String {
         if DemoData.usesReal { return "This is the demo with your real matters: nothing is sent to an AI from it." }
         if DemoData.isRequested { return "This is the demo: your keys are not used in it, so nothing is sent to an AI from it." }
-        if deviceOnly { return "Only Apple's model on this device is on (Settings → Causabee Pro). It reads new mail; this comes to it later." }
+        if deviceOnly { return "Pro is off: Apple's model on this device reads new mail, and this comes to it later. Turn Pro on with the bolt for it now." }
         #if os(iOS)
         let settings = "Settings (⋯ on the overview) — or on your Mac: a key saved there comes through iCloud Keychain"
         #else

@@ -62,10 +62,16 @@ struct SettingsSheet: View {
                     Toggle("Pro: the bigger AI reads mail and files at once", isOn: Binding(
                         get: { auto && Store.shared.plan == .pro },
                         set: { on in if !on { auto = false } else if Store.shared.mayTurnOnPro() { auto = true } }))
+                    if BeeServer.isSetUp {
+                        Text(auto ? "Pro is on: GPT-6.1 Sol reads new mail and files as they come and answers your questions — sent pseudonymised. What is taken in, and into which matter, you still decide."
+                                  : "Pro is off: Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    } else {
                     Text(auto ? "New mail and files are read by the AI as soon as they are there — sent pseudonymised, without asking first. What is taken in, and into which matter, you still decide. When a matter’s record changes, its next step and its summary are written again" + (Money.hidden ? "." : " — a few cents each time.")
                               : "New mail and files wait until you tap “Sort in”. What is taken in, and into which matter, you decide after. Next steps and summaries are written when you tap for them.")
                         .font(.footnote).foregroundStyle(.secondary)
-                    if auto { Text(AutoUpdate.spentWords ?? "Pro has spent nothing today on next steps and summaries").font(.footnote).foregroundStyle(.secondary) }
+                    }
+                    if auto, !BeeServer.isSetUp { Text(AutoUpdate.spentWords ?? "Pro has spent nothing today on next steps and summaries").font(.footnote).foregroundStyle(.secondary) }
                     Text((ModelChoice.proPicks ? "Causabee Pro picks the model: GPT-6.1 Sol, for mail and answers. " : String(format: "About %.2f cents per mail. ",
                                 (Claude.Model.choices.first { $0.id == mail } ?? .opus).perMail * 100))
                          + "A mail is sorted only once — here or on your Mac: what a model sorted in stays that way.")
