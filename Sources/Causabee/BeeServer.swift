@@ -123,12 +123,17 @@ struct ProBar: View {
 }
 
 /// The hidden switch, for testing Pro through the beeserver: the address, the token, on or off.
-/// Shown in Settings only once a token is kept — or while `--beeserver` is given at start.
+/// Shown in Settings only once a token is kept, after the version line is tapped five times, or
+/// while `--beeserver` is given at start.
 struct BeeServerSettings: View {
     @State private var server = BeeServer.shared
     @State private var pastedToken = ""
 
-    static var shows: Bool { BeeServer.shared.token != nil || CommandLine.arguments.contains("--beeserver") }
+    static let revealedKey = "beeserver.revealed"
+
+    static var shows: Bool {
+        UserDefaults.standard.bool(forKey: revealedKey) || BeeServer.shared.token != nil || CommandLine.arguments.contains("--beeserver")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {

@@ -12,6 +12,7 @@ struct SettingsSheet: View {
     @AppStorage(ModelChoice.assistantKey) private var assistant = Claude.Model.opus.id
     @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
     @AppStorage(ModelChoice.strictKey) private var strict = true
+    @AppStorage(BeeServerSettings.revealedKey) private var revealed = false
     @AppStorage(AutoMode.key) private var auto = false
     @AppStorage(BeeJoy.key) private var celebrates = true
     @Query private var profiles: [Profile]
@@ -126,7 +127,7 @@ struct SettingsSheet: View {
                     Text("Names are disguised before anything is sent. Each device keeps its own list — this \(ThisDevice.name) once it gets new mail — and puts it into iCloud, end-to-end encrypted, when you switch away from Causabee; a name one device learned, the others disguise too. Without any list, the assistant sends nothing.")
                 }
 
-                if BeeServerSettings.shows {
+                if revealed || BeeServerSettings.shows {
                     Section { BeeServerSettings() } header: { Text("Causabee Pro") }
                 }
 
@@ -144,7 +145,8 @@ struct SettingsSheet: View {
                 }
 
                 // Which Causabee this is, to say when something is reported.
-                Section { LabeledContent("Causabee", value: AppRelease.label) }
+                // Five taps show the beeserver's switch, for testing Pro.
+                Section { LabeledContent("Causabee", value: AppRelease.label).onTapGesture(count: 5) { revealed = true } }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
