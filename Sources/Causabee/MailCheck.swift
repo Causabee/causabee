@@ -136,8 +136,14 @@ final class MailCheck {
     /// put aside go from the line that says "new mails", from the list to tick, and from what was
     /// read and waits to be taken in. With none left, the prompt is gone.
     func settleElsewhere(context: ModelContext) {
+        // Asked after every change: nothing to settle while no mail waits.
+        switch state {
+        case .newMail, .ready, .answered: break
+        default: return
+        }
         let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
-        let known = Set(SortedMails.answered(in: context).keys).union(entries.map(\.messageID))
+        // The ids are enough: an answer in the store is a mail dealt with.
+        let known = SortedMails.answeredIDs(in: context).union(entries.map(\.messageID))
         switch state {
         case .newMail(let look, let door):
             let left = Set(look.newIDs.filter { !known.contains($0) })

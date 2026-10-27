@@ -346,11 +346,21 @@ final class StoredChanges {
         }
         // A change saved here is a change too, at once: the prepared overview is made anew from it.
         NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated {
-                StoredChanges.shared.count += 1
-                if let context = StoredChanges.shared.context { PublicNames.refresh(in: context) }
-                if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] saved, change %d", StoredChanges.shared.count) }
-            }
+            MainActor.assumeIsolated { StoredChanges.shared.saved() }
+        }
+    }
+
+    /// Saves one right after the other — sorting mail in saves five times — count once, after the
+    /// last: each count made every page read the store again, some hundred milliseconds each.
+    @ObservationIgnored private var savePending = false
+    private func saved() {
+        guard !savePending else { return }
+        savePending = true
+        DispatchQueue.main.async {
+            self.savePending = false
+            self.count += 1
+            if let context = self.context { PublicNames.refresh(in: context) }
+            if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] saved, change %d", self.count) }
         }
     }
 
@@ -360,9 +370,12 @@ final class StoredChanges {
     private func changed() {
         guard !pending else { return }
         pending = true
-        for delay in [0.5, 2, 4, 8, 15] {
+        // Three times, not five: each time every page reads the store again, some hundred
+        // milliseconds, and the store reports what this device sent to iCloud as well. Four seconds
+        // is when another device's change was seen to arrive; fifteen, for the kept texts.
+        for delay in [0.5, 4, 15] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                if delay == 2 { self.pending = false }
+                if delay == 4 { self.pending = false }
                 self.count += 1
                 // A name marked public on another device counts here too.
                 if let context = self.context { PublicNames.refresh(in: context) }

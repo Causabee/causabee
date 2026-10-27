@@ -38,19 +38,36 @@ public enum SortedMails {
     /// bulk, in a matter, or left out. Asked again right before mail is sent to be read — iCloud may
     /// have brought another device's work in while this one was looking.
     public static func known(in context: ModelContext) -> Set<String> {
-        let sorted = answered(in: context).values.filter { Extractor.isSettled($0) || $0.isBulk }.map(\.emailID)
+        // Only what is settled or bulk goes into the store, and a mark is a mail left out: every
+        // record is a mail dealt with — its id is enough, nothing needs reading.
+        let records = ((try? context.fetch(FetchDescriptor<SortedMail>())) ?? []).map(\.messageID)
         let entries = ((try? context.fetch(FetchDescriptor<Entry>())) ?? []).map(\.messageID)
-        return Set(sorted).union(entries).union(setAside(in: context)).subtracting([""])
+        return Set(records).union(entries).subtracting([""])
     }
+
+    /// The ids of every mail some device sorted, without reading the answers.
+    public static func answeredIDs(in context: ModelContext) -> Set<String> {
+        Set(((try? context.fetch(FetchDescriptor<SortedMail>())) ?? []).filter { !$0.data.isEmpty }.map(\.messageID))
+    }
+
+    /// Answers read before, by Message-ID, with the size of what they were read from: a record is
+    /// read again only when it is new or changed. Each read took some fifty milliseconds for a few
+    /// hundred mails, and it was asked after every save.
+    private static var read: [String: (size: Int, judgement: Judgement)] = [:]
 
     /// Every answer in the store, by Message-ID.
     public static func answered(in context: ModelContext) -> [String: Judgement] {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         var out: [String: Judgement] = [:]
-        for record in (try? context.fetch(FetchDescriptor<SortedMail>())) ?? [] {
+        for record in (try? context.fetch(FetchDescriptor<SortedMail>())) ?? [] where !record.data.isEmpty {
+            if let known = read[record.messageID], known.size == record.data.count {
+                out[known.judgement.emailID] = known.judgement
+                continue
+            }
             guard let json = try? (record.data as NSData).decompressed(using: .lzfse) as Data,
                   let judgement = try? decoder.decode(Judgement.self, from: json) else { continue }
+            read[record.messageID] = (record.data.count, judgement)
             out[judgement.emailID] = judgement
         }
         return out
