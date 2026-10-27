@@ -1,7 +1,7 @@
 import Foundation
 
-/// What the owner has: Normal for free — up to three open matters — more matters for a small
-/// subscription, or Pro, which has the bigger AI and no limit. Nothing already there is ever
+/// What the owner has: Causabee for free — up to three open matters — Plus, every matter, for a small
+/// subscription, or Pro, which has the bigger AI and every matter too. Nothing already there is ever
 /// locked: only a fourth matter waits, until a matter is closed or the plan has room.
 public enum Plan: String, Codable, Sendable, Comparable {
     case free, matters, pro
@@ -38,7 +38,7 @@ extension Judgement {
         let name = matterTitle ?? matter.map(Matter.readable) ?? ""
         waiting.matter = nil
         waiting.matterTitle = nil
-        waiting.matterReason = "Would start the matter “\(name)” — Normal holds \(Plan.freeMatters) open matters"
+        waiting.matterReason = "Would start the matter “\(name)” — Causabee holds \(Plan.freeMatters) open matters for free"
         return waiting
     }
 }

@@ -638,7 +638,7 @@ struct AutoQuestion: ViewModifier {
             // Short, and by name: which model reads, that names are disguised, who decides, what it costs.
             Text("Pro reads new mail and files for you as they arrive, with \(model.label) — names disguised. " +
                  "You still decide what goes into a matter. " + String(format: "About %.1f cents a mail. ", model.perMail * 100) +
-                 "In Normal, nothing is read by the AI until you tap.")
+                 "Without Pro, nothing is read by the AI until you tap.")
         }
     }
 }
