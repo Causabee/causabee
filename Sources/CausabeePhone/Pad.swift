@@ -109,6 +109,8 @@ struct PadControls: View {
     @AppStorage(AutoMode.key) private var auto = false
     @Environment(\.modelContext) private var context
     @State private var asksAuto = false
+    /// On, and Pro bought.
+    private var pro: Bool { auto && Store.shared.plan == .pro }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -116,14 +118,16 @@ struct PadControls: View {
             round("eyeglasses", on: navigation.reading, label: navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode") {
                 withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
             }
-            round(auto ? "bolt.fill" : "bolt", on: auto, label: "Pro") {
-                // The first time it is turned on, what it does is said and asked.
+            round(pro ? "bolt.fill" : "bolt", on: pro, label: "Pro") {
+                if pro { auto = false; Haptics.tap(); return }
+                // Without Pro bought: the plans first. The first time it is turned on, what it does is said and asked.
+                guard Store.shared.mayTurnOnPro() else { return }
                 if AutoMode.asksFirst { asksAuto = true; return }
-                auto.toggle()
+                auto = true
                 Haptics.tap()
-                if auto { PhoneMailCheck.shared.autoTurnedOn(context: context) }
+                PhoneMailCheck.shared.autoTurnedOn(context: context)
             }
-            .accessibilityValue(auto ? "On" : "Off")
+            .accessibilityValue(pro ? "On" : "Off")
             .asksBeforeAuto($asksAuto) {
                 auto = true
                 Haptics.tap()

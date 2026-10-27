@@ -558,7 +558,7 @@ struct MatterScreen: View {
     private func startNewMatter() {
         let mails = MatterStatus(matter).mailsSinceClosed
         let name = newMatterName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !mails.isEmpty, !name.isEmpty,
+        guard !mails.isEmpty, !name.isEmpty, Store.shared.mayStartMatter(in: context),
               let new = try? matter.split(mails, intoNewMatterNamed: name, turnsSince: matter.closedAt, in: context) else { return }
         try? context.save()
         // The new matter in place of the closed one: back goes to the overview.

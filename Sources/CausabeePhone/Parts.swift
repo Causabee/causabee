@@ -136,27 +136,32 @@ struct PhoneAutoButton: View {
     @AppStorage(AutoMode.key) private var auto = false
     @Environment(\.modelContext) private var context
     @State private var asks = false
+    /// On, and Pro bought.
+    private var pro: Bool { auto && Store.shared.plan == .pro }
 
     var body: some View {
         Button {
             // The first time it is turned on, what it does is said and asked — before anything is
             // read, not beside the bolt once it already is.
+            if pro { auto = false; Haptics.tap(); return }
+            // Without Pro bought: the plans first.
+            guard Store.shared.mayTurnOnPro() else { return }
             if AutoMode.asksFirst { asks = true; return }
-            auto.toggle()
+            auto = true
             Haptics.tap()
-            if auto { PhoneMailCheck.shared.autoTurnedOn(context: context) }
+            PhoneMailCheck.shared.autoTurnedOn(context: context)
         } label: {
-            Image(systemName: auto ? "bolt.fill" : "bolt").font(.system(size: 15, weight: .medium))
-                .foregroundStyle(auto ? Color.black : Color.secondary)
+            Image(systemName: pro ? "bolt.fill" : "bolt").font(.system(size: 15, weight: .medium))
+                .foregroundStyle(pro ? Color.black : Color.secondary)
                 .frame(width: 36, height: 36)
                 // Glass, as the bee under it: clear while Auto is off, the bee's yellow while it is on.
-                .onGlass(Circle(), tint: auto ? Theme.bee.opacity(0.82) : nil)
+                .onGlass(Circle(), tint: pro ? Theme.bee.opacity(0.82) : nil)
                 // A finger's room around the small disc.
                 .frame(width: 44, height: 44).contentShape(Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Pro")
-        .accessibilityValue(auto ? "On" : "Off")
+        .accessibilityValue(pro ? "On" : "Off")
         .accessibilityHint("Pro: the bigger AI reads new mail and files at once. Normal: only when you say so")
         .accessibilityIdentifier("auto.toggle")
         .asksBeforeAuto($asks) {

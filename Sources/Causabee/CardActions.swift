@@ -481,7 +481,7 @@ enum CardActions {
             let along = attachments(text: text, question: question, scope: scope, attach: card.attach ?? [])
             return .openMail(url, MailDraft(to: to, subject: subject ?? card.subject ?? "", body: text, files: along.files, missing: along.missing))
         case .newMatter:
-            guard !text.isEmpty, let matter = try? Matter.make(named: text, in: context) else { return .nothing }
+            guard !text.isEmpty, Store.shared.mayStartMatter(in: context), let matter = try? Matter.make(named: text, in: context) else { return .nothing }
             return .madeMatter(matter, .madeMatter(matter.persistentModelID))
         case .changeDate:
             guard let day = card.due else { return .nothing }

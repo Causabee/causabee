@@ -556,6 +556,7 @@ struct RootView: View {
     @State private var navigation = Navigation()
     @Environment(\.modelContext) private var context
     @State private var mailCheck = MailCheck()
+    @State private var plans = Store.shared
     /// The closed matters in the sidebar, folded away until opened; remembered on this Mac.
     @AppStorage("sidebar.showsClosed") private var showsClosed = false
     @AppStorage(AutoMode.key) private var auto = false
@@ -595,7 +596,8 @@ struct RootView: View {
     }
 
     private func start(_ name: String) {
-        guard let matter = try? Matter.make(named: name, in: context) else { return }
+        // A fourth open matter, on Normal: the plans first.
+        guard Store.shared.mayStartMatter(in: context), let matter = try? Matter.make(named: name, in: context) else { return }
         try? context.save()
         search = ""
         navigation.open(matter)
@@ -824,12 +826,15 @@ struct RootView: View {
         // A turn asked on the iPhone, or on the other Mac, arrives while Causabee is open.
         .onReceive(NotificationCenter.default.publisher(for: .threadMayHaveChanged)) { _ in navigation.refresh() }
         // Mail the iPhone or the other Mac sorted meanwhile is not asked about here any more.
-        .onChange(of: StoredChanges.shared.count) { mailCheck.settleElsewhere(context: context) }
+        .onChange(of: StoredChanges.shared.count) { mailCheck.settleElsewhere(context: context); Store.shared.readShared() }
+        // The plans, wherever a fourth matter or Pro asks for them.
+        .sheet(item: $plans.asks) { reason in PlanSheet(reason: reason) }
         .onAppear {
             navigation.attach(context)
             // `--demo --shot`: set up as one of the introduction's pictures.
             IntroShot.current?.arrange(navigation, matters: matters)
             MirrorRunner.shared.start(context)
+            Store.shared.start(context)
             // Not over the demo: it is started to be looked at, and photographed, as it is.
             // The setup's test starts as a first start does: the introduction, then the setup.
             // `--intro`: the demo's made-up matters, with the introduction over them first.

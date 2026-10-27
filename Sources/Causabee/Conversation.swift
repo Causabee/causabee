@@ -237,7 +237,9 @@ struct Conversation {
             if (try? FileManager.default.copyItem(at: look.file, to: target)) != nil { judgement.source = target.path }
         }
         do {
-            _ = try MatterImport.apply([judgement], to: context, owner: owner)
+            // On Normal, a file that would start a fourth open matter waits: the plans first.
+            let imported = try MatterImport.apply([judgement], to: context, owner: owner, room: Store.shared.room(in: context))
+            if !imported.held.isEmpty { Store.shared.asks = .matters }
             let taken = (try? context.fetch(FetchDescriptor<Matter>()))?.first { $0.answers(to: judgement.matter ?? "") }
             // A mail dropped in brings its important links along, as suggestions.
             if look.kind == .mail, let email = look.report.outcomes.first?.email, let taken {

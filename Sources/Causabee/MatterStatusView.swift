@@ -937,7 +937,7 @@ struct MatterStatusView: View {
     private func startNewMatter() {
         let mails = MatterStatus(matter).mailsSinceClosed
         let name = newMatterName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !mails.isEmpty, !name.isEmpty,
+        guard !mails.isEmpty, !name.isEmpty, Store.shared.mayStartMatter(in: context),
               let new = try? matter.split(mails, intoNewMatterNamed: name, turnsSince: matter.closedAt, in: context) else { return }
         splitting = false
         navigation.open(new)
