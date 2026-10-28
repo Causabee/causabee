@@ -284,87 +284,61 @@ struct FilesSection: View {
     }
 }
 
-/// The mail account the files come out of: the address and an app password, kept in this
-/// iPhone's Keychain and handed only to that account's server. Read-only: nothing is changed or sent.
+/// The mail accounts, and connecting another — the same setup as on the Mac: the address first,
+/// then its way in, a login tried before anything is kept, and the label or folder Causabee reads.
+/// The password is kept in iCloud Keychain, so the Macs and the iPad have it too.
 struct MailAccountSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var address = ""
-    @State private var host = ""
-    @State private var password = ""
     @State private var saved = Keychain.accounts().filter { !$0.usesGoogle }
-    @State private var failure: String?
     /// The saved account asked about before its password goes — from every device, and not back.
     @State private var removing: String?
-
-    private var knownHost: String? { MailAccount(user: address.trimmingCharacters(in: .whitespaces))?.host }
+    @State private var adding = false
 
     var body: some View {
         NavigationStack {
-            Form {
-                if !saved.isEmpty {
-                    Section("Saved — shared with your Macs through iCloud Keychain") {
-                        ForEach(saved, id: \.user) { account in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(account.user)
-                                    Text(account.host).font(.caption).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Button("Remove from all devices", role: .destructive) { removing = account.user }
-                                .buttonStyle(.borderless)
-                                // Asked first: the password goes from the Macs too, and cannot be brought back.
-                                .confirmationDialog("Remove the password for \(account.user)?",
-                                                    isPresented: Binding(get: { removing == account.user }, set: { if !$0 { removing = nil } }),
-                                                    titleVisibility: .visible) {
-                                    Button("Remove from all devices", role: .destructive) {
-                                        try? Keychain.delete(account: account.user)
-                                        saved = Keychain.accounts().filter { !$0.usesGoogle }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    if !saved.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SettingsPart("Saved — shared with your Macs through iCloud Keychain")
+                            ForEach(saved, id: \.user) { account in
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(account.user)
+                                        Text(account.host).font(.caption).foregroundStyle(.secondary)
                                     }
-                                    Button("Cancel", role: .cancel) { }
-                                } message: {
-                                    Text("It goes from iCloud Keychain, so from your Macs as well. To get mail again you type it in anew.")
+                                    Spacer()
+                                    Button("Remove", role: .destructive) { removing = account.user }
+                                        .buttonStyle(.borderless)
                                 }
                             }
                         }
                     }
-                }
-                Section {
-                    TextField("Mail address", text: $address)
-                        .textContentType(.username).keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never).autocorrectionDisabled()
-                    if !address.isEmpty && knownHost == nil {
-                        TextField("Mail server (IMAP), e.g. imap.example.com", text: $host)
-                            .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    if saved.isEmpty || adding {
+                        MailSetup(connected: { _ in saved = Keychain.accounts().filter { !$0.usesGoogle } })
+                    } else {
+                        Button("Add another account") { adding = true }.buttonStyle(.borderless)
                     }
-                    SecureField("App password", text: $password).textContentType(.password)
-                } header: {
-                    Text(saved.isEmpty ? "Mail account" : "Add another")
-                } footer: {
-                    Text("Files are taken out of your mail when you open them — read-only, one mail at a time — and are not kept in iCloud. The password is kept in your iCloud Keychain, end-to-end encrypted, so Causabee on your Macs and this \(ThisDevice.name) shares it — typed once — and it goes only to your mail server. For Gmail, use an app password (Google Account › Security › App passwords).")
                 }
-                if let failure { Text(failure).foregroundStyle(Theme.warning) }
+                .padding(20)
+                .frame(maxWidth: 560, alignment: .leading)
+                .frame(maxWidth: .infinity)
             }
             .navigationTitle("Mail account")
             .navigationBarTitleDisplayMode(.inline)
-            .keepsWhatWasTyped([address, host, password])
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save).disabled(address.isEmpty || password.isEmpty || (knownHost == nil && host.isEmpty))
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            // Asked first: the password goes from the Macs too, and cannot be brought back.
+            .confirmationDialog("Remove the password for \(removing ?? "")?",
+                                isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+                                titleVisibility: .visible) {
+                Button("Remove from all devices", role: .destructive) {
+                    if let removing { try? Keychain.delete(account: removing) }
+                    saved = Keychain.accounts().filter { !$0.usesGoogle }
                 }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("It goes from iCloud Keychain, so from your Macs as well. To get mail again you connect it anew.")
             }
-        }
-    }
-
-    private func save() {
-        let user = address.trimmingCharacters(in: .whitespaces)
-        let server = knownHost ?? host.trimmingCharacters(in: .whitespaces)
-        do {
-            try Keychain.save(password.trimmingCharacters(in: .whitespaces), for: MailAccount(user: user, host: server))
-            password = ""
-            dismiss()
-        } catch {
-            failure = plainWords(error)
         }
     }
 }
