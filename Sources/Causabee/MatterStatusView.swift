@@ -160,7 +160,9 @@ struct MatterStatusView: View {
                 .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
                 // Another part chosen in the title bar: it is shown from its start, not from where the last one was read.
                 .onChange(of: part) { if partsUnder { scroller.scrollTo("partTop", anchor: .top) } }
-                .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 1 } action: { _, under in
+                // Scrolled by hand, not shifted by a point or two when the window lays the page out
+                // anew — a sidebar closing in a narrow window left it there, and the name jumped up.
+                .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 8 } action: { _, under in
                     withAnimation(.easeOut(duration: 0.15)) { scrolledUnder = under }
                 }
                 .onPreferenceChange(PageFindMatches.self) { found in
