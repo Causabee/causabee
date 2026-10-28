@@ -343,10 +343,11 @@ private struct MailStep: View {
                 labelSection(saved)
             } else {
                 // The same setup as on the iPhone and the iPad: the address first, then its way in.
-                MailSetup(save: { try SetupState.save($0, for: $1) }, keepsGoogle: !SetupState.isFresh) { _ in
+                MailSetupFlow(save: { try SetupState.save($0, for: $1) }, embedded: true) { _ in
                     tick += 1
                     changed()
                 }
+                .frame(minHeight: 470)
             }
         }
     }

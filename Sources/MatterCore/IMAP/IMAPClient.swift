@@ -106,8 +106,10 @@ public enum IMAPError: Error, CustomStringConvertible, Equatable {
 /// `allowed`, and none of them changes a mailbox: a folder is opened with `EXAMINE`, which the
 /// server itself holds to read-only, and mail is read with `BODY.PEEK[]`, which does not mark
 /// it as read. `STORE`, `COPY`, `MOVE`, `EXPUNGE`, `APPEND` and `SELECT` cannot be sent at all.
+/// The one exception is `CREATE`: the label or folder Causabee reads, made in the setup when it is
+/// not there yet and the owner said yes — nothing is moved into it, and nothing else is touched.
 public actor IMAPClient: ReadOnlyMailbox {
-    public static let allowed: Set<String> = ["CAPABILITY", "LOGIN", "AUTHENTICATE", "LIST", "EXAMINE", "UID SEARCH", "UID FETCH", "NOOP", "LOGOUT"]
+    public static let allowed: Set<String> = ["CAPABILITY", "LOGIN", "AUTHENTICATE", "LIST", "EXAMINE", "UID SEARCH", "UID FETCH", "NOOP", "LOGOUT", "CREATE"]
 
     private let transport: any IMAPTransport
     private var reader = IMAPReader()
@@ -156,6 +158,11 @@ public actor IMAPClient: ReadOnlyMailbox {
                   case .list(let flags) = tokens[1], let name = tokens[3].text else { return nil }
             return MailFolder(name: MailboxName.decode(name), attributes: Set(flags.compactMap(\.text)))
         }
+    }
+
+    /// Makes the label (Gmail) or folder (any other mailbox) Causabee reads — asked for in the setup.
+    public func create(_ folder: String) async throws {
+        _ = try await command("CREATE", try Self.quoted(MailboxName.encode(folder)))
     }
 
     public func examine(_ folder: String) async throws -> OpenedFolder {

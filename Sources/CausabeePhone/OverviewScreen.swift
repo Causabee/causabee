@@ -116,6 +116,8 @@ struct RootView: View {
             }
             NSLog("[timing] tour done")
         }
+        // `--demo --shot mail-setup`: the mail setup open, for its pictures and to try it.
+        .sheet(isPresented: .constant(PhoneShot.isMailSetup)) { MailAccountSheet() }
         // `--demo --shot listening`: the care matter open, the assistant over it.
         .task {
             // `--shot matter`: the care matter alone, for the website's picture of a matter.
@@ -449,6 +451,11 @@ enum PhoneShot {
         let arguments = CommandLine.arguments
         guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot"), at + 1 < arguments.count else { return false }
         return arguments[at + 1] == "matter"
+    }()
+    static let isMailSetup: Bool = {
+        let arguments = CommandLine.arguments
+        guard DemoData.isRequested, let at = arguments.firstIndex(of: "--shot"), at + 1 < arguments.count else { return false }
+        return arguments[at + 1] == "mail-setup"
     }()
     static let isListening: Bool = {
         let arguments = CommandLine.arguments

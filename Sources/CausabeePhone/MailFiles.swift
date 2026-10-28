@@ -295,49 +295,49 @@ struct MailAccountSheet: View {
     @State private var adding = false
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    if !saved.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            SettingsPart("Saved — shared with your Macs through iCloud Keychain")
-                            ForEach(saved, id: \.user) { account in
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(account.user)
-                                        Text(account.host).font(.caption).foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    Button("Remove", role: .destructive) { removing = account.user }
-                                        .buttonStyle(.borderless)
+        if saved.isEmpty || adding {
+            // One thing per screen, in the system's navigation — its own back button and close.
+            MailSetupFlow(finished: { connected in
+                saved = Keychain.accounts().filter { !$0.usesGoogle }
+                if connected == nil, !saved.isEmpty { adding = false } else { dismiss() }
+            })
+        } else {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        SettingsPart("Saved — shared with your Macs through iCloud Keychain")
+                        ForEach(saved, id: \.user) { account in
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(account.user)
+                                    Text(account.host).font(.caption).foregroundStyle(.secondary)
                                 }
+                                Spacer()
+                                Button("Remove", role: .destructive) { removing = account.user }
+                                    .buttonStyle(.borderless)
                             }
                         }
-                    }
-                    if saved.isEmpty || adding {
-                        MailSetup(connected: { _ in saved = Keychain.accounts().filter { !$0.usesGoogle } })
-                    } else {
                         Button("Add another account") { adding = true }.buttonStyle(.borderless)
                     }
+                    .padding(20)
+                    .frame(maxWidth: 560, alignment: .leading)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(20)
-                .frame(maxWidth: 560, alignment: .leading)
-                .frame(maxWidth: .infinity)
-            }
-            .navigationTitle("Mail account")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
-            // Asked first: the password goes from the Macs too, and cannot be brought back.
-            .confirmationDialog("Remove the password for \(removing ?? "")?",
-                                isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
-                                titleVisibility: .visible) {
-                Button("Remove from all devices", role: .destructive) {
-                    if let removing { try? Keychain.delete(account: removing) }
-                    saved = Keychain.accounts().filter { !$0.usesGoogle }
+                .navigationTitle("Mail account")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+                // Asked first: the password goes from the Macs too, and cannot be brought back.
+                .confirmationDialog("Remove the password for \(removing ?? "")?",
+                                    isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+                                    titleVisibility: .visible) {
+                    Button("Remove from all devices", role: .destructive) {
+                        if let removing { try? Keychain.delete(account: removing) }
+                        saved = Keychain.accounts().filter { !$0.usesGoogle }
+                    }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("It goes from iCloud Keychain, so from your Macs as well. To get mail again you connect it anew.")
                 }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("It goes from iCloud Keychain, so from your Macs as well. To get mail again you connect it anew.")
             }
         }
     }

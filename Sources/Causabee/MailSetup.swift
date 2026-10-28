@@ -1,297 +1,779 @@
 import MatterCore
+import Network
 import SwiftUI
+#if os(iOS)
+import UIKit
+#else
+import AppKit
+#endif
 
-/// Connecting a mail account, the same on the Mac, the iPhone and the iPad: the address first,
-/// then the way in that fits it — Google's own sign-in or an app password for Gmail, a short
-/// walkthrough for iCloud's app-specific password, the server for any other provider — a login
-/// that is tried before anything is kept, and last the label or folder Causabee reads.
-struct MailSetup: View {
-    /// Keeps the password or token: in the Keychain, or — in the Mac's test of the setup — nowhere.
+/// Connecting a mail account, one thing per screen — the same on the iPhone, the iPad and the Mac
+/// (Figma: Proposals › "Mail setup", 2026-10-28). Errors are prevented rather than reported: the
+/// provider is known from the address, a pasted password is checked before it is sent, and the
+/// label Causabee reads is made by Causabee when it is not there. The end is how to give Causabee
+/// its first mail.
+struct MailSetupFlow: View {
+    /// Keeps the password: in the Keychain, or — in the Mac's test of the setup — nowhere.
     var save: (String, MailAccount) throws -> Void = { try Keychain.save($0, for: $1) }
-    /// Whether Google's refresh token is kept: not in that test.
-    var keepsGoogle = true
-    /// Told when an account is connected.
-    var connected: (MailAccount) -> Void = { _ in }
+    /// In the Mac's setup window: no "Later" of its own, the window has one.
+    var embedded = false
+    /// Done with an account, or left for later (nil).
+    var finished: (MailAccount?) -> Void = { _ in }
 
+    enum Page: Hashable {
+        case intro, provider, address, outlook, password, notFound, ownSettings, connecting
+        case label, labelFound, done
+        case notAccepted, twoStep, offline, failed
+    }
+
+    @Environment(\.openURL) private var openURL
+    @State private var path: [Page] = [.intro]
+    @State private var chosen: MailDiscovery.Kind = .other
     @State private var address = ""
-    @State private var found: MailDiscovery.Found?
-    @State private var looked = false
+    @State private var provider: MailProvider?
     @State private var finding = false
     @State private var host = ""
     @State private var port = "993"
     @State private var password = ""
-    @State private var working = false
-    @State private var result: (text: String, good: Bool)?
     @State private var account: MailAccount?
-    @State private var label: (found: Bool, mails: Int)?
-    @State private var secret: String?
-    @State private var google = GoogleSignInFlow()
-    @State private var appPassword = false
+    @State private var secret = ""
+    @State private var steps: [(text: String, state: StatusRow.State)] = []
+    @State private var mails = 0
+    @State private var working = false
+    @State private var failure = ""
+    @State private var usualPasswordSent = false
+    @State private var clipboardHasText = false
+    @FocusState private var typingAddress: Bool
 
     static let labelName = "Causabee"
-    /// "Click" on the Mac, "Tap" where a finger does it.
     #if os(iOS)
-    static let click = "Tap"
+    static let tap = "Tap"
     #else
-    static let click = "Click"
+    static let tap = "Click"
     #endif
 
-    private var kind: MailDiscovery.Kind { found?.kind ?? .other }
+    private var page: Page { path.last ?? .intro }
+    private var name: String { provider?.name ?? (chosen == .gmail ? "Gmail" : chosen == .icloud ? "iCloud Mail" : "your provider") }
+    private var kind: MailProvider.Password { provider?.password ?? (chosen == .gmail ? .google : chosen == .icloud ? .apple : .usual) }
+    private var isGmail: Bool { (provider?.kind ?? chosen) == .gmail }
+    private var check: PasswordCheck { PasswordCheck.of(password, for: kind) }
+
+    private func step(_ page: Page) -> Int? {
+        switch page {
+        case .intro, .outlook: nil
+        case .provider: 1
+        case .address, .notFound, .ownSettings: 2
+        case .password, .connecting, .notAccepted, .twoStep, .offline, .failed: 3
+        case .label, .labelFound, .done: 4
+        }
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if let account {
-                SetupOutcome(text: "Connected: \(account.user)" + (account.usesGoogle ? ", signed in with Google" : ""), good: true)
-                labelStep(account)
-            } else {
-                addressStep
-                if looked { way }
-                if let result { SetupOutcome(text: result.text, good: result.good) }
-            }
-        }
-    }
-
-    // MARK: 1 · The address
-
-    private var addressStep: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SetupNote("Causabee reads your mail the way a mail app does, and only reads: it never sends, deletes, moves or marks mail as read. It reads only the mail you give it a label for.")
-            HStack {
-                TextField("Your mail address", text: $address)
-                    .textContentType(.emailAddress)
-                    #if os(iOS)
-                    .keyboardType(.emailAddress).textInputAutocapitalization(.never)
-                    #endif
-                    .autocorrectionDisabled()
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit(look)
-                    .onChange(of: address) { looked = false; found = nil; result = nil }
-                if !looked {
-                    Button(finding ? "Looking …" : "Continue", action: look)
-                        .disabled(finding || !address.contains("@"))
+        Group {
+            #if os(iOS)
+            if !embedded {
+                // The system's navigation, in Liquid Glass: its back button and the swipe from the
+                // edge, the steps on the bar, and a close button for later.
+                NavigationStack(path: Binding(get: { Array(path.dropFirst()) }, set: { path = [path.first ?? .intro] + $0 })) {
+                    screen(path.first ?? .intro)
+                        .navigationDestination(for: Page.self) { screen($0) }
                 }
+            } else { framed }
+            #else
+            framed
+            #endif
+        }
+        .onAppear(perform: lookAtClipboard)
+        #if os(iOS)
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in lookAtClipboard() }
+        #else
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in lookAtClipboard() }
+        #endif
+    }
+
+    // MARK: The frame
+
+    /// No way back while connecting, nor once it is done.
+    private func backHidden(_ page: Page) -> Bool { [.connecting, .labelFound, .done].contains(page) }
+
+    #if os(iOS)
+    private func screen(_ page: Page) -> some View {
+        ScrollView {
+            content(page).padding(.horizontal, 24).padding(.top, 4).padding(.bottom, 16)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .background(Theme.canvas)
+        .safeAreaBar(edge: .bottom, spacing: 0) { actions(page) }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(backHidden(page))
+        .toolbar {
+            if let step = step(page) { ToolbarItem(placement: .principal) { Progress(step: step) } }
+            if page != .connecting && page != .done {
+                ToolbarItem(placement: .topBarTrailing) { Button(role: .close) { finished(nil) }.accessibilityLabel("Later") }
             }
         }
     }
+    #endif
 
-    private func look() {
+    /// In the Mac's setup window: the steps, the page, the buttons under it.
+    private var framed: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                if path.count > 1, !backHidden(page) { Button("Back") { back() }.buttonStyle(.borderless).foregroundStyle(Theme.gold) }
+                Spacer()
+                if let step = step(page) { Progress(step: step) }
+            }
+            content(page)
+            Spacer(minLength: 0)
+            actions(page)
+        }
+        .padding(4)
+        .animation(.easeInOut(duration: 0.2), value: page)
+    }
+
+    @ViewBuilder private func content(_ page: Page) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            switch page {
+            case .intro: intro
+            case .provider: providers
+            case .address: addressPage
+            case .outlook: outlook
+            case .password: passwordPage
+            case .notFound: notFound
+            case .ownSettings: ownSettings
+            case .connecting: connecting
+            case .label: labelPage
+            case .labelFound: labelFound
+            case .done: done
+            case .notAccepted: notAccepted
+            case .twoStep: twoStep
+            case .offline: offline
+            case .failed: failed
+            }
+        }
+        .frame(maxWidth: 560, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .id(page)
+        .transition(.asymmetric(insertion: .opacity, removal: .identity))
+    }
+
+    @ViewBuilder private func actions(_ page: Page) -> some View {
+        VStack(spacing: 6) {
+            switch page {
+            case .intro: primary("Connect my mail") { go(.provider) }
+            case .connecting: EmptyView()
+            case .address: primary(finding ? "Looking …" : "Continue", enabled: !finding && MailDiscovery.domain(of: address) != nil) { lookUp() }
+            case .outlook: primary("Choose another mail") { path = [.intro, .provider] }
+            case .password:
+                if let catchURL = provider.flatMap(Self.settings) { secondary("Open \(name) settings") { openURL(catchURL) } }
+                if kind == .google || kind == .apple || kind == .appPassword, check != .right {
+                    primary(kind == .apple ? "Open Apple Account" : kind == .google ? "Open Google" : "Open \(name)") { if let page = provider?.passwordPage ?? makePasswordURL { openURL(page) } }
+                    if kind == .google { secondary("Google says app passwords aren’t available") { go(.twoStep) } }
+                } else {
+                    primary("Connect", enabled: check == .right && !working) { connect() }
+                }
+            case .ownSettings: primary("Connect", enabled: !host.isEmpty && !password.isEmpty && !working) { connect() }
+            case .label: primary(working ? "Making it …" : "Make the label", enabled: !working) { makeLabel() }
+            case .labelFound: primary("Continue") { go(.done) }
+            case .done: primary("Done") { finished(account) }
+            case .notAccepted:
+                if kind == .google || kind == .apple || kind == .appPassword { primary("Make a new app password") { if let page = provider?.passwordPage ?? makePasswordURL { openURL(page) }; password = ""; path.removeLast() } }
+                else { primary("Type it again") { password = ""; path.removeLast() } }
+                secondary("Paste again") { password = ""; path.removeLast() }
+            case .twoStep: primary("Turn it on at Google") { openURL(URL(string: "https://myaccount.google.com/signinoptions/twosv")!) }; secondary("Back") { back() }
+            case .offline, .failed: primary("Try again now") { replaceTop(.connecting); connect() }; secondary("Check the settings") { path.removeLast() }
+            default: EmptyView()
+            }
+        }
+        .frame(maxWidth: 560)
+        .padding(.horizontal, embedded ? 4 : 24)
+        .padding(.top, 12)
+        .padding(.bottom, embedded ? 4 : 8)
+    }
+
+    // MARK: 1 · Start
+
+    @ViewBuilder private var intro: some View {
+        BeeMark(size: 30).foregroundStyle(Theme.beeMark)
+        title("Let Causabee read the mail you choose")
+        lead("It sorts that mail into matters, with its tasks and dates. Three promises first:")
+        Promise(icon: "envelope", title: "Only the mail you choose", detail: "Causabee reads mail you give the label “\(Self.labelName)” — nothing else in your mailbox.")
+        Promise(icon: "checkmark.shield", title: "It only reads", detail: "It never sends, deletes or moves mail, and leaves it unread. The one thing it adds is its label, when you say so.")
+        Promise(icon: "key", title: "Your password stays yours", detail: "You make a password just for Causabee. It is kept in your iCloud Keychain and goes only to your mail provider.")
+    }
+
+    @ViewBuilder private var providers: some View {
+        title("Which mail do you use?")
+        lead("Pick the one you want Causabee to read. You can add another later.")
+        ProviderTile(mark: "G", title: "Gmail", detail: "Also Google Workspace at work") { choose(.gmail) }
+        ProviderTile(mark: "iC", title: "iCloud Mail", detail: "@icloud.com, @me.com, @mac.com") { choose(.icloud) }
+        ProviderTile(mark: "@", title: "Another provider", detail: "GMX, Web.de, T-Online, Posteo, IONOS, Yahoo …") { choose(.other) }
+        note("Outlook and Hotmail can’t be read by apps like Causabee yet — Microsoft only lets its own apps in.", quiet: true)
+    }
+
+    // MARK: 2 · The address
+
+    @ViewBuilder private var addressPage: some View {
+        title(chosen == .gmail ? "Your Gmail address" : chosen == .icloud ? "Your iCloud address" : "Your mail address")
+        lead("The one whose mail Causabee should read.")
+        TextField(chosen == .gmail ? "name@gmail.com" : chosen == .icloud ? "name@icloud.com" : "name@example.com", text: $address)
+            .textContentType(.emailAddress)
+            .autocorrectionDisabled()
+            #if os(iOS)
+            .keyboardType(.emailAddress).textInputAutocapitalization(.never)
+            #endif
+            .font(.body)
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(known != nil ? Theme.done : Theme.strongLine, lineWidth: known != nil ? 2 : 1))
+            .focused($typingAddress)
+            .onAppear { typingAddress = true }
+            .onSubmit { if MailDiscovery.domain(of: address) != nil { lookUp() } }
+            .onChange(of: address) { provider = nil }
+        if let known {
+            Label("\(known.name) — Causabee knows how to connect it.", systemImage: "checkmark").font(.footnote).foregroundStyle(Theme.done)
+            if known.password == .google || known.password == .apple {
+                note("Next, \(known.password == .google ? "Google" : "Apple") makes a password just for Causabee. It takes about a minute.")
+            }
+        } else if MailProvider.isOutlook(address) {
+            Label("Outlook can’t be connected yet — continue to see what works instead.", systemImage: "info.circle").font(.footnote).foregroundStyle(.secondary)
+        }
+    }
+
+    /// The provider known from the address alone, before anything is asked.
+    private var known: MailProvider? { MailProvider.by(address: address.trimmingCharacters(in: .whitespaces)) }
+
+    @ViewBuilder private var outlook: some View {
+        title("Outlook can’t be connected yet")
+        lead("Microsoft lets only its own apps read Outlook and Hotmail mail. That isn’t something Causabee can change.")
+        Text("What works instead:").font(.headline)
+        SetupHint(number: 1, text: "Forward the mails you want sorted to a Gmail or iCloud address, and connect that.")
+        SetupHint(number: 2, text: "Or drop a mail’s PDF or a screenshot into Causabee — it sorts those too.")
+    }
+
+    @ViewBuilder private var notFound: some View {
+        title("Which provider is it?")
+        lead("Causabee couldn’t find the settings for \(address) by itself. Pick your provider:")
+        ForEach(MailProvider.others) { other in
+            ProviderTile(mark: String(other.name.prefix(1)), title: other.name, detail: "") { provider = other; host = other.host; port = String(other.port); go(.password) }
+        }
+        Button("Not listed? Enter the settings yourself ›") { go(.ownSettings) }.buttonStyle(.borderless).foregroundStyle(Theme.gold)
+    }
+
+    @ViewBuilder private var ownSettings: some View {
+        title("Your provider’s settings")
+        lead("Your provider’s help pages name them — look for “IMAP”. Causabee connects securely, usually on port 993.")
+        field("Incoming mail server", text: $host, prompt: "imap.example.com")
+        field("Port", text: $port, prompt: "993")
+        SecureField("Password", text: $password).textContentType(.password)
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.strongLine))
+        note("Many providers want a password made for apps rather than your usual one. Their settings say so.", quiet: true)
+    }
+
+    // MARK: 3 · The password
+
+    private var makePasswordURL: URL? { chosen == .gmail ? MailProvider.gmail.passwordPage : chosen == .icloud ? MailProvider.icloud.passwordPage : nil }
+
+    @ViewBuilder private var passwordPage: some View {
+        switch kind {
+        case .google:
+            if check == .right || !password.isEmpty {
+                title("Paste the 16 letters")
+                lead(check == .right ? "That’s it — \(Self.tap.lowercased()) Connect." : clipboardHasText ? "Causabee noticed something on your clipboard — \(Self.tap.lowercased()) Paste to use it." : "Copy the 16 letters at Google, then \(Self.tap.lowercased()) Paste.")
+            } else {
+                title("Make a password for Causabee")
+                lead("Google gives apps like Causabee their own password, so your real one is never shared.")
+                SetupHint(number: 1, text: "\(Self.tap) “Open Google” and sign in if asked.")
+                SetupHint(number: 2, text: "Type “Causabee” as the app name, then \(Self.tap.lowercased()) Create.")
+                SetupHint(number: 3, text: "Google shows 16 letters. Copy them and come back here.")
+                Sketch(url: "myaccount.google.com", heading: "App passwords", fieldLabel: "App name", button: "Create")
+            }
+        case .apple:
+            if check == .right || !password.isEmpty {
+                title("Paste the code")
+                lead(check == .right ? "That’s it — \(Self.tap.lowercased()) Connect." : clipboardHasText ? "Causabee noticed something on your clipboard — \(Self.tap.lowercased()) Paste to use it." : "Copy the code at Apple, then \(Self.tap.lowercased()) Paste.")
+            } else {
+                title("Make a password for Causabee")
+                lead("Apple gives apps like Causabee their own password, so your Apple Account password is never shared.")
+                SetupHint(number: 1, text: "\(Self.tap) “Open Apple Account” and sign in.")
+                SetupHint(number: 2, text: "Choose Sign-In and Security, then App-Specific Passwords.")
+                SetupHint(number: 3, text: "Name it “Causabee”, \(Self.tap.lowercased()) Create, and copy the code.")
+                Sketch(url: "account.apple.com", heading: "App-Specific Passwords", fieldLabel: "Name", button: "Create")
+            }
+        case .appPassword:
+            title("A password for Causabee")
+            lead("\(name) wants a password made for apps. Make one named “Causabee”, copy it, and paste it here.")
+        case .usual:
+            if case .allowIMAP = provider?.catch {
+                title("One setting at \(name) first")
+                lead("\(name) only lets apps read mail once you allow it. It’s a single switch.")
+                SetupHint(number: 1, text: "\(Self.tap) “Open \(name) settings” and sign in.")
+                SetupHint(number: 2, text: "Under POP3 & IMAP, turn on “Allow access”.")
+                SetupHint(number: 3, text: "Come back and type your \(name) password here.")
+            } else if case .mailPassword = provider?.catch {
+                title("Your \(name) mail password")
+                lead("\(name) has a password just for mail, set in its mail settings — not the one you sign in to Telekom with.")
+            } else {
+                title("Your \(name) password")
+                lead("Causabee uses it only to read the mail you give it, and keeps it in your iCloud Keychain.")
+            }
+        }
+        if kind != .google && kind != .apple || check == .right || !password.isEmpty {
+            PasteField(text: $password, kind: kind, check: check, providerName: name)
+        } else {
+            // Already copied: pasted straight from here, the page turns to the field.
+            PasteButton(payloadType: String.self) { pasted in if let first = pasted.first { password = first } }
+                .labelStyle(.titleAndIcon)
+        }
+    }
+
+    // MARK: Connecting
+
+    @ViewBuilder private var connecting: some View {
+        title("Connecting to \(name)")
+        lead("This takes a few seconds.")
+        BeeLoader(size: 28)
+        ForEach(Array(steps.enumerated()), id: \.offset) { _, step in StatusRow(text: step.text, state: step.state) }
+    }
+
+    // MARK: 4 · The label
+
+    @ViewBuilder private var labelPage: some View {
+        title(isGmail ? "One label for Causabee" : "One folder for Causabee")
+        lead(isGmail ? "Causabee reads only mail with the label “\(Self.labelName)”. Shall it make the label in your Gmail now?"
+                     : "Causabee reads only mail in the folder “\(Self.labelName)”. Shall it make the folder in your mailbox now?")
+        MailWithLabel(isGmail: isGmail)
+        note("Making this \(isGmail ? "label" : "folder") is the only change Causabee ever makes to your mailbox. You can rename or delete it there.")
+        if !failure.isEmpty { Label(failure, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.warning).font(.footnote) }
+    }
+
+    @ViewBuilder private var labelFound: some View {
+        title(isGmail ? "Your label is ready" : "Your folder is ready")
+        lead("Causabee found “\(Self.labelName)” in your mailbox, with \(mails) \(mails == 1 ? "mail" : "mails") in it.")
+        StatusRow(text: "Connected to \(account?.user ?? address)", state: .done)
+        StatusRow(text: "Found “\(Self.labelName)” · \(mails) \(mails == 1 ? "mail" : "mails")", state: .done)
+    }
+
+    @ViewBuilder private var done: some View {
+        ZStack { Circle().fill(Theme.bee); Image(systemName: "checkmark").font(.system(size: 30, weight: .semibold)).foregroundStyle(.black) }
+            .frame(width: 72, height: 72)
+        title("You’re all set")
+        lead(mails > 0 ? "Causabee reads the \(mails) \(mails == 1 ? "mail" : "mails") in “\(Self.labelName)” now. More come the same way:" : "Here is how Causabee gets its first mail:")
+        if isGmail {
+            SetupHint(number: 1, text: "In Gmail, open a mail about something you’re dealing with — a move, a claim, a parent’s care.")
+            SetupHint(number: 2, text: "\(Self.tap) the label button, and tick “\(Self.labelName)”.")
+        } else {
+            SetupHint(number: 1, text: "In Mail, open a mail about something you’re dealing with — a move, a claim, a parent’s care.")
+            SetupHint(number: 2, text: "Move it to the folder “\(Self.labelName)”.")
+        }
+        SetupHint(number: 3, text: "Come back here. Causabee reads it and sorts it into a matter.")
+        StatusRow(text: "Connected · \(account?.user ?? address)", state: .done)
+        StatusRow(text: "\(isGmail ? "Label" : "Folder") “\(Self.labelName)” \(mails > 0 ? "found" : "made")", state: .done)
+        StatusRow(text: "Password kept in iCloud Keychain — your other devices have it too", state: .done)
+    }
+
+    // MARK: When something goes wrong
+
+    @ViewBuilder private var notAccepted: some View {
+        title("\(kind == .google ? "Google" : kind == .apple ? "Apple" : name) didn’t take that password")
+        lead("Nothing is wrong with your account. Usually it’s one of these:")
+        switch kind {
+        case .google, .apple, .appPassword:
+            ReasonTile(number: 1, title: "It was your usual password", detail: "Causabee needs the one made for apps", first: usualPasswordSent)
+            ReasonTile(number: 2, title: "Only part of it was copied", detail: "Copy all of it, then paste again", first: false)
+            ReasonTile(number: 3, title: "The app password was deleted", detail: "Make a new one — it takes a minute", first: false)
+        case .usual:
+            ReasonTile(number: 1, title: "A letter was typed wrong", detail: "Capitals count — type it again", first: true)
+            if case .allowIMAP = provider?.catch { ReasonTile(number: 2, title: "Access for apps is still off", detail: "Turn on POP3 & IMAP in \(name)’s settings", first: false) }
+            if case .mailPassword = provider?.catch { ReasonTile(number: 2, title: "It was the login password", detail: "\(name) wants its separate mail password", first: false) }
+        }
+    }
+
+    @ViewBuilder private var twoStep: some View {
+        title("First, one thing at Google")
+        lead("Google only makes app passwords once 2-Step Verification is on. It protects your account too, and takes about two minutes.")
+        SetupHint(number: 1, text: "\(Self.tap) “Turn it on at Google”.")
+        SetupHint(number: 2, text: "Follow Google’s steps — it sends a code to your phone.")
+        SetupHint(number: 3, text: "Come back: Causabee goes on where you left off.")
+        note("Causabee keeps your place. Nothing you did so far is lost.")
+    }
+
+    @ViewBuilder private var offline: some View {
+        title("No connection right now")
+        lead("This device is offline. Nothing was lost — try again as soon as you’re back online.")
+        StatusRow(text: "Can’t reach \(name) — no internet", state: .problem)
+        StatusRow(text: "Connecting, once you’re online", state: .waiting)
+    }
+
+    @ViewBuilder private var failed: some View {
+        title("Couldn’t reach \(name)")
+        lead("The mail server didn’t answer as expected. Check the address and the settings, then try again.")
+        Text(failure).font(.footnote).foregroundStyle(.secondary).textSelection(.enabled)
+    }
+
+    // MARK: Moving on
+
+    private func go(_ next: Page) { path.append(next) }
+    /// In place of the page shown — connecting gives way to what came of it, not to a page more.
+    private func replaceTop(_ next: Page) { if path.count > 1 { path[path.count - 1] = next } else { path.append(next) } }
+    private func back() { if path.count > 1 { path.removeLast() } }
+
+    private func choose(_ kind: MailDiscovery.Kind) {
+        chosen = kind
+        provider = kind == .gmail ? .gmail : kind == .icloud ? .icloud : nil
+        go(.address)
+    }
+
+    /// The provider from the address, its server found by itself; Outlook said at once.
+    private func lookUp() {
         let typed = address.trimmingCharacters(in: .whitespaces)
-        guard typed.contains("@") else { return }
+        if MailProvider.isOutlook(typed) { go(.outlook); return }
+        if let known = MailProvider.by(address: typed) { use(known); return }
         finding = true
         Task {
             let found = await MailDiscovery.find(typed)
-            self.found = found
-            host = found?.host ?? ""
-            port = String(found?.port ?? 993)
             finding = false
-            looked = true
-        }
-    }
-
-    @ViewBuilder private var way: some View {
-        switch kind {
-        case .gmail: gmailWay
-        case .icloud: icloudWay
-        case .other: otherWay
-        }
-    }
-
-    // MARK: 2 · Gmail
-
-    @ViewBuilder private var gmailWay: some View {
-        SettingsPart(found?.source == "MX" ? "Google Workspace" : "Gmail")
-        if GoogleSignIn.isConfigured && !appPassword {
-            Button { signInWithGoogle() } label: {
-                Label("Sign in with Google", systemImage: "person.crop.circle.badge.checkmark")
+            if let found, let named = MailProvider.by(host: found.host) { use(named); return }
+            if let found {
+                provider = MailProvider(id: "found", name: MailDiscovery.domain(of: typed) ?? "your provider", domains: [], host: found.host, port: found.port, kind: found.kind)
+                host = found.host; port = String(found.port); go(.password)
+            } else {
+                go(.notFound)
             }
-            .filledButton()
-            .disabled(working)
-            SetupNote("On Google's own page: you type your Google password there, not in Causabee, and Google shows what Causabee may do.")
-            Button("Use an app password instead") { appPassword = true }.buttonStyle(.borderless).foregroundStyle(.secondary)
-        } else {
-            SetupHint(number: 1, text: "Google lets an app read mail with an app password once 2-Step Verification is on for your account.")
-            Link("Turn on 2-Step Verification →", destination: URL(string: "https://myaccount.google.com/signinoptions/twosv")!).foregroundStyle(Theme.gold)
-            SetupHint(number: 2, text: "Make an app password, and name it “Causabee”.")
-            Link("Open Google's app passwords →", destination: URL(string: "https://myaccount.google.com/apppasswords")!).foregroundStyle(Theme.gold)
-            SetupHint(number: 3, text: "Google shows 16 letters. Copy them, and paste them here.")
-            passwordField("16 letters from Google")
-            logInButton
         }
     }
 
-    private func signInWithGoogle() {
-        working = true
-        result = nil
-        Task {
-            do {
-                let (signedIn, token) = try await google.signIn(hint: address.trimmingCharacters(in: .whitespaces), keep: keepsGoogle)
-                if !keepsGoogle { try save(token, signedIn) }
-                let client = try await IMAPClient.connect(to: signedIn, password: token)
-                label = await Self.count(in: (try? await client.folders()) ?? [], client: client)
-                await client.logout()
-                secret = token
-                account = signedIn
-                connected(signedIn)
-            } catch where GoogleSignInFlow.wasCancelled(error) {
-                result = nil
-            } catch {
-                result = ("Not signed in: \(plainWords(error))", false)
-            }
-            working = false
+    private func use(_ known: MailProvider) {
+        provider = known; chosen = known.kind; host = known.host; port = String(known.port)
+        password = ""
+        go(.password)
+    }
+
+    private static func settings(_ provider: MailProvider) -> URL? {
+        switch provider.catch {
+        case .allowIMAP(let url), .mailPassword(let url): url
+        case nil: nil
         }
     }
 
-    // MARK: 2 · iCloud
-
-    @ViewBuilder private var icloudWay: some View {
-        SettingsPart("iCloud Mail")
-        SetupNote("Apple lets an app read iCloud Mail with an app-specific password — made in a minute, and taken back there whenever you like.")
-        SetupHint(number: 1, text: "Open account.apple.com and sign in with your Apple Account.")
-        Link("Open account.apple.com →", destination: URL(string: "https://account.apple.com/account/manage")!).foregroundStyle(Theme.gold)
-        SetupHint(number: 2, text: "Choose “Sign-In and Security”, then “App-Specific Passwords”.")
-        SetupHint(number: 3, text: "\(Self.click) “+”, name it “Causabee”, and confirm with your password.")
-        SetupHint(number: 4, text: "Apple shows a code like abcd-efgh-ijkl-mnop. Copy it, and paste it here.")
-        passwordField("abcd-efgh-ijkl-mnop")
-        logInButton
-    }
-
-    // MARK: 2 · Any other provider
-
-    @ViewBuilder private var otherWay: some View {
-        SettingsPart("Your mail provider")
-        if let found {
-            SetupNote("Found its mail server" + (found.source == "Thunderbird" ? " in Thunderbird's list of providers" : found.source == "autoconfig" ? " in its own settings" : "") + ". Change it if your provider says otherwise.")
-        } else {
-            SetupNote("Your provider's help pages name its IMAP server — often imap. and the domain. Causabee connects over TLS, usually on port 993.")
-        }
-        HStack {
-            TextField("IMAP server, e.g. imap.example.com", text: $host)
-                .autocorrectionDisabled()
-                #if os(iOS)
-                .textInputAutocapitalization(.never).keyboardType(.URL)
-                #endif
-                .textFieldStyle(.roundedBorder)
-            TextField("Port", text: $port)
-                .frame(width: 64)
-                #if os(iOS)
-                .keyboardType(.numberPad)
-                #endif
-                .textFieldStyle(.roundedBorder)
-        }
-        SetupNote("Many providers want a password made for one app — an app password — rather than your usual one. Their settings say so.")
-        passwordField("Password")
-        logInButton
-    }
-
-    // MARK: The password and the login
-
-    private func passwordField(_ prompt: String) -> some View {
-        HStack {
-            SecureField(prompt, text: $password)
-                .textContentType(.password)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit(logIn)
-            PasteButton(payloadType: String.self) { pasted in
-                if let first = pasted.first { password = first.trimmingCharacters(in: .whitespacesAndNewlines) }
-            }
-            .labelStyle(.iconOnly)
-        }
-    }
-
-    private var logInButton: some View {
-        HStack {
-            Button(working ? "Logging in …" : "Log in", action: logIn)
-                .filledButton()
-                .disabled(working || password.isEmpty || (kind == .other && host.isEmpty))
-            if working { ProgressView().controlSize(.small) }
-        }
-    }
-
-    private func logIn() {
+    /// Logs in, finds the label, keeps the password — each shown as it happens.
+    private func connect() {
         let user = address.trimmingCharacters(in: .whitespaces)
-        let server = host.trimmingCharacters(in: .whitespaces)
-        guard !password.isEmpty, !server.isEmpty else { return }
+        let server = (host.isEmpty ? provider?.host ?? "" : host).trimmingCharacters(in: .whitespaces)
         let trying = MailAccount(user: user, host: server, port: UInt16(port) ?? 993)
-        // Google shows an app password in four groups of four, Apple in four groups with dashes: the
-        // spaces are not part of Google's; Apple's dashes are.
-        let typed = kind == .gmail ? password.replacingOccurrences(of: " ", with: "") : password.trimmingCharacters(in: .whitespaces)
+        let typed = PasswordCheck.cleaned(password, for: kind)
+        usualPasswordSent = false
         working = true
-        result = nil
+        steps = [("Reaching \(name)", .working), ("Signing in as \(user)", .waiting), ("Looking for “\(Self.labelName)”", .waiting)]
+        if page != .connecting { go(.connecting) }
         Task {
             do {
                 let client = try await IMAPClient.connect(to: trying, password: typed)
-                label = await Self.count(in: (try? await client.folders()) ?? [], client: client)
+                steps[0].state = .done; steps[1] = ("Signed in as \(user)", .done); steps[2].state = .working
+                let folders = (try? await client.folders()) ?? []
+                let label = folders.first { $0.name == Self.labelName } ?? folders.first { $0.name.lowercased() == Self.labelName.lowercased() }
+                if let label { mails = (try? await client.examine(label.name))?.exists ?? 0 }
                 await client.logout()
                 try save(typed, trying)
-                password = ""
-                secret = typed
+                steps[2] = (label == nil ? "No “\(Self.labelName)” yet — next" : "Found “\(Self.labelName)”", .done)
                 account = trying
-                connected(trying)
+                secret = typed
+                try? await Task.sleep(for: .milliseconds(500))
+                replaceTop(label == nil ? .label : .labelFound)
             } catch {
-                result = ("Not logged in: " + Self.why(error, kind: kind), false)
+                failure = plainWords(error)
+                replaceTop(Self.kind(of: error, usual: &usualPasswordSent))
             }
             working = false
         }
     }
 
-    /// What to do about a refused login, for the way it was tried.
-    static func why(_ error: Error, kind: MailDiscovery.Kind) -> String {
-        let words = plainWords(error)
-        guard "\(error)".lowercased().contains("auth") || "\(error)".lowercased().contains("login") else { return words }
-        switch kind {
-        case .gmail: return "Google did not accept it. It has to be an app password — 16 letters — not your Google password."
-        case .icloud: return "Apple did not accept it. It has to be an app-specific password, and the address your Apple Account's iCloud Mail uses."
-        case .other: return words
+    /// Which screen says what went wrong.
+    static func kind(of error: Error, usual: inout Bool) -> Page {
+        if let imap = error as? IMAPError, case .refused(let command, let answer) = imap, ["LOGIN", "AUTHENTICATE"].contains(command) {
+            // Gmail says so when the account's own password was sent instead of an app password.
+            usual = answer.lowercased().contains("application-specific") || answer.lowercased().contains("app password")
+            return .notAccepted
         }
+        if isDroppedConnection(error) { return .offline }
+        if let url = error as? URLError, [.notConnectedToInternet, .networkConnectionLost, .dataNotAllowed].contains(url.code) { return .offline }
+        if let nw = error as? NWError, case .dns = nw { return .offline }
+        return .failed
     }
 
-    // MARK: 3 · The label
-
-    @ViewBuilder private func labelStep(_ account: MailAccount) -> some View {
-        let gmail = account.host == "imap.gmail.com"
-        SettingsPart(gmail ? "The label “\(Self.labelName)”" : "The folder “\(Self.labelName)”")
-        SetupNote(gmail
-                  ? "Causabee reads only mail with the label “\(Self.labelName)”. Nothing else in your mailbox is read: you decide what it sees by putting the label on a mail."
-                  : "Causabee reads only mail in the folder “\(Self.labelName)”. Nothing else in your mailbox is read: you decide what it sees by moving a mail there.")
-        if gmail {
-            SetupHint(number: 1, text: "In Gmail, next to Labels, \(Self.click.lowercased()) “+” and make a label called “\(Self.labelName)”.")
-            SetupHint(number: 2, text: "Put it on a few mails of one matter. Replies in the same thread are found by themselves.")
-            SetupNote("Tip: a Gmail filter can put the label on mail from the school, the landlord or the insurer by itself.")
-        } else {
-            SetupHint(number: 1, text: account.host == "imap.mail.me.com"
-                      ? "In Mail, or at icloud.com/mail, make a folder called “\(Self.labelName)”."
-                      : "In your mail app, or on your provider's website, make a folder called “\(Self.labelName)”.")
-            SetupHint(number: 2, text: "Move a few mails of one matter into it.")
-        }
-        if let label {
-            SetupOutcome(text: label.found ? "Found “\(Self.labelName)”, with \(label.mails) \(label.mails == 1 ? "mail" : "mails")."
-                                           : "There is no “\(Self.labelName)” yet. Make it, put a few mails in it, then check again.",
-                         good: label.found)
-        }
-        HStack {
-            Button(working ? "Looking …" : "Check again") { check(account) }.disabled(working || secret == nil)
-            if working { ProgressView().controlSize(.small) }
-        }
-    }
-
-    private func check(_ account: MailAccount) {
-        guard let secret else { return }
+    /// The label or folder, made — the one change Causabee makes to a mailbox, asked first.
+    private func makeLabel() {
+        guard let account else { return }
         working = true
+        failure = ""
         Task {
-            if let client = try? await IMAPClient.connect(to: account, password: secret) {
-                label = await Self.count(in: (try? await client.folders()) ?? [], client: client)
+            do {
+                let client = try await IMAPClient.connect(to: account, password: secret)
+                try await client.create(Self.labelName)
                 await client.logout()
+                mails = 0
+                go(.done)
+            } catch {
+                failure = "It couldn’t be made: \(plainWords(error)) Make it yourself in \(isGmail ? "Gmail" : "your mailbox"), then come back."
             }
             working = false
         }
     }
 
-    static func count(in folders: [MailFolder], client: IMAPClient) async -> (found: Bool, mails: Int) {
-        // Found as "Get new mail" finds it: the exact name first, then in any capitals.
-        guard let folder = folders.first(where: { $0.name == labelName })
-                ?? folders.first(where: { $0.name.lowercased() == labelName.lowercased() }) else { return (false, 0) }
-        let opened = try? await client.examine(folder.name)
-        return (true, opened?.exists ?? 0)
+    private func lookAtClipboard() {
+        #if os(iOS)
+        clipboardHasText = UIPasteboard.general.hasStrings
+        #else
+        clipboardHasText = NSPasteboard.general.availableType(from: [.string]) != nil
+        #endif
+    }
+
+    // MARK: Small parts
+
+    private func title(_ text: String) -> some View {
+        Text(text).font(.custom("Source Serif 4", size: 30 * Theme.textScale, relativeTo: .largeTitle)).fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func lead(_ text: String) -> some View {
+        Text(text).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func note(_ text: String, quiet: Bool = false) -> some View {
+        Text(text).font(quiet ? .footnote : .subheadline).foregroundStyle(quiet ? .secondary : .primary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(quiet ? 0 : 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(quiet ? .clear : Theme.box, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func field(_ label: String, text: Binding<String>, prompt: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label).font(.footnote).foregroundStyle(.secondary)
+            TextField(prompt, text: text)
+                .autocorrectionDisabled()
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                #endif
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.strongLine))
+        }
+    }
+
+    private func primary(_ label: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
+        Button(action: action) { Text(label).frame(maxWidth: .infinity) }
+            .filledButton()
+            .disabled(!enabled)
+    }
+
+    private func secondary(_ label: String, action: @escaping () -> Void) -> some View {
+        Button(label, action: action).buttonStyle(.borderless).foregroundStyle(Theme.gold).padding(.vertical, 6)
+    }
+}
+
+/// The four steps of the setup, the ones done in bee yellow.
+private struct Progress: View {
+    let step: Int
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(1...4, id: \.self) { index in
+                Capsule().fill(index <= step ? Theme.bee : Theme.line).frame(width: 26, height: 4)
+            }
+        }
+        .accessibilityElement()
+        .accessibilityLabel("Step \(step) of 4")
+    }
+}
+
+/// What Causabee will and won't do, said before anything is asked.
+private struct Promise: View {
+    let icon: String
+    let title: String
+    let detail: String
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon).font(.body).frame(width: 36, height: 36).background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline)
+                Text(detail).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+/// A provider to choose, large enough to tap without aiming.
+private struct ProviderTile: View {
+    let mark: String
+    let title: String
+    let detail: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Text(mark).font(.headline).frame(width: 44, height: 44).background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.headline).foregroundStyle(.primary)
+                    if !detail.isEmpty { Text(detail).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading) }
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+            }
+            .padding(16)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// A likely reason a password was refused, the likeliest marked.
+private struct ReasonTile: View {
+    let number: Int
+    let title: String
+    let detail: String
+    let first: Bool
+    var body: some View {
+        HStack(spacing: 14) {
+            Text("\(number)").font(.headline).frame(width: 36, height: 36).background(first ? Theme.beeSoft : Theme.box, in: RoundedRectangle(cornerRadius: 10))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline)
+                Text(detail).font(.subheadline).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(first ? Theme.bee : Theme.line, lineWidth: first ? 2 : 1))
+    }
+}
+
+/// One part of connecting, as it happens.
+struct StatusRow: View {
+    enum State { case done, working, waiting, problem }
+    let text: String
+    let state: State
+    var body: some View {
+        HStack(spacing: 12) {
+            Group {
+                switch state {
+                case .done: Image(systemName: "checkmark").foregroundStyle(Theme.done)
+                case .working: ProgressView().controlSize(.small)
+                case .waiting: Image(systemName: "circle").foregroundStyle(.tertiary)
+                case .problem: Image(systemName: "exclamationmark").foregroundStyle(Theme.warning)
+                }
+            }
+            .frame(width: 24)
+            Text(text).fontWeight(state == .waiting ? .regular : .medium).foregroundStyle(state == .waiting ? .secondary : .primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// The password, pasted rather than typed, and looked at as it comes in.
+private struct PasteField: View {
+    @Binding var text: String
+    let kind: MailProvider.Password
+    let check: PasswordCheck
+    let providerName: String
+
+    private var placeholder: String {
+        switch kind {
+        case .google: "abcd efgh ijkl mnop"
+        case .apple: "abcd-efgh-ijkl-mnop"
+        case .appPassword: "The password for apps"
+        case .usual: "Your \(providerName) password"
+        }
+    }
+
+    private var words: (String, Color) {
+        switch (kind, check) {
+        case (.google, .right): ("✓ 16 letters — that’s the right kind.", Theme.done)
+        case (.apple, .right): ("✓ That’s an app-specific password — the right kind.", Theme.done)
+        case (.google, .partial): ("Only part of it — Google shows 16 letters.", Theme.warning)
+        case (.apple, .partial): ("Only part of it — Apple’s code has four groups of four letters.", Theme.warning)
+        case (.google, .wrongKind): ("That looks like your usual Google password. Causabee needs the 16-letter one made for it.", Theme.warning)
+        case (.apple, .wrongKind): ("That looks like your Apple Account password. Causabee needs the code made for it.", Theme.warning)
+        case (.google, _): ("Google shows 16 letters. Copy them, then paste.", .secondary)
+        case (.apple, _): ("Apple shows a code like abcd-efgh-ijkl-mnop. Copy it, then paste.", .secondary)
+        default: ("Kept in your iCloud Keychain. It goes only to \(providerName).", .secondary)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Group {
+                    if kind == .google || kind == .apple { TextField(placeholder, text: $text) } else { SecureField(placeholder, text: $text) }
+                }
+                .textContentType(.password)
+                .autocorrectionDisabled()
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                #endif
+                .font(.body.monospaced())
+                PasteButton(payloadType: String.self) { pasted in if let first = pasted.first { text = first } }
+                    .labelStyle(.titleOnly)
+                    .buttonBorderShape(.capsule)
+                    .tint(Theme.gold)
+            }
+            .padding(.leading, 16).padding(.trailing, 8).padding(.vertical, 8)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(check == .right && kind != .usual && kind != .appPassword ? Theme.done : check == .wrongKind || check == .partial ? Theme.warning : Theme.strongLine,
+                                                               lineWidth: check == .empty ? 1 : 2))
+            Text(words.0).font(.footnote).foregroundStyle(words.1).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// A sketch of the provider's page — words only, no logos — with the one place to tap ringed in yellow.
+private struct Sketch: View {
+    let url: String
+    let heading: String
+    let fieldLabel: String
+    let button: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(url, systemImage: "lock.fill").font(.caption).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity).padding(.vertical, 5).background(Theme.box, in: RoundedRectangle(cornerRadius: 8))
+            Text(heading).font(.headline)
+            Text(fieldLabel).font(.caption).foregroundStyle(.secondary)
+            Text("Causabee").font(.subheadline).padding(.horizontal, 12).padding(.vertical, 9)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.bee, lineWidth: 2))
+            HStack(spacing: 10) {
+                Text(button).font(.subheadline).padding(.horizontal, 16).padding(.vertical, 8)
+                    .background(Theme.box, in: Capsule()).overlay(Capsule().stroke(Theme.bee, lineWidth: 2))
+                Text("← \(MailSetupFlow.tap.lowercased()) here").font(.caption).foregroundStyle(Theme.gold)
+            }
+        }
+        .padding(16)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A mail as the mailbox lists it, with the label on it: what the label is, shown rather than told.
+private struct MailWithLabel: View {
+    let isGmail: Bool
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Sunrise Care").font(.headline)
+                Spacer()
+                Text("09:12").font(.footnote).foregroundStyle(.tertiary)
+            }
+            Text("Your contract for the care at home").font(.subheadline)
+            Text(isGmail ? MailSetupFlow.labelName : "📁 " + MailSetupFlow.labelName).font(.footnote.weight(.semibold)).foregroundStyle(.black)
+                .padding(.horizontal, 10).padding(.vertical, 4).background(Theme.bee, in: Capsule())
+        }
+        .padding(16)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line))
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -303,27 +785,8 @@ struct SetupHint: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text("\(number)").font(.callout.weight(.semibold))
-                .frame(width: 22, height: 22).background(Theme.bee, in: Circle()).foregroundStyle(.black)
+                .frame(width: 24, height: 24).background(Theme.bee, in: Circle()).foregroundStyle(.black)
             Text(text).fixedSize(horizontal: false, vertical: true)
         }
-    }
-}
-
-/// A line of explanation: grey, and wrapping.
-struct SetupNote: View {
-    let text: String
-    init(_ text: String) { self.text = text }
-    var body: some View { Text(text).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
-}
-
-/// A result: done with a tick, a problem in orange.
-struct SetupOutcome: View {
-    let text: String
-    let good: Bool
-    var body: some View {
-        Label(text, systemImage: good ? "checkmark.circle.fill" : "exclamationmark.triangle")
-            .foregroundStyle(good ? Theme.done : Theme.warning)
-            .fixedSize(horizontal: false, vertical: true)
-            .textSelection(.enabled)
     }
 }

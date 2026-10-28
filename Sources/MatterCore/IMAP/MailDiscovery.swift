@@ -28,7 +28,7 @@ public enum MailDiscovery {
         }
     }
 
-    static func domain(of address: String) -> String? {
+    public static func domain(of address: String) -> String? {
         let parts = address.trimmingCharacters(in: .whitespaces).lowercased().split(separator: "@")
         guard parts.count == 2, parts[1].contains("."), !parts[0].isEmpty else { return nil }
         return String(parts[1])
