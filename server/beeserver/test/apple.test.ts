@@ -66,6 +66,11 @@ describe("a purchase as the App Store signed it", () => {
     await expect(verifyTransaction(`${h}.${forged}.${s}`, der(c.root))).rejects.toThrow(NotApple);
   });
 
+  it("is refused, not a fault, when it cannot even be read", async () => {
+    await expect(verifyTransaction("a.b.c")).rejects.toThrow(NotApple);
+    await expect(verifyTransaction("nonsense")).rejects.toThrow(NotApple);
+  });
+
   it("is refused by default unless Apple signed it", async () => {
     const c = await chain();
     await expect(verifyTransaction(await sign(purchase, c))).rejects.toThrow(NotApple);

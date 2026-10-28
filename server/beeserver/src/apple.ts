@@ -18,7 +18,10 @@ export interface AppleTransaction {
   bundleId: string;
   productId: string;
   purchaseDate: number;
+  originalPurchaseDate?: number;
   expiresDate?: number;
+  /// The app's own id for the Apple Account that bought it, set at each purchase.
+  appAccountToken?: string;
   revocationDate?: number;
   environment: string;
   type: string;
@@ -31,6 +34,21 @@ const text = (b64url: string) => new TextDecoder().decode(bytes(b64url));
 
 /// The transaction, once its signature and its chain hold. `root` is Apple's, but for a test.
 export async function verifyTransaction(jws: string, root = appleRootG3, now = new Date()): Promise<AppleTransaction> {
+  return verifySigned<AppleTransaction>(jws, root, now);
+}
+
+/// Anything the App Store signed — a transaction, a renewal's details, a notification — once its
+/// signature and its chain hold.
+export async function verifySigned<T>(jws: string, root = appleRootG3, now = new Date()): Promise<T> {
+  try {
+    return await verifyOrThrow<T>(jws, root, now);
+  } catch (error) {
+    // Whatever cannot even be read is not Apple's either.
+    throw error instanceof NotApple ? error : new NotApple("unreadable");
+  }
+}
+
+async function verifyOrThrow<T>(jws: string, root: string, now: Date): Promise<T> {
   const parts = jws.split(".");
   if (parts.length !== 3) throw new NotApple("not a JWS");
   const header = JSON.parse(text(parts[0]));
@@ -50,5 +68,5 @@ export async function verifyTransaction(jws: string, root = appleRootG3, now = n
   const key = await leaf.publicKey.export({ name: "ECDSA", namedCurve: "P-256" }, ["verify"]);
   const signed = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, bytes(parts[2]), new TextEncoder().encode(parts[0] + "." + parts[1]));
   if (!signed) throw new NotApple("signature does not hold");
-  return JSON.parse(text(parts[1])) as AppleTransaction;
+  return JSON.parse(text(parts[1])) as T;
 }
