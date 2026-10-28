@@ -3,9 +3,11 @@
 // Causabee's own key, passes the request on unchanged, and writes what it cost into the ledger.
 // The text passing through is disguised already, and none of it is stored or logged.
 //
-// Step 1 of concept/pro-service.md: accounts and tokens are made by hand with the admin secret,
-// for Ralf's own use through a hidden switch. Apple's signed subscriptions come in step 2.
+// Step 2 of concept/pro-service.md: a Pro subscription, as the App Store signed it, is redeemed
+// for a token; every request checks it has not ended; a top-up bought in the app adds to the
+// month, counted once. Accounts made by hand with the admin secret stay, for testing.
 
+import { NotApple, verifyTransaction, type AppleTransaction } from "./apple";
 import { anthropicUsage, costMicros, openAIUsage, prices, type Usage } from "./prices";
 
 export interface Env {
@@ -17,6 +19,18 @@ export interface Env {
 
 /// No answer may run away: the app asks for at most 8,000 tokens today.
 const mostOutputTokens = 16_000;
+
+/// The app, and what it sells.
+const bundleId = "de.chille.causabee";
+const proProducts = ["de.chille.causabee.pro.monthly"];
+/// A top-up adds to the month what it says here, in micro-dollars: the same share for everyone.
+export const topUps: Record<string, number> = { "de.chille.causabee.pro.topup": 1_500_000 };
+/// A subscriber's month: three dollars of the providers' prices.
+const allowanceMicros = 3_000_000;
+/// Pro goes on this long past the end Apple last told: a renewal is seen when the app next opens.
+const graceMs = 3 * 86_400_000;
+/// What a subscriber's requests may use: the plan picks the model, and the month goes furthest with Sol.
+const subscriberModels = ["gpt-6.1-sol"];
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
@@ -31,6 +45,8 @@ export default {
         if (!account) return json({ error: "unauthorized" }, 401);
         return json(await allowance(env, account));
       }
+      if (request.method === "POST" && url.pathname === "/v1/subscribe") return await subscribe(request, env);
+      if (request.method === "POST" && url.pathname === "/v1/topup") return await topUp(request, env);
       if (request.method === "POST" && url.pathname === "/v1/ai/openai") return await relay(request, env, "openai");
       if (request.method === "POST" && url.pathname === "/v1/ai/anthropic") return await relay(request, env, "anthropic");
       if (url.pathname === "/") return new Response("beeserver\n");
@@ -103,10 +119,14 @@ async function allowance(env: Env, account: string) {
 async function relay(request: Request, env: Env, provider: "openai" | "anthropic"): Promise<Response> {
   const account = await who(request, env);
   if (!account) return json({ error: "unauthorized" }, 401);
+  const kind = await env.DB.prepare("SELECT kind, expires FROM accounts WHERE id = ?").bind(account).first<{ kind: string; expires: string | null }>();
+  if (kind?.kind === "apple" && (!kind.expires || Date.parse(kind.expires) + graceMs < Date.now())) {
+    return json({ error: "subscription_ended", ...(await allowance(env, account)) }, 402);
+  }
 
   const body = (await request.json()) as Record<string, any>;
   const model = String(body.model ?? "");
-  if (!prices[model]) return json({ error: "model_not_offered", model }, 400);
+  if (!prices[model] || (kind?.kind === "apple" && !subscriberModels.includes(model))) return json({ error: "model_not_offered", model }, 400);
   if (provider === "openai") body.max_output_tokens = Math.min(Number(body.max_output_tokens ?? mostOutputTokens), mostOutputTokens);
   else body.max_tokens = Math.min(Number(body.max_tokens ?? mostOutputTokens), mostOutputTokens);
 
@@ -162,6 +182,63 @@ async function spend(env: Env, account: string, model: string, usage: Usage, cos
   await env.DB.batch(rows);
 }
 
+// MARK: Bought in the app
+
+async function transaction(request: Request): Promise<AppleTransaction | Response> {
+  const { transaction: jws } = (await request.json()) as { transaction?: string };
+  if (!jws) return json({ error: "no_transaction" }, 400);
+  try {
+    const t = await verifyTransaction(jws);
+    if (t.bundleId !== bundleId) return json({ error: "not_this_app" }, 400);
+    if (t.revocationDate) return json({ error: "refunded" }, 402);
+    return t;
+  } catch (error) {
+    if (error instanceof NotApple) return json({ error: "not_signed_by_apple" }, 400);
+    throw error;
+  }
+}
+
+/// A Pro subscription, signed by the App Store, for a token. The account is the subscription's
+/// first transaction: renewals, and every device of the same Apple Account, land in it. Sent
+/// again with a renewal, it only moves the end; with the account's own token it makes no new one.
+async function subscribe(request: Request, env: Env): Promise<Response> {
+  const known = await who(request, env);
+  const t = await transaction(request);
+  if (t instanceof Response) return t;
+  if (!proProducts.includes(t.productId)) return json({ error: "not_pro" }, 400);
+  if (!t.expiresDate || t.expiresDate + graceMs < Date.now()) return json({ error: "subscription_ended" }, 402);
+  const account = "apple:" + t.originalTransactionId;
+  const now = new Date().toISOString();
+  const expires = new Date(t.expiresDate).toISOString();
+  await env.DB.prepare("INSERT OR IGNORE INTO accounts (id, created, allowance_micros, kind, expires) VALUES (?, ?, ?, 'apple', ?)")
+    .bind(account, now, allowanceMicros, expires).run();
+  // Only ever later: an old transaction sent after a new one does not shorten it.
+  await env.DB.prepare("UPDATE accounts SET expires = ? WHERE id = ? AND (expires IS NULL OR expires < ?)").bind(expires, account, expires).run();
+  const token = known === account ? null : await newToken(env, account, "App Store · " + t.environment);
+  return json({ token, expires, ...(await allowance(env, account)) });
+}
+
+/// A top-up bought in the app: added once, however often it is sent — the purchase is the ledger's ref.
+async function topUp(request: Request, env: Env): Promise<Response> {
+  const account = await who(request, env);
+  if (!account) return json({ error: "unauthorized" }, 401);
+  const t = await transaction(request);
+  if (t instanceof Response) return t;
+  const micros = topUps[t.productId];
+  if (!micros) return json({ error: "not_a_topup" }, 400);
+  await env.DB.prepare("INSERT OR IGNORE INTO ledger (account, period, kind, micros, ref, model, time) VALUES (?, ?, 'topup', ?, ?, ?, ?)")
+    .bind(account, period(), micros, "apple:" + t.transactionId, t.productId, new Date().toISOString()).run();
+  return json(await allowance(env, account));
+}
+
+async function newToken(env: Env, account: string, label: string): Promise<string> {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const token = "bee_" + btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  await env.DB.prepare("INSERT INTO tokens (hash, account, label, created) VALUES (?, ?, ?, ?)").bind(await sha256(token), account, label, new Date().toISOString()).run();
+  // Shown this once: only its hash is kept.
+  return token;
+}
+
 // MARK: By hand, with the admin secret
 
 async function admin(request: Request, url: URL, env: Env): Promise<Response> {
@@ -176,11 +253,7 @@ async function admin(request: Request, url: URL, env: Env): Promise<Response> {
   }
   if (request.method === "POST" && url.pathname === "/admin/tokens") {
     const { account, label } = (await request.json()) as { account: string; label: string };
-    const bytes = crypto.getRandomValues(new Uint8Array(32));
-    const token = "bee_" + btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-    await env.DB.prepare("INSERT INTO tokens (hash, account, label, created) VALUES (?, ?, ?, ?)").bind(await sha256(token), account, label, now).run();
-    // Shown this once: only its hash is kept.
-    return json({ token, account, label });
+    return json({ token: await newToken(env, account, label), account, label });
   }
   if (request.method === "POST" && url.pathname === "/admin/grant") {
     const { account, micros, ref } = (await request.json()) as { account: string; micros: number; ref: string };

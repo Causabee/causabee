@@ -23,6 +23,8 @@ final class BeeServer {
     /// This month's Pro: the share used 0…1, and the day it starts anew — as the server said last.
     var monthUsed: Double?
     var renewsOn: String?
+    /// A top-up is left after the month.
+    var extra = false
     var problem: String?
 
     var token: String? { Self.storedToken }
@@ -33,12 +35,7 @@ final class BeeServer {
     /// A token is kept: Pro goes through the beeserver, and the bolt turns it on and off.
     nonisolated static var isSetUp: Bool { relay != nil }
 
-    nonisolated static var relay: URL? {
-        guard storedToken != nil else { return nil }
-        let typed = (UserDefaults.standard.string(forKey: addressKey) ?? "").trimmingCharacters(in: .whitespaces)
-        guard let url = URL(string: typed.isEmpty ? defaultAddress : typed), url.scheme == "https" else { return nil }
-        return url
-    }
+    nonisolated static var relay: URL? { storedToken == nil ? nil : base }
 
     /// The client for a model through the beeserver; nil when none is set up, or for Mistral,
     /// which Pro does not offer. Read from what is stored, so it can be asked from anywhere.
@@ -54,13 +51,72 @@ final class BeeServer {
             Task { @MainActor in
                 BeeServer.shared.monthUsed = used
                 if !renews.isEmpty { BeeServer.shared.renewsOn = renews }
-                // Used up: the bolt goes off by itself, and Apple's model on the device takes over.
-                if used >= 1, UserDefaults.standard.bool(forKey: AutoMode.key) {
-                    UserDefaults.standard.set(false, forKey: AutoMode.key)
-                    BeeServer.shared.problem = "This month's Pro is used up, so Pro is off until it starts anew. Apple's model on this device reads new mail meanwhile."
-                }
             }
         }
+        // Used up, or ended: the bolt goes off by itself, and Apple's model on the device takes over.
+        Claude.proStopped = { why in
+            Task { @MainActor in
+                UserDefaults.standard.set(false, forKey: AutoMode.key)
+                if why == "allowance_used" { BeeServer.shared.monthUsed = 1 }
+                BeeServer.shared.problem = why == "subscription_ended"
+                    ? "Causabee Pro has ended, so Pro is off. Apple's model on this device reads new mail."
+                    : "This month's Pro is used up, so Pro is off until it starts anew — or until a top-up. Apple's model on this device reads new mail meanwhile."
+            }
+        }
+    }
+
+    /// Where a purchase is redeemed: the address typed for testing, or the beeserver's own.
+    nonisolated static var base: URL? {
+        let typed = (UserDefaults.standard.string(forKey: addressKey) ?? "").trimmingCharacters(in: .whitespaces)
+        return URL(string: typed.isEmpty ? defaultAddress : typed).flatMap { $0.scheme == "https" ? $0 : nil }
+    }
+
+    /// The Pro subscription as the App Store signed it, for this Apple Account's token — kept in
+    /// iCloud Keychain, so the Mac and the other devices have it too. Sent again with each renewal:
+    /// then it only moves the end. Returns whether the server took it.
+    @discardableResult
+    func subscribe(transaction jws: String) async -> Bool {
+        guard let base = Self.base else { return false }
+        var request = URLRequest(url: base.appendingPathComponent("v1/subscribe"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization") }
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["transaction": jws])
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200,
+                  let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                problem = "Causabee Pro could not be set up just now. It is tried again when Causabee next opens."
+                return false
+            }
+            if let new = object["token"] as? String, new.hasPrefix("bee_") { try APIKeys.save(new, as: Self.tokenName) }
+            monthUsed = object["monthUsed"] as? Double
+            renewsOn = object["renewsOn"] as? String
+            extra = object["extra"] as? Bool ?? false
+            problem = nil
+            Money.hidden = true
+            return true
+        } catch {
+            problem = plainWords(error)
+            return false
+        }
+    }
+
+    /// A top-up as the App Store signed it: added to this month once, however often it is sent.
+    func topUp(transaction jws: String) async -> Bool {
+        guard let relay, let token else { return false }
+        var request = URLRequest(url: relay.appendingPathComponent("v1/topup"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["transaction": jws])
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
+        monthUsed = object["monthUsed"] as? Double
+        extra = object["extra"] as? Bool ?? false
+        problem = nil
+        return true
     }
 
     /// Asks the server how much of this month is used.
@@ -77,6 +133,7 @@ final class BeeServer {
             }
             monthUsed = object["monthUsed"] as? Double
             renewsOn = object["renewsOn"] as? String
+            extra = object["extra"] as? Bool ?? false
             problem = nil
         } catch {
             problem = plainWords(error)
@@ -120,7 +177,7 @@ struct ProBar: View {
                 .accessibilityElement()
                 .accessibilityLabel("This month's Pro: \(Int((left * 100).rounded())) percent left")
                 if left <= 0 {
-                    Text("Used for this month. Causabee goes on with Apple's models until it starts anew.")
+                    Text(server.extra ? "This month's share is used; your top-up carries on." : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.")
                         .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -136,15 +193,10 @@ struct BeeServerSettings: View {
     @State private var server = BeeServer.shared
     @State private var pastedToken = ""
 
-    static let revealedKey = "beeserver.revealed"
-
-    static var shows: Bool {
-        UserDefaults.standard.bool(forKey: revealedKey) || BeeServer.shared.token != nil || CommandLine.arguments.contains("--beeserver")
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("The bolt turns Pro on and off. On: GPT-6.1 Sol reads new mail as it comes and answers, sent pseudonymised. Off: Apple's model on this device reads new mail — nothing leaves it.")
+            Text(server.token == nil ? "Pro's token comes with the subscription. Here a server for testing, and a token made by hand."
+                 : "A token is kept: Pro goes through this server. It came with the subscription, or was pasted here.")
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             TextField(BeeServer.defaultAddress, text: $server.address)
                 .textFieldStyle(.roundedBorder)
@@ -166,7 +218,6 @@ struct BeeServerSettings: View {
                 Text("The address must start with https://").font(.footnote).foregroundStyle(Theme.warning)
             }
             if let problem = server.problem { Text(problem).font(.footnote).foregroundStyle(Theme.warning) }
-            ProBar()
         }
         .task { await server.refresh() }
     }

@@ -2,10 +2,12 @@
 -- mail text or name is ever stored: only who asked, which model, how many tokens, what it cost.
 
 CREATE TABLE IF NOT EXISTS accounts (
-  id TEXT PRIMARY KEY,                 -- step 1: a name given by hand; later the subscription's originalTransactionId
+  id TEXT PRIMARY KEY,                 -- a name given by hand, or "apple:" and the subscription's originalTransactionId
   created TEXT NOT NULL,
   allowance_micros INTEGER NOT NULL,   -- the month's allowance in micro-dollars: 3_000_000 is $3
-  blocked INTEGER NOT NULL DEFAULT 0
+  blocked INTEGER NOT NULL DEFAULT 0,
+  kind TEXT NOT NULL DEFAULT 'hand',   -- hand | apple
+  expires TEXT                         -- apple: when the subscription ends, as the App Store last said
 );
 
 CREATE TABLE IF NOT EXISTS tokens (
@@ -21,7 +23,7 @@ CREATE TABLE IF NOT EXISTS ledger (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   account TEXT NOT NULL REFERENCES accounts(id),
   period TEXT NOT NULL,                -- the month it counts in, "2026-10"
-  kind TEXT NOT NULL,                  -- spend | topup | grant
+  kind TEXT NOT NULL,                  -- spend | spend_extra | topup | grant
   micros INTEGER NOT NULL,             -- spend positive; a topup or grant adds to what may be spent
   ref TEXT UNIQUE,                     -- the request's id, or the purchase's: never counted twice
   model TEXT,
