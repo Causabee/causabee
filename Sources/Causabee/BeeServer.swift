@@ -23,8 +23,25 @@ final class BeeServer {
     /// This month's Pro: the share used 0…1, and the day it starts anew — as the server said last.
     var monthUsed: Double?
     var renewsOn: String?
-    /// A top-up is left after the month.
+    /// A top-up is left after the month, and how much, in Pro months.
     var extra = false
+    var extraShare = 0.0
+    /// Whose the account is: a subscriber's, one of top-ups only, or one made by hand.
+    var kind = "hand"
+
+    /// A top-up is left: Pro's bolt works with it, Pro bought or not. As the server said last.
+    nonisolated static var hasCredit: Bool { storedToken != nil && UserDefaults.standard.bool(forKey: creditKey) }
+    nonisolated static let creditKey = "beeserver.credit"
+
+    /// What the server says of an account, after any answer of its own.
+    private func take(_ object: [String: Any]) {
+        if let used = object["monthUsed"] as? Double { monthUsed = used }
+        if let renews = object["renewsOn"] as? String { renewsOn = renews }
+        extra = object["extra"] as? Bool ?? false
+        extraShare = object["extraShare"] as? Double ?? 0
+        kind = object["kind"] as? String ?? kind
+        UserDefaults.standard.set(extra, forKey: Self.creditKey)
+    }
     var problem: String?
 
     var token: String? { Self.storedToken }
@@ -90,9 +107,7 @@ final class BeeServer {
                 return false
             }
             if let new = object["token"] as? String, new.hasPrefix("bee_") { try APIKeys.save(new, as: Self.tokenName) }
-            monthUsed = object["monthUsed"] as? Double
-            renewsOn = object["renewsOn"] as? String
-            extra = object["extra"] as? Bool ?? false
+            take(object)
             problem = nil
             Money.hidden = true
             return true
@@ -102,19 +117,23 @@ final class BeeServer {
         }
     }
 
-    /// A top-up as the App Store signed it: added to this month once, however often it is sent.
+    /// A top-up as the App Store signed it: added once, however often it is sent. Bought without
+    /// Pro, it opens an account of its own, and its token comes back with the answer.
     func topUp(transaction jws: String) async -> Bool {
-        guard let relay, let token else { return false }
-        var request = URLRequest(url: relay.appendingPathComponent("v1/topup"))
+        guard let base = Self.base else { return false }
+        var request = URLRequest(url: base.appendingPathComponent("v1/topup"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization") }
         request.httpBody = try? JSONSerialization.data(withJSONObject: ["transaction": jws])
         guard let (data, response) = try? await URLSession.shared.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
-        monthUsed = object["monthUsed"] as? Double
-        extra = object["extra"] as? Bool ?? false
+        if let new = object["token"] as? String, new.hasPrefix("bee_") {
+            try? APIKeys.save(new, as: Self.tokenName)
+            Money.hidden = true
+        }
+        take(object)
         problem = nil
         return true
     }
@@ -131,9 +150,7 @@ final class BeeServer {
                 problem = "The beeserver did not answer as it should."
                 return
             }
-            monthUsed = object["monthUsed"] as? Double
-            renewsOn = object["renewsOn"] as? String
-            extra = object["extra"] as? Bool ?? false
+            take(object)
             problem = nil
         } catch {
             problem = plainWords(error)
@@ -154,32 +171,43 @@ struct ProBar: View {
     var body: some View {
         Group { bar }
             // Shown before any answer came this time: asked of the server once.
-            .task { if BeeServer.isSetUp, server.monthUsed == nil { await server.refresh() } }
+            .task { if BeeServer.isSetUp { await server.refresh() } }
     }
 
     @ViewBuilder private var bar: some View {
-        if BeeServer.isSetUp, let used = server.monthUsed {
+        if BeeServer.isSetUp, server.kind == "credit" {
+            // Top-ups without Pro: what is left of them, in Pro months.
+            meter("Your top-ups", left: min(1, server.extraShare),
+                  words: "\(Int((server.extraShare * 100).rounded())) % of a Pro month left",
+                  note: server.extraShare <= 0 ? "Used. Apple's model on this device reads new mail — or buy another top-up." : nil)
+        } else if BeeServer.isSetUp, let used = server.monthUsed {
             let left = max(0, 1 - used)
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text("This month's Pro").font(.subheadline.weight(.medium))
-                    Spacer(minLength: 0)
-                    Text("\(Int((left * 100).rounded())) % left" + (server.renewsWords.map { " · \($0)" } ?? ""))
-                        .font(.footnote).foregroundStyle(.secondary)
+            meter("This month's Pro", left: left,
+                  words: "\(Int((left * 100).rounded())) % left" + (server.renewsWords.map { " · \($0)" } ?? "")
+                    + (server.extraShare > 0 ? " · top-ups \(Int((server.extraShare * 100).rounded())) %" : ""),
+                  note: left > 0 ? nil : server.extra ? "This month's share is used; your top-up carries on."
+                    : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.")
+        }
+    }
+
+    private func meter(_ title: String, left: Double, words: String, note: String?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text(title).font(.subheadline.weight(.medium))
+                Spacer(minLength: 0)
+                Text(words).font(.footnote).foregroundStyle(.secondary)
+            }
+            GeometryReader { box in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.box)
+                    Capsule().fill(left > 0.2 ? Theme.bee : Theme.warning).frame(width: max(6, box.size.width * left))
                 }
-                GeometryReader { box in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Theme.box)
-                        Capsule().fill(left > 0.2 ? Theme.bee : Theme.warning).frame(width: max(6, box.size.width * left))
-                    }
-                }
-                .frame(height: 8)
-                .accessibilityElement()
-                .accessibilityLabel("This month's Pro: \(Int((left * 100).rounded())) percent left")
-                if left <= 0 {
-                    Text(server.extra ? "This month's share is used; your top-up carries on." : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.")
-                        .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                }
+            }
+            .frame(height: 8)
+            .accessibilityElement()
+            .accessibilityLabel("\(title): \(Int((left * 100).rounded())) percent left")
+            if let note {
+                Text(note).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
     }

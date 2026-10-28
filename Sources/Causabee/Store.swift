@@ -32,6 +32,30 @@ final class Store {
     private(set) var buying: String?
     var problem: String?
 
+    /// What happens at the end of the subscription's period, as the App Store says it.
+    enum Renewal: Equatable {
+        case renews(Date)
+        case ends(Date)
+        case changes(to: Plan, on: Date)
+        /// The card could not be charged: Apple keeps trying, the plan goes on until then.
+        case billingProblem(until: Date?)
+    }
+    private(set) var renewal: Renewal?
+
+    /// The app's own id for this Apple Account, sent with every purchase so the beeserver puts them
+    /// into one account — Plus's top-ups and a later Pro too. Kept in iCloud Keychain: the same on
+    /// every device.
+    static var accountID: UUID {
+        if let kept = APIKeys.get("CAUSABEE_ACCOUNT_ID"), let id = UUID(uuidString: kept) { return id }
+        let id = UUID()
+        try? APIKeys.save(id.uuidString, as: "CAUSABEE_ACCOUNT_ID")
+        return id
+    }
+
+    static func plan(of productID: String) -> Plan {
+        proIDs.contains(productID) ? .pro : mattersIDs.contains(productID) ? .matters : .free
+    }
+
     /// A purchase seen through iCloud counts a week past its end: the device that renews it may
     /// not have been opened since.
     private static let grace: TimeInterval = 7 * 86_400
@@ -83,7 +107,7 @@ final class Store {
         var signed: String?
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result, transaction.revocationDate == nil else { continue }
-            let plan: Plan = Self.proIDs.contains(transaction.productID) ? .pro : Self.mattersIDs.contains(transaction.productID) ? .matters : .free
+            let plan = Self.plan(of: transaction.productID)
             if plan > best.plan || (plan == best.plan && (transaction.expirationDate ?? .distantFuture) > (best.until ?? .distantPast)) {
                 best = (plan, transaction.expirationDate)
                 signed = plan == .pro ? result.jwsRepresentation : nil
@@ -92,6 +116,7 @@ final class Store {
         bought = best
         if best.plan != .free { share(best) }
         remember()
+        await readRenewal()
         // Pro bought or renewed here: the beeserver is told, once for each end date.
         if best.plan == .pro, let signed, let until = best.until, !DemoData.isRequested {
             let told = UserDefaults.standard.object(forKey: Self.redeemedKey) as? Date ?? .distantPast
@@ -101,12 +126,37 @@ final class Store {
         }
     }
 
+    /// Renews, ends, changes to another plan, or waits for the card — for the subscription this
+    /// Apple Account has in Causabee's group.
+    private func readRenewal() async {
+        guard let product = products.first(where: { Self.plan(of: $0.id) != .free }),
+              let statuses = try? await product.subscription?.status else { renewal = nil; return }
+        for status in statuses {
+            guard case .verified(let info) = status.renewalInfo, case .verified(let transaction) = status.transaction else { continue }
+            let end = transaction.expirationDate ?? Date()
+            switch status.state {
+            case .inGracePeriod, .inBillingRetryPeriod:
+                renewal = .billingProblem(until: info.gracePeriodExpirationDate)
+                return
+            case .subscribed:
+                if !info.willAutoRenew { renewal = .ends(end) }
+                else if let next = info.autoRenewPreference, next != transaction.productID, Self.plan(of: next) != Self.plan(of: transaction.productID) {
+                    renewal = .changes(to: Self.plan(of: next), on: end)
+                } else { renewal = .renews(end) }
+                return
+            default:
+                continue
+            }
+        }
+        renewal = nil
+    }
+
     func buy(_ product: Product) async {
         buying = product.id
         problem = nil
         defer { buying = nil }
         do {
-            switch try await product.purchase() {
+            switch try await product.purchase(options: [.appAccountToken(Self.accountID)]) {
             case .success(let result):
                 guard case .verified(let transaction) = result else {
                     problem = "The App Store could not confirm the purchase. Nothing was charged that is not confirmed."
@@ -156,9 +206,9 @@ final class Store {
         return false
     }
 
-    /// Pro may be turned on — or the plan sheet.
+    /// Pro may be turned on — with Pro, or with a top-up left — or the plan sheet.
     func mayTurnOnPro() -> Bool {
-        if plan == .pro { return true }
+        if plan == .pro || BeeServer.hasCredit { return true }
         asks = .pro
         return false
     }

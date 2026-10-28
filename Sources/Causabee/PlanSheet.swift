@@ -41,12 +41,12 @@ struct PlanSheet: View {
                 plan("Causabee Pro", "The bigger AI, up to a monthly limit · every matter · names always disguised",
                      price: nil, current: store.plan == .pro, products: store.products.filter { Store.proIDs.contains($0.id) })
                 ProBar()
-                // More Pro for this month, once Pro is yours: as often as needed, kept until used.
-                if store.plan == .pro, let topUp = store.products.first(where: { Store.topUpIDs.contains($0.id) }) {
+                // More Pro, with any plan: as often as needed, kept until used — Pro's bolt works with it.
+                if let topUp = store.products.first(where: { Store.topUpIDs.contains($0.id) }) {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("More Pro this month").font(.subheadline.weight(.medium))
-                            Text("A third of a month more, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
+                            Text(store.plan == .pro ? "More Pro this month" : "Pro, now and then").font(.subheadline.weight(.medium))
+                            Text("A third of a Pro month, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
                         Button { Task { await store.buy(topUp) } } label: {
@@ -55,6 +55,10 @@ struct PlanSheet: View {
                         .filledButton()
                         .disabled(store.buying != nil)
                     }
+                }
+                if store.plan != .free, !store.products.isEmpty {
+                    Text("Changing between Plus and Pro: up to Pro at once, the rest of Plus paid back by Apple; down to Plus at the next renewal. Cancelling is in your Apple Account.")
+                        .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if store.products.isEmpty {
                     Text(Self.noStoreWords).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -124,12 +128,13 @@ struct PlanSheet: View {
     }
 }
 
-/// Settings' first part, the same on every device: which plan this is and until when, Pro's bolt
-/// in words with this month's bar, and changing or restoring the plan.
+/// Settings' first part, the same on every device: which plan this is and what happens at its
+/// end, Pro's bolt in words with the bar, a top-up, and changing, managing or restoring the plan.
 struct PlanSettings: View {
     @State private var store = Store.shared
     @State private var server = BeeServer.shared
     @State private var choosing = false
+    @State private var managing = false
     @AppStorage(AutoMode.key) private var auto = false
 
     private var name: String {
@@ -148,46 +153,78 @@ struct PlanSettings: View {
         }
     }
 
-    private var until: String? {
-        let end = [store.bought.until, store.shared.until].compactMap { $0 }.max()
-        return end.map { "until " + $0.formatted(.dateTime.day().month(.wide)) }
+    private static func day(_ date: Date) -> String { date.formatted(.dateTime.day().month(.wide)) }
+
+    /// Renews, ends or changes — as this device's App Store says; on the Mac, until when.
+    private var end: String {
+        switch store.renewal {
+        case .renews(let date): return "renews " + Self.day(date)
+        case .ends(let date): return "ends " + Self.day(date)
+        case .changes(let plan, let date): return (plan == .pro ? "Pro" : "Plus") + " from " + Self.day(date)
+        case .billingProblem: return "payment problem"
+        case nil:
+            if store.plan == .free { return "Free" }
+            return [store.bought.until, store.shared.until].compactMap { $0 }.max().map { "until " + Self.day($0) } ?? ""
+        }
     }
 
+    /// Pro's bolt: with Pro, or with a top-up left.
+    private var canUsePro: Bool { store.plan == .pro || BeeServer.hasCredit }
+
     private var pro: Binding<Bool> {
-        Binding(get: { auto && store.plan == .pro },
+        Binding(get: { auto && canUsePro },
                 set: { on in if !on { auto = false } else if store.mayTurnOnPro() { auto = true } })
     }
 
     var body: some View {
-        LabeledContent(name, value: store.plan == .free ? "Free" : until ?? "")
+        LabeledContent(name, value: end)
         Text(holds).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-        if store.plan == .pro {
+        if case .billingProblem(let until) = store.renewal {
+            Text("Apple could not charge your payment method. " + (until.map { "The plan goes on until \(Self.day($0)); " } ?? "")
+                 + "update it in your Apple Account, and it renews as before.")
+                .font(.footnote).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
+        }
+        if canUsePro {
             Toggle("Pro on (the bolt)", isOn: pro)
             Text(pro.wrappedValue ? "GPT-6.1 Sol reads new mail as it comes and answers your questions — names disguised first. What is taken in, and into which matter, you still decide."
                  : "Off: Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it.")
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            ProBar()
-            if let topUp = store.products.first(where: { Store.topUpIDs.contains($0.id) }) {
-                Button {
-                    Task { await store.buy(topUp) }
-                } label: {
-                    if store.buying == topUp.id { BeeLoader(size: 14) } else { Text("More Pro this month · \(topUp.displayPrice)") }
-                }
-                .buttonStyle(.borderless)
-                .disabled(store.buying != nil)
-                Text("A third of a month more, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
+        }
+        if BeeServer.isSetUp { ProBar() }
+        if let topUp = store.products.first(where: { Store.topUpIDs.contains($0.id) }) {
+            Button {
+                Task { await store.buy(topUp) }
+            } label: {
+                if store.buying == topUp.id { BeeLoader(size: 14) }
+                else { Text((store.plan == .pro ? "More Pro this month · " : "Pro, now and then · ") + topUp.displayPrice) }
             }
+            .buttonStyle(.borderless)
+            .disabled(store.buying != nil)
+            Text("A third of a Pro month, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
         }
         if let problem = server.problem ?? store.problem {
             Text(problem).font(.footnote).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
         }
+        #if os(macOS)
+        if store.plan != .free {
+            Text("Change or cancel it on your iPhone or iPad: this Mac follows through iCloud.")
+                .font(.footnote).foregroundStyle(.secondary)
+        }
+        #endif
         HStack(spacing: 16) {
             Button(store.plan == .free ? "See the plans …" : "Change plan …") { choosing = true }
+            #if os(iOS)
+            if store.plan != .free, store.bought.plan != .free { Button("Manage subscription") { managing = true } }
+            #endif
             Button("Restore Purchases") { Task { await store.restore() } }
         }
         // Two buttons on one row of a form: each its own, not the whole row.
         .buttonStyle(.borderless)
         .sheet(isPresented: $choosing) { PlanSheet(reason: .choose) }
+        #if os(iOS)
+        .manageSubscriptionsSheet(isPresented: $managing)
+        .onChange(of: managing) { if !managing { Task { await store.refresh() } } }
+        #endif
     }
 }
 
