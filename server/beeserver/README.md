@@ -16,7 +16,7 @@ subscriptions, the notifications and the Mac's device grant come next.
 | `POST /v1/ai/openai` | OpenAI's Responses API body, as the app sends it today |
 | `POST /v1/ai/anthropic` | Anthropic's Messages API body; `anthropic-version` and `anthropic-beta` passed on |
 | `GET /v1/allowance` | `{ monthUsed: 0…1, renewsOn, extra }` — a share, never money |
-| `POST /admin/accounts` | `{ id, allowanceMicros }` — $3 is `3000000` |
+| `POST /admin/accounts` | `{ id, allowanceMicros }` — $4.50 is `4500000` |
 | `POST /admin/tokens` | `{ account, label }` — the token is shown this once |
 | `POST /admin/grant` | `{ account, micros, ref }` — a top-up by hand |
 | `GET /admin/ledger?account=&period=2026-10` | a month by model, to set beside the provider's invoice |

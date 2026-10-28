@@ -46,7 +46,7 @@ struct PlanSheet: View {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("More Pro this month").font(.subheadline.weight(.medium))
-                            Text("Half a month more, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
+                            Text("A third of a month more, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
                         Button { Task { await store.buy(topUp) } } label: {
@@ -175,7 +175,7 @@ struct PlanSettings: View {
                 }
                 .buttonStyle(.borderless)
                 .disabled(store.buying != nil)
-                Text("Half a month more, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
+                Text("A third of a month more, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
             }
         }
         if let problem = server.problem ?? store.problem {

@@ -23,10 +23,11 @@ const mostOutputTokens = 16_000;
 /// The app, and what it sells.
 const bundleId = "de.chille.causabee";
 const proProducts = ["de.chille.causabee.pro.monthly"];
-/// A top-up adds to the month what it says here, in micro-dollars: the same share for everyone.
+/// A top-up adds what it says here, in micro-dollars — a third of a Pro month — kept until used.
 export const topUps: Record<string, number> = { "de.chille.causabee.pro.topup": 1_500_000 };
-/// A subscriber's month: three dollars of the providers' prices.
-const allowanceMicros = 3_000_000;
+/// A subscriber's month: four dollars fifty of the providers' prices. Per dollar of AI it is
+/// better than a top-up (€7.99 for $4.50 against €2.99 for $1.50), so Pro stays the plan to have.
+const allowanceMicros = 4_500_000;
 /// Pro goes on this long past the end Apple last told: a renewal is seen when the app next opens.
 const graceMs = 3 * 86_400_000;
 /// What a subscriber's requests may use: the plan picks the model, and the month goes furthest with Sol.
@@ -246,7 +247,7 @@ async function admin(request: Request, url: URL, env: Env): Promise<Response> {
   const now = new Date().toISOString();
 
   if (request.method === "POST" && url.pathname === "/admin/accounts") {
-    const { id, allowanceMicros = 3_000_000 } = (await request.json()) as { id: string; allowanceMicros?: number };
+    const { id, allowanceMicros = 4_500_000 } = (await request.json()) as { id: string; allowanceMicros?: number };
     await env.DB.prepare("INSERT OR IGNORE INTO accounts (id, created, allowance_micros) VALUES (?, ?, ?)").bind(id, now, allowanceMicros).run();
     await env.DB.prepare("UPDATE accounts SET allowance_micros = ? WHERE id = ?").bind(allowanceMicros, id).run();
     return json({ id, allowanceMicros });
