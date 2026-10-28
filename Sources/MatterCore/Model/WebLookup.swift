@@ -113,7 +113,7 @@ public enum WebLookup {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
             let (data, response) = try await Claude.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            Claude.noteAllowance(response)
+            Claude.noteAllowance(response, body: data)
             guard status == 200 else { throw Claude.Failure.http(status: status, body: String(decoding: data, as: UTF8.self)) }
             guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw Claude.Failure.unreadable("not a JSON object") }
             let usage = object["usage"] as? [String: Any] ?? [:]
@@ -145,7 +145,7 @@ public enum WebLookup {
         ] as [String: Any])
         let (data, response) = try await Claude.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        Claude.noteAllowance(response)
+        Claude.noteAllowance(response, body: data)
         guard status == 200 else { throw Claude.Failure.http(status: status, body: String(decoding: data, as: UTF8.self)) }
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw Claude.Failure.unreadable("not a JSON object") }
         let output = object["output"] as? [[String: Any]] ?? []

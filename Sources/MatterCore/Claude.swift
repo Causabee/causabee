@@ -171,11 +171,16 @@ public struct Claude: Sendable {
     /// What the beeserver says of this month's Pro after each answer: the share used, the day it
     /// renews. Set by the app, which shows it as a bar.
     nonisolated(unsafe) public static var allowanceSeen: (@Sendable (_ used: Double, _ renewsOn: String) -> Void)?
+    /// The beeserver stopped answering for Pro: `allowance_used` — the month and every top-up — or
+    /// `subscription_ended`.
+    nonisolated(unsafe) public static var proStopped: (@Sendable (_ why: String) -> Void)?
 
-    static func noteAllowance(_ response: URLResponse) {
+    static func noteAllowance(_ response: URLResponse, body: Data = Data()) {
         guard let http = response as? HTTPURLResponse else { return }
-        // The beeserver's "used up": the month and every top-up.
-        if http.statusCode == 402, http.url?.path.contains("/v1/ai/") == true { allowanceSeen?(1, ""); return }
+        if http.statusCode == 402, http.url?.path.contains("/v1/ai/") == true {
+            proStopped?(String(decoding: body, as: UTF8.self).contains("subscription_ended") ? "subscription_ended" : "allowance_used")
+            return
+        }
         guard let used = http.value(forHTTPHeaderField: "causabee-month-used").flatMap(Double.init) else { return }
         allowanceSeen?(used, http.value(forHTTPHeaderField: "causabee-renews-on") ?? "")
     }
@@ -272,7 +277,7 @@ public struct Claude: Sendable {
             attempt += 1
             let (data, response) = try await Self.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            Self.noteAllowance(response)
+            Self.noteAllowance(response, body: data)
             if status == 200 { return try Self.answer(from: data, seconds: Date().timeIntervalSince(started)) }
 
             // Rate limits, overload and server errors are worth waiting out; anything else is a
@@ -367,7 +372,7 @@ public struct Claude: Sendable {
             attempt += 1
             let (data, response) = try await Self.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            Self.noteAllowance(response)
+            Self.noteAllowance(response, body: data)
             if status == 200 {
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                     throw Failure.unreadable("not a JSON object")
@@ -430,6 +435,8 @@ public extension Claude.Failure {
         case .http(let status, let body):
             switch status {
             case 401, 403: return "The AI service did not accept the API key. Check it in Settings."
+            case 402 where body.contains("subscription_ended"):
+                return "Causabee Pro has ended. Apple's model on this device reads new mail; Pro comes back with the subscription."
             case 402 where body.contains("allowance_used"):
                 return "This month's Pro is used up. Apple's model on this device reads new mail until it starts anew."
             case 429 where body.contains("daily_limit"):

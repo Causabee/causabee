@@ -53,6 +53,17 @@ enum ModelChoice {
         return DeviceReader.isAvailable ? .device : .none(deviceOnly ? DeviceReader.Unavailable().errorDescription ?? "" : missingKey(model))
     }
 
+    /// Who reads new mail now, in one sentence for Settings.
+    static var readerWords: String {
+        if DemoData.isRequested { return "In the demo, the mail is made up and nothing is sent." }
+        if proPicks { return "Pro: GPT-6.1 Sol reads new mail as it comes — names disguised first." }
+        if case .device = mailReader(for: mail) { return "Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it." }
+        if client(for: mail) != nil {
+            return String(format: "%@ reads new mail with your own key — names disguised first. About %.2f cents per mail.", mail.label, mail.perMail * 100)
+        }
+        return "Nothing reads new mail yet: Apple Intelligence is off on this device. Turn it on in the system's Settings, or choose Pro."
+    }
+
     /// Under the mails ticked to be sorted in: who reads them, and — with your own keys — about what it costs.
     static func sortingWords(_ count: Int, estimate: Double, model: Claude.Model) -> String {
         let mails = count == 1 ? "mail" : "mails"
@@ -83,46 +94,45 @@ struct ModelSettingsView: View {
     @AppStorage(ModelChoice.strictKey) private var strict = true
     @AppStorage(BeeJoy.key) private var celebrates = true
 
+    @State private var developer = false
+
     var body: some View {
         Form {
+            Section { PlanSettings() } header: { Text("Your plan") }
             Section {
-                if ModelChoice.proPicks { LabeledContent("Sort mail", value: Claude.Model.gptSol.label) } else { picker("Sort mail", selection: $mail) }
-                if mail.hasPrefix("mistral") || mail.hasPrefix("gpt-") {
+                if ModelChoice.mail.isMistral || ModelChoice.mail.isOpenAI {
                     Toggle("Fewer, real tasks", isOn: $strict)
                         .help("The rule from the test: no task for saying yes or getting ready, unless the mail asks for it.")
                 }
-                Text((ModelChoice.proPicks ? "Causabee Pro picks the model: GPT-6.1 Sol, for mail and answers." : estimate(mail)) + " A mail is sorted only once: what a model sorted in stays that way.")
+                Text(ModelChoice.readerWords + " A mail is sorted only once: what a model sorted in stays that way.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            } header: { Text("New mail, screenshots, files") }
+            } header: { Text("Mail") }
             Section {
-                if ModelChoice.proPicks { LabeledContent("Assistant", value: Claude.Model.gptSol.label) } else { picker("Assistant", selection: $assistant) }
-                Text("Answers, summaries and the next step. Under each answer you see which model wrote it.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            } header: { Text("Questions") }
-            Section {
+                SettingsPart("Calendar and Reminders")
+                CalendarSettings()
+                SettingsPart("Matter folders in iCloud Drive")
+                FolderSettings()
                 Toggle("The bee is glad when you tick a task", isOn: $celebrates)
-            } header: { Text("Tasks") }
+            } header: { Text("Matters") }
+            Section { SettingsPart("Public names"); PublicNamesSettings() } header: { Text("Privacy") } footer: {
+                Text("Names are disguised before anything leaves this Mac. Big companies and brands — Expedia, Lufthansa — are not: the AI reads them as they are, and a question looked up on the web may name them. Mark one here, or in a person's menu.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section { CloudSettings() } header: { Text("iCloud") }
-            Section { CalendarSettings() } header: { Text("Calendar and Reminders") }
-            Section { FolderSettings() } header: { Text("Matter folders in iCloud Drive") }
-            Section { PublicNamesSettings() } header: { Text("Public names") } footer: {
-                Text("Big companies and brands — Expedia, Lufthansa — are not disguised: the AI reads them as they are, and a question looked up on the web may name them. Mark one here, or in a person's menu.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            if BeeServerSettings.shows {
-                Section { BeeServerSettings() } header: { Text("Causabee Pro") }
-            }
             Section {
-                KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
-                KeyField(title: "Mistral", name: "MISTRAL_API_KEY")
-                KeyField(title: "OpenAI", name: "OPENAI_API_KEY")
-            } header: { Text("API keys") } footer: {
-                Text("Pasted here, kept in the Keychain like the mail password. Never in a file.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Section {
-                Text("All of them get only pseudonymised text: Claude (Anthropic, USA), Mistral (Paris) or OpenAI (USA). In the test, Mistral Large 3 sorted almost as well as Opus; for tasks, Opus was better in about one mail out of three.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                DisclosureGroup("Developer", isExpanded: $developer) {
+                    picker("Sort mail", selection: $mail)
+                    picker("Assistant", selection: $assistant)
+                    Text(ModelChoice.proPicks ? "Pro picks GPT-6.1 Sol while it is on; these are used with your own keys." : estimate(mail) + " Used with your own keys.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
+                    KeyField(title: "Mistral", name: "MISTRAL_API_KEY")
+                    KeyField(title: "OpenAI", name: "OPENAI_API_KEY")
+                    Text("Keys are kept in the Keychain like the mail password, never in a file. All of them get only pseudonymised text: Claude (Anthropic, USA), Mistral (Paris) or OpenAI (USA).")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    BeeServerSettings()
+                }
+                LabeledContent("Causabee", value: AppRelease.label)
             }
         }
         .formStyle(.grouped)

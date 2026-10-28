@@ -23,6 +23,25 @@ final class BeeServer {
     /// This month's Pro: the share used 0…1, and the day it starts anew — as the server said last.
     var monthUsed: Double?
     var renewsOn: String?
+    /// A top-up is left after the month, and how much, in Pro months.
+    var extra = false
+    var extraShare = 0.0
+    /// Whose the account is: a subscriber's, one of top-ups only, or one made by hand.
+    var kind = "hand"
+
+    /// A top-up is left: Pro's bolt works with it, Pro bought or not. As the server said last.
+    nonisolated static var hasCredit: Bool { storedToken != nil && UserDefaults.standard.bool(forKey: creditKey) }
+    nonisolated static let creditKey = "beeserver.credit"
+
+    /// What the server says of an account, after any answer of its own.
+    private func take(_ object: [String: Any]) {
+        if let used = object["monthUsed"] as? Double { monthUsed = used }
+        if let renews = object["renewsOn"] as? String { renewsOn = renews }
+        extra = object["extra"] as? Bool ?? false
+        extraShare = object["extraShare"] as? Double ?? 0
+        kind = object["kind"] as? String ?? kind
+        UserDefaults.standard.set(extra, forKey: Self.creditKey)
+    }
     var problem: String?
 
     var token: String? { Self.storedToken }
@@ -33,12 +52,7 @@ final class BeeServer {
     /// A token is kept: Pro goes through the beeserver, and the bolt turns it on and off.
     nonisolated static var isSetUp: Bool { relay != nil }
 
-    nonisolated static var relay: URL? {
-        guard storedToken != nil else { return nil }
-        let typed = (UserDefaults.standard.string(forKey: addressKey) ?? "").trimmingCharacters(in: .whitespaces)
-        guard let url = URL(string: typed.isEmpty ? defaultAddress : typed), url.scheme == "https" else { return nil }
-        return url
-    }
+    nonisolated static var relay: URL? { storedToken == nil ? nil : base }
 
     /// The client for a model through the beeserver; nil when none is set up, or for Mistral,
     /// which Pro does not offer. Read from what is stored, so it can be asked from anywhere.
@@ -54,13 +68,74 @@ final class BeeServer {
             Task { @MainActor in
                 BeeServer.shared.monthUsed = used
                 if !renews.isEmpty { BeeServer.shared.renewsOn = renews }
-                // Used up: the bolt goes off by itself, and Apple's model on the device takes over.
-                if used >= 1, UserDefaults.standard.bool(forKey: AutoMode.key) {
-                    UserDefaults.standard.set(false, forKey: AutoMode.key)
-                    BeeServer.shared.problem = "This month's Pro is used up, so Pro is off until it starts anew. Apple's model on this device reads new mail meanwhile."
-                }
             }
         }
+        // Used up, or ended: the bolt goes off by itself, and Apple's model on the device takes over.
+        Claude.proStopped = { why in
+            Task { @MainActor in
+                UserDefaults.standard.set(false, forKey: AutoMode.key)
+                if why == "allowance_used" { BeeServer.shared.monthUsed = 1 }
+                BeeServer.shared.problem = why == "subscription_ended"
+                    ? "Causabee Pro has ended, so Pro is off. Apple's model on this device reads new mail."
+                    : "This month's Pro is used up, so Pro is off until it starts anew — or until a top-up. Apple's model on this device reads new mail meanwhile."
+            }
+        }
+    }
+
+    /// Where a purchase is redeemed: the address typed for testing, or the beeserver's own.
+    nonisolated static var base: URL? {
+        let typed = (UserDefaults.standard.string(forKey: addressKey) ?? "").trimmingCharacters(in: .whitespaces)
+        return URL(string: typed.isEmpty ? defaultAddress : typed).flatMap { $0.scheme == "https" ? $0 : nil }
+    }
+
+    /// The Pro subscription as the App Store signed it, for this Apple Account's token — kept in
+    /// iCloud Keychain, so the Mac and the other devices have it too. Sent again with each renewal:
+    /// then it only moves the end. Returns whether the server took it.
+    @discardableResult
+    func subscribe(transaction jws: String) async -> Bool {
+        guard let base = Self.base else { return false }
+        var request = URLRequest(url: base.appendingPathComponent("v1/subscribe"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization") }
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["transaction": jws])
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200,
+                  let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                problem = "Causabee Pro could not be set up just now. It is tried again when Causabee next opens."
+                return false
+            }
+            if let new = object["token"] as? String, new.hasPrefix("bee_") { try APIKeys.save(new, as: Self.tokenName) }
+            take(object)
+            problem = nil
+            Money.hidden = true
+            return true
+        } catch {
+            problem = plainWords(error)
+            return false
+        }
+    }
+
+    /// A top-up as the App Store signed it: added once, however often it is sent. Bought without
+    /// Pro, it opens an account of its own, and its token comes back with the answer.
+    func topUp(transaction jws: String) async -> Bool {
+        guard let base = Self.base else { return false }
+        var request = URLRequest(url: base.appendingPathComponent("v1/topup"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization") }
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["transaction": jws])
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
+        if let new = object["token"] as? String, new.hasPrefix("bee_") {
+            try? APIKeys.save(new, as: Self.tokenName)
+            Money.hidden = true
+        }
+        take(object)
+        problem = nil
+        return true
     }
 
     /// Asks the server how much of this month is used.
@@ -75,8 +150,7 @@ final class BeeServer {
                 problem = "The beeserver did not answer as it should."
                 return
             }
-            monthUsed = object["monthUsed"] as? Double
-            renewsOn = object["renewsOn"] as? String
+            take(object)
             problem = nil
         } catch {
             problem = plainWords(error)
@@ -95,34 +169,49 @@ struct ProBar: View {
     @State private var server = BeeServer.shared
 
     var body: some View {
-        Group { bar }
-            // Shown before any answer came this time: asked of the server once.
-            .task { if BeeServer.isSetUp, server.monthUsed == nil { await server.refresh() } }
+        // Asked of the server each time it is shown — on a view that is there before the answer is:
+        // an empty one would never be shown, and so never ask.
+        VStack(alignment: .leading, spacing: 0) {
+            Color.clear.frame(height: 0)
+            bar
+        }
+        .task { if BeeServer.isSetUp { await server.refresh() } }
     }
 
     @ViewBuilder private var bar: some View {
-        if BeeServer.isSetUp, let used = server.monthUsed {
+        if BeeServer.isSetUp, server.kind == "credit" {
+            // Top-ups without Pro: what is left of them, in Pro months.
+            meter("Your top-ups", left: min(1, server.extraShare),
+                  words: "\(Int((server.extraShare * 100).rounded())) % of a Pro month left",
+                  note: server.extraShare <= 0 ? "Used. Apple's model on this device reads new mail — or buy another top-up." : nil)
+        } else if BeeServer.isSetUp, let used = server.monthUsed {
             let left = max(0, 1 - used)
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text("This month's Pro").font(.subheadline.weight(.medium))
-                    Spacer(minLength: 0)
-                    Text("\(Int((left * 100).rounded())) % left" + (server.renewsWords.map { " · \($0)" } ?? ""))
-                        .font(.footnote).foregroundStyle(.secondary)
+            meter("This month's Pro", left: left,
+                  words: "\(Int((left * 100).rounded())) % left" + (server.renewsWords.map { " · \($0)" } ?? "")
+                    + (server.extraShare > 0 ? " · top-ups \(Int((server.extraShare * 100).rounded())) %" : ""),
+                  note: left > 0 ? nil : server.extra ? "This month's share is used; your top-up carries on."
+                    : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.")
+        }
+    }
+
+    private func meter(_ title: String, left: Double, words: String, note: String?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text(title).font(.subheadline.weight(.medium))
+                Spacer(minLength: 0)
+                Text(words).font(.footnote).foregroundStyle(.secondary)
+            }
+            GeometryReader { box in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.box)
+                    Capsule().fill(left > 0.2 ? Theme.bee : Theme.warning).frame(width: max(6, box.size.width * left))
                 }
-                GeometryReader { box in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Theme.box)
-                        Capsule().fill(left > 0.2 ? Theme.bee : Theme.warning).frame(width: max(6, box.size.width * left))
-                    }
-                }
-                .frame(height: 8)
-                .accessibilityElement()
-                .accessibilityLabel("This month's Pro: \(Int((left * 100).rounded())) percent left")
-                if left <= 0 {
-                    Text("Used for this month. Causabee goes on with Apple's models until it starts anew.")
-                        .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                }
+            }
+            .frame(height: 8)
+            .accessibilityElement()
+            .accessibilityLabel("\(title): \(Int((left * 100).rounded())) percent left")
+            if let note {
+                Text(note).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -136,15 +225,10 @@ struct BeeServerSettings: View {
     @State private var server = BeeServer.shared
     @State private var pastedToken = ""
 
-    static let revealedKey = "beeserver.revealed"
-
-    static var shows: Bool {
-        UserDefaults.standard.bool(forKey: revealedKey) || BeeServer.shared.token != nil || CommandLine.arguments.contains("--beeserver")
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("The bolt turns Pro on and off. On: GPT-6.1 Sol reads new mail as it comes and answers, sent pseudonymised. Off: Apple's model on this device reads new mail — nothing leaves it.")
+            Text(server.token == nil ? "Pro's token comes with the subscription. Here a server for testing, and a token made by hand."
+                 : "A token is kept: Pro goes through this server. It came with the subscription, or was pasted here.")
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             TextField(BeeServer.defaultAddress, text: $server.address)
                 .textFieldStyle(.roundedBorder)
@@ -166,7 +250,6 @@ struct BeeServerSettings: View {
                 Text("The address must start with https://").font(.footnote).foregroundStyle(Theme.warning)
             }
             if let problem = server.problem { Text(problem).font(.footnote).foregroundStyle(Theme.warning) }
-            ProBar()
         }
         .task { await server.refresh() }
     }
