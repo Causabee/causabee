@@ -64,6 +64,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AskSteps.swift,
+				BeeServer.swift,
 				PlanSheet.swift,
 				Store.swift,
 				BeeLoader.swift,

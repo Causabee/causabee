@@ -727,12 +727,12 @@ struct PhoneTurnView: View {
                 // What the disguise found in the question — so it is seen that it looked — and what it cost.
                 // A tap shows who answered and what went out, disguised — as on the Mac.
                 Button { withAnimation(.snappy) { showsSent.toggle() } } label: {
-                    Text((answer.disguiseLine.map { $0 + " · " } ?? "") + "$\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
+                    Text(Money.hidden ? (answer.disguiseLine ?? "Pro") : (answer.disguiseLine.map { $0 + " · " } ?? "") + "$\(String(format: "%.3f", answer.cost))").font(.caption2).foregroundStyle(.secondary)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(minHeight: 32).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("\(answer.disguiseSentence ?? "") \(answer.modelLabel), $\(String(format: "%.3f", answer.cost))")
+                .accessibilityLabel("\(answer.disguiseSentence ?? "") \(answer.modelLabel)" + (Money.hidden ? "" : ", $\(String(format: "%.3f", answer.cost))"))
                 .accessibilityHint(showsSent ? "Hides what was sent" : "Shows what was sent, pseudonymised")
             }
             .padding(.leading, -8)

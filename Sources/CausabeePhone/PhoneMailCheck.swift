@@ -211,7 +211,7 @@ final class PhoneMailCheck {
         lastChecked = Date()
         // Sorted on another device right before: not new here.
         let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
-        look = look.without(Set(SortedMails.answered(in: context).keys).union(entries.map(\.messageID)))
+        look = look.without(SortedMails.answeredIDs(in: context).union(entries.map(\.messageID)))
         guard isQuiet, look.pending > 0, !look.newIDs.isEmpty else { return }
         state = .newMail(look, door)
         MailNotice.tell(look)
@@ -233,8 +233,14 @@ final class PhoneMailCheck {
     /// put aside go from the line that says "new mails", from the list to tick, and from what was
     /// read and waits to be taken in. With none left, the prompt is gone.
     func settleElsewhere(context: ModelContext) {
+        // Asked after every change: nothing to settle while no mail waits.
+        switch state {
+        case .newMail, .ready, .answered: break
+        default: return
+        }
         let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
-        let known = Set(SortedMails.answered(in: context).keys).union(entries.map(\.messageID))
+        // The ids are enough: an answer in the store is a mail dealt with.
+        let known = SortedMails.answeredIDs(in: context).union(entries.map(\.messageID))
         switch state {
         case .newMail(let look, let door):
             let left = Set(look.newIDs.filter { !known.contains($0) })
@@ -358,12 +364,11 @@ final class PhoneMailCheck {
         // while this one looked — read twice, its tasks came twice.
         let look = look.without(SortedMails.known(in: context))
         guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
-        guard let claude = ModelChoice.client(for: door.model) else {
-            // Locked, the key cannot be read — it is there all the same: the mail waits to be read.
-            if !UIApplication.shared.isProtectedDataAvailable { state = .newMail(look, door); return }
-            state = .failed(ModelChoice.missingKey(door.model))
-            return
-        }
+        // Locked, the key cannot be read — it is there all the same: the mail waits to be read.
+        if !UIApplication.shared.isProtectedDataAvailable { state = .newMail(look, door); return }
+        let reader = ModelChoice.mailReader(for: door.model)
+        if case .none(let why) = reader { state = .failed(why); return }
+        let claude = reader.client
         state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
         // Paid for once: switching away from Causabee meanwhile does not stop it halfway.
         let background = UIApplication.shared.beginBackgroundTask(withName: "Reading mail")
@@ -420,7 +425,7 @@ final class PhoneMailCheck {
             KeptTexts.share(besides: door.log, in: context)
             PhoneNames.publish(in: context)
             let matters = try context.fetch(FetchDescriptor<Matter>())
-            Self.logIntake(judgements, matters: matters, model: door.model.label, in: context)
+            Self.logIntake(judgements, matters: matters, model: judgements.contains { $0.decidedBy == .onDevice } ? "Apple's model on this device" : door.model.label, in: context)
             // Their important links, offered in their matters.
             let takenIDs = Set(judgements.map(\.emailID))
             for outcome in look.report.outcomes where takenIDs.contains(outcome.judgement.emailID) { _ = MailLinks.suggest(outcome.email, in: context) }
@@ -727,8 +732,7 @@ struct PhoneMailReview: View {
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
             Text(chosen.isEmpty ? "None ticked: “Leave out” puts \(look.pending == 1 ? "it" : "them") aside, and \(look.pending == 1 ? "it is" : "they are") not offered again. “Later” keeps \(look.pending == 1 ? "it" : "them") for the next time."
-                 : String(format: "Sorting in %d %@ costs about $%.2f. Sent pseudonymised to %@.", chosen.count, chosen.count == 1 ? "mail" : "mails",
-                          look.only(chosen).estimate, door.model.label))
+                 : ModelChoice.sortingWords(chosen.count, estimate: look.only(chosen).estimate, model: door.model))
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 Button("Later", action: later).buttonStyle(.phone)
@@ -772,7 +776,7 @@ struct PhoneMailVerdict: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("\(offers.count) \(offers.count == 1 ? "mail" : "mails") read").font(.headline)
             MailOffers(offers: offers, chosen: $chosen, moved: $moved, skipped: $skipped)
-            Text(String(format: "Read for $%.3f. Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside.", answered.cost)
+            Text((Money.hidden || answered.cost == 0 ? "Read. " : String(format: "Read for $%.3f. ", answered.cost)) + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
                  + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, skipped) }

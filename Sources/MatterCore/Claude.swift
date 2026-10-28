@@ -136,9 +136,48 @@ public struct Claude: Sendable {
 
     public let key: String
     public var endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
+    /// The beeserver, Causabee Pro's way: requests go there, with `key` a Pro token instead of a
+    /// provider's key, and are passed on with Causabee's own. Nil: straight to the provider.
+    public var relay: URL?
 
-    public init(key: String) {
+    public init(key: String, relay: URL? = nil) {
         self.key = key
+        self.relay = relay
+    }
+
+    public enum Provider: String { case anthropic, openai }
+
+    /// A request to a provider, with the right address and key: the provider's own, or the
+    /// beeserver's with the Pro token.
+    public func request(_ provider: Provider, timeout: TimeInterval = 600) -> URLRequest {
+        var request: URLRequest
+        if let relay {
+            request = URLRequest(url: relay.appendingPathComponent("v1/ai/" + provider.rawValue))
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "authorization")
+        } else if provider == .anthropic {
+            request = URLRequest(url: endpoint)
+            request.setValue(key, forHTTPHeaderField: "x-api-key")
+        } else {
+            request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "authorization")
+        }
+        if provider == .anthropic { request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version") }
+        request.httpMethod = "POST"
+        request.timeoutInterval = timeout
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        return request
+    }
+
+    /// What the beeserver says of this month's Pro after each answer: the share used, the day it
+    /// renews. Set by the app, which shows it as a bar.
+    nonisolated(unsafe) public static var allowanceSeen: (@Sendable (_ used: Double, _ renewsOn: String) -> Void)?
+
+    static func noteAllowance(_ response: URLResponse) {
+        guard let http = response as? HTTPURLResponse else { return }
+        // The beeserver's "used up": the month and every top-up.
+        if http.statusCode == 402, http.url?.path.contains("/v1/ai/") == true { allowanceSeen?(1, ""); return }
+        guard let used = http.value(forHTTPHeaderField: "causabee-month-used").flatMap(Double.init) else { return }
+        allowanceSeen?(used, http.value(forHTTPHeaderField: "causabee-renews-on") ?? "")
     }
 
     /// `ANTHROPIC_API_KEY` from the environment, or from a `.env` file in the working directory
@@ -221,14 +260,9 @@ public struct Claude: Sendable {
     public func send(_ body: [String: Any], model: Model) async throws -> Answer {
         if model.isMistral { return try await sendMistral(body, model: model) }
         if model.isOpenAI { return try await sendOpenAI(body, model: model) }
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
         // Nothing is streamed back, so the server says nothing until it is done; a long mail
         // with thinking on can take minutes, and the default of sixty seconds would give up.
-        request.timeoutInterval = 600
-        request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue(key, forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        var request = request(.anthropic)
         if model.takesFallbacks { request.setValue("server-side-fallback-2026-07-01", forHTTPHeaderField: "anthropic-beta") }
         request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])
 
@@ -238,6 +272,7 @@ public struct Claude: Sendable {
             attempt += 1
             let (data, response) = try await Self.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            Self.noteAllowance(response)
             if status == 200 { return try Self.answer(from: data, seconds: Date().timeIntervalSince(started)) }
 
             // Rate limits, overload and server errors are worth waiting out; anything else is a
@@ -271,6 +306,8 @@ public struct Claude: Sendable {
     }
 
     func sendMistral(_ body: [String: Any], model: Model) async throws -> Answer {
+        // Not offered through Pro: only the models the beeserver counts.
+        if relay != nil { throw Failure.http(status: 400, body: "Mistral is not offered through Causabee Pro.") }
         var request = URLRequest(url: URL(string: "https://api.mistral.ai/v1/chat/completions")!)
         request.httpMethod = "POST"
         request.timeoutInterval = 600
@@ -322,11 +359,7 @@ public struct Claude: Sendable {
     }
 
     func sendOpenAI(_ body: [String: Any], model: Model) async throws -> Answer {
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 600
-        request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "authorization")
+        var request = request(.openai)
         request.httpBody = try JSONSerialization.data(withJSONObject: Self.openAIBody(body, model: model), options: [.sortedKeys])
         let started = Date()
         var attempt = 0
@@ -334,6 +367,7 @@ public struct Claude: Sendable {
             attempt += 1
             let (data, response) = try await Self.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            Self.noteAllowance(response)
             if status == 200 {
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                     throw Failure.unreadable("not a JSON object")
@@ -396,6 +430,10 @@ public extension Claude.Failure {
         case .http(let status, let body):
             switch status {
             case 401, 403: return "The AI service did not accept the API key. Check it in Settings."
+            case 402 where body.contains("allowance_used"):
+                return "This month's Pro is used up. Apple's model on this device reads new mail until it starts anew."
+            case 429 where body.contains("daily_limit"):
+                return "Today's share of Pro is used. It goes on tomorrow; Apple's model on this device reads new mail meanwhile."
             case 402: return "The AI service says the account has no credit left. Top it up with the provider, then try again."
             case 404: return "The AI service does not know this model. Choose another in Settings."
             case 408, 504: return "The AI service took too long to answer. Try again."

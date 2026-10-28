@@ -748,7 +748,7 @@ struct TurnView: View {
                     withAnimation(.easeOut(duration: 0.15)) { showsSent.toggle() }
                 } label: {
                     // What the disguise found in the question — so it is seen that it looked — and what it cost.
-                    Text((answer.disguiseLine.map { $0 + " · " } ?? "") + String(format: "$%.3f", answer.cost)).font(.caption2).contentShape(Rectangle())
+                    Text(Money.hidden ? (answer.disguiseLine ?? "Pro") : (answer.disguiseLine.map { $0 + " · " } ?? "") + String(format: "$%.3f", answer.cost)).font(.caption2).contentShape(Rectangle())
                 }
                 .help(showsSent ? "Hide what was sent" : (answer.disguiseSentence.map { $0 + " " } ?? "") + "\(answer.modelLabel) — shows what was sent, pseudonymised")
             }

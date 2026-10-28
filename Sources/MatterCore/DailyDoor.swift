@@ -92,7 +92,25 @@ public struct DailyDoor: Sendable {
         model.perMail
     }
 
+    /// The log as last read, by its path, size and date: read again only when it changed.
+    nonisolated(unsafe) private static var logs: [String: (stamp: String, answers: [String: Judgement])] = [:]
+    private static let logsLock = NSLock()
+
     public static func readLog(_ url: URL) -> [String: Judgement] {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+        let stamp = "\((attributes?[.size] as? Int) ?? -1) \(((attributes?[.modificationDate] as? Date)?.timeIntervalSince1970) ?? 0)"
+        logsLock.lock()
+        let kept = logs[url.path]
+        logsLock.unlock()
+        if let kept, kept.stamp == stamp { return kept.answers }
+        let answers = readLogAnew(url)
+        logsLock.lock()
+        logs[url.path] = (stamp, answers)
+        logsLock.unlock()
+        return answers
+    }
+
+    private static func readLogAnew(_ url: URL) -> [String: Judgement] {
         guard let data = try? Data(contentsOf: url) else { return [:] }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -157,7 +175,8 @@ public struct DailyDoor: Sendable {
     /// written back with them.
     /// `placed`: the matter each earlier mail is in now. A mail the owner moved counts as that
     /// matter's, so the replies in its thread follow it there.
-    public func classify(_ look: Look, claude: Claude, owner: [String], matters: [(key: String, about: String)] = [],
+    /// `claude` nil: read by Apple's model on this device.
+    public func classify(_ look: Look, claude: Claude?, owner: [String], matters: [(key: String, about: String)] = [],
                          placed: [String: String] = [:], onFile: [String: Extractor.OnFile] = [:],
                          progress: @Sendable (Int, Int, String) -> Void = { _, _, _ in }) async throws -> (judgements: [Judgement], summary: Extractor.Summary) {
         var outcomes = look.report.outcomes
@@ -165,6 +184,7 @@ public struct DailyDoor: Sendable {
         if let pseudonymizer = look.report.pseudonymizer {
             var extractor = Extractor(model: model, claude: claude, cache: cache)
             extractor.strict = strict
+            extractor.onDevice = claude == nil
             extractor.storeMatters = matters
             extractor.onFile = onFile
             // A mail sent from a draft Causabee opened goes into the draft's matter.

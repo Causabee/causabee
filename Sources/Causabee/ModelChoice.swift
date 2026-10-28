@@ -14,9 +14,12 @@ enum ModelChoice {
     }
 
     /// Sorting new mail, screenshots and files into matters.
-    static var mail: Claude.Model { model(mailKey) }
+    static var mail: Claude.Model { proPicks ? .gptSol : model(mailKey) }
     /// Answers, summaries, the next step.
-    static var assistant: Claude.Model { model(assistantKey) }
+    static var assistant: Claude.Model { proPicks ? .gptSol : model(assistantKey) }
+    /// With Pro the plan picks, so the month goes furthest: GPT-6.1 Sol for everything — it sorts
+    /// nearly as well as Opus at two fifths of the price.
+    static var proPicks: Bool { BeeServer.isSetUp && AutoMode.isOn }
     /// Fewer, real to-dos — on by default, and only ever given to Mistral or OpenAI: Opus's
     /// instructions stay as its answers were made with.
     static var strict: Bool { (mail.isMistral || mail.isOpenAI) && (UserDefaults.standard.object(forKey: strictKey) as? Bool ?? true) }
@@ -24,12 +27,44 @@ enum ModelChoice {
     /// The API client for the model, with the key its API takes; nil when that key is missing.
     /// None in the demo with the owner's real matters: from there nothing is sent, whatever is asked.
     static func client(for model: Claude.Model) -> Claude? {
-        DemoData.usesReal ? nil : Claude.key(for: model).map(Claude.init)
+        if DemoData.usesReal { return nil }
+        // With Pro set up, the bolt decides: on, through the beeserver; off, nothing leaves the device.
+        if BeeServer.isSetUp { return AutoMode.isOn ? BeeServer.client(for: model) : nil }
+        // Without it, the developer's own keys, as before.
+        return Claude.key(for: model).map { Claude(key: $0) }
+    }
+
+    /// Pro set up and the bolt off: only Apple's model on this device.
+    static var deviceOnly: Bool { BeeServer.isSetUp && !AutoMode.isOn }
+
+    /// Who reads new mail: the chosen model with its key or Pro; without either, Apple's model on
+    /// this device — nothing leaves it, nothing is paid.
+    enum Reader {
+        case cloud(Claude)
+        case device
+        case none(String)
+
+        var client: Claude? { if case .cloud(let claude) = self { claude } else { nil } }
+    }
+
+    static func mailReader(for model: Claude.Model) -> Reader {
+        if let claude = client(for: model) { return .cloud(claude) }
+        if DemoData.isRequested || DemoData.usesReal { return .none(missingKey(model)) }
+        return DeviceReader.isAvailable ? .device : .none(deviceOnly ? DeviceReader.Unavailable().errorDescription ?? "" : missingKey(model))
+    }
+
+    /// Under the mails ticked to be sorted in: who reads them, and — with your own keys — about what it costs.
+    static func sortingWords(_ count: Int, estimate: Double, model: Claude.Model) -> String {
+        let mails = count == 1 ? "mail" : "mails"
+        if case .device = mailReader(for: model) { return "Sorting in \(count) \(mails) on this device, with Apple's model: nothing leaves it." }
+        if Money.hidden { return "Sorting in \(count) \(mails) with Causabee Pro. Sent pseudonymised to \(model.label)." }
+        return String(format: "Sorting in %d %@ costs about $%.2f. Sent pseudonymised to %@.", count, mails, estimate, model.label)
     }
 
     static func missingKey(_ model: Claude.Model) -> String {
         if DemoData.usesReal { return "This is the demo with your real matters: nothing is sent to an AI from it." }
         if DemoData.isRequested { return "This is the demo: your keys are not used in it, so nothing is sent to an AI from it." }
+        if deviceOnly { return "Pro is off: Apple's model on this device reads new mail, and this comes to it later. Turn Pro on with the bolt for it now." }
         #if os(iOS)
         let settings = "Settings (⋯ on the overview) — or on your Mac: a key saved there comes through iCloud Keychain"
         #else
@@ -51,16 +86,16 @@ struct ModelSettingsView: View {
     var body: some View {
         Form {
             Section {
-                picker("Sort mail", selection: $mail)
+                if ModelChoice.proPicks { LabeledContent("Sort mail", value: Claude.Model.gptSol.label) } else { picker("Sort mail", selection: $mail) }
                 if mail.hasPrefix("mistral") || mail.hasPrefix("gpt-") {
                     Toggle("Fewer, real tasks", isOn: $strict)
                         .help("The rule from the test: no task for saying yes or getting ready, unless the mail asks for it.")
                 }
-                Text(estimate(mail) + " A mail is sorted only once: what a model sorted in stays that way.")
+                Text((ModelChoice.proPicks ? "Causabee Pro picks the model: GPT-6.1 Sol, for mail and answers." : estimate(mail)) + " A mail is sorted only once: what a model sorted in stays that way.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             } header: { Text("New mail, screenshots, files") }
             Section {
-                picker("Assistant", selection: $assistant)
+                if ModelChoice.proPicks { LabeledContent("Assistant", value: Claude.Model.gptSol.label) } else { picker("Assistant", selection: $assistant) }
                 Text("Answers, summaries and the next step. Under each answer you see which model wrote it.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             } header: { Text("Questions") }
@@ -73,6 +108,9 @@ struct ModelSettingsView: View {
             Section { PublicNamesSettings() } header: { Text("Public names") } footer: {
                 Text("Big companies and brands — Expedia, Lufthansa — are not disguised: the AI reads them as they are, and a question looked up on the web may name them. Mark one here, or in a person's menu.")
                     .font(.caption).foregroundStyle(.secondary)
+            }
+            if BeeServerSettings.shows {
+                Section { BeeServerSettings() } header: { Text("Causabee Pro") }
             }
             Section {
                 KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
@@ -314,11 +352,21 @@ final class StoredChanges {
         }
         // A change saved here is a change too, at once: the prepared overview is made anew from it.
         NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated {
-                StoredChanges.shared.count += 1
-                if let context = StoredChanges.shared.context { PublicNames.refresh(in: context) }
-                if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] saved, change %d", StoredChanges.shared.count) }
-            }
+            MainActor.assumeIsolated { StoredChanges.shared.saved() }
+        }
+    }
+
+    /// Saves one right after the other — sorting mail in saves five times — count once, after the
+    /// last: each count made every page read the store again, some hundred milliseconds each.
+    @ObservationIgnored private var savePending = false
+    private func saved() {
+        guard !savePending else { return }
+        savePending = true
+        DispatchQueue.main.async {
+            self.savePending = false
+            self.count += 1
+            if let context = self.context { PublicNames.refresh(in: context) }
+            if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] saved, change %d", self.count) }
         }
     }
 
@@ -328,9 +376,12 @@ final class StoredChanges {
     private func changed() {
         guard !pending else { return }
         pending = true
-        for delay in [0.5, 2, 4, 8, 15] {
+        // Three times, not five: each time every page reads the store again, some hundred
+        // milliseconds, and the store reports what this device sent to iCloud as well. Four seconds
+        // is when another device's change was seen to arrive; fifteen, for the kept texts.
+        for delay in [0.5, 4, 15] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                if delay == 2 { self.pending = false }
+                if delay == 4 { self.pending = false }
                 self.count += 1
                 // A name marked public on another device counts here too.
                 if let context = self.context { PublicNames.refresh(in: context) }
@@ -407,8 +458,9 @@ enum PriceEstimates {
         return 600 + mailText + todos + notes + rest
     }
 
-    static func step(_ matter: Matter) -> String { String(format: "≈ %.1f cents", of(matter).step * 100) }
-    static func summary(_ matter: Matter) -> String { String(format: "≈ %.1f cents", of(matter).summary * 100) }
+    /// " · ≈ 2.4 cents" after a button's words — nothing with Pro, where the plan holds the AI.
+    static func step(_ matter: Matter) -> String { Money.hidden ? "" : String(format: " · ≈ %.1f cents", of(matter).step * 100) }
+    static func summary(_ matter: Matter) -> String { Money.hidden ? "" : String(format: " · ≈ %.1f cents", of(matter).summary * 100) }
 }
 
 /// Auto, the whole circle: when a matter's record has changed, its next step and its summary are
@@ -534,6 +586,7 @@ final class AutoUpdate {
         if CommandLine.arguments.contains("--auto-anew") { Self.known = [:] }
         watchSaves()
         NewsNotice.listen()
+        BeeServer.listen()
         while !Task.isCancelled {
             try? await Task.sleep(for: Self.pace)
             // News written here, or come from another device: told once, Auto or not.

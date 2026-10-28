@@ -82,7 +82,7 @@ public enum WebLookup {
         who decides — and when it depends on something, on what. Prefer official and primary \
         sources. No advice for a particular person: there is none to give, the question is general.
         """
-        if model.isOpenAI { return try await openAI(question, instructions: instructions, country: country, key: claude.key, model: model) }
+        if model.isOpenAI { return try await openAI(question, instructions: instructions, country: country, claude: claude, model: model) }
         if model.isMistral { throw NotOffered() }
         return try await anthropic(question, instructions: instructions, country: country, claude: claude, model: model)
     }
@@ -104,12 +104,7 @@ public enum WebLookup {
         var tool: [String: Any] = ["type": "web_search_20260209", "name": "web_search", "max_uses": 2]
         if let country { tool["user_location"] = ["type": "approximate", "country": country] }
         var messages: [[String: Any]] = [["role": "user", "content": question]]
-        var request = URLRequest(url: claude.endpoint)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 300
-        request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue(claude.key, forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        var request = claude.request(.anthropic, timeout: 300)
         var texts: [String] = [], sources: [Source] = [], cost = 0.0
         // A long search can pause its turn: it is handed back as it stands, to go on — a few times at most.
         for _ in 0..<3 {
@@ -118,6 +113,7 @@ public enum WebLookup {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
             let (data, response) = try await Claude.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            Claude.noteAllowance(response)
             guard status == 200 else { throw Claude.Failure.http(status: status, body: String(decoding: data, as: UTF8.self)) }
             guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw Claude.Failure.unreadable("not a JSON object") }
             let usage = object["usage"] as? [String: Any] ?? [:]
@@ -137,15 +133,11 @@ public enum WebLookup {
         return (answer(texts), unique(sources), cost)
     }
 
-    static func openAI(_ question: String, instructions: String, country: String?, key: String,
+    static func openAI(_ question: String, instructions: String, country: String?, claude: Claude,
                        model: Claude.Model) async throws -> (answer: String, sources: [Source], cost: Double) {
         var tool: [String: Any] = ["type": "web_search"]
         if let country { tool["user_location"] = ["type": "approximate", "country": country] }
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 300
-        request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "authorization")
+        var request = claude.request(.openai, timeout: 300)
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "model": model.id, "instructions": instructions, "input": question, "tools": [tool], "max_output_tokens": 2000,
             // A general question, answered from what the search finds: no need to think long.
@@ -153,6 +145,7 @@ public enum WebLookup {
         ] as [String: Any])
         let (data, response) = try await Claude.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        Claude.noteAllowance(response)
         guard status == 200 else { throw Claude.Failure.http(status: status, body: String(decoding: data, as: UTF8.self)) }
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw Claude.Failure.unreadable("not a JSON object") }
         let output = object["output"] as? [[String: Any]] ?? []

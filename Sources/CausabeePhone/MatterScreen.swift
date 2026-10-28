@@ -608,7 +608,7 @@ struct MatterScreen: View {
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
                     }
-                    Button((fresh ? "ask again · " : "Suggest better · ") + PriceEstimates.step(matter), action: askStep)
+                    Button((fresh ? "ask again" : "Suggest better") + PriceEstimates.step(matter), action: askStep)
                         .font(.caption).underline().foregroundStyle(.secondary)
                 }
             }
@@ -782,11 +782,11 @@ struct MatterScreen: View {
                     AutoLine(matter: matter, size: 11)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    Button("Update · \(PriceEstimates.summary(matter))", action: writeSummary).font(.caption).underline().foregroundStyle(.secondary)
+                    Button("Update\(PriceEstimates.summary(matter))", action: writeSummary).font(.caption).underline().foregroundStyle(.secondary)
                     Spacer()
                 } else {
                     Spacer()
-                    Button("Write the brief · \(PriceEstimates.summary(matter))", action: writeSummary).buttonStyle(.phone)
+                    Button("Write the brief\(PriceEstimates.summary(matter))", action: writeSummary).buttonStyle(.phone)
                 }
             }
             .tool()

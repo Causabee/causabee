@@ -12,6 +12,7 @@ struct SettingsSheet: View {
     @AppStorage(ModelChoice.assistantKey) private var assistant = Claude.Model.opus.id
     @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
     @AppStorage(ModelChoice.strictKey) private var strict = true
+    @AppStorage(BeeServerSettings.revealedKey) private var revealed = false
     @AppStorage(AutoMode.key) private var auto = false
     @AppStorage(BeeJoy.key) private var celebrates = true
     @Query private var profiles: [Profile]
@@ -45,34 +46,49 @@ struct SettingsSheet: View {
                 }
 
                 Section {
-                    Picker("Sort mail", selection: $mail) {
-                        ForEach(Claude.Model.choices, id: \.id) { model in
-                            Text(model.label + (Claude.key(for: model) == nil ? " — no key" : "")).tag(model.id)
+                    if ModelChoice.proPicks {
+                        LabeledContent("Sort mail", value: Claude.Model.gptSol.label)
+                    } else {
+                        Picker("Sort mail", selection: $mail) {
+                            ForEach(Claude.Model.choices, id: \.id) { model in
+                                Text(model.label + (Claude.key(for: model) == nil ? " — no key" : "")).tag(model.id)
+                            }
                         }
+                        .id(tick)
                     }
-                    .id(tick)
                     if mail.hasPrefix("mistral") || mail.hasPrefix("gpt-") {
                         Toggle("Fewer, real tasks", isOn: $strict)
                     }
                     Toggle("Pro: the bigger AI reads mail and files at once", isOn: Binding(
                         get: { auto && Store.shared.plan == .pro },
                         set: { on in if !on { auto = false } else if Store.shared.mayTurnOnPro() { auto = true } }))
-                    Text(auto ? "New mail and files are read by the AI as soon as they are there — sent pseudonymised, without asking first. What is taken in, and into which matter, you still decide. When a matter’s record changes, its next step and its summary are written again — a few cents each time."
+                    if BeeServer.isSetUp {
+                        Text(auto ? "Pro is on: GPT-6.1 Sol reads new mail and files as they come and answers your questions — sent pseudonymised. What is taken in, and into which matter, you still decide."
+                                  : "Pro is off: Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    } else {
+                    Text(auto ? "New mail and files are read by the AI as soon as they are there — sent pseudonymised, without asking first. What is taken in, and into which matter, you still decide. When a matter’s record changes, its next step and its summary are written again" + (Money.hidden ? "." : " — a few cents each time.")
                               : "New mail and files wait until you tap “Sort in”. What is taken in, and into which matter, you decide after. Next steps and summaries are written when you tap for them.")
                         .font(.footnote).foregroundStyle(.secondary)
-                    if auto { Text(AutoUpdate.spentWords ?? "Pro has spent nothing today on next steps and summaries").font(.footnote).foregroundStyle(.secondary) }
-                    Text(String(format: "About %.2f cents per mail. A mail is sorted only once — here or on your Mac: what a model sorted in stays that way.",
+                    }
+                    if auto, !BeeServer.isSetUp { Text(AutoUpdate.spentWords ?? "Pro has spent nothing today on next steps and summaries").font(.footnote).foregroundStyle(.secondary) }
+                    Text((ModelChoice.proPicks ? "Causabee Pro picks the model: GPT-6.1 Sol, for mail and answers. " : String(format: "About %.2f cents per mail. ",
                                 (Claude.Model.choices.first { $0.id == mail } ?? .opus).perMail * 100))
+                         + "A mail is sorted only once — here or on your Mac: what a model sorted in stays that way.")
                         .font(.footnote).foregroundStyle(.secondary)
                 } header: { Text("New mail") }
 
                 Section {
-                    Picker("Assistant", selection: $assistant) {
-                        ForEach(Claude.Model.choices, id: \.id) { model in
-                            Text(model.label + (Claude.key(for: model) == nil ? " — no key" : "")).tag(model.id)
+                    if ModelChoice.proPicks {
+                        LabeledContent("Assistant", value: Claude.Model.gptSol.label)
+                    } else {
+                        Picker("Assistant", selection: $assistant) {
+                            ForEach(Claude.Model.choices, id: \.id) { model in
+                                Text(model.label + (Claude.key(for: model) == nil ? " — no key" : "")).tag(model.id)
+                            }
                         }
+                        .id(tick)
                     }
-                    .id(tick)
                     Text("Answers, summaries and the next step. Under each answer you see which model wrote it.")
                         .font(.footnote).foregroundStyle(.secondary)
                 } header: { Text("Questions") }
@@ -126,6 +142,10 @@ struct SettingsSheet: View {
                     Text("Names are disguised before anything is sent. Each device keeps its own list — this \(ThisDevice.name) once it gets new mail — and puts it into iCloud, end-to-end encrypted, when you switch away from Causabee; a name one device learned, the others disguise too. Without any list, the assistant sends nothing.")
                 }
 
+                if revealed || BeeServerSettings.shows {
+                    Section { BeeServerSettings() } header: { Text("Causabee Pro") }
+                }
+
                 Section {
                     KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
                     KeyField(title: "Mistral", name: "MISTRAL_API_KEY")
@@ -140,7 +160,8 @@ struct SettingsSheet: View {
                 }
 
                 // Which Causabee this is, to say when something is reported.
-                Section { LabeledContent("Causabee", value: AppRelease.label) }
+                // Five taps show the beeserver's switch, for testing Pro.
+                Section { LabeledContent("Causabee", value: AppRelease.label).onTapGesture(count: 5) { revealed = true } }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)

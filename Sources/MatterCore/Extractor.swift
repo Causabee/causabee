@@ -42,6 +42,9 @@ public struct Extractor: Sendable {
     /// Mails whose matter is known before they are read — sent by the owner from a draft Causabee
     /// opened in that matter — by Message-ID: the matter's key.
     public var assigned: [String: String] = [:]
+    /// Read by Apple's model on this device instead: nothing is sent, nothing paid. The mail is
+    /// read in its own words, since it never leaves.
+    public var onDevice = false
 
     var system: String { strict ? ExtractionPrompt.system + ExtractionPrompt.strict : ExtractionPrompt.system }
     var promptVersion: String { strict ? ExtractionPrompt.strictVersion : ExtractionPrompt.version }
@@ -221,6 +224,11 @@ public struct Extractor: Sendable {
             if history.omitted > 0 { summary.historyLeftOut += 1 }
             // Written in a matter: told as its thread is, so the to-dos are read in its light.
             let thread = assignedTo.map { disguiser.apply($0).text } ?? threads.matter(for: outcomes[index].email)
+            if onDevice {
+                await readOnDevice(&outcomes[index], thread: thread, assignedTo: assignedTo, matters: &matters,
+                                   threads: &threads, summary: &summary, owner: owner, disguiser: disguiser, restorer: restorer)
+                continue
+            }
             let user = ExtractionPrompt.user(mail: Self.text(of: disguise, body: history.newest, omitted: history.omitted),
                                              sent: outcomes[index].email.date, owner: disguisedOwner, matters: matters,
                                              thread: thread, open: book.open(for: thread, matters: matters.map(\.name)),
@@ -358,6 +366,67 @@ public struct Extractor: Sendable {
         lines.append("Subject: \(unlinked(disguise.subject))")
         if !disguise.attachmentNames.isEmpty { lines.append("Attachments: \(disguise.attachmentNames.map(unlinked).joined(separator: ", "))") }
         return lines.joined(separator: "\n") + "\n\n" + body
+    }
+
+    /// One mail by Apple's model on the device, into the same judgement the cloud model writes.
+    /// The matters and the thread are kept in disguise like the rest of the run; the model is
+    /// shown them in their real names.
+    func readOnDevice(_ outcome: inout Spike.Outcome, thread: String?, assignedTo: String?, matters: inout [(name: String, summary: String)],
+                      threads: inout ThreadMemory, summary: inout Summary, owner: [String], disguiser: Replacer, restorer: Replacer) async {
+        func real(_ text: String) -> String { restorer.apply(text).text }
+        let email = outcome.email
+        var record = Judgement.Extraction(model: DeviceReader.modelID, servedBy: DeviceReader.modelID, mode: "on_device", prompt: DeviceReader.version)
+        let newest = Quotes.newest(of: email.body, subject: email.subject)
+        record.historyOmitted = newest.omitted
+        let known = matters.map { (name: real($0.name), about: real($0.summary)) }
+        let shown = known.map { $0.about.isEmpty ? $0.name : "\($0.name) — \($0.about.prefix(90))" }
+        do {
+            let text = "Subject: \(email.subject)\nFrom: \(email.from)\n\n" + newest.newest
+            guard let read = try await DeviceReader.read(mail: text, sent: email.date, owner: owner, matters: shown,
+                                                         thread: assignedTo ?? thread.map(real)) else {
+                throw DeviceReader.Unavailable()
+            }
+            var decision = outcome.judgement
+            // The name as listed, whatever the model added around it; a name not listed is a new matter only when it says so.
+            let answered = read.matter?.trimmingCharacters(in: CharacterSet(charactersIn: "`\"' ")).components(separatedBy: " — ").first
+            let listed = answered.flatMap { name in known.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.name }
+            let matter = assignedTo ?? listed ?? (read.isNew ? answered : nil)
+            decision.matter = matter
+            decision.matterTitle = listed == nil && assignedTo == nil ? matter : nil
+            decision.digest = read.digest
+            decision.matterConfidence = listed != nil ? 0.7 : 0.5
+            decision.matterReason = assignedTo != nil ? "Written from this matter in Causabee" : "Read on this device"
+            decision.decidedBy = .onDevice
+            // The small model sometimes writes one to-do twice, the second time in more words: kept once.
+            var todos: [Judgement.Todo] = []
+            func words(_ text: String) -> Set<String> { Set(text.lowercased().split { !$0.isLetter }.map(String.init).filter { $0.count > 3 }) }
+            for todo in read.todos {
+                let these = words(todo.text)
+                if todos.contains(where: { let those = words($0.text); return !these.isEmpty && !those.isEmpty
+                    && Double(these.intersection(those).count) >= 0.7 * Double(min(these.count, those.count)) }) { continue }
+                todos.append(.init(text: todo.text, owner: Judgement.Todo.Owner(rawValue: todo.owner) ?? .unknown, due: todo.due, sourceQuote: todo.text))
+            }
+            decision.todos = todos
+            decision.appointments = read.appointments.map { .init(what: $0.what, date: $0.date, time: $0.time, place: nil, sourceQuote: $0.quote) }
+            decision.deadlines = read.deadlines.map { .init(what: $0.what, date: $0.date, sourceQuote: $0.quote) }
+            decision.stages = Spike.stages + ["on_device"]
+            outcome.judgement = decision
+
+            if let matter {
+                let disguised = disguiser.apply(matter).text
+                threads.remember(email, matter: disguised)
+                if !matters.contains(where: { $0.name == disguised }) { matters.append((disguised, disguiser.apply(read.digest).text)) }
+            }
+            record.seconds = read.seconds
+            summary.sent += 1
+            summary.seconds += read.seconds
+            summary.todosNew += decision.todos.count
+            summary.appointments += decision.appointments.count
+        } catch {
+            record.error = "\(error)"
+            summary.failed.append((outcome.judgement.subject, plainWords(error)))
+        }
+        outcome.judgement.extraction = record
     }
 
     /// Step 6. Everything the model wrote goes back through the mapping before it is logged,

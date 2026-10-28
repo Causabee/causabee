@@ -40,6 +40,7 @@ struct PlanSheet: View {
                      price: nil, current: store.plan == .matters, products: store.products.filter { Store.mattersIDs.contains($0.id) })
                 plan("Causabee Pro", "The bigger AI, up to a monthly limit · every matter · names always disguised",
                      price: nil, current: store.plan == .pro, products: store.products.filter { Store.proIDs.contains($0.id) })
+                ProBar()
                 if store.products.isEmpty {
                     Text(Self.noStoreWords).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }

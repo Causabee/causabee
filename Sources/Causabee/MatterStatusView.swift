@@ -300,12 +300,12 @@ struct MatterStatusView: View {
                     AutoLine(matter: matter)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    Button("Update · \(PriceEstimates.summary(matter))", action: writeSummary)
+                    Button("Update\(PriceEstimates.summary(matter))", action: writeSummary)
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
                     Spacer()
                 } else {
                     Spacer()
-                    Button("Write the brief · \(PriceEstimates.summary(matter))", action: writeSummary)
+                    Button("Write the brief\(PriceEstimates.summary(matter))", action: writeSummary)
                         .help("Causabee's adviser writes what it understands of this matter, the summary and the next step, and proposes changes to the list — from the facts, pseudonymised.")
                 }
             }
@@ -412,7 +412,7 @@ struct MatterStatusView: View {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
                             .help("Causabee suggested this on \(Dates.short(at)); the matter has changed since.")
                     }
-                    Button((fresh ? "ask again · " : "Suggest better · ") + PriceEstimates.step(matter), action: askStep)
+                    Button((fresh ? "ask again" : "Suggest better") + PriceEstimates.step(matter), action: askStep)
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
                         .help("Causabee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
                 }

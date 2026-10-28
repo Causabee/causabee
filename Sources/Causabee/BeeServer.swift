@@ -1,0 +1,173 @@
+import Foundation
+import MatterCore
+import SwiftUI
+
+/// Causabee Pro through the beeserver — for now a switch for testing, with a token made by hand
+/// (concept/pro-service.md, step 1). On, the AI's requests go to the beeserver with the Pro token
+/// and Causabee's own keys are added there; the app shows how much of this month's Pro is used,
+/// never what anything cost. The token is kept like the API keys: in iCloud Keychain, so the
+/// owner's other devices have it too.
+@MainActor
+@Observable
+final class BeeServer {
+    static let shared = BeeServer()
+
+    nonisolated static let addressKey = "beeserver.address"
+    nonisolated static let tokenName = "CAUSABEE_PRO_TOKEN"
+    /// Until subscriptions hand out tokens and the server has its own name.
+    nonisolated static let defaultAddress = "https://beeserver.ralf-e2a.workers.dev"
+
+    var address: String = UserDefaults.standard.string(forKey: addressKey) ?? "" {
+        didSet { UserDefaults.standard.set(address, forKey: Self.addressKey) }
+    }
+    /// This month's Pro: the share used 0…1, and the day it starts anew — as the server said last.
+    var monthUsed: Double?
+    var renewsOn: String?
+    var problem: String?
+
+    var token: String? { Self.storedToken }
+    var relay: URL? { Self.relay }
+
+    nonisolated static var storedToken: String? { APIKeys.get(tokenName) }
+
+    /// A token is kept: Pro goes through the beeserver, and the bolt turns it on and off.
+    nonisolated static var isSetUp: Bool { relay != nil }
+
+    nonisolated static var relay: URL? {
+        guard storedToken != nil else { return nil }
+        let typed = (UserDefaults.standard.string(forKey: addressKey) ?? "").trimmingCharacters(in: .whitespaces)
+        guard let url = URL(string: typed.isEmpty ? defaultAddress : typed), url.scheme == "https" else { return nil }
+        return url
+    }
+
+    /// The client for a model through the beeserver; nil when none is set up, or for Mistral,
+    /// which Pro does not offer. Read from what is stored, so it can be asked from anywhere.
+    nonisolated static func client(for model: Claude.Model) -> Claude? {
+        guard !model.isMistral, let relay, let token = storedToken else { return nil }
+        return Claude(key: token, relay: relay)
+    }
+
+    /// Hears what the server says after each answer.
+    static func listen() {
+        Money.hidden = isSetUp
+        Claude.allowanceSeen = { used, renews in
+            Task { @MainActor in
+                BeeServer.shared.monthUsed = used
+                if !renews.isEmpty { BeeServer.shared.renewsOn = renews }
+                // Used up: the bolt goes off by itself, and Apple's model on the device takes over.
+                if used >= 1, UserDefaults.standard.bool(forKey: AutoMode.key) {
+                    UserDefaults.standard.set(false, forKey: AutoMode.key)
+                    BeeServer.shared.problem = "This month's Pro is used up, so Pro is off until it starts anew. Apple's model on this device reads new mail meanwhile."
+                }
+            }
+        }
+    }
+
+    /// Asks the server how much of this month is used.
+    func refresh() async {
+        guard let relay, let token else { return }
+        var request = URLRequest(url: relay.appendingPathComponent("v1/allowance"))
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200,
+                  let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                problem = "The beeserver did not answer as it should."
+                return
+            }
+            monthUsed = object["monthUsed"] as? Double
+            renewsOn = object["renewsOn"] as? String
+            problem = nil
+        } catch {
+            problem = plainWords(error)
+        }
+    }
+
+    /// "Renews 1 November", from the server's "2026-11-01".
+    var renewsWords: String? {
+        guard let renewsOn, let date = MatterStatus.date(of: renewsOn) else { return nil }
+        return "renews " + date.formatted(.dateTime.day().month(.wide))
+    }
+}
+
+/// This month's Pro as a bar: how much is left, and when it starts anew — never money.
+struct ProBar: View {
+    @State private var server = BeeServer.shared
+
+    var body: some View {
+        Group { bar }
+            // Shown before any answer came this time: asked of the server once.
+            .task { if BeeServer.isSetUp, server.monthUsed == nil { await server.refresh() } }
+    }
+
+    @ViewBuilder private var bar: some View {
+        if BeeServer.isSetUp, let used = server.monthUsed {
+            let left = max(0, 1 - used)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text("This month's Pro").font(.subheadline.weight(.medium))
+                    Spacer(minLength: 0)
+                    Text("\(Int((left * 100).rounded())) % left" + (server.renewsWords.map { " · \($0)" } ?? ""))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                GeometryReader { box in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Theme.box)
+                        Capsule().fill(left > 0.2 ? Theme.bee : Theme.warning).frame(width: max(6, box.size.width * left))
+                    }
+                }
+                .frame(height: 8)
+                .accessibilityElement()
+                .accessibilityLabel("This month's Pro: \(Int((left * 100).rounded())) percent left")
+                if left <= 0 {
+                    Text("Used for this month. Causabee goes on with Apple's models until it starts anew.")
+                        .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+}
+
+/// Where Pro's token is kept until subscriptions hand them out, and the address it goes to. The
+/// bolt turns Pro on and off.
+/// Shown in Settings only once a token is kept, after the version line is tapped five times, or
+/// while `--beeserver` is given at start.
+struct BeeServerSettings: View {
+    @State private var server = BeeServer.shared
+    @State private var pastedToken = ""
+
+    static let revealedKey = "beeserver.revealed"
+
+    static var shows: Bool {
+        UserDefaults.standard.bool(forKey: revealedKey) || BeeServer.shared.token != nil || CommandLine.arguments.contains("--beeserver")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("The bolt turns Pro on and off. On: GPT-6.1 Sol reads new mail as it comes and answers, sent pseudonymised. Off: Apple's model on this device reads new mail — nothing leaves it.")
+                .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            TextField(BeeServer.defaultAddress, text: $server.address)
+                .textFieldStyle(.roundedBorder)
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+                #endif
+            HStack(spacing: 8) {
+                SecureField(server.token == nil ? "Pro token (bee_…)" : "Pro token kept — paste to replace", text: $pastedToken)
+                    .textFieldStyle(.roundedBorder)
+                Button("Keep") {
+                    try? APIKeys.save(pastedToken.trimmingCharacters(in: .whitespacesAndNewlines), as: BeeServer.tokenName)
+                    pastedToken = ""
+                    Task { await server.refresh() }
+                }
+                .disabled(!pastedToken.hasPrefix("bee_"))
+            }
+            if server.token != nil, server.relay == nil {
+                Text("The address must start with https://").font(.footnote).foregroundStyle(Theme.warning)
+            }
+            if let problem = server.problem { Text(problem).font(.footnote).foregroundStyle(Theme.warning) }
+            ProBar()
+        }
+        .task { await server.refresh() }
+    }
+}
