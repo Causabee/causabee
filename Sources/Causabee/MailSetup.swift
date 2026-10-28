@@ -43,6 +43,8 @@ struct MailSetupFlow: View {
     @State private var failure = ""
     @State private var usualPasswordSent = false
     @State private var clipboardHasText = false
+    /// Back from Google's 2-Step page: the check turns to going on.
+    @State private var checkedAtGoogle = false
     @FocusState private var typingAddress: Bool
 
     static let labelName = "Causabee"
@@ -180,7 +182,14 @@ struct MailSetupFlow: View {
                 if kind == .google || kind == .apple || kind == .appPassword { primary("Make a new app password") { if let page = provider?.passwordPage ?? makePasswordURL { openURL(page) }; password = ""; path.removeLast() } }
                 else { primary("Type it again") { password = ""; path.removeLast() } }
                 secondary("Paste again") { password = ""; path.removeLast() }
-            case .twoStep: primary("Turn it on at Google") { openURL(URL(string: "https://myaccount.google.com/signinoptions/twosv")!) }; secondary("Back") { back() }
+            case .twoStep:
+                if checkedAtGoogle {
+                    primary("It’s on — continue") { toAppPassword() }
+                    secondary("Open Google again") { openTwoStep() }
+                } else {
+                    primary("Check at Google") { openTwoStep() }
+                    secondary("It’s already on") { toAppPassword() }
+                }
             case .offline, .failed: primary("Try again now") { replaceTop(.connecting); connect() }; secondary("Check the settings") { path.removeLast() }
             default: EmptyView()
             }
@@ -392,12 +401,29 @@ struct MailSetupFlow: View {
     }
 
     @ViewBuilder private var twoStep: some View {
-        title("First, one thing at Google")
-        lead("Google only makes app passwords once 2-Step Verification is on. It protects your account too, and takes about two minutes.")
-        SetupHint(number: 1, text: "\(Self.tap) “Turn it on at Google”.")
-        SetupHint(number: 2, text: "Follow Google’s steps — it sends a code to your phone.")
-        SetupHint(number: 3, text: "Come back: Causabee goes on where you left off.")
-        note("Causabee keeps your place. Nothing you did so far is lost.")
+        title("First, one check at Google")
+        lead("Google makes a password for apps only when 2-Step Verification is on. Many accounts have it — but not always when you sign in with a passkey.")
+        SetupHint(number: 1, text: "\(Self.tap) “Check at Google” and sign in if asked.")
+        SetupHint(number: 2, text: "If Google offers to turn it on, do it and add your phone number. Your passkey stays as it is.")
+        SetupHint(number: 3, text: "Come back here — Causabee keeps your place.")
+        if isWorkspace {
+            note("At work or on your own domain, whoever runs your Google account may have to allow 2-Step Verification first.", quiet: true)
+        }
+    }
+
+    private var isWorkspace: Bool {
+        guard let domain = MailDiscovery.domain(of: address) else { return false }
+        return !MailProvider.gmail.domains.contains(domain)
+    }
+
+    private func openTwoStep() {
+        openURL(URL(string: "https://myaccount.google.com/signinoptions/twosv")!)
+        checkedAtGoogle = true
+    }
+
+    /// On to the app password — back to it when the check came from there.
+    private func toAppPassword() {
+        if path.dropLast().last == .password { path.removeLast() } else { go(.password) }
     }
 
     @ViewBuilder private var offline: some View {
@@ -431,6 +457,10 @@ struct MailSetupFlow: View {
         let typed = address.trimmingCharacters(in: .whitespaces)
         if MailProvider.isOutlook(typed) { go(.outlook); return }
         if let known = MailProvider.by(address: typed) { use(known); return }
+        // Gmail or iCloud chosen, on an own domain: the choice is trusted — where the domain's mail
+        // is delivered doesn't always say where the account is.
+        if chosen == .gmail { use(.gmail); return }
+        if chosen == .icloud { use(.icloud); return }
         finding = true
         Task {
             let found = await MailDiscovery.find(typed)
@@ -448,7 +478,8 @@ struct MailSetupFlow: View {
     private func use(_ known: MailProvider) {
         provider = known; chosen = known.kind; host = known.host; port = String(known.port)
         password = ""
-        go(.password)
+        // Gmail asks for 2-Step Verification before any app password — checked first, so no one meets "not available".
+        go(known.kind == .gmail ? .twoStep : .password)
     }
 
     private static func settings(_ provider: MailProvider) -> URL? {
