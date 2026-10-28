@@ -167,6 +167,16 @@ struct PlanSettings: View {
                  : "Off: Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it.")
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             ProBar()
+            if let topUp = store.products.first(where: { Store.topUpIDs.contains($0.id) }) {
+                Button {
+                    Task { await store.buy(topUp) }
+                } label: {
+                    if store.buying == topUp.id { BeeLoader(size: 14) } else { Text("More Pro this month · \(topUp.displayPrice)") }
+                }
+                .buttonStyle(.borderless)
+                .disabled(store.buying != nil)
+                Text("Half a month more, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
+            }
         }
         if let problem = server.problem ?? store.problem {
             Text(problem).font(.footnote).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
