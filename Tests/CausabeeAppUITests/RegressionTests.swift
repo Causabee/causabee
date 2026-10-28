@@ -106,7 +106,10 @@ final class RegressionTests: XCTestCase {
         let words = "Mum prefers mornings \(stamp)"
         choose("Note", from: "assistant.plus")
         type(words, into: "note.field", "“Note” was picked and the note's field did not open.")
-        press("Add")
+        // The note's own round arrow, "Add note": a plain "Add" is another card's.
+        let add = element("note.add")
+        XCTAssertTrue(add.waitForExistence(timeout: 5), "The note's add button did not show.")
+        add.click()
         let note = app.staticTexts.matching(NSPredicate(format: "value == %@ OR label == %@", words, words)).firstMatch
         XCTAssertTrue(note.waitForExistence(timeout: 8), "The note was added and is not among the notes.")
     }
