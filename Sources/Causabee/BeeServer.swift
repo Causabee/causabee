@@ -169,9 +169,13 @@ struct ProBar: View {
     @State private var server = BeeServer.shared
 
     var body: some View {
-        Group { bar }
-            // Shown before any answer came this time: asked of the server once.
-            .task { if BeeServer.isSetUp { await server.refresh() } }
+        // Asked of the server each time it is shown — on a view that is there before the answer is:
+        // an empty one would never be shown, and so never ask.
+        VStack(alignment: .leading, spacing: 0) {
+            Color.clear.frame(height: 0)
+            bar
+        }
+        .task { if BeeServer.isSetUp { await server.refresh() } }
     }
 
     @ViewBuilder private var bar: some View {
