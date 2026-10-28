@@ -41,6 +41,8 @@ final class Store {
         case billingProblem(until: Date?)
     }
     private(set) var renewal: Renewal?
+    /// This Apple Account may still have the group's free trial: it is offered once.
+    private(set) var trialOpen = false
 
     /// The app's own id for this Apple Account, sent with every purchase so the beeserver puts them
     /// into one account — Plus's top-ups and a later Pro too. Kept in iCloud Keychain: the same on
@@ -89,6 +91,21 @@ final class Store {
 
     func load() async {
         products = ((try? await Product.products(for: Self.mattersIDs + Self.proIDs + Self.topUpIDs)) ?? []).sorted { $0.price < $1.price }
+        trialOpen = await products.first(where: { Self.proIDs.contains($0.id) })?.subscription?.isEligibleForIntroOffer ?? false
+    }
+
+    /// "1 week free, then €7.99 a month" while the trial is still open; otherwise the price alone.
+    func offer(of product: Product) -> String {
+        guard trialOpen, let intro = product.subscription?.introductoryOffer, intro.paymentMode == .freeTrial else { return Self.price(of: product) }
+        let period = intro.period
+        let unit = switch period.unit {
+        case .day: period.value == 1 ? "day" : "days"
+        case .week: period.value == 1 ? "week" : "weeks"
+        case .month: period.value == 1 ? "month" : "months"
+        case .year: period.value == 1 ? "year" : "years"
+        @unknown default: "periods"
+        }
+        return "\(period.value) \(unit) free, then " + Self.price(of: product)
     }
 
     /// A transaction done with: a top-up only once the beeserver has added it — until then the

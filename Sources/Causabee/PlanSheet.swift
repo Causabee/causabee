@@ -113,7 +113,7 @@ struct PlanSheet: View {
                         Button {
                             Task { await store.buy(product) }
                         } label: {
-                            if store.buying == product.id { BeeLoader(size: 14) } else { Text(Store.price(of: product)) }
+                            if store.buying == product.id { BeeLoader(size: 14) } else { Text(store.offer(of: product)) }
                         }
                         .filledButton()
                         .disabled(store.buying != nil)
