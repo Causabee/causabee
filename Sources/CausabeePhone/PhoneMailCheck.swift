@@ -118,7 +118,9 @@ final class PhoneMailCheck {
     }
 
     /// The door to the label, or why there is none — the same for a check by hand or by itself.
-    private func door(context: ModelContext) -> (door: DailyDoor?, why: String?) {
+    /// What the store knows is read by the worker — every answer, every mail in a matter, every
+    /// person's address: on the screen's thread it held the screen up.
+    private func door(context: ModelContext) async -> (door: DailyDoor?, why: String?) {
         guard let account = Keychain.accounts().first(where: { !$0.usesGoogle }) else {
             return (nil, "No mail account yet: add it in Settings (⋯ above).")
         }
@@ -129,21 +131,21 @@ final class PhoneMailCheck {
         do { try NameLists.adopt(into: door.mapping, device: PhoneNames.device, in: context) } catch {
             return (nil, "The list of names cannot be written: \(error.localizedDescription)")
         }
-        door.earlier = SortedMails.answered(in: context)
-        // Mail in a matter was sorted somewhere: not read again, whatever the record says.
-        let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
-        door.alsoKnown = Set(entries.map(\.messageID))
         // Left out here or on another device; what this one left out before it was shared, shared now.
-        SortedMails.setAside(Self.setAside.union(UnplacedAside.all), device: PhoneNames.device, in: context)
-        door.setAside = Self.setAside.union(SortedMails.setAside(in: context))
+        let known = await StoreWorker.for(context.container)
+            .mailKnown(leftOutHere: Self.setAside.union(UnplacedAside.all), device: PhoneNames.device)
+        door.earlier = known.answered
+        // Mail in a matter was sorted somewhere: not read again, whatever the record says.
+        door.alsoKnown = known.inMatters
+        door.setAside = Self.setAside.union(known.setAside)
         // New mail from the people of the matters is found without a label, and offered.
-        door.knownSenders = KnownSenders.addresses(in: (try? context.fetch(FetchDescriptor<Matter>())) ?? [])
+        door.knownSenders = known.knownSenders
         // A mail sent from a draft opened in a matter goes into it, label or not.
-        door.sentDrafts = LabelIntake.SentDraft.recent(in: context)
+        door.sentDrafts = known.sentDrafts
         // A Mac that sorted mail before shares what it sorted when the new Causabee starts there.
         // Until it has, every mail it answered would look new here — read again, and offered to
         // be sent again.
-        if door.earlier.isEmpty, entries.contains(where: { $0.source.kind == .mail }) {
+        if door.earlier.isEmpty, known.hasMail {
             return (nil, "Your Mac has not shared what it sorted yet. Open Causabee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again.")
         }
         return (door, nil)
@@ -181,7 +183,7 @@ final class PhoneMailCheck {
             defer { checking = false; UIApplication.shared.endBackgroundTask(keep) }
             // What the other devices sorted meanwhile, in from iCloud first: otherwise it looks new.
             await CloudCatchUp.shared.caughtUp()
-            guard let door = door(context: context).door else { return }
+            guard let door = await door(context: context).door else { return }
             guard let password = try? Keychain.password(for: door.account.user),
                   let look = try? await door.look(password: password) else { return }
             lastChecked = Date()
@@ -205,13 +207,12 @@ final class PhoneMailCheck {
         defer { checking = false }
         // What the other devices sorted meanwhile — not waited for long, there is little time.
         await CloudCatchUp.shared.caughtUp(limit: .seconds(6))
-        guard let door = door(context: context).door,
+        guard let door = await door(context: context).door,
               let password = try? Keychain.password(for: door.account.user),
               var look = try? await door.look(password: password) else { return }
         lastChecked = Date()
         // Sorted on another device right before: not new here.
-        let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
-        look = look.without(SortedMails.answeredIDs(in: context).union(entries.map(\.messageID)))
+        look = look.without(await StoreWorker.for(context.container).settled())
         guard isQuiet, look.pending > 0, !look.newIDs.isEmpty else { return }
         state = .newMail(look, door)
         MailNotice.tell(look)
@@ -238,9 +239,15 @@ final class PhoneMailCheck {
         case .newMail, .ready, .answered: break
         default: return
         }
-        let entries = (try? context.fetch(FetchDescriptor<Entry>())) ?? []
-        // The ids are enough: an answer in the store is a mail dealt with.
-        let known = SortedMails.answeredIDs(in: context).union(entries.map(\.messageID))
+        // The ids are enough: an answer in the store is a mail dealt with. Read by the worker,
+        // and settled against the state as it is when they come.
+        Task {
+            let known = await StoreWorker.for(context.container).settled()
+            settle(known)
+        }
+    }
+
+    private func settle(_ known: Set<String>) {
         switch state {
         case .newMail(let look, let door):
             let left = Set(look.newIDs.filter { !known.contains($0) })
@@ -269,7 +276,8 @@ final class PhoneMailCheck {
     /// ticked, all are left out, and nothing is sent.
     func sortIn(_ chosen: Set<String>, of look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
         Self.setAside.formUnion(Set(look.newIDs).subtracting(chosen))
-        SortedMails.setAside(Set(look.newIDs).subtracting(chosen), device: PhoneNames.device, in: context)
+        let leftOut = Set(look.newIDs).subtracting(chosen)
+        Task { await StoreWorker.for(context.container).setAside(leftOut, device: PhoneNames.device) }
         guard !chosen.isEmpty else { state = .nothingNew(known: look.intake.alreadyKnown); return }
         classify(look.only(chosen), with: door, context: context, owner: owner)
     }
@@ -286,7 +294,7 @@ final class PhoneMailCheck {
             defer { UIApplication.shared.endBackgroundTask(keep) }
             // What the other devices sorted meanwhile, in from iCloud first — a short wait, asked for by hand.
             await CloudCatchUp.shared.caughtUp(limit: .seconds(8))
-            let (found, why) = door(context: context)
+            let (found, why) = await door(context: context)
             guard let door = found else { state = .failed(why ?? "Mail cannot be read."); return }
             let account = door.account
             do {
@@ -362,8 +370,6 @@ final class PhoneMailCheck {
     func classify(_ look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
         // Asked once more right before anything is sent: another device may have sorted some of it
         // while this one looked — read twice, its tasks came twice.
-        let look = look.without(SortedMails.known(in: context))
-        guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
         // Locked, the key cannot be read — it is there all the same: the mail waits to be read.
         if !UIApplication.shared.isProtectedDataAvailable { state = .newMail(look, door); return }
         let reader = ModelChoice.mailReader(for: door.model)
@@ -374,6 +380,9 @@ final class PhoneMailCheck {
         let background = UIApplication.shared.beginBackgroundTask(withName: "Reading mail")
         Task {
             defer { UIApplication.shared.endBackgroundTask(background) }
+            let look = look.without(await StoreWorker.for(context.container).dealtWith())
+            guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
+            state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
             do {
                 let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), placed: Unplaced.placed(in: context), onFile: Unplaced.onFile(in: context))
                 let answered = Answered(judgements: judgements, cost: summary.cost, failed: summary.failed.count, look: look, door: door)
