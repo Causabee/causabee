@@ -651,9 +651,8 @@ struct FileFace<Items: View>: View {
     }
 }
 
-/// A picture or a PDF as a small picture of itself, when the file is on this device — one of
-/// ours, or one from a mail opened before. Otherwise its sign, as before: nothing is fetched from
-/// the mail just to show it.
+/// A picture or a PDF as a small picture of itself: from the file on this device — one of ours,
+/// or one from a mail opened before — or taken out of its mail for it, read-only. Its sign until then.
 struct FileThumbnail: View {
     let document: MatterCore.Document
     let symbol: String
@@ -687,7 +686,10 @@ struct FileThumbnail: View {
     }
 
     private func load() async {
-        guard shows, let file = Self.onDevice(document) else { return }
+        guard shows else { return }
+        var found = Self.onDevice(document)
+        if found == nil { found = await MailPreviews.fetch(document) }
+        guard let file = found else { return }
         let key = file.path as NSString
         if let known = Self.made.object(forKey: key) { picture = known.image; return }
         let request = QLThumbnailGenerator.Request(fileAt: file, size: Self.size, scale: scale, representationTypes: .thumbnail)
@@ -712,6 +714,44 @@ struct FileThumbnail: View {
             if files.fileExists(atPath: file.path) { return file }
         }
         return nil
+    }
+}
+
+/// Pictures and PDFs still in their mail, taken out one at a time so their small picture can show:
+/// read-only, only that one mail, and kept where opening the file looks first — so it opens at once
+/// too. Each is tried once a launch; a large one is left until it is opened.
+@MainActor
+enum MailPreviews {
+    private static var last: Task<Void, Never>?
+    private static var tried = Set<String>()
+    static let largest = 15_000_000
+
+    static func fetch(_ document: MatterCore.Document) async -> URL? {
+        let pointer = document.source.pointer
+        guard !document.isOwnFile, pointer.hasPrefix("imap://"), document.byteCount <= largest,
+              tried.insert(document.messageID + "/" + document.name).inserted else { return nil }
+        // The account on the mail's server, so a password only ever goes where it belongs.
+        let host = pointer.firstMatch(of: /^imap:\/\/([^\/]+)\//).map { String($0.output.1) }
+        let accounts = Keychain.accounts()
+        guard let account = accounts.first(where: { $0.host == host }) ?? (host == nil ? accounts.first : nil) else { return nil }
+        let (name, messageID) = (document.name, document.messageID)
+        let before = last
+        let fetching = Task { () -> URL? in
+            await before?.value
+            guard let password = try? await MailSecret.secret(for: account) else { return nil }
+            return try? await MailFetch.file(name, pointer: pointer, messageID: messageID, account: account, password: password, cache: cache)
+        }
+        last = Task { _ = await fetching.value }
+        return await fetching.value
+    }
+
+    private static var cache: URL {
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        #if os(macOS)
+        return caches.appendingPathComponent("Causabee/Anhänge", isDirectory: true)
+        #else
+        return MailFiles.cache
+        #endif
     }
 }
 
