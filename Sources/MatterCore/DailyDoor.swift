@@ -142,7 +142,9 @@ public struct DailyDoor: Sendable {
         let client = try await IMAPClient.connect(to: account, password: password)
         let intake: LabelIntake.Result
         do {
-            var reading = LabelIntake(label: label, host: account.host, known: settled)
+            // Mail left out is not fetched again either: it was downloaded, read and disguised at
+            // every check, only to be dropped below — more of it every week.
+            var reading = LabelIntake(label: label, host: account.host, known: settled.union(setAside))
             // A scan mailed to yourself with the label's name in the subject counts as labelled.
             reading.keyword = label
             reading.ownAddresses = [account.user]
