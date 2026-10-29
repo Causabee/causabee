@@ -68,9 +68,10 @@ struct SetupAssistant: View {
     /// The owner chose "Later": not shown by itself again. Still in the Causabee menu.
     static let laterKey = "setup.later"
 
-    /// The two things Causabee cannot work without: a key for the model that sorts mail, and a mail account.
+    /// What Causabee cannot work without: a mail account. No key: without Pro, Apple's model on
+    /// this Mac reads the mail.
     @MainActor static var isMissingSomething: Bool {
-        !SetupState.hasKey(for: SetupState.mailModel) || SetupState.mailAccount == nil
+        SetupState.mailAccount == nil
     }
 
     enum Step: Int, CaseIterable, Identifiable {
@@ -79,7 +80,7 @@ struct SetupAssistant: View {
         var title: String {
             switch self {
             case .you: "About you"
-            case .ai: "AI and API key"
+            case .ai: "Your plan"
             case .mail: "Mail"
             case .calendar: "Calendar"
             case .ready: "Ready"
@@ -88,7 +89,7 @@ struct SetupAssistant: View {
         var icon: String {
             switch self {
             case .you: "person"
-            case .ai: "key"
+            case .ai: "sparkles"
             case .mail: "envelope"
             case .calendar: "calendar"
             case .ready: "checkmark.seal"
@@ -134,7 +135,7 @@ struct SetupAssistant: View {
         _ = tick
         switch step {
         case .you: return !(SetupState.isFresh ? SetupState.names : profiles.first?.names ?? []).isEmpty
-        case .ai: return SetupState.hasKey(for: SetupState.mailModel)
+        case .ai: return true
         case .mail: return SetupState.mailAccount != nil
         case .calendar: return SetupState.isCalendarConnected
         case .ready: return !SetupAssistant.isMissingSomething
@@ -180,7 +181,7 @@ struct SetupAssistant: View {
     private var page: some View {
         switch step {
         case .you: YouStep(names: SetupState.isFresh ? SetupState.names : profiles.first?.names ?? []) { names in saveNames(names) }
-        case .ai: AIStep { tick += 1 }
+        case .ai: PlanStep()
         case .mail: MailStep { tick += 1 }
         case .calendar: CalendarStep { tick += 1 }
         case .ready: readyPage
@@ -238,8 +239,8 @@ struct SetupAssistant: View {
             Text("How it goes from here")
                 .font(.headline)
             Hint(number: 1, text: "Put the label “Causabee” on the mails you want sorted. Start with a few from one matter.")
-            Hint(number: 2, text: "Click “Get new mail”. Causabee reads them for free and tells you what sorting will cost.")
-            Hint(number: 3, text: "Click “Sort in”. Each mail is sorted once, into a matter with its tasks, dates and people.")
+            Hint(number: 2, text: "Click “Get new mail”. Causabee fetches them; nothing is read by an AI yet.")
+            Hint(number: 3, text: "Click “Sort in”. Each mail is sorted once — by Apple's model on this Mac, or with Pro by the bigger AI — into a matter with its tasks, dates and people.")
             Hint(number: 4, text: "Drop a screenshot or a PDF onto the window any time. It is sorted the same way.")
         }
     }
@@ -304,142 +305,17 @@ private struct YouStep: View {
     }
 }
 
-// MARK: 2 · AI and key
+// MARK: 2 · Your plan
 
-private struct AIStep: View {
-    let changed: () -> Void
-
-    enum Provider: String, CaseIterable, Identifiable {
-        case claude, mistral, openai
-        var id: String { rawValue }
-        var model: Claude.Model {
-            switch self {
-            case .claude: .opus
-            case .mistral: .mistralLarge
-            case .openai: .gptSol
-            }
-        }
-        var name: String {
-            switch self {
-            case .claude: "Claude (Anthropic)"
-            case .mistral: "Mistral"
-            case .openai: "OpenAI"
-            }
-        }
-        var about: String {
-            switch self {
-            case .claude: "Recommended. Best at finding the real tasks in a mail. Servers in the USA."
-            case .mistral: "From Paris, in the EU. Cheaper, and sorts almost as well."
-            case .openai: "Servers in the USA."
-            }
-        }
-        var keyPage: URL {
-            switch self {
-            case .claude: URL(string: "https://console.anthropic.com/settings/keys")!
-            case .mistral: URL(string: "https://console.mistral.ai/api-keys")!
-            case .openai: URL(string: "https://platform.openai.com/api-keys")!
-            }
-        }
-    }
-
-    @State private var pasted = ""
-    @State private var checking = false
-    @State private var result: (text: String, good: Bool)?
-    @State private var tick = 0
-
-    private var provider: Provider {
-        let _ = tick
-        let model = SetupState.mailModel
-        return model.isMistral ? .mistral : model.isOpenAI ? .openai : .claude
-    }
-
+/// Which plan, in place of a key: free, Apple's model on this Mac reads the mail; Plus and Pro
+/// are bought on the iPhone or the iPad, and this Mac follows through iCloud. Own keys are in
+/// Settings › Developer, for testing.
+private struct PlanStep: View {
     var body: some View {
-        let _ = tick
-        let hasKey = SetupState.hasKey(for: provider.model)
         VStack(alignment: .leading, spacing: 14) {
-            Explain("Causabee uses an AI to read each mail and find its matter, tasks and dates. You pay the AI company yourself, by use. Before anything is sent, names, addresses and numbers are replaced.")
-            Picker("AI", selection: Binding(get: { provider }, set: { choose($0) })) {
-                ForEach(Provider.allCases) { Text($0.name).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            Explain(provider.about + String(format: " About %.1f cents per mail.", provider.model.perMail * 100))
-
-            if hasKey {
-                Outcome(text: "The \(provider.name) key is saved\(SetupState.isFresh ? " for this test only" : " in the Keychain").", good: true)
-            }
-            Text(hasKey ? "Replace the key" : "Your API key").font(.headline).padding(.top, 6)
-            HStack {
-                SecureField("Paste the key", text: $pasted).textFieldStyle(.roundedBorder)
-                Button(checking ? "Checking …" : "Check and save") { check() }
-                    .disabled(checking || pasted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-            if let result { Outcome(text: result.text, good: result.good) }
-            Link("Where do I get a key? Open the \(provider.name) console →", destination: provider.keyPage)
-                .foregroundStyle(Theme.gold)
-            Explain("Make an account there, add a little credit — five or ten euros goes a long way — and make a new key. It is kept in your Mac's Keychain, never in a file. Checking it is free.")
-        }
-    }
-
-    private func choose(_ provider: Provider) {
-        SetupState.choose(provider.model)
-        tick += 1
-        result = nil
-        changed()
-    }
-
-    private func check() {
-        let key = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
-        let provider = provider
-        checking = true
-        result = nil
-        Task {
-            let answer = await KeyCheck.check(key, for: provider)
-            if answer.good {
-                do {
-                    try SetupState.saveKey(key, for: provider.model)
-                    pasted = ""
-                    result = ("The key works, and is saved\(SetupState.isFresh ? " for this test only" : " in the Keychain").", true)
-                } catch {
-                    result = ("The key works, but could not be saved: \(plainWords(error))", false)
-                }
-            } else {
-                result = (answer.text, false)
-            }
-            checking = false
-            tick += 1
-            changed()
-        }
-    }
-}
-
-/// Asks the provider for its list of models with the key: free, and it says whether the key is good.
-private enum KeyCheck {
-    static func check(_ key: String, for provider: AIStep.Provider) async -> (text: String, good: Bool) {
-        var request: URLRequest
-        switch provider {
-        case .claude:
-            request = URLRequest(url: URL(string: "https://api.anthropic.com/v1/models?limit=1")!)
-            request.setValue(key, forHTTPHeaderField: "x-api-key")
-            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        case .mistral:
-            request = URLRequest(url: URL(string: "https://api.mistral.ai/v1/models")!)
-            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        case .openai:
-            request = URLRequest(url: URL(string: "https://api.openai.com/v1/models")!)
-            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        }
-        request.timeoutInterval = 20
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            switch status {
-            case 200: return ("", true)
-            case 401, 403: return ("\(provider.name) did not accept this key. Check that it was copied in full.", false)
-            default: return ("Could not check the key: \(provider.name) answered \(status). Try again in a moment.", false)
-            }
-        } catch {
-            return ("Could not reach \(provider.name): \(error.localizedDescription)", false)
+            Explain("Causabee is free for three open matters: Apple's model on this Mac reads your mail, and nothing leaves it. Causabee Plus holds every matter; Causabee Pro has the bigger AI read and answer, names disguised first.")
+            Explain("Plans are bought in the App Store on your iPhone or iPad. This Mac follows through iCloud — nothing to do here.")
+            Form { PlanSettings() }.formStyle(.grouped).frame(minHeight: 200)
         }
     }
 }
@@ -448,67 +324,31 @@ private enum KeyCheck {
 
 private struct MailStep: View {
     let changed: () -> Void
-    @State private var address = ""
-    @State private var password = ""
-    @State private var server = ""
     @State private var working = false
     @State private var result: (text: String, good: Bool)?
     /// What the label check found: nil until it was looked at.
     @State private var label: (found: Bool, mails: Int)?
-    @State private var flow = GoogleSignInFlow()
-    /// The last result came from Google's button, and is shown under it.
-    @State private var googleTried = false
     @State private var tick = 0
 
     private let labelName = "Causabee"
 
-    private var known: MailAccount? { MailAccount(user: address.trimmingCharacters(in: .whitespaces)) }
-    private var isGmail: Bool { (known?.host ?? server).contains("gmail") }
 
     var body: some View {
         let _ = tick
         let saved = SetupState.mailAccount
         VStack(alignment: .leading, spacing: 14) {
-            Explain("Causabee reads your mail the way a mail app does, with a password made just for it. It only reads: it never sends, deletes, moves or marks mail as read.")
             if let saved {
+                Explain("Causabee reads your mail the way a mail app does. It only reads: it never sends, deletes, moves or marks mail as read.")
                 Outcome(text: "Connected: \(saved.user)" + (saved.usesGoogle ? ", signed in with Google" : " on \(saved.host)"), good: true)
                 labelSection(saved)
             } else {
-                login
+                // The same setup as on the iPhone and the iPad: the address first, then its way in.
+                MailSetupFlow(save: { try SetupState.save($0, for: $1) }, embedded: true) { _ in
+                    tick += 1
+                    changed()
+                }
+                .frame(minHeight: 470)
             }
-        }
-    }
-
-    // A password for Causabee alone, where the provider makes one.
-    private var login: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if GoogleSignIn.isConfigured {
-                google
-            }
-            TextField("Email address", text: $address).textFieldStyle(.roundedBorder)
-                .textContentType(.emailAddress)
-            if !address.contains("@") || known != nil {
-                EmptyView()
-            } else {
-                TextField("Mail server (IMAP), for example imap.example.com", text: $server).textFieldStyle(.roundedBorder)
-                Explain("Only Gmail and iCloud addresses are known. For any other address, your mail provider tells you its IMAP server. A Google Workspace address on its own domain: imap.gmail.com.")
-            }
-            SecureField("App password", text: $password).textFieldStyle(.roundedBorder)
-            if known?.host == "imap.mail.me.com" {
-                Explain("iCloud: make an app-specific password at account.apple.com → Sign-In and Security → App-Specific Passwords.")
-                Link("Open account.apple.com →", destination: URL(string: "https://account.apple.com")!).foregroundStyle(Theme.gold)
-            } else {
-                Explain("Gmail: turn on 2-Step Verification, then make an app password named “Causabee”. Your normal Google password does not work here.")
-                Link("Open Google app passwords →", destination: URL(string: "https://myaccount.google.com/apppasswords")!).foregroundStyle(Theme.gold)
-            }
-            HStack {
-                Button(working ? "Logging in …" : "Log in") { logIn() }
-                    .disabled(working || !address.contains("@") || password.isEmpty || (known == nil && server.isEmpty))
-                if working { ProgressView().controlSize(.small) }
-            }
-            if let result, !googleTried { Outcome(text: result.text, good: result.good) }
-            Divider().padding(.vertical, 4)
-            labelHowTo(gmail: known?.host != "imap.mail.me.com" && (known != nil || server.isEmpty || isGmail))
         }
     }
 
@@ -557,76 +397,6 @@ private struct MailStep: View {
             .buttonStyle(.borderless).foregroundStyle(.secondary)
         }
         if let result, !result.good { Outcome(text: result.text, good: false) }
-    }
-
-    /// Gmail and Google Workspace without an app password: Google's own page, in the Mac's sign-in window.
-    private var google: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button { signInWithGoogle() } label: {
-                Label("Sign in with Google", systemImage: "person.crop.circle.badge.checkmark")
-            }
-            .inkButton()
-            .disabled(working)
-            Explain("For Gmail and Google Workspace. No app password needed: you sign in on Google's page, and Google shows what Causabee may do. Causabee only reads, and writes nothing but a draft when you click for one.")
-            if let result, working == false, googleTried { Outcome(text: result.text, good: result.good) }
-            HStack {
-                VStack { Divider() }
-                Text("or with an app password").font(.caption).foregroundStyle(.secondary)
-                VStack { Divider() }
-            }
-            .padding(.vertical, 6)
-        }
-    }
-
-    private func signInWithGoogle() {
-        working = true
-        result = nil
-        googleTried = true
-        Task {
-            do {
-                let hint = address.contains("@") ? address.trimmingCharacters(in: .whitespaces) : nil
-                let (account, token) = try await flow.signIn(hint: hint, keep: !SetupState.isFresh)
-                // In the test only in memory; otherwise the refresh token is in the Keychain already.
-                if SetupState.isFresh { try SetupState.save(token, for: account) }
-                let client = try await IMAPClient.connect(to: account, password: token)
-                label = await count(in: (try? await client.folders()) ?? [], client: client)
-                await client.logout()
-                result = ("Signed in with Google as \(account.user).", true)
-            } catch where GoogleSignInFlow.wasCancelled(error) {
-                result = nil
-            } catch {
-                result = ("Not signed in: \(plainWords(error))", false)
-            }
-            working = false
-            tick += 1
-            changed()
-        }
-    }
-
-    private func logIn() {
-        googleTried = false
-        let user = address.trimmingCharacters(in: .whitespaces)
-        guard let account = known ?? (server.isEmpty ? nil : MailAccount(user: user, host: server.trimmingCharacters(in: .whitespaces))) else { return }
-        // Google shows an app password as four groups of four. The spaces are not part of it.
-        let secret = account.host == "imap.gmail.com" ? password.replacingOccurrences(of: " ", with: "") : password
-        working = true
-        result = nil
-        Task {
-            do {
-                let client = try await IMAPClient.connect(to: account, password: secret)
-                let folders = (try? await client.folders()) ?? []
-                label = await count(in: folders, client: client)
-                await client.logout()
-                try SetupState.save(secret, for: account)
-                password = ""
-                result = ("Logged in. The password is saved\(SetupState.isFresh ? " for this test only" : " in the Keychain").", true)
-            } catch {
-                result = ("Not logged in: \(plainWords(error))", false)
-            }
-            working = false
-            tick += 1
-            changed()
-        }
     }
 
     private func lookForLabel(_ account: MailAccount) {

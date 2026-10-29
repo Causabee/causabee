@@ -1,10 +1,15 @@
-import AppKit
 import AuthenticationServices
 import MatterCore
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
-/// Google's sign-in page in the Mac's own sign-in window, not in Causabee: the owner types their
-/// Google password there, where Causabee cannot see it, and Google comes back to the app's own
-/// address with a code. The window is the one Safari's passwords and passkeys work in.
+/// Google's sign-in page in the system's own sign-in window, not in Causabee — on the Mac, the
+/// iPhone and the iPad alike: the owner types their Google password there, where Causabee cannot
+/// see it, and Google comes back to the app's own address with a code. The window is the one
+/// Safari's passwords and passkeys work in.
 @MainActor
 final class GoogleSignInFlow: NSObject, ASWebAuthenticationPresentationContextProviding {
     private var session: ASWebAuthenticationSession?
@@ -28,7 +33,13 @@ final class GoogleSignInFlow: NSObject, ASWebAuthenticationPresentationContextPr
     }
 
     nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        MainActor.assumeIsolated { NSApp.keyWindow ?? NSApp.windows.first ?? ASPresentationAnchor() }
+        MainActor.assumeIsolated {
+            #if os(macOS)
+            NSApp.keyWindow ?? NSApp.windows.first ?? ASPresentationAnchor()
+            #else
+            UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
+            #endif
+        }
     }
 
     /// The owner closed the window: not an error worth showing.

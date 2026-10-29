@@ -151,21 +151,26 @@ struct WelcomeSheet: View {
 
     private var signedIn: Bool { sync.account == "signed in to iCloud" }
     private var hasAccount: Bool { !Keychain.accounts().filter { !$0.usesGoogle }.isEmpty }
-    private var hasKey: Bool { Claude.Model.choices.contains { Claude.key(for: $0) != nil } }
-    private var allThere: Bool { signedIn && hasAccount && hasKey }
+    private var allThere: Bool { signedIn && hasAccount }
+    /// No key needed: without Pro, Apple's model on the device reads the mail.
+    private var planWords: String {
+        switch Store.shared.plan {
+        case .free: "free — reads on this \(ThisDevice.name)"
+        case .matters: "Causabee Plus"
+        case .pro: "Causabee Pro"
+        }
+    }
 
     /// What this iPhone has: a tick and two words where it is there, a button where it is not.
     /// The list of names is no row: it comes from the Mac, and until it is there nothing is sent.
     private var checks: some View {
-        let there = [signedIn, hasKey, hasAccount].filter { $0 }.count
+        let there = [signedIn, true, hasAccount].filter { $0 }.count
         return VStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: "On this \(ThisDevice.name)", detail: there == 3 ? "All there" : "\(there) of 3 there")
             VStack(spacing: 0) {
                 check("iCloud", done: signedIn, detail: signedIn ? "from your Mac" : "sign in, in Settings")
                 Divider().padding(.leading, 48)
-                check("AI key", done: hasKey, detail: hasKey ? ModelChoice.assistant.label : "for the assistant") {
-                    Button("Add …") { opensSettings = true }.buttonStyle(.phone)
-                }
+                check("Plan", done: true, detail: planWords)
                 Divider().padding(.leading, 48)
                 check("Mail", done: hasAccount, detail: hasAccount ? "ready" : "for new mail") {
                     Button("Add …") { addsAccount = true }.buttonStyle(.phone)

@@ -125,12 +125,14 @@ struct IMAPTests {
         }
     }
 
-    @Test("Nothing that changes a mailbox is on the list of commands it can send")
+    @Test("Nothing that changes mail is on the list of commands it can send — only making the label it reads")
     func readOnly() {
         for verb in ["SELECT", "STORE", "UID STORE", "COPY", "UID COPY", "MOVE", "UID MOVE", "EXPUNGE",
-                     "UID EXPUNGE", "APPEND", "DELETE", "RENAME", "CREATE", "SUBSCRIBE"] {
+                     "UID EXPUNGE", "APPEND", "DELETE", "RENAME", "SUBSCRIBE"] {
             #expect(!IMAPClient.allowed.contains(verb), "\(verb)")
         }
+        // Asked for in the setup: the label or folder Causabee reads, made when it is not there.
+        #expect(IMAPClient.allowed.contains("CREATE"))
     }
 
     @Test("A wrong password is refused, says what to use instead, and is not repeated")
