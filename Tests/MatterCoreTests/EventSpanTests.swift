@@ -56,4 +56,13 @@ struct EventSpanTests {
         let german = try #require(Calendars.span(what: "Workshop bis 14:30 Uhr", day: "2026-10-30", time: "09:00"))
         #expect(Calendar.current.component(.hour, from: german.end) == 14)
     }
+
+    @Test func anEndInTheNameBecomesItsEnd() {
+        #expect(Calendars.endClock(in: "Causabee test session — ends at 11:45 am", after: "10:00") == "11:45")
+        #expect(Calendars.endClock(in: "Interview, 3:30–6:00 PM", after: "15:30") == "18:00")
+        #expect(Calendars.endClock(in: "Zahnarzt", after: "10:00") == nil)
+        #expect(Calendars.withoutEnd("Causabee test session — ends at 11:45 am") == "Causabee test session")
+        #expect(Calendars.withoutEnd("Workshop bis 14:30 Uhr") == "Workshop")
+        #expect(Calendars.withoutEnd("Portfolio review, 12:00–13:30") == "Portfolio review, 12:00–13:30")
+    }
 }

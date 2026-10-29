@@ -140,7 +140,24 @@ public enum Mirror {
         }
         if calendars.canReadEvents {
             for appointment in (try? context.fetch(FetchDescriptor<Appointment>())) ?? [] {
+                // Its end said only in its name, as the assistant once wrote it: kept as its end,
+                // and the name without it — Calendar gets both below.
+                if appointment.endTime == nil, let end = Calendars.endClock(in: appointment.what, after: appointment.time) {
+                    appointment.endTime = end
+                    appointment.what = Calendars.withoutEnd(appointment.what)
+                }
                 guard let id = appointment.calendarID, let event = calendars.event(id) else { continue }
+                // An event Causabee made an hour long, as every one was, while the appointment knows
+                // when it ends: given that end, before Calendar's end is taken as the owner's. One
+                // whose length the owner has set is theirs.
+                if event.notes?.hasPrefix("Causabee · ") == true, !event.isAllDay,
+                   abs(event.endDate.timeIntervalSince(event.startDate) - 3_600) < 1,
+                   let span = Calendars.span(what: appointment.what, day: appointment.day, time: appointment.time,
+                                             endDay: appointment.endDay, endTime: appointment.endTime),
+                   !span.allDay, abs(span.start.timeIntervalSince(event.startDate)) < 1, abs(span.end.timeIntervalSince(event.endDate)) > 1 {
+                    event.endDate = span.end
+                    if (try? calendars.store.save(event, span: .thisEvent, commit: false)) != nil { result.pushed += 1 }
+                }
                 let merge = Self.merge(local: [appointment.what, appointment.day, appointment.time ?? "", appointment.place ?? ""],
                                        remote: fields(of: event), stamp: stamps["event:" + id])
                 if merge.pulled {
@@ -158,14 +175,6 @@ public enum Mirror {
                 let written = !merge.pushed || write(merge.remote, to: event, calendars: calendars)
                 if merge.pushed, written { result.pushed += 1 }
                 if written { stamps["event:" + id] = merge.stamp }
-                // An event Causabee made an hour long, as every one was, although its words say when
-                // it ends: given its end once. One whose length the owner has set is theirs.
-                if event.notes?.hasPrefix("Causabee · ") == true, !event.isAllDay,
-                   abs(event.endDate.timeIntervalSince(event.startDate) - 3_600) < 1,
-                   let end = Calendars.end(in: event.title ?? "", from: event.startDate), abs(end.timeIntervalSince(event.endDate)) > 1 {
-                    event.endDate = end
-                    if (try? calendars.store.save(event, span: .thisEvent, commit: false)) != nil { result.pushed += 1 }
-                }
             }
             for deadline in (try? context.fetch(FetchDescriptor<Deadline>())) ?? [] {
                 guard let id = deadline.calendarID, let event = calendars.event(id) else { continue }

@@ -533,8 +533,8 @@ enum CardActions {
             undo = .removeLink(link.persistentModelID)
         case .newAppointment:
             guard let matter = scope, !text.isEmpty, let day = card.due else { return .nothing }
-            let item = Appointment(what: text, day: day, time: card.time, place: nil, source: source)
-            item.endTime = card.endTime
+            let item = Appointment(what: Calendars.withoutEnd(text), day: day, time: card.time, place: nil, source: source)
+            item.endTime = card.endTime ?? Calendars.endClock(in: text, after: card.time)
             item.endDay = card.endDay.flatMap { $0 > day ? $0 : nil }
             item.sources = used(card, inHand: inHand, refs: refs, in: matter, context: context) + item.sources
             context.insert(item)

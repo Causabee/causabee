@@ -95,6 +95,23 @@ public final class Calendars {
         return end > start ? end : nil
     }
 
+    /// The hour an appointment ends, read from its own words, as `HH:MM`: nil when they say none.
+    public nonisolated static func endClock(in what: String, after time: String?) -> String? {
+        guard let (hour, minute) = clock(time), let day = MatterStatus.date(of: "2026-01-15"),
+              let start = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: day),
+              let end = end(in: what, from: start) else { return nil }
+        let parts = Calendar.current.dateComponents([.hour, .minute], from: end)
+        return String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
+    }
+
+    /// Its name without the end said in it — "Test session — ends at 11:45 am" is "Test session":
+    /// the end is kept apart, and shown with the time.
+    public nonisolated static func withoutEnd(_ what: String) -> String {
+        let said = #/(?i)\s*[—–,-]?\s*\(?(?:ends? at|until|till|bis|endet um)\s*\d{1,2}[:.]\d{2}\s*(?:[AaPp]\.?[Mm]\.?|Uhr)?\)?/#
+        let left = what.replacing(said, with: "").trimmingCharacters(in: .whitespaces)
+        return left.isEmpty ? what : left
+    }
+
     /// The event this id stands for, if it is still there.
     public func event(_ id: String?) -> EKEvent? {
         guard canReadEvents, !isSealed, let id, !id.isEmpty else { return nil }
