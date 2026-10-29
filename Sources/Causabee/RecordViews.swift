@@ -1,4 +1,6 @@
+import CryptoKit
 import MatterCore
+import QuickLookThumbnailing
 import SwiftData
 import UniformTypeIdentifiers
 import SwiftUI
@@ -584,7 +586,7 @@ struct FileFace<Items: View>: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: Self.icon(document)).font(.title3).foregroundStyle(.secondary).frame(width: 26)
+            FileThumbnail(document: document, symbol: Self.icon(document), state: state)
             VStack(alignment: .leading, spacing: 3) {
                 Text(document.shownName).lineLimit(2).multilineTextAlignment(.leading)
                 (Text(line) + Text(document.readAt.map { " · read \(Dates.short($0))" } ?? "").foregroundColor(Theme.done))
@@ -647,6 +649,75 @@ struct FileFace<Items: View>: View {
         .contextMenu { Group { items }.menuSigns() }
         #endif
     }
+}
+
+/// A picture or a PDF as a small picture of itself, when the file is on this device — one of
+/// ours, or one from a mail opened before. Otherwise its sign, as before: nothing is fetched from
+/// the mail just to show it.
+struct FileThumbnail: View {
+    let document: MatterCore.Document
+    let symbol: String
+    /// Changes when a file has just been fetched, so the picture is looked for again.
+    let state: String?
+    @State private var picture: CGImage?
+    @Environment(\.displayScale) private var scale
+
+    static let size = CGSize(width: 40, height: 48)
+    private static let made = NSCache<NSString, CGImageBox>()
+
+    private var shows: Bool {
+        let type = document.contentType.lowercased(), name = document.name.lowercased()
+        return type.hasPrefix("image/") || type == "application/pdf" || name.hasSuffix(".pdf")
+    }
+
+    var body: some View {
+        Group {
+            if let picture {
+                Image(decorative: picture, scale: scale)
+                    .resizable().scaledToFill()
+                    .frame(width: Self.size.width, height: Self.size.height)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(.secondary.opacity(0.25), lineWidth: 0.5))
+            } else {
+                Image(systemName: symbol).font(.title3).foregroundStyle(.secondary)
+                    .frame(width: Self.size.width, height: shows ? Self.size.height : nil)
+            }
+        }
+        .task(id: "\(document.name)|\(state ?? "")") { await load() }
+    }
+
+    private func load() async {
+        guard shows, let file = Self.onDevice(document) else { return }
+        let key = file.path as NSString
+        if let known = Self.made.object(forKey: key) { picture = known.image; return }
+        let request = QLThumbnailGenerator.Request(fileAt: file, size: Self.size, scale: scale, representationTypes: .thumbnail)
+        guard let made = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request) else { return }
+        Self.made.setObject(CGImageBox(made.cgImage), forKey: key)
+        picture = made.cgImage
+    }
+
+    /// Where the file is on this device, if it is: never a placeholder of iCloud Drive's.
+    static func onDevice(_ document: MatterCore.Document) -> URL? {
+        let files = FileManager.default
+        if document.isOwnFile {
+            return [document.source.fileURL, MatterFolders.kept(document)].compactMap { $0 }.first { files.fileExists(atPath: $0.path) }
+        }
+        // Taken out of its mail before: in the cache, under a digest of the mail's id.
+        let caches = files.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let name = document.name.replacingOccurrences(of: "/", with: "-")
+        let hash = SHA256.hash(data: Data(document.messageID.utf8))
+        for (folder, length) in [("Causabee/Anhänge", 6), ("Mail files", 8), ("Causabee/Anhänge", 8)] {
+            let digest = hash.prefix(length).map { String(format: "%02x", $0) }.joined()
+            let file = caches.appendingPathComponent(folder, isDirectory: true).appendingPathComponent(digest).appendingPathComponent(name)
+            if files.fileExists(atPath: file.path) { return file }
+        }
+        return nil
+    }
+}
+
+final class CGImageBox {
+    let image: CGImage
+    init(_ image: CGImage) { self.image = image }
 }
 
 extension View {

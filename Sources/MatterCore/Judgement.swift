@@ -158,17 +158,23 @@ public struct Judgement: Codable, Sendable {
         public var date: String
         /// `HH:MM`, or nil when the mail gives only the day.
         public var time: String?
+        /// The last day, when it runs over several; nil for one day.
+        public var endDate: String? = nil
+        /// `HH:MM` it ends, when the mail says.
+        public var endTime: String? = nil
         public var place: String?
         public var sourceQuote: String
         /// The appointment on file this one moves or settles, as it was listed: "2026-10-23 11:00".
         public var replaces: String? = nil
-        enum CodingKeys: String, CodingKey { case what, date, time, place, sourceQuote = "source_quote", replaces }
+        enum CodingKeys: String, CodingKey { case what, date, time, endDate = "end_date", endTime = "end_time", place, sourceQuote = "source_quote", replaces }
 
         public func encode(to encoder: any Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(what, forKey: .what)
             try container.encode(date, forKey: .date)
             try container.always(time, forKey: .time)
+            try container.always(endDate, forKey: .endDate)
+            try container.always(endTime, forKey: .endTime)
             try container.always(place, forKey: .place)
             try container.encode(sourceQuote, forKey: .sourceQuote)
             try container.encodeIfPresent(replaces, forKey: .replaces)

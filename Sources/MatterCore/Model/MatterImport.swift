@@ -186,11 +186,15 @@ public enum MatterImport {
                 }) {
                     same.sources.append(source.quoting(found.sourceQuote))
                     if same.time == nil { same.time = found.time }
+                    if same.endTime == nil { same.endTime = found.endTime }
+                    if same.endDay == nil { same.endDay = found.endDate }
                     if same.place == nil { same.place = found.place }
                     continue
                 }
                 let appointment = Appointment(what: found.what, day: found.date, time: found.time, place: found.place,
                                               source: source.quoting(found.sourceQuote))
+                appointment.endDay = found.endDate
+                appointment.endTime = found.endTime
                 appointment.matter = matter
                 context.insert(appointment)
                 summary.appointments += 1

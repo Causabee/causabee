@@ -2020,6 +2020,10 @@ struct DateRow: View {
         var sources: [Source] = []
         var appointment: Appointment?
         var deadline: Deadline?
+        var endDay: String? { appointment?.endDay }
+        var endTime: String? { appointment?.endTime }
+        /// "10:00–11:30", or the start alone.
+        var hours: String? { time.map { start in endTime.map { "\(start)–\($0)" } ?? start } }
 
         var findID: PageFind.ID {
             if let id = appointment?.persistentModelID ?? deadline?.persistentModelID { return .model(id) }
@@ -2061,7 +2065,8 @@ struct DateRow: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(Dates.short(item.day)).font(.callout.weight(.semibold))
-                if let time = item.time { Text(time).font(.caption).foregroundStyle(.secondary) }
+                if let hours = item.hours { Text(hours).font(.caption).foregroundStyle(.secondary) }
+                if let last = item.endDay { Text("until \(Dates.short(last))").font(.caption).foregroundStyle(.secondary) }
             }
             .frame(width: 74, alignment: .leading)
             VStack(alignment: .leading, spacing: 4) {
@@ -2073,7 +2078,7 @@ struct DateRow: View {
                     SourceJump(sources: item.sources, label: Sources.origin(item.sources.first), matter: item.appointment?.matter ?? item.deadline?.matter)
                 }
                 if !isPast || item.calendarID != nil {
-                    CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time,
+                    CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime,
                                  place: item.place, matterName: matterName, tick: tick) { id in item.connect(id); save() }
                 }
             }

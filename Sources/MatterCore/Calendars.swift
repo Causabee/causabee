@@ -36,8 +36,41 @@ public final class Calendars {
 
     static func start(day: String, time: String?) -> Date? {
         guard let date = date(of: day) else { return nil }
-        guard let time, time.count == 5, let hour = Int(time.prefix(2)), let minute = Int(time.suffix(2)) else { return date }
+        guard let (hour, minute) = clock(time) else { return date }
         return Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: date)
+    }
+
+    /// "09:30" or "9:30" as hour and minute; nil for anything that is no time of day.
+    nonisolated static func clock(_ time: String?) -> (Int, Int)? {
+        let parts = time?.split(separator: ":") ?? []
+        guard parts.count == 2, parts[1].count == 2, let hour = Int(parts[0]), let minute = Int(parts[1]),
+              (0..<24).contains(hour), (0..<60).contains(minute) else { return nil }
+        return (hour, minute)
+    }
+
+    /// Where an appointment goes in Calendar: its start, its end, and whether it fills whole days.
+    /// The end it was given comes first; then one read from its words; then an hour. A whole-day
+    /// one ends on its last day — Calendar shows it through that day. Never an end before the start.
+    public static func span(what: String, day: String, time: String?, endDay: String? = nil,
+                                        endTime: String? = nil) -> (start: Date, end: Date, allDay: Bool)? {
+        guard let start = start(day: day, time: time) else { return nil }
+        let calendar = Calendar.current
+        // A time that is no time of day — "morning", "9" — is a whole day, not midnight.
+        if clock(time) == nil {
+            guard let endDay, endDay > day, let last = date(of: endDay) else { return (start, start, true) }
+            return (start, last, true)
+        }
+        var end: Date?
+        if clock(endTime) != nil {
+            end = Self.start(day: endDay ?? day, time: endTime)
+            // "22:00–01:00" with no day of its own: it ends the next morning.
+            if endDay == nil, let found = end, found <= start { end = calendar.date(byAdding: .day, value: 1, to: found) }
+        } else if let endDay, endDay > day {
+            end = Self.start(day: endDay, time: time)
+        }
+        end = end ?? Self.end(in: what, from: start)
+        guard let end, end > start else { return (start, start.addingTimeInterval(3_600), false) }
+        return (start, end, false)
     }
 
     /// When an appointment ends, read from its own words — "Portfolio review, 12:00–13:30",
@@ -211,14 +244,15 @@ public final class Calendars {
     // MARK: Adding, on a click
 
     /// A new event for an appointment or a deadline; returns the id to keep with it.
-    public func addEvent(what: String, day: String, time: String?, place: String?, matter: String) throws -> String {
+    public func addEvent(what: String, day: String, time: String?, endDay: String? = nil, endTime: String? = nil,
+                         place: String?, matter: String) throws -> String {
         guard !isSealed else { throw CocoaError(.featureUnsupported) }
-        guard let start = Self.start(day: day, time: time) else { throw CocoaError(.formatting) }
+        guard let span = Self.span(what: what, day: day, time: time, endDay: endDay, endTime: endTime) else { throw CocoaError(.formatting) }
         let event = EKEvent(eventStore: store)
         event.title = what
-        event.startDate = start
-        event.isAllDay = time == nil
-        event.endDate = time == nil ? start : Self.end(in: what, from: start) ?? start.addingTimeInterval(3_600)
+        event.isAllDay = span.allDay
+        event.startDate = span.start
+        event.endDate = span.end
         event.location = place
         event.notes = "Causabee · \(matter)"
         event.calendar = try targetCalendar(for: .event)
