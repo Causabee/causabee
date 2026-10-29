@@ -122,6 +122,8 @@ final class MailCheck {
         // What the iPhone or the other Mac sorted is known here too, and their names disguised.
         NameListPublisher.adopt()
         door.earlier = SortedMails.answered(in: context)
+        // Mail in a matter was sorted somewhere: not read again, whatever the record says.
+        door.alsoKnown = Set(((try? context.fetch(FetchDescriptor<Entry>())) ?? []).map(\.messageID))
         // Left out here or on another device; what this Mac left out before it was shared, shared now.
         SortedMails.setAside(Self.setAside.union(UnplacedAside.all), device: NameListPublisher.device, in: context)
         door.setAside = Self.setAside.union(SortedMails.setAside(in: context))
