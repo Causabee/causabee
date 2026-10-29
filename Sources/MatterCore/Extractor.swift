@@ -530,10 +530,7 @@ struct ThreadMemory: Sendable {
     }
 
     static func subjectKey(_ subject: String) -> String? {
-        var key = subject.trimmed.lowercased()
-        while let prefix = key.firstMatch(of: /^(re|aw|antw|wg|fwd?|\[[^\]]*\])\s*:?\s*/) , !prefix.output.0.isEmpty {
-            key = String(key[prefix.range.upperBound...])
-        }
+        let key = String(ReplyPrefix.strip(Substring(subject.trimmed.lowercased()), colon: .optional, brackets: true))
         return key.count >= 12 ? key : nil
     }
 }

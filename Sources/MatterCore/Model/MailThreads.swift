@@ -125,11 +125,8 @@ public enum MailThreads {
 
     /// "Re: AW: SperrMüll" → "SperrMüll", written as it was.
     public static func clean(_ subject: String) -> String {
-        var text = subject.trimmingCharacters(in: .whitespaces)
-        while let prefix = text.firstMatch(of: /^(?i:re|aw|antw|wg|fwd?)\s*:\s*/), !prefix.output.isEmpty {
-            text = String(text[prefix.range.upperBound...])
-        }
-        return text.isEmpty ? subject : text
+        let text = ReplyPrefix.strip(Substring(subject.trimmingCharacters(in: .whitespaces)), colon: .required, brackets: false)
+        return text.isEmpty ? subject : String(text)
     }
 }
 

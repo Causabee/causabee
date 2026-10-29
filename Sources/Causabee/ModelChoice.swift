@@ -614,14 +614,16 @@ final class AutoUpdate {
             guard AutoMode.isOn else { lastSeen = [:]; if !pending.isEmpty { pending = [] }; continue }
             // Not even the matters fetched when nothing was saved since the last look.
             guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { continue }
+            // The stamps — every matter read whole — by the worker; the screen's thread only compares.
+            let stamps = await StoreWorker.for(context.container).recordStamps()
             let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
-            look(matters, context: context, owner: AutoMode.owner(in: context).first, names: names)
+            look(matters, stamps: stamps, context: context, owner: AutoMode.owner(in: context).first, names: names)
         }
     }
 
     /// Looks at every matter going on, every few seconds while Auto is on; cheap, and sends nothing
     /// unless one has changed and come to rest.
-    func look(_ matters: [Matter], context: ModelContext, owner: String?, names: () throws -> Names) {
+    func look(_ matters: [Matter], stamps: [String: String] = [:], context: ModelContext, owner: String?, names: () throws -> Names) {
         guard AutoMode.isOn else { lastSeen = [:]; return }
         // Nothing saved since the last look, and nothing on its way to rest: nothing can have changed.
         guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { return }
@@ -629,7 +631,7 @@ final class AutoUpdate {
         var known = Self.known
         defer { Self.known = known }
         for matter in matters where !matter.isClosed && !working.contains(matter.key) {
-            let key = matter.key, stamp = matter.recordStamp
+            let key = matter.key, stamp = stamps[matter.key] ?? matter.recordStamp
             guard let before = known[key] else { known[key] = Known(stamp: stamp); continue }
             guard before.stamp != stamp else { lastSeen[key] = nil; if pending.contains(key) { pending.remove(key) }; continue }
             // Both written elsewhere in the last minutes — the other device's Auto: taken as they are.

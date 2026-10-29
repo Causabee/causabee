@@ -75,6 +75,19 @@ public actor StoreWorker {
         SortedMails.setAside(ids, device: device, in: modelContext)
     }
 
+    // MARK: Matters
+
+    /// Each open matter's record as one short word, by its key — what Auto looks at to see that
+    /// one has changed. Every mail, file and task of every matter is read for it: here, not on
+    /// the screen's thread, after every save.
+    public func recordStamps() -> [String: String] {
+        var stamps: [String: String] = [:]
+        for matter in (try? modelContext.fetch(FetchDescriptor<Matter>())) ?? [] where !matter.isClosed {
+            stamps[matter.key] = matter.recordStamp
+        }
+        return stamps
+    }
+
     // MARK: Unread mail
 
     /// The mails whose unread dot a check asks about: from the mailbox, from the last year — of
