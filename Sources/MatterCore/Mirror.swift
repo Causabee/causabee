@@ -85,12 +85,27 @@ public enum Mirror {
         return String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
     }
 
+    /// Whether what this side holds is still what it was when both were last in step: then only
+    /// the other side can have changed it, and nothing needs asking there unless it has changed.
+    static func unchangedHere(_ local: [String], stamp: String?) -> Bool {
+        guard let stamp, let mine = stamp.components(separatedBy: sideSeparator).first else { return false }
+        return mine == local.joined(separator: fieldSeparator)
+    }
+
     /// Everything connected, both ways. Saves the store when something came in.
-    public static func reconcile(_ context: ModelContext, calendars: Calendars = .shared, stamps: Stamps = .device) -> Result {
+    ///
+    /// `onlyChangedHere`: Calendar and Reminders said nothing changed there — only this store was
+    /// saved. Then only what changed here is looked up there: each lookup asks Calendar's database,
+    /// and asking for every connected thing after every tick held the screen up.
+    public static func reconcile(_ context: ModelContext, calendars: Calendars = .shared, stamps: Stamps = .device,
+                                 onlyChangedHere: Bool = false) -> Result {
         var result = Result()
         if calendars.canReadReminders {
-            for todo in (try? context.fetch(FetchDescriptor<Todo>())) ?? [] {
-                guard let id = todo.reminderID, let reminder = calendars.reminder(id) else { continue }
+            for todo in (try? context.fetch(FetchDescriptor<Todo>(predicate: #Predicate { $0.reminderID != nil }))) ?? [] {
+                guard let id = todo.reminderID else { continue }
+                if onlyChangedHere, unchangedHere([todo.text, todo.due ?? "", todo.dueTime ?? "", todo.isDone ? "done" : ""],
+                                                  stamp: stamps["reminder:" + id]) { continue }
+                guard let reminder = calendars.reminder(id) else { continue }
                 let parts = reminder.dueDateComponents
                 let due = parts.flatMap { Calendar.current.date(from: $0) }.map { MatterStatus.day($0) } ?? ""
                 let dueTime = (parts?.hour).map { String(format: "%02d:%02d", $0, parts?.minute ?? 0) } ?? ""
@@ -142,11 +157,15 @@ public enum Mirror {
             for appointment in (try? context.fetch(FetchDescriptor<Appointment>())) ?? [] {
                 // Its end said only in its name, as the assistant once wrote it: kept as its end,
                 // and the name without it — Calendar gets both below.
-                if appointment.endTime == nil, let end = Calendars.endClock(in: appointment.what, after: appointment.time) {
+                if appointment.endTime == nil, appointment.what.contains(where: \.isNumber),
+                   let end = Calendars.endClock(in: appointment.what, after: appointment.time) {
                     appointment.endTime = end
                     appointment.what = Calendars.withoutEnd(appointment.what)
                 }
-                guard let id = appointment.calendarID, let event = calendars.event(id) else { continue }
+                guard let id = appointment.calendarID else { continue }
+                if onlyChangedHere, unchangedHere([appointment.what, appointment.day, appointment.time ?? "", appointment.place ?? ""],
+                                                  stamp: stamps["event:" + id]) { continue }
+                guard let event = calendars.event(id) else { continue }
                 // An event Causabee made an hour long, as every one was, while the appointment knows
                 // when it ends: given that end, before Calendar's end is taken as the owner's. One
                 // whose length the owner has set is theirs.
@@ -177,7 +196,9 @@ public enum Mirror {
                 if written { stamps["event:" + id] = merge.stamp }
             }
             for deadline in (try? context.fetch(FetchDescriptor<Deadline>())) ?? [] {
-                guard let id = deadline.calendarID, let event = calendars.event(id) else { continue }
+                guard let id = deadline.calendarID else { continue }
+                if onlyChangedHere, unchangedHere([deadline.what, deadline.day], stamp: stamps["event:" + id]) { continue }
+                guard let event = calendars.event(id) else { continue }
                 let theirs = fields(of: event)
                 let merge = Self.merge(local: [deadline.what, deadline.day], remote: [theirs[0], theirs[1]], stamp: stamps["event:" + id])
                 if merge.pulled { deadline.what = merge.local[0]; deadline.day = merge.local[1]; result.pulled += 1 }

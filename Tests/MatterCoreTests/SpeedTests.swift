@@ -92,3 +92,16 @@ struct SpeedTests {
         for (name, ms) in report { print(String(format: "SPEED %8.2f ms  %@", ms, name)) }
     }
 }
+
+@Suite("The Calendar sync after a save here asks Calendar only about what changed here")
+@MainActor
+struct MirrorChangedHereTests {
+    @Test("What this side holds as it was when last in step is left alone; anything else is not")
+    func unchangedHere() {
+        let stamp = ["Zahnarzt", "2026-10-30", "10:00", ""].joined(separator: Mirror.fieldSeparator) + Mirror.sideSeparator
+            + ["Zahnarzt", "2026-10-30", "10:00", ""].joined(separator: Mirror.fieldSeparator)
+        #expect(Mirror.unchangedHere(["Zahnarzt", "2026-10-30", "10:00", ""], stamp: stamp))
+        #expect(!Mirror.unchangedHere(["Zahnarzt", "2026-10-31", "10:00", ""], stamp: stamp))
+        #expect(!Mirror.unchangedHere(["Zahnarzt", "2026-10-30", "10:00", ""], stamp: nil))
+    }
+}
