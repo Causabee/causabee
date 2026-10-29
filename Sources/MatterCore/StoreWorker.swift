@@ -11,19 +11,36 @@ import SwiftData
 /// It reads; what it would change on something the screen shows, it says, and the screen's
 /// context puts it down — a few values, by id. Saved here, a change did not reach the objects the
 /// screen already holds. New records, which no screen holds yet, it may save itself.
-@ModelActor
 public actor StoreWorker {
+    private let container: ModelContainer
+    /// Its own context, made on first use inside the worker — on one of its threads, not the
+    /// main one. (A SwiftData `@ModelActor` made its context where the worker was made, and a
+    /// worker made from the screen's code then ran on the main thread: measured, and replaced.)
+    private var made: ModelContext?
+    private var modelContext: ModelContext {
+        if let made { return made }
+        let context = ModelContext(container)
+        context.autosaveEnabled = false
+        made = context
+        return context
+    }
+
+    init(container: ModelContainer) { self.container = container }
+
     /// One worker for the store: what it does is done one after another.
     @MainActor private static var workers: [ObjectIdentifier: StoreWorker] = [:]
 
     @MainActor
-    public static func `for`(_ container: ModelContainer) -> StoreWorker {
+    public static func `for`(_ container: ModelContainer) async -> StoreWorker {
         let key = ObjectIdentifier(container)
         if let known = workers[key] { return known }
-        let made = StoreWorker(modelContainer: container)
+        let made = StoreWorker(container: container)
         workers[key] = made
         return made
     }
+
+    /// Whether its work runs away from the main thread, as it must.
+    public func isAwayFromScreen() -> Bool { !Thread.isMainThread }
 
     // MARK: Mail
 
@@ -79,6 +96,13 @@ public actor StoreWorker {
     /// Left out on this device: said in the store, for every device.
     public func setAside(_ ids: Set<String>, device: String) {
         SortedMails.setAside(ids, device: device, in: modelContext)
+    }
+
+    /// The names the other devices' lists know, into this device's own list: every list read
+    /// and its names learned — a tenth of a second on the main thread before each check.
+    @discardableResult
+    public func adoptNames(into url: URL, device: String) throws -> Int {
+        try NameLists.adopt(into: url, device: device, in: modelContext)
     }
 
     // MARK: Matters

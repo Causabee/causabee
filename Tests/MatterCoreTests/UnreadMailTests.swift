@@ -17,7 +17,7 @@ struct UnreadMailTests {
     func refresh() async throws {
         let container = try MatterSchema.container(at: nil)
         let context = container.mainContext
-        let worker = StoreWorker.for(container)
+        let worker = await StoreWorker.for(container)
         let matter = Matter(key: "mama")
         context.insert(matter)
         func mail(_ uid: Int, days: Double, kind: Source.Kind = .mail) -> Entry {
@@ -49,7 +49,7 @@ struct UnreadMailTests {
     func oneMatter() async throws {
         let container = try MatterSchema.container(at: nil)
         let context = container.mainContext
-        let worker = StoreWorker.for(container)
+        let worker = await StoreWorker.for(container)
         let open = Matter(key: "open"), other = Matter(key: "other")
         context.insert(open); context.insert(other)
         func mail(_ uid: Int, in matter: Matter) -> Entry {

@@ -44,6 +44,14 @@ enum NameListPublisher {
                                    deviceName: Host.current().localizedName ?? "Mac", in: context)
     }
 
+    /// The same, by the worker: before a mail check, away from the screen.
+    static func adoptAway(_ container: ModelContainer) async {
+        let mapping = CausabeeApp.mappingLocation()
+        let before = mapping.deletingLastPathComponent().appendingPathComponent("mapping.before-other-devices.json")
+        if !FileManager.default.fileExists(atPath: before.path) { try? FileManager.default.copyItem(at: mapping, to: before) }
+        _ = try? await StoreWorker.for(container).adoptNames(into: mapping, device: device)
+    }
+
     /// The other devices' names into this Mac's list. The list as it was before the first time
     /// is kept beside it.
     static func adopt() {

@@ -33,7 +33,7 @@ public enum UnreadMail {
     /// The same, with its own connection: for a mail check that has the account and its password.
     @discardableResult
     public static func refresh(account: MailAccount, password: String, in context: ModelContext) async -> Int {
-        let worker = StoreWorker.for(context.container)
+        let worker = await StoreWorker.for(context.container)
         let asked = await worker.unreadAsked()
         guard !asked.isEmpty, let client = try? await IMAPClient.connect(to: account, password: password) else { return 0 }
         let changed = await refresh(from: client, asked: asked, worker: worker, in: context)
@@ -48,7 +48,7 @@ extension UnreadMail {
     public static func refresh(_ matter: Matter, in context: ModelContext) async {
         let key = matter.key
         guard Date().timeIntervalSince(lastAsked[key] ?? .distantPast) > 60 else { return }
-        let worker = StoreWorker.for(context.container)
+        let worker = await StoreWorker.for(context.container)
         let asked = await worker.unreadAsked(matter: key)
         guard !asked.isEmpty, let account = Keychain.accounts().first, let password = try? await MailSecret.secret(for: account) else { return }
         lastAsked[key] = Date()

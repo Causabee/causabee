@@ -122,7 +122,7 @@ final class MailCheck {
         door.model = ModelChoice.mail
         door.strict = ModelChoice.strict
         // What the iPhone or the other Mac sorted is known here too, and their names disguised.
-        NameListPublisher.adopt()
+        await NameListPublisher.adoptAway(context.container)
         // Left out here or on another device; what this Mac left out before it was shared, shared now.
         let known = await StoreWorker.for(context.container)
             .mailKnown(leftOutHere: Self.setAside.union(UnplacedAside.all), device: NameListPublisher.device)

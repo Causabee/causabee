@@ -69,7 +69,7 @@ public enum NameLists {
     /// it — or from nothing, when there is none. Writes the file only when it changed; says how
     /// many names came in.
     @discardableResult
-    public static func adopt(into url: URL, device: String, in context: ModelContext) throws -> Int {
+    nonisolated public static func adopt(into url: URL, device: String, in context: ModelContext) throws -> Int {
         let others = try context.fetch(FetchDescriptor<NameList>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]))
             .filter { $0.device != device }
         var mapping = read(file: url) ?? others.lazy.compactMap { try? read($0) }.first ?? Pseudonymizer.Mapping()
@@ -92,14 +92,14 @@ public enum NameLists {
         return added
     }
 
-    private static func read(_ list: NameList) throws -> Pseudonymizer.Mapping {
+    nonisolated private static func read(_ list: NameList) throws -> Pseudonymizer.Mapping {
         guard let json = try? (list.data as NSData).decompressed(using: .lzfse) as Data,
               var mapping = try? JSONDecoder().decode(Pseudonymizer.Mapping.self, from: json) else { throw Failure.unreadable }
         mapping.upgrade()
         return mapping
     }
 
-    private static func read(file url: URL) -> Pseudonymizer.Mapping? {
+    nonisolated private static func read(file url: URL) -> Pseudonymizer.Mapping? {
         guard let data = try? Data(contentsOf: url), !data.isEmpty,
               var mapping = try? JSONDecoder().decode(Pseudonymizer.Mapping.self, from: data) else { return nil }
         mapping.upgrade()

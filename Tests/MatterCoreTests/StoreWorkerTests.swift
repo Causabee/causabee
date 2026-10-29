@@ -20,7 +20,8 @@ struct StoreWorkerTests {
         entry.matter = matter
         context.insert(entry)
         try context.save()
-        let worker = StoreWorker.for(container)
+        let worker = await StoreWorker.for(container)
+        #expect(await worker.isAwayFromScreen())
         let known = await worker.mailKnown(leftOutHere: ["<2@x>"], device: "mac")
         #expect(known.inMatters == ["<1@x>"])
         #expect(known.setAside == ["<2@x>"])

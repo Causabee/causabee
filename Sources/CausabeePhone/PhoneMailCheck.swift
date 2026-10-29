@@ -128,7 +128,7 @@ final class PhoneMailCheck {
         door.model = ModelChoice.mail
         door.strict = ModelChoice.strict
         // This iPhone's own list, started from the Mac's, with the other devices' names in it.
-        do { try NameLists.adopt(into: door.mapping, device: PhoneNames.device, in: context) } catch {
+        do { try await StoreWorker.for(context.container).adoptNames(into: door.mapping, device: PhoneNames.device) } catch {
             return (nil, "The list of names cannot be written: \(error.localizedDescription)")
         }
         // Left out here or on another device; what this one left out before it was shared, shared now.
