@@ -49,12 +49,12 @@ struct MatterScreen: View {
     /// Files or a folder being brought in: how far it is, and what it came to.
     @State private var coming = FilesComing.State()
     @State private var bringing: Task<Void, Never>?
-    /// The parts in the page have scrolled under the bar, which shows them then.
-    @State private var partsUnder = false
+    /// Where the page stands while it scrolls: whether the parts are under the bar. Kept apart
+    /// from the page's own state — the parts passing under the bar redraw the tabs, not the page.
+    @State private var scroll = PageScroll()
     /// The matter written out as a document, and why it could not be.
     @State private var exported: URL?
     @State private var exportFailure: String?
-    @State private var topInset = CGFloat.zero
     /// One person's part of the record: chosen in "People".
     @State private var person: PersistentIdentifier?
     /// Every conversation shown, not only the newest: a source pointed at an older mail.
@@ -90,13 +90,12 @@ struct MatterScreen: View {
                         notesPart
                         history(status)
                     } else {
-                        parts(status)
+                        // Under the bar the pinned ones stand for them: these do not show through it.
+                        UnderBar(scroll: scroll) { parts(status) }
                             .id("parts")
-                            // Under the bar the pinned ones stand for them: these do not show through it.
-                            .opacity(partsUnder ? 0 : 1)
                             // Gone up to where the pinned ones stand, 6 points under the bar: then those
                             // take their place at once, on the same spot, so nothing jumps.
-                            .onGeometryChange(for: Bool.self) { $0.frame(in: .global).minY < topInset + 6 } action: { partsUnder = $0 }
+                            .onGeometryChange(for: Bool.self) { [scroll] in $0.frame(in: .global).minY < scroll.topInset + 6 } action: { scroll.partsUnder = $0 }
                         // At least as tall as the page shows: a short part does not pull the page
                         // down, and the parts stay where they were tapped.
                         VStack(alignment: .leading, spacing: 20) {
@@ -136,15 +135,15 @@ struct MatterScreen: View {
             // Pulled down: the next step and the summary are written again — with Auto on, too.
             .refreshable { writeAnew() }
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
-            .onScrollGeometryChange(for: CGFloat.self) { $0.contentInsets.top } action: { topInset = $1 }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentInsets.top } action: { scroll.topInset = $1 }
             // Another part chosen from the pinned tabs: it is shown from its start, not from where the last one was read.
             .onChange(of: part) {
                 // Right under the pinned tabs, which stay: the part's start at their lower edge.
-                if partsUnder { scroller.scrollTo("part", anchor: UnitPoint(x: 0.5, y: 44 / max(pageHeight, 200))) }
+                if scroll.partsUnder { scroller.scrollTo("part", anchor: UnitPoint(x: 0.5, y: 44 / max(pageHeight, 200))) }
             }
             // Over the page, not in it: the page keeps its place when they come and go.
             .overlay(alignment: .top) {
-                if partsUnder, !find.isActive {
+                PinnedParts(scroll: scroll, hidden: find.isActive) {
                     // The tabs change places without a fade: there is one set of them at a time.
                     // As wide as they are in the page, on a bar as wide as the column: on an
                     // iPad the page is narrower than its column.
@@ -1655,4 +1654,31 @@ struct PhoneDateEditor: View {
         try? context.save()
         dismiss()
     }
+}
+
+/// Where a matter's page stands while it scrolls. Read only by the small views below: a part
+/// passing under the bar used to work out the whole page again — every task, the brief, the next
+/// step — in the middle of the scroll, and a frame was lost.
+@MainActor
+@Observable
+final class PageScroll {
+    var partsUnder = false
+    var topInset: CGFloat = 0
+}
+
+/// The parts in the page, unseen while the bar shows them.
+private struct UnderBar<Content: View>: View {
+    let scroll: PageScroll
+    let content: Content
+    init(scroll: PageScroll, @ViewBuilder content: () -> Content) { self.scroll = scroll; self.content = content() }
+    var body: some View { content.opacity(scroll.partsUnder ? 0 : 1) }
+}
+
+/// The parts pinned under the bar, once the page's have gone under it.
+private struct PinnedParts<Content: View>: View {
+    let scroll: PageScroll
+    let hidden: Bool
+    let content: Content
+    init(scroll: PageScroll, hidden: Bool, @ViewBuilder content: () -> Content) { self.scroll = scroll; self.hidden = hidden; self.content = content() }
+    var body: some View { if scroll.partsUnder, !hidden { content } }
 }

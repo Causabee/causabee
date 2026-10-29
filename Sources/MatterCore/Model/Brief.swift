@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// What Causabee understands of one matter: what it is about and what the owner wants from it,
 /// who is who, what is agreed, what is open and what waits, what could go wrong, and the next
@@ -131,10 +132,26 @@ public struct Brief: Codable, Equatable, Sendable {
     }
 }
 
+/// Briefs read from their JSON, by the JSON: a matter's page asked for its brief a few times each
+/// time it drew — while scrolling too — and each time the whole of it was decoded again.
+enum ReadBriefs {
+    private static let kept = Mutex<[String: Brief]>([:])
+
+    static func read(_ json: String) -> Brief? {
+        if let known = kept.withLock({ $0[json] }) { return known }
+        guard let brief = try? JSONDecoder().decode(Brief.self, from: Data(json.utf8)) else { return nil }
+        kept.withLock { kept in
+            if kept.count > 64 { kept.removeAll() }
+            kept[json] = brief
+        }
+        return brief
+    }
+}
+
 extension Matter {
     /// The brief, read from its JSON; nil while none was written or said.
     public var shownBrief: Brief? {
-        get { brief.flatMap { try? JSONDecoder().decode(Brief.self, from: Data($0.utf8)) } }
+        get { brief.flatMap(ReadBriefs.read) }
         set {
             brief = newValue.flatMap { try? JSONEncoder().encode($0) }.flatMap { String(data: $0, encoding: .utf8) }
             briefAt = newValue?.writtenAt
