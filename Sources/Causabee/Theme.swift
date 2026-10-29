@@ -1191,3 +1191,11 @@ extension UserDefaults {
         set(value, forKey: key)
     }
 }
+
+/// A part of a page drawn on its own: what it reads while it is drawn — where the page has scrolled
+/// to, say — draws it again, not the page around it.
+struct DrawnApart<Content: View>: View {
+    let content: () -> Content
+    init(@ViewBuilder _ content: @escaping () -> Content) { self.content = content }
+    var body: some View { content() }
+}

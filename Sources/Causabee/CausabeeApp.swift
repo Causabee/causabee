@@ -723,7 +723,9 @@ struct RootView: View {
                         switch navigation.place {
                         case .matter(let id):
                             if let matter = matters.first(where: { $0.persistentModelID == id }) {
-                                MatterStatusView(matter: matter).id(id)
+                                // The same matter, the same page: the window drawn again after a change
+                                // elsewhere does not make the page work everything out again.
+                                MatterStatusView(matter: matter).equatable().id(id)
                             }
                         case .assistant, nil:
                             OverviewView(matters: sorted, search: $search, start: start)

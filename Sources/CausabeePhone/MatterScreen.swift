@@ -1700,3 +1700,10 @@ private struct PhoneCountLine: View {
         }
     }
 }
+
+/// The same page as long as it is the same matter: what it shows of the matter it reads itself,
+/// and draws again when that changes. Compared by its fields, a page seemed new each time the
+/// screen around it was drawn — its own state is made anew with each — and was worked out whole.
+extension MatterScreen: Equatable {
+    nonisolated static func == (a: Self, b: Self) -> Bool { a.matter === b.matter }
+}

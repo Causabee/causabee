@@ -200,7 +200,9 @@ struct RootView: View {
     @ViewBuilder
     private func matterPage(_ id: PersistentIdentifier) -> some View {
         if let matter = matters.first(where: { $0.persistentModelID == id }) {
-            MatterScreen(matter: matter)
+            // The same matter, the same page: the overview drawn again after a change elsewhere does
+            // not make the page work everything out again.
+            MatterScreen(matter: matter).equatable()
         } else {
             ContentUnavailableView("This matter is gone", systemImage: "folder.badge.questionmark",
                                    description: Text("It was merged or removed on another device."))
