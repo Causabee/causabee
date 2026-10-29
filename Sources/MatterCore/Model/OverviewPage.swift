@@ -182,13 +182,13 @@ public final class OverviewPages {
 
     /// `version` goes up with every change to the store — the app's count of changes.
     public func page(for matters: [Matter], version: Int, now: Date = Date()) -> OverviewPage {
-        _ = arrived
         let day = MatterStatus.day(now)
         let ids = matters.map(\.persistentModelID)
         if let found = kept.first(where: { $0.version == version && $0.day == day && $0.ids == ids }) { return found.page }
         // The same matters as before, changed: the worker prepares them, and the page as it was
-        // stands until then.
+        // stands until then — and whoever drew it draws again when the new one comes.
         if let worker, let before = kept.last(where: { $0.day == day && $0.ids == ids && $0.version < version }) {
+            _ = arrived
             ask(worker, ids: ids, version: version, day: day, now: now)
             return before.page
         }
