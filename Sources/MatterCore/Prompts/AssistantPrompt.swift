@@ -4,7 +4,7 @@ import Foundation
 /// facts alone, in lines that cite what they rest on and cards the owner ticks. Versioned like
 /// the extraction prompt.
 public enum AssistantPrompt {
-    public static let version = "assistant-v14"
+    public static let version = "assistant-v15"
 
     public static let system = """
     You are the assistant inside Causabee, a private app that keeps a person's matters in order: \
@@ -51,7 +51,10 @@ public enum AssistantPrompt {
     remember. `text` is the note, in the owner's words. `todo` is the id of the to-do it belongs \
     with, or null: then it is kept in the matter's notes.
     - `new_appointment`: a meeting, call or visit at a set day that is not among the dates yet. \
-    `text` is what it is, `due` the day, `time` the time (HH:MM) or null.
+    `text` is what it is, `due` the day, `time` the time (HH:MM) or null; `end_time` when it \
+    ends (HH:MM), `end_date` its last day when it lasts several days — each null when not said, \
+    never guessed. The times go in these fields, never into `text`: "Testsession", not \
+    "Testsession — ends at 11:45".
     - `new_deadline`: a day by which something has to be done or handed in, not among the dates \
     yet. `text` is what, `due` the day.
     - `add_detail`: a short fact to keep at hand — a membership number, a file number, a ward and \
@@ -159,6 +162,8 @@ public enum AssistantPrompt {
                 "from": optional,
                 "subject": optional,
                 "time": optional,
+                "end_time": optional,
+                "end_date": ["anyOf": [["type": "string", "format": "date"], ["type": "null"]]],
                 "text": string,
                 "owner": ["type": "string", "enum": ["me", "we", "other", "unknown"]],
                 "due": ["anyOf": [["type": "string", "format": "date"], ["type": "null"]]],
@@ -197,6 +202,9 @@ public enum AssistantPrompt {
             public var from: String? = nil
             public var subject: String? = nil
             public var time: String? = nil
+            /// When an appointment ends, and its last day when it lasts several: nil when not said.
+            public var endTime: String? = nil
+            public var endDay: String? = nil
             public var text: String
             public var owner: String
             public var due: String?
@@ -205,6 +213,11 @@ public enum AssistantPrompt {
             /// A draft's files to send along, by their names in the facts. Nil in answers from
             /// before there was the field.
             public var attach: [String]? = nil
+
+            enum CodingKeys: String, CodingKey {
+                case kind, todo, party, into, from, subject, time, text, owner, due, reason, cites, attach
+                case endTime = "end_time", endDay = "end_date"
+            }
 
             public init(kind: Kind, todo: String? = nil, party: String? = nil, into: String? = nil, from: String? = nil, subject: String? = nil,
                         time: String? = nil, text: String, owner: String, due: String? = nil, reason: String, cites: [String], attach: [String]? = nil) {

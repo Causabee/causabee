@@ -1035,7 +1035,8 @@ struct ActionCard: View {
         case .waitsFor: return "Waits for another task?"
         case .addLink: return "Save link? · Name:"
         case .addContact: return "Contact? · Name:"
-        case .newAppointment: return "New appointment? · " + (card.due.map(Dates.short) ?? "?") + (card.time.map { " at \($0)" } ?? "")
+        case .newAppointment: return "New appointment? · " + (card.due.map(Dates.short) ?? "?") + (card.time.map { " at \($0)" + (card.endTime.map { "–" + $0 } ?? "") } ?? "")
+            + (card.endDay.map { " until " + Dates.short($0) } ?? "")
         case .newDeadline: return "New deadline? · by " + (card.due.map(Dates.short) ?? "?")
         case .addDetail: return "Detail? · " + (card.subject ?? "")
         case .correctText: return "Replace in the text?"

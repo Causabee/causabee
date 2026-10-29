@@ -78,9 +78,14 @@ public final class Calendars {
     /// event was an hour long whatever it said. Nil when the words give no end after the beginning.
     nonisolated static func end(in what: String, from start: Date) -> Date? {
         let range = #/(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?\s*(?:[–—-]|to|bis)\s*(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?/#
-        guard let found = what.firstMatch(of: range), var hour = Int(found.4), let minute = Int(found.5),
-              hour < 24, minute < 60 else { return nil }
-        let half = found.6.map { $0.lowercased().prefix(1) }
+        // Or only the end, said in words: "ends at 11:45 am", "until 18:00", "bis 14:30 Uhr".
+        let until = #/(?i)(?:ends? at|until|till|bis|endet um)\s*(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?/#
+        let said: (hour: Substring, minute: Substring, half: Substring?)
+        if let found = what.firstMatch(of: range) { said = (found.4, found.5, found.6) }
+        else if let found = what.firstMatch(of: until) { said = (found.1, found.2, found.3) }
+        else { return nil }
+        guard var hour = Int(said.hour), let minute = Int(said.minute), hour < 24, minute < 60 else { return nil }
+        let half = said.half.map { $0.lowercased().prefix(1) }
         if half == "p", hour < 12 { hour += 12 }
         if half == "a", hour == 12 { hour = 0 }
         let calendar = Calendar.current

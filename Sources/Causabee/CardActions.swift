@@ -493,6 +493,8 @@ enum CardActions {
                 undo = .date(appointment.persistentModelID, day: appointment.day, time: appointment.time)
                 appointment.day = day
                 appointment.time = card.time ?? appointment.time
+                appointment.endTime = card.endTime ?? appointment.endTime
+                if let end = card.endDay { appointment.endDay = end > day ? end : nil }
             } else if let deadline = model(card.todo, as: Deadline.self) {
                 undo = .date(deadline.persistentModelID, day: deadline.day, time: nil)
                 deadline.day = day
@@ -532,6 +534,8 @@ enum CardActions {
         case .newAppointment:
             guard let matter = scope, !text.isEmpty, let day = card.due else { return .nothing }
             let item = Appointment(what: text, day: day, time: card.time, place: nil, source: source)
+            item.endTime = card.endTime
+            item.endDay = card.endDay.flatMap { $0 > day ? $0 : nil }
             item.sources = used(card, inHand: inHand, refs: refs, in: matter, context: context) + item.sources
             context.insert(item)
             item.matter = matter

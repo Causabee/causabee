@@ -49,4 +49,11 @@ struct EventSpanTests {
         #expect(backwards.end == at(12, 11))
         #expect(Calendars.span(what: "Visit", day: "2026-02-31", time: "10:00") == nil)
     }
+
+    @Test func anEndSaidOnlyInWordsIsKept() throws {
+        let span = try #require(Calendars.span(what: "Causabee test session — ends at 11:45 am", day: "2026-10-30", time: "10:00"))
+        #expect(Calendar.current.dateComponents([.hour, .minute], from: span.end) == DateComponents(hour: 11, minute: 45))
+        let german = try #require(Calendars.span(what: "Workshop bis 14:30 Uhr", day: "2026-10-30", time: "09:00"))
+        #expect(Calendar.current.component(.hour, from: german.end) == 14)
+    }
 }
