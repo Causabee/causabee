@@ -1015,6 +1015,8 @@ struct MatterScreen: View {
                 // And which is still unread in the inbox, read-only: the dots as the mailbox has them now.
                 if !store.isDemo { await UnreadMail.refresh(matter, in: context) }
                 await ReplyLinks.fill(in: matter, context: context)
+                // A file added before still kept only in the app: into the matter's folder, once.
+                if MatterFolders.hasOwnCopies(matter) { PhoneFolderSaver.save([matter]) }
             }
             RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts(threads: threads, made: made), person: personParty?.name, clearPerson: { person = nil }) {
                 // The matter's folder, on the record's own line — as on the Mac. Files are added by the plus.

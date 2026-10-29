@@ -573,8 +573,9 @@ struct FileFace<Items: View>: View {
     /// Where it is and where it came from — its own name too, when it has a name of ours.
     private var line: String {
         if document.isOwnFile {
-            let at = document.source.fileURL != nil ? "on this \(ThisDevice.name), in Causabee's folder"
-                : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder"
+            let at = MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder"
+                : document.source.fileURL != nil && MatterFolders.root == nil ? "only on this \(ThisDevice.name) — switch on iCloud Drive for Causabee"
+                : document.source.fileURL != nil ? "on this \(ThisDevice.name), in Causabee's folder"
                 : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
                 : "added on \(document.source.addedOn) · not in the matter's folder yet"
             return [document.title == nil ? nil : document.name, at].compactMap { $0 }.joined(separator: " · ")
@@ -688,6 +689,8 @@ struct FileThumbnail: View {
     private func load() async {
         guard shows else { return }
         var found = Self.onDevice(document)
+        // In its matter's folder, not downloaded yet: brought down from iCloud Drive.
+        if found == nil, document.isOwnFile, let kept = MatterFolders.kept(document) { found = try? await MatterFolders.fetched(kept) }
         if found == nil { found = await MailPreviews.fetch(document) }
         guard let file = found else { return }
         let key = file.path as NSString

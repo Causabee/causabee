@@ -1423,6 +1423,8 @@ struct MatterStatusView: View {
         Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) {
             if !DemoData.isRequested { await UnreadMail.refresh(matter, in: context) }
             await linkReplies()
+            // A file added before still kept only in the app: into the matter's folder, once.
+            if !DemoData.isRequested, MatterFolders.hasOwnCopies(matter) { FolderSaver.shared.save([matter]) }
         }
         if filter == .details {
             DetailsSection(matter: matter, showsEmpty: true).id("details")
