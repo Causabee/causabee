@@ -1,6 +1,6 @@
 import CryptoKit
 import MatterCore
-import QuickLookThumbnailing
+import ImageIO
 import SwiftData
 import UniformTypeIdentifiers
 import SwiftUI
@@ -692,10 +692,36 @@ struct FileThumbnail: View {
         guard let file = found else { return }
         let key = file.path as NSString
         if let known = Self.made.object(forKey: key) { picture = known.image; return }
-        let request = QLThumbnailGenerator.Request(fileAt: file, size: Self.size, scale: scale, representationTypes: .thumbnail)
-        guard let made = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request) else { return }
-        Self.made.setObject(CGImageBox(made.cgImage), forKey: key)
-        picture = made.cgImage
+        // Made here, not by Quick Look: its service made none for some files the app keeps.
+        let longest = max(Self.size.width, Self.size.height) * scale * 2
+        guard let made = await Task.detached(priority: .utility, operation: { Self.picture(of: file, longest: longest) }).value else { return }
+        Self.made.setObject(CGImageBox(made), forKey: key)
+        picture = made
+    }
+
+    /// A PDF's first page, or the picture itself, small: never the whole of a large file in memory.
+    nonisolated static func picture(of file: URL, longest: CGFloat) -> CGImage? {
+        if file.pathExtension.lowercased() == "pdf" {
+            guard let page = CGPDFDocument(file as CFURL)?.page(at: 1) else { return nil }
+            let box = page.getBoxRect(.cropBox)
+            let turned = page.rotationAngle % 180 != 0
+            let (width, height) = turned ? (box.height, box.width) : (box.width, box.height)
+            guard width > 0, height > 0 else { return nil }
+            let factor = longest / max(width, height)
+            let (w, h) = (Int(width * factor), Int(height * factor))
+            guard let context = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                          space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
+            context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+            context.fill(CGRect(x: 0, y: 0, width: w, height: h))
+            context.concatenate(page.getDrawingTransform(.cropBox, rect: CGRect(x: 0, y: 0, width: w, height: h), rotate: 0, preserveAspectRatio: true))
+            context.drawPDFPage(page)
+            return context.makeImage()
+        }
+        guard let source = CGImageSourceCreateWithURL(file as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
+                                        kCGImageSourceCreateThumbnailWithTransform: true,
+                                        kCGImageSourceThumbnailMaxPixelSize: longest]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 
     /// Where the file is on this device, if it is: never a placeholder of iCloud Drive's.
