@@ -114,6 +114,23 @@ public actor StoreWorker {
 
     // MARK: Matters
 
+    /// A matter's news from new mail, not seen yet: what a notification says.
+    public struct News: Sendable {
+        public let key: String
+        public let name: String
+        public let line: String
+        public let since: Date
+        public let mails: Int
+    }
+
+    /// Every open matter's news not seen yet — each brief read for it.
+    public func news() -> [News] {
+        ((try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []).compactMap { matter in
+            guard !matter.isClosed, matter.brief != nil, let news = matter.shownBrief?.news, !news.seen, let line = news.lines.first else { return nil }
+            return News(key: matter.key, name: matter.name, line: line, since: news.since, mails: news.mails)
+        }
+    }
+
     /// The overview of these matters, prepared from the store as it is saved.
     public func overviewPage(ids: [PersistentIdentifier], now: Date) -> OverviewPage {
         let all = (try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []

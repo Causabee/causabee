@@ -1140,17 +1140,18 @@ enum NewsNotice {
     private static let toldKey = "news.told"
     private static var looked = -1
 
-    /// Each matter's news not told yet, as a notification: looked at once per change to the store.
-    static func tell(_ matters: () -> [Matter]) {
+    /// Each matter's news not told yet, as a notification: looked at once per change to the store,
+    /// every brief read by the worker.
+    static func tell(_ worker: StoreWorker) async {
         guard !DemoData.isRequested, looked != StoredChanges.shared.count else { return }
         looked = StoredChanges.shared.count
+        let all = await worker.news()
         var told = UserDefaults.standard.stringArray(forKey: toldKey) ?? []
-        for matter in matters() where !matter.isClosed && matter.brief != nil {
-            guard let news = matter.shownBrief?.news, !news.seen, let line = news.lines.first else { continue }
-            let mark = "\(matter.key)|\(Int(news.since.timeIntervalSince1970))|\(news.mails)"
+        for news in all {
+            let mark = "\(news.key)|\(Int(news.since.timeIntervalSince1970))|\(news.mails)"
             guard !told.contains(mark) else { continue }
             told.append(mark)
-            post(title: matter.name, body: line, mails: news.mails, key: matter.key)
+            post(title: news.name, body: news.line, mails: news.mails, key: news.key)
         }
         UserDefaults.standard.set(Array(told.suffix(200)), forKey: toldKey)
     }

@@ -614,7 +614,7 @@ final class AutoUpdate {
         while !Task.isCancelled {
             try? await Task.sleep(for: Self.pace)
             // News written here, or come from another device: told once, Auto or not.
-            NewsNotice.tell { (try? context.fetch(FetchDescriptor<Matter>())) ?? [] }
+            await NewsNotice.tell(await StoreWorker.for(context.container))
             guard AutoMode.isOn else { lastSeen = [:]; if !pending.isEmpty { pending = [] }; continue }
             // Not even the matters fetched when nothing was saved since the last look.
             guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { continue }
