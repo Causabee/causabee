@@ -98,13 +98,16 @@ struct CalendarChip: View {
         #endif
     }
 
-    /// What Calendar or Reminders said, kept: asked once per change of the store or the calendars,
-    /// not by every chip each time its page draws — each was a query to the calendars.
-    private struct Asked<Value> { let value: Value }
-
+    /// What Calendar or Reminders said, kept until they change — not asked again by every chip
+    /// after every change to the store: each was a query to the calendars, on the main thread, and
+    /// a page scrolled right after a sync stuttered.
     private func asked<Value>(_ what: String, _ work: () -> Value) -> Value {
-        let key = "chip \(kind == .event ? "e" : "r") \(tick) \(what)"
-        return StoredChanges.shared.kept(key) { Asked(value: work()) }.value
+        let key = "chip \(kind == .event ? "e" : "r") \(ChipAnswers.generation) \(tick) \(what)"
+        if let known = ChipAnswers.kept[key] as? ChipAnswers.Asked<Value> { return known.value }
+        let value = work()
+        if ChipAnswers.kept.count > 500 { ChipAnswers.kept.removeAll() }
+        ChipAnswers.kept[key] = ChipAnswers.Asked(value: value)
+        return value
     }
 
     /// What the connected entry is called now, or nil when it is gone.
@@ -233,4 +236,23 @@ struct CalendarSettings: View {
         Text("Causabee reads your calendars and reminders to show what is there already. It adds only when you \(Self.press) “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.")
             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
     }
+}
+
+/// The chips' answers from Calendar and Reminders, by what was asked, until either changes.
+@MainActor
+enum ChipAnswers {
+    struct Asked<Value> { let value: Value }
+    static var kept: [String: Any] = [:]
+    /// Goes up when Calendar or Reminders change: every answer is asked again then.
+    static var generation: Int {
+        if !watching {
+            watching = true
+            NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { changes += 1; kept.removeAll() }
+            }
+        }
+        return changes
+    }
+    private static var changes = 0
+    private static var watching = false
 }
