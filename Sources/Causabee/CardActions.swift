@@ -1156,7 +1156,7 @@ enum NewsNotice {
             told.append(mark)
             post(title: news.name, body: news.line, mails: news.mails, key: news.key)
         }
-        UserDefaults.standard.set(Array(told.suffix(200)), forKey: toldKey)
+        UserDefaults.standard.setIfChanged(Array(told.suffix(200)), forKey: toldKey)
     }
 
     private static func post(title: String, body: String, mails: Int, key: String) {

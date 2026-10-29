@@ -546,7 +546,7 @@ struct DetailsSection: View {
                     .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.line))
                 }
             }
-            .sheet(isPresented: $adding) { DetailEditor(matter: matter) }
+            .sheetWhenAsked(isPresented: $adding) { DetailEditor(matter: matter) }
             .sheet(item: $editing) { DetailEditor(matter: matter, detail: $0) }
         }
     }

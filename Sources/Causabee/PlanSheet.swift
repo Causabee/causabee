@@ -220,7 +220,7 @@ struct PlanSettings: View {
         }
         // Two buttons on one row of a form: each its own, not the whole row.
         .buttonStyle(.borderless)
-        .sheet(isPresented: $choosing) { PlanSheet(reason: .choose) }
+        .sheetWhenAsked(isPresented: $choosing) { PlanSheet(reason: .choose) }
         #if os(iOS)
         .manageSubscriptionsSheet(isPresented: $managing)
         .onChange(of: managing) { if !managing { Task { await store.refresh() } } }

@@ -21,8 +21,7 @@ struct PhoneWeek: View {
     }
 
     private func week(now: Date) -> some View {
-        // What came from another device shows at once: an arriving change redraws this.
-        let _ = StoredChanges.shared.count
+        // Drawn again when the overview the worker prepares after a change is ready.
         let days = Week.days(from: now)
         let today = days[0]
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today

@@ -8,6 +8,10 @@ public struct DayThing {
     public let time: String?
     /// The task it is, to open its matter at it; nil for a deadline or an appointment.
     public let todo: Todo?
+
+    public init(matter: Matter, what: String, time: String?, todo: Todo?) {
+        self.matter = matter; self.what = what; self.time = time; self.todo = todo
+    }
 }
 
 /// The overview's week: the next days across all open matters, and what is on each — the same

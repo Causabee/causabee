@@ -249,6 +249,16 @@ public final class OverviewPages {
 
     @ObservationIgnored private var single: (version: Int, day: String, byID: [PersistentIdentifier: MatterSummary]) = (-1, "", [:])
 
+    /// After a change: every set of matters asked about lately, prepared anew by the worker.
+    public func refresh(version: Int) {
+        guard let worker else { return }
+        let day = MatterStatus.day(Date())
+        var seen: Set<[PersistentIdentifier]> = []
+        for page in kept.reversed() where page.day == day && page.version < version && seen.insert(page.ids).inserted {
+            ask(worker, ids: page.ids, version: version, day: day, now: Date())
+        }
+    }
+
     /// Forgets the pages: the next one asked for is prepared anew.
     public func forget() { kept = []; single = (-1, "", [:]); asked = [] }
 }

@@ -34,6 +34,7 @@ struct CausabeePhoneApp: App {
             switch store.opened {
             case .success(let container):
                 RootView().modifier(ModelChoiceSync())
+                    .screenMeter()
                     .modelContainer(container)
                     .environment(store)
                     // Another store is another app: nothing of the last one's screens is kept.

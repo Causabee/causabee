@@ -106,6 +106,14 @@ struct RootView: View {
                 return .list(names.mapping, names.others)
             }
         }
+        // `--open <matter>`: starts in that matter — for the scroll tour.
+        .task {
+            let arguments = CommandLine.arguments
+            if let flag = arguments.firstIndex(of: "--open"), flag + 1 < arguments.count,
+               let matter = matters.first(where: { $0.answers(to: arguments[flag + 1]) }) {
+                navigation.go([matter.persistentModelID])
+            }
+        }
         // `--timing-tour`: ten matters opened one after another, each said how long it took.
         .task {
             guard CommandLine.arguments.contains("--timing-tour") else { return }
@@ -117,7 +125,7 @@ struct RootView: View {
             NSLog("[timing] tour done")
         }
         // `--demo --shot mail-setup`: the mail setup open, for its pictures and to try it.
-        .sheet(isPresented: .constant(PhoneShot.isMailSetup)) { MailAccountSheet() }
+        .sheetWhenAsked(isPresented: .constant(PhoneShot.isMailSetup)) { MailAccountSheet() }
         // `--demo --shot listening`: the care matter open, the assistant over it.
         .task {
             // `--shot matter`: the care matter alone, for the website's picture of a matter.
@@ -127,7 +135,7 @@ struct RootView: View {
             try? await Task.sleep(for: .seconds(1.2))
             navigation.showsAssistant = true
         }
-        .sheet(isPresented: Binding(get: { navigation.showsAssistant && !navigation.isPad }, set: { navigation.showsAssistant = $0 })) {
+        .sheetWhenAsked(isPresented: Binding(get: { navigation.showsAssistant && !navigation.isPad }, set: { navigation.showsAssistant = $0 })) {
             AssistantSheet(matter: about)
                 // About another matter — one chosen from its plus — it is that matter's thread, anew.
                 .id(about?.persistentModelID)
@@ -319,7 +327,7 @@ struct OverviewScreen: View {
                 .accessibilityLabel("More")
             }
         }
-        .sheet(isPresented: $editsAccount) { SettingsSheet() }
+        .sheetWhenAsked(isPresented: $editsAccount) { SettingsSheet() }
         // The menu bar's commands: Settings, new mail, and the field a matter is found or started in.
         .onReceive(NotificationCenter.default.publisher(for: .phoneSettings)) { _ in editsAccount = true }
         .onReceive(NotificationCenter.default.publisher(for: .phoneGetMail)) { _ in PhoneMailCheck.shared.look(context: context) }
@@ -328,7 +336,7 @@ struct OverviewScreen: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { searching = true }
         }
         // Once, at the first start: what Causabee is and what it needs.
-        .sheet(isPresented: $showsWelcome) { WelcomeSheet() }
+        .sheetWhenAsked(isPresented: $showsWelcome) { WelcomeSheet() }
         .onAppear { if !introSeen, !store.isDemo { showsWelcome = true } }
     }
 

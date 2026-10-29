@@ -189,7 +189,12 @@ struct MatterStatusView: View {
                     for address in web { addLink(address, title: "", todo: nil) }
                     return !web.isEmpty || !files.isEmpty
                 }
-                .onAppear { show(navigation.showing, with: scroller); showNews(with: scroller); loadCalendars() }
+                .onAppear {
+                    // `--part record`: starts in that part — for the scroll tour.
+                    if let at = CommandLine.arguments.firstIndex(of: "--part"), at + 1 < CommandLine.arguments.count,
+                       let chosen = Part(rawValue: CommandLine.arguments[at + 1]) { part = chosen }
+                    show(navigation.showing, with: scroller); showNews(with: scroller); loadCalendars()
+                }
                 // The Matter menu: the section scrolled to, then what adds to it opened.
                 .onReceive(NotificationCenter.default.publisher(for: .matterAction)) { note in
                     if note.object as? String == "writeAgain" { if !DemoData.isRequested { writeAgain() }; return }
@@ -221,8 +226,8 @@ struct MatterStatusView: View {
                 .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
                 .onChange(of: navigation.showing) { show(navigation.showing, with: scroller) }
                 .onChange(of: navigation.showsNews) { showNews(with: scroller) }
-                .sheet(isPresented: $addingContact) { ContactEditor(matter: matter) }
-                .sheet(isPresented: $addingDetail) { DetailEditor(matter: matter) }
+                .sheetWhenAsked(isPresented: $addingContact) { ContactEditor(matter: matter) }
+                .sheetWhenAsked(isPresented: $addingDetail) { DetailEditor(matter: matter) }
             }
         }
         .environment(find)
@@ -244,7 +249,7 @@ struct MatterStatusView: View {
             }
         }
         .navigationTitle(matter.name)
-        .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
+        .confirmationDialogWhenAsked(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
             Button("Merge") {
                 if let (party, other) = merging { confirmSame(party, as: other) }
             }
@@ -255,7 +260,7 @@ struct MatterStatusView: View {
         .alert("The matter could not be exported", isPresented: Binding(get: { exportFailure != nil }, set: { if !$0 { exportFailure = nil } })) {
             Button("OK") { exportFailure = nil }
         } message: { Text(exportFailure ?? "") }
-        .confirmationDialog(closeQuestion, isPresented: $asksToClose) {
+        .confirmationDialogWhenAsked(closeQuestion, isPresented: $asksToClose) {
             if matter.openTodos.isEmpty {
                 Button("Close") { close(markingOpenDone: false) }
             } else {
@@ -615,7 +620,7 @@ struct MatterStatusView: View {
                 // Added by the plus — beside the assistant's field — or dragged from the browser.
                 SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
             }
-            .popover(isPresented: $addingLink, arrowEdge: .bottom) {
+            .popoverWhenAsked(isPresented: $addingLink, arrowEdge: .bottom) {
                 LinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
                     addLink(address, title: title, todo: todo)
                     addingLink = false
@@ -912,7 +917,7 @@ struct MatterStatusView: View {
                             splitting = true
                         }
                         .help("The new mails, with what they brought, become a matter of their own; this one stays closed")
-                        .popover(isPresented: $splitting, arrowEdge: .bottom) { splitForm(status) }
+                        .popoverWhenAsked(isPresented: $splitting, arrowEdge: .bottom) { splitForm(status) }
                     }
                     Button(Say.openAgain) { matter.reopen(); try? context.save() }
                 }
@@ -981,7 +986,7 @@ struct MatterStatusView: View {
                     // system's size, more with the larger text.
                     .alignmentGuide(.firstTextBaseline) { $0[.bottom] - (15 - 8 * Theme.textScale) }
                     .help("Choose another icon")
-                    .popover(isPresented: $choosingIcon, arrowEdge: .bottom) { MatterIconPicker(matter: matter) }
+                    .popoverWhenAsked(isPresented: $choosingIcon, arrowEdge: .bottom) { MatterIconPicker(matter: matter) }
                 if renaming {
                     TextField("Name", text: $newName, selection: $nameSelection)
                         .font(Theme.titleFont)
@@ -1124,7 +1129,7 @@ struct MatterStatusView: View {
                 // No "+ Task" here: a task of one's own is said to the assistant, from its plus, or
                 // written from the menu — whose editor still opens at this line.
             }
-            .popover(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .bottom) {
+            .popoverWhenAsked(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .bottom) {
                 if let newTodo {
                     TodoEditor(todo: newTodo, done: { self.newTodo = nil; try? context.save() }, cancel: dropNewTodo, isNew: true)
                 }
@@ -1699,7 +1704,7 @@ struct TodoRow: View {
             Spacer(minLength: 8)
             HStack(spacing: 4) {
                 MoreMenu { moreItems }
-                    .popover(isPresented: $editing, arrowEdge: .bottom) {
+                    .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
                         TodoEditor(todo: todo, done: { editing = false; try? context.save() }, cancel: { editing = false })
                     }
             }
@@ -1714,8 +1719,8 @@ struct TodoRow: View {
             try? await Task.sleep(for: .seconds(2.5))
             editing = true
         }
-        .sheet(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
-        .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting) {
+        .sheetWhenAsked(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
+        .confirmationDialogWhenAsked("Delete “\(todo.text)”?", isPresented: $deleting) {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
                 Calendars.shared.removeReminder(todo.reminderID)
@@ -2092,7 +2097,7 @@ struct DateRow: View {
             Spacer(minLength: 8)
             HStack(spacing: 4) {
                 MoreMenu { moreItems }
-                    .popover(isPresented: $editing, arrowEdge: .bottom) {
+                    .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
                         DateEditor(item: item, done: { editing = false; save() }, cancel: { editing = false })
                     }
             }
@@ -2102,7 +2107,7 @@ struct DateRow: View {
         .padding(.vertical, 10)
         .contentShape(Rectangle())
         .contextMenu { moreItems }
-        .confirmationDialog("Delete “\(item.what)”?", isPresented: $deleting) {
+        .confirmationDialogWhenAsked("Delete “\(item.what)”?", isPresented: $deleting) {
             Button("Delete", role: .destructive) {
                 // The entry in Calendar it is connected with goes too.
                 Calendars.shared.removeEvent(item.calendarID)
@@ -2263,7 +2268,7 @@ struct PartyRow: View {
                     Button(Say.removeFromMatter, role: .destructive, action: remove)
                 }
             }
-                .popover(isPresented: $editing, arrowEdge: .bottom) {
+                .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Change person").font(.headline)
                         TextField("Name", text: $name).textFieldStyle(.roundedBorder).frame(width: 300)
@@ -2359,8 +2364,8 @@ struct DocumentRow: View {
 
     var body: some View {
         FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen) { moreItems }
-            .popover(isPresented: $renaming, arrowEdge: .bottom) { renameField }
-            .confirmationDialog("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
+            .popoverWhenAsked(isPresented: $renaming, arrowEdge: .bottom) { renameField }
+            .confirmationDialogWhenAsked("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
                 Button("Delete", role: .destructive, action: forget)
                 Button("Cancel", role: .cancel) {}
             } message: { Text(Self.deleteWords(document)) }
@@ -2471,7 +2476,7 @@ struct LinkRow: View {
                 Button(Say.removeLink, systemImage: "trash", role: .destructive, action: remove)
                     .help("Take the link out of the matter. The document itself stays where it is.")
             }
-                .popover(isPresented: $editing, arrowEdge: .bottom) {
+                .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
                     LinkEditor(link: link, todos: todos) { address, title, todo in
                         link.address = address
                         link.title = title

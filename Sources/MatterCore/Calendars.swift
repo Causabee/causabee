@@ -1,5 +1,6 @@
 import EventKit
 import Foundation
+import Synchronization
 
 /// The owner's calendars and reminders, as the Mac's Calendar and Reminders show them — iCloud,
 /// Google, Exchange alike. Read to find what a matter's appointments and tasks already are there;
@@ -77,15 +78,10 @@ public final class Calendars {
     /// "Interview, 3:30–6:00 PM": an appointment keeps its beginning only, and without this every
     /// event was an hour long whatever it said. Nil when the words give no end after the beginning.
     nonisolated static func end(in what: String, from start: Date) -> Date? {
-        let range = #/(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?\s*(?:[–—-]|to|bis)\s*(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?/#
-        // Or only the end, said in words: "ends at 11:45 am", "until 18:00", "bis 14:30 Uhr".
-        let until = #/(?i)(?:ends? at|until|till|bis|endet um)\s*(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?/#
-        let said: (hour: Substring, minute: Substring, half: Substring?)
-        if let found = what.firstMatch(of: range) { said = (found.4, found.5, found.6) }
-        else if let found = what.firstMatch(of: until) { said = (found.1, found.2, found.3) }
-        else { return nil }
-        guard var hour = Int(said.hour), let minute = Int(said.minute), hour < 24, minute < 60 else { return nil }
-        let half = said.half.map { $0.lowercased().prefix(1) }
+        guard let said = saidEnd(in: what) else { return nil }
+        var hour = said.hour
+        let minute = said.minute
+        let half = said.half
         if half == "p", hour < 12 { hour += 12 }
         if half == "a", hour == 12 { hour = 0 }
         let calendar = Calendar.current
@@ -93,6 +89,33 @@ public final class Calendars {
         // "3:30–6:00" with nothing said after it, for a beginning in the afternoon: the six is the evening's.
         if half == nil, end <= start, hour < 12, let later = calendar.date(byAdding: .hour, value: 12, to: end) { end = later }
         return end > start ? end : nil
+    }
+
+    /// The end an appointment's words say, as hour, minute and "a" or "p" — read once for each
+    /// wording and kept: the week asked it of every appointment each time it drew, and building the
+    /// expression each time was most of a stutter in the overview's scrolling (measured).
+    private struct SaidEnd: Sendable { let hour: Int; let minute: Int; let half: String? }
+    nonisolated private static let saidEnds = Mutex<[String: SaidEnd?]>([:])
+
+    nonisolated private static func saidEnd(in what: String) -> SaidEnd? {
+        // No digit, no time of day.
+        guard what.contains(where: \.isNumber) else { return nil }
+        if let known = saidEnds.withLock({ $0[what] }) { return known }
+        let range = #/(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?\s*(?:[–—-]|to|bis)\s*(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?/#
+        // Or only the end, said in words: "ends at 11:45 am", "until 18:00", "bis 14:30 Uhr".
+        let until = #/(?i)(?:ends? at|until|till|bis|endet um)\s*(\d{1,2})[:.](\d{2})\s*([AaPp]\.?[Mm]\.?)?/#
+        var found: SaidEnd?
+        var parts: (hour: Substring, minute: Substring, half: Substring?)?
+        if let match = what.firstMatch(of: range) { parts = (match.4, match.5, match.6) }
+        else if let match = what.firstMatch(of: until) { parts = (match.1, match.2, match.3) }
+        if let parts, let hour = Int(parts.hour), let minute = Int(parts.minute), hour < 24, minute < 60 {
+            found = SaidEnd(hour: hour, minute: minute, half: parts.half.map { String($0.lowercased().prefix(1)) })
+        }
+        saidEnds.withLock { kept in
+            if kept.count > 2_000 { kept.removeAll() }
+            kept[what] = .some(found)
+        }
+        return found
     }
 
     /// The hour an appointment ends, read from its own words, as `HH:MM`: nil when they say none.

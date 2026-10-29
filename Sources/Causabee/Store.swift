@@ -250,7 +250,7 @@ final class Store {
     }
 
     private func remember() {
-        UserDefaults.standard.set(plan.rawValue, forKey: Plan.cacheKey)
+        UserDefaults.standard.setIfChanged(plan.rawValue, forKey: Plan.cacheKey)
     }
 
     /// "€0.99 a month", "€9.99 a year".

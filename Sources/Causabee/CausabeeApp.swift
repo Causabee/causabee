@@ -125,7 +125,7 @@ struct CausabeeApp: App {
         WindowGroup("Causabee") {
             switch opened {
             case .success(let container):
-                RootView().modifier(ModelChoiceSync()).modelContainer(container).frame(minWidth: 960, minHeight: 640)
+                RootView().modifier(ModelChoiceSync()).screenMeter().modelContainer(container).frame(minWidth: 960, minHeight: 640)
             case .failure(let error):
                 ContentUnavailableView("The store cannot be opened",
                                        systemImage: "externaldrive.badge.exclamationmark",
@@ -876,12 +876,12 @@ struct RootView: View {
         .sheet(isPresented: $showsIntro, onDismiss: {
             if SetupState.isFresh || (!setupLater && !DemoData.isRequested && SetupAssistant.isMissingSomething) { showsSetup = true }
         }) { IntroView() }
-        .sheet(isPresented: $showsSetup) {
+        .sheetWhenAsked(isPresented: $showsSetup) {
             SetupAssistant { mailCheck.look(store: navigation.store, context: context) }
         }
         .modifier(PinQuestion(matters: matters, navigation: navigation))
         .matterChoosers(all: matters, navigation: navigation)
-        .confirmationDialog(mergeQuestion, isPresented: Binding(get: { navigation.merging != nil }, set: { if !$0 { navigation.merging = nil } })) {
+        .confirmationDialogWhenAsked(mergeQuestion, isPresented: Binding(get: { navigation.merging != nil }, set: { if !$0 { navigation.merging = nil } })) {
             Button("Merge") {
                 if let (from, into) = navigation.merging {
                     into.absorb(from, in: context)

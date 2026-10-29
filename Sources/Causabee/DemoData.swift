@@ -164,6 +164,17 @@ enum DemoData {
         }
         if let care = try? context.fetch(FetchDescriptor<Matter>(predicate: #Predicate { $0.key == "care-for-helga" })).first {
             mails(300, into: care, tag: "care")
+            // As many tasks as a long matter gathers: seventy done, a few open — a page as heavy
+            // as the owner's heaviest, to scroll and measure.
+            let source = Source(kind: .mail, pointer: "p", messageID: "care-0@big.example", date: now)
+            for t in 0..<75 {
+                let todo = Todo(text: "Long-running task \(t) in the care matter, written out in a sentence or two as mail has it",
+                                owner: [.me, .we, .other][t % 3], due: day(t % 9 - 4), source: source, origin: "care-big#\(t)")
+                todo.isDone = t >= 6
+                if todo.isDone { todo.doneAt = now.addingTimeInterval(-Double(t) * 3600) }
+                todo.matter = care
+                context.insert(todo)
+            }
         }
         try? context.save()
     }

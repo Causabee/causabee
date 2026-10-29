@@ -284,17 +284,29 @@ struct ModelChoiceSync: ViewModifier {
 @Observable
 final class StoredChanges {
     static let shared = StoredChanges()
-    fileprivate(set) var count = 0
+    fileprivate(set) var count = 0 {
+        didSet {
+            version = count
+            // The overview prepared anew by the worker; the screens that show it draw again
+            // when it comes — not at every change, each working it all out.
+            OverviewPages.shared.refresh(version: count)
+        }
+    }
+    /// The same count, read without drawing again when it changes: what is prepared from the
+    /// store is asked for by it, and the screens draw again when it is ready.
+    @ObservationIgnored private(set) var version = 0
 
     /// The prepared overview for these matters, as the store is now: prepared once per change,
-    /// however many views ask for it.
+    /// however many views ask for it — by the worker, the screens drawn again when it comes.
     func overview(_ matters: [Matter]) -> OverviewPage {
-        OverviewPages.shared.page(for: matters, version: count)
+        _ = OverviewPages.shared.arrived
+        return OverviewPages.shared.page(for: matters, version: version)
     }
 
     /// One matter as its card or row shows it, prepared once per change.
     func summary(_ matter: Matter) -> MatterSummary {
-        OverviewPages.shared.summary(of: matter, version: count)
+        _ = OverviewPages.shared.arrived
+        return OverviewPages.shared.summary(of: matter, version: version)
     }
 
     // The week's questions, answered once per change and per day — the week asked them eight or
@@ -310,7 +322,7 @@ final class StoredChanges {
     /// A matter's conversations and what came from each mail and file, prepared once per change —
     /// the record, its menus' counts and find all draw from it.
     func record(_ matter: Matter) -> (threads: [MailThreads.Thread], made: RecordLinks) {
-        kept("record \(matter.persistentModelID.hashValue)") { (MailThreads.build(MatterStatus(matter).mailEntries), RecordLinks(matter)) }
+        MatterKept.shared.value(matter, "record") { (MailThreads.build(MatterStatus(matter).mailEntries), RecordLinks(matter)) }
     }
 
     /// Every rule the owner set, read once per change — not fetched by each drawing of People.
@@ -319,7 +331,7 @@ final class StoredChanges {
     }
 
     private func kept<Value>(_ name: String, for matters: [Matter], _ work: () -> Value) -> Value {
-        if weekVersion != count { weekKept = [:]; weekVersion = count }
+        if weekVersion != version { weekKept = [:]; weekVersion = version }
         var hasher = Hasher()
         for matter in matters { hasher.combine(matter.persistentModelID) }
         let key = "\(name) \(MatterStatus.day(Date())) \(hasher.finalize())"
@@ -330,20 +342,52 @@ final class StoredChanges {
         return value
     }
 
+    // The week's days, from the overview the worker prepared — not from every matter's tasks,
+    // dates and appointments read again here after each change (measured: the week under an open
+    // matter worked them all out at every change, and the matter's page stuttered).
+
     func things(on day: String, in matters: [Matter]) -> [DayThing] {
-        kept("things \(day)", for: matters) { Week.things(on: day, in: matters) }
+        let arrived = OverviewPages.shared.arrived
+        return kept("things \(day) \(arrived)", for: matters) {
+            let page = overview(matters)
+            return dayThings(page.things(on: day), in: matters)
+        }
     }
 
     func next(after day: String, in matters: [Matter]) -> (day: String, thing: DayThing)? {
-        kept("next \(day)", for: matters) { Week.next(after: day, in: matters) }
+        let arrived = OverviewPages.shared.arrived
+        return kept("next \(day) \(arrived)", for: matters) {
+            guard let next = overview(matters).next(after: day), let thing = dayThings([next.thing], in: matters).first else { return nil }
+            return (next.day, thing)
+        }
     }
 
     /// Every open task past its day, the longest overdue first.
     func overdue(in matters: [Matter]) -> [Todo] {
-        kept("overdue", for: matters) {
-            matters.filter { !$0.isClosed }.flatMap { MatterStatus($0).overdue }.sorted { ($0.due ?? "") < ($1.due ?? "") }
+        let arrived = OverviewPages.shared.arrived
+        return kept("overdue \(arrived)", for: matters) {
+            overview(matters).overdue.compactMap { todo($0.task.todo, in: matters, matter: $0.matter.id) }
         }
     }
+
+    /// The prepared page's things as the store's own: their matters and tasks, found by id.
+    private func dayThings(_ things: [OverviewPage.Thing], in matters: [Matter]) -> [DayThing] {
+        let byID = Dictionary(matters.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { first, _ in first })
+        return things.compactMap { thing in
+            guard let matter = byID[thing.matter.id] else { return nil }
+            return DayThing(matter: matter, what: thing.what, time: thing.time, todo: thing.todo.flatMap { todo($0, in: matters, matter: thing.matter.id) })
+        }
+    }
+
+    private func todo(_ id: PersistentIdentifier, in matters: [Matter], matter: PersistentIdentifier) -> Todo? {
+        if let known: Todo = context?.registeredModel(for: id), !known.isDeleted { return known }
+        return matters.first { $0.persistentModelID == matter }?.todos?.first { $0.persistentModelID == id }
+    }
+
+    /// `--tour-changes`: a change to the store, as iCloud or a mail check brings one — for the
+    /// scroll tour, to see what a page does when one comes while it scrolls.
+    func nudgeForTour() { count += 1 }
+
     /// The app's context, for the debug build's report of what it sees.
     @ObservationIgnored var context: ModelContext?
     @ObservationIgnored private var watching = false
@@ -351,6 +395,7 @@ final class StoredChanges {
 
     func watch(_ context: ModelContext) {
         self.context = context
+        OwnerMe.refresh(context)
         // The overview prepared by the worker after a change, away from the screen.
         OverviewPages.shared.forget()
         let container = context.container
@@ -379,6 +424,7 @@ final class StoredChanges {
         DispatchQueue.main.async {
             self.savePending = false
             self.count += 1
+            OwnerMe.refresh(self.context)
             if let context = self.context { PublicNames.refresh(in: context) }
             if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] saved, change %d", self.count) }
         }
@@ -397,6 +443,7 @@ final class StoredChanges {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 if delay == 4 { self.pending = false }
                 self.count += 1
+                OwnerMe.refresh(self.context)
                 // A name marked public on another device counts here too.
                 if let context = self.context { PublicNames.refresh(in: context) }
                 // What another device kept of a mail or a file comes beside this store too.
@@ -441,8 +488,9 @@ enum PriceEstimates {
     static func of(_ matter: Matter) -> (step: Double, summary: Double) {
         // Unchanged store: as it was. Changed: worked out anew only when this matter's own record
         // changed — the facts are the heavy part — told by a cheap mark: its counts, and its notes'.
-        let version = StoredChanges.shared.count
-        if let known = kept[matter.persistentModelID], known.version == version { return (known.step, known.summary) }
+        // Not by the store's count of changes: reading it made the whole page of a matter draw again
+        // after every change anywhere.
+        let version = 0
         let key = [ModelChoice.assistant.id, "\(matter.entries?.count ?? 0)", "\(matter.todos?.count ?? 0)",
                    "\(matter.documents?.count ?? 0)", "\(matter.noteCount)",
                    "\((matter.noteBlocks ?? []).reduce(0) { $0 + $1.text.count } + (matter.notes?.count ?? 0))", MatterStatus.day(Date())].joined(separator: "|")
@@ -537,7 +585,12 @@ final class AutoUpdate {
 
     private static var known: [String: Known] {
         get { (UserDefaults.standard.data(forKey: knownKey)).flatMap { try? JSONDecoder().decode([String: Known].self, from: $0) } ?? [:] }
-        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: knownKey) }
+        set {
+            // In one order always, so that the same is the same and nothing is written for it.
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            UserDefaults.standard.setIfChanged(try? encoder.encode(newValue), forKey: knownKey)
+        }
     }
 
     /// What Auto spent on a day, in dollars.
@@ -555,7 +608,7 @@ final class AutoUpdate {
         guard let data = profile?.autoSpent, let all = try? JSONDecoder().decode([String: [String: Double]].self, from: data) else { return }
         var elsewhere: [String: Double] = [:]
         for (id, days) in all where id != device { for (day, dollars) in days { elsewhere[day, default: 0] += dollars } }
-        UserDefaults.standard.set(elsewhere, forKey: elsewhereKey)
+        UserDefaults.standard.setIfChanged(elsewhere, forKey: elsewhereKey)
     }
 
     /// This device's spending into the profile, for the others to say.
@@ -710,7 +763,7 @@ struct AutoQuestion: ViewModifier {
 
     func body(content: Content) -> some View {
         let model = Claude.Model.choices.first { $0.id == mail } ?? .opus
-        content.confirmationDialog("Turn on Pro?", isPresented: $asks, titleVisibility: .visible) {
+        content.confirmationDialogWhenAsked("Turn on Pro?", isPresented: $asks, titleVisibility: .visible) {
             Button("Turn Pro On") { agreed = true; turnOn() }
             Button("Cancel", role: .cancel) { }
         } message: {
@@ -776,5 +829,52 @@ final class CloudCatchUp {
         while (lastImport ?? .distantPast) < activeSince, ContinuousClock.now - start < limit {
             try? await Task.sleep(for: .milliseconds(400))
         }
+    }
+}
+
+
+/// What a matter's page works out from that matter — its conversations, what came from each mail,
+/// the record's counts — kept until that matter changes. Not again after every change to the store:
+/// a sync of another matter, a dot of unread mail elsewhere, Auto writing another brief each made
+/// the open page work all of it out again, and a long matter's page stuttered as it scrolled
+/// (measured: some hundred milliseconds each time). The page reads the matter itself, so a change
+/// to it — here or from another device — draws it again.
+@MainActor
+final class MatterKept {
+    static let shared = MatterKept()
+    private var kept: [PersistentIdentifier: (stamp: String, values: [String: Any])] = [:]
+
+    /// The matter as its page shows it, in one short word: its record, and which mail answers
+    /// which and which is unread.
+    static func stamp(of matter: Matter) -> String {
+        let entries = matter.entries ?? []
+        return matter.recordStamp + "|\(entries.count { $0.replyTo != nil })|\(entries.count { $0.isUnread == true })|\(matter.closedAt?.timeIntervalSince1970 ?? 0)"
+    }
+
+    func value<Value>(_ matter: Matter, _ name: String, _ work: () -> Value) -> Value {
+        let id = matter.persistentModelID
+        let stamp = Self.stamp(of: matter)
+        if kept[id]?.stamp != stamp { kept[id] = (stamp, [:]) }
+        if let known = kept[id]?.values[name] as? Value { return known }
+        let value = work()
+        kept[id]?.values[name] = value
+        if kept.count > 12 { kept = kept.filter { $0.key == id } }
+        return value
+    }
+}
+
+/// The owner as a sender — to tell the mail they sent — read from the profile when the store
+/// changes, not by a query in every conversation's card each time a page draws.
+@MainActor
+enum OwnerMe {
+    static private(set) var current = Me(names: [], withAccounts: true)
+    private static var names: [String]?
+
+    static func refresh(_ context: ModelContext?) {
+        guard let context else { return }
+        let now = ((try? context.fetch(FetchDescriptor<Profile>())) ?? []).first?.names ?? []
+        guard now != names else { return }
+        names = now
+        current = Me(names: now, withAccounts: true)
     }
 }
