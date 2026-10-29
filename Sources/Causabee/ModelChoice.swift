@@ -503,7 +503,7 @@ final class AutoUpdate {
     /// The matters whose record has changed and is coming to rest: written in a moment, and said so.
     private(set) var pending: Set<String> = []
     /// How often it looks. A matter is written once it has stood still from one look to the next.
-    private static let pace: Duration = .seconds(3)
+    private static let pace: Duration = .seconds(1)
 
     private struct Known: Codable {
         var stamp: String

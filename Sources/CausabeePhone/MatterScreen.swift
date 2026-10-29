@@ -574,11 +574,12 @@ struct MatterScreen: View {
     private func nextStep(_ status: MatterStatus, _ scroller: ScrollViewProxy) -> some View {
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
-        // Changed, and Auto writes it again: the step that stands until then, lighter and not to tap.
+        // Changed, and Auto writes it again: until it has, the step worked out on the device at
+        // once — it knows what was just ticked — and Causabee's in its place when it comes.
         let coming = AutoUpdate.shared.updating(matter)
+        let own = fresh && !coming
         VStack(alignment: .leading, spacing: 10) {
-            Group {
-            if fresh || coming, let step = matter.nextStep {
+            if own, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(.headline).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
@@ -598,10 +599,6 @@ struct MatterScreen: View {
                 Text("NEXT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Text("Nothing open.").foregroundStyle(.secondary)
             }
-            }
-            .opacity(coming ? 0.4 : 1)
-            .disabled(coming)
-            .animation(.easeInOut(duration: 0.3), value: coming)
             // Asking Claude, below the buttons: apart from what the step itself offers — as on the Mac.
             HStack(spacing: 4) {
                 if askingStep || coming {

@@ -376,11 +376,12 @@ struct MatterStatusView: View {
         let _ = AutoUpdate.shared.done
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
-        // Changed, and Auto writes it again: the step that stands until then, lighter and not to click.
+        // Changed, and Auto writes it again: until it has, the step worked out on the device at
+        // once — it knows what was just ticked — and Causabee's in its place when it comes.
         let coming = AutoUpdate.shared.updating(matter)
+        let own = fresh && !coming
         VStack(alignment: .leading, spacing: 10) {
-            Group {
-            if fresh || coming, let step = matter.nextStep {
+            if own, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
@@ -395,19 +396,15 @@ struct MatterStatusView: View {
                 Text("Nothing open.").foregroundStyle(.secondary)
             }
             HStack(spacing: 10) {
-                if fresh || coming, let step = matter.nextStep {
+                if own, let step = matter.nextStep {
                     let todo = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
                     stepButtons(text: step, todo: todo, waiting: todo?.owner == .other)
-                } else if !fresh, let rule, let id = rule.todo, let todo = matter.openTodos.first(where: { $0.persistentModelID == id }) {
+                } else if !own, let rule, let id = rule.todo, let todo = matter.openTodos.first(where: { $0.persistentModelID == id }) {
                     stepButtons(text: todo.text, todo: todo, waiting: rule.kind == .followUp || rule.kind == .wait)
                 }
                 Spacer()
             }
             .tool()
-            }
-            .opacity(coming ? 0.4 : 1)
-            .disabled(coming)
-            .animation(.easeInOut(duration: 0.3), value: coming)
             // Asking Claude, below the buttons on the left: apart from what the step itself offers.
             HStack(spacing: 10) {
                 if askingStep || coming {
