@@ -574,8 +574,11 @@ struct MatterScreen: View {
     private func nextStep(_ status: MatterStatus, _ scroller: ScrollViewProxy) -> some View {
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
+        // Changed, and Auto writes it again: the step that stands until then, lighter and not to tap.
+        let coming = AutoUpdate.shared.updating(matter)
         VStack(alignment: .leading, spacing: 10) {
-            if fresh, let step = matter.nextStep {
+            Group {
+            if fresh || coming, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(.headline).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
@@ -595,9 +598,13 @@ struct MatterScreen: View {
                 Text("NEXT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Text("Nothing open.").foregroundStyle(.secondary)
             }
+            }
+            .opacity(coming ? 0.4 : 1)
+            .disabled(coming)
+            .animation(.easeInOut(duration: 0.3), value: coming)
             // Asking Claude, below the buttons: apart from what the step itself offers — as on the Mac.
             HStack(spacing: 4) {
-                if askingStep || AutoUpdate.shared.working.contains(matter.key) {
+                if askingStep || coming {
                     BeeLoader(size: 12)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else if auto {
@@ -770,11 +777,12 @@ struct MatterScreen: View {
                     Text(String(line)).fixedSize(horizontal: false, vertical: true)
                         .findable(.section("summary-\(index)"), String(line))
                 }
+                .opacity(AutoUpdate.shared.updating(matter) ? 0.4 : 1)
             }
             BriefDetails(matter: matter)
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 8) {
-                if writingSummary || AutoUpdate.shared.working.contains(matter.key) {
+                if writingSummary || AutoUpdate.shared.updating(matter) {
                     BeeLoader(size: 12)
                     Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()

@@ -1181,10 +1181,11 @@ struct BriefDetails: View {
                         }
                     }
                 }
-                if !brief.open.isEmpty {
+                let proposals = Adviser.worthReading(brief.open, in: matter, context: context)
+                if !proposals.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("For the list").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        ForEach(brief.open) { proposal in
+                        ForEach(proposals) { proposal in
                             ProposalRow(proposal: proposal, matter: matter)
                         }
                     }
@@ -1225,6 +1226,7 @@ private struct ProposalRow: View {
     let matter: Matter
     @Environment(\.modelContext) private var context
     @State private var gone = false
+    @State private var why = false
 
     var body: some View {
         let card = proposal.card
@@ -1232,8 +1234,12 @@ private struct ProposalRow: View {
             Image(systemName: symbol).foregroundStyle(Theme.gold).frame(width: 18)
             VStack(alignment: .leading, spacing: 4) {
                 Text(what).fixedSize(horizontal: false, vertical: true)
+                // Why, in one line: the whole of it on a tap — the proposal itself is what to read.
                 if !card.reason.isEmpty {
-                    Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text(card.reason).font(.caption).foregroundStyle(.secondary)
+                        .lineLimit(why ? nil : 1).fixedSize(horizontal: false, vertical: true)
+                        .contentShape(Rectangle())
+                        .onTapGesture { withAnimation { why.toggle() } }
                 }
                 if gone { Text("What it was about is no longer there.").font(.caption).foregroundStyle(Theme.warning) }
                 HStack(spacing: 12) {

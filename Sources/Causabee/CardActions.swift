@@ -1043,6 +1043,45 @@ enum Adviser {
         }
     }
 
+    /// The proposals still worth reading: none for a task already on the list, done, or no longer
+    /// there; none for a wording no longer found — and one at a time for the same task, so that
+    /// three about one thing are not read at once. The next comes when the first is decided.
+    @MainActor static func worthReading(_ proposals: [Brief.Proposal], in matter: Matter, context: ModelContext) -> [Brief.Proposal] {
+        let todos = matter.todos ?? []
+        func same(_ a: String, _ b: String) -> Bool {
+            let x = a.lowercased().trimmingCharacters(in: .punctuationCharacters.union(.whitespaces))
+            let y = b.lowercased().trimmingCharacters(in: .punctuationCharacters.union(.whitespaces))
+            return x == y
+        }
+        var touched = Set<PersistentIdentifier>()
+        var worth: [Brief.Proposal] = []
+        for proposal in proposals {
+            let card = proposal.card
+            let refs = CardActions.local(proposal.refs, keys: proposal.keys, matter: matter, in: context)
+            let named = card.todo.flatMap { refs[$0] }.flatMap { CardActions.live($0, as: Todo.self, in: context) }
+            let subject: Todo?
+            switch card.kind {
+            case .newTodo:
+                // Already on the list — taken on another device, or written there by hand.
+                if !todos.contains(where: { same($0.text, card.text) }) { worth.append(proposal) }
+                continue
+            case .markDone, .waitsFor, .changeOwner, .changeDate:
+                guard let named, !named.isDone else { continue }
+                subject = named
+            case .correctText:
+                guard let from = card.from, !from.isEmpty, !same(from, card.text) else { continue }
+                subject = todos.first { !$0.isDone && $0.text.contains(from) }
+                guard subject != nil || (matter.appointments ?? []).contains(where: { $0.what.contains(from) })
+                        || (matter.deadlines ?? []).contains(where: { $0.what.contains(from) }) else { continue }
+            default:
+                subject = nil
+            }
+            if let subject, !touched.insert(subject.persistentModelID).inserted { continue }
+            worth.append(proposal)
+        }
+        return worth
+    }
+
     static func dismiss(_ proposal: Brief.Proposal, in matter: Matter, context: ModelContext) {
         matter.decide(proposal.id, .dismissed)
         try? context.save()

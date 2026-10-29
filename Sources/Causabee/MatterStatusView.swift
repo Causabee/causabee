@@ -290,11 +290,12 @@ struct MatterStatusView: View {
                     Text(String(line)).fixedSize(horizontal: false, vertical: true)
                         .findable(.section("summary-\(index)"), String(line))
                 }
+                .opacity(AutoUpdate.shared.updating(matter) ? 0.4 : 1)
             }
             BriefDetails(matter: matter)
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 10) {
-                if writingSummary || AutoUpdate.shared.working.contains(matter.key) {
+                if writingSummary || AutoUpdate.shared.updating(matter) {
                     BeeLoader(size: 10)
                     Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
@@ -375,8 +376,11 @@ struct MatterStatusView: View {
         let _ = AutoUpdate.shared.done
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
+        // Changed, and Auto writes it again: the step that stands until then, lighter and not to click.
+        let coming = AutoUpdate.shared.updating(matter)
         VStack(alignment: .leading, spacing: 10) {
-            if fresh, let step = matter.nextStep {
+            Group {
+            if fresh || coming, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
@@ -391,7 +395,7 @@ struct MatterStatusView: View {
                 Text("Nothing open.").foregroundStyle(.secondary)
             }
             HStack(spacing: 10) {
-                if fresh, let step = matter.nextStep {
+                if fresh || coming, let step = matter.nextStep {
                     let todo = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
                     stepButtons(text: step, todo: todo, waiting: todo?.owner == .other)
                 } else if !fresh, let rule, let id = rule.todo, let todo = matter.openTodos.first(where: { $0.persistentModelID == id }) {
@@ -400,9 +404,13 @@ struct MatterStatusView: View {
                 Spacer()
             }
             .tool()
+            }
+            .opacity(coming ? 0.4 : 1)
+            .disabled(coming)
+            .animation(.easeInOut(duration: 0.3), value: coming)
             // Asking Claude, below the buttons on the left: apart from what the step itself offers.
             HStack(spacing: 10) {
-                if askingStep || AutoUpdate.shared.working.contains(matter.key) {
+                if askingStep || coming {
                     BeeLoader(size: 10)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else if auto {
