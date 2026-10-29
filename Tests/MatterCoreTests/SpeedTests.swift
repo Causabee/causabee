@@ -115,3 +115,30 @@ struct MirrorChangedHereTests {
         #expect(!Mirror.unchangedHere(["Zahnarzt", "2026-10-30", "10:00", ""], stamp: nil))
     }
 }
+
+@Suite("Speed: what every device has sorted, read again")
+@MainActor
+struct SortedSpeedTests {
+    @Test("Two thousand answers in the store: read once, then again as kept")
+    func answers() throws {
+        let container = try MatterSchema.container(at: nil)
+        let context = container.mainContext
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var judgements: [Judgement] = []
+        for i in 0..<2000 {
+            var judgement = try decoder.decode(Judgement.self, from: Data(#"{"email_id":"<\#(i)@x>","source":"imap://x","date":"2026-09-30T07:00:00Z","subject":"Kaufvertrag \#(i)","from":"Petra Lindner <p@example.org>","is_bulk":false,"matter":"wohnung","matter_confidence":1,"matter_reason":"","decided_by":"pending","parties":[],"todos":[],"deadlines":[]}"#.utf8))
+            judgement.extraction = Judgement.Extraction(model: "m", servedBy: "m", mode: "placeholder", prompt: "p")
+            judgements.append(judgement)
+        }
+        try SortedMails.record(judgements, device: "mac", in: context)
+        let first = SpeedTests.time { _ = SortedMails.answered(in: context) }
+        let again = SpeedTests.time { _ = SortedMails.answered(in: context) }
+        let ids = SpeedTests.time { _ = SortedMails.answeredIDs(in: context) }
+        let log = FileManager.default.temporaryDirectory.appendingPathComponent("none-\(UUID().uuidString).jsonl")
+        let unplaced = SpeedTests.time { _ = Unplaced.find(log: log, context: context, setAside: []) }
+        for (name, ms) in [("answers, first", first), ("answers, kept", again), ("answered ids", ids), ("unplaced", unplaced)] {
+            print(String(format: "SPEED %8.2f ms  %@", ms, name))
+        }
+    }
+}

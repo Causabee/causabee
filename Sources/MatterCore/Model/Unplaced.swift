@@ -41,7 +41,7 @@ public enum Unplaced {
 
     /// The last month's mail with no matter, not in the store, not set aside — sorted on this
     /// device or on another.
-    public static func find(log: URL, context: ModelContext, setAside: Set<String>, days: Int = 30) -> [Judgement] {
+    nonisolated public static func find(log: URL, context: ModelContext, setAside: Set<String>, days: Int = 30) -> [Judgement] {
         let placed = Set(((try? context.fetch(FetchDescriptor<Entry>())) ?? []).map(\.messageID))
         let since = Date().addingTimeInterval(-Double(days) * 86_400)
         return SortedMails.all(log: log, in: context).values

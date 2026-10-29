@@ -70,6 +70,12 @@ public actor StoreWorker {
     /// Left out on any device.
     public func setAside() -> Set<String> { SortedMails.setAside(in: modelContext) }
 
+    /// Mail read but in no matter, to put into one — every answer and every mail of the store read
+    /// for it, some thirty milliseconds with two thousand.
+    public func unplaced(log: URL, setAsideHere: Set<String>) -> [Judgement] {
+        Unplaced.find(log: log, context: modelContext, setAside: setAsideHere.union(SortedMails.setAside(in: modelContext)))
+    }
+
     /// Left out on this device: said in the store, for every device.
     public func setAside(_ ids: Set<String>, device: String) {
         SortedMails.setAside(ids, device: device, in: modelContext)

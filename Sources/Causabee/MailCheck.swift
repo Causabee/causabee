@@ -357,7 +357,8 @@ struct MailCheckView: View {
 
     private func refresh() {
         let log = navigation.store.deletingLastPathComponent().appendingPathComponent("decisions-fetch.jsonl")
-        unplaced = Unplaced.find(log: log, context: context, setAside: setAside.union(SortedMails.setAside(in: context)))
+        let here = setAside
+        Task { unplaced = await StoreWorker.for(context.container).unplaced(log: log, setAsideHere: here) }
     }
 
     @ViewBuilder
