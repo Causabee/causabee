@@ -90,6 +90,16 @@ struct SpeedTests {
         report.append(("  · reply ids", Self.time { for e in entries { _ = e.replyTo } }))
         report.append(("  · clean", Self.time { for e in entries { _ = MailThreads.clean(e.title) } }))
         for (name, ms) in report { print(String(format: "SPEED %8.2f ms  %@", ms, name)) }
+        // The budget, in a debug build: what a screen works out while it draws has to fit a frame
+        // or two. About four times what it takes now — slower than that is a step backwards.
+        let budget: [String: Double] = [
+            "next step, every matter": 40, "mail threads, one matter": 20, "record links, one matter": 15,
+            "overview page, every matter": 50, "week, every matter": 25, "MatterStatus + next step, one matter": 4,
+        ]
+        for (name, ms) in report {
+            guard let most = budget[name] else { continue }
+            #expect(ms <= most, "\(name): \(String(format: "%.1f", ms)) ms, the budget is \(Int(most)) ms")
+        }
     }
 }
 
