@@ -351,6 +351,10 @@ final class StoredChanges {
 
     func watch(_ context: ModelContext) {
         self.context = context
+        // The overview prepared by the worker after a change, away from the screen.
+        OverviewPages.shared.forget()
+        let container = context.container
+        Task { OverviewPages.shared.worker = await StoreWorker.for(container) }
         // The names the owner marked as public, read before anything is disguised.
         PublicNames.refresh(in: context)
         // From the start: what iCloud brings in, so the mail check can wait for it.
@@ -396,7 +400,7 @@ final class StoredChanges {
                 // A name marked public on another device counts here too.
                 if let context = self.context { PublicNames.refresh(in: context) }
                 // What another device kept of a mail or a file comes beside this store too.
-                if delay == 15, let store = KeptTexts.store, let context = self.context { KeptTexts.share(besides: store, in: context) }
+                if delay == 15, let store = KeptTexts.store, let context = self.context { Task { await StoreWorker.for(context.container).shareKeptTexts(besides: store) } }
                 #if DEBUG
                 if CommandLine.arguments.contains("--report-changes"), let context = self.context {
                     let todos = (try? context.fetch(FetchDescriptor<Todo>())) ?? []

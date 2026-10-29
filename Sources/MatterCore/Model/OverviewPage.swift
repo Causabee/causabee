@@ -1,17 +1,18 @@
 import Foundation
+import Observation
 import SwiftData
 
 /// One matter as the overview, the sidebar and the week show it: plain values, worked out once
 /// from the store — not read from it again by every card, row and day each time the screen draws.
-public struct MatterSummary: Identifiable, Equatable {
-    public struct Overdue: Equatable {
+public struct MatterSummary: Identifiable, Equatable, Sendable {
+    public struct Overdue: Equatable, Sendable {
         public let todo: PersistentIdentifier
         public let due: String
         public let text: String
     }
 
     /// Something with a day on it: an open task's due day, a deadline, an appointment.
-    public struct Dated: Equatable {
+    public struct Dated: Equatable, Sendable {
         public let day: String
         public let time: String?
         public let what: String
@@ -19,7 +20,7 @@ public struct MatterSummary: Identifiable, Equatable {
         public let todo: PersistentIdentifier?
     }
 
-    public struct Next: Equatable {
+    public struct Next: Equatable, Sendable {
         public let day: String
         public let what: String
     }
@@ -89,7 +90,7 @@ public struct MatterSummary: Identifiable, Equatable {
 /// The overview, prepared: every matter's summary, and what is worked out from all of them — which
 /// are going on and in what order, the pinned, the quiet and the closed, the week, what is overdue.
 /// The same on the Mac, the iPhone and the iPad; the screens only draw it.
-public struct OverviewPage {
+public struct OverviewPage: Sendable {
     public let today: String
     public let summaries: [MatterSummary]
     /// Going on: late ones first, then by their next day, then by name.
@@ -161,26 +162,61 @@ public struct OverviewPage {
 
 /// The prepared overview, kept until the store changes or the day turns: however many views ask,
 /// and however often the screen draws, the matters are read once per change.
+///
+/// After a change it is prepared by the worker, away from the screen — every matter's tasks, dates
+/// and mail read, a fifth of a second on the owner's store, measured on the main thread. Until it
+/// comes, the page as it was stands; then the screens draw the new one.
 @MainActor
+@Observable
 public final class OverviewPages {
     public static let shared = OverviewPages()
     /// A few pages: for all the matters, and for the few views that ask about some of them.
-    private var kept: [(version: Int, day: String, ids: [PersistentIdentifier], page: OverviewPage)] = []
+    @ObservationIgnored private var kept: [(version: Int, day: String, ids: [PersistentIdentifier], page: OverviewPage)] = []
+    /// Counts the pages that came from the worker: the screens that read a page draw again then.
+    public private(set) var arrived = 0
+    /// Who prepares a page after a change; none, and it is prepared here, at once.
+    @ObservationIgnored public var worker: StoreWorker?
+    @ObservationIgnored private var asked: Set<String> = []
 
     public init() {}
 
     /// `version` goes up with every change to the store — the app's count of changes.
     public func page(for matters: [Matter], version: Int, now: Date = Date()) -> OverviewPage {
+        _ = arrived
         let day = MatterStatus.day(now)
         let ids = matters.map(\.persistentModelID)
         if let found = kept.first(where: { $0.version == version && $0.day == day && $0.ids == ids }) { return found.page }
+        // The same matters as before, changed: the worker prepares them, and the page as it was
+        // stands until then.
+        if let worker, let before = kept.last(where: { $0.day == day && $0.ids == ids && $0.version < version }) {
+            ask(worker, ids: ids, version: version, day: day, now: now)
+            return before.page
+        }
         let started = Date()
         let page = OverviewPage(matters, today: now)
         if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] overview prepared %d ms", Int(Date().timeIntervalSince(started) * 1000)) }
-        kept.removeAll { $0.version != version || $0.day != day }
+        keep(page, version: version, day: day, ids: ids)
+        return page
+    }
+
+    private func keep(_ page: OverviewPage, version: Int, day: String, ids: [PersistentIdentifier]) {
+        // The newest for these matters only; one for each set of matters asked about.
+        kept.removeAll { $0.day != day || ($0.ids == ids && $0.version <= version) }
         kept.append((version, day, ids, page))
         if kept.count > 4 { kept.removeFirst() }
-        return page
+    }
+
+    private func ask(_ worker: StoreWorker, ids: [PersistentIdentifier], version: Int, day: String, now: Date) {
+        let token = "\(version) \(day) \(ids.hashValue)"
+        guard asked.insert(token).inserted else { return }
+        Task {
+            let page = await worker.overviewPage(ids: ids, now: now)
+            asked.remove(token)
+            // A newer one may have come meanwhile: that one stays.
+            guard !kept.contains(where: { $0.ids == ids && $0.version >= version }) else { return }
+            keep(page, version: version, day: day, ids: ids)
+            arrived += 1
+        }
     }
 
     /// The matters in the page's order, from its summaries back to the store's own.
@@ -197,6 +233,13 @@ public final class OverviewPages {
         for page in kept where page.version == version && page.day == day {
             if let found = page.page[id] { return found }
         }
+        // Changed, and the worker prepares it: the newest page's summary stands until then.
+        if let worker, let before = kept.filter({ $0.day == day && $0.version < version && $0.page[id] != nil }).max(by: { $0.version < $1.version }),
+           let found = before.page[id] {
+            _ = arrived
+            ask(worker, ids: before.ids, version: version, day: day, now: now)
+            return found
+        }
         if single.version == version, single.day == day, let found = single.byID[id] { return found }
         if single.version != version || single.day != day { single = (version, day, [:]) }
         let made = MatterSummary(matter, today: day)
@@ -204,10 +247,10 @@ public final class OverviewPages {
         return made
     }
 
-    private var single: (version: Int, day: String, byID: [PersistentIdentifier: MatterSummary]) = (-1, "", [:])
+    @ObservationIgnored private var single: (version: Int, day: String, byID: [PersistentIdentifier: MatterSummary]) = (-1, "", [:])
 
     /// Forgets the pages: the next one asked for is prepared anew.
-    public func forget() { kept = []; single = (-1, "", [:]) }
+    public func forget() { kept = []; single = (-1, "", [:]); asked = [] }
 }
 
 /// Each matter's mail dates, in order, kept until its number of mails changes: a mail keeps its

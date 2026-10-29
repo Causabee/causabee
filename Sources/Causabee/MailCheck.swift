@@ -290,7 +290,7 @@ final class MailCheck {
             // other devices, end to end encrypted.
             for outcome in look.report.outcomes where outcome.judgement.disguise != nil { MailText.save(outcome.email, besides: door.log) }
             try? context.save()
-            KeptTexts.share(besides: door.log, in: context)
+            Task { await StoreWorker.for(context.container).shareKeptTexts(besides: door.log) }
             let matters = Set(judgements.compactMap(\.matter))
             let after = try context.fetch(FetchDescriptor<Matter>())
             let names = after.filter { matter in matters.contains { matter.answers(to: $0) } }.map(\.name)

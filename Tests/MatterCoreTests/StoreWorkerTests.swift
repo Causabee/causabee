@@ -30,3 +30,31 @@ struct StoreWorkerTests {
         #expect(await worker.dealtWith() == ["<1@x>", "<2@x>"])
     }
 }
+
+@Suite("The overview after a change: prepared by the worker, the page before standing until it comes")
+@MainActor
+struct OverviewByWorkerTests {
+    @Test("A task ticked: the page as it was at once, the new one from the worker a moment later")
+    func staleThenFresh() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let container = try MatterSchema.container(at: folder.appendingPathComponent("store.sqlite"))
+        let context = container.mainContext
+        let matter = Matter(key: "m", name: "M")
+        context.insert(matter)
+        let todo = Todo(text: "Call", owner: .me, due: nil, source: Source(kind: .mail, pointer: "x"), origin: "t")
+        todo.matter = matter
+        context.insert(todo)
+        try context.save()
+        let pages = OverviewPages()
+        pages.worker = await StoreWorker.for(container)
+        #expect(pages.page(for: [matter], version: 1).summaries.first?.openCount == 1)
+        todo.isDone = true
+        try context.save()
+        // At once: the page before.
+        #expect(pages.page(for: [matter], version: 2).summaries.first?.openCount == 1)
+        for _ in 0..<100 where pages.arrived == 0 { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(pages.page(for: [matter], version: 2).summaries.first?.openCount == 0)
+    }
+}

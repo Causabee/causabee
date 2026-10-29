@@ -63,7 +63,7 @@ public enum KeptTexts {
 
     /// Both ways. Says how many went up and how many came down.
     @discardableResult
-    public static func share(besides store: URL, in context: ModelContext) -> (up: Int, down: Int) {
+    nonisolated public static func share(besides store: URL, in context: ModelContext) -> (up: Int, down: Int) {
         let ids = Set(((try? context.fetch(FetchDescriptor<Entry>())) ?? []).map(\.messageID)
             + ((try? context.fetch(FetchDescriptor<Document>())) ?? []).map(\.messageID)).filter { !$0.isEmpty }
         let records = (try? context.fetch(FetchDescriptor<KeptText>())) ?? []

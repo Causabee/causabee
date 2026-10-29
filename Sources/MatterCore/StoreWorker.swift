@@ -105,7 +105,21 @@ public actor StoreWorker {
         try NameLists.adopt(into: url, device: device, in: modelContext)
     }
 
+    /// The kept words of every mail and file, both ways between this device and the store: every
+    /// mail's id and every kept text read, and a file looked for each — on the worker.
+    @discardableResult
+    public func shareKeptTexts(besides store: URL) -> (up: Int, down: Int) {
+        KeptTexts.share(besides: store, in: modelContext)
+    }
+
     // MARK: Matters
+
+    /// The overview of these matters, prepared from the store as it is saved.
+    public func overviewPage(ids: [PersistentIdentifier], now: Date) -> OverviewPage {
+        let all = (try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []
+        let byID = Dictionary(all.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { first, _ in first })
+        return OverviewPage(ids.compactMap { byID[$0] }, today: now)
+    }
 
     /// Each open matter's record as one short word, by its key — what Auto looks at to see that
     /// one has changed. Every mail, file and task of every matter is read for it: here, not on

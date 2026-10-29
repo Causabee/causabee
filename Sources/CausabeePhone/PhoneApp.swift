@@ -123,7 +123,7 @@ final class PhoneStore {
             if !DemoData.isRequested { BackgroundMailCheck.container = container }
             // The kept words of mails and files, the same on every device.
             KeptTexts.store = url
-            KeptTexts.share(besides: url, in: container.mainContext)
+            Task { await StoreWorker.for(container).shareKeptTexts(besides: url) }
             // Files added on this device before they went into their matter's folder: there now, so every device opens them.
             if !DemoData.isRequested {
                 let context = container.mainContext

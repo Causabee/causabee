@@ -431,7 +431,7 @@ final class PhoneMailCheck {
             // shared with the other devices, end to end encrypted.
             for outcome in look.report.outcomes where outcome.judgement.disguise != nil { MailText.save(outcome.email, besides: door.log) }
             try? context.save()
-            KeptTexts.share(besides: door.log, in: context)
+            Task { await StoreWorker.for(context.container).shareKeptTexts(besides: door.log) }
             PhoneNames.publish(in: context)
             let matters = try context.fetch(FetchDescriptor<Matter>())
             Self.logIntake(judgements, matters: matters, model: judgements.contains { $0.decidedBy == .onDevice } ? "Apple's model on this device" : door.model.label, in: context)
