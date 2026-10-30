@@ -114,6 +114,18 @@ final class ScreenMeter: NSObject {
         #endif
     }
 
+    /// During a tour, each late frame and where on the page it was: a stall that comes back at the
+    /// same place has its cause there.
+    private func sayLate(gap: CFTimeInterval, at now: CFTimeInterval) {
+        guard let tour = touring else { return }
+        #if canImport(UIKit)
+        let y = (tour.scroll as? UIScrollView)?.contentOffset.y ?? 0
+        #else
+        let y = (tour.scroll as? NSScrollView)?.contentView.bounds.origin.y ?? 0
+        #endif
+        fputs(String(format: "LATE t=%.2f y=%.0f gap=%.0fms\n", now - tour.began, y, gap * 1000), stderr)
+    }
+
     @objc private func tick(_ link: CADisplayLink) {
         let now = link.timestamp
         let frame = max(link.targetTimestamp - link.timestamp, 1.0 / 120)
@@ -125,6 +137,7 @@ final class ScreenMeter: NSObject {
         if gap > frame * 1.5, gap < 1 {
             late += 1
             lost += (gap - frame) * 1000
+            sayLate(gap: gap, at: now)
             words = "frames \(frames) · late \(late) · lost \(Int(lost)) ms"
         } else if frames % 60 == 0 {
             words = "frames \(frames) · late \(late) · lost \(Int(lost)) ms"

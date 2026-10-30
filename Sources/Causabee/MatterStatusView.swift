@@ -96,6 +96,10 @@ struct MatterStatusView: View {
         // Not after every change to the store: one to another matter changes nothing here.
         let _ = ScreenMeter.printsChanges ? Self._printChanges() : ()
         let status = MatterStatus(matter)
+        // Worked out here, once for each change of the matter: the bar is drawn again each time the
+        // page passes under it, and counting went through all the matter's mail and tasks each time.
+        let count = MatterKept.shared.value(matter, "count") { Self.count(matter.entries ?? []) }
+        let since = status.firstDate
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
                 ScrollView {
@@ -114,7 +118,8 @@ struct MatterStatusView: View {
                             allMail(status)
                         } else {
                             // Under the title bar the bar has them: these do not show through its glass.
-                            DrawnApart { parts(status).opacity(partsUnder ? 0 : 1) }.id("parts")
+                            // Nearly gone, not gone: see the parts in the bar.
+                            DrawnApart { parts(status).opacity(partsUnder ? 0.001 : 1) }.id("parts")
                                 // Whether its lower edge has reached the place the title bar has for the
                                 // parts — twelve over the bar's lower edge. Only that, not the edge
                                 // itself: kept as a number, it changed with every frame of scrolling,
@@ -155,7 +160,7 @@ struct MatterStatusView: View {
                     .frame(maxWidth: .infinity)
                 }
                 // The name and the search stay on top while the page scrolls under them.
-                .safeAreaInset(edge: .top, spacing: 0) { DrawnApart { titleBar(status) } }
+                .safeAreaInset(edge: .top, spacing: 0) { DrawnApart { titleBar(status, count: count, since: since) } }
                 // What the page shows under the title bar: the container's size is already without the bar.
                 .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
                 // Another part chosen in the title bar: it is shown from its start, not from where the last one was read.
@@ -970,7 +975,7 @@ struct MatterStatusView: View {
     /// What the bar gives up when the page goes under it: the room on top, and the name's further lines.
     private var given: CGFloat { Self.restRoom + nameExtra }
 
-    private func titleBar(_ status: MatterStatus) -> some View {
+    private func titleBar(_ status: MatterStatus, count: String, since: Date?) -> some View {
         // Once the page has gone up under it, the bar is a bar: one line high, the name small in
         // it. The large name with the count under it, on glass over the page, stood squeezed.
         let compact = scrolledUnder && !renaming
@@ -1063,14 +1068,20 @@ struct MatterStatusView: View {
             }
             ZStack(alignment: .leading) {
                 HStack(spacing: 6) {
-                    Text(MatterKept.shared.value(matter, "count") { Self.count(matter.entries ?? []) })
-                    if let first = status.firstDate { Text("· since \(Dates.short(first))") }
+                    Text(count)
+                    if let since { Text("· since \(Dates.short(since))") }
                 }
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 // With the page under the bar the count is gone: the page is read there, not the bar.
                 .opacity(showsParts || compact ? 0 : 1)
-                parts(status).opacity(showsParts ? 1 : 0).allowsHitTesting(showsParts).accessibilityHidden(!showsParts)
+                // Never quite gone, and always there to click, here and in the page: when what can
+                // be clicked changes, SwiftUI goes through everything clickable in the window and
+                // macOS works out anew where it can be dragged from — a fifth of a second on a long
+                // record, each time the parts came out of the bar. A click while they are not seen
+                // does nothing. Hidden from VoiceOver: the page has the same ones.
+                parts(status, choosing: Binding(get: { part }, set: { if showsParts { part = $0 } }))
+                    .opacity(showsParts ? 1 : 0.001).accessibilityHidden(true)
             }
             // Under the small name, which is one line: up by what a longer name's further lines took.
             .offset(y: scrolledUnder ? -nameExtra : 0)
@@ -1385,12 +1396,12 @@ struct MatterStatusView: View {
 
     /// What is planned — tasks and dates —, the record, the people, the notes: signs, with the word
     /// of the part that is open. "To do" named only half of the first.
-    private func parts(_ status: MatterStatus) -> some View {
+    private func parts(_ status: MatterStatus, choosing: Binding<Part>? = nil) -> some View {
         PartTabs(tabs: [.init(value: Part.todo, title: "Plan", symbol: "calendar.badge.checkmark"),
                         .init(value: Part.record, title: "Record", symbol: "tray.full"),
                         .init(value: Part.people, title: "People", symbol: "person.2"),
                         .init(value: Part.notes, title: "Notes", symbol: "note.text")],
-                 selection: $part)
+                 selection: choosing ?? $part)
     }
 
     /// Whether this person wrote it: by any way their name is written.
