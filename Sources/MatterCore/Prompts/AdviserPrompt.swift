@@ -64,7 +64,9 @@ public enum AdviserPrompt {
     - `change_date`: a to-do's day is wrong or missing and the facts give it: `todo`, `due`.
     Two open to-dos that are one: `mark_done` the weaker with the reason that the other covers it. \
     Never propose what is on the list already, and nothing the owner put away (listed in the \
-    question). Every card has a one-line `reason` citing its ids. Unused fields are null; \
+    question). At most one card per to-do: not `mark_done` and `correct_text` for the same one. \
+    Few cards, only what changes what the owner does — none is fine. Every card has a short \
+    one-line `reason` citing its ids. Unused fields are null; \
     `attach` is empty.
 
     ## news

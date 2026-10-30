@@ -1,4 +1,6 @@
+import CryptoKit
 import MatterCore
+import ImageIO
 import SwiftData
 import UniformTypeIdentifiers
 import SwiftUI
@@ -571,8 +573,9 @@ struct FileFace<Items: View>: View {
     /// Where it is and where it came from — its own name too, when it has a name of ours.
     private var line: String {
         if document.isOwnFile {
-            let at = document.source.fileURL != nil ? "on this \(ThisDevice.name), in Causabee's folder"
-                : MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder"
+            let at = MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder"
+                : document.source.fileURL != nil && MatterFolders.root == nil ? "only on this \(ThisDevice.name) — switch on iCloud Drive for Causabee"
+                : document.source.fileURL != nil ? "on this \(ThisDevice.name), in Causabee's folder"
                 : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
                 : "added on \(document.source.addedOn) · not in the matter's folder yet"
             return [document.title == nil ? nil : document.name, at].compactMap { $0 }.joined(separator: " · ")
@@ -584,7 +587,7 @@ struct FileFace<Items: View>: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: Self.icon(document)).font(.title3).foregroundStyle(.secondary).frame(width: 26)
+            FileThumbnail(document: document, symbol: Self.icon(document), state: state)
             VStack(alignment: .leading, spacing: 3) {
                 Text(document.shownName).lineLimit(2).multilineTextAlignment(.leading)
                 (Text(line) + Text(document.readAt.map { " · read \(Dates.short($0))" } ?? "").foregroundColor(Theme.done))
@@ -647,6 +650,143 @@ struct FileFace<Items: View>: View {
         .contextMenu { Group { items }.menuSigns() }
         #endif
     }
+}
+
+/// A picture or a PDF as a small picture of itself: from the file on this device — one of ours,
+/// or one from a mail opened before — or taken out of its mail for it, read-only. Its sign until then.
+struct FileThumbnail: View {
+    let document: MatterCore.Document
+    let symbol: String
+    /// Changes when a file has just been fetched, so the picture is looked for again.
+    let state: String?
+    @State private var picture: CGImage?
+    @Environment(\.displayScale) private var scale
+
+    static let size = CGSize(width: 40, height: 48)
+    private static let made = NSCache<NSString, CGImageBox>()
+
+    private var shows: Bool {
+        let type = document.contentType.lowercased(), name = document.name.lowercased()
+        return type.hasPrefix("image/") || type == "application/pdf" || name.hasSuffix(".pdf")
+    }
+
+    var body: some View {
+        Group {
+            if let picture {
+                Image(decorative: picture, scale: scale)
+                    .resizable().scaledToFill()
+                    .frame(width: Self.size.width, height: Self.size.height)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(.secondary.opacity(0.25), lineWidth: 0.5))
+            } else {
+                Image(systemName: symbol).font(.title3).foregroundStyle(.secondary)
+                    .frame(width: Self.size.width, height: shows ? Self.size.height : nil)
+            }
+        }
+        .task(id: "\(document.name)|\(state ?? "")") { await load() }
+    }
+
+    private func load() async {
+        guard shows else { return }
+        var found = Self.onDevice(document)
+        // In its matter's folder, not downloaded yet: brought down from iCloud Drive.
+        if found == nil, document.isOwnFile, let kept = MatterFolders.kept(document) { found = try? await MatterFolders.fetched(kept) }
+        if found == nil { found = await MailPreviews.fetch(document) }
+        guard let file = found else { return }
+        let key = file.path as NSString
+        if let known = Self.made.object(forKey: key) { picture = known.image; return }
+        // Made here, not by Quick Look: its service made none for some files the app keeps.
+        let longest = max(Self.size.width, Self.size.height) * scale * 2
+        guard let made = await Task.detached(priority: .utility, operation: { Self.picture(of: file, longest: longest) }).value else { return }
+        Self.made.setObject(CGImageBox(made), forKey: key)
+        picture = made
+    }
+
+    /// A PDF's first page, or the picture itself, small: never the whole of a large file in memory.
+    nonisolated static func picture(of file: URL, longest: CGFloat) -> CGImage? {
+        if file.pathExtension.lowercased() == "pdf" {
+            guard let page = CGPDFDocument(file as CFURL)?.page(at: 1) else { return nil }
+            let box = page.getBoxRect(.cropBox)
+            let turned = page.rotationAngle % 180 != 0
+            let (width, height) = turned ? (box.height, box.width) : (box.width, box.height)
+            guard width > 0, height > 0 else { return nil }
+            let factor = longest / max(width, height)
+            let (w, h) = (Int(width * factor), Int(height * factor))
+            guard let context = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                          space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
+            context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+            context.fill(CGRect(x: 0, y: 0, width: w, height: h))
+            context.concatenate(page.getDrawingTransform(.cropBox, rect: CGRect(x: 0, y: 0, width: w, height: h), rotate: 0, preserveAspectRatio: true))
+            context.drawPDFPage(page)
+            return context.makeImage()
+        }
+        guard let source = CGImageSourceCreateWithURL(file as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
+                                        kCGImageSourceCreateThumbnailWithTransform: true,
+                                        kCGImageSourceThumbnailMaxPixelSize: longest]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
+
+    /// Where the file is on this device, if it is: never a placeholder of iCloud Drive's.
+    static func onDevice(_ document: MatterCore.Document) -> URL? {
+        let files = FileManager.default
+        if document.isOwnFile {
+            return [document.source.fileURL, MatterFolders.kept(document)].compactMap { $0 }.first { files.fileExists(atPath: $0.path) }
+        }
+        // Taken out of its mail before: in the cache, under a digest of the mail's id.
+        let caches = files.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let name = document.name.replacingOccurrences(of: "/", with: "-")
+        let hash = SHA256.hash(data: Data(document.messageID.utf8))
+        for (folder, length) in [("Causabee/Anhänge", 6), ("Mail files", 8), ("Causabee/Anhänge", 8)] {
+            let digest = hash.prefix(length).map { String(format: "%02x", $0) }.joined()
+            let file = caches.appendingPathComponent(folder, isDirectory: true).appendingPathComponent(digest).appendingPathComponent(name)
+            if files.fileExists(atPath: file.path) { return file }
+        }
+        return nil
+    }
+}
+
+/// Pictures and PDFs still in their mail, taken out one at a time so their small picture can show:
+/// read-only, only that one mail, and kept where opening the file looks first — so it opens at once
+/// too. Each is tried once a launch; a large one is left until it is opened.
+@MainActor
+enum MailPreviews {
+    private static var last: Task<Void, Never>?
+    private static var tried = Set<String>()
+    static let largest = 15_000_000
+
+    static func fetch(_ document: MatterCore.Document) async -> URL? {
+        let pointer = document.source.pointer
+        guard !document.isOwnFile, pointer.hasPrefix("imap://"), document.byteCount <= largest,
+              tried.insert(document.messageID + "/" + document.name).inserted else { return nil }
+        // The account on the mail's server, so a password only ever goes where it belongs.
+        let host = pointer.firstMatch(of: /^imap:\/\/([^\/]+)\//).map { String($0.output.1) }
+        let accounts = Keychain.accounts()
+        guard let account = accounts.first(where: { $0.host == host }) ?? (host == nil ? accounts.first : nil) else { return nil }
+        let (name, messageID) = (document.name, document.messageID)
+        let before = last
+        let fetching = Task { () -> URL? in
+            await before?.value
+            guard let password = try? await MailSecret.secret(for: account) else { return nil }
+            return try? await MailFetch.file(name, pointer: pointer, messageID: messageID, account: account, password: password, cache: cache)
+        }
+        last = Task { _ = await fetching.value }
+        return await fetching.value
+    }
+
+    private static var cache: URL {
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        #if os(macOS)
+        return caches.appendingPathComponent("Causabee/Anhänge", isDirectory: true)
+        #else
+        return MailFiles.cache
+        #endif
+    }
+}
+
+final class CGImageBox {
+    let image: CGImage
+    init(_ image: CGImage) { self.image = image }
 }
 
 extension View {
@@ -1041,10 +1181,11 @@ struct BriefDetails: View {
                         }
                     }
                 }
-                if !brief.open.isEmpty {
+                let proposals = Adviser.worthReading(brief.open, in: matter, context: context)
+                if !proposals.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("For the list").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        ForEach(brief.open) { proposal in
+                        ForEach(proposals) { proposal in
                             ProposalRow(proposal: proposal, matter: matter)
                         }
                     }
@@ -1085,6 +1226,7 @@ private struct ProposalRow: View {
     let matter: Matter
     @Environment(\.modelContext) private var context
     @State private var gone = false
+    @State private var why = false
 
     var body: some View {
         let card = proposal.card
@@ -1092,8 +1234,12 @@ private struct ProposalRow: View {
             Image(systemName: symbol).foregroundStyle(Theme.gold).frame(width: 18)
             VStack(alignment: .leading, spacing: 4) {
                 Text(what).fixedSize(horizontal: false, vertical: true)
+                // Why, in one line: the whole of it on a tap — the proposal itself is what to read.
                 if !card.reason.isEmpty {
-                    Text(card.reason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text(card.reason).font(.caption).foregroundStyle(.secondary)
+                        .lineLimit(why ? nil : 1).fixedSize(horizontal: false, vertical: true)
+                        .contentShape(Rectangle())
+                        .onTapGesture { withAnimation { why.toggle() } }
                 }
                 if gone { Text("What it was about is no longer there.").font(.caption).foregroundStyle(Theme.warning) }
                 HStack(spacing: 12) {

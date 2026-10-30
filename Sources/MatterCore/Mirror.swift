@@ -140,7 +140,24 @@ public enum Mirror {
         }
         if calendars.canReadEvents {
             for appointment in (try? context.fetch(FetchDescriptor<Appointment>())) ?? [] {
+                // Its end said only in its name, as the assistant once wrote it: kept as its end,
+                // and the name without it — Calendar gets both below.
+                if appointment.endTime == nil, let end = Calendars.endClock(in: appointment.what, after: appointment.time) {
+                    appointment.endTime = end
+                    appointment.what = Calendars.withoutEnd(appointment.what)
+                }
                 guard let id = appointment.calendarID, let event = calendars.event(id) else { continue }
+                // An event Causabee made an hour long, as every one was, while the appointment knows
+                // when it ends: given that end, before Calendar's end is taken as the owner's. One
+                // whose length the owner has set is theirs.
+                if event.notes?.hasPrefix("Causabee · ") == true, !event.isAllDay,
+                   abs(event.endDate.timeIntervalSince(event.startDate) - 3_600) < 1,
+                   let span = Calendars.span(what: appointment.what, day: appointment.day, time: appointment.time,
+                                             endDay: appointment.endDay, endTime: appointment.endTime),
+                   !span.allDay, abs(span.start.timeIntervalSince(event.startDate)) < 1, abs(span.end.timeIntervalSince(event.endDate)) > 1 {
+                    event.endDate = span.end
+                    if (try? calendars.store.save(event, span: .thisEvent, commit: false)) != nil { result.pushed += 1 }
+                }
                 let merge = Self.merge(local: [appointment.what, appointment.day, appointment.time ?? "", appointment.place ?? ""],
                                        remote: fields(of: event), stamp: stamps["event:" + id])
                 if merge.pulled {
@@ -149,19 +166,15 @@ public enum Mirror {
                     appointment.time = l[2].isEmpty ? nil : l[2]; appointment.place = l[3].isEmpty ? nil : l[3]
                     result.pulled += 1
                 }
+                // The end is Calendar's to say: what the owner set there is kept here.
+                let end = Self.end(of: event)
+                if appointment.endDay != end.day { appointment.endDay = end.day }
+                if appointment.endTime != end.time { appointment.endTime = end.time }
                 // In step only once Calendar has it too: a stamp over a failed write would take the
                 // old Calendar value for the owner's newer one next time, and put it back.
                 let written = !merge.pushed || write(merge.remote, to: event, calendars: calendars)
                 if merge.pushed, written { result.pushed += 1 }
                 if written { stamps["event:" + id] = merge.stamp }
-                // An event Causabee made an hour long, as every one was, although its words say when
-                // it ends: given its end once. One whose length the owner has set is theirs.
-                if event.notes?.hasPrefix("Causabee · ") == true, !event.isAllDay,
-                   abs(event.endDate.timeIntervalSince(event.startDate) - 3_600) < 1,
-                   let end = Calendars.end(in: event.title ?? "", from: event.startDate), abs(end.timeIntervalSince(event.endDate)) > 1 {
-                    event.endDate = end
-                    if (try? calendars.store.save(event, span: .thisEvent, commit: false)) != nil { result.pushed += 1 }
-                }
             }
             for deadline in (try? context.fetch(FetchDescriptor<Deadline>())) ?? [] {
                 guard let id = deadline.calendarID, let event = calendars.event(id) else { continue }
@@ -182,6 +195,13 @@ public enum Mirror {
         [event.title ?? "", MatterStatus.day(event.startDate), event.isAllDay ? "" : time(of: event.startDate), event.location ?? ""]
     }
 
+    /// The last day of an event that runs over several, and the hour it ends — as an appointment keeps them.
+    static func end(of event: EKEvent) -> (day: String?, time: String?) {
+        let first = MatterStatus.day(event.startDate), last = MatterStatus.day(event.endDate)
+        if event.isAllDay { return (last > first ? last : nil, nil) }
+        return (last > first ? last : nil, time(of: event.endDate))
+    }
+
     /// A deadline knows only what and which day: the time and place the owner may have given it in
     /// Calendar stay as they are, and a new day keeps the event's own time and length.
     private static func writeDeadline(what: String, day: String, to event: EKEvent, calendars: Calendars) -> Bool {
@@ -199,10 +219,12 @@ public enum Mirror {
         let time = fields[2].isEmpty ? nil : fields[2]
         guard let start = Calendars.start(day: fields[1], time: time) else { return false }
         let length = event.isAllDay ? 3_600 : max(event.endDate.timeIntervalSince(event.startDate), 900)
+        // A stay over several days keeps its days when it moves.
+        let days = event.isAllDay ? Calendar.current.dateComponents([.day], from: event.startDate, to: event.endDate).day ?? 0 : 0
         event.title = fields[0]
         event.isAllDay = time == nil
         event.startDate = start
-        event.endDate = time == nil ? start : start.addingTimeInterval(length)
+        event.endDate = time == nil ? Calendar.current.date(byAdding: .day, value: max(days, 0), to: start) ?? start : start.addingTimeInterval(length)
         event.location = fields[3].isEmpty ? nil : fields[3]
         return (try? calendars.store.save(event, span: .thisEvent, commit: false)) != nil
     }

@@ -236,6 +236,42 @@ public enum MatterFolders {
         }
     }
 
+    /// A file the owner added lives in its matter's folder in iCloud Drive, the same on every
+    /// device: once its copy is there, whole, Causabee's own copy in the app is let go. A file
+    /// Causabee only points to — one in a folder of the owner's — is never touched.
+    private nonisolated static func letGo(_ file: URL, keptAt target: URL) async {
+        guard isOurCopy(file) else { return }
+        await Task.detached(priority: .utility) {
+            let files = FileManager.default
+            let size = { (url: URL) in (try? files.attributesOfItem(atPath: url.path)[.size] as? Int) ?? nil }
+            guard let mine = size(file), mine > 0, size(target) == mine else { return }
+            try? files.removeItem(at: file)
+        }.value
+    }
+
+    /// In a folder that is Causabee's own: the app's on the iPhone and iPad, the one shared with its
+    /// extensions, or on the Mac the attachments folder beside its store.
+    public nonisolated static func isOurCopy(_ file: URL) -> Bool {
+        let path = file.resolvingSymlinksInPath().standardizedFileURL.path
+        func inside(_ folder: URL?) -> Bool {
+            guard let folder else { return false }
+            return path.hasPrefix(folder.resolvingSymlinksInPath().standardizedFileURL.path + "/")
+        }
+        if inside(FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.de.chille.causabee")) { return true }
+        #if os(iOS)
+        return inside(URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true))
+        #else
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        return inside(support) && path.contains("/" + ScreenshotDoor.attachmentsFolder + "/")
+            && path.dropFirst(support.resolvingSymlinksInPath().standardizedFileURL.path.count + 1).hasPrefix("Causabee")
+        #endif
+    }
+
+    /// A matter with a file the owner added still kept only in the app, here.
+    public static func hasOwnCopies(_ matter: Matter) -> Bool {
+        root != nil && (matter.documents ?? []).contains { $0.isOwnFile && $0.source.fileURL.map(isOurCopy) == true }
+    }
+
     private nonisolated static func copied(_ file: URL, to target: URL) async -> Bool {
         await Task.detached(priority: .utility) { (try? FileManager.default.copyItem(at: file, to: target)) != nil }.value
     }
@@ -272,14 +308,23 @@ public enum MatterFolders {
             progress(index + 1, jobs.count)
             guard let folder = folders[ObjectIdentifier(matter)] else { continue }
             let target = place(for: document, in: folder)
-            if FileManager.default.fileExists(atPath: target.path) { result.already += 1; continue }
+            if FileManager.default.fileExists(atPath: target.path) {
+                result.already += 1
+                if document.isOwnFile, let file = document.source.fileURL { await letGo(file, keptAt: target) }
+                continue
+            }
             // A file the owner dropped in is copied as it is — unless it was saved already, before it
             // was a document, under the name its copy had.
             if document.isOwnFile {
                 guard let file = document.source.fileURL else { result.failed.append(document.name); continue }
                 let before = folder.appendingPathComponent(stamp(document.source.date) + file.lastPathComponent)
                 if FileManager.default.fileExists(atPath: before.path) { result.already += 1; continue }
-                if await copied(file, to: target) { result.saved += 1 } else { result.failed.append(document.name) }
+                if await copied(file, to: target) {
+                    result.saved += 1
+                    await letGo(file, keptAt: target)
+                } else {
+                    result.failed.append(document.name)
+                }
                 continue
             }
             var data: Data?

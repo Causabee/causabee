@@ -290,11 +290,12 @@ struct MatterStatusView: View {
                     Text(String(line)).fixedSize(horizontal: false, vertical: true)
                         .findable(.section("summary-\(index)"), String(line))
                 }
+                .opacity(AutoUpdate.shared.updating(matter) ? 0.4 : 1)
             }
             BriefDetails(matter: matter)
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 10) {
-                if writingSummary || AutoUpdate.shared.working.contains(matter.key) {
+                if writingSummary || AutoUpdate.shared.updating(matter) {
                     BeeLoader(size: 10)
                     Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
@@ -375,8 +376,12 @@ struct MatterStatusView: View {
         let _ = AutoUpdate.shared.done
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
+        // Changed, and Auto writes it again: until it has, the step worked out on the device at
+        // once — it knows what was just ticked — and Causabee's in its place when it comes.
+        let coming = AutoUpdate.shared.updating(matter)
+        let own = fresh && !coming
         VStack(alignment: .leading, spacing: 10) {
-            if fresh, let step = matter.nextStep {
+            if own, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
@@ -391,10 +396,10 @@ struct MatterStatusView: View {
                 Text("Nothing open.").foregroundStyle(.secondary)
             }
             HStack(spacing: 10) {
-                if fresh, let step = matter.nextStep {
+                if own, let step = matter.nextStep {
                     let todo = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
                     stepButtons(text: step, todo: todo, waiting: todo?.owner == .other)
-                } else if !fresh, let rule, let id = rule.todo, let todo = matter.openTodos.first(where: { $0.persistentModelID == id }) {
+                } else if !own, let rule, let id = rule.todo, let todo = matter.openTodos.first(where: { $0.persistentModelID == id }) {
                     stepButtons(text: todo.text, todo: todo, waiting: rule.kind == .followUp || rule.kind == .wait)
                 }
                 Spacer()
@@ -402,7 +407,7 @@ struct MatterStatusView: View {
             .tool()
             // Asking Claude, below the buttons on the left: apart from what the step itself offers.
             HStack(spacing: 10) {
-                if askingStep || AutoUpdate.shared.working.contains(matter.key) {
+                if askingStep || coming {
                     BeeLoader(size: 10)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else if auto {
@@ -1423,6 +1428,8 @@ struct MatterStatusView: View {
         Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) {
             if !DemoData.isRequested { await UnreadMail.refresh(matter, in: context) }
             await linkReplies()
+            // A file added before still kept only in the app: into the matter's folder, once.
+            if !DemoData.isRequested, MatterFolders.hasOwnCopies(matter) { FolderSaver.shared.save([matter]) }
         }
         if filter == .details {
             DetailsSection(matter: matter, showsEmpty: true).id("details")
@@ -2020,6 +2027,10 @@ struct DateRow: View {
         var sources: [Source] = []
         var appointment: Appointment?
         var deadline: Deadline?
+        var endDay: String? { appointment?.endDay }
+        var endTime: String? { appointment?.endTime }
+        /// "10:00–11:30", or the start alone.
+        var hours: String? { time.map { start in endTime.map { "\(start)–\($0)" } ?? start } }
 
         var findID: PageFind.ID {
             if let id = appointment?.persistentModelID ?? deadline?.persistentModelID { return .model(id) }
@@ -2061,7 +2072,8 @@ struct DateRow: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(Dates.short(item.day)).font(.callout.weight(.semibold))
-                if let time = item.time { Text(time).font(.caption).foregroundStyle(.secondary) }
+                if let hours = item.hours { Text(hours).font(.caption).foregroundStyle(.secondary) }
+                if let last = item.endDay { Text("until \(Dates.short(last))").font(.caption).foregroundStyle(.secondary) }
             }
             .frame(width: 74, alignment: .leading)
             VStack(alignment: .leading, spacing: 4) {
@@ -2073,7 +2085,7 @@ struct DateRow: View {
                     SourceJump(sources: item.sources, label: Sources.origin(item.sources.first), matter: item.appointment?.matter ?? item.deadline?.matter)
                 }
                 if !isPast || item.calendarID != nil {
-                    CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time,
+                    CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime,
                                  place: item.place, matterName: matterName, tick: tick) { id in item.connect(id); save() }
                 }
             }

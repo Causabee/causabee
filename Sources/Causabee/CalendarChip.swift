@@ -16,6 +16,9 @@ struct CalendarChip: View {
     let title: String
     var day: String? = nil
     var time: String? = nil
+    /// An event's last day and the hour it ends, when known.
+    var endDay: String? = nil
+    var endTime: String? = nil
     var place: String? = nil
     var note: String? = nil
     let matterName: String
@@ -135,7 +138,7 @@ struct CalendarChip: View {
     private func add() {
         do {
             let id = kind == .event
-                ? try calendars.addEvent(what: title, day: day ?? "", time: time, place: place, matter: matterName)
+                ? try calendars.addEvent(what: title, day: day ?? "", time: time, endDay: endDay, endTime: endTime, place: place, matter: matterName)
                 : try calendars.addReminder(text: title, due: day, time: time, note: note, matter: matterName)
             error = nil
             connect(id)

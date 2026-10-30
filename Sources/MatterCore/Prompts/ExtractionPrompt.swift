@@ -142,6 +142,12 @@ public enum ExtractionPrompt {
     `HH:MM` or null, `place` is where or null. An appointment is not a to-do. A calendar \
     invitation is an appointment.
 
+    When it ends is said too, if the email says it: `end_time` is `HH:MM` — 10:00–11:30 has \
+    `end_time` 11:30 — and `end_date` is the last day of one that runs over several days: a \
+    hotel stay from 12 to 15 May has `date` 2026-05-12 and `end_date` 2026-05-15, a flight \
+    landing the next morning has the landing day. Both are null when the email gives no end; \
+    never guess a length. `end_date` is null for one that ends on its first day.
+
     Only an appointment that is settled: agreed, booked or invited to. Times that are only \
     proposed or offered to choose from — "would 11:00 or 14:00 suit you?", "we suggest Friday" — \
     are no appointment yet; the reply that settles one is.
@@ -262,6 +268,8 @@ public enum ExtractionPrompt {
             "appointments": ["type": "array", "items": object([
                 "what": string, "date": date,
                 "time": ["anyOf": [string, ["type": "null"]]],
+                "end_date": ["anyOf": [date, ["type": "null"]]],
+                "end_time": ["anyOf": [string, ["type": "null"]]],
                 "place": ["anyOf": [string, ["type": "null"]]],
                 "source_quote": string,
                 "replaces": ["anyOf": [string, ["type": "null"]]],

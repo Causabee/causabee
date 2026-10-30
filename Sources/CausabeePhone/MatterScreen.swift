@@ -574,8 +574,12 @@ struct MatterScreen: View {
     private func nextStep(_ status: MatterStatus, _ scroller: ScrollViewProxy) -> some View {
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
+        // Changed, and Auto writes it again: until it has, the step worked out on the device at
+        // once — it knows what was just ticked — and Causabee's in its place when it comes.
+        let coming = AutoUpdate.shared.updating(matter)
+        let own = fresh && !coming
         VStack(alignment: .leading, spacing: 10) {
-            if fresh, let step = matter.nextStep {
+            if own, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(.headline).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
@@ -597,7 +601,7 @@ struct MatterScreen: View {
             }
             // Asking Claude, below the buttons: apart from what the step itself offers — as on the Mac.
             HStack(spacing: 4) {
-                if askingStep || AutoUpdate.shared.working.contains(matter.key) {
+                if askingStep || coming {
                     BeeLoader(size: 12)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else if auto {
@@ -770,11 +774,12 @@ struct MatterScreen: View {
                     Text(String(line)).fixedSize(horizontal: false, vertical: true)
                         .findable(.section("summary-\(index)"), String(line))
                 }
+                .opacity(AutoUpdate.shared.updating(matter) ? 0.4 : 1)
             }
             BriefDetails(matter: matter)
             // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
             HStack(spacing: 8) {
-                if writingSummary || AutoUpdate.shared.working.contains(matter.key) {
+                if writingSummary || AutoUpdate.shared.updating(matter) {
                     BeeLoader(size: 12)
                     Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
@@ -1015,6 +1020,8 @@ struct MatterScreen: View {
                 // And which is still unread in the inbox, read-only: the dots as the mailbox has them now.
                 if !store.isDemo { await UnreadMail.refresh(matter, in: context) }
                 await ReplyLinks.fill(in: matter, context: context)
+                // A file added before still kept only in the app: into the matter's folder, once.
+                if MatterFolders.hasOwnCopies(matter) { PhoneFolderSaver.save([matter]) }
             }
             RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts(threads: threads, made: made), person: personParty?.name, clearPerson: { person = nil }) {
                 // The matter's folder, on the record's own line — as on the Mac. Files are added by the plus.
@@ -1470,6 +1477,10 @@ struct PhoneDateRow: View {
         var kind: String
         var appointment: Appointment?
         var deadline: Deadline?
+        var endDay: String? { appointment?.endDay }
+        var endTime: String? { appointment?.endTime }
+        /// "10:00–11:30", or the start alone.
+        var hours: String? { time.map { start in endTime.map { "\(start)–\($0)" } ?? start } }
 
         var findID: PageFind.ID {
             if let id = appointment?.persistentModelID ?? deadline?.persistentModelID { return .model(id) }
@@ -1516,7 +1527,8 @@ struct PhoneDateRow: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(Dates.short(item.day)).font(.subheadline.weight(.semibold))
-                if let time = item.time { Text(time).font(.caption).foregroundStyle(.secondary) }
+                if let hours = item.hours { Text(hours).font(.caption).foregroundStyle(.secondary) }
+                if let last = item.endDay { Text("until \(Dates.short(last))").font(.caption).foregroundStyle(.secondary) }
             }
             .frame(width: 64, alignment: .leading)
             VStack(alignment: .leading, spacing: 4) {
@@ -1529,7 +1541,7 @@ struct PhoneDateRow: View {
                 let sources = item.appointment?.sources ?? item.deadline?.sources ?? []
                 SourceJump(sources: sources, label: Sources.origin(sources.first), matter: matter)
                 if !isPast || item.calendarID != nil {
-                    CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time,
+                    CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime,
                                  place: item.place, matterName: matter.name, tick: tick) { id in item.connect(id); try? context.save() }
                 }
             }

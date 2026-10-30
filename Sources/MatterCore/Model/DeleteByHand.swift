@@ -41,7 +41,7 @@ private enum Kept: @unchecked Sendable {
     case todo(text: String, ownerRaw: String, due: String?, dueTime: String?, note: String?, isDone: Bool, isInfo: Bool,
               doneAt: Date?, doneSource: Source?, sources: [Source], origin: String, createdAt: Date,
               matter: PersistentIdentifier?, waitsFor: PersistentIdentifier?, unblocks: [PersistentIdentifier], links: [PersistentIdentifier])
-    case appointment(what: String, day: String, time: String?, place: String?, sources: [Source], matter: PersistentIdentifier?)
+    case appointment(what: String, day: String, time: String?, endDay: String?, endTime: String?, place: String?, sources: [Source], matter: PersistentIdentifier?)
     case deadline(what: String, day: String, sources: [Source], matter: PersistentIdentifier?)
     case detail(label: String, value: String, createdAt: Date, matter: PersistentIdentifier?, party: PersistentIdentifier?)
     case note(text: String, createdAt: Date, fromAssistant: Bool, matter: PersistentIdentifier?)
@@ -57,7 +57,7 @@ private enum Kept: @unchecked Sendable {
                          matter: todo.matter?.persistentModelID, waitsFor: todo.waitsFor?.persistentModelID,
                          unblocks: (todo.unblocks ?? []).map(\.persistentModelID), links: (todo.links ?? []).map(\.persistentModelID))
         case let item as Appointment:
-            self = .appointment(what: item.what, day: item.day, time: item.time, place: item.place, sources: item.sources,
+            self = .appointment(what: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime, place: item.place, sources: item.sources,
                                 matter: item.matter?.persistentModelID)
         case let item as Deadline:
             self = .deadline(what: item.what, day: item.day, sources: item.sources, matter: item.matter?.persistentModelID)
@@ -112,8 +112,10 @@ private enum Kept: @unchecked Sendable {
                 if let link = Self.live(id, as: WebLink.self, in: context), link.todo == nil { link.todo = todo }
             }
             return todo
-        case let .appointment(what, day, time, place, sources, matter):
+        case let .appointment(what, day, time, endDay, endTime, place, sources, matter):
             let item = Appointment(what: what, day: day, time: time, place: place, source: sources.first ?? Self.byHand)
+            item.endDay = endDay
+            item.endTime = endTime
             item.sources = sources
             context.insert(item)
             item.matter = Self.live(matter, as: Matter.self, in: context)

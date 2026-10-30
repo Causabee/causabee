@@ -208,6 +208,10 @@ public final class Appointment {
     public var day: String = ""
     /// `HH:MM`, or nil when only the day is known.
     public var time: String?
+    /// `YYYY-MM-DD` of its last day, when it runs over several — a stay, a trip. Nil for one day.
+    public var endDay: String?
+    /// `HH:MM` it ends, when the mail or Calendar says.
+    public var endTime: String?
     public var place: String?
     public var sources: [Source] = []
     /// The calendar event it is connected to, by the id that is the same on every device.

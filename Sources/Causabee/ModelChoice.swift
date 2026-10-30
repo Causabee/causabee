@@ -503,7 +503,7 @@ final class AutoUpdate {
     /// The matters whose record has changed and is coming to rest: written in a moment, and said so.
     private(set) var pending: Set<String> = []
     /// How often it looks. A matter is written once it has stood still from one look to the next.
-    private static let pace: Duration = .seconds(3)
+    private static let pace: Duration = .seconds(1)
 
     private struct Known: Codable {
         var stamp: String
@@ -576,6 +576,16 @@ final class AutoUpdate {
         // A month of days is enough to look back on.
         for day in all.keys.sorted().dropLast(31) { all[day] = nil }
         UserDefaults.standard.set(all, forKey: spentKey)
+    }
+
+    /// Its step and summary are about to be written again: changed and coming to rest, or being
+    /// written — or changed a moment ago, before Auto has looked. What stands until then is shown
+    /// lighter, not as if it were still the step.
+    func updating(_ matter: Matter) -> Bool {
+        guard AutoMode.isOn, !matter.isClosed else { return false }
+        if working.contains(matter.key) || pending.contains(matter.key) { return true }
+        guard let change = matter.lastChange, let at = matter.nextStepAt, change > at else { return false }
+        return change > Date().addingTimeInterval(-60)
     }
 
     /// The step, or the summary, as it stands was written by Auto.
