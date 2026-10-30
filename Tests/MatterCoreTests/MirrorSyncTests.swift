@@ -151,6 +151,18 @@ struct MirrorSyncTests {
         #expect(await calendar.reminders["r1"]?.fields == ["Mietvertrag lesen", "2026-11-06", "", ""])
     }
 
+    @Test("Saved while Calendar is asked — a new task gets its id in the store then: it is still kept in step")
+    func savedMeanwhile() async throws {
+        let todo = Todo(text: "Steuererklärung abgeben", owner: .me, due: "2026-11-02", source: source(), origin: "x")
+        todo.reminderID = "r1"
+        context.insert(todo)
+        await calendar.set(reminder: "r1", ["Steuererklärung abgeben", "2026-11-02", "", "done"], completedAt: Date(timeIntervalSince1970: 1_800_000_000))
+        let context = self.context
+        await calendar.whileAsked { try? context.save() }
+        #expect(await sync().pulled == 1)
+        #expect(todo.isDone)
+    }
+
     @Test("Stopped while Calendar is asked — the store about to be another one: nothing is touched")
     func cancelled() async throws {
         let todo = Todo(text: "Vertrag lesen", owner: .me, due: "2026-11-02", source: source(), origin: "x")
