@@ -351,6 +351,8 @@ final class Writers: @unchecked Sendable {
         defer { lock.unlock() }
         if let known = kept[id], known.signature == signature { return known.writers }
         let made = Writers(parties)
+        // The worker reads with a context of its own for each job: their people are kept too, a few.
+        if kept.count > 300 { kept.removeAll() }
         kept[id] = (signature, made)
         return made
     }

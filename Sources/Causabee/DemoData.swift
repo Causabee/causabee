@@ -394,11 +394,15 @@ enum DemoData {
 
         /// The steps the app suggested and wrote, as if asked for with a click today.
         func summarise(_ summary: String, next: String, why: String, todo handle: String) {
+            // This morning — or, before eight, a quarter of an hour ago: a time still ahead made
+            // every task ticked at night look older than the step, and the step was never written
+            // again. Not later: Auto takes a step written in the last minutes for another device's.
+            let written = min(DemoData.date(0, hour: 8), Date().addingTimeInterval(-900))
             matter.summary = summary
-            matter.summaryAt = DemoData.date(0, hour: 8)
+            matter.summaryAt = written
             matter.nextStep = next
             matter.nextStepWhy = why
-            matter.nextStepAt = DemoData.date(0, hour: 8)
+            matter.nextStepAt = written
             matter.nextStepTodo = todos[handle]?.origin
         }
 

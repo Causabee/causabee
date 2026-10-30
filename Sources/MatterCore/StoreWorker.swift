@@ -13,15 +13,12 @@ import SwiftData
 /// screen already holds. New records, which no screen holds yet, it may save itself.
 public actor StoreWorker {
     private let container: ModelContainer
-    /// Its own context, made on first use inside the worker — on one of its threads, not the
-    /// main one. (A SwiftData `@ModelActor` made its context where the worker was made, and a
-    /// worker made from the screen's code then ran on the main thread: measured, and replaced.)
-    private var made: ModelContext?
-    private var modelContext: ModelContext {
-        if let made { return made }
+    /// A context of its own for each job, made inside the worker — on one of its threads, not the
+    /// main one. Not one kept for all: a context keeps what it read, and a task ticked on the screen
+    /// after the worker had read it stayed open for the worker (Auto never saw the tick).
+    private func fresh() -> ModelContext {
         let context = ModelContext(container)
         context.autosaveEnabled = false
-        made = context
         return context
     }
 
@@ -62,6 +59,7 @@ public actor StoreWorker {
 
     /// All of it at once — and what this device left out put in the store first, for the others.
     public func mailKnown(leftOutHere: Set<String>, device: String) -> MailKnown {
+        let modelContext = fresh()
         SortedMails.setAside(leftOutHere, device: device, in: modelContext)
         var known = MailKnown()
         known.answered = SortedMails.answered(in: modelContext)
@@ -75,26 +73,29 @@ public actor StoreWorker {
     }
 
     /// Every mail some device has dealt with: sorted, bulk, in a matter, or left out.
-    public func dealtWith() -> Set<String> { SortedMails.known(in: modelContext) }
+    public func dealtWith() -> Set<String> { SortedMails.known(in: fresh()) }
 
     /// The mails sorted somewhere or in a matter — what another device settled meanwhile.
     public func settled() -> Set<String> {
-        SortedMails.answeredIDs(in: modelContext)
+        let modelContext = fresh()
+        return SortedMails.answeredIDs(in: modelContext)
             .union(((try? modelContext.fetch(FetchDescriptor<Entry>())) ?? []).map(\.messageID))
             .subtracting([""])
     }
 
     /// Left out on any device.
-    public func setAside() -> Set<String> { SortedMails.setAside(in: modelContext) }
+    public func setAside() -> Set<String> { SortedMails.setAside(in: fresh()) }
 
     /// Mail read but in no matter, to put into one — every answer and every mail of the store read
     /// for it, some thirty milliseconds with two thousand.
     public func unplaced(log: URL, setAsideHere: Set<String>) -> [Judgement] {
-        Unplaced.find(log: log, context: modelContext, setAside: setAsideHere.union(SortedMails.setAside(in: modelContext)))
+        let modelContext = fresh()
+        return Unplaced.find(log: log, context: modelContext, setAside: setAsideHere.union(SortedMails.setAside(in: modelContext)))
     }
 
     /// Left out on this device: said in the store, for every device.
     public func setAside(_ ids: Set<String>, device: String) {
+        let modelContext = fresh()
         SortedMails.setAside(ids, device: device, in: modelContext)
     }
 
@@ -102,14 +103,16 @@ public actor StoreWorker {
     /// and its names learned — a tenth of a second on the main thread before each check.
     @discardableResult
     public func adoptNames(into url: URL, device: String) throws -> Int {
-        try NameLists.adopt(into: url, device: device, in: modelContext)
+        let modelContext = fresh()
+        return try NameLists.adopt(into: url, device: device, in: modelContext)
     }
 
     /// The kept words of every mail and file, both ways between this device and the store: every
     /// mail's id and every kept text read, and a file looked for each — on the worker.
     @discardableResult
     public func shareKeptTexts(besides store: URL) -> (up: Int, down: Int) {
-        KeptTexts.share(besides: store, in: modelContext)
+        let modelContext = fresh()
+        return KeptTexts.share(besides: store, in: modelContext)
     }
 
     // MARK: Matters
@@ -125,7 +128,8 @@ public actor StoreWorker {
 
     /// Every open matter's news not seen yet — each brief read for it.
     public func news() -> [News] {
-        ((try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []).compactMap { matter in
+        let modelContext = fresh()
+        return ((try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []).compactMap { matter -> News? in
             guard !matter.isClosed, matter.brief != nil, let news = matter.shownBrief?.news, !news.seen, let line = news.lines.first else { return nil }
             return News(key: matter.key, name: matter.name, line: line, since: news.since, mails: news.mails)
         }
@@ -133,13 +137,15 @@ public actor StoreWorker {
 
     /// The open matters by their newest mail, as the share sheet offers them: every mail's day read.
     public func openMattersByLastMail() -> [(key: String, name: String, last: Date?)] {
-        ((try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []).filter { !$0.isClosed }
+        let modelContext = fresh()
+        return ((try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []).filter { !$0.isClosed }
             .map { (key: $0.key, name: $0.name, last: MatterStatus($0).lastDate) }
             .sorted { ($0.last ?? .distantPast) > ($1.last ?? .distantPast) }
     }
 
     /// The overview of these matters, prepared from the store as it is saved.
     public func overviewPage(ids: [PersistentIdentifier], now: Date) -> OverviewPage {
+        let modelContext = fresh()
         let all = (try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []
         let byID = Dictionary(all.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { first, _ in first })
         return OverviewPage(ids.compactMap { byID[$0] }, today: now)
@@ -149,6 +155,7 @@ public actor StoreWorker {
     /// one has changed. Every mail, file and task of every matter is read for it: here, not on
     /// the screen's thread, after every save.
     public func recordStamps() -> [String: String] {
+        let modelContext = fresh()
         var stamps: [String: String] = [:]
         for matter in (try? modelContext.fetch(FetchDescriptor<Matter>())) ?? [] where !matter.isClosed {
             stamps[matter.key] = matter.recordStamp
@@ -161,6 +168,7 @@ public actor StoreWorker {
     /// The mails whose unread dot a check asks about: from the mailbox, from the last year — of
     /// every matter, or of the one with this key.
     public func unreadAsked(matter key: String? = nil, now: Date = Date()) -> [(pointer: String, messageID: String)] {
+        let modelContext = fresh()
         let since = now.addingTimeInterval(-365 * 86_400)
         let entries: [Entry]
         if let key {
@@ -176,6 +184,7 @@ public actor StoreWorker {
 
     /// Of what the mailbox said, what differs from the store: the dots to change.
     public func unreadChanges(_ unread: [String: Bool]) -> [String: Bool] {
+        let modelContext = fresh()
         guard !unread.isEmpty else { return [:] }
         var changes: [String: Bool] = [:]
         for entry in (try? modelContext.fetch(FetchDescriptor<Entry>())) ?? [] {

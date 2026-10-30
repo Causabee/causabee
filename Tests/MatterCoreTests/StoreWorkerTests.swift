@@ -58,3 +58,28 @@ struct OverviewByWorkerTests {
         #expect(pages.page(for: [matter], version: 2).summaries.first?.openCount == 0)
     }
 }
+
+@Suite("The worker sees what the screen saves, the second time too")
+@MainActor
+struct WorkerSeesChangesTests {
+    @Test("A task ticked after the worker read it: its next stamp is another")
+    func secondRead() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let container = try MatterSchema.container(at: folder.appendingPathComponent("store.sqlite"))
+        let context = container.mainContext
+        let matter = Matter(key: "m", name: "M")
+        context.insert(matter)
+        let todo = Todo(text: "Call", owner: .me, due: nil, source: Source(kind: .mail, pointer: "x"), origin: "t")
+        todo.matter = matter
+        context.insert(todo)
+        try context.save()
+        let worker = StoreWorker.for(container)
+        let before = await worker.recordStamps()["m"]
+        todo.isDone = true
+        try context.save()
+        let after = await worker.recordStamps()["m"]
+        #expect(before != nil && after != nil && before != after)
+    }
+}
