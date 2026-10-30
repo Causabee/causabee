@@ -51,6 +51,8 @@ struct PadSidebar: View {
                                 .background(navigation.path.isEmpty ? Theme.box : Theme.card, in: RoundedRectangle(cornerRadius: 36 * 0.27))
                                 .accessibilityHidden(true)
                             Text("Overview").font(.headline)
+                            Spacer(minLength: 8)
+                            PadMailSign()
                         }
                             .padding(.horizontal, 14).padding(.vertical, 10)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -193,4 +195,31 @@ private struct PageWide: ViewModifier {
 
 extension View {
     func pageWide(_ most: CGFloat) -> some View { modifier(PageWide(most: most)) }
+}
+
+/// Beside the sidebar's Overview: the bee while mail is read, and how many new mails wait there.
+/// With a matter open the overview's own line is out of sight — the Mac's sidebar shows it too.
+struct PadMailSign: View {
+    var body: some View {
+        switch PhoneMailCheck.shared.state {
+        case .reading, .sending:
+            BeeLoader(size: 13).accessibilityLabel("Looking for mail")
+        case .newMail(let look, _), .ready(let look, _):
+            count(look.pending)
+        case .demoNew:
+            count(DemoData.newMail.count)
+        case .answered:
+            Circle().fill(Theme.bee).frame(width: 8, height: 8).accessibilityLabel("Mail read, to take in")
+        default:
+            EmptyView()
+        }
+    }
+
+    private func count(_ number: Int) -> some View {
+        Text("\(number)").font(.footnote.weight(.semibold)).monospacedDigit()
+            .padding(.horizontal, 7).padding(.vertical, 2)
+            .background(Theme.bee, in: Capsule())
+            .foregroundStyle(.black)
+            .accessibilityLabel("\(number) new \(number == 1 ? "mail" : "mails")")
+    }
 }

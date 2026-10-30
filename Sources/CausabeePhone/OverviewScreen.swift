@@ -10,6 +10,8 @@ struct RootView: View {
     @Query private var matters: [Matter]
     @Environment(\.scenePhase) private var phase
     @Environment(\.horizontalSizeClass) private var width
+    /// Settings, from the overview's menu or the menu bar's — open from any page.
+    @State private var showsSettings = false
 
     /// The matter the assistant is about: the one that is open.
     private var about: Matter? { navigation.path.last.flatMap { id in matters.first { $0.persistentModelID == id } } }
@@ -90,6 +92,11 @@ struct RootView: View {
         @Bindable var navigation = navigation
         return stack
         .tint(Theme.gold)
+        // Mail is looked for whatever page is open: on the iPad a matter's page stands in the
+        // overview's place.
+        .modifier(PhoneMailDuties())
+        .sheetWhenAsked(isPresented: $showsSettings) { SettingsSheet() }
+        .onReceive(NotificationCenter.default.publisher(for: .phoneSettings)) { _ in showsSettings = true }
         // Auto, the whole circle, as on the Mac: a matter whose record has changed and come to rest
         // gets its next step and its summary written again — while Causabee is open.
         // A notification of news tapped: its matter opens.
@@ -221,7 +228,6 @@ struct OverviewScreen: View {
     /// The cursor is in "Find or start a matter".
     @FocusState private var searching: Bool
     @Environment(\.modelContext) private var context
-    @State private var editsAccount = false
     @AppStorage(WelcomeSheet.seenKey) private var introSeen = false
     @State private var showsWelcome = false
     /// How many cards fit side by side: one on the iPhone, two on a wide iPad.
@@ -319,7 +325,7 @@ struct OverviewScreen: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Group {
-                        Button("Settings", systemImage: "gearshape") { editsAccount = true }
+                        Button("Settings", systemImage: "gearshape") { NotificationCenter.default.post(name: .phoneSettings, object: nil) }
                         Button("Introduction", systemImage: "info.circle") { showsWelcome = true }
                         Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: store.isDemo ? "arrow.uturn.backward" : "sparkles") { store.switchDemo(!store.isDemo) }
                     }
@@ -329,10 +335,8 @@ struct OverviewScreen: View {
                 .accessibilityLabel("More")
             }
         }
-        .sheetWhenAsked(isPresented: $editsAccount) { SettingsSheet() }
-        // The menu bar's commands: Settings, new mail, and the field a matter is found or started in.
-        .onReceive(NotificationCenter.default.publisher(for: .phoneSettings)) { _ in editsAccount = true }
-        .onReceive(NotificationCenter.default.publisher(for: .phoneGetMail)) { _ in PhoneMailCheck.shared.look(context: context) }
+        // The menu bar's field a matter is found or started in. Settings and Get New Mail are the
+        // whole window's: on the iPad a matter's page stands where this was.
         .onReceive(NotificationCenter.default.publisher(for: .phoneFind)) { _ in if navigation.path.isEmpty { searching = true } }
         .onReceive(NotificationCenter.default.publisher(for: .phoneNewMatter)) { _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { searching = true }
