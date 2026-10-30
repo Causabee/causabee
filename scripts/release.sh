@@ -91,6 +91,12 @@ fi
 APP=$OUT/Causabee.app
 rm -rf "$OUT"; mkdir -p "$OUT"
 
+# Every field of the models must be in iCloud's Production schema first: a build with one that is
+# not stops every device's uploads (29 October). Not skipped with CAUSABEE_SKIP_TESTS — it takes seconds.
+step "Checking that iCloud's Production schema has every field"
+swift test --filter CloudKitSchemaTests > "$OUT/schema.log" 2>&1 \
+  || { grep -A3 "Not in iCloud" "$OUT/schema.log" | head -6; fail "A field is not in iCloud's Production schema: nothing was built. The whole log: $OUT/schema.log" }
+
 step "Building $TITLE (Release)"
 BUILD=$(date +%Y%m%d%H%M)
 # What the About panel says: "Version Beta 0.5 (19)" — the stage and the beta's number, handed to the build.

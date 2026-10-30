@@ -5,20 +5,20 @@ import Foundation
 /// the same chat, or a mail forwarded twice, does not fill a matter with doubles.
 @MainActor
 public enum Duplicates {
-    static func words(_ text: String) -> Set<String> {
+    nonisolated static func words(_ text: String) -> Set<String> {
         Set(text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "de_DE"))
             .split { !$0.isLetter && !$0.isNumber }.map(String.init).filter { $0.count >= 4 })
     }
 
     /// Half the words of the shorter one are in the other.
-    public static func alike(_ a: String, _ b: String) -> Bool {
+    public nonisolated static func alike(_ a: String, _ b: String) -> Bool {
         let x = words(a), y = words(b)
         guard !x.isEmpty, !y.isEmpty else { return false }
         return Double(x.intersection(y).count) / Double(min(x.count, y.count)) >= 0.5
     }
 
     /// Nearly the same words, few left over on either side: for things that are not the matter's own.
-    public static func same(_ a: String, _ b: String) -> Bool {
+    public nonisolated static func same(_ a: String, _ b: String) -> Bool {
         let x = words(a), y = words(b)
         guard !x.isEmpty, !y.isEmpty else { return false }
         return Double(x.intersection(y).count) / Double(x.union(y).count) >= 0.8
