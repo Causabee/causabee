@@ -63,6 +63,8 @@ enum Theme {
     static let titleFont = Font.custom("Source Serif 4", size: 26 * Theme.textScale, relativeTo: .largeTitle)
     /// A matter's name on its overview card: the same face, the size of a title (Figma "Title 1 Serif").
     static let cardTitleFont = Font.custom("Source Serif 4", size: 22 * Theme.textScale, relativeTo: .title)
+    /// What is left of the month's Pro, the one big number of the plan.
+    static let planNumberFont = Font.custom("Source Serif 4", size: 34 * Theme.textScale, relativeTo: .largeTitle)
     /// A matter's name on its one line in the overview: the cards' serif, smaller — so a matter
     /// never looks like one of its tasks.
     static let rowTitleFont = Font.custom("Source Serif 4", size: 17 * Theme.textScale, relativeTo: .headline)

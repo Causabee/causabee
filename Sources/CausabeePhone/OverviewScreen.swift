@@ -96,6 +96,8 @@ struct RootView: View {
         // overview's place.
         .modifier(PhoneMailDuties())
         .sheetWhenAsked(isPresented: $showsSettings) { SettingsSheet() }
+        // `--demo --plan-shot`: set up as a picture of the plan.
+        .onAppear { if PlanShot.showsSheet { Store.shared.asks = .choose } else if PlanShot.current != nil { showsSettings = true } }
         .onReceive(NotificationCenter.default.publisher(for: .phoneSettings)) { _ in showsSettings = true }
         // Auto, the whole circle, as on the Mac: a matter whose record has changed and come to rest
         // gets its next step and its summary written again — while Causabee is open.

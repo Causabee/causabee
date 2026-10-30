@@ -98,7 +98,7 @@ struct ModelSettingsView: View {
 
     var body: some View {
         Form {
-            Section { PlanSettings() } header: { Text("Your plan") }
+            PlanSettings()
             Section {
                 if ModelChoice.mail.isMistral || ModelChoice.mail.isOpenAI {
                     Toggle("Fewer, real tasks", isOn: $strict)
