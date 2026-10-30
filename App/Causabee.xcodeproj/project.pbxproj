@@ -73,6 +73,7 @@
 				CalendarChip.swift,
 				CardActions.swift,
 				DemoData.swift,
+				ScreenMeter.swift,
 				MirrorRunner.swift,
 				MatterMenus.swift,
 				ModelChoice.swift,

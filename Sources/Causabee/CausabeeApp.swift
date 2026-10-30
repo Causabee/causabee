@@ -100,7 +100,7 @@ struct CausabeeApp: App {
             MainActor.assumeIsolated { NameListPublisher.start(container.mainContext) }
             MainActor.assumeIsolated { StoredChanges.shared.watch(container.mainContext) }
             // The kept words of mails and files, the same on every device.
-            MainActor.assumeIsolated { KeptTexts.store = url; KeptTexts.share(besides: url, in: container.mainContext) }
+            MainActor.assumeIsolated { KeptTexts.store = url; Task { await StoreWorker.for(container).shareKeptTexts(besides: url) } }
             // Files added on this device before they went into their matter's folder: there now, so every device opens them.
             if !DemoData.isRequested {
                 let context = container.mainContext
@@ -125,7 +125,7 @@ struct CausabeeApp: App {
         WindowGroup("Causabee") {
             switch opened {
             case .success(let container):
-                RootView().modifier(ModelChoiceSync()).modelContainer(container).frame(minWidth: 960, minHeight: 640)
+                RootView().modifier(ModelChoiceSync()).screenMeter().modelContainer(container).frame(minWidth: 960, minHeight: 640)
             case .failure(let error):
                 ContentUnavailableView("The store cannot be opened",
                                        systemImage: "externaldrive.badge.exclamationmark",
@@ -723,7 +723,9 @@ struct RootView: View {
                         switch navigation.place {
                         case .matter(let id):
                             if let matter = matters.first(where: { $0.persistentModelID == id }) {
-                                MatterStatusView(matter: matter).id(id)
+                                // The same matter, the same page: the window drawn again after a change
+                                // elsewhere does not make the page work everything out again.
+                                MatterStatusView(matter: matter).equatable().id(id)
                             }
                         case .assistant, nil:
                             OverviewView(matters: sorted, search: $search, start: start)
@@ -876,12 +878,12 @@ struct RootView: View {
         .sheet(isPresented: $showsIntro, onDismiss: {
             if SetupState.isFresh || (!setupLater && !DemoData.isRequested && SetupAssistant.isMissingSomething) { showsSetup = true }
         }) { IntroView() }
-        .sheet(isPresented: $showsSetup) {
+        .sheetWhenAsked(isPresented: $showsSetup) {
             SetupAssistant { mailCheck.look(store: navigation.store, context: context) }
         }
         .modifier(PinQuestion(matters: matters, navigation: navigation))
         .matterChoosers(all: matters, navigation: navigation)
-        .confirmationDialog(mergeQuestion, isPresented: Binding(get: { navigation.merging != nil }, set: { if !$0 { navigation.merging = nil } })) {
+        .confirmationDialogWhenAsked(mergeQuestion, isPresented: Binding(get: { navigation.merging != nil }, set: { if !$0 { navigation.merging = nil } })) {
             Button("Merge") {
                 if let (from, into) = navigation.merging {
                     into.absorb(from, in: context)

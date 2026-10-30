@@ -77,23 +77,24 @@ struct MatterStatusView: View {
     @State private var person: PersistentIdentifier?
     /// ⌘F on this page.
     @State private var find = PageFind()
-    /// The page has gone up under the title bar: the bar turns to glass, with a line under it.
-    @State private var scrolledUnder = false
+    /// Where the page stands as it scrolls — under the title bar, its parts in the bar. Read only
+    /// by the bar and the parts, drawn on their own: the page went under the bar and every task,
+    /// date and mail was worked out again, three times on the way, and a frame was lost.
+    @State private var scroll = MacPageScroll()
+    private var scrolledUnder: Bool { scroll.scrolledUnder }
+    private var partsUnder: Bool { scroll.partsUnder }
     @State private var choosingIcon = false
     @State private var addingContact = IntroShot.current == .careContact
     @State private var addingDetail = false
-    /// The parts in the page have scrolled under the title bar, which shows them then.
-    @State private var partsUnder = false
-    /// The parts' lower edge has reached the bar's place for them.
-    @State private var partsReached = false
     /// How much of the page is seen under the title bar.
     @State private var pageHeight = CGFloat.zero
     @State private var barEdge = CGFloat.zero
     @Environment(\.reading) private var reading
 
     var body: some View {
-        // What came from another device shows at once: an arriving change redraws the page.
-        let _ = StoredChanges.shared.count
+        // Drawn again when this matter changes — here or from another device: the page reads it.
+        // Not after every change to the store: one to another matter changes nothing here.
+        let _ = ScreenMeter.printsChanges ? Self._printChanges() : ()
         let status = MatterStatus(matter)
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
@@ -112,14 +113,13 @@ struct MatterStatusView: View {
                             notesPart.id("notes")
                             allMail(status)
                         } else {
-                            parts(status).id("parts")
-                                // Under the title bar the bar has them: these do not show through its glass.
-                                .opacity(partsUnder ? 0 : 1)
+                            // Under the title bar the bar has them: these do not show through its glass.
+                            DrawnApart { parts(status).opacity(partsUnder ? 0 : 1) }.id("parts")
                                 // Whether its lower edge has reached the place the title bar has for the
                                 // parts — twelve over the bar's lower edge. Only that, not the edge
                                 // itself: kept as a number, it changed with every frame of scrolling,
                                 // and the whole page was worked out again each time.
-                                .onGeometryChange(for: Bool.self) { [limit = barEdge - 11 - given] in $0.frame(in: .global).maxY < limit } action: { partsReached = $0 }
+                                .onGeometryChange(for: Bool.self) { [limit = barEdge - 11 - given] in $0.frame(in: .global).maxY < limit } action: { scroll.partsReached = $0 }
                             // At least as tall as the page shows: a short part does not pull the
                             // page down, and the parts stay where they were clicked.
                             VStack(alignment: .leading, spacing: 22) {
@@ -155,7 +155,7 @@ struct MatterStatusView: View {
                     .frame(maxWidth: .infinity)
                 }
                 // The name and the search stay on top while the page scrolls under them.
-                .safeAreaInset(edge: .top, spacing: 0) { titleBar(status) }
+                .safeAreaInset(edge: .top, spacing: 0) { DrawnApart { titleBar(status) } }
                 // What the page shows under the title bar: the container's size is already without the bar.
                 .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
                 // Another part chosen in the title bar: it is shown from its start, not from where the last one was read.
@@ -163,7 +163,7 @@ struct MatterStatusView: View {
                 // Scrolled by hand, not shifted by a point or two when the window lays the page out
                 // anew — a sidebar closing in a narrow window left it there, and the name jumped up.
                 .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 8 } action: { _, under in
-                    withAnimation(.easeOut(duration: 0.15)) { scrolledUnder = under }
+                    withAnimation(.easeOut(duration: 0.15)) { scroll.scrolledUnder = under }
                 }
                 .onPreferenceChange(PageFindMatches.self) { found in
                     MainActor.assumeIsolated {
@@ -189,7 +189,12 @@ struct MatterStatusView: View {
                     for address in web { addLink(address, title: "", todo: nil) }
                     return !web.isEmpty || !files.isEmpty
                 }
-                .onAppear { show(navigation.showing, with: scroller); showNews(with: scroller); loadCalendars() }
+                .onAppear {
+                    // `--part record`: starts in that part — for the scroll tour.
+                    if let at = CommandLine.arguments.firstIndex(of: "--part"), at + 1 < CommandLine.arguments.count,
+                       let chosen = Part(rawValue: CommandLine.arguments[at + 1]) { part = chosen }
+                    show(navigation.showing, with: scroller); showNews(with: scroller); loadCalendars()
+                }
                 // The Matter menu: the section scrolled to, then what adds to it opened.
                 .onReceive(NotificationCenter.default.publisher(for: .matterAction)) { note in
                     if note.object as? String == "writeAgain" { if !DemoData.isRequested { writeAgain() }; return }
@@ -221,8 +226,8 @@ struct MatterStatusView: View {
                 .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
                 .onChange(of: navigation.showing) { show(navigation.showing, with: scroller) }
                 .onChange(of: navigation.showsNews) { showNews(with: scroller) }
-                .sheet(isPresented: $addingContact) { ContactEditor(matter: matter) }
-                .sheet(isPresented: $addingDetail) { DetailEditor(matter: matter) }
+                .sheetWhenAsked(isPresented: $addingContact) { ContactEditor(matter: matter) }
+                .sheetWhenAsked(isPresented: $addingDetail) { DetailEditor(matter: matter) }
             }
         }
         .environment(find)
@@ -244,7 +249,7 @@ struct MatterStatusView: View {
             }
         }
         .navigationTitle(matter.name)
-        .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
+        .confirmationDialogWhenAsked(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } })) {
             Button("Merge") {
                 if let (party, other) = merging { confirmSame(party, as: other) }
             }
@@ -255,7 +260,7 @@ struct MatterStatusView: View {
         .alert("The matter could not be exported", isPresented: Binding(get: { exportFailure != nil }, set: { if !$0 { exportFailure = nil } })) {
             Button("OK") { exportFailure = nil }
         } message: { Text(exportFailure ?? "") }
-        .confirmationDialog(closeQuestion, isPresented: $asksToClose) {
+        .confirmationDialogWhenAsked(closeQuestion, isPresented: $asksToClose) {
             if matter.openTodos.isEmpty {
                 Button("Close") { close(markingOpenDone: false) }
             } else {
@@ -615,7 +620,7 @@ struct MatterStatusView: View {
                 // Added by the plus — beside the assistant's field — or dragged from the browser.
                 SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
             }
-            .popover(isPresented: $addingLink, arrowEdge: .bottom) {
+            .popoverWhenAsked(isPresented: $addingLink, arrowEdge: .bottom) {
                 LinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
                     addLink(address, title: title, todo: todo)
                     addingLink = false
@@ -912,7 +917,7 @@ struct MatterStatusView: View {
                             splitting = true
                         }
                         .help("The new mails, with what they brought, become a matter of their own; this one stays closed")
-                        .popover(isPresented: $splitting, arrowEdge: .bottom) { splitForm(status) }
+                        .popoverWhenAsked(isPresented: $splitting, arrowEdge: .bottom) { splitForm(status) }
                     }
                     Button(Say.openAgain) { matter.reopen(); try? context.save() }
                 }
@@ -981,7 +986,7 @@ struct MatterStatusView: View {
                     // system's size, more with the larger text.
                     .alignmentGuide(.firstTextBaseline) { $0[.bottom] - (15 - 8 * Theme.textScale) }
                     .help("Choose another icon")
-                    .popover(isPresented: $choosingIcon, arrowEdge: .bottom) { MatterIconPicker(matter: matter) }
+                    .popoverWhenAsked(isPresented: $choosingIcon, arrowEdge: .bottom) { MatterIconPicker(matter: matter) }
                 if renaming {
                     TextField("Name", text: $newName, selection: $nameSelection)
                         .font(Theme.titleFont)
@@ -1058,7 +1063,7 @@ struct MatterStatusView: View {
             }
             ZStack(alignment: .leading) {
                 HStack(spacing: 6) {
-                    Text(StoredChanges.shared.kept("count \(matter.persistentModelID.hashValue)") { Self.count(matter.entries ?? []) })
+                    Text(MatterKept.shared.value(matter, "count") { Self.count(matter.entries ?? []) })
                     if let first = status.firstDate { Text("· since \(Dates.short(first))") }
                 }
                 .font(.callout)
@@ -1105,10 +1110,10 @@ struct MatterStatusView: View {
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { barEdge = $0 }
         // The parts in the page reach the place the bar has for them — twelve over its lower edge —
         // and are in the bar from there: they stay where they have come to.
-        .onChange(of: partsReached) { _, under in
-            withAnimation(.easeOut(duration: 0.15)) { partsUnder = under && scrolledUnder }
+        .onChange(of: scroll.partsReached) { _, under in
+            withAnimation(.easeOut(duration: 0.15)) { scroll.partsUnder = under && scroll.scrolledUnder }
         }
-        .onChange(of: scrolledUnder) { _, under in if !under { partsUnder = false } }
+        .onChange(of: scroll.scrolledUnder) { _, under in if !under { scroll.partsUnder = false } }
     }
 
     // MARK: To-dos
@@ -1124,7 +1129,7 @@ struct MatterStatusView: View {
                 // No "+ Task" here: a task of one's own is said to the assistant, from its plus, or
                 // written from the menu — whose editor still opens at this line.
             }
-            .popover(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .bottom) {
+            .popoverWhenAsked(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .bottom) {
                 if let newTodo {
                     TodoEditor(todo: newTodo, done: { self.newTodo = nil; try? context.save() }, cancel: dropNewTodo, isNew: true)
                 }
@@ -1399,10 +1404,12 @@ struct MatterStatusView: View {
     private func record(_ status: MatterStatus) -> some View {
         // Built once for this drawing, for the menus' counts and the list alike.
         let (threads, made) = StoredChanges.shared.record(matter)
-        let counts = Dictionary(uniqueKeysWithValues: RecordBrowse.Show.allCases.map { item in
-            (item, RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks,
-                                     kind: filter, show: item, made: made).items.count)
-        })
+        let counts = MatterKept.shared.value(matter, "counts \(filter)") {
+            Dictionary(uniqueKeysWithValues: RecordBrowse.Show.allCases.map { item in
+                (item, RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks,
+                                         kind: filter, show: item, made: made).items.count)
+            })
+        }
         RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts, person: personParty?.name, clearPerson: { person = nil }) {
             // Adding a file and opening the folder, on the record's own line: there under
             // "Everything" as under "Files", and whether or not there is a file yet.
@@ -1517,8 +1524,9 @@ struct MatterStatusView: View {
     @ViewBuilder
     private func recordList(threads: [MailThreads.Thread], made: RecordLinks) -> some View {
         let party = personParty
-        let picked = RecordBrowse.pick(threads: threads, documents: shownDocuments,
-                                       links: party == nil ? keptLinks : [], kind: filter, show: show, made: made)
+        let picked = MatterKept.shared.value(matter, "pick \(filter) \(show) \(party == nil)") {
+            RecordBrowse.pick(threads: threads, documents: shownDocuments, links: party == nil ? keptLinks : [], kind: filter, show: show, made: made)
+        }
         let all = party.map { party in
             picked.items.filter { item in NamedPeople.of(item, in: matter).contains { $0.id == party.persistentModelID } }
         } ?? picked.items
@@ -1567,7 +1575,7 @@ struct MatterStatusView: View {
     private func allMail(_ status: MatterStatus) -> some View {
         let made = StoredChanges.shared.record(matter).made
         return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Mail", detail: StoredChanges.shared.kept("count mail \(matter.persistentModelID.hashValue)") { Self.count(status.mailEntries) })
+            SectionHeader(title: "Mail", detail: MatterKept.shared.value(matter, "count mail") { Self.count(status.mailEntries) })
             ForEach(StoredChanges.shared.record(matter).threads) { thread in
                 ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
             }
@@ -1699,7 +1707,7 @@ struct TodoRow: View {
             Spacer(minLength: 8)
             HStack(spacing: 4) {
                 MoreMenu { moreItems }
-                    .popover(isPresented: $editing, arrowEdge: .bottom) {
+                    .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
                         TodoEditor(todo: todo, done: { editing = false; try? context.save() }, cancel: { editing = false })
                     }
             }
@@ -1714,8 +1722,8 @@ struct TodoRow: View {
             try? await Task.sleep(for: .seconds(2.5))
             editing = true
         }
-        .sheet(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
-        .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting) {
+        .sheetWhenAsked(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
+        .confirmationDialogWhenAsked("Delete “\(todo.text)”?", isPresented: $deleting) {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
                 Calendars.shared.removeReminder(todo.reminderID)
@@ -2092,7 +2100,7 @@ struct DateRow: View {
             Spacer(minLength: 8)
             HStack(spacing: 4) {
                 MoreMenu { moreItems }
-                    .popover(isPresented: $editing, arrowEdge: .bottom) {
+                    .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
                         DateEditor(item: item, done: { editing = false; save() }, cancel: { editing = false })
                     }
             }
@@ -2102,7 +2110,7 @@ struct DateRow: View {
         .padding(.vertical, 10)
         .contentShape(Rectangle())
         .contextMenu { moreItems }
-        .confirmationDialog("Delete “\(item.what)”?", isPresented: $deleting) {
+        .confirmationDialogWhenAsked("Delete “\(item.what)”?", isPresented: $deleting) {
             Button("Delete", role: .destructive) {
                 // The entry in Calendar it is connected with goes too.
                 Calendars.shared.removeEvent(item.calendarID)
@@ -2263,7 +2271,7 @@ struct PartyRow: View {
                     Button(Say.removeFromMatter, role: .destructive, action: remove)
                 }
             }
-                .popover(isPresented: $editing, arrowEdge: .bottom) {
+                .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Change person").font(.headline)
                         TextField("Name", text: $name).textFieldStyle(.roundedBorder).frame(width: 300)
@@ -2359,8 +2367,8 @@ struct DocumentRow: View {
 
     var body: some View {
         FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen) { moreItems }
-            .popover(isPresented: $renaming, arrowEdge: .bottom) { renameField }
-            .confirmationDialog("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
+            .popoverWhenAsked(isPresented: $renaming, arrowEdge: .bottom) { renameField }
+            .confirmationDialogWhenAsked("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
                 Button("Delete", role: .destructive, action: forget)
                 Button("Cancel", role: .cancel) {}
             } message: { Text(Self.deleteWords(document)) }
@@ -2471,7 +2479,7 @@ struct LinkRow: View {
                 Button(Say.removeLink, systemImage: "trash", role: .destructive, action: remove)
                     .help("Take the link out of the matter. The document itself stays where it is.")
             }
-                .popover(isPresented: $editing, arrowEdge: .bottom) {
+                .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
                     LinkEditor(link: link, todos: todos) { address, title, todo in
                         link.address = address
                         link.title = title
@@ -2643,4 +2651,20 @@ struct EmptyBox: View {
         .frame(maxWidth: .infinity)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
     }
+}
+
+/// Where a matter's page stands on the Mac as it scrolls.
+@MainActor
+@Observable
+final class MacPageScroll {
+    var scrolledUnder = false
+    var partsUnder = false
+    var partsReached = false
+}
+
+/// The same page as long as it is the same matter: what it shows of the matter it reads itself,
+/// and draws again when that changes. Compared by its fields, a page seemed new each time the
+/// screen around it was drawn — its own state is made anew with each — and was worked out whole.
+extension MatterStatusView: Equatable {
+    nonisolated static func == (a: Self, b: Self) -> Bool { a.matter === b.matter }
 }

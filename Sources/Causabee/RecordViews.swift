@@ -21,7 +21,6 @@ struct ThreadCard: View {
     /// What came from each mail; nil where it is not shown.
     var links: RecordLinks? = nil
     let talk: (Entry) -> Void
-    @Query private var profiles: [Profile]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -34,7 +33,7 @@ struct ThreadCard: View {
                 }
             }
             VStack(alignment: .leading, spacing: 0) {
-                let me = Me(names: profiles.first?.names ?? [], withAccounts: true)
+                let me = OwnerMe.current
                 let joined = MailThreads.joined(thread.rows, deepest: ThreadMailRow.deepest)
                 ForEach(thread.rows) { row in
                     ThreadMailRow(row: row, started: row.depth == 0 && thread.count > 1, sent: me.sent(row.entry.from), subject: thread.subject,
@@ -296,7 +295,7 @@ struct ThreadMailRow: View {
         #if os(iOS)
         .quickLookPreview($preview)
         #endif
-        .alert("The file is not here", isPresented: $cannotOpen) {
+        .alertWhenAsked("The file is not here", isPresented: $cannotOpen) {
             Button("OK", role: .cancel) {}
         } message: {
             Text("It is neither on this device nor in the matter's folder in iCloud Drive yet. What it said is here.")
@@ -307,7 +306,7 @@ struct ThreadMailRow: View {
         #else
         .contextMenu { Group { items }.menuSigns() }
         #endif
-        .alert("Move to a new matter", isPresented: $naming) {
+        .alertWhenAsked("Move to a new matter", isPresented: $naming) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}
             Button("Move") {
@@ -404,7 +403,7 @@ struct SourceJump: View {
                 return .handled
             })
             .help(places.contains { $0.item != nil } ? "Shows it in the record" : "Opens it in Mail")
-            .confirmationDialog("Every mail that asked for it", isPresented: $choosing, titleVisibility: .visible) {
+            .confirmationDialogWhenAsked("Every mail that asked for it", isPresented: $choosing, titleVisibility: .visible) {
                 ForEach(Array(places.enumerated()), id: \.offset) { index, place in
                     if place.item != nil || outside(place.source) != nil {
                         Button((index == 0 ? "First: " : "") + Sources.origin(place.source)) { go(place) }

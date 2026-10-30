@@ -60,7 +60,7 @@ struct PeopleSection: View {
                 }
                 .phoneCard()
             }
-            .confirmationDialog(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } }),
+            .confirmationDialogWhenAsked(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } }),
                                 titleVisibility: .visible) {
                 Button("Merge") { if let (party, other) = merging { confirmSame(party, as: other) } }
                 Button("Cancel", role: .cancel) { merging = nil }
@@ -145,7 +145,7 @@ struct PhonePartyRow: View {
         .contentShape(Rectangle())
         .contextMenu { Group { items }.menuSigns() }
         .findable(.model(party.persistentModelID), party.name, membership.role)
-        .sheet(isPresented: $editing) {
+        .sheetWhenAsked(isPresented: $editing) {
             PartyEditor(party: party, membership: membership, matter: matter, save: save, remove: remove)
         }
     }
@@ -318,7 +318,7 @@ struct LinksSection: View {
             }
             .padding(.horizontal, 4)
         }
-        .sheet(isPresented: $adding) {
+        .sheetWhenAsked(isPresented: $adding) {
             PhoneLinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
                 guard !(matter.links ?? []).contains(where: { $0.address == address && $0.todo === todo }) else { return }
                 let link = WebLink(address: address, title: title)
@@ -414,7 +414,7 @@ struct PhoneLinkRow: View {
         .padding(.vertical, 10)
         .contextMenu { Group { items }.menuSigns() }
         .findable(.model(link.persistentModelID), link.shownName, link.address)
-        .sheet(isPresented: $editing) {
+        .sheetWhenAsked(isPresented: $editing) {
             PhoneLinkEditor(link: link, todos: todos) { address, title, todo in
                 link.address = address
                 link.title = title

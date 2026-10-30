@@ -22,11 +22,14 @@ struct SharedIn: ViewModifier {
             .onChange(of: matters.count) { publish() }
     }
 
+    /// Every mail's day read for it — a third of a second as Causabee started, on the main thread:
+    /// by the worker now.
     private func publish() {
-        let open = matters.filter { !$0.isClosed }
-            .map { ($0, MatterStatus($0).lastDate) }
-            .sorted { ($0.1 ?? .distantPast) > ($1.1 ?? .distantPast) }
-        ShareInbox.publish(open.map { ShareInbox.Choice(key: $0.0.key, name: $0.0.name, last: $0.1) })
+        let worker = StoreWorker.for(context.container)
+        Task {
+            let open = await worker.openMattersByLastMail()
+            ShareInbox.publish(open.map { ShareInbox.Choice(key: $0.key, name: $0.name, last: $0.last) })
+        }
     }
 
     private func takeIn() {

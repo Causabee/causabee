@@ -17,6 +17,12 @@ final class MirrorRunner {
     @ObservationIgnored private var running = false
     /// A change came while a sync ran: once more after it, so it is not lost.
     @ObservationIgnored private var again = false
+    /// The sync is saving what it brought in: that save is told while it happens, and is not a
+    /// change to sync again — counted as one, every sync started the next, two seconds later, for good.
+    @ObservationIgnored private var reconciling = false
+    /// Calendar or Reminders may have changed — they said so, or Causabee was away: everything
+    /// connected is looked up there. Otherwise only what changed here is.
+    @ObservationIgnored private var theirsChanged = true
 
     @ObservationIgnored private var watching = false
 
@@ -26,19 +32,24 @@ final class MirrorRunner {
         guard self.context !== context else { return }
         pending?.cancel()
         self.context = context
+        theirsChanged = true
         guard !watching else { soon(after: 0.5); return }
         watching = true
         NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { MirrorRunner.shared.soon() }
+            MainActor.assumeIsolated { MirrorRunner.shared.theirsChanged = true; MirrorRunner.shared.soon() }
         }
         NotificationCenter.default.addObserver(forName: ModelContext.didSave, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { MirrorRunner.shared.soon() }
+            MainActor.assumeIsolated {
+                guard !MirrorRunner.shared.reconciling else { return }
+                MirrorRunner.shared.soon()
+            }
         }
         // Back to the front: what was changed in Reminders or Calendar meanwhile — on the iPhone no
         // change is told while Causabee is away — is looked at now.
         NotificationCenter.default.addObserver(forName: Self.becameActive, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
                 Calendars.shared.store.refreshSourcesIfNecessary()
+                MirrorRunner.shared.theirsChanged = true
                 MirrorRunner.shared.soon(after: 0.3)
             }
         }
@@ -58,11 +69,15 @@ final class MirrorRunner {
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled, let context else { return }
             running = true
-            // A reminder iCloud gave a new id is found again by its words first.
-            await Calendars.shared.relink((try? context.fetch(FetchDescriptor<Todo>(predicate: #Predicate { $0.reminderID != nil }))) ?? [])
-            let result = Mirror.reconcile(context)
+            let theirs = theirsChanged
+            theirsChanged = false
+            // A reminder iCloud gave a new id is found again by its words first — only when
+            // Reminders changed: asking for every task's reminder is what made a tick slow.
+            if theirs { await Calendars.shared.relink((try? context.fetch(FetchDescriptor<Todo>(predicate: #Predicate { $0.reminderID != nil }))) ?? []) }
+            reconciling = true
+            let result = Mirror.reconcile(context, onlyChangedHere: !theirs)
+            reconciling = false
             if result.pushed + result.pulled > 0 { last = result; lastAt = Date() }
-            // What the sync saved itself is not a change to sync again.
             try? await Task.sleep(for: .seconds(0.5))
             running = false
             if again { again = false; soon() }

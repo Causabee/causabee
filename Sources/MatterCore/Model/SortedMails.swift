@@ -1,10 +1,11 @@
 import Foundation
 import SwiftData
+import Synchronization
 
 /// The record of what the label has answered, between the owner's devices. Each device keeps its
 /// own log (`decisions-fetch.jsonl`) and puts every answer into the store, where the others read
 /// it: a mail sorted on the iPhone is not sent again from the Mac, nor the other way round.
-@MainActor
+/// Asked with the screen's context or a worker's (`StoreWorker`): nothing in it is the screen's own.
 public enum SortedMails {
     /// What the store keeps of an answer: the answer, without the disguised text that was sent and
     /// the names found in it — those stay in the log of the device that sorted it.
@@ -53,7 +54,7 @@ public enum SortedMails {
     /// Answers read before, by Message-ID, with the size of what they were read from: a record is
     /// read again only when it is new or changed. Each read took some fifty milliseconds for a few
     /// hundred mails, and it was asked after every save.
-    private static var read: [String: (size: Int, judgement: Judgement)] = [:]
+    private static let read = Mutex<[String: (size: Int, judgement: Judgement)]>([:])
 
     /// Every answer in the store, by Message-ID.
     public static func answered(in context: ModelContext) -> [String: Judgement] {
@@ -61,13 +62,13 @@ public enum SortedMails {
         decoder.dateDecodingStrategy = .iso8601
         var out: [String: Judgement] = [:]
         for record in (try? context.fetch(FetchDescriptor<SortedMail>())) ?? [] where !record.data.isEmpty {
-            if let known = read[record.messageID], known.size == record.data.count {
+            if let known = read.withLock({ $0[record.messageID] }), known.size == record.data.count {
                 out[known.judgement.emailID] = known.judgement
                 continue
             }
             guard let json = try? (record.data as NSData).decompressed(using: .lzfse) as Data,
                   let judgement = try? decoder.decode(Judgement.self, from: json) else { continue }
-            read[record.messageID] = (record.data.count, judgement)
+            read.withLock { $0[record.messageID] = (record.data.count, judgement) }
             out[judgement.emailID] = judgement
         }
         return out

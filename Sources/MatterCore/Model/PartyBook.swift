@@ -337,18 +337,22 @@ final class Writers: @unchecked Sendable {
     }
 
     private static let lock = NSLock()
-    nonisolated(unsafe) private static var kept: [PersistentIdentifier: (signature: String, writers: Writers)] = [:]
+    /// By matter and by the context it was read in: a worker's context gets its own people, never
+    /// those of the screen's.
+    nonisolated(unsafe) private static var kept: [String: (signature: String, writers: Writers)] = [:]
 
     /// The matter's book, as its people are now: made anew when one is added, renamed or merged.
     static func of(_ matter: Matter) -> Writers {
         let parties = matter.parties
         let signature = parties.map { "\($0.persistentModelID.hashValue)|\($0.name)|\($0.spellings.joined(separator: ","))|\($0.address ?? "")" }
             .joined(separator: "\u{1F}")
-        let id = matter.persistentModelID
+        let id = "\(matter.persistentModelID.hashValue)|\(matter.modelContext.map { ObjectIdentifier($0).hashValue } ?? 0)"
         lock.lock()
         defer { lock.unlock() }
         if let known = kept[id], known.signature == signature { return known.writers }
         let made = Writers(parties)
+        // The worker reads with a context of its own for each job: their people are kept too, a few.
+        if kept.count > 300 { kept.removeAll() }
         kept[id] = (signature, made)
         return made
     }

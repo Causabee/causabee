@@ -20,10 +20,10 @@ final class AutoTests: XCTestCase {
         // Auto takes note of the matters on its first look, a few seconds in; then the change.
         Thread.sleep(forTimeInterval: 6)
         done.tap()
-        // Said at once that it will be written, and written within a few seconds.
-        let soon = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Auto updates this in a moment")).firstMatch
+        // Said at once that it is being written, and written within a few seconds.
+        let soon = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Causabee is on it")).firstMatch
         XCTAssertTrue(soon.waitForExistence(timeout: 8), "Nothing says the record changed and will be written.")
-        // Written: the line says "Auto mode" again, and the step is Causabee's.
+        // Written: the line says "Pro" again, and the step is Causabee's.
         XCTAssertTrue(soon.waitForNonExistence(timeout: 20), "The next step was not written again by Auto.")
         XCTAssertTrue(app.staticTexts["NEXT · FROM CAUSABEE"].waitForExistence(timeout: 5), "After Auto wrote it, the step is not Causabee's.")
     }

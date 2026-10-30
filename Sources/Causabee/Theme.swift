@@ -1130,3 +1130,72 @@ struct PartTabs<Value: Hashable>: View {
         .accessibilityLabel("Part of the matter")
     }
 }
+
+// MARK: Asked-for presentations
+
+/// A row's dialog, sheet, alert or popover, there only while it is asked for. Attached to every row
+/// — each task, date, person, mail and source — they were worked out again at every frame of a
+/// scroll (a quarter of the main thread's time on a long page, measured): a dialog resolves its
+/// colours, a sheet its presentation, whether shown or not. Hung on a clear background, so the
+/// row itself stays the same view and keeps what it holds.
+extension View {
+    /// `onDismiss` is called as the sheet goes: when what shows it says it is no longer shown.
+    func sheetWhenAsked<Sheet: View>(isPresented: Binding<Bool>, onDismiss: (() -> Void)? = nil,
+                                     @ViewBuilder content: @escaping () -> Sheet) -> some View {
+        background { if isPresented.wrappedValue { Color.clear.sheet(isPresented: isPresented, content: content) } }
+            .onChange(of: isPresented.wrappedValue) { was, now in if was, !now { onDismiss?() } }
+    }
+
+    func confirmationDialogWhenAsked<Actions: View, Message: View>(_ title: String, isPresented: Binding<Bool>, titleVisibility: Visibility = .automatic,
+                                                                  @ViewBuilder actions: @escaping () -> Actions,
+                                                                  @ViewBuilder message: @escaping () -> Message) -> some View {
+        background {
+            if isPresented.wrappedValue {
+                Color.clear.confirmationDialog(title, isPresented: isPresented, titleVisibility: titleVisibility, actions: actions, message: message)
+            }
+        }
+    }
+
+    func confirmationDialogWhenAsked<Actions: View>(_ title: String, isPresented: Binding<Bool>, titleVisibility: Visibility = .automatic,
+                                                   @ViewBuilder actions: @escaping () -> Actions) -> some View {
+        background {
+            if isPresented.wrappedValue {
+                Color.clear.confirmationDialog(title, isPresented: isPresented, titleVisibility: titleVisibility, actions: actions)
+            }
+        }
+    }
+
+    func alertWhenAsked<Actions: View, Message: View>(_ title: String, isPresented: Binding<Bool>,
+                                                     @ViewBuilder actions: @escaping () -> Actions,
+                                                     @ViewBuilder message: @escaping () -> Message) -> some View {
+        background { if isPresented.wrappedValue { Color.clear.alert(title, isPresented: isPresented, actions: actions, message: message) } }
+    }
+
+    func alertWhenAsked<Actions: View>(_ title: String, isPresented: Binding<Bool>, @ViewBuilder actions: @escaping () -> Actions) -> some View {
+        background { if isPresented.wrappedValue { Color.clear.alert(title, isPresented: isPresented, actions: actions) } }
+    }
+
+    func popoverWhenAsked<Content: View>(isPresented: Binding<Bool>, arrowEdge: Edge = .top, @ViewBuilder content: @escaping () -> Content) -> some View {
+        background { if isPresented.wrappedValue { Color.clear.popover(isPresented: isPresented, arrowEdge: arrowEdge, content: content) } }
+    }
+}
+
+extension UserDefaults {
+    /// Written only when it is another: every write tells every view that keeps a setting whose
+    /// name has a dot in it — "mail.auto" — to draw again, and a matter's whole page was drawn
+    /// again each second while Auto wrote down what it had seen (measured).
+    func setIfChanged(_ value: Any?, forKey key: String) {
+        let now = object(forKey: key) as? NSObject
+        if let value = value as? NSObject, now?.isEqual(value) == true { return }
+        if value == nil, now == nil { return }
+        set(value, forKey: key)
+    }
+}
+
+/// A part of a page drawn on its own: what it reads while it is drawn — where the page has scrolled
+/// to, say — draws it again, not the page around it.
+struct DrawnApart<Content: View>: View {
+    let content: () -> Content
+    init(@ViewBuilder _ content: @escaping () -> Content) { self.content = content }
+    var body: some View { content() }
+}

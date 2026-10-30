@@ -148,9 +148,9 @@ struct FilesSection: View {
             }
         }
         .quickLookPreview($preview)
-        .sheet(isPresented: $addsAccount) { MailAccountSheet() }
-        .sheet(isPresented: $addsScan) { ScanSheet(matter: matter) }
-        .confirmationDialog(deleting.map { "Delete “\($0.shownName)”?" } ?? "", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+        .sheetWhenAsked(isPresented: $addsAccount) { MailAccountSheet() }
+        .sheetWhenAsked(isPresented: $addsScan) { ScanSheet(matter: matter) }
+        .confirmationDialogWhenAsked(deleting.map { "Delete “\($0.shownName)”?" } ?? "", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
                             titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 if let document = deleting { withAnimation { _ = matter.forget(document, besides: PhoneCloud.storeLocation(), in: context); try? context.save() } }
@@ -327,7 +327,7 @@ struct MailAccountSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
                 // Asked first: the password goes from the Macs too, and cannot be brought back.
-                .confirmationDialog("Remove the password for \(removing ?? "")?",
+                .confirmationDialogWhenAsked("Remove the password for \(removing ?? "")?",
                                     isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
                                     titleVisibility: .visible) {
                     Button("Remove from all devices", role: .destructive) {

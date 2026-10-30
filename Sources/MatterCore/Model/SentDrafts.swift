@@ -4,7 +4,6 @@ import SwiftData
 extension LabelIntake.SentDraft {
     /// The drafts opened from a matter in the assistant in the last two weeks, on any device: a
     /// draft card taken — opened in Mail — in a turn about a matter, with the subject it went with.
-    @MainActor
     public static func recent(in context: ModelContext, now: Date = Date()) -> [LabelIntake.SentDraft] {
         let since = Calendar.current.date(byAdding: .day, value: -days, to: now) ?? now
         let turns = (try? context.fetch(FetchDescriptor<ThreadTurn>(predicate: #Predicate { $0.date > since }))) ?? []

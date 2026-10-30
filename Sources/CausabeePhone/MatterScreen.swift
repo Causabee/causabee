@@ -13,8 +13,6 @@ struct MatterScreen: View {
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
-    /// "32 mails · 3 screenshots", counted away from the screen, and for which change of the store.
-    @State private var counted: (version: Int, line: String)?
     @Environment(\.undoManager) private var undoManager
     @State private var showsDone = false
     @State private var showsPast = false
@@ -49,12 +47,12 @@ struct MatterScreen: View {
     /// Files or a folder being brought in: how far it is, and what it came to.
     @State private var coming = FilesComing.State()
     @State private var bringing: Task<Void, Never>?
-    /// The parts in the page have scrolled under the bar, which shows them then.
-    @State private var partsUnder = false
+    /// Where the page stands while it scrolls: whether the parts are under the bar. Kept apart
+    /// from the page's own state — the parts passing under the bar redraw the tabs, not the page.
+    @State private var scroll = PageScroll()
     /// The matter written out as a document, and why it could not be.
     @State private var exported: URL?
     @State private var exportFailure: String?
-    @State private var topInset = CGFloat.zero
     /// One person's part of the record: chosen in "People".
     @State private var person: PersistentIdentifier?
     /// Every conversation shown, not only the newest: a source pointed at an older mail.
@@ -71,8 +69,9 @@ struct MatterScreen: View {
     @State private var calendarTick = 0
 
     var body: some View {
-        // What came from another device shows at once: an arriving change redraws this.
-        let _ = StoredChanges.shared.count
+        // Drawn again when this matter changes — here or from another device: the page reads it.
+        // Not after every change to the store: one to another matter changes nothing here.
+        let _ = ScreenMeter.printsChanges ? Self._printChanges() : ()
         let status = MatterStatus(matter)
         ScrollViewReader { scroller in
             ScrollView {
@@ -90,13 +89,12 @@ struct MatterScreen: View {
                         notesPart
                         history(status)
                     } else {
-                        parts(status)
+                        // Under the bar the pinned ones stand for them: these do not show through it.
+                        UnderBar(scroll: scroll) { parts(status) }
                             .id("parts")
-                            // Under the bar the pinned ones stand for them: these do not show through it.
-                            .opacity(partsUnder ? 0 : 1)
                             // Gone up to where the pinned ones stand, 6 points under the bar: then those
                             // take their place at once, on the same spot, so nothing jumps.
-                            .onGeometryChange(for: Bool.self) { $0.frame(in: .global).minY < topInset + 6 } action: { partsUnder = $0 }
+                            .onGeometryChange(for: Bool.self) { [scroll] in $0.frame(in: .global).minY < scroll.topInset + 6 } action: { scroll.partsUnder = $0 }
                         // At least as tall as the page shows: a short part does not pull the page
                         // down, and the parts stay where they were tapped.
                         VStack(alignment: .leading, spacing: 20) {
@@ -136,15 +134,15 @@ struct MatterScreen: View {
             // Pulled down: the next step and the summary are written again — with Auto on, too.
             .refreshable { writeAnew() }
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
-            .onScrollGeometryChange(for: CGFloat.self) { $0.contentInsets.top } action: { topInset = $1 }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentInsets.top } action: { scroll.topInset = $1 }
             // Another part chosen from the pinned tabs: it is shown from its start, not from where the last one was read.
             .onChange(of: part) {
                 // Right under the pinned tabs, which stay: the part's start at their lower edge.
-                if partsUnder { scroller.scrollTo("part", anchor: UnitPoint(x: 0.5, y: 44 / max(pageHeight, 200))) }
+                if scroll.partsUnder { scroller.scrollTo("part", anchor: UnitPoint(x: 0.5, y: 44 / max(pageHeight, 200))) }
             }
             // Over the page, not in it: the page keeps its place when they come and go.
             .overlay(alignment: .top) {
-                if partsUnder, !find.isActive {
+                PinnedParts(scroll: scroll, hidden: find.isActive) {
                     // The tabs change places without a fade: there is one set of them at a time.
                     // As wide as they are in the page, on a bar as wide as the column: on an
                     // iPad the page is narrower than its column.
@@ -157,6 +155,9 @@ struct MatterScreen: View {
                 }
             }
             .onAppear {
+                // `--part record`: starts in that part — for the scroll tour.
+                if let at = CommandLine.arguments.firstIndex(of: "--part"), at + 1 < CommandLine.arguments.count,
+                   let chosen = Part(rawValue: CommandLine.arguments[at + 1]) { part = chosen }
                 show(navigation.showing, with: scroller); showNews(with: scroller); loadCalendars()
                 // `--timing`: from the tap to the page drawn — said after the frame it came in.
                 if let asked = Navigation.askedAt {
@@ -231,19 +232,19 @@ struct MatterScreen: View {
                 }
             }
         }
-        .sheet(isPresented: $addingScan, onDismiss: { part = .record; filter = .files }) { ScanSheet(matter: matter) }
+        .sheetWhenAsked(isPresented: $addingScan, onDismiss: { part = .record; filter = .files }) { ScanSheet(matter: matter) }
         // Files, or a folder with all that is in it: each a file of the matter, as on the Mac.
         .fileImporter(isPresented: $addingFiles, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
             if case .success(let picked) = result { bring(picked) }
         }
-        .sheet(isPresented: $coming.shows) {
+        .sheetWhenAsked(isPresented: $coming.shows) {
             FilesComing(state: coming) { bringing?.cancel() }
                 .presentationDetents([.height(210)])
                 .interactiveDismissDisabled(coming.said == nil)
         }
-        .sheet(isPresented: $addingContact, onDismiss: { part = .people }) { ContactEditor(matter: matter) }
-        .sheet(isPresented: $addingDetail, onDismiss: { part = .record; filter = .details }) { DetailEditor(matter: matter) }
-        .sheet(isPresented: $addingLink, onDismiss: { part = .record; filter = .links }) {
+        .sheetWhenAsked(isPresented: $addingContact, onDismiss: { part = .people }) { ContactEditor(matter: matter) }
+        .sheetWhenAsked(isPresented: $addingDetail, onDismiss: { part = .record; filter = .details }) { DetailEditor(matter: matter) }
+        .sheetWhenAsked(isPresented: $addingLink, onDismiss: { part = .record; filter = .links }) {
             PhoneLinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
                 guard !(matter.links ?? []).contains(where: { $0.address == address && $0.todo === todo }) else { return }
                 let link = WebLink(address: address, title: title)
@@ -338,7 +339,7 @@ struct MatterScreen: View {
             Button("OK") { exportFailure = nil }
         } message: { Text(exportFailure ?? "") }
         .sheet(item: $newTodo, onDismiss: dropEmptyTodos) { todo in PhoneTodoEditor(todo: todo, isNew: true) }
-        .confirmationDialog(closeQuestion, isPresented: $asksToClose, titleVisibility: .visible) {
+        .confirmationDialogWhenAsked(closeQuestion, isPresented: $asksToClose, titleVisibility: .visible) {
             if matter.openTodos.isEmpty {
                 Button("Close") { close(markingOpenDone: false) }
             } else {
@@ -435,26 +436,9 @@ struct MatterScreen: View {
 
     // MARK: Header
 
-    /// "12 mails · since Sep 8": as the Mac's title bar says it.
-    @ViewBuilder
-    private func countLine(_ status: MatterStatus) -> some View {
-        if !(matter.entries ?? []).isEmpty {
-            // The kinds counted away from the screen, once per change; meanwhile how many there are.
-            let total = (matter.entries ?? []).count
-            // The day of its first mail, as the overview's summary has it: not every mail read again.
-            let since = StoredChanges.shared.summary(matter).firstDate.map { " · since \(Dates.short($0))" } ?? ""
-            Text((counted?.line ?? (total == 1 ? "1 mail" : "\(total) mails")) + since)
-                .task(id: StoredChanges.shared.count) {
-                    let id = matter.persistentModelID
-                    guard counted?.version != StoredChanges.shared.count else { return }
-                    let container = context.container
-                    let version = StoredChanges.shared.count
-                    let kinds = await Task.detached { RecordKinds.count(of: id, in: container) }.value
-                    counted = (version, Self.count(kinds: kinds))
-                }
-                .font(.subheadline).foregroundStyle(.secondary)
-        }
-    }
+    /// "12 mails · since Sep 8": as the Mac's title bar says it — a view of its own, so that only
+    /// it is drawn again when the store changes.
+    private func countLine(_ status: MatterStatus) -> some View { PhoneCountLine(matter: matter) }
 
     private func header(_ status: MatterStatus) -> some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -479,7 +463,7 @@ struct MatterScreen: View {
         }
         // Under the iPad's bar a little air: the name is up there, and the page began too close to it.
         .padding(.top, navigation.isPad ? 10 : 4)
-        .sheet(isPresented: $choosingIcon) {
+        .sheetWhenAsked(isPresented: $choosingIcon) {
             MatterIconPicker(matter: matter).presentationDetents([.height(470)]).presentationDragIndicator(.visible)
         }
     }
@@ -545,7 +529,7 @@ struct MatterScreen: View {
             .padding(.top, 4)
         }
         .phoneBox()
-        .alert("A new matter with the \(StoredChanges.shared.summary(matter).newMailsSinceClosed) new \(StoredChanges.shared.summary(matter).newMailsSinceClosed == 1 ? "mail" : "mails")", isPresented: $splitting) {
+        .alertWhenAsked(splitting ? Self.splitTitle(StoredChanges.shared.summary(matter).newMailsSinceClosed) : "", isPresented: $splitting) {
             TextField("Name", text: $newMatterName)
             Button("Cancel", role: .cancel) {}
             Button("Start", action: startNewMatter)
@@ -1056,9 +1040,11 @@ struct MatterScreen: View {
 
     /// How many there are for each "Show", of the kind chosen.
     private func counts(threads: [MailThreads.Thread], made: RecordLinks) -> [RecordBrowse.Show: Int] {
-        Dictionary(uniqueKeysWithValues: RecordBrowse.Show.allCases.map { item in
-            (item, RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks, kind: filter, show: item, made: made).items.count)
-        })
+        MatterKept.shared.value(matter, "counts \(filter)") {
+            Dictionary(uniqueKeysWithValues: RecordBrowse.Show.allCases.map { item in
+                (item, RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks, kind: filter, show: item, made: made).items.count)
+            })
+        }
     }
 
     /// The record as the three menus have it: what kind, which of them, in which order — with
@@ -1066,8 +1052,9 @@ struct MatterScreen: View {
     @ViewBuilder
     private func recordList(threads: [MailThreads.Thread], made: RecordLinks) -> some View {
         let party = personParty
-        let picked = RecordBrowse.pick(threads: threads, documents: shownDocuments,
-                                       links: party == nil ? keptLinks : [], kind: filter, show: show, made: made)
+        let picked = MatterKept.shared.value(matter, "pick \(filter) \(show) \(party == nil)") {
+            RecordBrowse.pick(threads: threads, documents: shownDocuments, links: party == nil ? keptLinks : [], kind: filter, show: show, made: made)
+        }
         let all = party.map { party in
             picked.items.filter { item in NamedPeople.of(item, in: matter).contains { $0.id == party.persistentModelID } }
         } ?? picked.items
@@ -1142,6 +1129,10 @@ struct MatterScreen: View {
         for entry in entries { counts[entry.source.kind, default: 0] += 1 }
         return count(kinds: counts)
     }
+
+    /// Worked out only while it is asked: read every time the page drew, it made the page draw
+    /// again after every change to the store.
+    static func splitTitle(_ new: Int) -> String { "A new matter with the \(new) new \(new == 1 ? "mail" : "mails")" }
 
     static func count(kinds counts: [Source.Kind: Int]) -> String {
         let names: [(Source.Kind, String, String)] = [
@@ -1257,9 +1248,9 @@ struct PhoneTodoRow: View {
         .padding(.horizontal, 12).padding(.vertical, 12)
         .contentShape(Rectangle())
         .contextMenu { Group { moreItems }.menuSigns() }
-        .sheet(isPresented: $editing) { PhoneTodoEditor(todo: todo) }
-        .sheet(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
-        .confirmationDialog("Delete “\(todo.text)”?", isPresented: $deleting, titleVisibility: .visible) {
+        .sheetWhenAsked(isPresented: $editing) { PhoneTodoEditor(todo: todo) }
+        .sheetWhenAsked(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
+        .confirmationDialogWhenAsked("Delete “\(todo.text)”?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
                 Calendars.shared.removeReminder(todo.reminderID)
@@ -1559,8 +1550,8 @@ struct PhoneDateRow: View {
         .padding(.vertical, 10)
         .contentShape(Rectangle())
         .contextMenu { Group { moreItems }.menuSigns() }
-        .sheet(isPresented: $editing) { PhoneDateEditor(item: item) }
-        .confirmationDialog("Delete “\(item.what)”?", isPresented: $deleting, titleVisibility: .visible) {
+        .sheetWhenAsked(isPresented: $editing) { PhoneDateEditor(item: item) }
+        .confirmationDialogWhenAsked("Delete “\(item.what)”?", isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 // The entry in Calendar it is connected with goes too.
                 Calendars.shared.removeEvent(item.calendarID)
@@ -1655,4 +1646,64 @@ struct PhoneDateEditor: View {
         try? context.save()
         dismiss()
     }
+}
+
+/// Where a matter's page stands while it scrolls. Read only by the small views below: a part
+/// passing under the bar used to work out the whole page again — every task, the brief, the next
+/// step — in the middle of the scroll, and a frame was lost.
+@MainActor
+@Observable
+final class PageScroll {
+    var partsUnder = false
+    var topInset: CGFloat = 0
+}
+
+/// The parts in the page, unseen while the bar shows them.
+private struct UnderBar<Content: View>: View {
+    let scroll: PageScroll
+    let content: Content
+    init(scroll: PageScroll, @ViewBuilder content: () -> Content) { self.scroll = scroll; self.content = content() }
+    var body: some View { content.opacity(scroll.partsUnder ? 0 : 1) }
+}
+
+/// The parts pinned under the bar, once the page's have gone under it.
+private struct PinnedParts<Content: View>: View {
+    let scroll: PageScroll
+    let hidden: Bool
+    let content: Content
+    init(scroll: PageScroll, hidden: Bool, @ViewBuilder content: () -> Content) { self.scroll = scroll; self.hidden = hidden; self.content = content() }
+    var body: some View { if scroll.partsUnder, !hidden { content } }
+}
+
+/// "12 mails · since Sep 8", under a matter's name: the kinds counted away from the screen, once
+/// per change of the store; meanwhile how many there are.
+private struct PhoneCountLine: View {
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+    @State private var counted: (version: Int, line: String)?
+
+    var body: some View {
+        if !(matter.entries ?? []).isEmpty {
+            let total = (matter.entries ?? []).count
+            // The day of its first mail, as the overview's summary has it: not every mail read again.
+            let since = StoredChanges.shared.summary(matter).firstDate.map { " · since \(Dates.short($0))" } ?? ""
+            Text((counted?.line ?? (total == 1 ? "1 mail" : "\(total) mails")) + since)
+                .task(id: StoredChanges.shared.count) {
+                    let id = matter.persistentModelID
+                    guard counted?.version != StoredChanges.shared.count else { return }
+                    let container = context.container
+                    let version = StoredChanges.shared.count
+                    let kinds = await Task.detached { RecordKinds.count(of: id, in: container) }.value
+                    counted = (version, MatterScreen.count(kinds: kinds))
+                }
+                .font(.subheadline).foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// The same page as long as it is the same matter: what it shows of the matter it reads itself,
+/// and draws again when that changes. Compared by its fields, a page seemed new each time the
+/// screen around it was drawn — its own state is made anew with each — and was worked out whole.
+extension MatterScreen: Equatable {
+    nonisolated static func == (a: Self, b: Self) -> Bool { a.matter === b.matter }
 }

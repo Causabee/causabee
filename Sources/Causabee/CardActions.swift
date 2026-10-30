@@ -87,6 +87,9 @@ enum CardActions {
     /// A fact by its id, if it is still there. A party merged away or a to-do deleted is gone,
     /// and `context.model(for:)` would hand back an object that crashes when read.
     static func live<T: PersistentModel>(_ id: PersistentIdentifier, as type: T.Type, in context: ModelContext) -> T? {
+        // The one the context holds already, without asking the store: the brief's proposals ask
+        // for their tasks each time a page draws.
+        if let known: T = context.registeredModel(for: id), !known.isDeleted, known.modelContext != nil { return known }
         var descriptor = FetchDescriptor<T>(predicate: #Predicate { $0.persistentModelID == id })
         descriptor.fetchLimit = 1
         return (try? context.fetch(descriptor))?.first
@@ -1140,19 +1143,20 @@ enum NewsNotice {
     private static let toldKey = "news.told"
     private static var looked = -1
 
-    /// Each matter's news not told yet, as a notification: looked at once per change to the store.
-    static func tell(_ matters: () -> [Matter]) {
+    /// Each matter's news not told yet, as a notification: looked at once per change to the store,
+    /// every brief read by the worker.
+    static func tell(_ worker: StoreWorker) async {
         guard !DemoData.isRequested, looked != StoredChanges.shared.count else { return }
         looked = StoredChanges.shared.count
+        let all = await worker.news()
         var told = UserDefaults.standard.stringArray(forKey: toldKey) ?? []
-        for matter in matters() where !matter.isClosed && matter.brief != nil {
-            guard let news = matter.shownBrief?.news, !news.seen, let line = news.lines.first else { continue }
-            let mark = "\(matter.key)|\(Int(news.since.timeIntervalSince1970))|\(news.mails)"
+        for news in all {
+            let mark = "\(news.key)|\(Int(news.since.timeIntervalSince1970))|\(news.mails)"
             guard !told.contains(mark) else { continue }
             told.append(mark)
-            post(title: matter.name, body: line, mails: news.mails, key: matter.key)
+            post(title: news.name, body: news.line, mails: news.mails, key: news.key)
         }
-        UserDefaults.standard.set(Array(told.suffix(200)), forKey: toldKey)
+        UserDefaults.standard.setIfChanged(Array(told.suffix(200)), forKey: toldKey)
     }
 
     private static func post(title: String, body: String, mails: Int, key: String) {

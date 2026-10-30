@@ -164,6 +164,17 @@ enum DemoData {
         }
         if let care = try? context.fetch(FetchDescriptor<Matter>(predicate: #Predicate { $0.key == "care-for-helga" })).first {
             mails(300, into: care, tag: "care")
+            // As many tasks as a long matter gathers: seventy done, a few open — a page as heavy
+            // as the owner's heaviest, to scroll and measure.
+            let source = Source(kind: .mail, pointer: "p", messageID: "care-0@big.example", date: now)
+            for t in 0..<75 {
+                let todo = Todo(text: "Long-running task \(t) in the care matter, written out in a sentence or two as mail has it",
+                                owner: [.me, .we, .other][t % 3], due: day(t % 9 - 4), source: source, origin: "care-big#\(t)")
+                todo.isDone = t >= 6
+                if todo.isDone { todo.doneAt = now.addingTimeInterval(-Double(t) * 3600) }
+                todo.matter = care
+                context.insert(todo)
+            }
         }
         try? context.save()
     }
@@ -383,11 +394,15 @@ enum DemoData {
 
         /// The steps the app suggested and wrote, as if asked for with a click today.
         func summarise(_ summary: String, next: String, why: String, todo handle: String) {
+            // This morning — or, before eight, a quarter of an hour ago: a time still ahead made
+            // every task ticked at night look older than the step, and the step was never written
+            // again. Not later: Auto takes a step written in the last minutes for another device's.
+            let written = min(DemoData.date(0, hour: 8), Date().addingTimeInterval(-900))
             matter.summary = summary
-            matter.summaryAt = DemoData.date(0, hour: 8)
+            matter.summaryAt = written
             matter.nextStep = next
             matter.nextStepWhy = why
-            matter.nextStepAt = DemoData.date(0, hour: 8)
+            matter.nextStepAt = written
             matter.nextStepTodo = todos[handle]?.origin
         }
 

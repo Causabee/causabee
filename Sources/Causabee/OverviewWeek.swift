@@ -185,7 +185,7 @@ struct OverviewWeek: View {
             .contentShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
-        .popover(isPresented: isShown ? $showsOverdue : .constant(false), arrowEdge: .bottom) {
+        .popoverWhenAsked(isPresented: isShown ? $showsOverdue : .constant(false), arrowEdge: .bottom) {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(late) { todo in
                     Button {
@@ -304,7 +304,7 @@ struct PinQuestion: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .confirmationDialog("Pin “\(navigation.pinning?.name ?? "")” instead of …",
+            .confirmationDialogWhenAsked("Pin “\(navigation.pinning?.name ?? "")” instead of …",
                                 isPresented: Binding(get: { navigation.pinning != nil }, set: { if !$0 { navigation.pinning = nil } })) {
                 ForEach(Pins.pinned(matters)) { pinned in
                     Button(pinned.name) {

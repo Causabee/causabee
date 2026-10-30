@@ -92,9 +92,7 @@ struct PhoneMatterRow: View {
     var brief = false
 
     var body: some View {
-        // What came from another device shows at once: an arriving change redraws this.
-        let _ = StoredChanges.shared.count
-        // Prepared once per change, not worked out by every row each time it draws.
+        // Prepared by the worker after each change: drawn again when it is ready, not at every change.
         let summary = StoredChanges.shared.summary(matter)
         HStack(spacing: 12) {
         MatterIconTile(matter: matter, size: 36, ground: tile)
@@ -137,7 +135,7 @@ struct MatterQuestions: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .confirmationDialog("Pin “\(navigation.pinning?.name ?? "")” instead of …", isPresented: Binding(get: { navigation.pinning != nil }, set: { if !$0 { navigation.pinning = nil } }),
+            .confirmationDialogWhenAsked("Pin “\(navigation.pinning?.name ?? "")” instead of …", isPresented: Binding(get: { navigation.pinning != nil }, set: { if !$0 { navigation.pinning = nil } }),
                                 titleVisibility: .visible) {
                 ForEach(Pins.pinned(matters)) { pinned in
                     Button(pinned.name) {
@@ -151,7 +149,7 @@ struct MatterQuestions: ViewModifier {
             } message: {
                 Text("Up to \(Pins.most) matters stay on top of the overview.")
             }
-            .confirmationDialog(mergeQuestion, isPresented: Binding(get: { navigation.merging != nil }, set: { if !$0 { navigation.merging = nil } }),
+            .confirmationDialogWhenAsked(mergeQuestion, isPresented: Binding(get: { navigation.merging != nil }, set: { if !$0 { navigation.merging = nil } }),
                                 titleVisibility: .visible) {
                 Button("Merge") {
                     if let (from, into) = navigation.merging {

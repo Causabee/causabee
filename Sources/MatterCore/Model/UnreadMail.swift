@@ -4,28 +4,25 @@ import SwiftData
 /// Which mail of the matters is still unread in the mailbox: asked at each mail check, read-only —
 /// `UID SEARCH UNSEEN` asks about the `\Seen` flag and changes none. Kept on each mail, so every
 /// device shows the same. As fresh as the last check: mail read in Apple Mail loses its dot then.
+/// The store is read and written by the worker, away from the screen.
 @MainActor
 public enum UnreadMail {
-    /// The mails a check asks about: from the mailbox, not a scan or a file, from the last year —
-    /// of every matter, or of one.
-    static func asked(in context: ModelContext, of matter: Matter? = nil, now: Date = Date()) -> [Entry] {
-        let since = now.addingTimeInterval(-365 * 86_400)
-        let all = matter.map { $0.entries ?? [] } ?? ((try? context.fetch(FetchDescriptor<Entry>())) ?? [])
-        return all.filter {
-            $0.source.kind == .mail && $0.source.pointer.hasPrefix("imap://") && !$0.messageID.isEmpty && ($0.date ?? .distantPast) > since
-        }
-    }
-
     /// Asks, and puts down what changed. Says how many changed.
     @discardableResult
-    public static func refresh(from mailbox: some ReadOnlyMailbox, in context: ModelContext, of matter: Matter? = nil) async -> Int {
-        let entries = asked(in: context, of: matter)
-        guard !entries.isEmpty,
-              let unread = try? await MailFetch.unread(of: entries.map { (pointer: $0.source.pointer, messageID: $0.messageID) }, from: mailbox)
-        else { return 0 }
+    static func refresh(from mailbox: some ReadOnlyMailbox, asked: [(pointer: String, messageID: String)], worker: StoreWorker,
+                        in context: ModelContext) async -> Int {
+        guard !asked.isEmpty, let unread = try? await MailFetch.unread(of: asked, from: mailbox) else { return 0 }
+        return apply(await worker.unreadChanges(unread), in: context)
+    }
+
+    /// The dots that changed, put down here: only those mails are fetched.
+    static func apply(_ changes: [String: Bool], in context: ModelContext) -> Int {
+        guard !changes.isEmpty else { return 0 }
+        let ids = Array(changes.keys)
+        let entries = (try? context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { ids.contains($0.messageID) }))) ?? []
         var changed = 0
-        for entry in entries where entry.modelContext != nil {
-            guard let now = unread[entry.messageID], entry.isUnread != now else { continue }
+        for entry in entries {
+            guard let now = changes[entry.messageID], entry.isUnread != now else { continue }
             entry.isUnread = now
             changed += 1
         }
@@ -36,8 +33,10 @@ public enum UnreadMail {
     /// The same, with its own connection: for a mail check that has the account and its password.
     @discardableResult
     public static func refresh(account: MailAccount, password: String, in context: ModelContext) async -> Int {
-        guard !asked(in: context).isEmpty, let client = try? await IMAPClient.connect(to: account, password: password) else { return 0 }
-        let changed = await refresh(from: client, in: context)
+        let worker = await StoreWorker.for(context.container)
+        let asked = await worker.unreadAsked()
+        guard !asked.isEmpty, let client = try? await IMAPClient.connect(to: account, password: password) else { return 0 }
+        let changed = await refresh(from: client, asked: asked, worker: worker, in: context)
         await client.logout()
         return changed
     }
@@ -48,11 +47,13 @@ extension UnreadMail {
     /// mailbox has them the moment it is looked at. Not again within a minute for the same matter.
     public static func refresh(_ matter: Matter, in context: ModelContext) async {
         let key = matter.key
-        guard Date().timeIntervalSince(lastAsked[key] ?? .distantPast) > 60, !asked(in: context, of: matter).isEmpty,
-              let account = Keychain.accounts().first, let password = try? await MailSecret.secret(for: account) else { return }
+        guard Date().timeIntervalSince(lastAsked[key] ?? .distantPast) > 60 else { return }
+        let worker = await StoreWorker.for(context.container)
+        let asked = await worker.unreadAsked(matter: key)
+        guard !asked.isEmpty, let account = Keychain.accounts().first, let password = try? await MailSecret.secret(for: account) else { return }
         lastAsked[key] = Date()
         guard let client = try? await IMAPClient.connect(to: account, password: password) else { return }
-        await refresh(from: client, in: context, of: matter)
+        await refresh(from: client, asked: asked, worker: worker, in: context)
         await client.logout()
     }
 

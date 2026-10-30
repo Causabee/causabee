@@ -15,7 +15,9 @@ struct UnreadMailTests {
 
     @Test("At a check, each mail of the last year gets the mailbox's word: unread or not; a scan and an old mail are not asked about")
     func refresh() async throws {
-        let context = ModelContext(try MatterSchema.container(at: nil))
+        let container = try MatterSchema.container(at: nil)
+        let context = container.mainContext
+        let worker = await StoreWorker.for(container)
         let matter = Matter(key: "mama")
         context.insert(matter)
         func mail(_ uid: Int, days: Double, kind: Source.Kind = .mail) -> Entry {
@@ -34,18 +36,20 @@ struct UnreadMailTests {
             .init(uid: 1, thread: nil, raw: raw(1), seen: false), .init(uid: 2, thread: nil, raw: raw(2), seen: true),
             .init(uid: 3, thread: nil, raw: raw(3), seen: false),
         ]])
-        #expect(await UnreadMail.refresh(from: mailbox, in: context) == 2)
+        #expect(await UnreadMail.refresh(from: mailbox, asked: await worker.unreadAsked(), worker: worker, in: context) == 2)
         #expect(new.isUnread == true)
         #expect(read.isUnread == false)
         #expect(old.isUnread == nil)
         #expect(scan.isUnread == nil)
         #expect(matter.unreadMails.map(\.title) == ["Mail 1"])
-        #expect(await UnreadMail.refresh(from: mailbox, in: context) == 0)
+        #expect(await UnreadMail.refresh(from: mailbox, asked: await worker.unreadAsked(), worker: worker, in: context) == 0)
     }
 
     @Test("A matter opened is asked about alone: another matter's mail keeps what the last check said")
     func oneMatter() async throws {
-        let context = ModelContext(try MatterSchema.container(at: nil))
+        let container = try MatterSchema.container(at: nil)
+        let context = container.mainContext
+        let worker = await StoreWorker.for(container)
         let open = Matter(key: "open"), other = Matter(key: "other")
         context.insert(open); context.insert(other)
         func mail(_ uid: Int, in matter: Matter) -> Entry {
@@ -61,7 +65,7 @@ struct UnreadMailTests {
         let mailbox = FakeMailbox(gmail: false, folders: [MailFolder(name: "INBOX")], content: ["INBOX": [
             .init(uid: 1, thread: nil, raw: raw(1), seen: false), .init(uid: 2, thread: nil, raw: raw(2), seen: false),
         ]])
-        #expect(await UnreadMail.refresh(from: mailbox, in: context, of: open) == 1)
+        #expect(await UnreadMail.refresh(from: mailbox, asked: await worker.unreadAsked(matter: "open"), worker: worker, in: context) == 1)
         #expect(here.isUnread == true)
         #expect(there.isUnread == nil)
     }
