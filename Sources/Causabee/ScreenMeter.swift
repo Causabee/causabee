@@ -110,8 +110,23 @@ final class ScreenMeter: NSObject {
         if let scroll = tour.scroll as? NSScrollView {
             scroll.contentView.scroll(to: NSPoint(x: 0, y: y))
             scroll.reflectScrolledClipView(scroll.contentView)
+            // A real scroll event first asks what is under it, and that alone cost a Mac's long page
+            // a fifth of a second per event — a tour that only moves the page never saw it.
+            if let frame = scroll.window?.contentView { _ = frame.hitTest(frame.convert(NSPoint(x: scroll.bounds.midX, y: scroll.bounds.midY), from: scroll)) }
         }
         #endif
+    }
+
+    /// During a tour, each late frame and where on the page it was: a stall that comes back at the
+    /// same place has its cause there.
+    private func sayLate(gap: CFTimeInterval, at now: CFTimeInterval) {
+        guard let tour = touring else { return }
+        #if canImport(UIKit)
+        let y = (tour.scroll as? UIScrollView)?.contentOffset.y ?? 0
+        #else
+        let y = (tour.scroll as? NSScrollView)?.contentView.bounds.origin.y ?? 0
+        #endif
+        fputs(String(format: "LATE t=%.2f y=%.0f gap=%.0fms\n", now - tour.began, y, gap * 1000), stderr)
     }
 
     @objc private func tick(_ link: CADisplayLink) {
@@ -125,6 +140,7 @@ final class ScreenMeter: NSObject {
         if gap > frame * 1.5, gap < 1 {
             late += 1
             lost += (gap - frame) * 1000
+            sayLate(gap: gap, at: now)
             words = "frames \(frames) · late \(late) · lost \(Int(lost)) ms"
         } else if frames % 60 == 0 {
             words = "frames \(frames) · late \(late) · lost \(Int(lost)) ms"

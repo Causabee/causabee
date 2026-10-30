@@ -234,6 +234,17 @@ struct Card<Content: View>: View {
     }
 }
 
+/// The rows of a long list, drawn only near the screen — but all of them while the page is
+/// searched: the search reports what it found from the rows that are drawn.
+struct PageRows<Content: View>: View {
+    let all: Bool
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        if all { VStack(spacing: 0) { content } } else { LazyVStack(spacing: 0) { content } }
+    }
+}
+
 struct RowDivider: View {
     var body: some View { Divider().padding(.leading, 14) }
 }

@@ -96,6 +96,10 @@ struct MatterStatusView: View {
         // Not after every change to the store: one to another matter changes nothing here.
         let _ = ScreenMeter.printsChanges ? Self._printChanges() : ()
         let status = MatterStatus(matter)
+        // Worked out here, once for each change of the matter: the bar is drawn again each time the
+        // page passes under it, and counting went through all the matter's mail and tasks each time.
+        let count = MatterKept.shared.value(matter, "count") { Self.count(matter.entries ?? []) }
+        let since = status.firstDate
         VStack(spacing: 0) {
             ScrollViewReader { scroller in
                 ScrollView {
@@ -114,7 +118,8 @@ struct MatterStatusView: View {
                             allMail(status)
                         } else {
                             // Under the title bar the bar has them: these do not show through its glass.
-                            DrawnApart { parts(status).opacity(partsUnder ? 0 : 1) }.id("parts")
+                            // Nearly gone, not gone: see the parts in the bar.
+                            DrawnApart { parts(status).opacity(partsUnder ? 0.001 : 1) }.id("parts")
                                 // Whether its lower edge has reached the place the title bar has for the
                                 // parts — twelve over the bar's lower edge. Only that, not the edge
                                 // itself: kept as a number, it changed with every frame of scrolling,
@@ -155,7 +160,7 @@ struct MatterStatusView: View {
                     .frame(maxWidth: .infinity)
                 }
                 // The name and the search stay on top while the page scrolls under them.
-                .safeAreaInset(edge: .top, spacing: 0) { DrawnApart { titleBar(status) } }
+                .safeAreaInset(edge: .top, spacing: 0) { DrawnApart { titleBar(status, count: count, since: since) } }
                 // What the page shows under the title bar: the container's size is already without the bar.
                 .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { pageHeight = $1 }
                 // Another part chosen in the title bar: it is shown from its start, not from where the last one was read.
@@ -193,6 +198,9 @@ struct MatterStatusView: View {
                     // `--part record`: starts in that part — for the scroll tour.
                     if let at = CommandLine.arguments.firstIndex(of: "--part"), at + 1 < CommandLine.arguments.count,
                        let chosen = Part(rawValue: CommandLine.arguments[at + 1]) { part = chosen }
+                    // `--record-kind files`: that kind of the record — for the scroll tour.
+                    if let at = CommandLine.arguments.firstIndex(of: "--record-kind"), at + 1 < CommandLine.arguments.count,
+                       let kind = RecordBrowse.Kind.allCases.first(where: { "\($0)" == CommandLine.arguments[at + 1] }) { filter = kind }
                     show(navigation.showing, with: scroller); showNews(with: scroller); loadCalendars()
                 }
                 // The Matter menu: the section scrolled to, then what adds to it opened.
@@ -541,15 +549,17 @@ struct MatterStatusView: View {
                 }
                 if !shown.isEmpty {
                     Card {
-                        ForEach(Array(shown.enumerated()), id: \.element.persistentModelID) { index, document in
-                            if index > 0 { RowDivider() }
-                            DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
-                                        open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
-                                        read: { fetch(document, then: { conversation.bring($0, document: document) }) },
-                                        hide: { setHidden(document, !document.isHidden) },
-                                        nameIt: { nameFromContent(document) },
-                                        talk: { talk(document.shownName, "File") })
-                                .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+                        PageRows(all: find.isActive) {
+                            ForEach(Array(shown.enumerated()), id: \.element.persistentModelID) { index, document in
+                                if index > 0 { RowDivider() }
+                                DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
+                                            open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
+                                            read: { fetch(document, then: { conversation.bring($0, document: document) }) },
+                                            hide: { setHidden(document, !document.isHidden) },
+                                            nameIt: { nameFromContent(document) },
+                                            talk: { talk(document.shownName, "File") })
+                                    .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+                            }
                         }
                     }
                 }
@@ -866,7 +876,17 @@ struct MatterStatusView: View {
             || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == todo && $0.day < today }) { showsPast = true }
         if (matter.entries ?? []).contains(where: { $0.persistentModelID == todo })
             || (matter.documents ?? []).contains(where: { $0.persistentModelID == todo }) { showsAllHistory = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { withAnimation { scroller.scrollTo(todo, anchor: .center) } }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            // The record draws what is near the screen: to its line first, so that it is there to go to.
+            let (threads, made) = StoredChanges.shared.record(matter)
+            let shown = recordShown(threads: threads, made: made)
+            if part == .record, let line = RecordBrowse.line(of: todo, in: shown.lines, attached: shown.picked.attached) {
+                scroller.scrollTo(line, anchor: .center)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { withAnimation { scroller.scrollTo(todo, anchor: .center) } }
+            } else {
+                withAnimation { scroller.scrollTo(todo, anchor: .center) }
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { withAnimation { if marked == todo { marked = nil }; if find.shown == todo { find.shown = nil } } }
     }
 
@@ -970,7 +990,7 @@ struct MatterStatusView: View {
     /// What the bar gives up when the page goes under it: the room on top, and the name's further lines.
     private var given: CGFloat { Self.restRoom + nameExtra }
 
-    private func titleBar(_ status: MatterStatus) -> some View {
+    private func titleBar(_ status: MatterStatus, count: String, since: Date?) -> some View {
         // Once the page has gone up under it, the bar is a bar: one line high, the name small in
         // it. The large name with the count under it, on glass over the page, stood squeezed.
         let compact = scrolledUnder && !renaming
@@ -1063,14 +1083,20 @@ struct MatterStatusView: View {
             }
             ZStack(alignment: .leading) {
                 HStack(spacing: 6) {
-                    Text(MatterKept.shared.value(matter, "count") { Self.count(matter.entries ?? []) })
-                    if let first = status.firstDate { Text("· since \(Dates.short(first))") }
+                    Text(count)
+                    if let since { Text("· since \(Dates.short(since))") }
                 }
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 // With the page under the bar the count is gone: the page is read there, not the bar.
                 .opacity(showsParts || compact ? 0 : 1)
-                parts(status).opacity(showsParts ? 1 : 0).allowsHitTesting(showsParts).accessibilityHidden(!showsParts)
+                // Never quite gone, and always there to click, here and in the page: when what can
+                // be clicked changes, SwiftUI goes through everything clickable in the window and
+                // macOS works out anew where it can be dragged from — a fifth of a second on a long
+                // record, each time the parts came out of the bar. A click while they are not seen
+                // does nothing. Hidden from VoiceOver: the page has the same ones.
+                parts(status, choosing: Binding(get: { part }, set: { if showsParts { part = $0 } }))
+                    .opacity(showsParts ? 1 : 0.001).accessibilityHidden(true)
             }
             // Under the small name, which is one line: up by what a longer name's further lines took.
             .offset(y: scrolledUnder ? -nameExtra : 0)
@@ -1385,12 +1411,12 @@ struct MatterStatusView: View {
 
     /// What is planned — tasks and dates —, the record, the people, the notes: signs, with the word
     /// of the part that is open. "To do" named only half of the first.
-    private func parts(_ status: MatterStatus) -> some View {
+    private func parts(_ status: MatterStatus, choosing: Binding<Part>? = nil) -> some View {
         PartTabs(tabs: [.init(value: Part.todo, title: "Plan", symbol: "calendar.badge.checkmark"),
                         .init(value: Part.record, title: "Record", symbol: "tray.full"),
                         .init(value: Part.people, title: "People", symbol: "person.2"),
                         .init(value: Part.notes, title: "Notes", symbol: "note.text")],
-                 selection: $part)
+                 selection: choosing ?? $part)
     }
 
     /// Whether this person wrote it: by any way their name is written.
@@ -1499,20 +1525,22 @@ struct MatterStatusView: View {
             if kept.isEmpty {
                 EmptyBox(text: "Every file of this matter has been read. Files from a folder and files in mail are kept only until you have them read.")
             }
-            ForEach(kept, id: \.persistentModelID) { document in
-                DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
-                            open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
-                            read: { fetch(document, then: { conversation.bring($0, document: document) }) },
-                            hide: { setHidden(document, !document.isHidden) },
-                            nameIt: { nameFromContent(document) },
-                            talk: { talk(document.shownName, "File") },
-                            chosen: chosen.map { _ in chosen?.contains(document.persistentModelID) == true },
-                            choose: {
-                                guard document.reading == .kept else { return }
-                                if chosen?.remove(document.persistentModelID) == nil { chosen?.insert(document.persistentModelID) }
-                            })
-                    .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
-                    .fileCardFrame(kept: true)
+            LazyVStack(alignment: .leading, spacing: 10) {
+                ForEach(kept, id: \.persistentModelID) { document in
+                    DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
+                                open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
+                                read: { fetch(document, then: { conversation.bring($0, document: document) }) },
+                                hide: { setHidden(document, !document.isHidden) },
+                                nameIt: { nameFromContent(document) },
+                                talk: { talk(document.shownName, "File") },
+                                chosen: chosen.map { _ in chosen?.contains(document.persistentModelID) == true },
+                                choose: {
+                                    guard document.reading == .kept else { return }
+                                    if chosen?.remove(document.persistentModelID) == nil { chosen?.insert(document.persistentModelID) }
+                                })
+                        .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+                        .fileCardFrame(kept: true)
+                }
             }
         }
         .onChange(of: filter) { chosen = nil }
@@ -1521,8 +1549,7 @@ struct MatterStatusView: View {
 
     /// The record as the three menus have it: what kind, which of them, in which order — with
     /// what a person chosen in People wrote or is named in.
-    @ViewBuilder
-    private func recordList(threads: [MailThreads.Thread], made: RecordLinks) -> some View {
+    private func recordShown(threads: [MailThreads.Thread], made: RecordLinks) -> (picked: RecordBrowse.Picked, all: [RecordBrowse.Item], lines: [RecordBrowse.Line], older: Int) {
         let party = personParty
         let picked = MatterKept.shared.value(matter, "pick \(filter) \(show) \(party == nil)") {
             RecordBrowse.pick(threads: threads, documents: shownDocuments, links: party == nil ? keptLinks : [], kind: filter, show: show, made: made)
@@ -1533,38 +1560,53 @@ struct MatterStatusView: View {
         let ordered = all.sorted { sort == .oldest ? $0.date < $1.date : $0.date > $1.date }
         let visible = showsAllHistory || sort == .byPerson || sort == .byKind ? ordered : Array(ordered.prefix(60))
         let groups = RecordBrowse.groups(visible, sort: sort) { item in NamedPeople.of(item, in: matter).map(\.name) }
+        return (picked, all, RecordBrowse.lines(of: groups), all.count - visible.count)
+    }
+
+    @ViewBuilder
+    private func recordList(threads: [MailThreads.Thread], made: RecordLinks) -> some View {
+        let (picked, all, lines, older) = recordShown(threads: threads, made: made)
         if all.isEmpty {
-            EmptyBox(text: party != nil ? "Nothing here was written by \(party?.name ?? "them") or names them."
+            EmptyBox(text: personParty != nil ? "Nothing here was written by \(personParty?.name ?? "them") or names them."
                          : show != .all ? "Nothing in the record is \(show.label.lowercased()) here."
                          : "Mail sorted into this matter, its files and links show here, newest first.")
         }
-        ForEach(groups) { group in
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: group.title, detail: group.items.count == 1 ? "1 entry" : "\(group.items.count) entries")
-                ForEach(group.items) { item in
-                    AlsoUnder(names: group.also[item.id] ?? [])
-                    switch item {
-                    case .thread(let thread):
-                        // Its files right under it, close: one thing.
-                        VStack(alignment: .leading, spacing: 4) {
-                            ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
-                            let files = picked.attached[thread.id] ?? []
-                            ReadAllLine(count: files.filter { $0.reading == .kept }.count) { readAll(files) }
-                            ForEach(files) { document in fileCard(document) }
-                        }
-                    case .document(let document):
-                        fileCard(document, made: made.made(from: document))
-                    case .link(let link):
-                        Card {
-                            LinkRow(link: link, todos: matter.openTodos) { remove(link) }
-                                .findable(.model(link.persistentModelID), link.shownName, link.address)
+        // Only what is near the screen is drawn. On the Mac every scroll event asks all that can
+        // be clicked where it now is, and macOS then works out anew where the window can be dragged
+        // from: with every conversation of a long matter drawn, that was a fifth of a second per
+        // event.
+        LazyVStack(alignment: .leading, spacing: 10) {
+            ForEach(lines) { line in
+                switch line {
+                case .title(let group, let first):
+                    SectionHeader(title: group.title, detail: group.items.count == 1 ? "1 entry" : "\(group.items.count) entries")
+                        .padding(.top, first ? 0 : 12)
+                case .item(let item, _, let also):
+                    VStack(alignment: .leading, spacing: 10) {
+                        AlsoUnder(names: also)
+                        switch item {
+                        case .thread(let thread):
+                            // Its files right under it, close: one thing.
+                            VStack(alignment: .leading, spacing: 4) {
+                                ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
+                                let files = picked.attached[thread.id] ?? []
+                                ReadAllLine(count: files.filter { $0.reading == .kept }.count) { readAll(files) }
+                                ForEach(files) { document in fileCard(document) }
+                            }
+                        case .document(let document):
+                            fileCard(document, made: made.made(from: document))
+                        case .link(let link):
+                            Card {
+                                LinkRow(link: link, todos: matter.openTodos) { remove(link) }
+                                    .findable(.model(link.persistentModelID), link.shownName, link.address)
+                            }
                         }
                     }
                 }
             }
         }
-        if all.count > visible.count {
-            Button("… and \(all.count - visible.count) older — show them") { showsAllHistory = true }
+        if older > 0 {
+            Button("… and \(older) older — show them") { showsAllHistory = true }
                 .buttonStyle(.gold).font(.caption).padding(.horizontal, 4)
         }
     }
