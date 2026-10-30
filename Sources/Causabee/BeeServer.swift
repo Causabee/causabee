@@ -157,10 +157,11 @@ final class BeeServer {
         }
     }
 
-    /// "Renews 1 November", from the server's "2026-11-01".
-    var renewsWords: String? {
+    /// "starts anew on 1 November", from the server's "2026-11-01": the month's share, which is
+    /// not the subscription and has a day of its own.
+    var startsAnewWords: String? {
         guard let renewsOn, let date = MatterStatus.date(of: renewsOn) else { return nil }
-        return "renews " + date.formatted(.dateTime.day().month(.wide))
+        return "starts anew on " + Dates.long(date)
     }
 }
 
@@ -187,7 +188,7 @@ struct ProBar: View {
         } else if BeeServer.isSetUp, let used = server.monthUsed {
             let left = max(0, 1 - used)
             meter("This month's Pro", left: left,
-                  words: "\(Int((left * 100).rounded())) % left" + (server.renewsWords.map { " · \($0)" } ?? "")
+                  words: "\(Int((left * 100).rounded())) % left" + (server.startsAnewWords.map { " · \($0)" } ?? "")
                     + (server.extraShare > 0 ? " · top-ups \(Int((server.extraShare * 100).rounded())) %" : ""),
                   note: left > 0 ? nil : server.extra ? "This month's share is used; your top-up carries on."
                     : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.")

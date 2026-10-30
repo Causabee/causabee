@@ -129,6 +129,9 @@ enum Dates {
         return formatter
     }()
 
+    /// `31 October`, in those words on every Mac: a German region made it "31. October".
+    static func long(_ date: Date) -> String { date.formatted(.dateTime.day().month(.wide).locale(Locale(identifier: "en_GB"))) }
+
     /// `2026-10-13` → `Oct 13`
     static func short(_ day: String) -> String { parser.date(from: day).map(short) ?? day }
     static func short(_ date: Date) -> String {

@@ -41,12 +41,12 @@ struct PlanSheet: View {
                 plan("Causabee Pro", "The bigger AI, up to a monthly limit · every matter · names always disguised",
                      price: nil, current: store.plan == .pro, products: store.products.filter { Store.proIDs.contains($0.id) })
                 ProBar()
-                // More Pro, with any plan: as often as needed, kept until used — Pro's bolt works with it.
+                // A top-up, with any plan: as often as needed, kept until used — Pro's bolt works with it.
                 if let topUp = store.products.first(where: { Store.topUpIDs.contains($0.id) }) {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(store.plan == .pro ? "More Pro this month" : "Pro, now and then").font(.subheadline.weight(.medium))
-                            Text("A third of a Pro month, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
+                            Text(store.plan == .pro ? "Top up this month" : "Pro, now and then").font(.subheadline.weight(.medium))
+                            Text("Adds a third of a month's Pro use, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
                         Button { Task { await store.buy(topUp) } } label: {
@@ -153,18 +153,17 @@ struct PlanSettings: View {
         }
     }
 
-    private static func day(_ date: Date) -> String { date.formatted(.dateTime.day().month(.wide)) }
 
     /// Renews, ends or changes — as this device's App Store says; on the Mac, until when.
     private var end: String {
         switch store.renewal {
-        case .renews(let date): return "renews " + Self.day(date)
-        case .ends(let date): return "ends " + Self.day(date)
-        case .changes(let plan, let date): return (plan == .pro ? "Pro" : "Plus") + " from " + Self.day(date)
+        case .renews(let date): return "renews " + Dates.long(date)
+        case .ends(let date): return "ends " + Dates.long(date)
+        case .changes(let plan, let date): return (plan == .pro ? "Pro" : "Plus") + " from " + Dates.long(date)
         case .billingProblem: return "payment problem"
         case nil:
             if store.plan == .free { return "Free" }
-            return [store.bought.until, store.shared.until].compactMap { $0 }.max().map { "until " + Self.day($0) } ?? ""
+            return [store.bought.until, store.shared.until].compactMap { $0 }.max().map { "until " + Dates.long($0) } ?? ""
         }
     }
 
@@ -180,7 +179,7 @@ struct PlanSettings: View {
         LabeledContent(name, value: end)
         Text(holds).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         if case .billingProblem(let until) = store.renewal {
-            Text("Apple could not charge your payment method. " + (until.map { "The plan goes on until \(Self.day($0)); " } ?? "")
+            Text("Apple could not charge your payment method. " + (until.map { "The plan goes on until \(Dates.long($0)); " } ?? "")
                  + "update it in your Apple Account, and it renews as before.")
                 .font(.footnote).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
         }
@@ -196,11 +195,11 @@ struct PlanSettings: View {
                 Task { await store.buy(topUp) }
             } label: {
                 if store.buying == topUp.id { BeeLoader(size: 14) }
-                else { Text((store.plan == .pro ? "More Pro this month · " : "Pro, now and then · ") + topUp.displayPrice) }
+                else { Text((store.plan == .pro ? "Top up this month · " : "Pro, now and then · ") + topUp.displayPrice) }
             }
             .buttonStyle(.borderless)
             .disabled(store.buying != nil)
-            Text("A third of a Pro month, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
+            Text("Adds a third of a month's Pro use, kept until it is used.").font(.footnote).foregroundStyle(.secondary)
         }
         if let problem = server.problem ?? store.problem {
             Text(problem).font(.footnote).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
