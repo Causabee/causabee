@@ -4,12 +4,14 @@ import XCTest
 /// hundred mails each, and a care matter with some three hundred mails and seventy tasks done.
 /// Each screen is swiped up and down, and the app's own frame meter (`--frame-meter`) says how
 /// many frames came late and how much time was lost. Not part of the TestFlight run: run it to compare.
+/// (The app's own `--scroll-tour` measures without the test's reading of the screen between swipes.)
 ///
-///   xcodebuild test -project App/Causabee.xcodeproj -scheme CausabeePhoneUITests -destination 'platform=iOS Simulator,name=iPhone 18 Pro' -only-testing:CausabeePhoneUITests/ScrollTests
+///   TEST_RUNNER_CAUSABEE_SCROLL_TESTS=1 xcodebuild test -project App/Causabee.xcodeproj -scheme CausabeePhoneUITests -destination 'platform=iOS Simulator,name=iPhone 18 Pro' -only-testing:CausabeePhoneUITests/ScrollTests
 final class ScrollTests: XCTestCase {
     private var app: XCUIApplication!
 
-    override func setUp() {
+    override func setUpWithError() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CAUSABEE_SCROLL_TESTS"] != nil, "Only when asked for: TEST_RUNNER_CAUSABEE_SCROLL_TESTS=1")
         continueAfterFailure = true
         app = XCUIApplication()
         app.launchArguments = ["--demo", "--big", "--frame-meter", "-mail.auto", "NO", "-demo.filled", "anew"]
