@@ -52,7 +52,9 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
     /// Something going on: an open task, or a day ahead.
     public var isActive: Bool { !isClosed && (openCount > 0 || next != nil) }
 
-    public init(_ matter: Matter, today: String) {
+    /// `quick`: without reading every mail's date — for the first drawing after Causabee starts,
+    /// while the worker reads them: the dates come with the page it prepares.
+    public init(_ matter: Matter, today: String, quick: Bool = false) {
         id = matter.persistentModelID
         key = matter.key
         name = matter.name
@@ -79,7 +81,7 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         overdue = open.filter { !$0.isBlocked && ($0.due ?? "9999") < today }
             .map { Overdue(todo: $0.persistentModelID, due: $0.due ?? "", text: $0.text) }
             .sorted { $0.due < $1.due }
-        let dates = MailDates.of(matter, entries: entries)
+        let dates = quick ? [] : MailDates.of(matter, entries: entries)
         lastDate = dates.last
         firstDate = dates.first
         newMailsSinceClosed = matter.closedAt.map { closed in dates.count - (dates.firstIndex { $0 > closed } ?? dates.count) } ?? 0
@@ -103,10 +105,10 @@ public struct OverviewPage: Sendable {
     public let closed: [MatterSummary]
     private let byID: [PersistentIdentifier: MatterSummary]
 
-    public init(_ matters: [Matter], today: Date = Date()) {
+    public init(_ matters: [Matter], today: Date = Date(), quick: Bool = false) {
         let day = MatterStatus.day(today)
         self.today = day
-        let summaries = matters.map { MatterSummary($0, today: day) }
+        let summaries = matters.map { MatterSummary($0, today: day, quick: quick) }
         self.summaries = summaries
         byID = Dictionary(summaries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let active = summaries.filter(\.isActive).sorted { a, b in
@@ -193,6 +195,16 @@ public final class OverviewPages {
             return before.page
         }
         let started = Date()
+        // The first page, as Causabee starts: drawn at once without every mail's date — reading
+        // them was most of half a second on the main thread before anything showed — and the
+        // whole page from the worker a moment later.
+        if let worker, !kept.contains(where: { $0.ids == ids }) {
+            let page = OverviewPage(matters, today: now, quick: true)
+            keep(page, version: version - 1, day: day, ids: ids)
+            ask(worker, ids: ids, version: version, day: day, now: now)
+            _ = arrived
+            return page
+        }
         let page = OverviewPage(matters, today: now)
         if CommandLine.arguments.contains("--timing-tour") { NSLog("[timing] overview prepared %d ms", Int(Date().timeIntervalSince(started) * 1000)) }
         keep(page, version: version, day: day, ids: ids)

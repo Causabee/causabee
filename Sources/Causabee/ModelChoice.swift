@@ -398,8 +398,7 @@ final class StoredChanges {
         OwnerMe.refresh(context)
         // The overview prepared by the worker after a change, away from the screen.
         OverviewPages.shared.forget()
-        let container = context.container
-        Task { OverviewPages.shared.worker = await StoreWorker.for(container) }
+        OverviewPages.shared.worker = StoreWorker.for(context.container)
         // The names the owner marked as public, read before anything is disguised.
         PublicNames.refresh(in: context)
         // From the start: what iCloud brings in, so the mail check can wait for it.

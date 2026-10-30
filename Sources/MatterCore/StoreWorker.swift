@@ -31,7 +31,7 @@ public actor StoreWorker {
     @MainActor private static var workers: [ObjectIdentifier: StoreWorker] = [:]
 
     @MainActor
-    public static func `for`(_ container: ModelContainer) async -> StoreWorker {
+    public static func `for`(_ container: ModelContainer) -> StoreWorker {
         let key = ObjectIdentifier(container)
         if let known = workers[key] { return known }
         let made = StoreWorker(container: container)
@@ -129,6 +129,13 @@ public actor StoreWorker {
             guard !matter.isClosed, matter.brief != nil, let news = matter.shownBrief?.news, !news.seen, let line = news.lines.first else { return nil }
             return News(key: matter.key, name: matter.name, line: line, since: news.since, mails: news.mails)
         }
+    }
+
+    /// The open matters by their newest mail, as the share sheet offers them: every mail's day read.
+    public func openMattersByLastMail() -> [(key: String, name: String, last: Date?)] {
+        ((try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []).filter { !$0.isClosed }
+            .map { (key: $0.key, name: $0.name, last: MatterStatus($0).lastDate) }
+            .sorted { ($0.last ?? .distantPast) > ($1.last ?? .distantPast) }
     }
 
     /// The overview of these matters, prepared from the store as it is saved.
