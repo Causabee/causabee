@@ -489,6 +489,35 @@ final class PhoneMailCheck {
     }
 }
 
+/// When mail is looked for — on every device, whatever page is open. Hung on the whole window, not
+/// on the overview's panel: on the iPad a matter's page stands in the overview's place, and with
+/// one open no mail was looked for, nothing another device sorted was settled, and Get New Mail
+/// did nothing.
+struct PhoneMailDuties: ViewModifier {
+    @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var phase
+
+    func body(content: Content) -> some View {
+        let check = PhoneMailCheck.shared
+        return content
+            .onAppear { check.checkQuietly(context: context) }
+            // Mail the Mac sorted meanwhile is not asked about here any more.
+            .onChange(of: StoredChanges.shared.count) { check.settleElsewhere(context: context) }
+            // Back to the front: a look whether new mail came, by itself — iOS lets no app check
+            // reliably while it is away.
+            .onChange(of: phase) { _, now in if now == .active { check.checkQuietly(context: context) } }
+            // And every ten minutes while it is open and in front, as on the Mac.
+            .task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(600))
+                    if phase == .active { check.checkQuietly(context: context) }
+                }
+            }
+            // The menu bar's Get New Mail, from any page.
+            .onReceive(NotificationCenter.default.publisher(for: .phoneGetMail)) { _ in check.look(context: context) }
+    }
+}
+
 /// On the overview, under its line: "Get new mail", and what came of it — the Mac's sidebar
 /// bottom, on the iPhone.
 struct PhoneMailCheckView: View {
@@ -498,7 +527,6 @@ struct PhoneMailCheckView: View {
     @Query private var matters: [Matter]
     @State private var check = PhoneMailCheck.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.scenePhase) private var phase
     @State private var unplaced: [Judgement] = []
     @State private var showsUnplaced = true
     /// Mail set aside with "Not needed" — on this device, as on the Mac.
@@ -522,20 +550,8 @@ struct PhoneMailCheckView: View {
             unplacedList
         }
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.35), value: check.phase)
-        .onAppear { refresh(); check.checkQuietly(context: context) }
+        .onAppear { refresh() }
         .onChange(of: check.stateKey) { refresh() }
-        // Mail the Mac sorted meanwhile is not asked about here any more.
-        .onChange(of: StoredChanges.shared.count) { check.settleElsewhere(context: context) }
-        // Back to the front: a look whether new mail came, by itself — iOS lets no app check
-        // reliably while it is away.
-        .onChange(of: phase) { _, now in if now == .active { check.checkQuietly(context: context) } }
-        // And every ten minutes while it is open and in front, as on the Mac.
-        .task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(600))
-                if phase == .active { check.checkQuietly(context: context) }
-            }
-        }
     }
 
     /// Found by itself: a small capsule in the middle, opened when the owner wants.
