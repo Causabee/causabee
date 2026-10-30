@@ -119,13 +119,14 @@ public enum Mirror {
                 appointment.what = Calendars.withoutEnd(appointment.what)
             }
         }
-        // What each held when Calendar and Reminders were asked.
-        var asked: [PersistentIdentifier: [String]] = [:]
-        for todo in todos { asked[todo.persistentModelID] = fields(of: todo) }
-        for appointment in appointments { asked[appointment.persistentModelID] = fields(of: appointment) }
-        for deadline in deadlines { asked[deadline.persistentModelID] = fields(of: deadline) }
+        // What each held when Calendar and Reminders were asked — by the object, not its id in the
+        // store: a new one saved meanwhile gets another id, and was taken for one changed here.
+        var asked: [ObjectIdentifier: [String]] = [:]
+        for todo in todos { asked[ObjectIdentifier(todo)] = fields(of: todo) }
+        for appointment in appointments { asked[ObjectIdentifier(appointment)] = fields(of: appointment) }
+        for deadline in deadlines { asked[ObjectIdentifier(deadline)] = fields(of: deadline) }
         func still(_ model: some PersistentModel, _ now: @autoclosure () -> [String]) -> Bool {
-            !model.isDeleted && model.modelContext != nil && asked[model.persistentModelID] == now()
+            !model.isDeleted && model.modelContext != nil && asked[ObjectIdentifier(model)] == now()
         }
         func connected(_ prefix: String, _ items: [(id: String, local: [String])]) -> [String] {
             items.filter { !onlyChangedHere || !unchangedHere($0.local, stamp: stamps[prefix + $0.id]) }.map(\.id)
@@ -170,9 +171,9 @@ public enum Mirror {
             inStep.append(stamp)
         }
 
-        let keptTodos = oneEach(todos.compactMap { todo in todo.reminderID.map { (key: todo.persistentModelID, id: $0, local: asked[todo.persistentModelID] ?? []) } },
+        let keptTodos = oneEach(todos.compactMap { todo in todo.reminderID.map { (key: ObjectIdentifier(todo), id: $0, local: asked[ObjectIdentifier(todo)] ?? []) } },
                                 stamp: { stamps["reminder:" + $0] }, remote: { seen.reminders[$0]?.fields })
-        for todo in todos where keptTodos.contains(todo.persistentModelID) {
+        for todo in todos where keptTodos.contains(ObjectIdentifier(todo)) {
             guard let id = todo.reminderID, let theirs = seen.reminders[id], still(todo, fields(of: todo)) else { continue }
             let key = "reminder:" + id
             var remote = theirs.fields
@@ -206,10 +207,10 @@ public enum Mirror {
             if merge.pushed { send(.reminder(id: id, fields: merge.remote), then: (key, merge.stamp)) } else { stamps[key] = merge.stamp }
         }
 
-        let keptEvents = oneEach(appointments.compactMap { a in a.calendarID.map { (key: a.persistentModelID, id: $0, local: asked[a.persistentModelID] ?? []) } }
-                                     + deadlines.compactMap { d in d.calendarID.map { (key: d.persistentModelID, id: $0, local: asked[d.persistentModelID] ?? []) } },
+        let keptEvents = oneEach(appointments.compactMap { a in a.calendarID.map { (key: ObjectIdentifier(a), id: $0, local: asked[ObjectIdentifier(a)] ?? []) } }
+                                     + deadlines.compactMap { d in d.calendarID.map { (key: ObjectIdentifier(d), id: $0, local: asked[ObjectIdentifier(d)] ?? []) } },
                                  stamp: { stamps["event:" + $0] }, remote: { seen.events[$0]?.fields })
-        for appointment in appointments where keptEvents.contains(appointment.persistentModelID) {
+        for appointment in appointments where keptEvents.contains(ObjectIdentifier(appointment)) {
             guard let id = appointment.calendarID, let theirs = seen.events[id], still(appointment, fields(of: appointment)) else { continue }
             let key = "event:" + id
             var end = theirs.end
@@ -239,7 +240,7 @@ public enum Mirror {
             }
             if merge.pushed { send(.event(id: id, fields: merge.remote), then: (key, merge.stamp)) } else { stamps[key] = merge.stamp }
         }
-        for deadline in deadlines where keptEvents.contains(deadline.persistentModelID) {
+        for deadline in deadlines where keptEvents.contains(ObjectIdentifier(deadline)) {
             guard let id = deadline.calendarID, let theirs = seen.events[id], still(deadline, fields(of: deadline)) else { continue }
             let key = "event:" + id
             let merge = Self.merge(local: fields(of: deadline), remote: [theirs.fields[0], theirs.fields[1]], stamp: stamps[key])
