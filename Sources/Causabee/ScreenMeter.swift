@@ -110,6 +110,9 @@ final class ScreenMeter: NSObject {
         if let scroll = tour.scroll as? NSScrollView {
             scroll.contentView.scroll(to: NSPoint(x: 0, y: y))
             scroll.reflectScrolledClipView(scroll.contentView)
+            // A real scroll event first asks what is under it, and that alone cost a Mac's long page
+            // a fifth of a second per event — a tour that only moves the page never saw it.
+            if let frame = scroll.window?.contentView { _ = frame.hitTest(frame.convert(NSPoint(x: scroll.bounds.midX, y: scroll.bounds.midY), from: scroll)) }
         }
         #endif
     }

@@ -141,6 +141,42 @@ public enum RecordBrowse {
         return Picked(items: items, attached: attached)
     }
 
+    /// One line of the record as a list draws it, heading after heading with what stands under
+    /// each: one flat list, so that only what is near the screen need be drawn. A thing under
+    /// several people has a line under each.
+    public enum Line: Identifiable {
+        case title(Group, first: Bool)
+        case item(Item, under: String, also: [String])
+
+        public var id: String {
+            switch self {
+            case .title(let group, _): "title \(group.id)"
+            case .item(let item, let under, _): "\(under) \(item.id)"
+            }
+        }
+    }
+
+    public static func lines(of groups: [Group]) -> [Line] {
+        groups.enumerated().flatMap { index, group in
+            [Line.title(group, first: index == 0)] + group.items.map { Line.item($0, under: group.title, also: group.also[$0.id] ?? []) }
+        }
+    }
+
+    /// The line a mail, a file or a link stands on: what is not near the screen is not drawn, so
+    /// going to it goes to its line first.
+    public static func line(of model: PersistentIdentifier, in lines: [Line], attached: [String: [Document]]) -> String? {
+        lines.first { line in
+            guard case .item(let item, _, _) = line else { return false }
+            switch item {
+            case .thread(let thread):
+                return thread.rows.contains { $0.entry.persistentModelID == model }
+                    || (attached[thread.id] ?? []).contains { $0.persistentModelID == model }
+            case .document(let document): return document.persistentModelID == model
+            case .link(let link): return link.persistentModelID == model
+            }
+        }?.id
+    }
+
     private static let month: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US")

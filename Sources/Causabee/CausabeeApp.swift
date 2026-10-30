@@ -112,7 +112,8 @@ struct CausabeeApp: App {
             return container
         }
         CloudSync.shared.watch()
-        DispatchQueue.main.async { NSApp.activate(); MenuOrder.keep() }
+        // `--stay-behind`: measured behind the owner's work, not in front of it.
+        DispatchQueue.main.async { if !CommandLine.arguments.contains("--stay-behind") { NSApp.activate() }; MenuOrder.keep() }
         if let folder = DesignRender.folder, case .success(let container) = opened {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { DesignRender.editor(container, to: folder) }
         }
