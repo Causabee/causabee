@@ -49,6 +49,7 @@ final class MirrorRunner {
         NotificationCenter.default.addObserver(forName: Self.becameActive, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
                 Calendars.shared.store.refreshSourcesIfNecessary()
+                Task { await CalendarWorker.shared.refresh() }
                 MirrorRunner.shared.theirsChanged = true
                 MirrorRunner.shared.soon(after: 0.3)
             }
@@ -71,12 +72,14 @@ final class MirrorRunner {
             running = true
             let theirs = theirsChanged
             theirsChanged = false
-            // A reminder iCloud gave a new id is found again by its words first — only when
-            // Reminders changed: asking for every task's reminder is what made a tick slow.
-            if theirs { await Calendars.shared.relink((try? context.fetch(FetchDescriptor<Todo>(predicate: #Predicate { $0.reminderID != nil }))) ?? []) }
-            reconciling = true
-            let result = Mirror.reconcile(context, onlyChangedHere: !theirs)
-            reconciling = false
+            // Calendar and Reminders are asked by the worker, away from the screen: the page
+            // scrolls on while they answer.
+            let result = await Mirror.reconcile(context, onlyChangedHere: !theirs)
+            if !Task.isCancelled, context.hasChanges {
+                reconciling = true
+                try? context.save()
+                reconciling = false
+            }
             if result.pushed + result.pulled > 0 { last = result; lastAt = Date() }
             try? await Task.sleep(for: .seconds(0.5))
             running = false

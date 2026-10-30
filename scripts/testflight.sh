@@ -37,6 +37,12 @@ if [[ -z ${CAUSABEE_SKIP_TESTS:-} ]]; then
     || { grep -E "error:|failed" "$OUT/tests.log" | tail -12; fail "The regression tests failed: nothing was uploaded. The whole log: $OUT/tests.log" }
 fi
 
+# Every field of the models must be in iCloud's Production schema first: a build with one that is
+# not stops every device's uploads (29 October). Not skipped with CAUSABEE_SKIP_TESTS — it takes seconds.
+step "Checking that iCloud's Production schema has every field"
+swift test --filter CloudKitSchemaTests > "$OUT/schema.log" 2>&1 \
+  || { grep -A3 "Not in iCloud" "$OUT/schema.log" | head -6; fail "A field is not in iCloud's Production schema: nothing was built. The whole log: $OUT/schema.log" }
+
 step "Archiving Causabee $VERSION ($BUILD) for the iPhone"
 xcodebuild archive -project App/Causabee.xcodeproj -scheme CausabeePhone -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$OUT/CausabeePhone.xcarchive" -allowProvisioningUpdates \

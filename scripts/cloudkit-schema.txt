@@ -1,0 +1,152 @@
+Appointment.calendarID
+Appointment.calendarStamp
+Appointment.day
+Appointment.endDay
+Appointment.endTime
+Appointment.matter -> Matter
+Appointment.place
+Appointment.sources
+Appointment.time
+Appointment.what
+Deadline.calendarID
+Deadline.calendarStamp
+Deadline.day
+Deadline.matter -> Matter
+Deadline.sources
+Deadline.what
+Decision.decidedAt
+Decision.matter -> Matter
+Decision.sources
+Decision.what
+Decision.why
+Document.byteCount
+Document.contentType
+Document.isHidden
+Document.matter -> Matter
+Document.messageID
+Document.name
+Document.readAt
+Document.source
+Document.title
+Entry.date
+Entry.digest
+Entry.from
+Entry.isUnread
+Entry.matter -> Matter
+Entry.messageID
+Entry.replyTo
+Entry.source
+Entry.title
+KeptText.data
+KeptText.messageID
+KeptText.savedAt
+Matter.aliases
+Matter.appointments -> Appointment
+Matter.brief
+Matter.briefAt
+Matter.closedAt
+Matter.createdAt
+Matter.deadlines -> Deadline
+Matter.decisions -> Decision
+Matter.details -> MatterDetail
+Matter.documents -> Document
+Matter.entries -> Entry
+Matter.folderName
+Matter.icon
+Matter.key
+Matter.links -> WebLink
+Matter.linksSearchedAt
+Matter.memberships -> Membership
+Matter.name
+Matter.nextStep
+Matter.nextStepAt
+Matter.nextStepTodo
+Matter.nextStepWhy
+Matter.noteBlocks -> MatterNote
+Matter.notes
+Matter.phase
+Matter.pinnedAt
+Matter.summary
+Matter.summaryAt
+Matter.todos -> Todo
+Matter.turns -> ThreadTurn
+MatterDetail.createdAt
+MatterDetail.label
+MatterDetail.matter -> Matter
+MatterDetail.party -> Party
+MatterDetail.value
+MatterNote.createdAt
+MatterNote.fromAssistant
+MatterNote.matter -> Matter
+MatterNote.text
+Membership.matter -> Matter
+Membership.mentions
+Membership.party -> Party
+Membership.roles
+NameList.data
+NameList.device
+NameList.deviceName
+NameList.digest
+NameList.updatedAt
+Party.addedAt
+Party.address
+Party.details -> MatterDetail
+Party.keys
+Party.memberships -> Membership
+Party.name
+Party.phone
+Party.spellings
+Profile.assistantModel
+Profile.autoOn
+Profile.autoSpent
+Profile.beeGlad
+Profile.calendarTitle
+Profile.mailModel
+Profile.names
+Profile.plan
+Profile.planUntil
+Profile.reminderListTitle
+Profile.strictTasks
+Rule.createdAt
+Rule.fired
+Rule.isOn
+Rule.kindRaw
+Rule.matterKey
+Rule.object
+Rule.origin
+Rule.subject
+SortedMail.data
+SortedMail.date
+SortedMail.device
+SortedMail.messageID
+SortedMail.sortedAt
+ThreadTurn.date
+ThreadTurn.id
+ThreadTurn.matter -> Matter
+ThreadTurn.payload
+Todo.createdAt
+Todo.doneAt
+Todo.doneSource
+Todo.due
+Todo.dueTime
+Todo.isDone
+Todo.isInfo
+Todo.links -> WebLink
+Todo.matter -> Matter
+Todo.note
+Todo.origin
+Todo.ownerRaw
+Todo.reminderID
+Todo.reminderStamp
+Todo.sources
+Todo.text
+Todo.unblocks -> Todo
+Todo.waitsFor -> Todo
+WebLink.address
+WebLink.createdAt
+WebLink.isDismissed
+WebLink.isSuggestion
+WebLink.matter -> Matter
+WebLink.messageID
+WebLink.title
+WebLink.todo -> Todo

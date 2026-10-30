@@ -27,6 +27,8 @@ struct CalendarChip: View {
     var tick = 0
     let connect: (String?) -> Void
     @State private var error: String?
+    /// What Calendar or Reminders said, asked by the worker away from the screen.
+    @State private var answer: CalendarWorker.ChipAnswer?
 
     private var calendars: Calendars { Calendars.shared }
     private var allowed: Bool { kind == .event ? calendars.canReadEvents : calendars.canReadReminders }
@@ -34,12 +36,20 @@ struct CalendarChip: View {
 
     @Environment(\.reading) private var reading
 
+    private var ask: ChipAnswers.Ask {
+        ChipAnswers.Ask(event: kind == .event, linkedID: linkedID, day: day, time: time, title: title, reminders: reminders.count)
+    }
+
     var body: some View {
         // While reading, only a connection that is there is shown, not the offer to make one.
         if allowed, !(reading && linkedID == nil) {
+            let ask = ask
             HStack(spacing: 6) {
-                if let id = linkedID {
-                    if let found = linked(id) {
+                // The last answer while Calendar or Reminders are asked anew; at first a place the
+                // size of the sign, so the page does not move when it comes.
+                switch answer ?? ChipAnswers.last[ask] {
+                case .linked(let found)?:
+                    if let id = linkedID {
                         Button { open(id) } label: {
                             Label("in \(where_)" + (found.isEmpty ? "" : " · \(found)"), systemImage: kind == .event ? "calendar.badge.checkmark" : "checklist.checked")
                                 .font(.caption).foregroundStyle(Theme.done)
@@ -47,25 +57,30 @@ struct CalendarChip: View {
                         .buttonStyle(.plain)
                         .help("Connected and kept in step. Click to open it in \(where_).")
                         .contextMenu { Button("Open in \(where_)") { open(id) }; Button("Disconnect") { connect(nil) } }
-                    } else {
-                        Label("no longer in \(where_)", systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(Theme.warning)
-                        Button("Add again", action: add).buttonStyle(.gold).font(.caption)
-                        Button("Disconnect") { connect(nil) }.buttonStyle(.gold).font(.caption)
                     }
-                } else if let match = found() {
+                case .gone?:
+                    Label("no longer in \(where_)", systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(Theme.warning)
+                    Button("Add again", action: add).buttonStyle(.gold).font(.caption)
+                    Button("Disconnect") { connect(nil) }.buttonStyle(.gold).font(.caption)
+                case .found(let id, let found, let list)?:
                     // Which list or calendar it is in, first: a connection to the wrong one is seen before it is made.
-                    Label("found in \(match.list.isEmpty ? where_ : match.list): \(match.title)", systemImage: "link")
+                    Label("found in \(list.isEmpty ? where_ : list): \(found)", systemImage: "link")
                         .font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    Button("Connect") { connect(match.id) }.buttonStyle(.gold).font(.caption)
+                    Button("Connect") { connect(id) }.buttonStyle(.gold).font(.caption)
                         .help("It is there already: connect to it instead of adding a second one.")
-                } else {
+                case .none?:
                     Button(action: add) { Label("Add to \(where_)", systemImage: "plus") }
                         .buttonStyle(.gold).font(.caption)
                         .help(kind == .event ? "Into the calendar chosen in Settings" : "Into the list chosen in Settings")
+                case nil:
+                    Label("Add to \(where_)", systemImage: "plus").font(.caption).hidden()
                 }
                 if let error { Text(error).font(.caption).foregroundStyle(Theme.warning).lineLimit(1) }
             }
             .id(tick)
+            .task(id: ChipAnswers.Asking(ask: ask, generation: ChipAnswers.generation, tick: tick)) {
+                answer = await ChipAnswers.answer(ask, reminders: reminders)
+            }
         }
     }
 
@@ -96,46 +111,6 @@ struct CalendarChip: View {
             UIApplication.shared.open(url)
         }
         #endif
-    }
-
-    /// What Calendar or Reminders said, kept until they change — not asked again by every chip
-    /// after every change to the store: each was a query to the calendars, on the main thread, and
-    /// a page scrolled right after a sync stuttered.
-    private func asked<Value>(_ what: String, _ work: () -> Value) -> Value {
-        let key = "chip \(kind == .event ? "e" : "r") \(ChipAnswers.generation) \(tick) \(what)"
-        if let known = ChipAnswers.kept[key] as? ChipAnswers.Asked<Value> { return known.value }
-        let value = work()
-        if ChipAnswers.kept.count > 500 { ChipAnswers.kept.removeAll() }
-        ChipAnswers.kept[key] = ChipAnswers.Asked(value: value)
-        return value
-    }
-
-    /// What the connected entry is called now, or nil when it is gone.
-    private func linked(_ id: String) -> String? {
-        asked("linked \(id) \(reminders.count)") { workOutLinked(id) }
-    }
-
-    private func workOutLinked(_ id: String) -> String? {
-        switch kind {
-        case .event: return calendars.event(id).map { $0.calendar?.title ?? "" }
-        case .reminder:
-            if let reminder = reminders.first(where: { $0.id == id }) { return reminder.list + (reminder.isDone ? " · done" : "") }
-            return calendars.reminder(id).map { $0.calendar?.title ?? "" }
-        }
-    }
-
-    private func found() -> (id: String, title: String, list: String)? {
-        asked("found \(day ?? "") \(time ?? "") \(title) \(reminders.count)") { workOutFound() }
-    }
-
-    private func workOutFound() -> (id: String, title: String, list: String)? {
-        switch kind {
-        case .event:
-            guard let day, let event = calendars.findEvent(day: day, time: time, what: title) else { return nil }
-            return (event.calendarItemExternalIdentifier, event.title ?? "", event.calendar?.title ?? "")
-        case .reminder:
-            return Calendars.findReminder(title, in: reminders, ownLists: calendars.ownLists).map { ($0.id, $0.title, $0.list) }
-        }
     }
 
     private func add() {
@@ -238,17 +213,50 @@ struct CalendarSettings: View {
     }
 }
 
-/// The chips' answers from Calendar and Reminders, by what was asked, until either changes.
+/// The chips' answers from Calendar and Reminders, asked by the worker. The last one to each is
+/// kept and shown while it is asked anew — after Calendar or Reminders changed — so a sign does not
+/// blink away; each is asked once for each change there.
 @MainActor
 enum ChipAnswers {
-    struct Asked<Value> { let value: Value }
-    static var kept: [String: Any] = [:]
+    struct Ask: Hashable {
+        var event: Bool
+        var linkedID: String?
+        var day: String?
+        var time: String?
+        var title: String
+        /// How many reminders the page has read: a reminder is found among them.
+        var reminders: Int
+    }
+
+    /// What a chip's question is waiting for: asked again when any of it changes.
+    struct Asking: Hashable {
+        var ask: Ask
+        var generation: Int
+        var tick: Int
+    }
+
+    static var last: [Ask: CalendarWorker.ChipAnswer] = [:]
+    private static var answeredAt: [Ask: Int] = [:]
+
+    static func answer(_ ask: Ask, reminders: [Calendars.Reminder]) async -> CalendarWorker.ChipAnswer {
+        // The demo's made-up matters find nothing of the owner's.
+        if Calendars.shared.isSealed { return ask.linkedID == nil ? .none : .gone }
+        let now = generation
+        if answeredAt[ask] == now, let known = last[ask] { return known }
+        let answer = await CalendarWorker.shared.chip(event: ask.event, linkedID: ask.linkedID, day: ask.day, time: ask.time,
+                                                      title: ask.title, reminders: reminders)
+        if last.count > 2000 { last.removeAll(); answeredAt.removeAll() }
+        last[ask] = answer
+        answeredAt[ask] = now
+        return answer
+    }
+
     /// Goes up when Calendar or Reminders change: every answer is asked again then.
     static var generation: Int {
         if !watching {
             watching = true
             NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { changes += 1; kept.removeAll() }
+                MainActor.assumeIsolated { changes += 1 }
             }
         }
         return changes

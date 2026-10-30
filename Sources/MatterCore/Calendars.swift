@@ -12,7 +12,7 @@ public final class Calendars {
     public let store = EKEventStore()
 
     /// The name of what Causabee makes when the owner has not chosen one of their own.
-    public static let ownName = "Causabee"
+    public nonisolated static let ownName = "Causabee"
 
     /// Set for the demo: its made-up matters neither find the owner's own events and reminders
     /// nor add to them.
@@ -33,9 +33,9 @@ public final class Calendars {
 
     // MARK: Finding
 
-    static func date(of text: String) -> Date? { MatterStatus.date(of: text) }
+    nonisolated static func date(of text: String) -> Date? { MatterStatus.date(of: text) }
 
-    static func start(day: String, time: String?) -> Date? {
+    nonisolated static func start(day: String, time: String?) -> Date? {
         guard let date = date(of: day) else { return nil }
         guard let (hour, minute) = clock(time) else { return date }
         return Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: date)
@@ -52,7 +52,7 @@ public final class Calendars {
     /// Where an appointment goes in Calendar: its start, its end, and whether it fills whole days.
     /// The end it was given comes first; then one read from its words; then an hour. A whole-day
     /// one ends on its last day — Calendar shows it through that day. Never an end before the start.
-    public static func span(what: String, day: String, time: String?, endDay: String? = nil,
+    public nonisolated static func span(what: String, day: String, time: String?, endDay: String? = nil,
                                         endTime: String? = nil) -> (start: Date, end: Date, allDay: Bool)? {
         guard let start = start(day: day, time: time) else { return nil }
         let calendar = Calendar.current
@@ -195,28 +195,9 @@ public final class Calendars {
     /// The reminder a task already is. In Causabee's own list, or the one chosen for it, half the
     /// words are enough; in the owner's other lists only nearly the same words: "Online-Antrag
     /// durchführen" in "Anschlussfinanzierung" is not "Online Check-in bei easyJet durchführen".
-    public static func findReminder(_ text: String, in reminders: [Reminder], ownLists: Set<String> = [ownName]) -> Reminder? {
+    public nonisolated static func findReminder(_ text: String, in reminders: [Reminder], ownLists: Set<String> = [ownName]) -> Reminder? {
         reminders.first { ownLists.contains($0.list) && Duplicates.alike($0.title, text) }
             ?? reminders.first { !ownLists.contains($0.list) && Duplicates.same($0.title, text) }
-    }
-
-    /// Tasks whose reminder is no longer found by its id — iCloud can give a reminder a new one
-    /// once it has it — found again by their words, and connected anew. Says how many. A reminder
-    /// another task is connected with already is not taken.
-    @discardableResult
-    public func relink(_ todos: [Todo]) async -> Int {
-        let lost = todos.filter { !$0.isDone && $0.reminderID != nil && reminder($0.reminderID) == nil }
-        guard !lost.isEmpty, canReadReminders, !isSealed else { return 0 }
-        let all = await allReminders()
-        var taken = Set(todos.compactMap(\.reminderID))
-        var found = 0
-        for todo in lost {
-            guard let match = Self.findReminder(todo.text, in: all.filter { !taken.contains($0.id) }, ownLists: ownLists) else { continue }
-            todo.reminderID = match.id
-            taken.insert(match.id)
-            found += 1
-        }
-        return found
     }
 
     /// The names of the lists Causabee adds to: its own, and the one chosen in Settings.
@@ -240,7 +221,7 @@ public final class Calendars {
         store.calendars(for: events ? .event : .reminder).first { $0.title == title && $0.allowsContentModifications }?.calendarIdentifier
     }
 
-    public static let calendarKey = "calendar.events", listKey = "calendar.reminders"
+    public nonisolated static let calendarKey = "calendar.events", listKey = "calendar.reminders"
 
     /// The calendar the owner chose, or "Causabee", made the first time it is needed — never one
     /// of the owner's own lists: a task in "Anschlussfinanzierung" is lost there.

@@ -80,7 +80,7 @@ public enum Mirror {
         public var pulled = 0
     }
 
-    static func time(of date: Date) -> String {
+    nonisolated static func time(of date: Date) -> String {
         let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
         return String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
     }
@@ -92,129 +92,176 @@ public enum Mirror {
         return mine == local.joined(separator: fieldSeparator)
     }
 
-    /// Everything connected, both ways. Saves the store when something came in.
+    /// Everything connected, both ways. Calendar and Reminders are asked and written by the
+    /// worker, away from the screen: here only the store is read and changed. Does not save — the
+    /// caller saves, and so knows that save for the sync's own.
     ///
     /// `onlyChangedHere`: Calendar and Reminders said nothing changed there — only this store was
-    /// saved. Then only what changed here is looked up there: each lookup asks Calendar's database,
-    /// and asking for every connected thing after every tick held the screen up.
-    public static func reconcile(_ context: ModelContext, calendars: Calendars = .shared, stamps: Stamps = .device,
-                                 onlyChangedHere: Bool = false) -> Result {
+    /// saved. Then only what changed here is looked up there.
+    ///
+    /// Cancelled while the worker answers, it stops there and touches nothing more: the store may
+    /// be another one by then. One changed here meanwhile is left as it is, for the sync its save starts.
+    public static func reconcile(_ context: ModelContext, worker: any CalendarAsking = CalendarWorker.shared, calendars: Calendars = .shared,
+                                 reads: (events: Bool, reminders: Bool)? = nil, stamps: Stamps = .device,
+                                 onlyChangedHere: Bool = false) async -> Result {
         var result = Result()
-        if calendars.canReadReminders {
-            let todos = (try? context.fetch(FetchDescriptor<Todo>(predicate: #Predicate { $0.reminderID != nil }))) ?? []
-            let kept = oneEach(todos.compactMap { todo in todo.reminderID.map { (key: todo.persistentModelID, id: $0, local: fields(of: todo)) } },
-                               stamp: { stamps["reminder:" + $0] }, remote: { calendars.reminder($0).map(fields(of:)) })
-            for todo in todos where kept.contains(todo.persistentModelID) {
-                guard let id = todo.reminderID else { continue }
-                if onlyChangedHere, unchangedHere(fields(of: todo), stamp: stamps["reminder:" + id]) { continue }
-                guard let reminder = calendars.reminder(id) else { continue }
-                // Seen here for the first time and done on one side only: a reminder is connected while
-                // its task is open, so one of them was ticked since — and then both are done. Without
-                // this, a task ticked before this device had looked once left its reminder open for good.
-                if stamps["reminder:" + id] == nil, todo.isDone != reminder.isCompleted {
-                    if todo.isDone {
-                        reminder.isCompleted = true
-                        if (try? calendars.store.save(reminder, commit: true)) != nil { result.pushed += 1 }
-                    } else {
-                        todo.isDone = true
-                        todo.doneAt = reminder.completionDate ?? Date()
-                        result.pulled += 1
-                    }
-                }
-                let merge = Self.merge(local: fields(of: todo), remote: fields(of: reminder), stamp: stamps["reminder:" + id])
-                if merge.pulled {
-                    let l = merge.local
-                    if !l[0].isEmpty { todo.text = l[0] }
-                    todo.due = l[1].isEmpty ? nil : l[1]
-                    todo.dueTime = l[2].isEmpty ? nil : l[2]
-                    let done = l[3] == "done"
-                    if done != todo.isDone {
-                        todo.isDone = done
-                        todo.doneAt = done ? (reminder.completionDate ?? Date()) : nil
-                        if !done { todo.doneSource = nil }
-                    }
-                    result.pulled += 1
-                }
-                if merge.pushed {
-                    let r = merge.remote
-                    reminder.title = r[0]
-                    reminder.isCompleted = r[3] == "done"
-                    reminder.dueDateComponents = r[1].isEmpty ? nil : Calendars.start(day: r[1], time: r[2].isEmpty ? nil : r[2]).map { date in
-                        Calendar.current.dateComponents(r[2].isEmpty ? [.year, .month, .day] : [.year, .month, .day, .hour, .minute], from: date)
-                    }
-                    // In step only once Reminders has it: remembered over a failed write, the old
-                    // state there would count as the owner's newer one next time.
-                    guard (try? calendars.store.save(reminder, commit: true)) != nil else { continue }
-                    result.pushed += 1
-                }
-                stamps["reminder:" + id] = merge.stamp
+        guard !calendars.isSealed else { return result }
+        let reads = reads ?? (calendars.canReadEvents, calendars.canReadReminders)
+        let todos = reads.reminders ? (try? context.fetch(FetchDescriptor<Todo>(predicate: #Predicate { $0.reminderID != nil }))) ?? [] : []
+        let appointments = reads.events ? (try? context.fetch(FetchDescriptor<Appointment>())) ?? [] : []
+        let deadlines = reads.events ? (try? context.fetch(FetchDescriptor<Deadline>())) ?? [] : []
+        for appointment in appointments {
+            // Its end said only in its name, as the assistant once wrote it: kept as its end,
+            // and the name without it — Calendar gets both below.
+            if appointment.endTime == nil, appointment.what.contains(where: \.isNumber),
+               let end = Calendars.endClock(in: appointment.what, after: appointment.time) {
+                appointment.endTime = end
+                appointment.what = Calendars.withoutEnd(appointment.what)
             }
         }
-        if calendars.canReadEvents {
-            let appointments = (try? context.fetch(FetchDescriptor<Appointment>())) ?? []
-            let deadlines = (try? context.fetch(FetchDescriptor<Deadline>())) ?? []
-            for appointment in appointments {
-                // Its end said only in its name, as the assistant once wrote it: kept as its end,
-                // and the name without it — Calendar gets both below.
-                if appointment.endTime == nil, appointment.what.contains(where: \.isNumber),
-                   let end = Calendars.endClock(in: appointment.what, after: appointment.time) {
-                    appointment.endTime = end
-                    appointment.what = Calendars.withoutEnd(appointment.what)
+        // What each held when Calendar and Reminders were asked.
+        var asked: [PersistentIdentifier: [String]] = [:]
+        for todo in todos { asked[todo.persistentModelID] = fields(of: todo) }
+        for appointment in appointments { asked[appointment.persistentModelID] = fields(of: appointment) }
+        for deadline in deadlines { asked[deadline.persistentModelID] = fields(of: deadline) }
+        func still(_ model: some PersistentModel, _ now: @autoclosure () -> [String]) -> Bool {
+            !model.isDeleted && model.modelContext != nil && asked[model.persistentModelID] == now()
+        }
+        func connected(_ prefix: String, _ items: [(id: String, local: [String])]) -> [String] {
+            items.filter { !onlyChangedHere || !unchangedHere($0.local, stamp: stamps[prefix + $0.id]) }.map(\.id)
+        }
+        let reminderIDs = connected("reminder:", todos.compactMap { todo in todo.reminderID.map { ($0, fields(of: todo)) } })
+        let eventIDs = connected("event:", appointments.compactMap { a in a.calendarID.map { ($0, fields(of: a)) } }
+                                     + deadlines.compactMap { d in d.calendarID.map { ($0, fields(of: d)) } })
+        guard !reminderIDs.isEmpty || !eventIDs.isEmpty else { return result }
+        var seen = await worker.look(events: eventIDs, reminders: reminderIDs)
+        guard !Task.isCancelled else { return result }
+
+        // A task whose reminder is no longer found by its id — iCloud can give a reminder a new
+        // one once it has it — found again by its words, and connected anew. A reminder another
+        // task is connected with already is not taken. Only when everything was asked for.
+        if !onlyChangedHere {
+            let lost = todos.filter { todo in !todo.isDone && todo.reminderID.map { seen.reminders[$0] == nil } == true }
+            if !lost.isEmpty {
+                let all = await calendars.allReminders()
+                guard !Task.isCancelled else { return result }
+                var taken = Set(todos.compactMap(\.reminderID))
+                var found: [String] = []
+                for todo in lost where still(todo, fields(of: todo)) {
+                    guard let match = Calendars.findReminder(todo.text, in: all.filter { !taken.contains($0.id) }, ownLists: calendars.ownLists) else { continue }
+                    todo.reminderID = match.id
+                    taken.insert(match.id)
+                    found.append(match.id)
                 }
-            }
-            let kept = oneEach(appointments.compactMap { a in a.calendarID.map { (key: a.persistentModelID, id: $0, local: fields(of: a)) } }
-                                   + deadlines.compactMap { d in d.calendarID.map { (key: d.persistentModelID, id: $0, local: [d.what, d.day]) } },
-                               stamp: { stamps["event:" + $0] }, remote: { calendars.event($0).map(fields(of:)) })
-            for appointment in appointments where kept.contains(appointment.persistentModelID) {
-                guard let id = appointment.calendarID else { continue }
-                if onlyChangedHere, unchangedHere(fields(of: appointment), stamp: stamps["event:" + id]) { continue }
-                guard let event = calendars.event(id) else { continue }
-                // An event Causabee made an hour long, as every one was, while the appointment knows
-                // when it ends: given that end, before Calendar's end is taken as the owner's. One
-                // whose length the owner has set is theirs.
-                if event.notes?.hasPrefix("Causabee · ") == true, !event.isAllDay,
-                   abs(event.endDate.timeIntervalSince(event.startDate) - 3_600) < 1,
-                   let span = Calendars.span(what: appointment.what, day: appointment.day, time: appointment.time,
-                                             endDay: appointment.endDay, endTime: appointment.endTime),
-                   !span.allDay, abs(span.start.timeIntervalSince(event.startDate)) < 1, abs(span.end.timeIntervalSince(event.endDate)) > 1 {
-                    event.endDate = span.end
-                    if (try? calendars.store.save(event, span: .thisEvent, commit: false)) != nil { result.pushed += 1 }
+                if !found.isEmpty {
+                    let more = await worker.look(events: [], reminders: found)
+                    guard !Task.isCancelled else { return result }
+                    seen.reminders.merge(more.reminders) { $1 }
                 }
-                let merge = Self.merge(local: fields(of: appointment), remote: fields(of: event), stamp: stamps["event:" + id])
-                if merge.pulled {
-                    let l = merge.local
-                    appointment.what = l[0]; appointment.day = l[1]
-                    appointment.time = l[2].isEmpty ? nil : l[2]; appointment.place = l[3].isEmpty ? nil : l[3]
-                    result.pulled += 1
-                }
-                // The end is Calendar's to say: what the owner set there is kept here.
-                let end = Self.end(of: event)
-                if appointment.endDay != end.day { appointment.endDay = end.day }
-                if appointment.endTime != end.time { appointment.endTime = end.time }
-                // In step only once Calendar has it too: a stamp over a failed write would take the
-                // old Calendar value for the owner's newer one next time, and put it back.
-                let written = !merge.pushed || write(merge.remote, to: event, calendars: calendars)
-                if merge.pushed, written { result.pushed += 1 }
-                if written { stamps["event:" + id] = merge.stamp }
-            }
-            for deadline in deadlines where kept.contains(deadline.persistentModelID) {
-                guard let id = deadline.calendarID else { continue }
-                if onlyChangedHere, unchangedHere([deadline.what, deadline.day], stamp: stamps["event:" + id]) { continue }
-                guard let event = calendars.event(id) else { continue }
-                let theirs = fields(of: event)
-                let merge = Self.merge(local: [deadline.what, deadline.day], remote: [theirs[0], theirs[1]], stamp: stamps["event:" + id])
-                if merge.pulled { deadline.what = merge.local[0]; deadline.day = merge.local[1]; result.pulled += 1 }
-                let written = !merge.pushed || writeDeadline(what: merge.remote[0], day: merge.remote[1], to: event, calendars: calendars)
-                if merge.pushed, written { result.pushed += 1 }
-                if written { stamps["event:" + id] = merge.stamp }
             }
         }
-        if result.pushed > 0 { try? calendars.store.commit() }
-        if context.hasChanges { try? context.save() }
+
+        // What goes out, and the stamp each is in step with once it is there: remembered over a
+        // failed write, the old state there would count as the owner's newer one next time.
+        var writes: [CalendarWorker.Write] = []
+        var inStep: [(key: String, stamp: String)?] = []
+        func send(_ write: CalendarWorker.Write, then stamp: (key: String, stamp: String)? = nil) {
+            writes.append(write)
+            inStep.append(stamp)
+        }
+
+        let keptTodos = oneEach(todos.compactMap { todo in todo.reminderID.map { (key: todo.persistentModelID, id: $0, local: asked[todo.persistentModelID] ?? []) } },
+                                stamp: { stamps["reminder:" + $0] }, remote: { seen.reminders[$0]?.fields })
+        for todo in todos where keptTodos.contains(todo.persistentModelID) {
+            guard let id = todo.reminderID, let theirs = seen.reminders[id], still(todo, fields(of: todo)) else { continue }
+            let key = "reminder:" + id
+            var remote = theirs.fields
+            // Seen here for the first time and done on one side only: a reminder is connected while
+            // its task is open, so one of them was ticked since — and then both are done. Without
+            // this, a task ticked before this device had looked once left its reminder open for good.
+            if stamps[key] == nil, todo.isDone != (remote[3] == "done") {
+                if todo.isDone {
+                    send(.completed(id: id))
+                    remote[3] = "done"
+                } else {
+                    todo.isDone = true
+                    todo.doneAt = theirs.completedAt ?? Date()
+                    result.pulled += 1
+                }
+            }
+            let merge = Self.merge(local: fields(of: todo), remote: remote, stamp: stamps[key])
+            if merge.pulled {
+                let l = merge.local
+                if !l[0].isEmpty { todo.text = l[0] }
+                todo.due = l[1].isEmpty ? nil : l[1]
+                todo.dueTime = l[2].isEmpty ? nil : l[2]
+                let done = l[3] == "done"
+                if done != todo.isDone {
+                    todo.isDone = done
+                    todo.doneAt = done ? (theirs.completedAt ?? Date()) : nil
+                    if !done { todo.doneSource = nil }
+                }
+                result.pulled += 1
+            }
+            if merge.pushed { send(.reminder(id: id, fields: merge.remote), then: (key, merge.stamp)) } else { stamps[key] = merge.stamp }
+        }
+
+        let keptEvents = oneEach(appointments.compactMap { a in a.calendarID.map { (key: a.persistentModelID, id: $0, local: asked[a.persistentModelID] ?? []) } }
+                                     + deadlines.compactMap { d in d.calendarID.map { (key: d.persistentModelID, id: $0, local: asked[d.persistentModelID] ?? []) } },
+                                 stamp: { stamps["event:" + $0] }, remote: { seen.events[$0]?.fields })
+        for appointment in appointments where keptEvents.contains(appointment.persistentModelID) {
+            guard let id = appointment.calendarID, let theirs = seen.events[id], still(appointment, fields(of: appointment)) else { continue }
+            let key = "event:" + id
+            var end = theirs.end
+            // An event Causabee made an hour long, as every one was, while the appointment knows
+            // when it ends: given that end, before Calendar's end is taken as the owner's. One
+            // whose length the owner has set is theirs.
+            if theirs.madeByCausabee, !theirs.isAllDay, let start = theirs.start, let was = theirs.end,
+               abs(was.timeIntervalSince(start) - 3_600) < 1,
+               let span = Calendars.span(what: appointment.what, day: appointment.day, time: appointment.time,
+                                         endDay: appointment.endDay, endTime: appointment.endTime),
+               !span.allDay, abs(span.start.timeIntervalSince(start)) < 1, abs(span.end.timeIntervalSince(was)) > 1 {
+                send(.end(id: id, at: span.end))
+                end = span.end
+            }
+            let merge = Self.merge(local: fields(of: appointment), remote: theirs.fields, stamp: stamps[key])
+            if merge.pulled {
+                let l = merge.local
+                appointment.what = l[0]; appointment.day = l[1]
+                appointment.time = l[2].isEmpty ? nil : l[2]; appointment.place = l[3].isEmpty ? nil : l[3]
+                result.pulled += 1
+            }
+            // The end is Calendar's to say: what the owner set there is kept here.
+            if let start = theirs.start, let end {
+                let last = Self.end(start: start, end: end, allDay: theirs.isAllDay)
+                if appointment.endDay != last.day { appointment.endDay = last.day }
+                if appointment.endTime != last.time { appointment.endTime = last.time }
+            }
+            if merge.pushed { send(.event(id: id, fields: merge.remote), then: (key, merge.stamp)) } else { stamps[key] = merge.stamp }
+        }
+        for deadline in deadlines where keptEvents.contains(deadline.persistentModelID) {
+            guard let id = deadline.calendarID, let theirs = seen.events[id], still(deadline, fields(of: deadline)) else { continue }
+            let key = "event:" + id
+            let merge = Self.merge(local: fields(of: deadline), remote: [theirs.fields[0], theirs.fields[1]], stamp: stamps[key])
+            if merge.pulled { deadline.what = merge.local[0]; deadline.day = merge.local[1]; result.pulled += 1 }
+            if merge.pushed {
+                send(.deadline(id: id, what: merge.remote[0], day: merge.remote[1]), then: (key, merge.stamp))
+            } else {
+                stamps[key] = merge.stamp
+            }
+        }
+
+        guard !writes.isEmpty else { return result }
+        // Kept in step even when cancelled meanwhile: what was written is there, and the stamps
+        // are this device's, not the store's.
+        for (index, written) in await worker.write(writes).enumerated() where written {
+            result.pushed += 1
+            if let stamp = inStep[index] { stamps[stamp.key] = stamp.stamp }
+        }
         return result
     }
 
-    static func fields(of event: EKEvent) -> [String] {
+    nonisolated static func fields(of event: EKEvent) -> [String] {
         [event.title ?? "", MatterStatus.day(event.startDate), event.isAllDay ? "" : time(of: event.startDate), event.location ?? ""]
     }
 
@@ -226,7 +273,11 @@ public enum Mirror {
         [todo.text, todo.due ?? "", todo.dueTime ?? "", todo.isDone ? "done" : ""]
     }
 
-    static func fields(of reminder: EKReminder) -> [String] {
+    static func fields(of deadline: Deadline) -> [String] {
+        [deadline.what, deadline.day]
+    }
+
+    nonisolated static func fields(of reminder: EKReminder) -> [String] {
         let parts = reminder.dueDateComponents
         let due = parts.flatMap { Calendar.current.date(from: $0) }.map { MatterStatus.day($0) } ?? ""
         let dueTime = (parts?.hour).map { String(format: "%02d:%02d", $0, parts?.minute ?? 0) } ?? ""
@@ -256,15 +307,15 @@ public enum Mirror {
     }
 
     /// The last day of an event that runs over several, and the hour it ends — as an appointment keeps them.
-    static func end(of event: EKEvent) -> (day: String?, time: String?) {
-        let first = MatterStatus.day(event.startDate), last = MatterStatus.day(event.endDate)
-        if event.isAllDay { return (last > first ? last : nil, nil) }
-        return (last > first ? last : nil, time(of: event.endDate))
+    static func end(start: Date, end: Date, allDay: Bool) -> (day: String?, time: String?) {
+        let first = MatterStatus.day(start), last = MatterStatus.day(end)
+        if allDay { return (last > first ? last : nil, nil) }
+        return (last > first ? last : nil, time(of: end))
     }
 
     /// A deadline knows only what and which day: the time and place the owner may have given it in
     /// Calendar stay as they are, and a new day keeps the event's own time and length.
-    private static func writeDeadline(what: String, day: String, to event: EKEvent, calendars: Calendars) -> Bool {
+    nonisolated static func writeDeadline(what: String, day: String, to event: EKEvent, store: EKEventStore) -> Bool {
         event.title = what
         if MatterStatus.day(event.startDate) != day,
            let start = Calendars.start(day: day, time: event.isAllDay ? nil : time(of: event.startDate)) {
@@ -272,10 +323,10 @@ public enum Mirror {
             event.startDate = start
             event.endDate = start.addingTimeInterval(length)
         }
-        return (try? calendars.store.save(event, span: .thisEvent, commit: false)) != nil
+        return (try? store.save(event, span: .thisEvent, commit: false)) != nil
     }
 
-    private static func write(_ fields: [String], to event: EKEvent, calendars: Calendars) -> Bool {
+    nonisolated static func write(_ fields: [String], to event: EKEvent, store: EKEventStore) -> Bool {
         let time = fields[2].isEmpty ? nil : fields[2]
         guard let start = Calendars.start(day: fields[1], time: time) else { return false }
         let length = event.isAllDay ? 3_600 : max(event.endDate.timeIntervalSince(event.startDate), 900)
@@ -286,6 +337,6 @@ public enum Mirror {
         event.startDate = start
         event.endDate = time == nil ? Calendar.current.date(byAdding: .day, value: max(days, 0), to: start) ?? start : start.addingTimeInterval(length)
         event.location = fields[3].isEmpty ? nil : fields[3]
-        return (try? calendars.store.save(event, span: .thisEvent, commit: false)) != nil
+        return (try? store.save(event, span: .thisEvent, commit: false)) != nil
     }
 }
