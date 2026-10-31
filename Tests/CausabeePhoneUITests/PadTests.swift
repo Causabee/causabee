@@ -17,23 +17,23 @@ final class PadTests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["--demo", "--open", "Care for Mum (Helga) after her fall", "--part", "all", "-mail.auto", "NO"]
         app.launch()
-        XCTAssertTrue(app.buttons["part.All"].waitForExistence(timeout: 40), "The matter's page did not open.")
+        XCTAssertTrue(app.buttons["part.Digest"].waitForExistence(timeout: 40), "The matter's page did not open.")
     }
 
     override func tearDown() { XCUIDevice.shared.orientation = .portrait }
 
     /// On its side: the journal between the sidebar and the column, on every filter, whole.
     func testTheColumnStandsBesideTheJournal() {
-        for part in ["All", "Plan", "Mail", "Files", "People", "Notes"] {
+        for part in ["Digest", "Plan", "Mail", "Files", "People", "Notes"] {
             let filter = app.buttons["part.\(part)"]
             XCTAssertTrue(filter.waitForExistence(timeout: 10), "\(part) is not among the filters.")
             filter.tap()
             let column = app.buttons["athand.Summary"]
             XCTAssertTrue(column.waitForExistence(timeout: 10), "The column is not there on \(part).")
             picture(part)
-            XCTAssertGreaterThan(app.buttons["part.All"].frame.minX, sidebar, "On \(part) the journal slid under the sidebar.")
+            XCTAssertGreaterThan(app.buttons["part.Digest"].frame.minX, sidebar, "On \(part) the journal slid under the sidebar.")
             XCTAssertLessThanOrEqual(column.frame.maxX, app.windows.firstMatch.frame.maxX, "On \(part) the column runs off the screen.")
-            XCTAssertLessThan(app.buttons["part.All"].frame.maxX, column.frame.minX, "On \(part) the journal and the column overlap.")
+            XCTAssertLessThan(app.buttons["part.Digest"].frame.maxX, column.frame.minX, "On \(part) the journal and the column overlap.")
         }
     }
 
@@ -43,10 +43,10 @@ final class PadTests: XCTestCase {
         let matters = app.buttons["part.Matters"]
         XCTAssertTrue(matters.waitForExistence(timeout: 10), "The overview did not open.")
         picture("Overview")
-        XCTAssertGreaterThan(app.buttons["part.All"].frame.minX, sidebar, "The overview slid under the sidebar.")
+        XCTAssertGreaterThan(app.buttons["part.Latest updates"].frame.minX, sidebar, "The overview slid under the sidebar.")
         matters.tap()
         picture("Overview's matters")
-        XCTAssertGreaterThan(app.buttons["part.All"].frame.minX, sidebar, "The overview slid under the sidebar.")
+        XCTAssertGreaterThan(app.buttons["part.Latest updates"].frame.minX, sidebar, "The overview slid under the sidebar.")
     }
 
     /// With the assistant beside it there is no room for the column: the journal has the page alone.
@@ -57,7 +57,7 @@ final class PadTests: XCTestCase {
         app.buttons["Ask Causabee"].firstMatch.tap()
         XCTAssertTrue(app.buttons["athand.Summary"].waitForNonExistence(timeout: 10), "The column stayed beside the assistant.")
         picture("Assistant")
-        XCTAssertGreaterThan(app.buttons["part.All"].frame.minX, sidebar, "The journal slid under the sidebar.")
+        XCTAssertGreaterThan(app.buttons["part.Digest"].frame.minX, sidebar, "The journal slid under the sidebar.")
     }
 
     /// Turned upright the sidebar and the column step aside, and the page has the whole window.
@@ -67,7 +67,7 @@ final class PadTests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         XCTAssertTrue(app.buttons["athand.Summary"].waitForNonExistence(timeout: 10), "The column stayed on an upright iPad.")
         picture("Upright")
-        XCTAssertGreaterThanOrEqual(app.buttons["part.All"].frame.minX, 0, "The journal is cut off on the left.")
+        XCTAssertGreaterThanOrEqual(app.buttons["part.Digest"].frame.minX, 0, "The journal is cut off on the left.")
     }
 
     private func picture(_ name: String) {

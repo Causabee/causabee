@@ -740,7 +740,7 @@ struct BallCard: View {
 enum OverviewPart: String, CaseIterable {
     case all, matters
 
-    var label: String { self == .all ? "All" : "Matters" }
+    var label: String { self == .all ? "Latest updates" : "Matters" }
 }
 
 /// The journal across all matters: a day at a time, each matter once, with what its newest mail says.

@@ -74,7 +74,7 @@ final class RegressionTests: XCTestCase {
     }
 
     func testTheFilters() {
-        for name in ["All", "Mail", "Files", "People", "Notes", "Plan"] { tab(name) }
+        for name in ["Digest", "Mail", "Files", "People", "Notes", "Plan"] { tab(name) }
         shows("WAITING FOR OTHERS", "Back on Plan, the plan is not shown.")
     }
 

@@ -59,7 +59,7 @@ final class ScrollTests: XCTestCase {
         XCTAssertTrue(app.buttons["Ask Causabee"].waitForExistence(timeout: 20), "The matter's page did not open.")
         sleep(2)
         scroll("matter · plan")
-        for (part, name) in [("All", "matter · journal"), ("Mail", "matter · mail"), ("People", "matter · people"), ("Notes", "matter · notes")] {
+        for (part, name) in [("Digest", "matter · journal"), ("Mail", "matter · mail"), ("People", "matter · people"), ("Notes", "matter · notes")] {
             let button = app.buttons[part].firstMatch
             guard button.exists else { continue }
             button.tap()

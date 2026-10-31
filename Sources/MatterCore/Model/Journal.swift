@@ -10,7 +10,7 @@ public enum Journal {
 
         public var label: String {
             switch self {
-            case .all: "All"
+            case .all: "Digest"
             case .plan: "Plan"
             case .mail: "Mail"
             case .files: "Files"
