@@ -11,6 +11,15 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         public let text: String
     }
 
+    /// The matter's newest mail: what its day in the overview's journal says.
+    public struct Latest: Equatable, Sendable {
+        public let title: String
+        public let digest: String?
+        public let date: Date
+        /// How many mails came that day.
+        public let mails: Int
+    }
+
     /// Something with a day on it: an open task's due day, a deadline, an appointment.
     public struct Dated: Equatable, Sendable {
         public let day: String
@@ -47,6 +56,7 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
     public let dated: [Dated]
     /// What new mail changes, as the brief says, until the owner has seen it: its first line.
     public let news: String?
+    public let latest: Latest?
 
     public var isPinned: Bool { pinnedAt != nil }
     /// Something going on: an open task, or a day ahead.
@@ -86,6 +96,12 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         firstDate = dates.first
         newMailsSinceClosed = matter.closedAt.map { closed in dates.count - (dates.firstIndex { $0 > closed } ?? dates.count) } ?? 0
         news = matter.brief == nil ? nil : matter.shownBrief?.news.flatMap { $0.seen ? nil : $0.lines.first }
+        if let last = dates.last, let newest = entries.first(where: { $0.date == last }) {
+            let day = MatterStatus.day(last)
+            latest = Latest(title: newest.title, digest: newest.digest, date: last, mails: dates.reversed().prefix { MatterStatus.day($0) == day }.count)
+        } else {
+            latest = nil
+        }
     }
 }
 
@@ -103,6 +119,8 @@ public struct OverviewPage: Sendable {
     public let pinned: [MatterSummary]
     public let quiet: [MatterSummary]
     public let closed: [MatterSummary]
+    /// The journal across all matters: the open ones with mail in the last two weeks, the newest first.
+    public let recent: [MatterSummary]
     private let byID: [PersistentIdentifier: MatterSummary]
 
     public init(_ matters: [Matter], today: Date = Date(), quick: Bool = false) {
@@ -127,6 +145,9 @@ public struct OverviewPage: Sendable {
         self.quiet = quiet.filter { !$0.isPinned }
         ordered = active + quiet + closed
         pinned = summaries.filter { !$0.isClosed && $0.isPinned }.sorted { ($0.pinnedAt ?? .distantPast) < ($1.pinnedAt ?? .distantPast) }
+        let limit = today.addingTimeInterval(-14 * 86_400)
+        recent = summaries.filter { !$0.isClosed && ($0.latest?.date ?? .distantPast) >= limit }
+            .sorted { ($0.latest?.date ?? .distantPast) > ($1.latest?.date ?? .distantPast) }
     }
 
     public subscript(id: PersistentIdentifier) -> MatterSummary? { byID[id] }

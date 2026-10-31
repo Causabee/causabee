@@ -232,6 +232,8 @@ struct OverviewScreen: View {
     @Environment(\.modelContext) private var context
     @AppStorage(WelcomeSheet.seenKey) private var introSeen = false
     @State private var showsWelcome = false
+    /// What happened across the matters, or the matters themselves.
+    @State private var part = OverviewPart.all
     /// How many cards fit side by side: one on the iPhone, two on a wide iPad.
     private var columns: Int { navigation.isPad && navigation.pageWidth >= PadMetrics.twoColumns ? 2 : 1 }
 
@@ -250,12 +252,18 @@ struct OverviewScreen: View {
                 // In the demo, three made-up mails come in: the whole round, nothing read or sent.
                 PhoneMailCheckView()
                 searchField
+                // With nothing in the last two weeks there is no journal: the matters stand here at once.
+                let hasJournal = !StoredChanges.shared.overview(matters).recent.isEmpty
                 if matters.isEmpty {
                     empty
                 } else {
-                    PhoneWeek(matters: matters)
+                    if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, selection: $part) }
+                    PhoneWeek(matters: matters).journalCard(inset: 14)
                 }
                 UnreadMatters(matters: matters) { matter, mail in navigation.open(matter, showing: mail) }
+                if hasJournal, part == .all {
+                    OverviewJournal(matters: matters) { navigation.open($0) }
+                } else {
                 let pinned = Pins.pinned(matters)
                 if !pinned.isEmpty {
                     SectionHeader(title: "Pinned", detail: nil).padding(.top, 4)
@@ -298,6 +306,7 @@ struct OverviewScreen: View {
                 }
                 // The quiet and the closed ones, folded away: the ones going on are the cards.
                 OtherMattersList(matters: matters)
+                }
                 if store.isDemo {
                     Button("Leave the demo") { store.switchDemo(false) }
                         .font(.footnote).foregroundStyle(Theme.gold).padding(.top, 8)
@@ -314,7 +323,7 @@ struct OverviewScreen: View {
         // A screenshot or a PDF dragged onto the overview, or pasted: read, and its matter found —
         // as the Mac reads what is dropped on its window.
         .receivesFiles(matter: nil)
-        .background(Theme.canvas)
+        .background(Theme.page)
         // The assistant about every matter, as on a matter's page; held, its plus for any matter.
         .overlay(alignment: .bottomTrailing) {
             if search.isEmpty, !(navigation.isPad && navigation.showsAssistant) { AssistantButton { navigation.openAssistant() } }
@@ -372,7 +381,6 @@ struct OverviewScreen: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
             .background(Theme.card, in: Capsule())
-            .overlay(Capsule().stroke(Theme.line))
             // Tapped and nothing typed yet: the matters opened last, to go straight back to. The first
             // letter typed puts what is found in their place.
             let recent = searching && query.isEmpty ? RecentMatters.list(in: matters, fillingFrom: activeMatters(matters)) : []
@@ -396,7 +404,7 @@ struct OverviewScreen: View {
                         .accessibilityIdentifier("recent.matter")
                     }
                 }
-                .phoneCard()
+                .journalRows()
             }
             if !query.isEmpty {
                 let hits = MatterSearch.find(query, in: matters)
@@ -425,7 +433,7 @@ struct OverviewScreen: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .phoneCard()
+                .journalRows()
             }
         }
     }

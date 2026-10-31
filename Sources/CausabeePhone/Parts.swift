@@ -231,8 +231,8 @@ struct PhoneMatterCard: View {
             }
         }
         .padding(16)
-        .phoneCard()
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .journalRows()
+        .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
         .onTapGesture { open(nil) }
         .accessibilityAddTraits(.isButton)
     }

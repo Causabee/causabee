@@ -416,6 +416,8 @@ struct OverviewView: View {
     /// The row the arrow keys or the mouse are on; Return opens it. The last row is "Start new".
     @State private var picked = 0
     /// How wide the page is: how many pinned matters fit side by side.
+    /// What happened across the matters, or the matters themselves.
+    @State private var part = OverviewPart.all
     @State private var width: CGFloat = 0
 
     private var ordered: [Matter] { activeMatters(matters) }
@@ -550,8 +552,14 @@ struct OverviewView: View {
                 .frame(maxWidth: 600)
                 .frame(maxWidth: .infinity)
                 .padding(.top, 84).padding(.bottom, 18)
-                if !matters.isEmpty { OverviewWeek(matters: matters) }
+                // With nothing in the last two weeks there is no journal: the matters stand here at once.
+                let hasJournal = !StoredChanges.shared.overview(matters).recent.isEmpty
+                if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, selection: $part) }
+                if !matters.isEmpty { OverviewWeek(matters: matters).journalCard(inset: 16) }
                 UnreadMatters(matters: matters) { matter, mail in navigation.open(matter, showing: mail) }
+                if hasJournal, part == .all {
+                    OverviewJournal(matters: matters) { navigation.open($0) }
+                } else {
                 let pinned = Pins.pinned(matters)
                 if !pinned.isEmpty { pinnedCards(pinned).padding(.top, 6) }
                 let rest = ordered.filter { !$0.isPinned }
@@ -579,13 +587,16 @@ struct OverviewView: View {
                 // The quiet and the closed ones, folded away under the cards — named, and each a way
                 // in — as on the iPhone and the iPad.
                 OtherMatters(matters: matters)
+                }
             }
             .padding(24)
-            // The whole width, up to where lines would get too long to follow.
-            .frame(maxWidth: 1400, alignment: .leading)
+            // The whole width, up to where lines would get too long to follow; the journal is read
+            // as a matter's is, no wider.
+            .frame(maxWidth: part == .all ? 820 : 1400, alignment: .leading)
             .frame(maxWidth: .infinity)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         }
+        .background(Theme.page)
         .navigationTitle("Overview")
     }
 
@@ -1120,10 +1131,10 @@ struct MatterCard: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(hovering ? Theme.strongLine : Theme.line))
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous).stroke(hovering ? Theme.strongLine : Color.clear))
         // The whole card is the door into the matter; an overdue line inside opens it at that task.
-        .contentShape(RoundedRectangle(cornerRadius: 10))
+        .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
         .onTapGesture(perform: open)
         .onHover { hovering = $0 }
         .pointerStyle(.link)

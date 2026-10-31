@@ -39,18 +39,19 @@ extension View {
     }
 }
 
-/// The filters over the journal: words, the open one on a white pill. Only the ones with something
+/// The filters over a journal: words, the open one on a white pill. Only the ones with something
 /// behind them are here; on a narrow screen or with large text the row scrolls.
-struct JournalPills: View {
-    let parts: [Journal.Part]
-    @Binding var selection: Journal.Part
+struct JournalPills<Part: Hashable>: View {
+    let parts: [Part]
+    let label: (Part) -> String
+    @Binding var selection: Part
 
     private var row: some View {
         HStack(spacing: 6) {
             ForEach(parts, id: \.self) { part in
                 let chosen = part == selection
                 Button { selection = part } label: {
-                    Text(part.label)
+                    Text(label(part))
                         #if os(iOS)
                         .font(.subheadline)
                         .padding(.horizontal, 11).padding(.vertical, 7)
@@ -69,9 +70,9 @@ struct JournalPills: View {
                 }
                 .buttonStyle(.plain)
                 .fixedSize()
-                .accessibilityLabel(part.label)
+                .accessibilityLabel(label(part))
                 .accessibilityAddTraits(chosen ? .isSelected : [])
-                .accessibilityIdentifier("part." + part.label)
+                .accessibilityIdentifier("part." + label(part))
             }
         }
     }
@@ -83,6 +84,12 @@ struct JournalPills: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Filter")
+    }
+}
+
+extension JournalPills where Part == Journal.Part {
+    init(parts: [Journal.Part], selection: Binding<Journal.Part>) {
+        self.init(parts: parts, label: \.label, selection: selection)
     }
 }
 
@@ -662,5 +669,88 @@ struct BallCard: View {
             }
             .journalCard()
         }
+    }
+}
+
+/// The overview's two pages: what happened across all matters, or the matters themselves.
+enum OverviewPart: String, CaseIterable {
+    case all, matters
+
+    var label: String { self == .all ? "All" : "Matters" }
+}
+
+/// The journal across all matters: a day at a time, each matter once, with what its newest mail says.
+struct OverviewJournal: View {
+    let matters: [Matter]
+    let open: (Matter) -> Void
+
+    private struct Day: Identifiable {
+        let id: String
+        let title: String
+        var summaries: [MatterSummary]
+    }
+
+    private func days(_ recent: [MatterSummary]) -> [Day] {
+        var days: [Day] = []
+        for summary in recent {
+            guard let date = summary.latest?.date else { continue }
+            let id = MatterStatus.day(date)
+            if days.last?.id == id { days[days.count - 1].summaries.append(summary) }
+            else { days.append(Day(id: id, title: Journal.dayTitle(date), summaries: [summary])) }
+        }
+        return days
+    }
+
+    var body: some View {
+        let recent = StoredChanges.shared.overview(matters).recent
+        let byID = Dictionary(matters.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { first, _ in first })
+        LazyVStack(alignment: .leading, spacing: Theme.cardGap) {
+            ForEach(days(recent)) { day in
+                JournalHeading(title: day.title)
+                ForEach(day.summaries) { summary in
+                    if let matter = byID[summary.id] { OverviewDayCard(summary: summary, matter: matter) { open(matter) } }
+                }
+            }
+        }
+    }
+}
+
+/// One matter's day: its name, what its newest mail says, how much came and how much is open.
+private struct OverviewDayCard: View {
+    let summary: MatterSummary
+    let matter: Matter
+    let open: () -> Void
+
+    var body: some View {
+        Button(action: open) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    MatterIconTile(matter: matter, size: 32)
+                    Text(summary.name).font(Theme.rowTitleFont).foregroundStyle(.primary).lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                if let latest = summary.latest {
+                    Text(latest.digest ?? latest.title)
+                        #if os(macOS)
+                        .font(.callout)
+                        #else
+                        .font(.subheadline)
+                        #endif
+                        .foregroundStyle(.secondary).lineLimit(3).multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Divider().padding(.top, 4)
+                    HStack(spacing: 8) {
+                        Text((latest.mails == 1 ? "1 mail" : "\(latest.mails) mails") + (summary.openCount == 0 ? "" : " · \(summary.openCount) open"))
+                        Spacer(minLength: 8)
+                        Text(Dates.short(latest.date)).monospacedDigit()
+                    }
+                    .font(.footnote).foregroundStyle(.secondary).padding(.top, 2)
+                }
+            }
+            .journalCard()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("overview.day")
     }
 }
