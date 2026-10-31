@@ -30,8 +30,7 @@ struct PeopleSection: View {
                               action: "Add Contact", symbol: "person.badge.plus") { adding = true }
             }
         } else {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "People", detail: memberships.count == 1 ? "1 name" : "\(memberships.count) names")
+            VStack(alignment: .leading, spacing: Theme.cardGap) {
                 let rules = StoredChanges.shared.rules(in: context)
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
@@ -42,10 +41,12 @@ struct PeopleSection: View {
                         try? context.save()
                     }
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(memberships.enumerated()), id: \.element.persistentModelID) { index, membership in
-                        if index > 0 { Divider().padding(.leading, 50) }
-                        if let party = membership.party {
+                // Those the ball lies with first.
+                let balls = memberships.map { membership in membership.party.map { Journal.ball(of: $0, in: matter) } ?? Journal.Ball() }
+                let ordered = zip(memberships, balls).enumerated().sorted { ($0.element.1.isEmpty ? 1 : 0, $0.offset) < ($1.element.1.isEmpty ? 1 : 0, $1.offset) }.map(\.element)
+                ForEach(ordered, id: \.0.persistentModelID) { membership, ball in
+                    if let party = membership.party {
+                        VStack(alignment: .leading, spacing: 0) {
                             PhonePartyRow(party: party, membership: membership, matter: matter,
                                           save: { name, role in edit(party, membership: membership, name: name, role: role) },
                                           remove: {
@@ -55,10 +56,11 @@ struct PeopleSection: View {
                                           merge: { other in merging = (party, other) })
                                 .contentShape(Rectangle())
                                 .onTapGesture { choose?(party) }
+                            if !ball.isEmpty { BallTile(ball: ball).padding(.horizontal, 12).padding(.bottom, 12) }
                         }
+                        .journalRows()
                     }
                 }
-                .phoneCard()
             }
             .confirmationDialogWhenAsked(mergeQuestion, isPresented: Binding(get: { merging != nil }, set: { if !$0 { merging = nil } }),
                                 titleVisibility: .visible) {
@@ -277,7 +279,7 @@ struct LinksSection: View {
                         }
                     }
                 }
-                .phoneCard()
+                .journalRows()
             } else if offered.isEmpty {
                 PhoneEmptyBox(text: "A Google Doc, a sheet — whatever belongs to this matter.",
                               action: "Add Link", symbol: "link.badge.plus") { adding = true }
@@ -296,7 +298,7 @@ struct LinksSection: View {
                             }
                         }
                     }
-                    .phoneCard().padding(.top, 6)
+                    .journalRows().padding(.top, 6)
                 } label: {
                     Text("From the mails · \(offered.count) \(offered.count == 1 ? "suggestion" : "suggestions")").font(.subheadline.weight(.semibold))
                 }

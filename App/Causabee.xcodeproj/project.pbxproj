@@ -66,6 +66,7 @@
 				AskSteps.swift,
 				BeeServer.swift,
 				GoogleSignInFlow.swift,
+				Journal.swift,
 				MailSetup.swift,
 				PlanSheet.swift,
 				Store.swift,

@@ -60,7 +60,7 @@ struct PhoneEmptyBox: View {
         }
         .padding(.horizontal, 20).padding(.vertical, action == nil ? 18 : 22)
         .frame(maxWidth: .infinity)
-        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 }
 

@@ -42,6 +42,8 @@ enum Theme {
     /// The window and its cards: white in light mode; in dark mode the warm grey's dark end.
     static let canvas = adaptive("canvas", light: 0xFFFFFF, dark: 0x141310)
     static let card = adaptive("card", light: 0xFFFFFF, dark: Palette.greyDark[5])
+    /// Under a matter's cards and the overview's: a soft grey, so that white cards stand on it.
+    static let page = adaptive("page", light: Palette.greyLight[9], dark: 0x141310)
     /// Boxes that stand out from the cards — "Next" and "Summary" among them.
     static let box = adaptive("box", light: Palette.greyLight[9], dark: Palette.greyDark[4])
     /// A search result or a task one jumped to, and the open row of the sidebar.

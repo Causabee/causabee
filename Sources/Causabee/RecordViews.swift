@@ -46,14 +46,7 @@ struct ThreadCard: View {
                 }
             }
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        #if os(macOS)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
-        #else
-        .phoneCard()
-        #endif
+        .journalCard(inset: 14)
     }
 
     private var span: String {
@@ -789,18 +782,13 @@ final class CGImageBox {
 }
 
 extension View {
-    /// A file as a card of the record. Read: white, with its line. Kept only: no ground, and a
+    /// A file as a card of the record. Read: white. Kept only: no ground, and a
     /// dashed line — stored, not read, never sent.
     func fileCardFrame(kept: Bool) -> some View {
-        #if os(macOS)
-        let corner: CGFloat = 10
-        #else
-        let corner: CGFloat = 12
-        #endif
+        let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
         return frame(maxWidth: .infinity, alignment: .leading)
-            .background(kept ? Color.clear : Theme.card, in: RoundedRectangle(cornerRadius: corner))
-            .overlay(RoundedRectangle(cornerRadius: corner)
-                .strokeBorder(kept ? Theme.strongLine : Theme.line, style: StrokeStyle(lineWidth: 1, dash: kept ? [5, 4] : [])))
+            .background(kept ? Color.clear : Theme.card, in: shape)
+            .overlay(shape.strokeBorder(kept ? Theme.strongLine : Color.clear, style: StrokeStyle(lineWidth: 1, dash: kept ? [5, 4] : [])))
     }
 }
 
@@ -842,10 +830,10 @@ struct ChooseBar: View {
 
 // MARK: Browsing
 
-/// The record's line: what kind of thing, which of them, in which order — three small menus, the
-/// same on every device, in the same order. One person chosen in People stands beside them.
+/// The line over Mail and Files: which of them, in which order — two small menus, the same on
+/// every device, in the same order. One person chosen in People stands beside them.
 struct RecordBar<Trailing: View>: View {
-    @Binding var kind: RecordBrowse.Kind
+    var kind: RecordBrowse.Kind
     @Binding var show: RecordBrowse.Show
     @Binding var sort: RecordBrowse.Sort
     /// How many there are for each "Show".
@@ -856,11 +844,6 @@ struct RecordBar<Trailing: View>: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            menu("Kind", kind.label) {
-                Picker("Kind", selection: $kind) {
-                    ForEach(RecordBrowse.Kind.allCases, id: \.self) { Text($0.label).tag($0) }
-                }
-            }
             if kind != .details {
                 menu("Show", show.label) {
                     Picker("Show", selection: $show) {
@@ -1097,68 +1080,121 @@ struct BroughtFile: Transferable {
     }
 }
 
-/// The brief under the summary — the same on every device: what Causabee understands of the
-/// matter, folded until opened; what the owner said of it, which every brief is written around;
-/// and the adviser's proposals for the to-do list, each taken with a tap or put away.
-struct BriefDetails: View {
+/// What is new, on top of the journal until it is seen: what the new mail changes, on yellow.
+struct NewsCard: View {
     let matter: Matter
     @Environment(\.modelContext) private var context
-    @State private var opens = false
+
+    var body: some View {
+        if let news = matter.shownBrief?.news, !news.seen {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
+                    BeeChip(text: "NEW · SINCE \(Dates.short(news.since).uppercased())")
+                    ForEach(Array(news.lines.enumerated()), id: \.offset) { _, line in
+                        Text(line).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .waitingTile()
+                HStack(spacing: 8) {
+                    Text(news.mails == 1 ? "1 mail" : "\(news.mails) mails").font(.footnote).foregroundStyle(.secondary)
+                    Spacer(minLength: 4)
+                    Button("Seen") { withAnimation { matter.sawNews(); try? context.save() } }
+                        .quietButton()
+                        .accessibilityIdentifier("brief.seen")
+                }
+                .padding(.horizontal, 16).padding(.vertical, 10)
+            }
+            .journalCard(inset: Theme.tileInset)
+            // A notification of news tapped goes here.
+            .id("news")
+        }
+    }
+}
+
+/// What Causabee asks of the owner, on yellow under the next step until it is answered: changes it
+/// proposes for the list, and questions it would look up. Over the plan it is one line: the plan is
+/// what that page is for.
+struct ForYouCard: View {
+    let matter: Matter
+    var folds = false
+    @State private var unfolded = false
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         if let brief = matter.shownBrief {
-            VStack(alignment: .leading, spacing: 12) {
-                if let news = brief.news, !news.seen {
-                    // What the new mail changes, first: on a pale honey, until it is seen.
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 8) {
-                            BeeChip(text: "NEW")
-                            Text("\(news.mails == 1 ? "1 mail" : "\(news.mails) mails") since \(Dates.short(news.since))")
-                                .font(.caption).foregroundStyle(.secondary)
-                            Spacer(minLength: 4)
-                            Button("Seen") { withAnimation { matter.sawNews(); try? context.save() } }
-                                .buttonStyle(.plain).font(.caption.weight(.medium)).foregroundStyle(Theme.gold)
-                                .accessibilityIdentifier("brief.seen")
+            let proposals = Adviser.worthReading(brief.open, in: matter, context: context)
+            let count = proposals.count + brief.openLookups.count
+            if count > 0 {
+                VStack(alignment: .leading, spacing: Theme.tileInset) {
+                    if folds, !unfolded {
+                        Button { withAnimation(.snappy(duration: 0.2)) { unfolded = true } } label: {
+                            HStack(spacing: 8) {
+                                Text(count == 1 ? "1 question from Causabee" : "\(count) questions from Causabee").foregroundStyle(.primary)
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                            }
+                            .waitingTile()
+                            .contentShape(Rectangle())
                         }
-                        ForEach(Array(news.lines.enumerated()), id: \.offset) { _, line in
-                            Text(line).fixedSize(horizontal: false, vertical: true)
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("foryou.unfold")
+                    } else {
+                        if !proposals.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("FOR THE LIST").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                ForEach(proposals) { proposal in
+                                    ProposalRow(proposal: proposal, matter: matter)
+                                }
+                            }
+                            .waitingTile()
+                        }
+                        if !brief.openLookups.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("LOOK UP?").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                // Said once, over them: what goes out, and what does not.
+                                Text("Only this question goes to the web — nothing of the matter.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                ForEach(brief.openLookups) { lookup in
+                                    LookupRow(lookup: lookup, matter: matter)
+                                }
+                            }
+                            .waitingTile()
                         }
                     }
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
-                    // A notification of news tapped goes here.
-                    .id("news")
                 }
-                if !brief.lines.isEmpty || !brief.answeredHere.isEmpty {
-                    DisclosureGroup(isExpanded: $opens) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            ForEach(Brief.Part.allCases, id: \.self) { part in
-                                let lines = brief.lines(part)
-                                if !lines.isEmpty {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(Self.title(part)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                                        ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-                                            Text(line).fixedSize(horizontal: false, vertical: true)
-                                                .findable(.section("brief-\(part.rawValue)-\(index)"), line)
-                                        }
-                                    }
-                                }
-                            }
-                            // What was looked up on the web: kept to read, folded with the rest — it
-                            // waits for nothing, and under the brief it stood in the way.
-                            if !brief.answeredHere.isEmpty {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Text("Looked up").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                                    ForEach(brief.answeredHere) { lookup in FoundRow(lookup: lookup) }
-                                }
+                .journalCard(inset: Theme.tileInset)
+            }
+        }
+    }
+}
+
+/// The brief, under the summary — the same on every device: what Causabee understands of the
+/// matter, what was looked up, and what the owner said of it, which every brief is written around.
+struct BriefDetails: View {
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        if let brief = matter.shownBrief {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(Brief.Part.allCases, id: \.self) { part in
+                    let lines = brief.lines(part)
+                    if !lines.isEmpty {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(Self.title(part)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                            ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                                Text(line).fixedSize(horizontal: false, vertical: true)
+                                    .findable(.section("brief-\(part.rawValue)-\(index)"), line)
                             }
                         }
-                        .padding(.top, 8)
-                    } label: {
-                        Text(opens ? "The brief" : "The brief · what Causabee understands").font(.callout.weight(.medium))
                     }
-                    .accessibilityIdentifier("brief.open")
+                }
+                // What was looked up on the web: kept to read — it waits for nothing.
+                if !brief.answeredHere.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Looked up").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        ForEach(brief.answeredHere) { lookup in FoundRow(lookup: lookup) }
+                    }
                 }
                 if !brief.said.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
@@ -1180,27 +1216,6 @@ struct BriefDetails: View {
                         }
                     }
                 }
-                let proposals = Adviser.worthReading(brief.open, in: matter, context: context)
-                if !proposals.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("For the list").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        ForEach(proposals) { proposal in
-                            ProposalRow(proposal: proposal, matter: matter)
-                        }
-                    }
-                }
-                if !brief.openLookups.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Look up?").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        // Said once, over them: what goes out, and what does not.
-                        Text("Only this question goes to the web — nothing of the matter.")
-                            .font(.caption).foregroundStyle(.secondary)
-                        ForEach(brief.openLookups) { lookup in
-                            LookupRow(lookup: lookup, matter: matter)
-                        }
-                    }
-                }
-
             }
         }
     }

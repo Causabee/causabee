@@ -132,7 +132,7 @@ struct FilesSection: View {
                         row(document).findable(.model(document.persistentModelID), document.shownName, document.name)
                     }
                 }
-                .phoneCard()
+                .journalRows()
             }
             if !hidden.isEmpty || !small.isEmpty {
                 HStack(spacing: 14) {
