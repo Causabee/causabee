@@ -645,3 +645,22 @@ struct BallTile: View {
         }
     }
 }
+
+/// Who has the ball, for the wide page's column: one line for each person it lies with.
+struct BallCard: View {
+    let matter: Matter
+
+    var body: some View {
+        let balls = matter.parties.map { ($0.name, Journal.ball(of: $0, in: matter)) }.filter { !$0.1.isEmpty }
+        if !balls.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("WHO HAS THE BALL").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                ForEach(balls, id: \.0) { name, ball in
+                    if ball.waitsForYou != nil { Text("\(name) waits for you") }
+                    if ball.youWaitFor != nil { Text("You wait for \(name)").foregroundStyle(.secondary) }
+                }
+            }
+            .journalCard()
+        }
+    }
+}
