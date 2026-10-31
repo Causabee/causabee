@@ -8,6 +8,12 @@ import XCTest
 ///
 ///   TEST_RUNNER_CAUSABEE_SCROLL_TESTS=1 xcodebuild test -project App/Causabee.xcodeproj -scheme CausabeePhoneUITests -destination 'platform=iOS Simulator,name=iPhone 18 Pro' -only-testing:CausabeePhoneUITests/ScrollTests
 final class ScrollTests: XCTestCase {
+    /// The overview opens on its journal; the matters are one filter away.
+    private func showMatters() {
+        let filter = app.buttons["part.Matters"]
+        if filter.waitForExistence(timeout: 40) { filter.tap() }
+    }
+
     private var app: XCUIApplication!
 
     override func setUpWithError() throws {
@@ -16,6 +22,7 @@ final class ScrollTests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["--demo", "--big", "--frame-meter", "-mail.auto", "NO", "-demo.filled", "anew"]
         app.launch()
+        showMatters()
         XCTAssertTrue(app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch.waitForExistence(timeout: 90), "The demo's overview did not come up.")
         // Settled: the store read, the first pages prepared.
         sleep(3)
@@ -52,7 +59,7 @@ final class ScrollTests: XCTestCase {
         XCTAssertTrue(app.buttons["Ask Causabee"].waitForExistence(timeout: 20), "The matter's page did not open.")
         sleep(2)
         scroll("matter · plan")
-        for (part, name) in [("Record", "matter · record"), ("People", "matter · people"), ("Notes", "matter · notes")] {
+        for (part, name) in [("All", "matter · journal"), ("Mail", "matter · mail"), ("People", "matter · people"), ("Notes", "matter · notes")] {
             let button = app.buttons[part].firstMatch
             guard button.exists else { continue }
             button.tap()

@@ -584,18 +584,17 @@ struct MatterStatusView: View {
                              action: "Add File", symbol: "doc.badge.plus") { addingFile = true }
                 }
                 if !shown.isEmpty {
-                    Card {
-                        PageRows(all: find.isActive) {
-                            ForEach(Array(shown.enumerated()), id: \.element.persistentModelID) { index, document in
-                                if index > 0 { RowDivider() }
-                                DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
-                                            open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
-                                            read: { fetch(document, then: { conversation.bring($0, document: document) }) },
-                                            hide: { setHidden(document, !document.isHidden) },
-                                            nameIt: { nameFromContent(document) },
-                                            talk: { talk(document.shownName, "File") })
-                                    .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
-                            }
+                    // A mosaic, read at a glance, drawn near the screen only.
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: Theme.cardGap, alignment: .top)], alignment: .leading, spacing: Theme.cardGap) {
+                        ForEach(shown, id: \.persistentModelID) { document in
+                            DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
+                                        open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
+                                        read: { fetch(document, then: { conversation.bring($0, document: document) }) },
+                                        hide: { setHidden(document, !document.isHidden) },
+                                        nameIt: { nameFromContent(document) },
+                                        talk: { talk(document.shownName, "File") }, tile: true)
+                                .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+                                .journalRows()
                         }
                     }
                 }
@@ -1756,7 +1755,7 @@ struct TodoRow: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(todo.reminderID == nil ? "It goes from this matter; Edit → Undo brings it back. Something only good to know can go to Info instead."
+            Text(todo.reminderID == nil ? "It goes from this matter; Edit → Undo brings it back. Something only good to know can move to Good to know instead."
                  : "It goes from this matter, and its reminder from Reminders. Edit → Undo brings the task back, not the reminder.")
         }
     }
@@ -2358,6 +2357,8 @@ struct DocumentRow: View {
     /// Nil, or whether it is chosen while several are being chosen to be read.
     var chosen: Bool? = nil
     var choose: () -> Void = {}
+    /// A tile of the mosaic.
+    var tile = false
     @Environment(\.modelContext) private var context
     @State private var renaming = false
     @State private var deleting = false
@@ -2367,7 +2368,7 @@ struct DocumentRow: View {
     private var isPDF: Bool { document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf") }
 
     var body: some View {
-        FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen) { moreItems }
+        FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen, tile: tile) { moreItems }
             .popoverWhenAsked(isPresented: $renaming, arrowEdge: .bottom) { renameField }
             .confirmationDialogWhenAsked("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
                 Button("Delete", role: .destructive, action: forget)

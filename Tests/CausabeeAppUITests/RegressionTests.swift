@@ -86,9 +86,9 @@ final class RegressionTests: XCTestCase {
         button.click()
     }
 
-    func testTheFourTabs() {
-        for name in ["Record", "People", "Notes", "Plan"] { tab(name) }
-        shows("Tasks", "Back on To do, the tasks are not shown.")
+    func testTheFilters() {
+        for name in ["All", "Mail", "Files", "People", "Notes", "Plan"] { tab(name) }
+        shows("WAITING FOR OTHERS", "Back on Plan, the plan is not shown.")
     }
 
     /// "Task" from the plus opens the task's own editor: added, it is in the list.
@@ -122,7 +122,7 @@ final class RegressionTests: XCTestCase {
         press("Add")
         // A detail's row is a button — a click copies it — that says its label and its value.
         let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", value)).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 8), "The detail was added and is not in the record.")
+        XCTAssertTrue(row.waitForExistence(timeout: 8), "The detail was added and is not in its card.")
     }
 
     func testAContactAddedByHand() {

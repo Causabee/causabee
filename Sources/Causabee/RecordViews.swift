@@ -543,6 +543,8 @@ struct FileFace<Items: View>: View {
     let nameIt: () -> Void
     /// Nil, or whether it is chosen while several are being chosen.
     var chosen: Bool? = nil
+    /// A tile of the mosaic: its picture on top, the name under it, read at a glance.
+    var tile = false
     @ViewBuilder let items: Items
 
     static func icon(_ document: MatterCore.Document) -> String {
@@ -577,7 +579,49 @@ struct FileFace<Items: View>: View {
             .compactMap { $0 }.joined(separator: " · ")
     }
 
+    /// The mosaic's tile: what the row says in full is a tap and a menu away.
+    private var mosaicTile: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            FileThumbnail(document: document, symbol: Self.icon(document), state: state, large: true)
+            HStack(alignment: .top, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(document.shownName).font(.footnote.weight(.medium)).lineLimit(2).multilineTextAlignment(.leading)
+                    Text(document.source.date.map(Dates.short) ?? "").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                #if os(macOS)
+                MoreMenu { items }
+                #else
+                Menu { items } label: {
+                    Image(systemName: "ellipsis").frame(width: 26, height: 22).contentShape(Rectangle())
+                }
+                .tint(.secondary)
+                .accessibilityLabel("More")
+                .tool()
+                #endif
+            }
+            if let state {
+                Text(state).font(.caption).foregroundStyle(state.hasPrefix("Getting") ? Color.secondary : Theme.warning).lineLimit(2)
+            } else if document.reading == .kept {
+                readButton
+            }
+        }
+        .padding(8)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: tap)
+        .opacity(document.isHidden ? 0.55 : 1)
+        #if os(macOS)
+        .contextMenu { items }
+        #else
+        .contextMenu { Group { items }.menuSigns() }
+        #endif
+    }
+
     var body: some View {
+        if tile { mosaicTile } else { row }
+    }
+
+    private var row: some View {
         HStack(alignment: .top, spacing: 12) {
             FileThumbnail(document: document, symbol: Self.icon(document), state: state)
             VStack(alignment: .leading, spacing: 3) {
@@ -651,6 +695,8 @@ struct FileThumbnail: View {
     let symbol: String
     /// Changes when a file has just been fetched, so the picture is looked for again.
     let state: String?
+    /// As wide as its tile in the mosaic.
+    var large = false
     @State private var picture: CGImage?
     @Environment(\.displayScale) private var scale
 
@@ -664,7 +710,18 @@ struct FileThumbnail: View {
 
     var body: some View {
         Group {
-            if let picture {
+            if large {
+                ZStack {
+                    Theme.box
+                    if let picture {
+                        Image(decorative: picture, scale: scale).resizable().scaledToFill()
+                    } else {
+                        Image(systemName: symbol).font(.title2).foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity).frame(height: 96)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.tileRadius - 4, style: .continuous))
+            } else if let picture {
                 Image(decorative: picture, scale: scale)
                     .resizable().scaledToFill()
                     .frame(width: Self.size.width, height: Self.size.height)
@@ -685,10 +742,10 @@ struct FileThumbnail: View {
         if found == nil, document.isOwnFile, let kept = MatterFolders.kept(document) { found = try? await MatterFolders.fetched(kept) }
         if found == nil { found = await MailPreviews.fetch(document) }
         guard let file = found else { return }
-        let key = file.path as NSString
+        let key = (file.path + (large ? " large" : "")) as NSString
         if let known = Self.made.object(forKey: key) { picture = known.image; return }
         // Made here, not by Quick Look: its service made none for some files the app keeps.
-        let longest = max(Self.size.width, Self.size.height) * scale * 2
+        let longest = (large ? 320 : max(Self.size.width, Self.size.height)) * scale * 2
         guard let made = await Task.detached(priority: .utility, operation: { Self.picture(of: file, longest: longest) }).value else { return }
         Self.made.setObject(CGImageBox(made), forKey: key)
         picture = made

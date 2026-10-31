@@ -4,12 +4,19 @@ import XCTest
 /// its next step written again by itself; a line under it says "Auto mode". On the demo, where nothing is
 /// sent: the step worked out on the device stands in for the AI's.
 final class AutoTests: XCTestCase {
+    /// The overview opens on its journal; the matters are one filter away.
+    private func showMatters() {
+        let filter = app.buttons["part.Matters"]
+        if filter.waitForExistence(timeout: 40) { filter.tap() }
+    }
+
     func testAStepDoneBringsTheNextByItself() {
         continueAfterFailure = false
         let app = XCUIApplication()
         // Auto on for this start only, and what it knew of the demo's matters forgotten.
         app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "YES", "--auto-anew"]
         app.launch()
+        showMatters()
         let matter = app.staticTexts["Bathroom renovation"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
         matter.tap()

@@ -1263,7 +1263,7 @@ struct PhoneTodoRow: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(todo.reminderID == nil ? "It goes from this matter; Undo brings it back. Something only good to know can go to Info instead."
+            Text(todo.reminderID == nil ? "It goes from this matter; Undo brings it back. Something only good to know can move to Good to know instead."
                  : "It goes from this matter, and its reminder from Reminders. Undo brings the task back, not the reminder.")
         }
     }
