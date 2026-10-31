@@ -558,6 +558,7 @@ struct RootView: View {
     @Environment(\.modelContext) private var context
     @State private var mailCheck = MailCheck()
     @State private var plans = Store.shared
+    @Environment(\.openSettings) private var openSettings
     /// The closed matters in the sidebar, folded away until opened; remembered on this Mac.
     @AppStorage("sidebar.showsClosed") private var showsClosed = false
     @AppStorage(AutoMode.key) private var auto = false
@@ -836,6 +837,8 @@ struct RootView: View {
             navigation.attach(context)
             // `--demo --shot`: set up as one of the introduction's pictures.
             IntroShot.current?.arrange(navigation, matters: matters)
+            // `--demo --plan-shot`: set up as a picture of the plan.
+            if PlanShot.showsSheet { Store.shared.asks = .choose } else if PlanShot.current != nil { openSettings() }
             MirrorRunner.shared.start(context)
             Store.shared.start(context)
             // Not over the demo: it is started to be looked at, and photographed, as it is.
