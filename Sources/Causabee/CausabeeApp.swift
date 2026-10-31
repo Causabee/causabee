@@ -247,7 +247,8 @@ final class Navigation {
     /// The assistant beside the overview: asked for with its button there, about all matters.
     var assistantOnOverview = false
     /// The assistant's column put away while a matter is open; remembered.
-    var assistantHidden = Navigation.remembers && UserDefaults.standard.bool(forKey: "assistant.hidden") {
+    /// `--no-assistant`: starts with its column away — for pictures of the page alone.
+    var assistantHidden = (Navigation.remembers && UserDefaults.standard.bool(forKey: "assistant.hidden")) || CommandLine.arguments.contains("--no-assistant") {
         didSet { if Navigation.remembers { UserDefaults.standard.set(assistantHidden, forKey: "assistant.hidden") } }
     }
     /// Whether what the owner chose — the assistant put away, reading — is read and kept: not for the

@@ -75,6 +75,8 @@ struct MatterScreen: View {
 
     /// What Mail and Files show of the record.
     private var filter: RecordBrowse.Kind { part == .mail ? .mail : .files }
+    /// A wide iPad has room for what is ahead in a column of its own.
+    private var hasColumn: Bool { navigation.isPad && navigation.pageWidth >= 860 }
 
     var body: some View {
         // Drawn again when this matter changes — here or from another device: the page reads it.
@@ -83,6 +85,7 @@ struct MatterScreen: View {
         let status = MatterStatus(matter)
         let plan = Journal.plan(status)
         ScrollViewReader { scroller in
+            HStack(alignment: .top, spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.cardGap) {
                     header(status)
@@ -107,10 +110,20 @@ struct MatterScreen: View {
                         VStack(alignment: .leading, spacing: Theme.cardGap) {
                             switch part {
                             case .all:
-                                if personParty == nil { top(status, plan, scroller) }
+                                if personParty == nil {
+                                    // Wide, the column has what comes next: the journal begins with what is new.
+                                    if hasColumn {
+                                        if matter.isClosed { closedBanner(status) }
+                                        NewsCard(matter: matter)
+                                    } else {
+                                        top(status, plan, scroller)
+                                    }
+                                }
                                 journal(status)
                             case .plan:
-                                if matter.isClosed { closedBanner(status) } else { nextStep(status, scroller); ForYouCard(matter: matter, folds: true) }
+                                if !hasColumn {
+                                    if matter.isClosed { closedBanner(status) } else { nextStep(status, scroller); ForYouCard(matter: matter, folds: true) }
+                                }
                                 planList(status, plan)
                                 CalendarAccessBanner { loadCalendars() }
                             case .mail, .files:
@@ -191,6 +204,23 @@ struct MatterScreen: View {
                 if find.isActive { showsDone = true; showsPast = true }
             }
             .onChange(of: find.current) { if let at = find.current { withAnimation { scroller.scrollTo(at, anchor: .center) } } }
+                // What is ahead keeps its own column while the journal scrolls beside it.
+                if hasColumn, !find.isActive {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: Theme.cardGap) {
+                            if !matter.isClosed {
+                                nextStep(status, scroller)
+                                ForYouCard(matter: matter, folds: part != .all)
+                                if part != .plan, plan.openCount > 0 { AheadCard(plan: plan, open: { part = .plan }, days: 4) }
+                            }
+                            atHandCard
+                            BallCard(matter: matter)
+                        }
+                        .padding(.top, 10).padding(.trailing, 16).padding(.bottom, 90)
+                    }
+                    .frame(width: 330)
+                }
+            }
         }
         .environment(find)
         // Edit → Find, ⌘F: in the matter that is open.

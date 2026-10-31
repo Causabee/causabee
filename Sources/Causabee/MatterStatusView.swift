@@ -92,7 +92,7 @@ struct MatterStatusView: View {
     @Environment(\.reading) private var reading
     /// How wide the whole page is: wide, what is ahead has its own column.
     @State private var pageWidth = CGFloat.zero
-    private var hasColumn: Bool { pageWidth >= 900 }
+    private var hasColumn: Bool { pageWidth >= 800 }
 
     init(matter: Matter) {
         self.matter = matter
@@ -267,7 +267,7 @@ struct MatterStatusView: View {
                     VStack(alignment: .leading, spacing: Theme.cardGap) {
                         if !matter.isClosed {
                             nextStep(status)
-                            ForYouCard(matter: matter, folds: part == .plan)
+                            ForYouCard(matter: matter, folds: part != .all)
                             if part != .plan, plan.openCount > 0 { AheadCard(plan: plan, open: { part = .plan }, days: 4) }
                         }
                         atHandCard

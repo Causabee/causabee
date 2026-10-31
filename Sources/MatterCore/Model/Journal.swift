@@ -197,19 +197,22 @@ public enum Journal {
         public init() {}
     }
 
-    /// By the mail a task came from: a task of the owner's asked for by this person waits for the
-    /// owner; someone else's task, said by name or asked for in their mail, is what the owner waits for.
+    /// Only what is certain enough to say: the person whose mail the next step came from waits for
+    /// the owner; someone else's task, said by name or asked for in their mail, is what the owner
+    /// waits for. Every other task of the owner's says nothing about anyone waiting, and a yellow
+    /// line on each person would mean nothing.
     public static func ball(of party: Party, in matter: Matter) -> Ball {
         var ball = Ball()
-        for todo in matter.openTodos.sorted(by: { ($0.due ?? "9999", $0.createdAt) < ($1.due ?? "9999", $1.createdAt) }) {
-            let mail = todo.sources.first?.messageID.flatMap { matter.entry(messageID: $0) }
-            let theirs = mail.map { matter.writer($0.from) === party } ?? false
-            if todo.owner == .other {
-                if ball.youWaitFor == nil, theirs || todo.text.localizedCaseInsensitiveContains(party.name) { ball.youWaitFor = todo.text }
-            } else if ball.waitsForYou == nil, theirs {
-                ball.waitsForYou = todo.text
-            }
+        let next = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
+            ?? MatterStatus(matter).nextStep?.todo.flatMap { id in matter.openTodos.first { $0.persistentModelID == id } }
+        func theirs(_ todo: Todo) -> Bool {
+            guard let id = todo.sources.first?.messageID, let mail = matter.entry(messageID: id) else { return false }
+            return matter.writer(mail.from) === party
         }
+        if let next, next.owner != .other, theirs(next) { ball.waitsForYou = next.text }
+        ball.youWaitFor = matter.openTodos.filter { $0.owner == .other }
+            .sorted { ($0.due ?? "9999", $0.createdAt) < ($1.due ?? "9999", $1.createdAt) }
+            .first { theirs($0) || $0.text.localizedCaseInsensitiveContains(party.name) }?.text
         return ball
     }
 

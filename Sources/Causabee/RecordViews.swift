@@ -1112,8 +1112,8 @@ struct NewsCard: View {
 }
 
 /// What Causabee asks of the owner, on yellow under the next step until it is answered: changes it
-/// proposes for the list, and questions it would look up. Over the plan it is one line: the plan is
-/// what that page is for.
+/// proposes for the list, and questions it would look up. One stands open; several, and over the
+/// plan, fold into one line: the page should not begin with a long read.
 struct ForYouCard: View {
     let matter: Matter
     var folds = false
@@ -1126,7 +1126,7 @@ struct ForYouCard: View {
             let count = proposals.count + brief.openLookups.count
             if count > 0 {
                 VStack(alignment: .leading, spacing: Theme.tileInset) {
-                    if folds, !unfolded {
+                    if folds || count > 1, !unfolded {
                         Button { withAnimation(.snappy(duration: 0.2)) { unfolded = true } } label: {
                             HStack(spacing: 8) {
                                 Text(count == 1 ? "1 question from Causabee" : "\(count) questions from Causabee").foregroundStyle(.primary)
