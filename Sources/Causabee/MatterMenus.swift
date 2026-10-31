@@ -101,6 +101,9 @@ private struct MatterChoosers: ViewModifier {
 /// The words of the menus and buttons, one list for every device: a menu item in Title Case, and
 /// "…" where it asks something more before it does it.
 enum Say {
+    // A task or a date
+    static let addToCalendar = "Add to Calendar"
+    static let addToReminders = "Add to Reminders"
     // A matter
     static let pinToTop = "Pin to Top"
     static let unpin = "Unpin"

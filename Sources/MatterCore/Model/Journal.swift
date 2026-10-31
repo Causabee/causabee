@@ -96,11 +96,12 @@ public enum Journal {
                 }
             }
 
-            /// On one day: what has no hour, then by the hour; a date before a task at the same hour.
+            /// On one day: the dates first, what the day is planned around, then the tasks; each
+            /// what has no hour, then by the hour.
             static func sameDay(_ a: Item, _ b: Item) -> Bool {
                 func rank(_ item: Item) -> Int { if case .task = item { 1 } else { 0 } }
-                if a.time != b.time { return a.time < b.time }
                 if rank(a) != rank(b) { return rank(a) < rank(b) }
+                if a.time != b.time { return a.time < b.time }
                 return a.name.localizedStandardCompare(b.name) == .orderedAscending
             }
         }
@@ -133,6 +134,18 @@ public enum Journal {
         public var isEmpty: Bool { overdue.isEmpty && stretches.isEmpty && noDay.isEmpty && waiting.isEmpty && blocked.isEmpty && past.isEmpty && done.isEmpty }
         /// How many days, tasks and dates stand on the plan: tasks and dates left.
         public var openCount: Int { stretches.flatMap(\.days).flatMap(\.items).count + overdue.count + noDay.count + waiting.count + blocked.count }
+
+        /// What stands in order, a day at a time: what comes on one day together, what has no day
+        /// together too.
+        public static func days<Thing>(of things: [Thing], on day: (Thing) -> String?) -> [(day: String?, things: [Thing])] {
+            var days: [(day: String?, things: [Thing])] = []
+            for thing in things {
+                let on = day(thing)
+                if let last = days.indices.last, days[last].day == on { days[last].things.append(thing) }
+                else { days.append((on, [thing])) }
+            }
+            return days
+        }
     }
 
     public static func plan(_ status: MatterStatus) -> Plan {
@@ -180,10 +193,11 @@ public enum Journal {
         return monthTitle(date, today: now)
     }
 
-    /// What a day's tile says: "THU" and "1".
-    public static func tile(_ day: String) -> (weekday: String, number: String) {
+    /// What a day's tile says: "THU" and "1"; with `month`, for a day that need not be this week's,
+    /// "OCT" and "1".
+    public static func tile(_ day: String, month: Bool = false) -> (over: String, number: String) {
         guard let date = MatterStatus.date(of: day) else { return ("", day) }
-        return (weekdayShort.string(from: date).uppercased(), String(monday.component(.day, from: date)))
+        return ((month ? monthShort : weekdayShort).string(from: date).uppercased(), String(monday.component(.day, from: date)))
     }
 
     // MARK: Who has the ball
@@ -401,6 +415,7 @@ public enum Journal {
     }
 
     private static let weekdayShort = formatter("EEE")
+    private static let monthShort = formatter("MMM")
     private static let weekdayLong = formatter("EEEE")
     private static let monthDay = formatter("MMM d")
     private static let monthDayYear = formatter("MMM d, yyyy")

@@ -84,8 +84,8 @@ struct JournalTests {
         #expect(plan.stretches.map(\.title) == ["This week", "Next week", "November"])
         let thursday = try #require(plan.stretches.first?.days.first)
         #expect(thursday.day == "2026-10-01")
-        // What has no hour first, then by the hour; a date before a task at the same hour.
-        #expect(thursday.items.map(\.name) == ["All day", "Thursday's task", "Physio"])
+        // The dates first, what the day is planned around, then the tasks.
+        #expect(thursday.items.map(\.name) == ["All day", "Physio", "Thursday's task"])
         #expect(plan.noDay.map(\.text) == ["Some day"])
         #expect(plan.waiting.map(\.text) == ["Karl's"])
         #expect(plan.blocked.map(\.text) == ["After it"])
@@ -104,10 +104,18 @@ struct JournalTests {
         #expect(Journal.stretch(of: "2026-10-05", today: "2026-10-04") == "Next week")
     }
 
-    @Test("A day's tile says its weekday and its number")
+    @Test("A day's tile says its weekday and its number, or its month where the day need not be this week's")
     func tile() {
-        #expect(Journal.tile("2026-10-01").weekday == "THU")
+        #expect(Journal.tile("2026-10-01").over == "THU")
         #expect(Journal.tile("2026-10-01").number == "1")
+        #expect(Journal.tile("2026-10-01", month: true).over == "OCT")
+    }
+
+    @Test("Tasks in a card stand a day at a time, those without a day together")
+    func days() {
+        let days = Journal.Plan.days(of: ["a", "b", "c", "d"]) { ["a": "2026-10-01", "b": "2026-10-01", "c": "2026-10-02"][$0] }
+        #expect(days.map(\.day) == ["2026-10-01", "2026-10-02", nil])
+        #expect(days.map(\.things) == [["a", "b"], ["c"], ["d"]])
     }
 
     @Test("A short journal is read whole, a day at a time, the newest first")

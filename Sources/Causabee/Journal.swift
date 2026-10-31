@@ -18,6 +18,9 @@ extension Theme {
     static let cardRadius: CGFloat = 16
     static let tileRadius: CGFloat = 12
     #endif
+    /// The plan's one grid: a day's tile, and beside it what a task is ticked in and a date marked with.
+    static let dayTile: CGFloat = 44
+    static let planMark: CGFloat = 26
 }
 
 extension View {
@@ -30,6 +33,14 @@ extension View {
 
     /// A card of rows, which keep their own room.
     func journalRows() -> some View { journalCard(inset: 0) }
+
+    /// A row of the plan. One line is as high as a day's tile, so that they stand side by side.
+    func planRow() -> some View { padding(.leading, 6).padding(.trailing, 6).padding(.vertical, 10) }
+
+    /// A date on the plan: a block of its own, told from a task at a glance. It is not to tick off.
+    func planDate() -> some View {
+        background(Theme.box, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
 
     /// What waits for the owner: yellow, and only that is. Without `forYou`, the same room with no colour.
     func waitingTile(_ forYou: Bool = true) -> some View {
@@ -96,14 +107,18 @@ extension JournalPills where Part == Journal.Part {
 /// A day's tile: "THU", "1".
 struct DayTile: View {
     let day: String
+    /// Its month over its number, not its weekday: for a day that need not be this week's.
+    var month = false
+    /// Gone by with something still to do.
+    var late = false
 
     var body: some View {
-        let tile = Journal.tile(day)
+        let tile = Journal.tile(day, month: month)
         VStack(spacing: 0) {
-            Text(tile.weekday).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-            Text(tile.number).font(.callout.weight(.medium)).monospacedDigit()
+            Text(tile.over).font(.caption2.weight(.semibold)).foregroundStyle(late ? Theme.warning : .secondary)
+            Text(tile.number).font(.callout.weight(.medium)).monospacedDigit().foregroundStyle(late ? Theme.warning : .primary)
         }
-        .frame(width: 44, height: 46)
+        .frame(width: Theme.dayTile, height: 46)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .accessibilityElement(children: .combine)
     }
@@ -137,16 +152,16 @@ struct AheadCard: View {
     private static func title(_ item: Journal.Plan.Item) -> String {
         switch item {
         case .task(let todo): todo.text
-        case .appointment(let appointment): (appointment.time.map { $0 + " · " } ?? "") + appointment.what
+        case .appointment(let appointment): appointment.what
         case .deadline(let deadline): deadline.what
         }
     }
 
     private static func under(_ item: Journal.Plan.Item) -> String? {
         switch item {
-        case .task(let todo): todo.owner == .we ? "together" : "task"
-        case .appointment(let appointment): appointment.place
-        case .deadline: "deadline"
+        case .task(let todo): todo.owner == .we ? "together" : nil
+        case .appointment(let appointment): PlanDateLine.words(hours: appointment.time, last: nil, place: appointment.place)
+        case .deadline: "Deadline"
         }
     }
 
@@ -551,11 +566,25 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
     @ViewBuilder let empty: Empty
     @Environment(PageFind.self) private var find
 
-    private func list(_ todos: [Todo], owner: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(todos.enumerated()), id: \.element.persistentModelID) { index, todo in
-                if index > 0 { Divider().padding(.leading, 50) }
-                task(todo, owner)
+    /// A day on the plan's grid: its tile, and beside it what is on it. With no day the tile's place
+    /// stays empty: what is ticked stands under what is ticked, in every card.
+    private func onDay<Rows: View>(_ day: String?, month: Bool = false, late: Bool = false, @ViewBuilder rows: () -> Rows) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            if let day { DayTile(day: day, month: month, late: late) } else { Color.clear.frame(width: Theme.dayTile, height: 0) }
+            VStack(alignment: .leading, spacing: 2) { rows() }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+    }
+
+    /// Tasks in a card of their own, a day at a time.
+    private func card(_ todos: [Todo], owner: Bool = false, late: Bool = false) -> some View {
+        let days = Journal.Plan.days(of: todos) { $0.due }
+        return VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(days.enumerated()), id: \.offset) { index, day in
+                if index > 0 { Divider().padding(.horizontal, 12) }
+                onDay(day.day, month: true, late: late) {
+                    ForEach(day.things, id: \.persistentModelID) { task($0, owner) }
+                }
             }
         }
         .journalRows()
@@ -583,50 +612,85 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
             if plan.isEmpty { empty }
             if !plan.overdue.isEmpty {
                 JournalHeading(title: "OVERDUE")
-                list(plan.overdue, owner: true)
+                card(plan.overdue, owner: true, late: true)
             }
             ForEach(plan.stretches) { stretch in
                 JournalHeading(title: stretch.title.uppercased())
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(stretch.days.enumerated()), id: \.element.id) { index, day in
-                        if index > 0 { Divider().padding(.horizontal, 16) }
-                        HStack(alignment: .top, spacing: 4) {
-                            DayTile(day: day.day).padding(.leading, 12).padding(.top, 12)
-                            VStack(alignment: .leading, spacing: 0) {
-                                ForEach(day.items) { entry in self.item(entry) }
-                            }
+                        if index > 0 { Divider().padding(.horizontal, 12) }
+                        onDay(day.day) {
+                            ForEach(day.items) { entry in self.item(entry) }
                         }
-                        .padding(.vertical, 2)
                     }
                 }
                 .journalRows()
             }
             if !plan.noDay.isEmpty {
                 JournalHeading(title: "NO DAY YET")
-                list(plan.noDay, owner: true)
+                card(plan.noDay, owner: true)
             }
             if !plan.waiting.isEmpty {
                 JournalHeading(title: "WAITING FOR OTHERS")
-                list(plan.waiting)
+                card(plan.waiting)
             }
             if !plan.blocked.isEmpty {
                 JournalHeading(title: "ONLY AFTER")
-                list(plan.blocked, owner: true)
+                card(plan.blocked, owner: true)
             }
             if !plan.done.isEmpty {
-                folded("Done · \(plan.done.count)", open: $showsDone) { list(plan.done) }
+                folded("Done · \(plan.done.count)", open: $showsDone) {
+                    onDay(nil) { ForEach(plan.done, id: \.persistentModelID) { task($0, false) } }.journalRows()
+                }
             }
             if !plan.past.isEmpty {
                 folded("Past · \(plan.past.count)", open: $showsPast) {
+                    let days = Journal.Plan.days(of: plan.past) { $0.day }
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(plan.past.enumerated()), id: \.element.id) { index, entry in
-                            if index > 0 { Divider().padding(.horizontal, 14) }
-                            date(entry, true)
+                        ForEach(Array(days.enumerated()), id: \.offset) { index, day in
+                            if index > 0 { Divider().padding(.horizontal, 12) }
+                            onDay(day.day, month: true) {
+                                ForEach(day.things) { date($0, true) }
+                            }
                         }
                     }
                     .journalRows()
                 }
             }
+        }
+    }
+}
+
+/// What stands on a date's row where a task has its box: a date is not ticked off.
+struct PlanDateMark: View {
+    let isDeadline: Bool
+
+    var body: some View {
+        Image(systemName: isDeadline ? "flag.fill" : "calendar")
+            .font(.callout)
+            .foregroundStyle(isDeadline ? Theme.warning : .secondary)
+            .frame(width: Theme.planMark, height: Theme.planMark)
+            .accessibilityHidden(true)
+    }
+}
+
+/// Under a date's name: when and where, or that it is a deadline. The block says it is a date.
+struct PlanDateLine: View {
+    let isDeadline: Bool
+    let hours: String?
+    let last: String?
+    let place: String?
+
+    static func words(hours: String?, last: String?, place: String?) -> String? {
+        let words = [hours, last.map { "until " + Dates.short($0) }, place].compactMap { $0 }
+        return words.isEmpty ? nil : words.joined(separator: " · ")
+    }
+
+    var body: some View {
+        if isDeadline {
+            Text("Deadline").font(.footnote).foregroundStyle(Theme.warning)
+        } else if let line = Self.words(hours: hours, last: last, place: place) {
+            Text(line).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
 }

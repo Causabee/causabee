@@ -885,14 +885,14 @@ struct MatterScreen: View {
     /// What is left, by when: dates and tasks together, with each row's own way to change it.
     private func planList(_ status: MatterStatus, _ plan: Journal.Plan) -> some View {
         PlanList(plan: plan, showsDone: $showsDone, showsPast: $showsPast) { todo, showsOwner in
-            PhoneTodoRow(todo: todo, today: status.today, showsOwner: showsOwner, showsDue: todo.due == nil || todo.due! < status.today || todo.isDone || todo.owner == .other || todo.isBlocked,
+            PhoneTodoRow(todo: todo, today: status.today, showsOwner: showsOwner, showsDue: todo.isDone,
                          reminders: todo.isDone ? nil : reminders, calendarTick: calendarTick) { withAnimation { toggle(todo) } }
                 .background(marked == todo.persistentModelID ? Theme.mark : .clear)
                 // Also its place to scroll to, from an overdue line or the page search.
                 .findable(.model(todo.persistentModelID), todo.text, todo.note)
         } date: { item, past in
             if let row = dateItem(item) {
-                PhoneDateRow(item: row, isPast: past, showsDay: past, matter: matter, tick: calendarTick)
+                PhoneDateRow(item: row, isPast: past, matter: matter, tick: calendarTick)
                     .findable(row.findID, row.what, row.place)
             }
         } empty: {
@@ -1171,6 +1171,10 @@ struct PhoneTodoRow: View {
     @State private var editing = false
     @State private var deleting = false
     @State private var choosingWait = false
+    @State private var addingReminder = 0
+
+    /// A task the owner can be reminded of: its offer is in the ⋯, its connection on the row.
+    private var remindable: Bool { !todo.isDone && !todo.isInfo && (todo.owner == .me || todo.owner == .we || todo.reminderID != nil) }
 
     var body: some View {
         // Taken back with Undo in the assistant, the task is gone while this row is drawn once more:
@@ -1179,7 +1183,7 @@ struct PhoneTodoRow: View {
     }
 
     private var row: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             Button {
                 let wasOpen = !todo.isDone
                 toggle()
@@ -1192,19 +1196,20 @@ struct PhoneTodoRow: View {
                     .font(.title3)
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(todo.isDone ? Theme.onInk : .secondary, todo.isDone ? Theme.ink : .secondary)
-                    .frame(width: 26, height: 26)
+                    .frame(width: Theme.planMark, height: Theme.planMark)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(todo.isDone ? "Open again" : "Mark as done")
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(todo.text)
                     .foregroundStyle(todo.isDone || todo.isBlocked ? .secondary : .primary)
                     .strikethrough(todo.isDone, color: .secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                if let reminders, !todo.isDone, !todo.isInfo, todo.owner == .me || todo.owner == .we || todo.reminderID != nil {
+                    .padding(.top, 2)
+                if let reminders, remindable {
                     CalendarChip(kind: .reminder, linkedID: todo.reminderID, title: todo.text, day: todo.due, time: todo.dueTime,
-                                 note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick) { id in
+                                 note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick, asked: addingReminder) { id in
                         todo.reminderID = id
                         todo.reminderStamp = nil
                         try? context.save()
@@ -1232,14 +1237,13 @@ struct PhoneTodoRow: View {
                         Link(destination: url) { Label(link.shownName, systemImage: "link").font(.footnote).lineLimit(1) }
                     }
                 }
-                // Whose, by when, and where it came from — that last a way to it in the record.
+                // Whose, when that is not the owner; where it came from is in the ⋯. Done, what showed it done.
                 if todo.isDone {
                     SourceJump(sources: todo.doneSource.map { [$0] } ?? [],
                                label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")",
                                matter: todo.matter, color: Theme.done, before: line, beforeColor: lineColor)
-                } else {
-                    SourceJump(sources: todo.sources, label: Sources.origin(todo.sources.first), matter: todo.matter, color: lineColor,
-                               before: line, beforeColor: lineColor)
+                } else if !line.isEmpty {
+                    Text(line).font(.caption).foregroundStyle(lineColor)
                 }
             }
             Spacer(minLength: 0)
@@ -1252,7 +1256,7 @@ struct PhoneTodoRow: View {
             // While reading, a long press still has everything.
             .tool()
         }
-        .padding(.horizontal, 12).padding(.vertical, 12)
+        .planRow()
         .contentShape(Rectangle())
         .contextMenu { Group { moreItems }.menuSigns() }
         .sheetWhenAsked(isPresented: $editing) { PhoneTodoEditor(todo: todo) }
@@ -1277,6 +1281,10 @@ struct PhoneTodoRow: View {
             AskCausabeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
         }
         Button(Say.edit, systemImage: "pencil") { editing = true }
+        if !todo.isDone { SourceItems(sources: todo.sources, matter: todo.matter) }
+        if reminders != nil, remindable, todo.reminderID == nil, Calendars.shared.canReadReminders {
+            Button(Say.addToReminders, systemImage: "bell") { addingReminder += 1 }
+        }
         if !todo.isDone {
             Button(Say.moveToInfo, systemImage: "info.circle") {
                 withAnimation { todo.isInfo = true }
@@ -1312,9 +1320,10 @@ struct PhoneTodoRow: View {
 
     private var line: String {
         var parts: [String] = []
-        if showsOwner { parts.append(["me": "Mine", "we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
+        // The owner's own need no saying: most of a list is.
+        if showsOwner, todo.owner != .me { parts.append(["we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
         if showsDue, let due = todo.due {
-            parts.append((!todo.isDone && due < today ? "Overdue since " : "by ") + Dates.short(due) + (todo.dueTime.map { " at \($0)" } ?? ""))
+            parts.append("by " + Dates.short(due) + (todo.dueTime.map { " at \($0)" } ?? ""))
         } else if let time = todo.dueTime, todo.due != nil {
             parts.append("at \(time)")
         }
@@ -1322,9 +1331,7 @@ struct PhoneTodoRow: View {
     }
 
     private var lineColor: Color {
-        if todo.isDone { return Theme.done }
-        if let due = todo.due, due < today { return Theme.warning }
-        return .secondary
+        todo.isDone ? Theme.done : .secondary
     }
 }
 
@@ -1487,12 +1494,6 @@ struct PhoneDateRow: View {
             return .section("date \(day) \(what)")
         }
 
-        /// On the same day: the whole-day ones first, then by the hour, then by name.
-        static func sameDay(_ a: Item, _ b: Item) -> Bool {
-            let (x, y) = (a.time ?? "", b.time ?? "")
-            return x != y ? x < y : a.what.localizedStandardCompare(b.what) == .orderedAscending
-        }
-
         init(_ appointment: Appointment) {
             (day, time, what, place, kind) = (appointment.day, appointment.time, appointment.what, appointment.place, "Appointment")
             self.appointment = appointment
@@ -1515,8 +1516,6 @@ struct PhoneDateRow: View {
 
     let item: Item
     let isPast: Bool
-    /// Off where its day stands beside it, on a tile: its hours then go with its name.
-    var showsDay = true
     let matter: Matter
     var tick = 0
     @Environment(\.modelContext) private var context
@@ -1524,30 +1523,21 @@ struct PhoneDateRow: View {
     @Environment(Navigation.self) private var navigation
     @State private var editing = false
     @State private var deleting = false
+    @State private var addingToCalendar = 0
+
+    private var sources: [Source] { item.appointment?.sources ?? item.deadline?.sources ?? [] }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            if showsDay {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Dates.short(item.day)).font(.subheadline.weight(.semibold))
-                    if let hours = item.hours { Text(hours).font(.caption).foregroundStyle(.secondary) }
-                    if let last = item.endDay { Text("until \(Dates.short(last))").font(.caption).foregroundStyle(.secondary) }
-                }
-                .frame(width: 64, alignment: .leading)
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text((showsDay ? "" : item.hours.map { $0 + " · " } ?? "") + item.what).fixedSize(horizontal: false, vertical: true)
-                if !showsDay, let last = item.endDay { Text("until \(Dates.short(last))").font(.caption).foregroundStyle(.secondary) }
-                HStack(spacing: 8) {
-                    Text(item.kind).font(.caption.weight(.medium))
-                        .foregroundStyle(item.kind == "Deadline" ? Theme.warning : .secondary)
-                    if let place = item.place { Text(place).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
-                }
-                let sources = item.appointment?.sources ?? item.deadline?.sources ?? []
-                SourceJump(sources: sources, label: Sources.origin(sources.first), matter: matter)
+        HStack(alignment: .top, spacing: 10) {
+            PlanDateMark(isDeadline: item.deadline != nil)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.what).fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(isPast ? .secondary : .primary)
+                    .padding(.top, 2)
+                PlanDateLine(isDeadline: item.deadline != nil, hours: item.hours, last: item.endDay, place: item.place)
                 if !isPast || item.calendarID != nil {
                     CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime,
-                                 place: item.place, matterName: matter.name, tick: tick) { id in item.connect(id); try? context.save() }
+                                 place: item.place, matterName: matter.name, tick: tick, asked: addingToCalendar) { id in item.connect(id); try? context.save() }
                 }
             }
             Spacer(minLength: 0)
@@ -1559,9 +1549,8 @@ struct PhoneDateRow: View {
             // While reading, a long press still has everything.
             .tool()
         }
-        .foregroundStyle(isPast ? .secondary : .primary)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .planRow()
+        .planDate()
         .contentShape(Rectangle())
         .contextMenu { Group { moreItems }.menuSigns() }
         .sheetWhenAsked(isPresented: $editing) { PhoneDateEditor(item: item) }
@@ -1582,6 +1571,10 @@ struct PhoneDateRow: View {
     private var moreItems: some View {
         AskCausabeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
         Button(Say.edit, systemImage: "pencil") { editing = true }
+        SourceItems(sources: sources, matter: matter)
+        if !isPast, item.calendarID == nil, Calendars.shared.canReadEvents {
+            Button(Say.addToCalendar, systemImage: "calendar.badge.plus") { addingToCalendar += 1 }
+        }
         Divider()
         Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }

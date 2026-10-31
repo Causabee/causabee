@@ -365,7 +365,7 @@ struct SourceJump: View {
     }
 
     /// Not in this matter's record — moved away, or never in it — but still openable outside.
-    private func outside(_ source: Source) -> URL? {
+    static func outside(_ source: Source) -> URL? {
         #if os(macOS)
         source.fileURL ?? source.mailURL
         #else
@@ -374,7 +374,7 @@ struct SourceJump: View {
     }
 
     private func line(_ places: [(source: Source, item: PersistentIdentifier?)]) -> AttributedString {
-        let reachable = places.contains { $0.item != nil || outside($0.source) != nil }
+        let reachable = places.contains { $0.item != nil || Self.outside($0.source) != nil }
         var start = AttributedString(before.isEmpty ? "" : before + " · ")
         start.foregroundColor = beforeColor
         var link = AttributedString(label + (places.count > 1 ? " · +\(places.count - 1)" : ""))
@@ -398,7 +398,7 @@ struct SourceJump: View {
             .help(places.contains { $0.item != nil } ? "Shows it in the record" : "Opens it in Mail")
             .confirmationDialogWhenAsked("Every mail that asked for it", isPresented: $choosing, titleVisibility: .visible) {
                 ForEach(Array(places.enumerated()), id: \.offset) { index, place in
-                    if place.item != nil || outside(place.source) != nil {
+                    if place.item != nil || Self.outside(place.source) != nil {
                         Button((index == 0 ? "First: " : "") + Sources.origin(place.source)) { go(place) }
                     }
                 }
@@ -406,7 +406,40 @@ struct SourceJump: View {
     }
 
     private func go(_ place: (source: Source, item: PersistentIdentifier?)) {
-        if let item = place.item { navigation.showing = item } else if let url = outside(place.source) { openURL(url) }
+        if let item = place.item { navigation.showing = item } else if let url = Self.outside(place.source) { openURL(url) }
+    }
+}
+
+/// The same way to where it came from, as a line of a row's ⋯: the row itself stays its name.
+/// Looked up on the tap, not while the list is drawn.
+struct SourceItems: View {
+    let sources: [Source]
+    let matter: Matter?
+    @Environment(Navigation.self) private var navigation
+    @Environment(\.openURL) private var openURL
+
+    private func title(_ source: Source) -> String {
+        let words = Sources.origin(source)
+        return words.prefix(1).uppercased() + words.dropFirst()
+    }
+
+    private func button(_ source: Source) -> some View {
+        Button(title(source), systemImage: source.kind == .mail ? "envelope" : "doc") {
+            if let item = matter.flatMap({ RecordLinks.item(for: source, in: $0) }) { navigation.showing = item }
+            else if let url = SourceJump.outside(source) { openURL(url) }
+        }
+    }
+
+    var body: some View {
+        // What was said to the assistant has nowhere to go to.
+        let shown = sources.filter { $0.kind != .conversation }
+        if shown.count > 1 {
+            Menu("Where it came from", systemImage: "envelope") {
+                ForEach(Array(shown.enumerated()), id: \.offset) { _, source in button(source) }
+            }
+        } else if let source = shown.first {
+            button(source)
+        }
     }
 }
 

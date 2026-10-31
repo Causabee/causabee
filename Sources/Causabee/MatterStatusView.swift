@@ -1187,13 +1187,13 @@ struct MatterStatusView: View {
     /// What is left, by when: dates and tasks together, with each row's own way to change it.
     private func planList(_ status: MatterStatus, _ plan: Journal.Plan) -> some View {
         PlanList(plan: plan, showsDone: $showsDone, showsPast: $showsPast) { todo, showsOwner in
-            TodoRow(todo: todo, today: status.today, showsOwner: showsOwner, showsDue: todo.due == nil || todo.due! < status.today || todo.isDone || todo.owner == .other || todo.isBlocked,
+            TodoRow(todo: todo, today: status.today, showsOwner: showsOwner, showsDue: todo.isDone,
                     info: todo.isDone ? nil : { setInfo(todo, true) }, reminders: todo.isDone ? nil : reminders, calendarTick: calendarTick) { toggle(todo) } talk: { talk(todo.text, "Task") }
                 .background(marked == todo.persistentModelID ? Theme.mark : .clear)
                 .findable(.model(todo.persistentModelID), todo.text, todo.note)
         } date: { item, past in
             if let row = dateItem(item) {
-                DateRow(item: row, isPast: past, showsDay: past, matterName: matter.name, tick: calendarTick, save: { try? context.save() }) { talk(row.what, row.kind) }
+                DateRow(item: row, isPast: past, matterName: matter.name, tick: calendarTick, save: { try? context.save() }) { talk(row.what, row.kind) }
                     .findable(row.findID, row.what, row.place)
             }
         } empty: {
@@ -1644,10 +1644,14 @@ struct TodoRow: View {
     @State private var choosingWait = false
     @State private var editing = false
     @State private var deleting = false
+    @State private var addingReminder = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// A task the owner can be reminded of: its offer is in the ⋯, its connection on the row.
+    private var remindable: Bool { !todo.isDone && !todo.isInfo && (todo.owner == .me || todo.owner == .we || todo.reminderID != nil) }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             Button {
                 let wasOpen = !todo.isDone
                 toggle()
@@ -1660,14 +1664,17 @@ struct TodoRow: View {
                     .font(.title3)
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(todo.isDone ? Theme.onInk : .secondary, todo.isDone ? Theme.ink : .secondary)
+                    .frame(width: Theme.planMark, height: Theme.planMark)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help(todo.isDone ? "Open again" : "Mark as done")
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(todo.text)
                     .foregroundStyle(todo.isDone || todo.isBlocked ? .secondary : .primary)
                     .strikethrough(todo.isDone, color: .secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
                 if let links = todo.links, !links.isEmpty {
                     HStack(spacing: 10) {
                         ForEach(links.sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
@@ -1679,9 +1686,9 @@ struct TodoRow: View {
                         }
                     }
                 }
-                if let reminders, !todo.isDone, !todo.isInfo, todo.owner == .me || todo.owner == .we || todo.reminderID != nil {
+                if let reminders, remindable {
                     CalendarChip(kind: .reminder, linkedID: todo.reminderID, title: todo.text, day: todo.due, time: todo.dueTime,
-                                 note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick) { id in
+                                 note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick, asked: addingReminder) { id in
                         todo.reminderID = id
                         todo.reminderStamp = nil
                         try? context.save()
@@ -1708,23 +1715,15 @@ struct TodoRow: View {
                             .help("Makes the address in the note a link on this task, and takes the line out of the note.")
                     }
                 }
-                HStack(spacing: 8) {
-                    if showsOwner {
-                        Text(["me": "Mine", "we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose")
-                            .font(.caption.weight(.medium)).foregroundStyle(.secondary)
-                    }
-                    if showsDue, let due = todo.due {
-                        Text("by \(Dates.short(due))\(todo.dueTime.map { " at \($0)" } ?? "")")
-                            .font(.caption)
-                            .foregroundStyle(!todo.isDone && due < today ? Theme.warning : .secondary)
-                    }
-                    // Where it came from, a way to it in the record; done, the mail that showed it done.
-                    if todo.isDone {
-                        SourceJump(sources: todo.doneSource.map { [$0] } ?? [],
-                                   label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")",
-                                   matter: todo.matter, color: Theme.done)
-                    } else {
-                        SourceJump(sources: todo.sources, label: Sources.origin(todo.sources.first), matter: todo.matter)
+                // Whose, when that is not the owner; where it came from is in the ⋯. Done, what showed it done.
+                if todo.isDone || !line.isEmpty {
+                    HStack(spacing: 8) {
+                        if !line.isEmpty { Text(line).font(.caption).foregroundStyle(.secondary) }
+                        if todo.isDone {
+                            SourceJump(sources: todo.doneSource.map { [$0] } ?? [],
+                                       label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")",
+                                       matter: todo.matter, color: Theme.done)
+                        }
                     }
                 }
             }
@@ -1736,8 +1735,7 @@ struct TodoRow: View {
                     }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .planRow()
         .contentShape(Rectangle())
         .contextMenu { moreItems }
         .task {
@@ -1774,12 +1772,28 @@ struct TodoRow: View {
         try? context.save()
     }
 
+    /// Whose, when that is not the owner; by when, where it says so.
+    private var line: String {
+        var parts: [String] = []
+        if showsOwner, todo.owner != .me { parts.append(["we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
+        if showsDue, let due = todo.due {
+            parts.append("by " + Dates.short(due) + (todo.dueTime.map { " at \($0)" } ?? ""))
+        } else if let time = todo.dueTime, todo.due != nil {
+            parts.append("at \(time)")
+        }
+        return parts.joined(separator: " · ")
+    }
+
     /// What the ⋯ and a right-click offer: change it by hand, say it is only worth knowing, and
     /// what it waits for.
     @ViewBuilder
     private var moreItems: some View {
         Button("Ask Causabee", action: talk)
         Button(Say.edit, systemImage: "pencil") { editing = true }
+        if !todo.isDone { SourceItems(sources: todo.sources, matter: todo.matter) }
+        if reminders != nil, remindable, todo.reminderID == nil, Calendars.shared.canReadReminders {
+            Button(Say.addToReminders, systemImage: "bell") { addingReminder += 1 }
+        }
         if let info {
             Button(Say.moveToInfo, systemImage: "info.circle", action: info)
         }
@@ -2020,11 +2034,6 @@ struct DateRow: View {
         var day: String
         var time: String?
         var what: String
-        /// On the same day: the whole-day ones first, then by the hour, then by name.
-        static func sameDay(_ a: Item, _ b: Item) -> Bool {
-            let (x, y) = (a.time ?? "", b.time ?? "")
-            return x != y ? x < y : alphabetically(a.what, b.what)
-        }
         var place: String?
         var kind: String
         var sources: [Source] = []
@@ -2062,8 +2071,6 @@ struct DateRow: View {
 
     let item: Item
     let isPast: Bool
-    /// Off where its day stands beside it, on a tile: its hours then go with its name.
-    var showsDay = true
     var matterName = ""
     var tick = 0
     var save: () -> Void = {}
@@ -2072,29 +2079,19 @@ struct DateRow: View {
     @Environment(\.undoManager) private var undoManager
     @State private var editing = false
     @State private var deleting = false
+    @State private var addingToCalendar = 0
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            if showsDay {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Dates.short(item.day)).font(.callout.weight(.semibold))
-                    if let hours = item.hours { Text(hours).font(.caption).foregroundStyle(.secondary) }
-                    if let last = item.endDay { Text("until \(Dates.short(last))").font(.caption).foregroundStyle(.secondary) }
-                }
-                .frame(width: 74, alignment: .leading)
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text((showsDay ? "" : item.hours.map { $0 + " · " } ?? "") + item.what).fixedSize(horizontal: false, vertical: true)
-                if !showsDay, let last = item.endDay { Text("until \(Dates.short(last))").font(.caption).foregroundStyle(.secondary) }
-                HStack(spacing: 8) {
-                    Text(item.kind).font(.caption.weight(.medium))
-                        .foregroundStyle(item.kind == "Deadline" ? Theme.warning : .secondary)
-                    if let place = item.place { Text(place).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
-                    SourceJump(sources: item.sources, label: Sources.origin(item.sources.first), matter: item.appointment?.matter ?? item.deadline?.matter)
-                }
+        HStack(alignment: .top, spacing: 10) {
+            PlanDateMark(isDeadline: item.deadline != nil)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.what).fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(isPast ? .secondary : .primary)
+                    .padding(.top, 4)
+                PlanDateLine(isDeadline: item.deadline != nil, hours: item.hours, last: item.endDay, place: item.place)
                 if !isPast || item.calendarID != nil {
                     CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime,
-                                 place: item.place, matterName: matterName, tick: tick) { id in item.connect(id); save() }
+                                 place: item.place, matterName: matterName, tick: tick, asked: addingToCalendar) { id in item.connect(id); save() }
                 }
             }
             Spacer(minLength: 8)
@@ -2105,9 +2102,8 @@ struct DateRow: View {
                     }
             }
         }
-        .foregroundStyle(isPast ? .secondary : .primary)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .planRow()
+        .planDate()
         .contentShape(Rectangle())
         .contextMenu { moreItems }
         .confirmationDialogWhenAsked("Delete “\(item.what)”?", isPresented: $deleting) {
@@ -2128,6 +2124,10 @@ struct DateRow: View {
     private var moreItems: some View {
         Button("Ask Causabee", action: talk)
         Button(Say.edit, systemImage: "pencil") { editing = true }
+        SourceItems(sources: item.sources, matter: item.appointment?.matter ?? item.deadline?.matter)
+        if !isPast, item.calendarID == nil, Calendars.shared.canReadEvents {
+            Button(Say.addToCalendar, systemImage: "calendar.badge.plus") { addingToCalendar += 1 }
+        }
         Divider()
         Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }
