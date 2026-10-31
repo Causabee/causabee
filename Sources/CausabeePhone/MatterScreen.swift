@@ -77,6 +77,8 @@ struct MatterScreen: View {
     private var filter: RecordBrowse.Kind { part == .mail ? .mail : .files }
     /// A wide iPad has room for what is ahead in a column of its own.
     private var hasColumn: Bool { navigation.isPad && navigation.pageWidth >= 860 }
+    /// What that column takes of the page's room. While finding it is away, and the page has it all.
+    private var beside: CGFloat { hasColumn && !find.isActive ? PadMetrics.column : 0 }
 
     var body: some View {
         // Drawn again when this matter changes — here or from another device: the page reads it.
@@ -145,7 +147,7 @@ struct MatterScreen: View {
                 // Exactly the page's width, and on an iPad no wider than is good to read: nothing on
                 // the page — a long address, a word without a break — can make it wider and let it
                 // slide sideways.
-                .pageWide(PadMetrics.page)
+                .pageWide(PadMetrics.page, beside: beside)
                 // A tap on the page puts the keyboard away. Behind the page, not over it: a tap
                 // gesture over the scroll view takes the taps from the system's segmented control.
                 .background {
@@ -218,7 +220,7 @@ struct MatterScreen: View {
                         }
                         .padding(.top, 10).padding(.trailing, 16).padding(.bottom, 90)
                     }
-                    .frame(width: 330)
+                    .frame(width: PadMetrics.column)
                 }
             }
         }
@@ -324,7 +326,7 @@ struct MatterScreen: View {
                     // the page's width: left to the bar, the name got the width of a letter.
                     // On the page's own left edge, over its first line — and clear of the sidebar's
                     // capsule where that lies over the page.
-                    .padding(.leading, max((navigation.pageWidth - min(navigation.pageWidth, PadMetrics.page)) / 2,
+                    .padding(.leading, max((navigation.pageWidth - beside - min(navigation.pageWidth - beside, PadMetrics.page)) / 2,
                                            navigation.showsSidebar ? 0 : PadMetrics.controls))
                     .frame(width: max(120, navigation.pageWidth - 172), alignment: .leading)
                     // Moved with the page, not by a transition of the bar's own.

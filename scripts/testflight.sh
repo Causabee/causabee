@@ -35,6 +35,12 @@ if [[ -z ${CAUSABEE_SKIP_TESTS:-} ]]; then
   xcodebuild test -project App/Causabee.xcodeproj -scheme CausabeePhoneUITests -destination "platform=iOS Simulator,name=$SIM" \
     -derivedDataPath .build-app/uitests > "$OUT/tests.log" 2>&1 \
     || { grep -E "error:|failed" "$OUT/tests.log" | tail -12; fail "The regression tests failed: nothing was uploaded. The whole log: $OUT/tests.log" }
+  # The iPad's columns are not there on an iPhone: a page cut off on both sides went through it (31 October).
+  step "Running the iPad's tests in the simulator"
+  PAD=${CAUSABEE_TEST_PAD:-iPad Air 11-inch (M4)}
+  xcodebuild test -project App/Causabee.xcodeproj -scheme CausabeePhoneUITests -destination "platform=iOS Simulator,name=$PAD" \
+    -only-testing:CausabeePhoneUITests/PadTests -collect-test-diagnostics never -derivedDataPath .build-app/uitests > "$OUT/pad-tests.log" 2>&1 \
+    || { grep -E "error:|failed" "$OUT/pad-tests.log" | tail -12; fail "The iPad's tests failed: nothing was uploaded. The whole log: $OUT/pad-tests.log" }
 fi
 
 # Every field of the models must be in iCloud's Production schema first: a build with one that is
