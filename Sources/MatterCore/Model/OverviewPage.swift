@@ -52,6 +52,8 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
     /// Open tasks past their day, the longest overdue first.
     public let overdue: [Overdue]
     public let newMailsSinceClosed: Int
+    /// Of those, the ones the owner has not ignored: what the overview shows.
+    public let mailsToShowSinceClosed: Int
     public let lastDate: Date?
     /// Its first mail's day: "since …" under its name.
     public let firstDate: Date?
@@ -96,7 +98,10 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         let dates = quick ? [] : MailDates.of(matter, entries: entries)
         lastDate = dates.last
         firstDate = dates.first
-        newMailsSinceClosed = matter.closedAt.map { closed in dates.count - (dates.firstIndex { $0 > closed } ?? dates.count) } ?? 0
+        let closed = matter.closedAt
+        let after = { (day: Date) in dates.count - (dates.firstIndex { $0 > day } ?? dates.count) }
+        newMailsSinceClosed = closed.map(after) ?? 0
+        mailsToShowSinceClosed = closed.map { after(max($0, matter.ignoredMailUntil ?? $0)) } ?? 0
         news = matter.brief == nil ? nil : matter.shownBrief?.news.flatMap { $0.seen ? nil : $0.lines.first }
         if let last = dates.last, let newest = entries.first(where: { $0.date == last }) {
             let onLast = MailDates.onLastDay(of: matter, entries: entries)

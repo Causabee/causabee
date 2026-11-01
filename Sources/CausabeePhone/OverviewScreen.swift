@@ -293,18 +293,7 @@ struct OverviewScreen: View {
                         }
                     }
                 }
-                ForEach(matters.filter { $0.isClosed && StoredChanges.shared.summary($0).newMailsSinceClosed > 0 }) { matter in
-                    let new = StoredChanges.shared.summary(matter).newMailsSinceClosed
-                    Button { navigation.open(matter) } label: {
-                        HStack {
-                            Image(systemName: "archivebox").foregroundStyle(.secondary)
-                            Text("\(new) new \(new == 1 ? "mail" : "mails") in the closed matter “\(matter.name)”").multilineTextAlignment(.leading)
-                            Spacer()
-                        }
-                        .font(.subheadline).padding(14).phoneBox()
-                    }
-                    .buttonStyle(.plain)
-                }
+                ClosedMailRows(matters: matters) { navigation.open($0) }
                 // The quiet and the closed ones, folded away: the ones going on are the cards.
                 OtherMattersList(matters: matters)
                 }

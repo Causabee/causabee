@@ -880,3 +880,52 @@ private struct OverviewDayCard: View {
         .accessibilityIdentifier("overview.day")
     }
 }
+
+/// A closed matter is out of the overview, unless mail came for it after it was closed. Held, or
+/// right-clicked on the Mac, that mail is ignored here: it stays in the matter and on its row among
+/// the closed ones, and the next mail shows here again.
+struct ClosedMailRows: View {
+    let matters: [Matter]
+    let open: (Matter) -> Void
+    @Environment(\.modelContext) private var context
+
+    private func ignore(_ matter: Matter) {
+        withAnimation(.snappy(duration: 0.2)) {
+            matter.ignoredMailUntil = StoredChanges.shared.summary(matter).lastDate
+            try? context.save()
+        }
+    }
+
+    var body: some View {
+        let waiting = matters.filter { $0.isClosed && StoredChanges.shared.summary($0).mailsToShowSinceClosed > 0 }
+        if !waiting.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(waiting.enumerated()), id: \.element.persistentModelID) { index, matter in
+                    let new = StoredChanges.shared.summary(matter).mailsToShowSinceClosed
+                    if index > 0 { Divider().padding(.leading, 44) }
+                    Button { open(matter) } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "archivebox").foregroundStyle(.secondary)
+                            Text("\(new) new \(new == 1 ? "mail" : "mails") in the closed matter “\(matter.name)”")
+                                .multilineTextAlignment(.leading)
+                            Spacer(minLength: 0)
+                        }
+                        #if os(iOS)
+                        .font(.subheadline)
+                        #else
+                        .font(.callout)
+                        #endif
+                        .padding(14)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open the matter")
+                    .contextMenu {
+                        Button(Say.ignoreNewMail, systemImage: "eye.slash") { ignore(matter) }.tint(Color.secondary)
+                    }
+                }
+            }
+            .journalRows()
+        }
+    }
+}

@@ -111,6 +111,7 @@ enum Say {
     static let mergeWith = "Merge With …"
     static let icon = "Icon …"
     static let openAgain = "Open Again"
+    static let ignoreNewMail = "Ignore New Mail"
     static let closeMatter = "Close Matter …"
     static let exportRTF = "Export as RTF"
     // A task, a date, a person, a link, a file

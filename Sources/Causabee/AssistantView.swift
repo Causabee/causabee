@@ -570,21 +570,7 @@ struct OverviewView: View {
                         .padding(.top, 6)
                     OverviewRows(matters: rest, all: matters)
                 }
-                // A closed matter is out of the overview, unless mail came for it after it was closed.
-                ForEach(matters.filter { $0.isClosed && StoredChanges.shared.summary($0).newMailsSinceClosed > 0 }) { matter in
-                    let new = StoredChanges.shared.summary(matter).newMailsSinceClosed
-                    HStack {
-                        Image(systemName: "archivebox").foregroundStyle(.secondary)
-                        Text("\(new) new \(new == 1 ? "mail" : "mails") in the closed matter “\(matter.name)”")
-                        Spacer()
-                    }
-                    .font(.callout)
-                    .padding(12)
-                    .box()
-                    .contentShape(RoundedRectangle(cornerRadius: 10))
-                    .onTapGesture { navigation.open(matter) }
-                    .help("Open the matter")
-                }
+                ClosedMailRows(matters: matters) { navigation.open($0) }
                 // The quiet and the closed ones, folded away under the cards — named, and each a way
                 // in — as on the iPhone and the iPad.
                 OtherMatters(matters: matters)
