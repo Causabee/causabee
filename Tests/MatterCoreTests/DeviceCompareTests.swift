@@ -101,4 +101,15 @@ struct DateFinderTests {
         #expect(days("Das Angebot ist gebunden bis 31.10.") == ["2026-10-31"])
         #expect(days("Can we talk tomorrow at 10:00?").isEmpty)
     }
+
+    @Test("A day and month with dots, read long after the day: from the mail, whatever today is")
+    func readLater() {
+        let sent = ISO8601DateFormatter().date(from: "2025-03-07T09:00:00Z")
+        func days(_ text: String) -> [String] { DateFinder.dates(in: text, sent: sent).map(\.day) }
+        #expect(days("Das Angebot ist gebunden bis 31.3.") == ["2025-03-31"])
+        #expect(days("Bitte bis 2.4. antworten") == ["2025-04-02"])
+        #expect(days("Das Angebot galt bis 1.3.").isEmpty)
+        #expect(days("Das kostet 12.50.").isEmpty)
+        #expect(days("Version 1.2.3.").isEmpty)
+    }
 }
