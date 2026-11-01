@@ -14,9 +14,12 @@ extension Theme {
     #if os(iOS)
     static let cardRadius: CGFloat = 20
     static let tileRadius: CGFloat = 16
+    /// How far a plan's first line stands down, to read level with its box or mark.
+    static let planTop: CGFloat = 2
     #else
     static let cardRadius: CGFloat = 16
     static let tileRadius: CGFloat = 12
+    static let planTop: CGFloat = 4
     #endif
     /// The plan's one grid: a day's tile, and beside it what a task is ticked in and a date marked with.
     static let dayTile: CGFloat = 44
@@ -142,26 +145,56 @@ struct NextCard<Head: View, Foot: View>: View {
     }
 }
 
-/// What is ahead, in one card: the next days, and how much more there is. A tap opens the plan.
+/// What is ahead, in one card, on the plan's grid: the next days, and how much more there is. A
+/// task's box ticks it; a tap on anything else opens the plan.
 struct AheadCard: View {
     let plan: Journal.Plan
+    let tick: (Todo) -> Void
     let open: () -> Void
     /// How many days it shows: on a wide page it stands in its own column and has the room.
     var days = 2
 
-    private static func title(_ item: Journal.Plan.Item) -> String {
-        switch item {
-        case .task(let todo): todo.text
-        case .appointment(let appointment): appointment.what
-        case .deadline(let deadline): deadline.what
+    private func name(_ text: String) -> some View {
+        Text(text).foregroundStyle(.primary).lineLimit(2).multilineTextAlignment(.leading).padding(.top, Theme.planTop)
+    }
+
+    /// What opens the plan, as wide as its row.
+    private func opens<Label: View>(@ViewBuilder _ label: () -> Label) -> some View {
+        Button(action: open) { label().frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()) }
+            .buttonStyle(.plain)
+    }
+
+    private func date(_ what: String, isDeadline: Bool, hours: String? = nil, place: String? = nil) -> some View {
+        opens {
+            HStack(alignment: .top, spacing: 10) {
+                PlanDateMark(isDeadline: isDeadline)
+                VStack(alignment: .leading, spacing: 2) {
+                    name(what)
+                    PlanDateLine(isDeadline: isDeadline, hours: hours, last: nil, place: place).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .planRow()
+            .planDate()
         }
     }
 
-    private static func under(_ item: Journal.Plan.Item) -> String? {
+    @ViewBuilder
+    private func row(_ item: Journal.Plan.Item) -> some View {
         switch item {
-        case .task(let todo): todo.owner == .we ? "together" : nil
-        case .appointment(let appointment): PlanDateLine.words(hours: appointment.time, last: nil, place: appointment.place)
-        case .deadline: "Deadline"
+        case .task(let todo):
+            HStack(alignment: .top, spacing: 10) {
+                PlanTick(todo: todo) { tick(todo) }
+                opens {
+                    VStack(alignment: .leading, spacing: 2) {
+                        name(todo.text)
+                        if todo.owner == .we { Text("together").font(.footnote).foregroundStyle(.secondary).lineLimit(1) }
+                    }
+                }
+            }
+            .planRow()
+        case .appointment(let appointment): date(appointment.what, isDeadline: false, hours: appointment.time, place: appointment.place)
+        case .deadline(let deadline): date(deadline.what, isDeadline: true)
         }
     }
 
@@ -172,20 +205,18 @@ struct AheadCard: View {
         let tasks = plan.openCount - items.filter { if case .task = $0 { false } else { true } }.count
         let dates = items.count - items.filter { if case .task = $0 { true } else { false } }.count
         let moreDates = dates - shown.compactMap(\.items.first).filter { if case .task = $0 { false } else { true } }.count
-        Button(action: open) {
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(shown) { day in
-                    if let item = day.items.first {
-                        HStack(alignment: .center, spacing: 14) {
-                            DayTile(day: day.day)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(Self.title(item)).foregroundStyle(.primary).lineLimit(2).multilineTextAlignment(.leading)
-                                if let under = Self.under(item) { Text(under).font(.footnote).foregroundStyle(.secondary).lineLimit(1) }
-                            }
-                        }
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(shown) { day in
+                if let item = day.items.first {
+                    HStack(alignment: .top, spacing: 6) {
+                        Button(action: open) { DayTile(day: day.day) }.buttonStyle(.plain)
+                        row(item)
                     }
+                    .padding(.horizontal, 12).padding(.vertical, 10)
                 }
-                if !shown.isEmpty { Divider() }
+                Divider().padding(.horizontal, 12)
+            }
+            opens {
                 HStack(spacing: 8) {
                     Group {
                         if plan.overdue.isEmpty {
@@ -199,13 +230,11 @@ struct AheadCard: View {
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
                 }
+                .padding(.horizontal, 12).padding(.vertical, 14)
             }
-            .padding(.horizontal, Theme.cardInset).padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("ahead")
     }
 
@@ -658,6 +687,33 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
                 }
             }
         }
+    }
+}
+
+/// A task's box. Ticked by hand the bee is glad: a little more when it was the matter's last open task.
+struct PlanTick: View {
+    let todo: Todo
+    let toggle: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Button {
+            let wasOpen = !todo.isDone
+            toggle()
+            if wasOpen, todo.isDone {
+                BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: reduceMotion)
+            }
+        } label: {
+            Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")
+                .font(.title3)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(todo.isDone ? Theme.onInk : .secondary, todo.isDone ? Theme.ink : .secondary)
+                .frame(width: Theme.planMark, height: Theme.planMark)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(todo.isDone ? "Open again" : "Mark as done")
+        .help(todo.isDone ? "Open again" : "Mark as done")
     }
 }
 

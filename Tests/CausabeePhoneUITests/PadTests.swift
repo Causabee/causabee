@@ -49,6 +49,27 @@ final class PadTests: XCTestCase {
         XCTAssertGreaterThan(app.buttons["part.Latest updates"].frame.minX, sidebar, "The overview slid under the sidebar.")
     }
 
+    /// What is ahead reads as the plan does: a task has its box, a date its block, and the box
+    /// ticks. The demo is filled anew after it, for the runs that count on that task.
+    func testATaskAheadIsTickedThere() {
+        let ahead = app.descendants(matching: .any)["ahead"]
+        XCTAssertTrue(ahead.waitForExistence(timeout: 10), "What is ahead is not there.")
+        picture("Ahead")
+        let box = ahead.buttons["Mark as done"].firstMatch
+        XCTAssertTrue(box.waitForExistence(timeout: 5), "No task ahead has its box.")
+        let left = ahead.staticTexts.matching(NSPredicate(format: "label CONTAINS ' open'")).firstMatch
+        let before = left.label
+        box.tap()
+        let end = Date().addingTimeInterval(5)
+        while left.label == before, Date() < end { RunLoop.current.run(until: Date().addingTimeInterval(0.2)) }
+        picture("Ahead, ticked")
+        XCTAssertNotEqual(left.label, before, "The box was tapped and the task still counts as open.")
+        app.terminate()
+        app.launchArguments += ["-demo.filled", "anew"]
+        app.launch()
+        XCTAssertTrue(app.buttons["part.Digest"].waitForExistence(timeout: 40), "The demo did not come back.")
+    }
+
     /// With the assistant beside it there is no room for the column: the journal has the page alone.
     /// On Mail, where what the column holds has no place in the page.
     func testTheAssistantTakesTheColumnsPlace() {

@@ -268,7 +268,7 @@ struct MatterStatusView: View {
                         if !matter.isClosed {
                             nextStep(status)
                             ForYouCard(matter: matter, folds: part != .all)
-                            if part != .plan, plan.openCount > 0 { AheadCard(plan: plan, open: { part = .plan }, days: 4) }
+                            if part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
                         }
                         atHandCard
                         BallCard(matter: matter)
@@ -364,7 +364,7 @@ struct MatterStatusView: View {
         if !matter.isClosed {
             nextStep(status)
             ForYouCard(matter: matter)
-            if plan.openCount > 0 { AheadCard(plan: plan) { part = .plan } }
+            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick) { part = .plan } }
         }
         atHandCard
     }
@@ -1228,6 +1228,8 @@ struct MatterStatusView: View {
         try? context.save()
     }
 
+    private func tick(_ todo: Todo) { toggle(todo) }
+
     private func toggle(_ todo: Todo) {
         todo.isDone.toggle()
         todo.doneAt = todo.isDone ? Date() : nil
@@ -1645,36 +1647,19 @@ struct TodoRow: View {
     @State private var editing = false
     @State private var deleting = false
     @State private var addingReminder = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A task the owner can be reminded of: its offer is in the ⋯, its connection on the row.
     private var remindable: Bool { !todo.isDone && !todo.isInfo && (todo.owner == .me || todo.owner == .we || todo.reminderID != nil) }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Button {
-                let wasOpen = !todo.isDone
-                toggle()
-                // Ticked by hand: the bee is glad — a little more, when it was the matter's last open task.
-                if wasOpen, todo.isDone {
-                    BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: reduceMotion)
-                }
-            } label: {
-                Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")
-                    .font(.title3)
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(todo.isDone ? Theme.onInk : .secondary, todo.isDone ? Theme.ink : .secondary)
-                    .frame(width: Theme.planMark, height: Theme.planMark)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help(todo.isDone ? "Open again" : "Mark as done")
+            PlanTick(todo: todo, toggle: toggle)
             VStack(alignment: .leading, spacing: 2) {
                 Text(todo.text)
                     .foregroundStyle(todo.isDone || todo.isBlocked ? .secondary : .primary)
                     .strikethrough(todo.isDone, color: .secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
+                    .padding(.top, Theme.planTop)
                 if let links = todo.links, !links.isEmpty {
                     HStack(spacing: 10) {
                         ForEach(links.sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
@@ -2087,7 +2072,7 @@ struct DateRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.what).fixedSize(horizontal: false, vertical: true)
                     .foregroundStyle(isPast ? .secondary : .primary)
-                    .padding(.top, 4)
+                    .padding(.top, Theme.planTop)
                 PlanDateLine(isDeadline: item.deadline != nil, hours: item.hours, last: item.endDay, place: item.place)
                 if !isPast || item.calendarID != nil {
                     CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime,
