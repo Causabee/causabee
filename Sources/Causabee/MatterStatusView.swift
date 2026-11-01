@@ -1712,13 +1712,11 @@ struct TodoRow: View {
                     }
                 }
             }
-            Spacer(minLength: 8)
-            HStack(spacing: 4) {
-                MoreMenu { moreItems }
-                    .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
-                        TodoEditor(todo: todo, done: { editing = false; try? context.save() }, cancel: { editing = false })
-                    }
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            PlanMore { moreItems }
+                .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
+                    TodoEditor(todo: todo, done: { editing = false; try? context.save() }, cancel: { editing = false })
+                }
         }
         .planRow()
         .contentShape(Rectangle())
@@ -2079,13 +2077,11 @@ struct DateRow: View {
                                  place: item.place, matterName: matterName, tick: tick, asked: addingToCalendar) { id in item.connect(id); save() }
                 }
             }
-            Spacer(minLength: 8)
-            HStack(spacing: 4) {
-                MoreMenu { moreItems }
-                    .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
-                        DateEditor(item: item, done: { editing = false; save() }, cancel: { editing = false })
-                    }
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            PlanMore { moreItems }
+                .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
+                    DateEditor(item: item, done: { editing = false; save() }, cancel: { editing = false })
+                }
         }
         .planRow()
         .planDate()

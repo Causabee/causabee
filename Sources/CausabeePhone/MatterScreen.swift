@@ -1231,15 +1231,9 @@ struct PhoneTodoRow: View {
                     Text(line).font(.caption).foregroundStyle(lineColor)
                 }
             }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
             // The Mac's ⋯: change it by hand, say it is only worth knowing, what it waits for.
-            Menu { moreItems } label: {
-                Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
-            }
-            .tint(.secondary)
-            .accessibilityLabel("More")
-            // While reading, a long press still has everything.
-            .tool()
+            PlanMore { moreItems }
         }
         .planRow()
         .contentShape(Rectangle())
@@ -1525,14 +1519,8 @@ struct PhoneDateRow: View {
                                  place: item.place, matterName: matter.name, tick: tick, asked: addingToCalendar) { id in item.connect(id); try? context.save() }
                 }
             }
-            Spacer(minLength: 0)
-            Menu { moreItems } label: {
-                Image(systemName: "ellipsis").frame(width: 30, height: 26).contentShape(Rectangle())
-            }
-            .tint(.secondary)
-            .accessibilityLabel("More")
-            // While reading, a long press still has everything.
-            .tool()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            PlanMore { moreItems }
         }
         .planRow()
         .planDate()
