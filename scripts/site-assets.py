@@ -28,17 +28,16 @@ IMG = OUT / "img"
 # The screenshots are 2880 × 1800: a 1440-point window at 2x, every pixel kept, so the website's
 # pictures are as sharp as the app on a Retina screen. Each crop is (left, top, right, bottom); the
 # animations in site/index.html measure the same parts in the older 1800-wide pixels (× 1.6 here).
-# Since Beta 57 the parts are pills, a little taller than the tabs were: 4 lower again, and the
-# care page's 16.
-# Since Beta 53 the matter's name stands 36 points lower at rest, and with it the page: the crops
-# of a page at its top are 36 lower than they were.
+# Since the journal the plan is one page of cards: the crops follow it, and the animations over the
+# pictures are off (`live--still`), so nothing in site/index.html is measured against them. A tile's
+# picture is always 1440 × 840: `.tile__img` holds that shape and cuts off what does not fit.
 # The matter's column is the window's second, from 542 to 1986 of 2880; the assistant's the third.
 CROPS = {
     "matter-phone": ("intro-2", (568, 0, 1960, 1547)),
-    "tasks": ("intro-3", (544, 500, 1984, 1340)),
-    "calendar": ("intro-3", (552, 1256, 1560, 1840)),
-    "files": ("intro-4", (544, 140, 1984, 820)),
-    "sources": ("intro-5", (544, 1120, 1984, 1816)),
+    "tasks": ("intro-3", (544, 690, 1984, 1530)),
+    "calendar": ("intro-3", (544, 240, 1984, 1080)),
+    "files": ("intro-4", (544, 190, 1984, 1030)),
+    "sources": ("site-mail", (544, 490, 1984, 1330)),
     # From under the day and the ×, which a crop cut through, to under the answer's own line of tools.
     "assistant": ("intro-5", (1990, 100, 2878, 1070)),
 }
@@ -46,7 +45,7 @@ FULL = {"overview": "intro-1", "matter": "intro-2", "care": "intro-5"}
 # A crop that starts right under the matter's pinned bar still catches its lower edge — a grey strip
 # with the tabs' bottoms. Those rows are painted in the page's own colour, taken from just below them;
 # the crop itself stays, because the animation over the picture is measured from its top.
-CLEAR_TOP = {"files": 56}
+CLEAR_TOP = {}
 
 # The icon as Icon Composer draws it: the bee's stripes and wings over the yellow, the wings
 # half see-through. The layers are App/Resources/BeeStripesWings.icon/Assets, moved up 30 points.
