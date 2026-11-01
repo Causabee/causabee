@@ -7,7 +7,13 @@ final class AutoTests: XCTestCase {
     /// The overview opens on its journal; the matters are one filter away.
     private func showMatters(in app: XCUIApplication) {
         let filter = app.buttons["part.Matters"]
-        if filter.waitForExistence(timeout: 40) { filter.tap() }
+        guard filter.waitForExistence(timeout: 40) else { return }
+        // The sorted mails' card comes in over the filters just after the start, and a tap then misses.
+        let row = app.staticTexts["Bathroom renovation"].firstMatch
+        for _ in 0..<5 where !row.exists {
+            filter.tap()
+            _ = row.waitForExistence(timeout: 3)
+        }
     }
 
     func testAStepDoneBringsTheNextByItself() {

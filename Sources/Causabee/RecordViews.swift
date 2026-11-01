@@ -594,7 +594,7 @@ struct FileFace<Items: View>: View {
     private var readButton: some View {
         Button("Read", action: read)
             .quietButton().fixedSize()
-            .help("Reads it on this device and shows it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
+            .help("Reads it on this device and shows it in the assistant. Nothing is sent until “Sort in”.")
     }
 
     /// Where it is and where it came from — its own name too, when it has a name of ours.
@@ -889,7 +889,7 @@ struct ReadAllLine: View {
 
     var body: some View {
         if count > 1 {
-            Button("Read all \(count) attachments · ≈ \(count * 4) cents", action: read)
+            Button("Read all \(count) attachments", action: read)
                 .buttonStyle(.gold).font(.caption)
                 .help("Reads each on this device and shows it in the assistant. Nothing is sent until “Sort in”.")
                 .padding(.horizontal, 4)
@@ -897,7 +897,7 @@ struct ReadAllLine: View {
     }
 }
 
-/// While choosing several kept files: how many, what reading them costs, and the button.
+/// While choosing several kept files: how many, and the button.
 struct ChooseBar: View {
     let chosen: Int
     let readable: Int
@@ -907,7 +907,7 @@ struct ChooseBar: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(chosen == 0 ? "Choose files" : "\(chosen) · ≈ \(chosen * 4) cents")
+            Text(chosen == 0 ? "Choose files" : "\(chosen) chosen")
                 .font(.callout).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 8)
             if chosen < readable { Button("All", action: all).buttonStyle(.gold).font(.callout) }

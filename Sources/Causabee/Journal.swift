@@ -167,12 +167,11 @@ struct OutOfDateStep: View {
 
 /// The one button that has Causabee write a matter again, wherever that is offered.
 struct UpdateNowButton: View {
-    var price = ""
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(Say.updateNow + price).font(.caption.weight(.medium)).foregroundStyle(.primary)
+            Text(Say.updateNow).font(.caption.weight(.medium)).foregroundStyle(.primary)
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(Theme.box, in: Capsule())
                 .contentShape(Capsule())

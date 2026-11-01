@@ -343,11 +343,11 @@ struct MatterStatusView: View {
                     AutoLine(matter: matter)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    UpdateNowButton(price: PriceEstimates.summary(matter), action: writeSummary)
+                    UpdateNowButton(action: writeSummary)
                     Spacer()
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
                 } else {
-                    Button("Write the brief\(PriceEstimates.summary(matter))", action: writeSummary)
+                    Button("Write the brief", action: writeSummary)
                         .help("Causabee's adviser writes what it understands of this matter, the summary and the next step, and proposes changes to the list — from the facts, pseudonymised.")
                     Spacer()
                 }
@@ -472,7 +472,7 @@ struct MatterStatusView: View {
                 } else if coming {
                     AutoWaitLine(matter: matter, writing: "Causabee is on it …")
                 } else if auto {
-                    // Auto asks: no link to ask with, and no price to weigh.
+                    // Auto asks: no link to ask with.
                     AutoLine(matter: matter)
                 } else {
                     // An older suggestion says only its day.
@@ -480,7 +480,7 @@ struct MatterStatusView: View {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
                             .help("Causabee suggested this on \(Dates.short(at)); the matter has changed since.")
                     }
-                    UpdateNowButton(price: PriceEstimates.step(matter), action: askStep)
+                    UpdateNowButton(action: askStep)
                         .help("Causabee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
                 }
                 Spacer()
@@ -2374,7 +2374,7 @@ struct DocumentRow: View {
         Button("Open", action: open)
         if document.reading == .kept {
             Button("Read", action: read)
-                .help("Reads it on this Mac and shows it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
+                .help("Reads it on this Mac and shows it in the assistant. Nothing is sent until “Sort in”.")
         }
         Button("Ask Causabee", action: talk)
         Divider()

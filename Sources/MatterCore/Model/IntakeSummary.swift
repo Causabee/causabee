@@ -96,13 +96,12 @@ public enum IntakeSummary {
     }
 
     /// "3 mails sorted into Lisbon · 1 new task" — or "into 3 matters" when there are several.
-    public static func line(mails: Int, matters: [String], tasks: Int, dates: Int, unplaced: Int = 0, cost: Double? = nil) -> String {
+    public static func line(mails: Int, matters: [String], tasks: Int, dates: Int, unplaced: Int = 0) -> String {
         var text = "\(mails) \(mails == 1 ? "mail" : "mails") sorted"
         if matters.count == 1 { text += " into \(matters[0])" } else if matters.count > 1 { text += " into \(matters.count) matters" }
         if tasks > 0 { text += " · \(tasks) new \(tasks == 1 ? "task" : "tasks")" }
         if dates > 0 { text += " · \(dates) \(dates == 1 ? "date" : "dates")" }
         if unplaced > 0 { text += " · \(unplaced) without a matter, below" }
-        if let cost, cost > 0, !Money.hidden { text += String(format: " · $%.3f", cost) }
         return text
     }
 

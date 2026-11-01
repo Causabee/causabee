@@ -655,14 +655,14 @@ struct MatterScreen: View {
                 } else if coming {
                     AutoWaitLine(matter: matter, writing: "Causabee is on it …")
                 } else if auto {
-                    // Auto asks: no link to ask with, and no price to weigh.
+                    // Auto asks: no link to ask with.
                     AutoLine(matter: matter, size: 11)
                 } else {
                     // An older suggestion says only its day.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
                     }
-                    UpdateNowButton(price: PriceEstimates.step(matter), action: askStep)
+                    UpdateNowButton(action: askStep)
                 }
             }
             .tool()
@@ -820,11 +820,11 @@ struct MatterScreen: View {
                     AutoLine(matter: matter, size: 11)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    UpdateNowButton(price: PriceEstimates.summary(matter), action: writeSummary)
+                    UpdateNowButton(action: writeSummary)
                     Spacer()
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
                 } else {
-                    Button("Write the brief\(PriceEstimates.summary(matter))", action: writeSummary).buttonStyle(.phone)
+                    Button("Write the brief", action: writeSummary).buttonStyle(.phone)
                     Spacer()
                 }
             }

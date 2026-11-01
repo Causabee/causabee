@@ -257,7 +257,7 @@ struct PhoneShotCard: View {
             case .read(let look):
                 preview(look)
                 Text(look.earlier != nil ? "Scanned before: its answer is kept, nothing is sent again."
-                     : String(format: "Sorting in costs about %.1f cents. Sent pseudonymised to %@.", look.estimate * 100, ModelChoice.mail.label))
+                     : "Sent pseudonymised to \(ModelChoice.mail.label) when you sort it in.")
                     .font(.footnote).foregroundStyle(.secondary)
                 HStack(spacing: 10) {
                     Button("Not now") { shots.remove(shot.id) }.buttonStyle(.phone)

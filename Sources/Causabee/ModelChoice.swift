@@ -59,17 +59,17 @@ enum ModelChoice {
         if proPicks { return "Pro: GPT-6.1 Sol reads new mail as it comes — names disguised first." }
         if case .device = mailReader(for: mail) { return "Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it." }
         if client(for: mail) != nil {
-            return String(format: "%@ reads new mail with your own key — names disguised first. About %.2f cents per mail.", mail.label, mail.perMail * 100)
+            return String(format: "%@ reads new mail with your own key — names disguised first.", mail.label)
         }
         return "Nothing reads new mail yet: Apple Intelligence is off on this device. Turn it on in the system's Settings, or choose Pro."
     }
 
-    /// Under the mails ticked to be sorted in: who reads them, and — with your own keys — about what it costs.
-    static func sortingWords(_ count: Int, estimate: Double, model: Claude.Model) -> String {
+    /// Under the mails ticked to be sorted in: who reads them.
+    static func sortingWords(_ count: Int, model: Claude.Model) -> String {
         let mails = count == 1 ? "mail" : "mails"
         if case .device = mailReader(for: model) { return "Sorting in \(count) \(mails) on this device, with Apple's model: nothing leaves it." }
-        if Money.hidden { return "Sorting in \(count) \(mails) with Causabee Pro. Sent pseudonymised to \(model.label)." }
-        return String(format: "Sorting in %d %@ costs about $%.2f. Sent pseudonymised to %@.", count, mails, estimate, model.label)
+        if BeeServer.isSetUp { return "Sorting in \(count) \(mails) with Causabee Pro. Sent pseudonymised to \(model.label)." }
+        return "Sorting in \(count) \(mails). Sent pseudonymised to \(model.label)."
     }
 
     static func missingKey(_ model: Claude.Model) -> String {
@@ -123,7 +123,7 @@ struct ModelSettingsView: View {
                 DisclosureGroup("Developer", isExpanded: $developer) {
                     picker("Sort mail", selection: $mail)
                     picker("Assistant", selection: $assistant)
-                    Text(ModelChoice.proPicks ? "Pro picks GPT-6.1 Sol while it is on; these are used with your own keys." : estimate(mail) + " Used with your own keys.")
+                    Text(ModelChoice.proPicks ? "Pro picks GPT-6.1 Sol while it is on; these are used with your own keys." : "Used with your own keys.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
                     KeyField(title: "Mistral", name: "MISTRAL_API_KEY")
@@ -148,10 +148,6 @@ struct ModelSettingsView: View {
         }
     }
 
-    private func estimate(_ id: String) -> String {
-        let model = Claude.Model.choices.first { $0.id == id } ?? .opus
-        return String(format: "About %.2f cents per mail.", model.perMail * 100)
-    }
 }
 #endif
 
@@ -476,55 +472,8 @@ struct AutoLine: View {
     }
 }
 
-/// What asking for a matter's next step or summary would cost, as the links beside them say it.
-/// Worked out from the matter's last 40 mails — a hundredth of a second and more — so only where
-/// it is shown, and kept until the matter's record or the model is another.
-@MainActor
-enum PriceEstimates {
-    private static var kept: [PersistentIdentifier: (version: Int, key: String, step: Double, summary: Double)] = [:]
-
-    static func of(_ matter: Matter) -> (step: Double, summary: Double) {
-        // Unchanged store: as it was. Changed: worked out anew only when this matter's own record
-        // changed — the facts are the heavy part — told by a cheap mark: its counts, and its notes'.
-        // Not by the store's count of changes: reading it made the whole page of a matter draw again
-        // after every change anywhere.
-        let version = 0
-        let key = [ModelChoice.assistant.id, "\(matter.entries?.count ?? 0)", "\(matter.todos?.count ?? 0)",
-                   "\(matter.documents?.count ?? 0)", "\(matter.noteCount)",
-                   "\((matter.noteBlocks ?? []).reduce(0) { $0 + $1.text.count } + (matter.notes?.count ?? 0))", MatterStatus.day(Date())].joined(separator: "|")
-        if let known = kept[matter.persistentModelID], known.key == key {
-            kept[matter.persistentModelID] = (version, key, known.step, known.summary)
-            return (known.step, known.summary)
-        }
-        // What the facts would come to, told from what goes into them — the whole sheet was made
-        // just to be measured, and was most of opening a matter with many people and mails.
-        let length = Self.factsLength(matter)
-        let model = ModelChoice.assistant
-        let found = (version: version, key: key, step: AssistantAsk.nextStepEstimate(length: length, model: model),
-                     summary: AssistantAsk.adviceEstimate(length: length, model: model))
-        kept[matter.persistentModelID] = found
-        return (found.step, found.summary)
-    }
-
-    /// About as many characters as the matter's facts have: its open tasks, the newest forty mails,
-    /// the notes, the people, the dates and the files, each about as long as the sheet writes it.
-    static func factsLength(_ matter: Matter) -> Int {
-        let mails = (matter.entries ?? []).sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }.prefix(40)
-        let mailText = mails.reduce(0) { $0 + $1.title.count + $1.from.count + ($1.digest?.count ?? 0) + 30 }
-        let todos = (matter.todos ?? []).reduce(0) { $0 + $1.text.count + 60 }
-        let notes = (matter.notesText?.count ?? 0) + (matter.shownBrief?.forFacts?.count ?? 0)
-        let rest = matter.parties.count * 80 + ((matter.appointments ?? []).count + (matter.deadlines ?? []).count) * 60
-            + (matter.documents ?? []).count * 50
-        return 600 + mailText + todos + notes + rest
-    }
-
-    /// " · ≈ 2.4 cents" after a button's words — nothing with Pro, where the plan holds the AI.
-    static func step(_ matter: Matter) -> String { Money.hidden ? "" : String(format: " · ≈ %.1f cents", of(matter).step * 100) }
-    static func summary(_ matter: Matter) -> String { Money.hidden ? "" : String(format: " · ≈ %.1f cents", of(matter).summary * 100) }
-}
-
 /// Auto, the whole circle: when a matter's record has changed, its next step and its summary are
-/// written again by themselves — what "ask again" and "Update" do on a tap.
+/// written again by themselves — what "Update now" does on a tap.
 ///
 /// - What counts as a change: `Matter.recordStamp` is another — a mail, a file, a task, a date, a note.
 /// - Bundled: `AutoPace` says when. While the owner works in a matter the next step goes grey and
@@ -645,12 +594,6 @@ final class AutoUpdate {
         all[device] = (UserDefaults.standard.dictionary(forKey: spentKey) as? [String: Double]) ?? [:]
         profile.autoSpent = try? JSONEncoder().encode(all)
         try? context.save()
-    }
-
-    /// "Auto · $0.12 today", or nil when it spent nothing today.
-    static var spentWords: String? {
-        let spent = spent()
-        return spent > 0 ? String(format: "Pro has spent $%.2f today on next steps and summaries", spent) : nil
     }
 
     private static func add(_ cost: Double) {
@@ -820,9 +763,9 @@ struct AutoQuestion: ViewModifier {
             Button("Turn Pro On") { agreed = true; turnOn() }
             Button("Cancel", role: .cancel) { }
         } message: {
-            // Short, and by name: which model reads, that names are disguised, who decides, what it costs.
+            // Short, and by name: which model reads, that names are disguised, who decides.
             Text("Pro reads new mail and files for you as they arrive, with \(model.label) — names disguised. " +
-                 "You still decide what goes into a matter. " + String(format: "About %.1f cents a mail. ", model.perMail * 100) +
+                 "You still decide what goes into a matter. " +
                  "Without Pro, nothing is read by the AI until you tap.")
         }
     }

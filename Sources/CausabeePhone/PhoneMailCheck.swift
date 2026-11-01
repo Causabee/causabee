@@ -446,7 +446,7 @@ final class PhoneMailCheck {
             // Short: what came of it, and what it cost; what it brought, line by line, under it.
             let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
             var text = IntakeSummary.line(mails: imported.mails, matters: names, tasks: imported.todosNew,
-                                          dates: imported.appointments + imported.deadlines, unplaced: unplaced, cost: answered.cost)
+                                          dates: imported.appointments + imported.deadlines, unplaced: unplaced)
             if answered.failed > 0 { text += " · \(answered.failed) failed" }
             if !held.isEmpty { text += " · \(held.count) \(held.count == 1 ? "waits" : "wait") for room for a new matter" }
             // Each mail with the matter it went into: a wrong one is moved from here.
@@ -754,7 +754,7 @@ struct PhoneMailReview: View {
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
             Text(chosen.isEmpty ? "None ticked: “Leave out” puts \(look.pending == 1 ? "it" : "them") aside, and \(look.pending == 1 ? "it is" : "they are") not offered again. “Later” keeps \(look.pending == 1 ? "it" : "them") for the next time."
-                 : ModelChoice.sortingWords(chosen.count, estimate: look.only(chosen).estimate, model: door.model))
+                 : ModelChoice.sortingWords(chosen.count, model: door.model))
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 Button("Later", action: later).buttonStyle(.phone)
@@ -798,7 +798,7 @@ struct PhoneMailVerdict: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("\(offers.count) \(offers.count == 1 ? "mail" : "mails") read").font(.headline)
             MailOffers(offers: offers, chosen: $chosen, moved: $moved, skipped: $skipped)
-            Text((Money.hidden || answered.cost == 0 ? "Read. " : String(format: "Read for $%.3f. ", answered.cost)) + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
+            Text("Read. " + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
                  + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, skipped) }
@@ -835,7 +835,7 @@ struct PhoneDemoMailReview: View {
                 }
                 .buttonStyle(.plain)
             }
-            Text("In the demo, sorting in sends nothing and costs nothing.").font(.footnote).foregroundStyle(.secondary)
+            Text("In the demo, sorting in sends nothing.").font(.footnote).foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 Button("Later", action: later).buttonStyle(.phone)
                 Button(chosen.count == DemoData.newMail.count ? "Sort in" : "Sort in \(chosen.count)") { sortIn(chosen) }

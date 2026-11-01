@@ -93,7 +93,7 @@ struct ShotView: View {
                 progress("Scanning on the Mac …")
             case .read(let look):
                 read(look)
-                buttons(primary: look.earlier == nil ? String(format: "Sort in · ≈ %.0f cents", (look.estimate * 100).rounded(.up)) : "Sort in · already scanned, costs nothing",
+                buttons(primary: look.earlier == nil ? "Sort in" : "Sort in · already scanned",
                         action: classify)
             case .sending(let look):
                 read(look)
