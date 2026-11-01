@@ -48,10 +48,10 @@ extension View {
     }
 
     /// What waits for the owner: yellow, and only that is. Without `forYou`, the same room with no colour.
-    func waitingTile(_ forYou: Bool = true) -> some View {
+    func waitingTile(_ forYou: Bool = true, outOfDate: Bool = false) -> some View {
         padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(forYou ? Theme.beeSoft : Color.clear, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+            .background(outOfDate ? Theme.box : forYou ? Theme.beeSoft : Color.clear, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
     }
 }
 
@@ -133,18 +133,99 @@ struct DayTile: View {
 struct NextCard<Head: View, Foot: View>: View {
     /// There is something for the owner to do: yellow. Nothing is: no colour at all.
     let forYou: Bool
+    /// The matter has changed since this was written: grey, whatever it says.
+    var outOfDate = false
     @ViewBuilder let head: Head
     @ViewBuilder let foot: Foot
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 8) { head }.waitingTile(forYou)
+            VStack(alignment: .leading, spacing: 8) { head }.waitingTile(forYou, outOfDate: outOfDate)
             VStack(alignment: .leading, spacing: 8) { foot }
                 .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .journalCard(inset: Theme.tileInset)
     }
+}
+
+/// Causabee's step once the matter has changed under it: still there to read, but it says it may
+/// no longer hold. Struck through when it is its own task that was done.
+struct OutOfDateStep: View {
+    let matter: Matter
+
+    var body: some View {
+        let done = matter.nextStepTodo.flatMap { origin in (matter.todos ?? []).first { $0.origin == origin } }?.isDone == true
+        BeeChip(text: "OUT OF DATE", tone: .quiet)
+        Text(matter.nextStep ?? "").font(Theme.rowTitleFont).foregroundStyle(.secondary)
+            .strikethrough(done, color: .secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        Text("Something changed since this was written.").font(.footnote).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// The one button that has Causabee write a matter again, wherever that is offered.
+struct UpdateNowButton: View {
+    var price = ""
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(Say.updateNow + price).font(.caption.weight(.medium)).foregroundStyle(.primary)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Theme.box, in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("update.now")
+    }
+}
+
+/// Under what Auto writes while the matter has changed: when it will, and the button not to wait.
+struct AutoWaitLine: View {
+    let matter: Matter
+    /// What is said while it is being written.
+    let writing: String
+    private var loader: CGFloat {
+        #if os(iOS)
+        12
+        #else
+        10
+        #endif
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if AutoUpdate.shared.working.contains(matter.key) {
+                BeeLoader(size: loader)
+                Text(writing).font(.caption).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+            } else {
+                Image(systemName: "clock").font(.caption).foregroundStyle(.secondary).accessibilityHidden(true)
+                Text("When you leave").font(.caption).foregroundStyle(.secondary)
+                Spacer(minLength: 8)
+                UpdateNowButton { AutoUpdate.shared.updateNow(matter) }
+            }
+        }
+    }
+}
+
+/// For as long as a page shows the matter, Auto waits for the owner to finish in it.
+private struct ShownToAuto: ViewModifier {
+    let key: String
+
+    func body(content: Content) -> some View {
+        content.task(id: key) {
+            AutoUpdate.shared.show(key)
+            while !Task.isCancelled { try? await Task.sleep(for: .seconds(3_600)) }
+            AutoUpdate.shared.leave(key)
+        }
+    }
+}
+
+extension View {
+    func shownToAuto(_ matter: Matter) -> some View { modifier(ShownToAuto(key: matter.key)) }
 }
 
 /// What is ahead, in one card, on the plan's grid: the next days, and how much more there is. A

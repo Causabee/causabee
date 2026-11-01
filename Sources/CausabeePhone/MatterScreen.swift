@@ -225,6 +225,7 @@ struct MatterScreen: View {
             }
         }
         .environment(find)
+        .shownToAuto(matter)
         // Edit → Find, ⌘F: in the matter that is open.
         .onReceive(NotificationCenter.default.publisher(for: .phoneFind)) { _ in
             if navigation.path.last == matter.persistentModelID { startFinding() }
@@ -612,15 +613,18 @@ struct MatterScreen: View {
     private func nextStep(_ status: MatterStatus, _ scroller: ScrollViewProxy) -> some View {
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
-        // Changed, and Auto writes it again: until it has, the step worked out on the device at
-        // once — it knows what was just ticked — and Causabee's in its place when it comes.
+        // Changed, and Auto will write it again: at once it says so, grey, and it is not offered
+        // to act on until it has.
         let coming = AutoUpdate.shared.updating(matter)
+        let outOfDate = coming && matter.nextStep != nil
         let own = fresh && !coming
         // Yellow only when something waits for the owner: while it waits for someone else there is
         // nothing to do, and the page says so without a colour.
         let forYou = own ? matter.nextStep != nil : rule.map { $0.kind != .wait } ?? false
-        NextCard(forYou: forYou) {
-            if own, let step = matter.nextStep {
+        NextCard(forYou: forYou, outOfDate: outOfDate) {
+            if outOfDate {
+                OutOfDateStep(matter: matter)
+            } else if own, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
@@ -634,7 +638,9 @@ struct MatterScreen: View {
                 Text("Nothing for you right now").font(Theme.rowTitleFont)
             }
         } foot: {
-            if own, let step = matter.nextStep {
+            if outOfDate {
+                EmptyView()
+            } else if own, let step = matter.nextStep {
                 let todo = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
                 stepButtons(text: step, todo: todo, waiting: todo?.owner == .other, scroller).tool()
             } else if let rule, let todo = rule.todo.flatMap({ id in matter.openTodos.first { $0.persistentModelID == id } }) {
@@ -643,19 +649,20 @@ struct MatterScreen: View {
             }
             // Asking Claude, below the buttons: apart from what the step itself offers — as on the Mac.
             HStack(spacing: 4) {
-                if askingStep || coming {
+                if askingStep {
                     BeeLoader(size: 12)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
+                } else if coming {
+                    AutoWaitLine(matter: matter, writing: "Causabee is on it …")
                 } else if auto {
                     // Auto asks: no link to ask with, and no price to weigh.
                     AutoLine(matter: matter, size: 11)
                 } else {
-                    // An older suggestion says only its day; the link beside it says what to do.
+                    // An older suggestion says only its day.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
                     }
-                    Button((fresh ? "ask again" : "Suggest better") + PriceEstimates.step(matter), action: askStep)
-                        .font(.caption).underline().foregroundStyle(.secondary)
+                    UpdateNowButton(price: PriceEstimates.step(matter), action: askStep)
                 }
             }
             .tool()
@@ -801,17 +808,19 @@ struct MatterScreen: View {
     /// What has no date, in one card: the summary with its brief, the details, what is good to know.
     private var atHandCard: some View {
         AtHandCard(matter: matter, opened: $atHand, talk: { navigation.talk($0.text, kind: "Info", in: matter) }) {
-            // Update below on the left, like "Suggest better"; with no summary yet, the button.
+            // Update below on the left, as under the next step; with no summary yet, the button.
             HStack(spacing: 8) {
-                if writingSummary || AutoUpdate.shared.updating(matter) {
+                if writingSummary {
                     BeeLoader(size: 12)
                     Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
+                } else if AutoUpdate.shared.updating(matter) {
+                    AutoWaitLine(matter: matter, writing: "Writing the brief …")
                 } else if matter.summaryAt != nil, auto {
                     AutoLine(matter: matter, size: 11)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    Button("Update\(PriceEstimates.summary(matter))", action: writeSummary).font(.caption).underline().foregroundStyle(.secondary)
+                    UpdateNowButton(price: PriceEstimates.summary(matter), action: writeSummary)
                     Spacer()
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
                 } else {

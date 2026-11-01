@@ -112,6 +112,7 @@ enum Say {
     static let icon = "Icon …"
     static let openAgain = "Open Again"
     static let ignoreNewMail = "Ignore New Mail"
+    static let updateNow = "Update now"
     static let closeMatter = "Close Matter …"
     static let exportRTF = "Export as RTF"
     // A task, a date, a person, a link, a file

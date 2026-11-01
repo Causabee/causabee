@@ -466,10 +466,9 @@ struct AutoLine: View {
     var size: CGFloat = 10
 
     var body: some View {
-        let soon = AutoUpdate.shared.pending.contains(matter.key)
         HStack(spacing: 5) {
             Image(systemName: "bolt.fill").font(.system(size: size))
-            Text(soon ? "Changed · Pro updates this in a moment" : "Pro")
+            Text("Pro")
         }
         .font(.caption).foregroundStyle(.secondary)
         .accessibilityElement(children: .combine)
@@ -528,8 +527,8 @@ enum PriceEstimates {
 /// written again by themselves — what "ask again" and "Update" do on a tap.
 ///
 /// - What counts as a change: `Matter.recordStamp` is another — a mail, a file, a task, a date, a note.
-/// - Bundled: a matter is written again only once its record has stood still from one look to the
-///   next, so a round of mail that brings three things is one update, not three.
+/// - Bundled: `AutoPace` says when. While the owner works in a matter the next step goes grey and
+///   nothing is sent until they leave, ask for it with "Update now", or it has stood still a while.
 /// - Never for the first sight of a matter: turning Auto on writes nothing; only what changes after.
 /// - What it spent is kept by the day, and which step and summary it wrote, to say so beside them.
 /// - Written on another device meanwhile: taken as it is, not paid for twice.
@@ -553,11 +552,21 @@ final class AutoUpdate {
     private(set) var done = 0
     /// The matters whose record has changed and is coming to rest: written in a moment, and said so.
     private(set) var pending: Set<String> = []
-    /// How often it looks. A matter is written once it has stood still from one look to the next.
+    /// How often it looks: only when something was saved, was asked for, or has come due.
     private static let pace: Duration = .seconds(1)
+    /// When each matter that is waiting last changed.
+    @ObservationIgnored private var changedAt: [String: Date] = [:]
+    /// The matters to write now: "Update now", or the owner has left them.
+    @ObservationIgnored private var asked: Set<String> = []
+    /// The next time a waiting matter comes due.
+    @ObservationIgnored private var wakeAt: Date?
+    /// The matters open on this device, each as often as a page shows it.
+    @ObservationIgnored private var shown: [String: Int] = [:]
 
     private struct Known: Codable {
         var stamp: String
+        /// How many mails it held then, to tell new mail from a ticked task. Nil from before.
+        var mails: Int?
         /// When Auto wrote the step and the summary, as the matter says it: beside them, "Auto".
         var stepAt: Date?
         var summaryAt: Date?
@@ -570,6 +579,25 @@ final class AutoUpdate {
     @ObservationIgnored private var saves = 0
     @ObservationIgnored private var savesLooked = -1
     @ObservationIgnored private var watching = false
+
+    /// Something can have changed, was asked for, or has come due.
+    private var hasReasonToLook: Bool {
+        saves != savesLooked || !asked.isEmpty || (wakeAt.map { $0 <= Date() } ?? false)
+    }
+
+    /// A page shows this matter: while it does, Auto waits for the owner to finish.
+    func show(_ key: String) { shown[key, default: 0] += 1 }
+
+    /// The page has gone: what changed there is written now.
+    func leave(_ key: String) {
+        shown[key, default: 1] -= 1
+        guard shown[key, default: 0] <= 0 else { return }
+        shown[key] = nil
+        asked.insert(key)
+    }
+
+    /// "Update now".
+    func updateNow(_ matter: Matter) { asked.insert(matter.key) }
 
     private func watchSaves() {
         guard !watching else { return }
@@ -667,9 +695,13 @@ final class AutoUpdate {
             try? await Task.sleep(for: Self.pace)
             // News written here, or come from another device: told once, Auto or not.
             await NewsNotice.tell(await StoreWorker.for(context.container))
-            guard AutoMode.isOn else { lastSeen = [:]; if !pending.isEmpty { pending = [] }; continue }
+            guard AutoMode.isOn else {
+                lastSeen = [:]; changedAt = [:]; asked = []; wakeAt = nil
+                if !pending.isEmpty { pending = [] }
+                continue
+            }
             // Not even the matters fetched when nothing was saved since the last look.
-            guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { continue }
+            guard hasReasonToLook else { continue }
             // The stamps — every matter read whole — by the worker; the screen's thread only compares.
             let stamps = await StoreWorker.for(context.container).recordStamps()
             let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
@@ -681,30 +713,52 @@ final class AutoUpdate {
     /// unless one has changed and come to rest.
     func look(_ matters: [Matter], stamps: [String: String] = [:], context: ModelContext, owner: String?, names: () throws -> Names) {
         guard AutoMode.isOn else { lastSeen = [:]; return }
-        // Nothing saved since the last look, and nothing on its way to rest: nothing can have changed.
-        guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { return }
+        // Nothing saved since the last look, and nothing come due: nothing can have changed.
+        guard hasReasonToLook else { return }
         savesLooked = saves
+        wakeAt = nil
         var known = Self.known
         defer { Self.known = known }
         for matter in matters where !matter.isClosed && !working.contains(matter.key) {
             let key = matter.key, stamp = stamps[matter.key] ?? matter.recordStamp
-            guard let before = known[key] else { known[key] = Known(stamp: stamp); continue }
-            guard before.stamp != stamp else { lastSeen[key] = nil; if pending.contains(key) { pending.remove(key) }; continue }
+            let mails = matter.entries?.count ?? 0
+            guard let before = known[key] else { known[key] = Known(stamp: stamp, mails: mails); continue }
+            guard before.stamp != stamp else {
+                lastSeen[key] = nil; changedAt[key] = nil; asked.remove(key)
+                if pending.contains(key) { pending.remove(key) }
+                continue
+            }
             // Both written elsewhere in the last minutes — the other device's Auto: taken as they are.
             if let step = matter.nextStepAt, let summary = matter.summaryAt, step != before.stepAt, summary != before.summaryAt,
                min(step, summary) > Date().addingTimeInterval(-600) {
-                known[key] = Known(stamp: stamp)
+                known[key] = Known(stamp: stamp, mails: mails)
+                lastSeen[key] = nil; changedAt[key] = nil; asked.remove(key)
                 pending.remove(key)
                 continue
             }
-            // Still changing: once more round — and said meanwhile, that it will be written.
-            guard lastSeen[key] == stamp else { lastSeen[key] = stamp; if !pending.contains(key) { pending.insert(key) }; continue }
+            // Changed again: the wait starts anew — and the page says at once that it is out of date.
+            let now = Date()
+            if lastSeen[key] != stamp {
+                lastSeen[key] = stamp
+                changedAt[key] = now
+                if !pending.contains(key) { pending.insert(key) }
+            }
+            let changed = changedAt[key] ?? now
+            let open = shown[key, default: 0] > 0
+            let newMail = mails > (before.mails ?? .max)
+            guard AutoPace.isDue(changed: changed, now: now, open: open, newMail: newMail, asked: asked.contains(key)) else {
+                let due = AutoPace.due(changed: changed, open: open, newMail: newMail)
+                wakeAt = min(wakeAt ?? due, due)
+                continue
+            }
             lastSeen[key] = nil
+            changedAt[key] = nil
+            asked.remove(key)
             pending.remove(key)
             // The demo sends nothing and costs nothing: after a moment, the step worked out on the
             // device and the summary as it stands, marked as Auto's — to see how it goes.
             if DemoData.isRequested {
-                known[key] = Known(stamp: stamp, stepAt: before.stepAt, summaryAt: before.summaryAt)
+                known[key] = Known(stamp: stamp, mails: mails, stepAt: before.stepAt, summaryAt: before.summaryAt)
                 working.insert(key)
                 Task {
                     try? await Task.sleep(for: .seconds(4))
@@ -720,7 +774,7 @@ final class AutoUpdate {
                     if matter.summary != nil { matter.summaryAt = now }
                     try? context.save()
                     var all = Self.known
-                    all[key] = Known(stamp: matter.recordStamp, stepAt: matter.nextStepAt == now ? now : nil, summaryAt: matter.summaryAt == now ? now : nil)
+                    all[key] = Known(stamp: matter.recordStamp, mails: matter.entries?.count, stepAt: matter.nextStepAt == now ? now : nil, summaryAt: matter.summaryAt == now ? now : nil)
                     Self.known = all
                 }
                 continue
@@ -729,7 +783,7 @@ final class AutoUpdate {
             guard ModelChoice.client(for: ModelChoice.assistant) != nil else { continue }
             // Its stamp is kept before anything is sent: an update that fails is not tried again
             // and again, each time for money — the next change tries the next.
-            known[key] = Known(stamp: stamp, stepAt: before.stepAt, summaryAt: before.summaryAt)
+            known[key] = Known(stamp: stamp, mails: mails, stepAt: before.stepAt, summaryAt: before.summaryAt)
             working.insert(key)
             let ahead = queue
             queue = Task {
@@ -743,7 +797,7 @@ final class AutoUpdate {
                     Self.add(cost)
                     Self.shareSpending(in: context)
                     var all = Self.known
-                    all[key] = Known(stamp: matter.recordStamp, stepAt: now, summaryAt: matter.summaryAt)
+                    all[key] = Known(stamp: matter.recordStamp, mails: matter.entries?.count, stepAt: now, summaryAt: matter.summaryAt)
                     Self.known = all
                 } catch {}
             }

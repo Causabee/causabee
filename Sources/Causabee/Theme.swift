@@ -100,16 +100,16 @@ enum Theme {
 
 /// A label on the yellow, black words: "NEXT", "SUMMARY"; on the orange for "OVERDUE" and "FOLLOW UP".
 struct BeeChip: View {
-    enum Tone { case bee, warning }
+    enum Tone { case bee, warning, quiet }
     let text: String
     var tone: Tone = .bee
     var body: some View {
         Text(text)
             .font(.caption.weight(.semibold))
             // On the orange: white in light mode, near-black on the lighter orange of dark mode.
-            .foregroundStyle(tone == .bee ? Color.black : Theme.onInk)
+            .foregroundStyle(tone == .bee ? Color.black : tone == .quiet ? Color.secondary : Theme.onInk)
             .padding(.horizontal, 7).padding(.vertical, 2)
-            .background(tone == .bee ? Theme.bee : Theme.warning, in: RoundedRectangle(cornerRadius: 5))
+            .background(tone == .bee ? Theme.bee : tone == .quiet ? Color.secondary.opacity(0.14) : Theme.warning, in: RoundedRectangle(cornerRadius: 5))
     }
 }
 

@@ -281,6 +281,7 @@ struct MatterStatusView: View {
         .background(Theme.page)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
         .environment(find)
+        .shownToAuto(matter)
         .focusedSceneValue(\.openMatter, matter.persistentModelID)
         .focusedSceneValue(\.matterState, MatterState(isPinned: matter.isPinned, isClosed: matter.isClosed))
         // Matter → Pin to Top, Rename …, Export as RTF, Close Matter…: what the ⋯ beside the name does.
@@ -330,18 +331,19 @@ struct MatterStatusView: View {
     /// What has no date, in one card: the summary with its brief, the details, what is good to know.
     private var atHandCard: some View {
         AtHandCard(matter: matter, opened: $atHand, talk: { talk($0.text, "Info") }) {
-            // Update below on the left, like "Suggest better"; with no summary yet, the button.
+            // Update below on the left, as under the next step; with no summary yet, the button.
             HStack(spacing: 10) {
-                if writingSummary || AutoUpdate.shared.updating(matter) {
+                if writingSummary {
                     BeeLoader(size: 10)
                     Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
+                } else if AutoUpdate.shared.updating(matter) {
+                    AutoWaitLine(matter: matter, writing: "Writing the brief …")
                 } else if matter.summaryAt != nil, auto {
                     AutoLine(matter: matter)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    Button("Update\(PriceEstimates.summary(matter))", action: writeSummary)
-                        .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
+                    UpdateNowButton(price: PriceEstimates.summary(matter), action: writeSummary)
                     Spacer()
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
                 } else {
@@ -425,15 +427,18 @@ struct MatterStatusView: View {
         let _ = AutoUpdate.shared.done
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
-        // Changed, and Auto writes it again: until it has, the step worked out on the device at
-        // once — it knows what was just ticked — and Causabee's in its place when it comes.
+        // Changed, and Auto will write it again: at once it says so, grey, and it is not offered
+        // to act on until it has.
         let coming = AutoUpdate.shared.updating(matter)
+        let outOfDate = coming && matter.nextStep != nil
         let own = fresh && !coming
         // Yellow only when something waits for the owner: while it waits for someone else there is
         // nothing to do, and the page says so without a colour.
         let forYou = own ? matter.nextStep != nil : rule.map { $0.kind != .wait } ?? false
-        NextCard(forYou: forYou) {
-            if own, let step = matter.nextStep {
+        NextCard(forYou: forYou, outOfDate: outOfDate) {
+            if outOfDate {
+                OutOfDateStep(matter: matter)
+            } else if own, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
                 Text(step).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
@@ -448,7 +453,9 @@ struct MatterStatusView: View {
             }
         } foot: {
             HStack(spacing: 10) {
-                if own, let step = matter.nextStep {
+                if outOfDate {
+                    EmptyView()
+                } else if own, let step = matter.nextStep {
                     let todo = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
                     stepButtons(text: step, todo: todo, waiting: todo?.owner == .other)
                 } else if !own, let rule, let id = rule.todo, let todo = matter.openTodos.first(where: { $0.persistentModelID == id }) {
@@ -459,20 +466,21 @@ struct MatterStatusView: View {
             .tool()
             // Asking Claude, below the buttons on the left: apart from what the step itself offers.
             HStack(spacing: 10) {
-                if askingStep || coming {
+                if askingStep {
                     BeeLoader(size: 10)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
+                } else if coming {
+                    AutoWaitLine(matter: matter, writing: "Causabee is on it …")
                 } else if auto {
                     // Auto asks: no link to ask with, and no price to weigh.
                     AutoLine(matter: matter)
                 } else {
-                    // An older suggestion says only its day; the link beside it says what to do.
+                    // An older suggestion says only its day.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
                             .help("Causabee suggested this on \(Dates.short(at)); the matter has changed since.")
                     }
-                    Button((fresh ? "ask again" : "Suggest better") + PriceEstimates.step(matter), action: askStep)
-                        .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
+                    UpdateNowButton(price: PriceEstimates.step(matter), action: askStep)
                         .help("Causabee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
                 }
                 Spacer()
