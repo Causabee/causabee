@@ -18,6 +18,8 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         public let date: Date
         /// How many mails came that day.
         public let mails: Int
+        /// How many files came that day. Only for a matter recent enough to be in the journal.
+        public let files: Int
     }
 
     /// Something with a day on it: an open task's due day, a deadline, an appointment.
@@ -97,8 +99,10 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         newMailsSinceClosed = matter.closedAt.map { closed in dates.count - (dates.firstIndex { $0 > closed } ?? dates.count) } ?? 0
         news = matter.brief == nil ? nil : matter.shownBrief?.news.flatMap { $0.seen ? nil : $0.lines.first }
         if let last = dates.last, let newest = entries.first(where: { $0.date == last }) {
-            let day = MatterStatus.day(last)
-            latest = Latest(title: newest.title, digest: newest.digest, date: last, mails: dates.reversed().prefix { MatterStatus.day($0) == day }.count)
+            let onLast = MailDates.onLastDay(of: matter, entries: entries)
+            let files = Date().timeIntervalSince(last) > 15 * 86_400 ? 0
+                : (matter.documents ?? []).filter { onLast.ids.contains($0.messageID) && !$0.isHidden && !$0.isSmallImage }.count
+            latest = Latest(title: newest.title, digest: newest.digest, date: last, mails: onLast.mails, files: files)
         } else {
             latest = nil
         }
@@ -300,19 +304,30 @@ public final class OverviewPages {
 /// day, and reading every mail's date of every matter — thousands — was most of preparing the
 /// overview again after any change at all, a task ticked or a brief written.
 enum MailDates {
+    /// The newest day's mails, and the Message-IDs of all that came that day: a file comes by those.
+    typealias LastDay = (mails: Int, ids: Set<String>)
+    private typealias Kept = (count: Int, dates: [Date], lastDay: LastDay)
     private static let lock = NSLock()
-    nonisolated(unsafe) private static var kept: [PersistentIdentifier: (count: Int, dates: [Date])] = [:]
+    nonisolated(unsafe) private static var kept: [PersistentIdentifier: Kept] = [:]
 
-    static func of(_ matter: Matter, entries: [Entry]) -> [Date] {
+    private static func kept(_ matter: Matter, entries: [Entry]) -> Kept {
         let id = matter.persistentModelID
         lock.lock()
         let known = kept[id]
         lock.unlock()
-        if let known, known.count == entries.count { return known.dates }
-        let dates = entries.compactMap(\.date).sorted()
+        if let known, known.count == entries.count { return known }
+        let dated = entries.filter { $0.date != nil }
+        let dates = dated.compactMap(\.date).sorted()
+        let newest = dates.last.map(MatterStatus.day)
+        let onLast = dated.filter { $0.date.map(MatterStatus.day) == newest }
+        let fresh: Kept = (entries.count, dates, (onLast.filter { $0.source.kind == .mail }.count, Set(onLast.map(\.messageID))))
         lock.lock()
-        kept[id] = (entries.count, dates)
+        kept[id] = fresh
         lock.unlock()
-        return dates
+        return fresh
     }
+
+    static func of(_ matter: Matter, entries: [Entry]) -> [Date] { kept(matter, entries: entries).dates }
+
+    static func onLastDay(of matter: Matter, entries: [Entry]) -> LastDay { kept(matter, entries: entries).lastDay }
 }

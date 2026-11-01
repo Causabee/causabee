@@ -835,11 +835,17 @@ struct OverviewJournal: View {
     }
 }
 
-/// One matter's day: its name, what its newest mail says, how much came and how much is open.
+/// One matter's day: its name, what its newest mail says, what came that day and what is left to do.
 private struct OverviewDayCard: View {
     let summary: MatterSummary
     let matter: Matter
     let open: () -> Void
+
+    /// "4 mails · 2 files": what is not there is not said.
+    private static func came(_ latest: MatterSummary.Latest) -> String {
+        func say(_ count: Int, _ one: String) -> String? { count == 0 ? nil : "\(count) \(one)\(count == 1 ? "" : "s")" }
+        return [say(latest.mails, "mail"), say(latest.files, "file")].compactMap { $0 }.joined(separator: " · ")
+    }
 
     var body: some View {
         Button(action: open) {
@@ -860,9 +866,9 @@ private struct OverviewDayCard: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Divider().padding(.top, 4)
                     HStack(spacing: 8) {
-                        Text((latest.mails == 1 ? "1 mail" : "\(latest.mails) mails") + (summary.openCount == 0 ? "" : " · \(summary.openCount) open"))
+                        Text(Self.came(latest))
                         Spacer(minLength: 8)
-                        Text(Dates.short(latest.date)).monospacedDigit()
+                        if summary.openCount > 0 { Text("\(summary.openCount) \(summary.openCount == 1 ? "task" : "tasks") open") }
                     }
                     .font(.footnote).foregroundStyle(.secondary).padding(.top, 2)
                 }

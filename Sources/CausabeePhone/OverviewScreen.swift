@@ -257,10 +257,11 @@ struct OverviewScreen: View {
                 if matters.isEmpty {
                     empty
                 } else {
-                    if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, selection: $part) }
                     PhoneWeek(matters: matters).journalCard(inset: 14)
                 }
                 UnreadMatters(matters: matters) { matter, mail in navigation.open(matter, showing: mail) }
+                // Under what stands on both, right over what they change.
+                if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, selection: $part) }
                 if hasJournal, part == .all {
                     OverviewJournal(matters: matters) { navigation.open($0) }
                 } else {
