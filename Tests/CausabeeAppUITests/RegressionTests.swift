@@ -88,7 +88,7 @@ final class RegressionTests: XCTestCase {
 
     func testTheFilters() {
         for name in ["Digest", "Mail", "Files", "People", "Notes", "Plan"] { tab(name) }
-        shows("WAITING FOR OTHERS", "Back on Plan, the plan is not shown.")
+        shows("Get the bath seat", "Back on Plan, the plan is not shown.")
     }
 
     /// "Task" from the plus opens the task's own editor: added, it is in the list.
