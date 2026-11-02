@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import MatterCore
 
@@ -11,6 +12,27 @@ struct IntakeOfferTests {
         var judgement = try decoder.decode(Judgement.self, from: Data(#"{"email_id":"\#(id)","source":"imap://x","date":"2026-09-30T07:00:00Z","subject":"Kaufvertrag","from":"Petra Lindner <p@example.org>","is_bulk":\#(bulk),"matter":\#(key),"matter_confidence":1,"matter_reason":"","decided_by":"pending","parties":[],"todos":[],"deadlines":[]}"#.utf8))
         judgement.matterTitle = title
         return judgement
+    }
+
+    @Test("A mail with no matter starts a new one under the owner's name, with what it brought; a like name is not joined")
+    @MainActor
+    func intoNew() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let closed = Matter(key: "freundeskreis", name: "Freundeskreis")
+        closed.closedAt = Date()
+        context.insert(closed)
+        try context.save()
+
+        var mails = [try judgement("a", matter: nil), try judgement("b", matter: "wohnung")]
+        for index in mails.indices { mails[index].decidedBy = .claude }
+        let started = mails.map { IntakeSummary.intoNew($0, named: " Freundeskreis ", existing: [closed]) }
+        #expect(started[0].matter == "freundeskreis2" && started[0].matterTitle == "Freundeskreis")
+        #expect(started[1].matter == started[0].matter)
+        _ = try MatterImport.apply(started, to: context, owner: [])
+        let new = try #require(try context.fetch(FetchDescriptor<Matter>()).first { $0.key == "freundeskreis2" })
+        #expect(new.name == "Freundeskreis")
+        #expect(Set((new.entries ?? []).map(\.messageID)) == ["a", "b"])
+        #expect((closed.entries ?? []).isEmpty)
     }
 
     @Test("Each mail that is no newsletter is offered with the matter it would go into")

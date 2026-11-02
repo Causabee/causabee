@@ -953,11 +953,16 @@ struct MailOffers: View {
     @Binding var chosen: Set<String>
     /// Mails the owner sends elsewhere than suggested, by the mail's id.
     @Binding var moved: [String: PersistentIdentifier]
+    /// Mails the owner starts a new matter with, and its name, by the mail's id.
+    @Binding var named: [String: String]
     /// The tasks and dates the owner leaves out, by the mail's id and their key in it.
     @Binding var skipped: [String: Set<String>]
     /// The Mac's sidebar is narrow: its words are small.
     var small = false
     @Query private var matters: [Matter]
+    /// The mail whose new matter is being named, and the name so far.
+    @State private var naming: String?
+    @State private var newName = ""
 
     var body: some View {
         let open = matters.filter { !$0.isClosed }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
@@ -981,17 +986,23 @@ struct MailOffers: View {
                             .lineLimit(2).multilineTextAlignment(.leading)
                         if on {
                             HStack(spacing: 6) {
-                                Text("→ " + (target?.name ?? offer.matter.map { offer.isNew ? "New matter: \($0)" : $0 } ?? "No matter found"))
+                                Text("→ " + (named[offer.id].map { "New matter: \($0)" } ?? target?.name ?? offer.matter.map { offer.isNew ? "New matter: \($0)" : $0 } ?? "No matter found"))
                                     .foregroundStyle(.secondary).lineLimit(1)
                                 Spacer(minLength: 4)
                                 // Nothing to change where none was found: there it is chosen.
-                                Menu(target == nil && offer.matter == nil ? "Choose" : "Change") {
-                                    ForEach(open) { matter in
-                                        Button(matter.name) { moved[offer.id] = matter.persistentModelID }
+                                Menu(target == nil && named[offer.id] == nil && offer.matter == nil ? "Choose" : "Change") {
+                                    // First: with many matters the end of the list is out of sight.
+                                    #if os(macOS)
+                                    Button("New Matter …") { newName = named[offer.id] ?? Matter.cleanSubject(offer.subject); naming = offer.id }
+                                    #else
+                                    Button("A new matter", systemImage: "plus.circle") { newName = named[offer.id] ?? Matter.cleanSubject(offer.subject); naming = offer.id }
+                                    #endif
+                                    if target != nil || named[offer.id] != nil {
+                                        Button("As suggested") { moved[offer.id] = nil; named[offer.id] = nil }
                                     }
-                                    if target != nil {
-                                        Divider()
-                                        Button("As suggested") { moved[offer.id] = nil }
+                                    Divider()
+                                    ForEach(open) { matter in
+                                        Button(matter.name) { moved[offer.id] = matter.persistentModelID; named[offer.id] = nil }
                                     }
                                 }
                                 #if os(macOS)
@@ -1027,6 +1038,18 @@ struct MailOffers: View {
                     }
                 }
             }
+        }
+        .alertWhenAsked("A new matter", isPresented: Binding(get: { naming != nil }, set: { if !$0 { naming = nil } })) {
+            TextField("Name", text: $newName)
+            Button("Cancel", role: .cancel) {}
+            Button("Start") {
+                let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard let id = naming, !name.isEmpty else { return }
+                named[id] = name
+                moved[id] = nil
+            }
+        } message: {
+            Text("Taking the mail in starts it, with what you left ticked.")
         }
     }
 }

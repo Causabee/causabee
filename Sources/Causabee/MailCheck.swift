@@ -250,13 +250,14 @@ final class MailCheck {
     /// Takes in what the owner left ticked, each into the matter suggested or the one chosen for it;
     /// with the tasks and dates left ticked in it; a mail that was unticked is put aside. All of it
     /// is recorded as read, so none is sent again.
-    func take(_ answered: Answered, chosen: Set<String>, moved: [String: PersistentIdentifier], skipped: [String: Set<String>] = [:], context: ModelContext, owner: [String]) {
+    func take(_ answered: Answered, chosen: Set<String>, moved: [String: PersistentIdentifier], named: [String: String] = [:], skipped: [String: Set<String>] = [:], context: ModelContext, owner: [String]) {
         let look = answered.look, door = answered.door
         do {
             let all = try context.fetch(FetchDescriptor<Matter>())
             let judgements = answered.judgements.filter { $0.isBulk || chosen.contains($0.emailID) }.map { judgement -> Judgement in
                 // Only the tasks and dates the owner left ticked.
                 var judgement = IntakeSummary.leaving(out: skipped[judgement.emailID] ?? [], of: judgement)
+                if let name = named[judgement.emailID] { return IntakeSummary.intoNew(judgement, named: name, existing: all) }
                 guard let id = moved[judgement.emailID], let matter = all.first(where: { $0.persistentModelID == id }) else { return judgement }
                 judgement.matter = matter.key
                 judgement.matterTitle = nil
@@ -377,6 +378,8 @@ struct MailCheckView: View {
                             }
                             HStack(spacing: 10) {
                                 Menu("Add to …") {
+                                    Button("New Matter …") { newName = Matter.cleanSubject(mail.subject); starting = mail }
+                                    Divider()
                                     ForEach(matters.filter { !$0.isClosed }.sorted { $0.name < $1.name }) { matter in
                                         Button(matter.name) {
                                             try? Unplaced.place(mail, in: matter, context: context, owner: profiles.first?.names ?? [])
@@ -384,8 +387,6 @@ struct MailCheckView: View {
                                             refresh()
                                         }
                                     }
-                                    Divider()
-                                    Button("New Matter …") { newName = Matter.cleanSubject(mail.subject); starting = mail }
                                 }
                                 .menuStyle(.borderlessButton).fixedSize().font(.caption)
                                 .help("Into that matter, with its tasks and dates. Nothing is sent: it was read already.")
@@ -480,8 +481,8 @@ struct MailCheckView: View {
                     check.sortIn(chosen, of: look, with: door, context: context, owner: profiles.first?.names ?? [])
                 }
             case .answered(let answered):
-                MailVerdict(answered: answered) { chosen, moved, skipped in
-                    check.take(answered, chosen: chosen, moved: moved, skipped: skipped, context: context, owner: profiles.first?.names ?? [])
+                MailVerdict(answered: answered) { chosen, moved, named, skipped in
+                    check.take(answered, chosen: chosen, moved: moved, named: named, skipped: skipped, context: context, owner: profiles.first?.names ?? [])
                 }
             case .demoReady:
                 DemoMailReview(later: { check.state = .idle }) { chosen in check.sortInDemo(context: context, only: chosen) }
@@ -620,13 +621,14 @@ struct MailReview: View {
 /// it would go into, and what it brings. "Take in" does what is ticked; the rest is put aside.
 struct MailVerdict: View {
     let answered: MailCheck.Answered
-    let take: (Set<String>, [String: PersistentIdentifier], [String: Set<String>]) -> Void
+    let take: (Set<String>, [String: PersistentIdentifier], [String: String], [String: Set<String>]) -> Void
     @Query private var matters: [Matter]
     @State private var chosen: Set<String>
     @State private var moved: [String: PersistentIdentifier] = [:]
+    @State private var named: [String: String] = [:]
     @State private var skipped: [String: Set<String>] = [:]
 
-    init(answered: MailCheck.Answered, take: @escaping (Set<String>, [String: PersistentIdentifier], [String: Set<String>]) -> Void) {
+    init(answered: MailCheck.Answered, take: @escaping (Set<String>, [String: PersistentIdentifier], [String: String], [String: Set<String>]) -> Void) {
         self.answered = answered
         self.take = take
         // A mail no matter was found for starts unticked: put aside with one tap, ticked only to place it.
@@ -638,13 +640,13 @@ struct MailVerdict: View {
         let bulk = answered.judgements.count - offers.count
         VStack(alignment: .leading, spacing: 8) {
             Text("\(offers.count) \(offers.count == 1 ? "mail" : "mails") read").font(.callout.weight(.semibold))
-            ScrollView { MailOffers(offers: offers, chosen: $chosen, moved: $moved, skipped: $skipped, small: true) }
+            ScrollView { MailOffers(offers: offers, chosen: $chosen, moved: $moved, named: $named, skipped: $skipped, small: true) }
                 .frame(maxHeight: 320)
                 .fixedSize(horizontal: false, vertical: true)
             Text("Read. " + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
                  + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, skipped) }
+            Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, named, skipped) }
                 .inkButton()
                 .accessibilityIdentifier("mail.takeIn")
         }
@@ -712,6 +714,8 @@ struct IntakeMailRow: View {
                 Text("→ " + mail.matter).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 4)
                 Menu("Move") {
+                    Button("New Matter …") { newName = Matter.cleanSubject(mail.subject); naming = true }
+                    Divider()
                     ForEach(MoveMailMenu.order(matters, current: nil).filter { $0.name != mail.matter }) { matter in
                         Button(matter.name) {
                             guard let entry = entry else { return }
@@ -719,8 +723,6 @@ struct IntakeMailRow: View {
                             moved(matter.name)
                         }
                     }
-                    Divider()
-                    Button("New Matter …") { newName = Matter.cleanSubject(mail.subject); naming = true }
                 }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                 .font(.caption).foregroundStyle(Theme.gold)

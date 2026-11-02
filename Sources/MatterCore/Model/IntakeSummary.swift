@@ -87,6 +87,24 @@ public enum IntakeSummary {
         }
     }
 
+    /// A mail the owner sends into a new matter of their own naming: under a key no matter answers
+    /// to, so it cannot fall into one with a like name, an open or a closed one. Two mails given
+    /// the same name go into the one new matter.
+    public static func intoNew(_ judgement: Judgement, named name: String, existing: [Matter]) -> Judgement {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let base = PartyNames.key(name).isEmpty ? "sache" : PartyNames.key(name)
+        var key = base
+        var number = 2
+        while existing.contains(where: { $0.answers(to: key) }) {
+            key = base + "\(number)"
+            number += 1
+        }
+        var judgement = judgement
+        judgement.matter = key
+        judgement.matterTitle = name
+        return judgement
+    }
+
     /// The mails sorted into a matter, each with that matter's name — the first few.
     public static func mails(_ judgements: [Judgement], name: (String) -> String?, limit: Int = 6) -> [Mail] {
         Array(judgements.compactMap { judgement -> Mail? in

@@ -2597,6 +2597,8 @@ struct MoveMailMenu: View {
 
     var body: some View {
         Menu("Move to Another Matter") {
+            Button("New Matter …", action: newMatter)
+            Divider()
             ForEach(MoveMailMenu.order(matters, current: entry.matter)) { matter in
                 if matter === entry.matter {
                     Button { } label: { Label(matter.name, systemImage: "checkmark") }.disabled(true)
@@ -2604,8 +2606,6 @@ struct MoveMailMenu: View {
                     Button(matter.name) { MoveMailMenu.move(entry, to: matter, in: context) }
                 }
             }
-            Divider()
-            Button("New Matter …", action: newMatter)
         }
     }
 
