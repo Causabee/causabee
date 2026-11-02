@@ -45,6 +45,9 @@ enum ModelChoice {
                         usedUp: (BeeServer.shared.monthUsed ?? 0) >= 1, onDevice: DeviceReader.isAvailable)
     }
 
+    /// Not with Pro, and Apple's model can write here.
+    @MainActor static var writesOnDevice: Bool { reach != .pro && DeviceReader.isAvailable }
+
     /// Pro set up and the bolt off: only Apple's model on this device.
     static var deviceOnly: Bool { BeeServer.isSetUp && !AutoMode.isOn }
 

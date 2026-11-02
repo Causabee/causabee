@@ -182,6 +182,19 @@ struct UpdateNowButton: View {
     }
 }
 
+/// The next step written by Apple's model on this device. It says no why: the model's are too often
+/// empty, and a step with none is how one written here is told from Pro's.
+@MainActor
+func writeStepOnDevice(_ matter: Matter, context: ModelContext) async throws {
+    let page = DeviceWriter.page(of: matter, today: MatterStatus.day(Date()))
+    guard let step = try await DeviceWriter.nextStep(from: page) else { throw DeviceReader.Unavailable() }
+    matter.nextStep = step.step
+    matter.nextStepWhy = nil
+    matter.nextStepTodo = step.todo.flatMap { page.todos[$0] }
+    matter.nextStepAt = Date()
+    try? context.save()
+}
+
 /// Where something is out of reach here: it says so before it is tried, and what would do it.
 /// Never yellow: yellow means something waits for the owner.
 struct ProLine: View {

@@ -11,11 +11,13 @@ public enum DeviceWriter {
     /// What the model reads of a matter, at most this many characters: its limit, less its
     /// instructions and its answer.
     static let mostCharacters = 9_000
-    static let newestMails = 8
+    public static let newestMails = 8
 
     public struct Page: Sendable {
         public var text: String
         public var language: String?
+        /// A task's id on the page, and its origin in the store.
+        public var todos: [String: String] = [:]
     }
 
     public struct Step: Sendable {
@@ -68,7 +70,9 @@ public enum DeviceWriter {
         if !mails.isEmpty { lines.append("Newest mails, newest first:\n" + mails.joined(separator: "\n")) }
         lines.append("\(matter.entries?.count ?? 0) mails in all.")
         let language = FactSheet.facts(for: [matter], today: today, mails: 0).language
-        return Page(text: restored(lines.joined(separator: "\n\n")), language: language)
+        var todos: [String: String] = [:]
+        for todo in open { if let id = ids[todo.persistentModelID] { todos[id] = todo.origin } }
+        return Page(text: restored(lines.joined(separator: "\n\n")), language: language, todos: todos)
     }
 
     static func stepInstructions(_ language: String?) -> String {

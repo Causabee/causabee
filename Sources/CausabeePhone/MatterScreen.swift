@@ -657,6 +657,10 @@ struct MatterScreen: View {
                 } else if auto {
                     // Auto asks: no link to ask with.
                     AutoLine(matter: matter, size: 11)
+                } else if ModelChoice.writesOnDevice {
+                    if own, matter.nextStepWhy == nil { Text("On this device").font(.caption).foregroundStyle(.secondary) }
+                    Spacer()
+                    UpdateNowButton(action: askStep)
                 } else if ModelChoice.reach != .pro {
                     ProLine(reach: ModelChoice.reach, mails: matter.entries?.count ?? 0)
                 } else {
@@ -668,6 +672,9 @@ struct MatterScreen: View {
                 }
             }
             .tool()
+            if ModelChoice.writesOnDevice, (matter.entries?.count ?? 0) > DeviceWriter.newestMails {
+                ProLine(reach: ModelChoice.reach, mails: matter.entries?.count ?? 0)
+            }
             if let stepError { Text(stepError).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
         }
     }
@@ -682,6 +689,15 @@ struct MatterScreen: View {
     }
 
     private func askStep() {
+        if ModelChoice.writesOnDevice {
+            askingStep = true
+            stepError = nil
+            Task {
+                do { try await writeStepOnDevice(matter, context: context) } catch { stepError = plainWords(error) }
+                askingStep = false
+            }
+            return
+        }
         let model = ModelChoice.assistant
         guard let claude = ModelChoice.client(for: model) else { stepError = ModelChoice.missingKey(model); return }
         let list: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])
