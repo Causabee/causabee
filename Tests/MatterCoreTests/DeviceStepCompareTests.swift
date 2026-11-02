@@ -55,6 +55,7 @@ struct DeviceStepCompareTests {
                 guard let step = try await DeviceWriter.nextStep(from: page) else { report.append("Apple's model is not available here."); break }
                 seconds.append(step.seconds)
                 report.append("**On device (\(String(format: "%.1f", step.seconds)) s):** \(step.step)\n\n_\(step.why)_\n\nWould you act on this? ☐ yes ☐ no\n")
+                if let summary = try await DeviceWriter.summary(from: page) { report.append("**Summary on device:** \(summary)\n\nIs this right? ☐ yes ☐ no\n") }
             } catch {
                 failures.append("\(matter.name): \(error)")
                 report.append("**On device:** failed: \(error)\n")

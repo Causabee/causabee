@@ -48,6 +48,11 @@ enum ModelChoice {
     /// Not with Pro, and Apple's model can write here.
     @MainActor static var writesOnDevice: Bool { reach != .pro && DeviceReader.isAvailable }
 
+    /// Under the assistant's field without Pro.
+    @MainActor static var stayingWords: String {
+        writesOnDevice ? "Stays on this device." : "Stays on this device. Asking needs Pro for now."
+    }
+
     /// Pro set up and the bolt off: only Apple's model on this device.
     static var deviceOnly: Bool { BeeServer.isSetUp && !AutoMode.isOn }
 

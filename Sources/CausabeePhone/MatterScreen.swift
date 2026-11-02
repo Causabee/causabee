@@ -768,6 +768,15 @@ struct MatterScreen: View {
 
     /// The adviser: the brief, the summary and the step, and its proposals for the list — one request, as on the Mac.
     private func writeSummary() {
+        if ModelChoice.writesOnDevice {
+            writingSummary = true
+            summaryError = nil
+            Task {
+                do { try await writeSummaryOnDevice(matter, context: context) } catch { summaryError = plainWords(error) }
+                writingSummary = false
+            }
+            return
+        }
         let model = ModelChoice.assistant
         guard ModelChoice.client(for: model) != nil else { summaryError = ModelChoice.missingKey(model); return }
         // Auto is writing it already: a second request would only cost twice, and count against the limit.
@@ -838,11 +847,11 @@ struct MatterScreen: View {
                     AutoLine(matter: matter, size: 11)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    if ModelChoice.reach == .pro { UpdateNowButton(action: writeSummary) }
+                    if ModelChoice.reach == .pro || ModelChoice.writesOnDevice { UpdateNowButton(action: writeSummary) }
                     Spacer()
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
-                } else if ModelChoice.reach == .pro {
-                    Button("Write the brief", action: writeSummary).buttonStyle(.phone)
+                } else if ModelChoice.reach == .pro || ModelChoice.writesOnDevice {
+                    Button(ModelChoice.writesOnDevice ? "Write a Summary" : "Write the brief", action: writeSummary).buttonStyle(.phone)
                     Spacer()
                 }
             }

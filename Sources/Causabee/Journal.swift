@@ -195,6 +195,28 @@ func writeStepOnDevice(_ matter: Matter, context: ModelContext) async throws {
     try? context.save()
 }
 
+/// A short summary written by Apple's model on this device, from what the page holds.
+@MainActor
+func writeSummaryOnDevice(_ matter: Matter, context: ModelContext) async throws {
+    let page = DeviceWriter.page(of: matter, today: MatterStatus.day(Date()))
+    guard let summary = try await DeviceWriter.summary(from: page) else { throw DeviceReader.Unavailable() }
+    matter.summary = summary
+    matter.summaryAt = Date()
+    try? context.save()
+}
+
+/// A question answered on this device: from one matter's page, or, beyond one matter, by counting.
+@MainActor
+func askOnDevice(_ question: String, about scope: [Matter], today: String) async throws -> AssistantAsk.Answer {
+    guard scope.count == 1, let matter = scope.first else {
+        return .onDevice(DeviceWriter.acrossMatters(scope, today: today), seconds: 0)
+    }
+    guard let answer = try await DeviceWriter.answer(question, from: DeviceWriter.page(of: matter, today: today)) else {
+        throw DeviceReader.Unavailable()
+    }
+    return .onDevice(answer.text, seconds: answer.seconds)
+}
+
 /// Where something is out of reach here: it says so before it is tried, and what would do it.
 /// Never yellow: yellow means something waits for the owner.
 struct ProLine: View {

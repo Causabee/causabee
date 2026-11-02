@@ -346,7 +346,7 @@ struct AssistantSheet: View {
             // The field itself is glass: the thread is seen through it as it passes under.
             .glassBehind(RoundedRectangle(cornerRadius: 24))
             // As on the Mac: "more" and "less" are links inside the line, so the full one wraps like a sentence.
-            Text(LocalizedStringKey(ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro for now."
+            Text(LocalizedStringKey(ModelChoice.reach != .pro ? ModelChoice.stayingWords
                 : showsMore
                 ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen) · goes pseudonymised, like the mails • [less](causabee://footer)"
                 : "Always pseudonymised sent • [more](causabee://footer)"))
@@ -435,7 +435,8 @@ extension AssistantSheet {
             }
             return
         }
-        guard let claude = client else {
+        let onDevice = client == nil && ModelChoice.writesOnDevice
+        guard client != nil || onDevice else {
             Haptics.failure()
             failure = ModelChoice.missingKey(model)
             return
@@ -443,7 +444,7 @@ extension AssistantSheet {
         let names: (mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry])
         // The demo's people are made up, and no Mac has a list of them: the rules alone disguise
         // what they find. With the owner's own matters, no list means nothing is sent.
-        if store.isDemo { names = (Pseudonymizer.Mapping(), []) } else { do { names = try PhoneNames.current(in: context) } catch {
+        if store.isDemo || onDevice { names = (Pseudonymizer.Mapping(), []) } else { do { names = try PhoneNames.current(in: context) } catch {
             failure = error.localizedDescription
             return
         } }
@@ -476,9 +477,14 @@ extension AssistantSheet {
         ask = Task {
             defer { said.finish() }
             do {
-                let answer = try await AssistantAsk.ask(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner,
+                let answer: AssistantAsk.Answer
+                if let client {
+                    answer = try await AssistantAsk.ask(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner,
                                                         today: today, mapping: names.mapping, others: names.others,
-                                                        claude: claude, model: model) { said.yield($0) }
+                                                        claude: client, model: model) { said.yield($0) }
+                } else {
+                    answer = try await askOnDevice(question, about: scope, today: today)
+                }
                 // Stopped while the answer was coming: it is not put into the thread.
                 guard !Task.isCancelled else { return }
                 var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",

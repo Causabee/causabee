@@ -50,7 +50,7 @@ public enum DeviceWriter {
         }
         let mine = rows(open.filter { $0.owner != .other }), others = rows(open.filter { $0.owner == .other })
         lines.append(mine.isEmpty ? "The owner's open tasks: none." : "The owner's open tasks:\n" + mine.joined(separator: "\n"))
-        if !others.isEmpty { lines.append("Waiting for others:\n" + others.joined(separator: "\n")) }
+        lines.append(others.isEmpty ? "Waiting for others: nothing." : "Waiting for others:\n" + others.joined(separator: "\n"))
 
         let ahead = (matter.appointments ?? []).filter { $0.day >= today }.map { ($0.day, "\($0.day)\($0.time.map { " " + $0 } ?? ""): \(one($0.what, 100))") }
             + (matter.deadlines ?? []).filter { $0.day >= today }.map { ($0.day, "\($0.day): \(one($0.what, 100)) (deadline)") }
@@ -95,8 +95,48 @@ public enum DeviceWriter {
         You answer a person's question about their matter, from the page you are given, in at \
         most three sentences. Use only what is on the page. Never add a fact, a name, a number or \
         a date. If the page does not hold the answer, say plainly that you cannot see it here. \
+        When asked what the owner waits for, answer with what stands under "Waiting for others" \
+        and nothing else: the owner's open tasks are the owner's to do. \
         Write in \(language ?? "the language of the page").
         """
+    }
+
+    static func summaryInstructions(_ language: String?) -> String {
+        """
+        You say in at most three short sentences where a person's matter stands, from the page you \
+        are given. Use only what is on the page. Never add a fact, a name, a number or a date, and \
+        give no advice. Write in \(language ?? "the language of the page").
+        """
+    }
+
+    /// With the page's ids gone: they are for the next step, and read oddly in an answer.
+    static func plain(_ page: Page) -> String {
+        page.text.replacingOccurrences(of: #"(?m)^T\d+ "#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: #" \(only after T\d+\)"#, with: " (waits for another task)", options: .regularExpression)
+    }
+
+    /// What is said of a question beyond one matter: the device sees one at a time.
+    public static func weekWords(tasks: Int, dates: Int) -> String {
+        let t = "\(tasks) \(tasks == 1 ? "task" : "tasks")", d = "\(dates) \(dates == 1 ? "date" : "dates")"
+        return "This week you have \(t) and \(d). For more, ask in a matter: on this device I see one at a time."
+    }
+
+    @MainActor
+    public static func acrossMatters(_ matters: [Matter], today: String) -> String {
+        let end = MatterStatus.date(of: today).flatMap { Calendar.current.date(byAdding: .day, value: 7, to: $0) }.map(MatterStatus.day) ?? today
+        let tasks = matters.flatMap(\.openTodos).filter { $0.owner != .other && ($0.due ?? "9999") <= end }.count
+        let dates = matters.flatMap { ($0.appointments ?? []).map(\.day) + ($0.deadlines ?? []).map(\.day) }.filter { $0 >= today && $0 <= end }.count
+        return weekWords(tasks: tasks, dates: dates)
+    }
+
+    public static func summary(from page: Page) async throws -> String? {
+        #if canImport(FoundationModels)
+        guard #available(iOS 26, macOS 26, *), DeviceReader.isAvailable else { return nil }
+        let session = LanguageModelSession(instructions: summaryInstructions(page.language))
+        return try await session.respond(to: plain(page), options: GenerationOptions(sampling: .greedy)).content
+        #else
+        return nil
+        #endif
     }
 
     public static func nextStep(from page: Page) async throws -> Step? {
@@ -118,12 +158,20 @@ public enum DeviceWriter {
         guard #available(iOS 26, macOS 26, *), DeviceReader.isAvailable else { return nil }
         let start = Date()
         let session = LanguageModelSession(instructions: answerInstructions(page.language))
-        let answer = try await session.respond(to: page.text + "\n\nQuestion: " + question,
+        let answer = try await session.respond(to: plain(page) + "\n\nQuestion: " + question,
                                                options: GenerationOptions(sampling: .greedy)).content
         return (answer, Date().timeIntervalSince(start))
         #else
         return nil
         #endif
+    }
+}
+
+extension AssistantAsk.Answer {
+    /// An answer written on this device: nothing went out, so nothing was disguised.
+    public static func onDevice(_ text: String, seconds: Double) -> Self {
+        Self(reply: AssistantPrompt.Reply(lines: [.init(text: text, cites: [])], cards: [], notInFacts: nil), sent: "", cost: 0,
+             seconds: seconds, newNames: 0, links: nil, servedBy: "On this device")
     }
 }
 

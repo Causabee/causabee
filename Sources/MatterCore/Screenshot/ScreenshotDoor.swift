@@ -196,7 +196,8 @@ public struct ScreenshotDoor: Sendable {
 
     /// Sends it, pseudonymised, with the matters and open to-dos as context, and keeps the answer in
     /// the record. What comes back is a judgement for the owner to look at before it goes in.
-    public func classify(_ look: Look, claude: Claude, owner: [String], matters: [(key: String, about: String)] = [],
+    /// `claude` nil: read on this device, by Apple's model or by the rules.
+    public func classify(_ look: Look, claude: Claude?, owner: [String], matters: [(key: String, about: String)] = [],
                          onFile: [String: Extractor.OnFile] = [:]) async throws -> Judgement {
         if let earlier = look.earlier { return earlier }
         var outcomes = look.report.outcomes
@@ -204,6 +205,7 @@ public struct ScreenshotDoor: Sendable {
         // A saved mail is read like a labelled one, newest message first; a chat or a document whole.
         var extractor = Extractor(model: model, claude: claude, cache: cache, newestOnly: look.kind == .mail, quietAfter: 0)
         extractor.strict = strict
+        extractor.onDevice = claude == nil
         extractor.storeMatters = matters
         extractor.onFile = onFile
         let summary = try await extractor
