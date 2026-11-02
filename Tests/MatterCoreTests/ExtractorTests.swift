@@ -249,6 +249,24 @@ struct ExtractorTests {
         #expect(try !String(contentsOf: closed, encoding: .utf8).contains("zaunbau"))
     }
 
+    @Test("With no model, a mail follows its thread or its draft, and the rest is the owner's to place")
+    func placesByRules() throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let json = #"{"email_id":"a@x.example","source":"imap://x","date":"2025-09-01T07:00:00Z","subject":"Hallo","from":"post@hv.example","is_bulk":false,"matter":null,"matter_confidence":0,"matter_reason":"","decided_by":"pending","parties":[],"deadlines":[],"todos":[],"appointments":[],"stages":[]}"#
+        var mail = try decoder.decode(Judgement.self, from: Data(json.utf8))
+        Extractor.placeByRules(&mail, body: "Guten   Tag,\n\ndie Rechnung ist da.", thread: nil, assignedTo: nil)
+        #expect(mail.matter == nil)
+        #expect(mail.digest == "Guten Tag, die Rechnung ist da.")
+        #expect(mail.decidedBy == .onDevice)
+        Extractor.placeByRules(&mail, body: "x", thread: "Küche", assignedTo: nil)
+        #expect(mail.matter == "Küche")
+        #expect(mail.matterReason == "Follows its thread")
+        Extractor.placeByRules(&mail, body: "x", thread: "Küche", assignedTo: "Bad")
+        #expect(mail.matter == "Bad")
+        #expect(mail.todos.isEmpty)
+    }
+
     @Test("A mail given to a closed matter starts its own, named after its subject; a reply in its thread stays")
     func leavesClosedMatter() throws {
         let decoder = JSONDecoder()

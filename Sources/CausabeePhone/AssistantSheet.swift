@@ -346,7 +346,8 @@ struct AssistantSheet: View {
             // The field itself is glass: the thread is seen through it as it passes under.
             .glassBehind(RoundedRectangle(cornerRadius: 24))
             // As on the Mac: "more" and "less" are links inside the line, so the full one wraps like a sentence.
-            Text(LocalizedStringKey(showsMore
+            Text(LocalizedStringKey(ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro for now."
+                : showsMore
                 ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen) · goes pseudonymised, like the mails • [less](causabee://footer)"
                 : "Always pseudonymised sent • [more](causabee://footer)"))
                 .font(.caption2).foregroundStyle(.secondary).tint(Theme.gold)

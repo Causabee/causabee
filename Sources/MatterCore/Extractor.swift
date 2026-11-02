@@ -401,6 +401,19 @@ public struct Extractor: Sendable {
         return lines.joined(separator: "\n") + "\n\n" + body
     }
 
+    /// One mail with no model at all: it goes where its thread or its draft says, and says what it
+    /// starts with. The tasks and dates stay the owner's to add.
+    static func placeByRules(_ decision: inout Judgement, body: String, thread: String?, assignedTo: String?) {
+        let matter = assignedTo ?? thread
+        decision.matter = matter
+        decision.matterTitle = nil
+        decision.matterConfidence = matter == nil ? 0 : 0.7
+        decision.matterReason = assignedTo != nil ? "Written from this matter in Causabee" : matter != nil ? "Follows its thread" : "Yours to place"
+        decision.digest = String(body.split(whereSeparator: \.isWhitespace).joined(separator: " ").prefix(160))
+        decision.decidedBy = .onDevice
+        decision.stages = Spike.stages + ["rules"]
+    }
+
     /// One mail by Apple's model on the device, into the same judgement the cloud model writes.
     /// The matters and the thread are kept in disguise like the rest of the run; the model is
     /// shown them in their real names.
@@ -408,6 +421,13 @@ public struct Extractor: Sendable {
                       threads: inout ThreadMemory, summary: inout Summary, owner: [String], disguiser: Replacer, restorer: Replacer) async {
         func real(_ text: String) -> String { restorer.apply(text).text }
         let email = outcome.email
+        // No Apple Intelligence here: the rules place what they can, and the owner the rest.
+        guard DeviceReader.isAvailable else {
+            Self.placeByRules(&outcome.judgement, body: Quotes.newest(of: email.body, subject: email.subject).newest, thread: thread.map(real), assignedTo: assignedTo)
+            if let matter = outcome.judgement.matter { threads.remember(email, matter: disguiser.apply(matter).text) }
+            outcome.judgement.extraction = Judgement.Extraction(model: "rules", servedBy: "rules", mode: "rules", prompt: "rules")
+            return
+        }
         var record = Judgement.Extraction(model: DeviceReader.modelID, servedBy: DeviceReader.modelID, mode: "on_device", prompt: DeviceReader.version)
         let newest = Quotes.newest(of: email.body, subject: email.subject)
         record.historyOmitted = newest.omitted

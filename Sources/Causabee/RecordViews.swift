@@ -1211,7 +1211,8 @@ struct ForYouCard: View {
     @Environment(\.modelContext) private var context
 
     var body: some View {
-        if let brief = matter.shownBrief {
+        // Proposals are Pro's: without it none waits for the owner, also from before.
+        if let brief = matter.shownBrief, ![Reach.device, .rules].contains(ModelChoice.reach) {
             let proposals = Adviser.worthReading(brief.open, in: matter, context: context)
             let count = proposals.count + brief.openLookups.count
             if count > 0 {

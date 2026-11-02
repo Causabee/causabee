@@ -15,7 +15,7 @@ public enum DeviceReader {
     public struct Unavailable: LocalizedError {
         public init() {}
         public var errorDescription: String? {
-            "Apple Intelligence is not available on this device. Turn it on in Settings, or add a key or Causabee Pro."
+            "Apple Intelligence is not available on this device. Turn it on in Settings, or use Causabee Pro."
         }
     }
 

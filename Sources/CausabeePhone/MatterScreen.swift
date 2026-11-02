@@ -657,6 +657,8 @@ struct MatterScreen: View {
                 } else if auto {
                     // Auto asks: no link to ask with.
                     AutoLine(matter: matter, size: 11)
+                } else if ModelChoice.reach != .pro {
+                    ProLine(reach: ModelChoice.reach, mails: matter.entries?.count ?? 0)
                 } else {
                     // An older suggestion says only its day.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
@@ -820,10 +822,10 @@ struct MatterScreen: View {
                     AutoLine(matter: matter, size: 11)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    UpdateNowButton(action: writeSummary)
+                    if ModelChoice.reach == .pro { UpdateNowButton(action: writeSummary) }
                     Spacer()
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
-                } else {
+                } else if ModelChoice.reach == .pro {
                     Button("Write the brief", action: writeSummary).buttonStyle(.phone)
                     Spacer()
                 }

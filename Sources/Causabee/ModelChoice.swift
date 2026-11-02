@@ -34,14 +34,26 @@ enum ModelChoice {
         return Claude.key(for: model).map { Claude(key: $0) }
     }
 
+    /// How far Causabee reaches here. The demo keeps every control: asked, it says it sends nothing.
+    @MainActor static var reach: Reach {
+        // `--demo --reach device|rules|off|used`: how a picture of each looks.
+        if let at = CommandLine.arguments.firstIndex(of: "--reach"), at + 1 < CommandLine.arguments.count {
+            return ["device": Reach.device, "rules": .rules, "off": .proOff, "used": .proUsedUp][CommandLine.arguments[at + 1]] ?? .pro
+        }
+        if DemoData.isRequested || DemoData.usesReal { return .pro }
+        return Reach.of(asks: client(for: assistant) != nil, holdsPro: BeeServer.isSetUp,
+                        usedUp: (BeeServer.shared.monthUsed ?? 0) >= 1, onDevice: DeviceReader.isAvailable)
+    }
+
     /// Pro set up and the bolt off: only Apple's model on this device.
     static var deviceOnly: Bool { BeeServer.isSetUp && !AutoMode.isOn }
 
     /// Who reads new mail: the chosen model with its key or Pro; without either, Apple's model on
-    /// this device — nothing leaves it, nothing is paid.
+    /// this device — nothing leaves it, nothing is paid; without that, the rules alone.
     enum Reader {
         case cloud(Claude)
         case device
+        case rules
         case none(String)
 
         var client: Claude? { if case .cloud(let claude) = self { claude } else { nil } }
@@ -50,7 +62,7 @@ enum ModelChoice {
     static func mailReader(for model: Claude.Model) -> Reader {
         if let claude = client(for: model) { return .cloud(claude) }
         if DemoData.isRequested || DemoData.usesReal { return .none(missingKey(model)) }
-        return DeviceReader.isAvailable ? .device : .none(deviceOnly ? DeviceReader.Unavailable().errorDescription ?? "" : missingKey(model))
+        return DeviceReader.isAvailable ? .device : .rules
     }
 
     /// Who reads new mail now, in one sentence for Settings.
@@ -58,16 +70,18 @@ enum ModelChoice {
         if DemoData.isRequested { return "In the demo, the mail is made up and nothing is sent." }
         if proPicks { return "Pro: GPT-6.1 Sol reads new mail as it comes — names disguised first." }
         if case .device = mailReader(for: mail) { return "Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it." }
+        if case .rules = mailReader(for: mail) { return "New mail comes in by its threads, and you place the rest. Nothing leaves this device." }
         if client(for: mail) != nil {
             return String(format: "%@ reads new mail with your own key — names disguised first.", mail.label)
         }
-        return "Nothing reads new mail yet: Apple Intelligence is off on this device. Turn it on in the system's Settings, or choose Pro."
+        return "In the demo, nothing reads new mail."
     }
 
     /// Under the mails ticked to be sorted in: who reads them.
     static func sortingWords(_ count: Int, model: Claude.Model) -> String {
         let mails = count == 1 ? "mail" : "mails"
         if case .device = mailReader(for: model) { return "Sorting in \(count) \(mails) on this device, with Apple's model: nothing leaves it." }
+        if case .rules = mailReader(for: model) { return "Bringing in \(count) \(mails) by their threads. You place the rest." }
         if BeeServer.isSetUp { return "Sorting in \(count) \(mails) with Causabee Pro. Sent pseudonymised to \(model.label)." }
         return "Sorting in \(count) \(mails). Sent pseudonymised to \(model.label)."
     }
@@ -75,14 +89,7 @@ enum ModelChoice {
     static func missingKey(_ model: Claude.Model) -> String {
         if DemoData.usesReal { return "This is the demo with your real matters: nothing is sent to an AI from it." }
         if DemoData.isRequested { return "This is the demo: your keys are not used in it, so nothing is sent to an AI from it." }
-        if deviceOnly { return "Pro is off: Apple's model on this device reads new mail, and this comes to it later. Turn Pro on with the bolt for it now." }
-        #if os(iOS)
-        let settings = "Settings (⋯ on the overview) — or on your Mac: a key saved there comes through iCloud Keychain"
-        #else
-        let settings = "Settings (⌘,)"
-        #endif
-        return model.isMistral ? "No Mistral key: paste it in \(settings)."
-            : model.isOpenAI ? "No OpenAI key: paste it in \(settings)." : "No Claude key: paste it in \(settings)."
+        return deviceOnly ? "Pro is off. Turn it on with the bolt for this." : "This needs Causabee Pro for now."
     }
 }
 
