@@ -1,7 +1,7 @@
 import Foundation
 
-/// How far Causabee reaches here: the plan and the device together. Pro thinks it through; Apple's
-/// model on the device keeps things organized; without either, the rules alone hold everything.
+/// How far Causabee reaches here: the plan and the device together. Pro thinks it through; without
+/// it the rules hold everything and choose the next step, and Apple's model sorts mail and screenshots.
 /// A control that cannot work here says so before it is tried, in these words.
 public enum Reach: Sendable, Equatable {
     /// Pro is on, or a key of the owner's own: a whole matter can be read.
@@ -21,6 +21,9 @@ public enum Reach: Sendable, Equatable {
         return onDevice ? .device : .rules
     }
 
+    /// Pro was never bought, or has ended.
+    public var isFree: Bool { self == .device || self == .rules }
+
     public enum Action: Sendable, Equatable {
         case seePro, turnOn, topUp
 
@@ -39,8 +42,7 @@ public enum Reach: Sendable, Equatable {
         let all = mails > 1 ? "all \(mails) mails" : "every mail"
         switch self {
         case .pro: return nil
-        case .device: return ("Pro reads \(all) for this.", .seePro)
-        case .rules: return ("Turn on Apple Intelligence in Settings, or use Pro.", .seePro)
+        case .device, .rules: return ("Pro reads \(all) for this.", .seePro)
         case .proOff: return ("Pro is off. Turn it on to read \(all).", .turnOn)
         case .proUsedUp: return (anew.map { "This month's Pro starts anew on \($0)." } ?? "This month's Pro is used up.", .topUp)
         }

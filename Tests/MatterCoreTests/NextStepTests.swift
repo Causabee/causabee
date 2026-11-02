@@ -42,6 +42,7 @@ struct NextStepTests {
         #expect(step.kind == .wait)
         #expect(step.text == answer.text)
         #expect(step.why.contains("Sep 30") && step.why.contains("Then this can go ahead: Nachweis"))
+        #expect(step.heading == "Wait · from your tasks")
 
         answer.isDone = true
         answer.doneAt = today
@@ -116,5 +117,9 @@ struct NextStepTests {
         #expect(MatterStatus.date(of: "2026-02-31") == nil)
         #expect(MatterStatus.date(of: "30.09.2026") == nil)
         #expect(MatterStatus.date(of: "") == nil)
+    }
+
+    @Test func aDateIsNoTask() {
+        #expect(NextStep(kind: .date, text: "Hearing", why: "", todo: nil).heading == "Soon")
     }
 }

@@ -1212,7 +1212,7 @@ struct ForYouCard: View {
 
     var body: some View {
         // Proposals are Pro's: without it none waits for the owner, also from before.
-        if let brief = matter.shownBrief, ![Reach.device, .rules].contains(ModelChoice.reach) {
+        if let brief = matter.shownBrief, !ModelChoice.reach.isFree {
             let proposals = Adviser.worthReading(brief.open, in: matter, context: context)
             let count = proposals.count + brief.openLookups.count
             if count > 0 {

@@ -343,11 +343,11 @@ struct MatterStatusView: View {
                     AutoLine(matter: matter)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    if ModelChoice.reach == .pro || ModelChoice.writesOnDevice { UpdateNowButton(action: writeSummary) }
+                    if ModelChoice.reach == .pro { UpdateNowButton(action: writeSummary) }
                     Spacer()
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
-                } else if ModelChoice.reach == .pro || ModelChoice.writesOnDevice {
-                    Button(ModelChoice.writesOnDevice ? "Write a Summary" : "Write the brief", action: writeSummary)
+                } else if ModelChoice.reach == .pro {
+                    Button("Write the brief", action: writeSummary)
                         .help("Causabee's adviser writes what it understands of this matter, the summary and the next step, and proposes changes to the list — from the facts, pseudonymised.")
                     Spacer()
                 }
@@ -399,15 +399,6 @@ struct MatterStatusView: View {
 
     /// The adviser: the brief, the summary and the step, and its proposals for the list — one request.
     private func writeSummary() {
-        if ModelChoice.writesOnDevice {
-            writingSummary = true
-            summaryError = nil
-            Task {
-                do { try await writeSummaryOnDevice(matter, context: context) } catch { summaryError = plainWords(error) }
-                writingSummary = false
-            }
-            return
-        }
         let model = ModelChoice.assistant
         guard ModelChoice.client(for: model) != nil else { summaryError = ModelChoice.missingKey(model); return }
         // Auto is writing it already: a second request would only cost twice, and count against the limit.
@@ -440,7 +431,8 @@ struct MatterStatusView: View {
         // to act on until it has.
         let coming = AutoUpdate.shared.updating(matter)
         let outOfDate = coming && matter.nextStep != nil
-        let own = fresh && !coming
+        // Without Pro the rule chooses, also over a step written earlier.
+        let own = fresh && !coming && !ModelChoice.reach.isFree
         // Yellow only when something waits for the owner: while it waits for someone else there is
         // nothing to do, and the page says so without a colour.
         let forYou = own ? matter.nextStep != nil : rule.map { $0.kind != .wait } ?? false
@@ -453,7 +445,7 @@ struct MatterStatusView: View {
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
             } else if let rule {
-                BeeChip(text: rule.label.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
+                BeeChip(text: rule.heading.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), rule.text, rule.why)
                 Text(rule.why).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation()
@@ -483,10 +475,6 @@ struct MatterStatusView: View {
                 } else if auto {
                     // Auto asks: no link to ask with.
                     AutoLine(matter: matter)
-                } else if ModelChoice.writesOnDevice {
-                    if own, matter.nextStepWhy == nil { Text("On this device").font(.caption).foregroundStyle(.secondary) }
-                    Spacer()
-                    UpdateNowButton(action: askStep)
                 } else if ModelChoice.reach != .pro {
                     ProLine(reach: ModelChoice.reach, mails: matter.entries?.count ?? 0)
                 } else {
@@ -501,9 +489,6 @@ struct MatterStatusView: View {
                 Spacer()
             }
             .tool()
-            if ModelChoice.writesOnDevice, (matter.entries?.count ?? 0) > DeviceWriter.newestMails {
-                ProLine(reach: ModelChoice.reach, mails: matter.entries?.count ?? 0)
-            }
             if let stepError { Text(stepError).font(.caption).foregroundStyle(Theme.warning).textSelection(.enabled) }
         }
     }
@@ -542,15 +527,6 @@ struct MatterStatusView: View {
     }
 
     private func askStep() {
-        if ModelChoice.writesOnDevice {
-            askingStep = true
-            stepError = nil
-            Task {
-                do { try await writeStepOnDevice(matter, context: context) } catch { stepError = plainWords(error) }
-                askingStep = false
-            }
-            return
-        }
         let model = ModelChoice.assistant
         guard let claude = ModelChoice.client(for: model) else { stepError = ModelChoice.missingKey(model); return }
         askingStep = true

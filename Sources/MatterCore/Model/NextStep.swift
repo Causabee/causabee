@@ -96,6 +96,9 @@ public struct NextStep: Sendable, Equatable {
         case .wait: "Wait"
         }
     }
+
+    /// The label, and where a step that is one of the owner's tasks comes from.
+    public var heading: String { todo == nil ? label : "\(label) · from your tasks" }
 }
 
 extension MatterStatus {
@@ -113,7 +116,7 @@ extension MatterStatus {
         func then(_ todo: Todo) -> String {
             let waiting = todo.waiting
             guard let first = waiting.first else { return "" }
-            return waiting.count == 1 ? " Then this can go ahead: \(first.text)." : " Then \(waiting.count) more tasks can go ahead."
+            return waiting.count == 1 ? " Then this can go ahead: " + Self.sentence(first.text) : " Then \(waiting.count) more tasks can go ahead."
         }
         func step(_ kind: NextStep.Kind, _ todo: Todo, _ why: String) -> NextStep {
             NextStep(kind: kind, text: todo.text, why: (why + then(todo)).trimmingCharacters(in: .whitespaces), todo: todo.persistentModelID)
