@@ -221,6 +221,66 @@ struct ExtractorTests {
         #expect(lines[0].contains("T5") && lines[0].contains("Vertrag schicken") && lines[0].contains("hausverwaltung"))
     }
 
+    @Test("A closed matter is not on the list a new subject is sorted from, however many mails went there")
+    func closedMatterIsNotListed() async throws {
+        let folder = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("closed-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try "Message-ID: <n@x.example>\nFrom: post@hv.example\nDate: Tue, 2 Sep 2025 09:00:00 +0200\nSubject: Etwas ganz Neues\n\nEin neues Anliegen."
+            .write(to: folder.appendingPathComponent("02.eml"), atomically: true, encoding: .utf8)
+        var report = try Spike(detector: EntityDetector(runsTagger: false))
+            .run(folder: folder, log: nil, pseudonymizer: Pseudonymizer(mode: .placeholder))
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let json = #"{"email_id":"a@x.example","source":"imap://x","date":"2025-09-01T07:00:00Z","subject":"Vertrag","from":"post@hv.example","is_bulk":false,"matter":"hausverwaltung","matter_confidence":1,"matter_reason":"Vertrag","decided_by":"claude","parties":[],"deadlines":[],"todos":[{"text":"Vertrag schicken","owner":"me","due":null,"source_quote":"","same_as":null,"id":"T5"}],"extraction":{"model":"claude-opus-5","served_by":"claude-opus-5","mode":"placeholder","prompt":"extract-v8","input_tokens":0,"output_tokens":0,"cost_usd":0,"seconds":0,"cached":false}}"#
+        let earlier = try decoder.decode(Judgement.self, from: Data(json.replacingOccurrences(of: "hausverwaltung", with: "zaunbau").utf8))
+
+        let open = folder.appendingPathComponent("open.jsonl")
+        var first = report.outcomes
+        _ = try await Extractor(model: .opus, claude: nil, cache: folder.appendingPathComponent("cache"))
+            .run(&first, pseudonymizer: try #require(report.pseudonymizer), owner: [], dryRun: open, known: [earlier.emailID: earlier])
+        #expect(try String(contentsOf: open, encoding: .utf8).contains("zaunbau"))
+
+        let closed = folder.appendingPathComponent("closed.jsonl")
+        var extractor = Extractor(model: .opus, claude: nil, cache: folder.appendingPathComponent("cache"))
+        extractor.closedMatters = ["zaunbau"]
+        _ = try await extractor.run(&report.outcomes, pseudonymizer: try #require(report.pseudonymizer), owner: [], dryRun: closed,
+                                    known: [earlier.emailID: earlier])
+        #expect(try !String(contentsOf: closed, encoding: .utf8).contains("zaunbau"))
+    }
+
+    @Test("A mail given to a closed matter starts its own, named after its subject; a reply in its thread stays")
+    func leavesClosedMatter() throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let json = #"{"email_id":"a@x.example","source":"imap://x","date":"2025-09-01T07:00:00Z","subject":"Re: Neue Küche - 3. Mai 10:00","from":"post@hv.example","is_bulk":false,"matter":"hausverwaltung","matter_confidence":1,"matter_reason":"Vertrag","decided_by":"claude","parties":[],"deadlines":[],"todos":[{"text":"Vertrag schicken","owner":"me","due":null,"source_quote":"","same_as":null,"id":"T5"}],"extraction":{"model":"claude-opus-5","served_by":"claude-opus-5","mode":"placeholder","prompt":"extract-v8","input_tokens":0,"output_tokens":0,"cost_usd":0,"seconds":0,"cached":false}}"#
+        var mail = try decoder.decode(Judgement.self, from: Data(json.utf8))
+        let matter = try #require(mail.matter)
+        var reply = mail
+
+        #expect(Extractor.leaveClosed(&reply, closed: [matter], thread: matter.uppercased()) == false)
+        #expect(reply.matter == matter)
+        var open = mail
+        #expect(Extractor.leaveClosed(&open, closed: ["sonst-etwas"], thread: nil) == false)
+        #expect(open.matter == matter)
+
+        #expect(Extractor.leaveClosed(&mail, closed: [matter], thread: nil))
+        #expect(mail.matter != matter)
+        #expect(mail.matterTitle == "Neue Küche")
+        var again = mail
+        again.matter = matter
+        #expect(Extractor.leaveClosed(&again, closed: [matter, try #require(mail.matter)], thread: "anderes"))
+        #expect(again.matter == mail.matter! + "2")
+    }
+
+    @Test("Told when the thread's matter is closed")
+    func threadClosed() {
+        let open = ExtractionPrompt.user(mail: "m", sent: nil, owner: [], matters: [], thread: "umzug")
+        let closed = ExtractionPrompt.user(mail: "m", sent: nil, owner: [], matters: [], thread: "umzug", threadClosed: true)
+        #expect(!open.contains("is closed"))
+        #expect(closed.contains("That matter is closed"))
+    }
+
     @Test("The record keeps every earlier answer when today's are written into it")
     func recordMerges() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("record-\(UUID()).jsonl")

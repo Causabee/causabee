@@ -27,20 +27,24 @@ fi
 mkdir -p scripts/shots
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-SHOTS=(overview lisbon lisbon-tasks lisbon-files care)
+# The sixth is for the website alone, scripts/shots/site-mail.png: the introduction has five.
+SHOTS=(overview lisbon lisbon-tasks lisbon-files care lisbon-record)
+PARTS=("" all "" "" "" mail)
 
-for i in {1..5}; do
+for i in {1..6}; do
   shot=$SHOTS[$i]
-  print "→ intro-$i: $shot"
+  part=$PARTS[$i]
+  print "→ picture $i: $shot"
   mkdir -p "$TMP/$shot"
-  # Opened as an app, not run from this shell: then it is in front, and macOS gives it Causabee's own
-  # Calendar and Reminders access, so the dates show "Add to Calendar" (the demo still adds nothing).
+  # Opened as an app, not run from this shell: macOS gives it Causabee's own Calendar and Reminders
+  # access, so the dates show "Add to Calendar" (the demo still adds nothing). Behind whatever the
+  # owner is working in: the window is photographed by its number, so it need not be in front.
   # Auto on, whatever the owner has chosen: the pictures show Causabee as the owner wants it shown
   # (said on 2026-10-11) — the bolt yellow, "Auto mode" under the next step and the summary.
   # And macOS told not to take the shot's name for a file to open: launched "to open a file", the
   # app is given no window of its own.
   # In the light look whatever the Mac is in: the website's pictures are light, also in the evening.
-  open -n -a "$APP" --args --store "$TMP/$shot/matters.store" --demo --shot "$shot" -mail.auto YES -auto.agreed YES -NSTreatUnknownArgumentsAsOpen NO -NSRequiresAquaSystemAppearance YES
+  open -g -n -a "$APP" --args --store "$TMP/$shot/matters.store" --demo --stay-behind --shot "$shot" ${part:+--part} ${part:+$part} -mail.auto YES -auto.agreed YES -NSTreatUnknownArgumentsAsOpen NO -NSRequiresAquaSystemAppearance YES
   for _ in {1..20}; do pid=$(pgrep -n -f -- "--shot $shot" || true); [[ -n $pid ]] && break; sleep 0.25; done
   [[ -n $pid ]] || { print -u2 "✗ Causabee did not start for $shot."; exit 1 }
   # The demo fills its store, opens the matter, scrolls, and a marked to-do fades again.
@@ -50,6 +54,10 @@ for i in {1..5}; do
   kill $pid; while kill -0 $pid 2>/dev/null; do sleep 0.2; done
   size=$(sips -g pixelWidth -g pixelHeight "$TMP/$shot.png" | awk '/pixel/ {print $2}' | paste -sd x -)
   [[ $size == 2880x1800 ]] || print "  (the window came out $size, not 2880x1800 — scaled anyway)"
+  if (( i == 6 )); then
+    sips -z 1800 2880 "$TMP/$shot.png" --out scripts/shots/site-mail.png > /dev/null
+    continue
+  fi
   sips -z 1800 2880 "$TMP/$shot.png" --out "scripts/shots/intro-$i.png" > /dev/null
   sips -z 1125 1800 "$TMP/$shot.png" --out "App/Resources/Intro/intro-$i.png" > /dev/null
 done

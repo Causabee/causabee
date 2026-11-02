@@ -220,7 +220,7 @@ struct NotesPart: View {
               }
             }
             .padding(.leading, inset).padding(.trailing, 6).padding(.vertical, 5)
-            .background(Theme.box, in: RoundedRectangle(cornerRadius: radius))
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
             if voice.asksModel { SpeechModelCard(voice: voice) }
             if let problem = voice.problem { Text(problem).font(.caption).foregroundStyle(Theme.warning).padding(.horizontal, 4) }
             Text("The assistant reads your notes too — names in them are pseudonymised first.")
@@ -284,9 +284,8 @@ struct NotesPart: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(.horizontal, inset).padding(.vertical, 12)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: radius))
-        .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.line))
+        .padding(.horizontal, Theme.cardInset).padding(.vertical, 14)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         .contextMenu {
             Button("Edit", systemImage: "pencil", action: edit)
             Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
@@ -513,6 +512,8 @@ struct DetailsSection: View {
     let matter: Matter
     /// Shown even while there is none yet — when the record shows only the details.
     var showsEmpty = false
+    /// Inside the one card for what has no date: the rows alone, with the way to add one.
+    var embedded = false
     @State private var adding = false
     @State private var editing: MatterDetail?
     @State private var copied: PersistentIdentifier?
@@ -525,7 +526,18 @@ struct DetailsSection: View {
 
     var body: some View {
         let details = matter.sortedDetails
-        if !details.isEmpty || showsEmpty {
+        if embedded {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(details.enumerated()), id: \.element.persistentModelID) { index, detail in
+                    if index > 0 { Divider() }
+                    row(detail, inset: 0)
+                }
+                Button { adding = true } label: { Label("New detail", systemImage: "plus") }
+                    .buttonStyle(.gold).font(.footnote).padding(.top, 8).tool()
+            }
+            .sheetWhenAsked(isPresented: $adding) { DetailEditor(matter: matter) }
+            .sheet(item: $editing) { DetailEditor(matter: matter, detail: $0) }
+        } else if !details.isEmpty || showsEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     SectionHeader(title: "Details", detail: details.isEmpty ? nil : "\(details.count)")
@@ -534,7 +546,7 @@ struct DetailsSection: View {
                     Text("A membership number, a file number, a ward and room: what you need on the phone with them.")
                         .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Theme.box, in: RoundedRectangle(cornerRadius: radius))
+                        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(details.enumerated()), id: \.element.persistentModelID) { index, detail in
@@ -542,8 +554,7 @@ struct DetailsSection: View {
                             row(detail)
                         }
                     }
-                    .background(Theme.card, in: RoundedRectangle(cornerRadius: radius))
-                    .overlay(RoundedRectangle(cornerRadius: radius).stroke(Theme.line))
+                    .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
                 }
             }
             .sheetWhenAsked(isPresented: $adding) { DetailEditor(matter: matter) }
@@ -551,7 +562,7 @@ struct DetailsSection: View {
         }
     }
 
-    private func row(_ detail: MatterDetail) -> some View {
+    private func row(_ detail: MatterDetail, inset: CGFloat = 14) -> some View {
         Button { copy(detail) } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -561,7 +572,7 @@ struct DetailsSection: View {
                 Spacer(minLength: 8)
                 Image(systemName: copied == detail.persistentModelID ? "checkmark" : "doc.on.doc").foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 14).padding(.vertical, 11)
+            .padding(.horizontal, inset).padding(.vertical, 11)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

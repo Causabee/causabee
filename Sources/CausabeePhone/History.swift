@@ -12,6 +12,8 @@ struct PhoneMoveMail: View {
 
     var body: some View {
         Menu {
+            Button("A new matter", systemImage: "plus.circle", action: newMatter)
+            Divider()
             ForEach(Self.order(matters, current: entry.matter)) { matter in
                 if matter === entry.matter {
                     Button(matter.name, systemImage: "checkmark") { }.disabled(true)
@@ -19,8 +21,6 @@ struct PhoneMoveMail: View {
                     Button(matter.name) { Self.move(entry, to: matter, in: context) }
                 }
             }
-            Divider()
-            Button("A new matter", systemImage: "plus.circle", action: newMatter)
         } label: {
             Label("Move to another matter", systemImage: "folder")
         }

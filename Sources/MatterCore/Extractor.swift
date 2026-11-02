@@ -28,6 +28,9 @@ public struct Extractor: Sendable {
     /// The owner's matters as the store has them — also those made in the app, which no mail
     /// named yet: by the key a mail is filed under, and a line on what each is about.
     public var storeMatters: [(key: String, about: String)] = []
+    /// What the closed matters answer to, lowercased: they are finished, and are not on the list a
+    /// mail is sorted from, however often the mails before it went there.
+    public var closedMatters: Set<String> = []
     /// What each matter has on file, by its key: its appointments, so a mail that moves one
     /// changes it rather than adding another, and what the owner took out of what mail brought.
     public var onFile: [String: OnFile] = [:]
@@ -110,6 +113,29 @@ public struct Extractor: Sendable {
         public var appointments = 0
     }
 
+    // MARK: Closed matters
+
+    /// A closed matter takes only what carries it on: a reply in its own thread. Any other mail the
+    /// model gave it — the person is known there, the words are alike — starts a matter of its own,
+    /// named after its subject: it is not to go unseen into what the owner has finished.
+    /// True when the mail was taken away from a closed matter.
+    public static func leaveClosed(_ judgement: inout Judgement, closed: Set<String>, thread: String?) -> Bool {
+        guard let matter = judgement.matter, closed.contains(matter.lowercased()),
+              thread?.lowercased() != matter.lowercased() else { return false }
+        let title = Matter.cleanSubject(judgement.subject)
+        let base = PartyNames.key(title).isEmpty ? "sache" : PartyNames.key(title)
+        var key = base
+        var number = 2
+        while closed.contains(key.lowercased()) {
+            key = base + "\(number)"
+            number += 1
+        }
+        judgement.matter = key
+        judgement.matterTitle = title.isEmpty ? nil : title
+        judgement.matterReason = "A closed matter takes no new subject"
+        return true
+    }
+
     // MARK: Who "me" is
 
     /// The mailbox owner, as the model will see them. Given with `--me`, or else read off the
@@ -173,7 +199,8 @@ public struct Extractor: Sendable {
             threads.remember(email, matter: matter)
             book.replay(matter: matter, todos: earlier.todos.map { ($0.id, disguiser.apply($0.text).text, $0.owner, $0.sameAs) },
                         done: earlier.done.map(\.todo))
-            if let name = matter, !matters.contains(where: { $0.name == name }) {
+            if let name = matter, let real = earlier.matter, !closedMatters.contains(real.lowercased()),
+               !matters.contains(where: { $0.name == name }) {
                 matters.append((name, disguiser.apply(earlier.matterReason).text))
             }
         }
@@ -231,7 +258,8 @@ public struct Extractor: Sendable {
             }
             let user = ExtractionPrompt.user(mail: Self.text(of: disguise, body: history.newest, omitted: history.omitted),
                                              sent: outcomes[index].email.date, owner: disguisedOwner, matters: matters,
-                                             thread: thread, open: book.open(for: thread, matters: matters.map(\.name)),
+                                             thread: thread, threadClosed: thread.map { closedMatters.contains(restorer.apply($0).text.lowercased()) } ?? false,
+                                             open: book.open(for: thread, matters: matters.map(\.name)),
                                              onFile: Self.shown(files, for: thread, from: outcomes[index].email.date))
             let body = Claude.body(model: model, system: system, user: user,
                                    schema: ExtractionPrompt.schema, effort: effort)
@@ -282,6 +310,11 @@ public struct Extractor: Sendable {
                     outcomes[index].judgement.matterTitle = nil
                     outcomes[index].judgement.matterReason = "Written from this matter in Causabee"
                     threads.remember(outcomes[index].email, matter: disguiser.apply(assignedTo).text)
+                } else if Self.leaveClosed(&outcomes[index].judgement, closed: closedMatters, thread: thread.map { restorer.apply($0).text }),
+                          let new = outcomes[index].judgement.matter {
+                    let disguised = disguiser.apply(new).text
+                    threads.remember(outcomes[index].email, matter: disguised)
+                    if !matters.contains(where: { $0.name == disguised }) { matters.append((disguised, disguised)) }
                 }
 
                 if wasCached { summary.cached += 1 } else { summary.sent += 1 }
@@ -410,9 +443,10 @@ public struct Extractor: Sendable {
             decision.appointments = read.appointments.map { .init(what: $0.what, date: $0.date, time: $0.time, place: nil, sourceQuote: $0.quote) }
             decision.deadlines = read.deadlines.map { .init(what: $0.what, date: $0.date, sourceQuote: $0.quote) }
             decision.stages = Spike.stages + ["on_device"]
+            if assignedTo == nil { _ = Self.leaveClosed(&decision, closed: closedMatters, thread: thread.map(real)) }
             outcome.judgement = decision
 
-            if let matter {
+            if let matter = decision.matter {
                 let disguised = disguiser.apply(matter).text
                 threads.remember(email, matter: disguised)
                 if !matters.contains(where: { $0.name == disguised }) { matters.append((disguised, disguiser.apply(read.digest).text)) }

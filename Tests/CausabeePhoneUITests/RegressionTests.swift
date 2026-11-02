@@ -5,6 +5,12 @@ import XCTest
 ///
 ///   xcodebuild test -project App/Causabee.xcodeproj -scheme CausabeePhoneUITests -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
 final class RegressionTests: XCTestCase {
+    /// The overview opens on its journal; the matters are one filter away.
+    private func showMatters() {
+        let filter = app.buttons["part.Matters"]
+        if filter.waitForExistence(timeout: 40) { filter.tap() }
+    }
+
     private var app: XCUIApplication!
     /// Different at every run: what an earlier run added is still in the demo's store.
     private let stamp = String(Int(Date().timeIntervalSince1970) % 100_000)
@@ -17,6 +23,7 @@ final class RegressionTests: XCTestCase {
         // and nothing waits for "Sort in".
         app.launchArguments = (name.contains("Letter") ? ["--demo", "--shot", "letter"] : ["--demo"]) + ["-mail.auto", "NO"]
         app.launch()
+        showMatters()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
         matter.tap()
@@ -66,9 +73,9 @@ final class RegressionTests: XCTestCase {
         XCTAssertTrue(found.waitForExistence(timeout: 8), message)
     }
 
-    func testTheFourTabs() {
-        for name in ["Record", "People", "Notes", "Plan"] { tab(name) }
-        shows("Tasks", "Back on To do, the tasks are not shown.")
+    func testTheFilters() {
+        for name in ["Digest", "Mail", "Files", "People", "Notes", "Plan"] { tab(name) }
+        shows("WAITING FOR OTHERS", "Back on Plan, the plan is not shown.")
     }
 
     func testATaskAddedStays() {
@@ -114,7 +121,7 @@ final class RegressionTests: XCTestCase {
         valueField.typeText(value)
         app.buttons["Add"].firstMatch.tap()
         let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", value)).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 8), "The detail was added and is not in the record.")
+        XCTAssertTrue(row.waitForExistence(timeout: 8), "The detail was added and is not in its card.")
     }
 
     func testANoteAdded() {

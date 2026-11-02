@@ -16,6 +16,12 @@ public enum Unplaced {
         }
     }
 
+    /// What the closed matters answer to: no new subject is sorted into them.
+    public static func closed(in context: ModelContext) -> Set<String> {
+        Set(((try? context.fetch(FetchDescriptor<Matter>())) ?? []).filter(\.isClosed)
+            .flatMap { [$0.key, $0.name] + $0.aliases }.map { $0.lowercased() })
+    }
+
     /// What each open matter has on file, by its key: its appointments, and what the owner took out.
     public static func onFile(in context: ModelContext) -> [String: Extractor.OnFile] {
         var files: [String: Extractor.OnFile] = [:]
@@ -48,6 +54,13 @@ public enum Unplaced {
             .filter { !$0.isBulk && $0.matter == nil && Extractor.isSettled($0) && $0.extraction?.skipped == nil }
             .filter { !placed.contains($0.emailID) && !setAside.contains($0.emailID) && ($0.date ?? .distantPast) >= since }
             .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+    }
+
+    /// Into a new matter the owner named, with what the answer found in it.
+    public static func start(_ judgement: Judgement, named name: String, context: ModelContext, owner: [String]) throws -> Matter {
+        let matter = try Matter.make(named: name, in: context)
+        try place(judgement, in: matter, context: context, owner: owner)
+        return matter
     }
 
     /// Into the matter the owner chose, with what the answer found in it.

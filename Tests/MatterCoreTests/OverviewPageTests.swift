@@ -102,6 +102,72 @@ struct OverviewPageTests {
         #expect(again < .milliseconds(50), "Asking 1,000 times for the same page took \(again)")
     }
 
+    @Test("Mail after closing shows on the overview until it is ignored, and the next mail shows alone; the matter still counts them all")
+    func ignoredMailOfAClosedMatter() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "flat", name: "Flat")
+        context.insert(matter)
+        let now = Date()
+        func mail(_ id: String, daysAgo: Double) {
+            let date = now.addingTimeInterval(-daysAgo * 86_400)
+            let entry = Entry(title: id, from: "a@example.com", date: date, source: Source(kind: .mail, pointer: id, messageID: id, date: date))
+            context.insert(entry)
+            entry.matter = matter
+        }
+        mail("<before>", daysAgo: 9)
+        matter.close(markingOpenDone: false, at: now.addingTimeInterval(-8 * 86_400))
+        mail("<one>", daysAgo: 3)
+        mail("<two>", daysAgo: 2)
+        let today = MatterStatus.day(now)
+        let before = MatterSummary(matter, today: today)
+        #expect(before.newMailsSinceClosed == 2)
+        #expect(before.mailsToShowSinceClosed == 2)
+
+        matter.ignoredMailUntil = before.lastDate
+        #expect(MatterSummary(matter, today: today).newMailsSinceClosed == 2)
+        #expect(MatterSummary(matter, today: today).mailsToShowSinceClosed == 0)
+
+        mail("<three>", daysAgo: 1)
+        #expect(MatterSummary(matter, today: today).newMailsSinceClosed == 3)
+        #expect(MatterSummary(matter, today: today).mailsToShowSinceClosed == 1)
+
+        matter.reopen()
+        #expect(MatterSummary(matter, today: today).mailsToShowSinceClosed == 0)
+    }
+
+    @Test("A matter's last day says the mails and files that came on it: not a scan as a mail, not another day's file, not a hidden one or a small image")
+    func cameOnTheLastDay() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "flat", name: "Flat")
+        context.insert(matter)
+        let now = Date()
+        func entry(_ id: String, _ kind: Source.Kind, _ date: Date) {
+            let source = Source(kind: kind, pointer: id, messageID: id, date: date)
+            let entry = Entry(title: id, from: "a@example.com", date: date, source: source)
+            context.insert(entry)
+            entry.matter = matter
+        }
+        func file(_ id: String, _ type: String = "application/pdf", bytes: Int = 90_000, hidden: Bool = false) {
+            let document = Document(name: id + ".pdf", contentType: type, byteCount: bytes, source: Source(kind: .mail, pointer: id, messageID: id))
+            document.messageID = id
+            document.isHidden = hidden
+            context.insert(document)
+            document.matter = matter
+        }
+        entry("<old>", .mail, now.addingTimeInterval(-3 * 86_400))
+        entry("<a>", .mail, now.addingTimeInterval(-2))
+        entry("<b>", .mail, now.addingTimeInterval(-1))
+        entry("<scan>", .document, now)
+        file("<old>")
+        file("<a>")
+        file("<a>", hidden: true)
+        file("<b>", "image/png", bytes: 900)
+        file("<scan>")
+        let latest = try #require(MatterSummary(matter, today: MatterStatus.day(now)).latest)
+        #expect(latest.mails == 2)
+        #expect(latest.files == 2)
+    }
+
     @Test("After a change with no new mail — a task ticked — the overview is prepared again without reading every mail's date, and a new mail still counts")
     func againAfterAChange() throws {
         let (context, matters) = try Self.bigStore()

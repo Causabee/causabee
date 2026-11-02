@@ -46,14 +46,7 @@ struct ThreadCard: View {
                 }
             }
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        #if os(macOS)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
-        #else
-        .phoneCard()
-        #endif
+        .journalCard(inset: 14)
     }
 
     private var span: String {
@@ -372,7 +365,7 @@ struct SourceJump: View {
     }
 
     /// Not in this matter's record — moved away, or never in it — but still openable outside.
-    private func outside(_ source: Source) -> URL? {
+    static func outside(_ source: Source) -> URL? {
         #if os(macOS)
         source.fileURL ?? source.mailURL
         #else
@@ -381,7 +374,7 @@ struct SourceJump: View {
     }
 
     private func line(_ places: [(source: Source, item: PersistentIdentifier?)]) -> AttributedString {
-        let reachable = places.contains { $0.item != nil || outside($0.source) != nil }
+        let reachable = places.contains { $0.item != nil || Self.outside($0.source) != nil }
         var start = AttributedString(before.isEmpty ? "" : before + " · ")
         start.foregroundColor = beforeColor
         var link = AttributedString(label + (places.count > 1 ? " · +\(places.count - 1)" : ""))
@@ -405,7 +398,7 @@ struct SourceJump: View {
             .help(places.contains { $0.item != nil } ? "Shows it in the record" : "Opens it in Mail")
             .confirmationDialogWhenAsked("Every mail that asked for it", isPresented: $choosing, titleVisibility: .visible) {
                 ForEach(Array(places.enumerated()), id: \.offset) { index, place in
-                    if place.item != nil || outside(place.source) != nil {
+                    if place.item != nil || Self.outside(place.source) != nil {
                         Button((index == 0 ? "First: " : "") + Sources.origin(place.source)) { go(place) }
                     }
                 }
@@ -413,7 +406,40 @@ struct SourceJump: View {
     }
 
     private func go(_ place: (source: Source, item: PersistentIdentifier?)) {
-        if let item = place.item { navigation.showing = item } else if let url = outside(place.source) { openURL(url) }
+        if let item = place.item { navigation.showing = item } else if let url = Self.outside(place.source) { openURL(url) }
+    }
+}
+
+/// The same way to where it came from, as a line of a row's ⋯: the row itself stays its name.
+/// Looked up on the tap, not while the list is drawn.
+struct SourceItems: View {
+    let sources: [Source]
+    let matter: Matter?
+    @Environment(Navigation.self) private var navigation
+    @Environment(\.openURL) private var openURL
+
+    private func title(_ source: Source) -> String {
+        let words = Sources.origin(source)
+        return words.prefix(1).uppercased() + words.dropFirst()
+    }
+
+    private func button(_ source: Source) -> some View {
+        Button(title(source), systemImage: source.kind == .mail ? "envelope" : "doc") {
+            if let item = matter.flatMap({ RecordLinks.item(for: source, in: $0) }) { navigation.showing = item }
+            else if let url = SourceJump.outside(source) { openURL(url) }
+        }
+    }
+
+    var body: some View {
+        // What was said to the assistant has nowhere to go to.
+        let shown = sources.filter { $0.kind != .conversation }
+        if shown.count > 1 {
+            Menu("Where it came from", systemImage: "envelope") {
+                ForEach(Array(shown.enumerated()), id: \.offset) { _, source in button(source) }
+            }
+        } else if let source = shown.first {
+            button(source)
+        }
     }
 }
 
@@ -550,6 +576,8 @@ struct FileFace<Items: View>: View {
     let nameIt: () -> Void
     /// Nil, or whether it is chosen while several are being chosen.
     var chosen: Bool? = nil
+    /// A tile of the mosaic: its picture on top, the name under it, read at a glance.
+    var tile = false
     @ViewBuilder let items: Items
 
     static func icon(_ document: MatterCore.Document) -> String {
@@ -566,7 +594,7 @@ struct FileFace<Items: View>: View {
     private var readButton: some View {
         Button("Read", action: read)
             .quietButton().fixedSize()
-            .help("Reads it on this device and shows it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
+            .help("Reads it on this device and shows it in the assistant. Nothing is sent until “Sort in”.")
     }
 
     /// Where it is and where it came from — its own name too, when it has a name of ours.
@@ -584,7 +612,49 @@ struct FileFace<Items: View>: View {
             .compactMap { $0 }.joined(separator: " · ")
     }
 
+    /// The mosaic's tile: what the row says in full is a tap and a menu away.
+    private var mosaicTile: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            FileThumbnail(document: document, symbol: Self.icon(document), state: state, large: true)
+            HStack(alignment: .top, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(document.shownName).font(.footnote.weight(.medium)).lineLimit(2).multilineTextAlignment(.leading)
+                    Text(document.source.date.map(Dates.short) ?? "").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                #if os(macOS)
+                MoreMenu { items }
+                #else
+                Menu { items } label: {
+                    Image(systemName: "ellipsis").frame(width: 26, height: 22).contentShape(Rectangle())
+                }
+                .tint(.secondary)
+                .accessibilityLabel("More")
+                .tool()
+                #endif
+            }
+            if let state {
+                Text(state).font(.caption).foregroundStyle(state.hasPrefix("Getting") ? Color.secondary : Theme.warning).lineLimit(2)
+            } else if document.reading == .kept {
+                readButton
+            }
+        }
+        .padding(8)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: tap)
+        .opacity(document.isHidden ? 0.55 : 1)
+        #if os(macOS)
+        .contextMenu { items }
+        #else
+        .contextMenu { Group { items }.menuSigns() }
+        #endif
+    }
+
     var body: some View {
+        if tile { mosaicTile } else { row }
+    }
+
+    private var row: some View {
         HStack(alignment: .top, spacing: 12) {
             FileThumbnail(document: document, symbol: Self.icon(document), state: state)
             VStack(alignment: .leading, spacing: 3) {
@@ -658,6 +728,8 @@ struct FileThumbnail: View {
     let symbol: String
     /// Changes when a file has just been fetched, so the picture is looked for again.
     let state: String?
+    /// As wide as its tile in the mosaic.
+    var large = false
     @State private var picture: CGImage?
     @Environment(\.displayScale) private var scale
 
@@ -671,7 +743,18 @@ struct FileThumbnail: View {
 
     var body: some View {
         Group {
-            if let picture {
+            if large {
+                ZStack {
+                    Theme.box
+                    if let picture {
+                        Image(decorative: picture, scale: scale).resizable().scaledToFill()
+                    } else {
+                        Image(systemName: symbol).font(.title2).foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity).frame(height: 96)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.tileRadius - 4, style: .continuous))
+            } else if let picture {
                 Image(decorative: picture, scale: scale)
                     .resizable().scaledToFill()
                     .frame(width: Self.size.width, height: Self.size.height)
@@ -692,10 +775,10 @@ struct FileThumbnail: View {
         if found == nil, document.isOwnFile, let kept = MatterFolders.kept(document) { found = try? await MatterFolders.fetched(kept) }
         if found == nil { found = await MailPreviews.fetch(document) }
         guard let file = found else { return }
-        let key = file.path as NSString
+        let key = (file.path + (large ? " large" : "")) as NSString
         if let known = Self.made.object(forKey: key) { picture = known.image; return }
         // Made here, not by Quick Look: its service made none for some files the app keeps.
-        let longest = max(Self.size.width, Self.size.height) * scale * 2
+        let longest = (large ? 320 : max(Self.size.width, Self.size.height)) * scale * 2
         guard let made = await Task.detached(priority: .utility, operation: { Self.picture(of: file, longest: longest) }).value else { return }
         Self.made.setObject(CGImageBox(made), forKey: key)
         picture = made
@@ -789,18 +872,13 @@ final class CGImageBox {
 }
 
 extension View {
-    /// A file as a card of the record. Read: white, with its line. Kept only: no ground, and a
+    /// A file as a card of the record. Read: white. Kept only: no ground, and a
     /// dashed line — stored, not read, never sent.
     func fileCardFrame(kept: Bool) -> some View {
-        #if os(macOS)
-        let corner: CGFloat = 10
-        #else
-        let corner: CGFloat = 12
-        #endif
+        let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
         return frame(maxWidth: .infinity, alignment: .leading)
-            .background(kept ? Color.clear : Theme.card, in: RoundedRectangle(cornerRadius: corner))
-            .overlay(RoundedRectangle(cornerRadius: corner)
-                .strokeBorder(kept ? Theme.strongLine : Theme.line, style: StrokeStyle(lineWidth: 1, dash: kept ? [5, 4] : [])))
+            .background(kept ? Color.clear : Theme.card, in: shape)
+            .overlay(shape.strokeBorder(kept ? Theme.strongLine : Color.clear, style: StrokeStyle(lineWidth: 1, dash: kept ? [5, 4] : [])))
     }
 }
 
@@ -811,7 +889,7 @@ struct ReadAllLine: View {
 
     var body: some View {
         if count > 1 {
-            Button("Read all \(count) attachments · ≈ \(count * 4) cents", action: read)
+            Button("Read all \(count) attachments", action: read)
                 .buttonStyle(.gold).font(.caption)
                 .help("Reads each on this device and shows it in the assistant. Nothing is sent until “Sort in”.")
                 .padding(.horizontal, 4)
@@ -819,7 +897,7 @@ struct ReadAllLine: View {
     }
 }
 
-/// While choosing several kept files: how many, what reading them costs, and the button.
+/// While choosing several kept files: how many, and the button.
 struct ChooseBar: View {
     let chosen: Int
     let readable: Int
@@ -829,7 +907,7 @@ struct ChooseBar: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(chosen == 0 ? "Choose files" : "\(chosen) · ≈ \(chosen * 4) cents")
+            Text(chosen == 0 ? "Choose files" : "\(chosen) chosen")
                 .font(.callout).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 8)
             if chosen < readable { Button("All", action: all).buttonStyle(.gold).font(.callout) }
@@ -842,10 +920,10 @@ struct ChooseBar: View {
 
 // MARK: Browsing
 
-/// The record's line: what kind of thing, which of them, in which order — three small menus, the
-/// same on every device, in the same order. One person chosen in People stands beside them.
+/// The line over Mail and Files: which of them, in which order — two small menus, the same on
+/// every device, in the same order. One person chosen in People stands beside them.
 struct RecordBar<Trailing: View>: View {
-    @Binding var kind: RecordBrowse.Kind
+    var kind: RecordBrowse.Kind
     @Binding var show: RecordBrowse.Show
     @Binding var sort: RecordBrowse.Sort
     /// How many there are for each "Show".
@@ -856,11 +934,6 @@ struct RecordBar<Trailing: View>: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            menu("Kind", kind.label) {
-                Picker("Kind", selection: $kind) {
-                    ForEach(RecordBrowse.Kind.allCases, id: \.self) { Text($0.label).tag($0) }
-                }
-            }
             if kind != .details {
                 menu("Show", show.label) {
                     Picker("Show", selection: $show) {
@@ -1097,68 +1170,121 @@ struct BroughtFile: Transferable {
     }
 }
 
-/// The brief under the summary — the same on every device: what Causabee understands of the
-/// matter, folded until opened; what the owner said of it, which every brief is written around;
-/// and the adviser's proposals for the to-do list, each taken with a tap or put away.
-struct BriefDetails: View {
+/// What is new, on top of the journal until it is seen: what the new mail changes, on yellow.
+struct NewsCard: View {
     let matter: Matter
     @Environment(\.modelContext) private var context
-    @State private var opens = false
+
+    var body: some View {
+        if let news = matter.shownBrief?.news, !news.seen {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
+                    BeeChip(text: "NEW · SINCE \(Dates.short(news.since).uppercased())")
+                    ForEach(Array(news.lines.enumerated()), id: \.offset) { _, line in
+                        Text(line).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .waitingTile()
+                HStack(spacing: 8) {
+                    Text(news.mails == 1 ? "1 mail" : "\(news.mails) mails").font(.footnote).foregroundStyle(.secondary)
+                    Spacer(minLength: 4)
+                    Button("Seen") { withAnimation { matter.sawNews(); try? context.save() } }
+                        .quietButton()
+                        .accessibilityIdentifier("brief.seen")
+                }
+                .padding(.horizontal, 16).padding(.vertical, 10)
+            }
+            .journalCard(inset: Theme.tileInset)
+            // A notification of news tapped goes here.
+            .id("news")
+        }
+    }
+}
+
+/// What Causabee asks of the owner, on yellow under the next step until it is answered: changes it
+/// proposes for the list, and questions it would look up. One stands open; several, and over the
+/// plan, fold into one line: the page should not begin with a long read.
+struct ForYouCard: View {
+    let matter: Matter
+    var folds = false
+    @State private var unfolded = false
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         if let brief = matter.shownBrief {
-            VStack(alignment: .leading, spacing: 12) {
-                if let news = brief.news, !news.seen {
-                    // What the new mail changes, first: on a pale honey, until it is seen.
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 8) {
-                            BeeChip(text: "NEW")
-                            Text("\(news.mails == 1 ? "1 mail" : "\(news.mails) mails") since \(Dates.short(news.since))")
-                                .font(.caption).foregroundStyle(.secondary)
-                            Spacer(minLength: 4)
-                            Button("Seen") { withAnimation { matter.sawNews(); try? context.save() } }
-                                .buttonStyle(.plain).font(.caption.weight(.medium)).foregroundStyle(Theme.gold)
-                                .accessibilityIdentifier("brief.seen")
+            let proposals = Adviser.worthReading(brief.open, in: matter, context: context)
+            let count = proposals.count + brief.openLookups.count
+            if count > 0 {
+                VStack(alignment: .leading, spacing: Theme.tileInset) {
+                    if folds || count > 1, !unfolded {
+                        Button { withAnimation(.snappy(duration: 0.2)) { unfolded = true } } label: {
+                            HStack(spacing: 8) {
+                                Text(count == 1 ? "1 question from Causabee" : "\(count) questions from Causabee").foregroundStyle(.primary)
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                            }
+                            .waitingTile()
+                            .contentShape(Rectangle())
                         }
-                        ForEach(Array(news.lines.enumerated()), id: \.offset) { _, line in
-                            Text(line).fixedSize(horizontal: false, vertical: true)
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("foryou.unfold")
+                    } else {
+                        if !proposals.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("FOR THE LIST").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                ForEach(proposals) { proposal in
+                                    ProposalRow(proposal: proposal, matter: matter)
+                                }
+                            }
+                            .waitingTile()
+                        }
+                        if !brief.openLookups.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("LOOK UP?").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                // Said once, over them: what goes out, and what does not.
+                                Text("Only this question goes to the web — nothing of the matter.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                ForEach(brief.openLookups) { lookup in
+                                    LookupRow(lookup: lookup, matter: matter)
+                                }
+                            }
+                            .waitingTile()
                         }
                     }
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
-                    // A notification of news tapped goes here.
-                    .id("news")
                 }
-                if !brief.lines.isEmpty || !brief.answeredHere.isEmpty {
-                    DisclosureGroup(isExpanded: $opens) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            ForEach(Brief.Part.allCases, id: \.self) { part in
-                                let lines = brief.lines(part)
-                                if !lines.isEmpty {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(Self.title(part)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                                        ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-                                            Text(line).fixedSize(horizontal: false, vertical: true)
-                                                .findable(.section("brief-\(part.rawValue)-\(index)"), line)
-                                        }
-                                    }
-                                }
-                            }
-                            // What was looked up on the web: kept to read, folded with the rest — it
-                            // waits for nothing, and under the brief it stood in the way.
-                            if !brief.answeredHere.isEmpty {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Text("Looked up").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                                    ForEach(brief.answeredHere) { lookup in FoundRow(lookup: lookup) }
-                                }
+                .journalCard(inset: Theme.tileInset)
+            }
+        }
+    }
+}
+
+/// The brief, under the summary — the same on every device: what Causabee understands of the
+/// matter, what was looked up, and what the owner said of it, which every brief is written around.
+struct BriefDetails: View {
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        if let brief = matter.shownBrief {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(Brief.Part.allCases, id: \.self) { part in
+                    let lines = brief.lines(part)
+                    if !lines.isEmpty {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(Self.title(part)).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                            ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                                Text(line).fixedSize(horizontal: false, vertical: true)
+                                    .findable(.section("brief-\(part.rawValue)-\(index)"), line)
                             }
                         }
-                        .padding(.top, 8)
-                    } label: {
-                        Text(opens ? "The brief" : "The brief · what Causabee understands").font(.callout.weight(.medium))
                     }
-                    .accessibilityIdentifier("brief.open")
+                }
+                // What was looked up on the web: kept to read — it waits for nothing.
+                if !brief.answeredHere.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Looked up").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        ForEach(brief.answeredHere) { lookup in FoundRow(lookup: lookup) }
+                    }
                 }
                 if !brief.said.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
@@ -1180,27 +1306,6 @@ struct BriefDetails: View {
                         }
                     }
                 }
-                let proposals = Adviser.worthReading(brief.open, in: matter, context: context)
-                if !proposals.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("For the list").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        ForEach(proposals) { proposal in
-                            ProposalRow(proposal: proposal, matter: matter)
-                        }
-                    }
-                }
-                if !brief.openLookups.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Look up?").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        // Said once, over them: what goes out, and what does not.
-                        Text("Only this question goes to the web — nothing of the matter.")
-                            .font(.caption).foregroundStyle(.secondary)
-                        ForEach(brief.openLookups) { lookup in
-                            LookupRow(lookup: lookup, matter: matter)
-                        }
-                    }
-                }
-
             }
         }
     }

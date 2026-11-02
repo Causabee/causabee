@@ -194,7 +194,7 @@ public enum ExtractionPrompt {
     }
 
     public static func user(mail: String, sent: Date?, owner: [String], matters: [(name: String, summary: String)],
-                            thread: String? = nil, open: [(matter: String, todos: [OpenTodo])] = [],
+                            thread: String? = nil, threadClosed: Bool = false, open: [(matter: String, todos: [OpenTodo])] = [],
                             onFile: [(matter: String, appointments: [String], unwanted: [String])] = []) -> String {
         var parts: [String] = []
         if owner.isEmpty {
@@ -214,7 +214,8 @@ public enum ExtractionPrompt {
             parts.append("Matters found so far:\n" + matters.map { "- \($0.name): \($0.summary)" }.joined(separator: "\n"))
         }
         if let thread {
-            parts.append("This email is a reply in a thread whose earlier emails were assigned to the matter `\(thread)`.")
+            parts.append("This email is a reply in a thread whose earlier emails were assigned to the matter `\(thread)`."
+                         + (threadClosed ? " That matter is closed: the email belongs to it only if it carries on what was finished there. Anything else starts a new matter, even from the same person." : ""))
         }
         let listed = open.filter { !$0.todos.isEmpty }
         if !listed.isEmpty {

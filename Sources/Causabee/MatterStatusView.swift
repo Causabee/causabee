@@ -6,17 +6,16 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// C2 · a matter's status: the place to drill down. What is open and whose, the dates, the
-/// people, and the history — every row with a door back into the assistant.
+/// C2 · a matter as one journal: what happened, a day at a time, with what is new on top; what comes
+/// next, what is ahead and what has no date beside it on a wide window, over it on a narrow one.
+/// The filters show the plan, the mail, the files, the people and the notes alone — every row with
+/// a door back into the assistant.
 struct MatterStatusView: View {
-    /// "1 deadline open", "2 deadlines open".
-    static func deadlinesOpen(_ count: Int) -> String { "\(count) \(count == 1 ? "deadline" : "deadlines") open" }
     let matter: Matter
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
     @Environment(\.undoManager) private var undoManager
     @State private var showsDone = false
-    @State private var showsInfos = false
     @State private var writingSummary = false
     @State private var showsSmallImages = false
     @State private var showsHidden = false
@@ -63,14 +62,15 @@ struct MatterStatusView: View {
     @State private var marked: PersistentIdentifier?
     /// Every conversation shown, not only the newest: a source pointed at an older mail.
     @State private var showsAllHistory = false
-    /// The page under what stands on top: what is to do, the record, or the people.
-    enum Part: String { case todo, record, people, notes }
-    /// The record, whole or one kind of it.
-
+    /// The filter that is open: a matter with much to do opens on its plan.
     // `--demo --shot lisbon-files`: the picture of the files is of the record's files.
-    @State private var part: Part = [.lisbonFiles, .careDetails, .lisbonRecord].contains(IntroShot.current) ? .record : [.carePeople, .careContact].contains(IntroShot.current) ? .people : .todo
-    @State private var filter: RecordBrowse.Kind = IntroShot.current == .lisbonFiles ? .files : IntroShot.current == .careDetails ? .details : .everything
-    /// Which of them, and in which order: the record's other two menus.
+    @State private var part: Journal.Part
+    /// What is open in the one card for what has no date.
+    @State private var atHand: Set<AtHandRow> = IntroShot.current == .careDetails ? [.details] : []
+    /// The old months opened, and the conversations opened.
+    @State private var openMonths: Set<String> = []
+    @State private var openThreads: Set<String> = []
+    /// Which of them, and in which order: the two menus over Mail and Files.
     @State private var show: RecordBrowse.Show = .all
     @State private var sort: RecordBrowse.Sort = .newest
     /// One person's part of the record: chosen in "People".
@@ -90,6 +90,19 @@ struct MatterStatusView: View {
     @State private var pageHeight = CGFloat.zero
     @State private var barEdge = CGFloat.zero
     @Environment(\.reading) private var reading
+    /// How wide the whole page is: wide, what is ahead has its own column.
+    @State private var pageWidth = CGFloat.zero
+    private var hasColumn: Bool { pageWidth >= 800 }
+
+    init(matter: Matter) {
+        self.matter = matter
+        let shot = IntroShot.current
+        _part = State(initialValue: shot == .lisbonFiles ? .files : shot == .lisbonRecord ? .mail : shot == .careDetails ? .all
+                      : [.carePeople, .careContact].contains(shot) ? .people : Journal.opening(matter, today: MatterStatus.day(Date())))
+    }
+
+    /// What Mail and Files show of the record.
+    private var filter: RecordBrowse.Kind { part == .mail ? .mail : .files }
 
     var body: some View {
         // Drawn again when this matter changes — here or from another device: the page reads it.
@@ -100,17 +113,15 @@ struct MatterStatusView: View {
         // page passes under it, and counting went through all the matter's mail and tasks each time.
         let count = MatterKept.shared.value(matter, "count") { Self.count(matter.entries ?? []) }
         let since = status.firstDate
-        VStack(spacing: 0) {
+        let plan = Journal.plan(status)
+        HStack(alignment: .top, spacing: 0) {
             ScrollViewReader { scroller in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 22) {
-                        closedBanner(status)
-                        if !matter.isClosed { nextStep(status) }
-                        summary
+                    VStack(alignment: .leading, spacing: Theme.cardGap) {
                         if find.isActive {
                             // Searching looks into every part, so everything is on the page.
-                            todos(status).id("tasks")
-                            dates(status)
+                            top(status, plan)
+                            planList(status, plan).id("tasks")
                             files.id("files")
                             links.id("links")
                             parties(status)
@@ -119,20 +130,30 @@ struct MatterStatusView: View {
                         } else {
                             // Under the title bar the bar has them: these do not show through its glass.
                             // Nearly gone, not gone: see the parts in the bar.
-                            DrawnApart { parts(status).opacity(partsUnder ? 0.001 : 1) }.id("parts")
+                            DrawnApart { parts().opacity(partsUnder ? 0.001 : 1) }.id("parts")
                                 // Whether its lower edge has reached the place the title bar has for the
                                 // parts — twelve over the bar's lower edge. Only that, not the edge
                                 // itself: kept as a number, it changed with every frame of scrolling,
                                 // and the whole page was worked out again each time.
                                 .onGeometryChange(for: Bool.self) { [limit = barEdge - 11 - given] in $0.frame(in: .global).maxY < limit } action: { scroll.partsReached = $0 }
                             // At least as tall as the page shows: a short part does not pull the
-                            // page down, and the parts stay where they were clicked.
-                            VStack(alignment: .leading, spacing: 22) {
+                            // page down, and the filters stay where they were clicked.
+                            VStack(alignment: .leading, spacing: Theme.cardGap) {
                                 switch part {
-                                case .todo:
-                                    todos(status).id("tasks")
-                                    dates(status)
-                                case .record:
+                                case .all:
+                                    if personParty == nil {
+                                        // Wide, the column has what comes next: the journal begins with what is new.
+                                        if hasColumn { closedBanner(status); NewsCard(matter: matter) } else { top(status, plan) }
+                                    }
+                                    journal(status)
+                                case .plan:
+                                    if !hasColumn {
+                                        closedBanner(status)
+                                        if !matter.isClosed { nextStep(status); ForYouCard(matter: matter, folds: true) }
+                                    }
+                                    planList(status, plan).id("tasks")
+                                    CalendarAccessBanner { loadCalendars() }.tool()
+                                case .mail, .files:
                                     record(status)
                                 case .people:
                                     parties(status)
@@ -178,7 +199,11 @@ struct MatterStatusView: View {
                 }
                 .onChange(of: find.query) { find.index = 0 }
                 .onChange(of: find.current) { if let at = find.current { withAnimation { scroller.scrollTo(at, anchor: .center) } } }
-                .onChange(of: matter.persistentModelID) { find.query = ""; showsAllHistory = false; person = nil; filter = .everything; show = .all }
+                .onChange(of: matter.persistentModelID) {
+                    find.query = ""; showsAllHistory = false; person = nil; show = .all
+                    openMonths = []; openThreads = []; atHand = []
+                    part = Journal.opening(matter, today: MatterStatus.day(Date()))
+                }
                 // `--demo --shot`: the part of the page the introduction's picture shows.
                 .onAppear {
                     if let section = IntroShot.current?.section {
@@ -197,10 +222,10 @@ struct MatterStatusView: View {
                 .onAppear {
                     // `--part record`: starts in that part — for the scroll tour.
                     if let at = CommandLine.arguments.firstIndex(of: "--part"), at + 1 < CommandLine.arguments.count,
-                       let chosen = Part(rawValue: CommandLine.arguments[at + 1]) { part = chosen }
-                    // `--record-kind files`: that kind of the record — for the scroll tour.
+                       let chosen = Journal.Part(asked: CommandLine.arguments[at + 1]) { part = chosen }
+                    // `--record-kind files`: that part — for the scroll tour.
                     if let at = CommandLine.arguments.firstIndex(of: "--record-kind"), at + 1 < CommandLine.arguments.count,
-                       let kind = RecordBrowse.Kind.allCases.first(where: { "\($0)" == CommandLine.arguments[at + 1] }) { filter = kind }
+                       let chosen = Journal.Part(rawValue: CommandLine.arguments[at + 1]) { part = chosen }
                     show(navigation.showing, with: scroller); showNews(with: scroller); loadCalendars()
                 }
                 // The Matter menu: the section scrolled to, then what adds to it opened.
@@ -212,10 +237,9 @@ struct MatterStatusView: View {
                     case .addContact: "people"; case .addDetail: "details"
                     }
                     switch action {
-                    case .newTask: part = .todo
-                    case .addFile: part = .record; filter = .files
-                    case .addLink: part = .record; filter = .links
-                    case .addDetail: part = .record; filter = .details
+                    case .newTask: part = .plan
+                    case .addFile, .addLink: part = .files
+                    case .addDetail: part = .all; atHand.insert(.details)
                     case .addContact: part = .people
                     case .writeNote: part = .notes
                     }
@@ -237,8 +261,27 @@ struct MatterStatusView: View {
                 .sheetWhenAsked(isPresented: $addingContact) { ContactEditor(matter: matter) }
                 .sheetWhenAsked(isPresented: $addingDetail) { DetailEditor(matter: matter) }
             }
+            // What is ahead keeps its own column while the journal scrolls beside it.
+            if hasColumn, !find.isActive {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Theme.cardGap) {
+                        if !matter.isClosed {
+                            nextStep(status)
+                            ForYouCard(matter: matter, folds: part != .all)
+                            if part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
+                        }
+                        atHandCard
+                        BallCard(matter: matter)
+                    }
+                    .padding(.top, 24).padding(.trailing, 24).padding(.bottom, 24)
+                }
+                .frame(width: 330)
+            }
         }
+        .background(Theme.page)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
         .environment(find)
+        .shownToAuto(matter)
         .focusedSceneValue(\.openMatter, matter.persistentModelID)
         .focusedSceneValue(\.matterState, MatterState(isPinned: matter.isPinned, isClosed: matter.isClosed))
         // Matter → Pin to Top, Rename …, Export as RTF, Close Matter…: what the ⋯ beside the name does.
@@ -285,52 +328,47 @@ struct MatterStatusView: View {
 
     private var summaryFacts: Facts { FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), mails: 40) }
 
-    /// A box once there is something in it: a summary, or a brief — written, or only said.
-    private var boxed: Bool { matter.summary?.isEmpty == false || matter.brief != nil }
-
-    /// Three or four lines on top, written only when asked for, and dated — and the brief under them.
-    @ViewBuilder
-    private var summary: some View {
-        let _ = AutoUpdate.shared.done
-        VStack(alignment: .leading, spacing: 10) {
-            if let text = matter.summary, !text.isEmpty {
-                HStack(spacing: 8) {
-                    BeeChip(text: "SUMMARY")
-                    // With Auto on it is kept up to date, and has no day to go by: "Auto mode" stands under it.
-                    if let at = matter.summaryAt, !auto { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
-                }
-                ForEach(Array(text.split(separator: "\n").enumerated()), id: \.offset) { index, line in
-                    Text(String(line)).fixedSize(horizontal: false, vertical: true)
-                        .findable(.section("summary-\(index)"), String(line))
-                }
-                .opacity(AutoUpdate.shared.updating(matter) ? 0.4 : 1)
-            }
-            BriefDetails(matter: matter)
-            // Update below on the left, like "Suggest better"; with no summary yet, the button on the right.
+    /// What has no date, in one card: the summary with its brief, the details, what is good to know.
+    private var atHandCard: some View {
+        AtHandCard(matter: matter, opened: $atHand, talk: { talk($0.text, "Info") }) {
+            // Update below on the left, as under the next step; with no summary yet, the button.
             HStack(spacing: 10) {
-                if writingSummary || AutoUpdate.shared.updating(matter) {
+                if writingSummary {
                     BeeLoader(size: 10)
                     Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
+                } else if AutoUpdate.shared.updating(matter) {
+                    AutoWaitLine(matter: matter, writing: "Writing the brief …")
                 } else if matter.summaryAt != nil, auto {
                     AutoLine(matter: matter)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    Button("Update\(PriceEstimates.summary(matter))", action: writeSummary)
-                        .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
+                    UpdateNowButton(action: writeSummary)
                     Spacer()
+                    if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
                 } else {
-                    Spacer()
-                    Button("Write the brief\(PriceEstimates.summary(matter))", action: writeSummary)
+                    Button("Write the brief", action: writeSummary)
                         .help("Causabee's adviser writes what it understands of this matter, the summary and the next step, and proposes changes to the list — from the facts, pseudonymised.")
+                    Spacer()
                 }
             }
             .tool()
             if let summaryError { Text(summaryError).font(.caption).foregroundStyle(Theme.warning).textSelection(.enabled) }
         }
-        .padding(boxed ? 20 : 0)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(boxed ? Theme.box : Color.clear, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// What stands on top of the journal on a narrow window: the closed matter's line, what is new,
+    /// what comes next and what waits for an answer; then what is ahead, and what has no date.
+    @ViewBuilder
+    private func top(_ status: MatterStatus, _ plan: Journal.Plan) -> some View {
+        closedBanner(status)
+        NewsCard(matter: matter)
+        if !matter.isClosed {
+            nextStep(status)
+            ForYouCard(matter: matter)
+            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick) { part = .plan } }
+        }
+        atHandCard
     }
 
     /// The matter's ⋯: what can be added and written again, then the matter itself.
@@ -389,27 +427,35 @@ struct MatterStatusView: View {
         let _ = AutoUpdate.shared.done
         let rule = status.nextStep
         let fresh = matter.nextStep != nil && matter.nextStepAt.map { at in (matter.lastChange ?? .distantPast) <= at } == true
-        // Changed, and Auto writes it again: until it has, the step worked out on the device at
-        // once — it knows what was just ticked — and Causabee's in its place when it comes.
+        // Changed, and Auto will write it again: at once it says so, grey, and it is not offered
+        // to act on until it has.
         let coming = AutoUpdate.shared.updating(matter)
+        let outOfDate = coming && matter.nextStep != nil
         let own = fresh && !coming
-        VStack(alignment: .leading, spacing: 10) {
-            if own, let step = matter.nextStep {
+        // Yellow only when something waits for the owner: while it waits for someone else there is
+        // nothing to do, and the page says so without a colour.
+        let forYou = own ? matter.nextStep != nil : rule.map { $0.kind != .wait } ?? false
+        NextCard(forYou: forYou, outOfDate: outOfDate) {
+            if outOfDate {
+                OutOfDateStep(matter: matter)
+            } else if own, let step = matter.nextStep {
                 BeeChip(text: "NEXT · FROM CAUSABEE")
-                Text(step).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+                Text(step).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
-                if let why = matter.nextStepWhy { Text(why).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
+                if let why = matter.nextStepWhy { Text(why).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
             } else if let rule {
                 BeeChip(text: rule.label.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
-                Text(rule.text).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+                Text(rule.text).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), rule.text, rule.why)
-                Text(rule.why).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation()
+                Text(rule.why).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation()
             } else {
-                Text("NEXT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                Text("Nothing open.").foregroundStyle(.secondary)
+                Text("Nothing for you right now").font(Theme.rowTitleFont)
             }
+        } foot: {
             HStack(spacing: 10) {
-                if own, let step = matter.nextStep {
+                if outOfDate {
+                    EmptyView()
+                } else if own, let step = matter.nextStep {
                     let todo = matter.nextStepTodo.flatMap { origin in matter.openTodos.first { $0.origin == origin } }
                     stepButtons(text: step, todo: todo, waiting: todo?.owner == .other)
                 } else if !own, let rule, let id = rule.todo, let todo = matter.openTodos.first(where: { $0.persistentModelID == id }) {
@@ -420,20 +466,21 @@ struct MatterStatusView: View {
             .tool()
             // Asking Claude, below the buttons on the left: apart from what the step itself offers.
             HStack(spacing: 10) {
-                if askingStep || coming {
+                if askingStep {
                     BeeLoader(size: 10)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
+                } else if coming {
+                    AutoWaitLine(matter: matter, writing: "Causabee is on it …")
                 } else if auto {
-                    // Auto asks: no link to ask with, and no price to weigh.
+                    // Auto asks: no link to ask with.
                     AutoLine(matter: matter)
                 } else {
-                    // An older suggestion says only its day; the link beside it says what to do.
+                    // An older suggestion says only its day.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
                         Text("From \(Dates.short(at)) ·").font(.caption).foregroundStyle(.secondary)
                             .help("Causabee suggested this on \(Dates.short(at)); the matter has changed since.")
                     }
-                    Button((fresh ? "ask again" : "Suggest better") + PriceEstimates.step(matter), action: askStep)
-                        .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
+                    UpdateNowButton(action: askStep)
                         .help("Causabee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.")
                 }
                 Spacer()
@@ -441,9 +488,6 @@ struct MatterStatusView: View {
             .tool()
             if let stepError { Text(stepError).font(.caption).foregroundStyle(Theme.warning).textSelection(.enabled) }
         }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
     }
 
     /// What can be done with the step right here: write the message it is, tick it off, see it.
@@ -509,8 +553,8 @@ struct MatterStatusView: View {
     /// The owner's own words on the matter: small dated blocks, read by the assistant too.
     private var notesPart: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "Notes")
             NotesPart(matter: matter, writing: $writingNote)
+            ForEach((matter.decisions ?? []).sorted { $0.decidedAt > $1.decidedAt }) { JournalDecisionCard(decision: $0) }
         }
     }
 
@@ -548,18 +592,17 @@ struct MatterStatusView: View {
                              action: "Add File", symbol: "doc.badge.plus") { addingFile = true }
                 }
                 if !shown.isEmpty {
-                    Card {
-                        PageRows(all: find.isActive) {
-                            ForEach(Array(shown.enumerated()), id: \.element.persistentModelID) { index, document in
-                                if index > 0 { RowDivider() }
-                                DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
-                                            open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
-                                            read: { fetch(document, then: { conversation.bring($0, document: document) }) },
-                                            hide: { setHidden(document, !document.isHidden) },
-                                            nameIt: { nameFromContent(document) },
-                                            talk: { talk(document.shownName, "File") })
-                                    .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
-                            }
+                    // A mosaic, read at a glance, drawn near the screen only.
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: Theme.cardGap, alignment: .top)], alignment: .leading, spacing: Theme.cardGap) {
+                        ForEach(shown, id: \.persistentModelID) { document in
+                            DocumentRow(document: document, sender: sender(of: document), state: fetching[document.persistentModelID],
+                                        open: { fetch(document, then: { NSWorkspace.shared.open($0) }) },
+                                        read: { fetch(document, then: { conversation.bring($0, document: document) }) },
+                                        hide: { setHidden(document, !document.isHidden) },
+                                        nameIt: { nameFromContent(document) },
+                                        talk: { talk(document.shownName, "File") }, tile: true)
+                                .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
+                                .journalRows()
                         }
                     }
                 }
@@ -859,28 +902,35 @@ struct MatterStatusView: View {
         marked = todo
         find.shown = todo
         // The part of the page it is in, with nothing filtered away.
-        if (matter.todos ?? []).contains(where: { $0.persistentModelID == todo })
+        let (threads, made) = StoredChanges.shared.record(matter)
+        let picked = RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks, kind: .everything, show: .all, made: made)
+        var line: String?
+        if matter.infos.contains(where: { $0.persistentModelID == todo }) {
+            part = .all; person = nil; atHand.insert(.info)
+        } else if (matter.todos ?? []).contains(where: { $0.persistentModelID == todo })
             || (matter.appointments ?? []).contains(where: { $0.persistentModelID == todo })
             || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == todo }) {
-            part = .todo
+            part = .plan
         } else if matter.parties.contains(where: { $0.persistentModelID == todo }) {
             part = .people
         } else {
-            part = .record; filter = .everything; show = .all; person = nil
+            part = .all; person = nil
+            // What is folded away — an old month, the conversation — is unfolded for it.
+            if let month = Journal.fold(of: todo, items: picked.items) { openMonths.insert(month) }
+            let lines = journalLines(picked.items, status: MatterStatus(matter), party: nil)
+            if case .item(let item)? = Journal.line(of: todo, in: lines, attached: picked.attached) {
+                line = item.id
+                if case .thread(let thread) = item { openThreads.insert(thread.id) }
+            }
         }
-        // What is folded away — done, past, an old conversation — is unfolded for it.
+        // What is folded away — done, past — is unfolded for it.
         if (matter.todos ?? []).contains(where: { $0.persistentModelID == todo && $0.isDone }) { showsDone = true }
-        if matter.infos.contains(where: { $0.persistentModelID == todo }) { showsInfos = true }
         let today = MatterStatus(matter).today
         if (matter.appointments ?? []).contains(where: { $0.persistentModelID == todo && $0.day < today })
             || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == todo && $0.day < today }) { showsPast = true }
-        if (matter.entries ?? []).contains(where: { $0.persistentModelID == todo })
-            || (matter.documents ?? []).contains(where: { $0.persistentModelID == todo }) { showsAllHistory = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            // The record draws what is near the screen: to its line first, so that it is there to go to.
-            let (threads, made) = StoredChanges.shared.record(matter)
-            let shown = recordShown(threads: threads, made: made)
-            if part == .record, let line = RecordBrowse.line(of: todo, in: shown.lines, attached: shown.picked.attached) {
+            // The journal draws what is near the screen: to its line first, so that it is there to go to.
+            if let line {
                 scroller.scrollTo(line, anchor: .center)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { withAnimation { scroller.scrollTo(todo, anchor: .center) } }
             } else {
@@ -922,9 +972,8 @@ struct MatterStatusView: View {
     private func closedBanner(_ status: MatterStatus) -> some View {
             if let closed = matter.closedAt {
                 HStack(spacing: 10) {
-                    Image(systemName: "archivebox").foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Closed on \(Dates.short(closed))").font(.callout.weight(.semibold))
+                        Text("Closed on \(Dates.short(closed))").font(Theme.rowTitleFont)
                         let new = StoredChanges.shared.summary(matter).newMailsSinceClosed
                         if new > 0 {
                             Text("\(new) new \(new == 1 ? "mail" : "mails") since closing").font(.callout).foregroundStyle(Theme.warning)
@@ -941,8 +990,7 @@ struct MatterStatusView: View {
                     }
                     Button(Say.openAgain) { matter.reopen(); try? context.save() }
                 }
-                .padding(20)
-                .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                .journalCard()
             }
     }
 
@@ -1095,7 +1143,7 @@ struct MatterStatusView: View {
                 // macOS works out anew where it can be dragged from — a fifth of a second on a long
                 // record, each time the parts came out of the bar. A click while they are not seen
                 // does nothing. Hidden from VoiceOver: the page has the same ones.
-                parts(status, choosing: Binding(get: { part }, set: { if showsParts { part = $0 } }))
+                parts(choosing: Binding(get: { part }, set: { if showsParts { part = $0 } }))
                     .opacity(showsParts ? 1 : 0.001).accessibilityHidden(true)
             }
             // Under the small name, which is one line: up by what a longer name's further lines took.
@@ -1142,101 +1190,38 @@ struct MatterStatusView: View {
         .onChange(of: scroll.scrolledUnder) { _, under in if !under { scroll.partsUnder = false } }
     }
 
-    // MARK: To-dos
+    // MARK: Plan
 
-    /// Any task at all, open or done — a task being written with "+ Task" not yet among them.
-    private var hasTodos: Bool { (matter.todos ?? []).contains { $0 !== newTodo } }
+    /// What is left, by when: dates and tasks together, with each row's own way to change it.
+    private func planList(_ status: MatterStatus, _ plan: Journal.Plan) -> some View {
+        PlanList(plan: plan, showsDone: $showsDone, showsPast: $showsPast) { todo, showsOwner in
+            TodoRow(todo: todo, today: status.today, showsOwner: showsOwner, showsDue: todo.isDone,
+                    info: todo.isDone ? nil : { setInfo(todo, true) }, reminders: todo.isDone ? nil : reminders, calendarTick: calendarTick) { toggle(todo) } talk: { talk(todo.text, "Task") }
+                .background(marked == todo.persistentModelID ? Theme.mark : .clear)
+                .findable(.model(todo.persistentModelID), todo.text, todo.note)
+        } date: { item, past in
+            if let row = dateItem(item) {
+                DateRow(item: row, isPast: past, matterName: matter.name, tick: calendarTick, save: { try? context.save() }) { talk(row.what, row.kind) }
+                    .findable(row.findID, row.what, row.place)
+            }
+        } empty: {
+            EmptyBox(text: "What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in.",
+                     action: "Add Task", symbol: "checklist", run: addTodo)
+        }
+        // A task of one's own is said to the assistant, from its plus, or written from the menu —
+        // whose editor opens at the plan's top.
+        .popoverWhenAsked(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .top) {
+            if let newTodo {
+                TodoEditor(todo: newTodo, done: { self.newTodo = nil; try? context.save() }, cancel: dropNewTodo, isNew: true)
+            }
+        }
+    }
 
-    @ViewBuilder
-    private func todos(_ status: MatterStatus) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                SectionHeader(title: "Tasks", detail: hasTodos ? "\(matter.openTodos.count) open · \(status.done.count) done" : nil)
-                // No "+ Task" here: a task of one's own is said to the assistant, from its plus, or
-                // written from the menu — whose editor still opens at this line.
-            }
-            .popoverWhenAsked(isPresented: Binding(get: { newTodo != nil }, set: { if !$0 { dropNewTodo() } }), arrowEdge: .bottom) {
-                if let newTodo {
-                    TodoEditor(todo: newTodo, done: { self.newTodo = nil; try? context.save() }, cancel: dropNewTodo, isNew: true)
-                }
-            }
-            if !hasTodos {
-                EmptyBox(text: "What is to do, and whose. Tasks in mail are found when it is sorted in.",
-                         action: "Add Task", symbol: "checklist", run: addTodo)
-            }
-            // What is past its day first, whoever's it is; the groups below hold the rest.
-            let overdue = status.overdue.sorted { ($0.due ?? "") < ($1.due ?? "") }
-            let late = Set(overdue.map(\.persistentModelID))
-            if !overdue.isEmpty {
-                Text("Overdue · \(overdue.count)").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.warning)
-                    .padding(.horizontal, 4).padding(.top, 4)
-                Card {
-                    ForEach(Array(overdue.enumerated()), id: \.element.persistentModelID) { index, todo in
-                        if index > 0 { RowDivider() }
-                        TodoRow(todo: todo, today: status.today, showsOwner: true, info: { setInfo(todo, true) },
-                                reminders: reminders, calendarTick: calendarTick) { toggle(todo) } talk: { talk(todo.text, "Task") }
-                            .background(marked == todo.persistentModelID ? Theme.mark : .clear)
-                            .findable(.model(todo.persistentModelID), todo.text, todo.note)
-                    }
-                }
-            }
-            ForEach([(Todo.Owner.me, "Mine"), (.we, "Ours"), (.other, "Waiting for"), (.unknown, "Unclear whose")], id: \.1) { owner, title in
-                let todos = status.open(owner).filter { !late.contains($0.persistentModelID) && !$0.isBlocked }
-                if !todos.isEmpty {
-                    Text("\(title) · \(todos.count)").font(.subheadline.weight(.semibold)).padding(.horizontal, 4).padding(.top, 4)
-                    Card {
-                        ForEach(Array(todos.enumerated()), id: \.element.persistentModelID) { index, todo in
-                            if index > 0 { RowDivider() }
-                            TodoRow(todo: todo, today: status.today, info: todo.isDone ? nil : { setInfo(todo, true) },
-                                    reminders: reminders, calendarTick: calendarTick) { toggle(todo) } talk: { talk(todo.text, "Task") }
-                                .background(marked == todo.persistentModelID ? Theme.mark : .clear)
-                                .findable(.model(todo.persistentModelID), todo.text, todo.note)
-                        }
-                    }
-                }
-            }
-            // What cannot be done yet, whoever's it is: under everything that can.
-            let blocked = matter.openTodos.filter(\.isBlocked).sorted { ($0.due ?? "9999", $0.createdAt) < ($1.due ?? "9999", $1.createdAt) }
-            if !blocked.isEmpty {
-                Text("Only after · \(blocked.count)").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-                    .padding(.horizontal, 4).padding(.top, 4)
-                    .help("Tasks that wait for another one. When that one is done, they move up.")
-                Card {
-                    ForEach(Array(blocked.enumerated()), id: \.element.persistentModelID) { index, todo in
-                        if index > 0 { RowDivider() }
-                        TodoRow(todo: todo, today: status.today, showsOwner: true, info: { setInfo(todo, true) }) { toggle(todo) } talk: { talk(todo.text, "Task") }
-                            .background(marked == todo.persistentModelID ? Theme.mark : .clear)
-                            .findable(.model(todo.persistentModelID), todo.text, todo.note)
-                    }
-                }
-            }
-            let infos = matter.infos
-            if !infos.isEmpty {
-                DisclosureGroup("Info · \(infos.count)", isExpanded: open($showsInfos)) {
-                    Card {
-                        ForEach(Array(infos.enumerated()), id: \.element.persistentModelID) { index, todo in
-                            if index > 0 { RowDivider() }
-                            InfoRow(todo: todo) { setInfo(todo, false) } talk: { talk(todo.text, "Info") }
-                                .findable(.model(todo.persistentModelID), todo.text)
-                        }
-                    }
-                    .padding(.top, 6)
-                }
-                .padding(.horizontal, 4)
-            }
-            if !status.done.isEmpty {
-                DisclosureGroup("Done · \(status.done.count)", isExpanded: open($showsDone)) {
-                    Card {
-                        ForEach(Array(status.done.enumerated()), id: \.element.persistentModelID) { index, todo in
-                            if index > 0 { RowDivider() }
-                            TodoRow(todo: todo, today: status.today, info: todo.isDone ? nil : { setInfo(todo, true) }) { toggle(todo) } talk: { talk(todo.text, "Task") }
-                                .findable(.model(todo.persistentModelID), todo.text, todo.note)
-                        }
-                    }
-                    .padding(.top, 6)
-                }
-                .padding(.horizontal, 4)
-            }
+    private func dateItem(_ item: Journal.Plan.Item) -> DateRow.Item? {
+        switch item {
+        case .appointment(let appointment): DateRow.Item(appointment)
+        case .deadline(let deadline): DateRow.Item(deadline)
+        case .task: nil
         }
     }
 
@@ -1251,56 +1236,14 @@ struct MatterStatusView: View {
         try? context.save()
     }
 
+    private func tick(_ todo: Todo) { toggle(todo) }
+
     private func toggle(_ todo: Todo) {
         todo.isDone.toggle()
         todo.doneAt = todo.isDone ? Date() : nil
         // Done by the owner's click, not by a mail: there is no mail to point at.
         if !todo.isDone { todo.doneSource = nil }
         try? context.save()
-    }
-
-    // MARK: Dates
-
-    @ViewBuilder
-    private func dates(_ status: MatterStatus) -> some View {
-        let upcoming = status.upcomingAppointments, past = status.pastAppointments
-        let deadlines = status.deadlines
-        if upcoming.isEmpty && past.isEmpty && deadlines.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Appointments and deadlines")
-                EmptyBox(text: "Appointments and deadlines are found in mail when it is sorted in. A task can have a day too.")
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Appointments and deadlines", detail: "\(upcoming.count) coming · \(Self.deadlinesOpen(deadlines.filter { $0.day >= status.today }.count))")
-                CalendarAccessBanner { loadCalendars() }.tool()
-                Card {
-                    let rows: [DateRow.Item] = upcoming.map(DateRow.Item.init) + deadlines.filter { $0.day >= status.today }.map(DateRow.Item.init)
-                    ForEach(Array(rows.sorted { $0.day != $1.day ? $0.day < $1.day : DateRow.Item.sameDay($0, $1) }.enumerated()), id: \.offset) { index, item in
-                        if index > 0 { RowDivider() }
-                        DateRow(item: item, isPast: false, matterName: matter.name, tick: calendarTick, save: { try? context.save() }) { talk(item.what, item.kind) }
-                            .findable(item.findID, item.what, item.place)
-                    }
-                    if rows.isEmpty {
-                        Text("Nothing coming.").foregroundStyle(.secondary).padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                let earlier: [DateRow.Item] = past.map(DateRow.Item.init) + deadlines.filter { $0.day < status.today }.map(DateRow.Item.init)
-                if !earlier.isEmpty {
-                    DisclosureGroup("Past · \(earlier.count)", isExpanded: open($showsPast)) {
-                        Card {
-                            ForEach(Array(earlier.sorted { $0.day != $1.day ? $0.day > $1.day : DateRow.Item.sameDay($0, $1) }.enumerated()), id: \.offset) { index, item in
-                                if index > 0 { RowDivider() }
-                                DateRow(item: item, isPast: true, matterName: matter.name, tick: calendarTick, save: { try? context.save() }) { talk(item.what, item.kind) }
-                                    .findable(item.findID, item.what, item.place)
-                            }
-                        }
-                        .padding(.top, 6)
-                    }
-                    .padding(.horizontal, 4)
-                }
-            }
-        }
     }
 
     // MARK: Parties
@@ -1320,10 +1263,8 @@ struct MatterStatusView: View {
                          action: "Add Contact", symbol: "person.badge.plus") { addingContact = true }
             }
         } else {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    SectionHeader(title: "People", detail: "\(memberships.count) · to merge, drag one name onto another")
-                }
+            VStack(alignment: .leading, spacing: Theme.cardGap) {
+                JournalHeading(title: "TO MERGE, DRAG ONE NAME ONTO ANOTHER").tool()
                 let rules = StoredChanges.shared.rules(in: context)
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
@@ -1335,9 +1276,11 @@ struct MatterStatusView: View {
                     }
                     .tool()
                 }
-                Card {
-                    ForEach(Array(memberships.enumerated()), id: \.element.persistentModelID) { index, membership in
-                        if index > 0 { RowDivider() }
+                // Those the ball lies with first.
+                let balls = memberships.map { membership in membership.party.map { Journal.ball(of: $0, in: matter) } ?? Journal.Ball() }
+                let ordered = zip(memberships, balls).enumerated().sorted { ($0.element.1.isEmpty ? 1 : 0, $0.offset) < ($1.element.1.isEmpty ? 1 : 0, $1.offset) }.map(\.element)
+                ForEach(ordered, id: \.0.persistentModelID) { membership, ball in
+                    Card {
                         if let party = membership.party {
                             PartyRow(party: party, membership: membership, matter: matter, save: { name, role in
                                 edit(party, membership: membership, name: name, role: role)
@@ -1349,8 +1292,8 @@ struct MatterStatusView: View {
                             }
                             .findable(.model(party.persistentModelID), party.name, membership.role)
                             .contentShape(Rectangle())
-                            .onTapGesture { person = party.persistentModelID; filter = .everything; part = .record }
-                            .help("Shows what \(party.name) wrote, in the record")
+                            .onTapGesture { person = party.persistentModelID; part = .all }
+                            .help("Shows what \(party.name) wrote, in the journal")
                             .draggable(party.name)
                             .contextMenu {
                                 MailAddressItems(addresses: CardActions.addresses(of: party))
@@ -1374,6 +1317,7 @@ struct MatterStatusView: View {
                                 merging = (dropped, party)
                                 return true
                             }
+                            if !ball.isEmpty { BallTile(ball: ball).padding(.horizontal, 12).padding(.bottom, 12) }
                         }
                     }
                 }
@@ -1409,14 +1353,9 @@ struct MatterStatusView: View {
     private var keptLinks: [WebLink] { (matter.links ?? []).filter(\.isKept) }
     private var personParty: Party? { person.flatMap { id in matter.parties.first { $0.persistentModelID == id } } }
 
-    /// What is planned — tasks and dates —, the record, the people, the notes: signs, with the word
-    /// of the part that is open. "To do" named only half of the first.
-    private func parts(_ status: MatterStatus, choosing: Binding<Part>? = nil) -> some View {
-        PartTabs(tabs: [.init(value: Part.todo, title: "Plan", symbol: "calendar.badge.checkmark"),
-                        .init(value: Part.record, title: "Record", symbol: "tray.full"),
-                        .init(value: Part.people, title: "People", symbol: "person.2"),
-                        .init(value: Part.notes, title: "Notes", symbol: "note.text")],
-                 selection: choosing ?? $part)
+    /// The filters over the journal, as on the iPhone.
+    private func parts(choosing: Binding<Journal.Part>? = nil) -> some View {
+        JournalPills(parts: Journal.parts(of: matter, open: part), selection: choosing ?? $part)
     }
 
     /// Whether this person wrote it: by any way their name is written.
@@ -1425,7 +1364,100 @@ struct MatterStatusView: View {
         return matter.writer(from) === party
     }
 
-    /// Everything that came in or was added — mail, files, links — as one list, or one kind of it.
+    /// The journal itself: what happened, a day at a time, the newest first, old months folded.
+    /// With one person chosen in People, what they wrote or are named in.
+    @ViewBuilder
+    private func journal(_ status: MatterStatus) -> some View {
+        let (threads, made) = StoredChanges.shared.record(matter)
+        readsTheMailbox
+        let party = personParty
+        let picked = MatterKept.shared.value(matter, "pick everything all") {
+            RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks, kind: .everything, show: .all, made: made)
+        }
+        let items = party.map { party in
+            picked.items.filter { item in NamedPeople.of(item, in: matter).contains { $0.id == party.persistentModelID } }
+        } ?? picked.items
+        let lines = MatterKept.shared.value(matter, "journal \(openMonths.sorted()) \(person?.hashValue ?? 0)") {
+            journalLines(items, status: status, party: party)
+        }
+        if let party {
+            Button { person = nil } label: { Label(party.name, systemImage: "xmark.circle.fill").lineLimit(1) }
+                .buttonStyle(.bordered).controlSize(.small)
+                .help("Only what \(party.name) wrote or is named in. Click to show everyone's again.")
+        }
+        if lines.isEmpty {
+            EmptyBox(text: party != nil ? "Nothing here was written by \(party?.name ?? "them") or names them."
+                         : "Mail sorted into this matter, its files, links and notes show here, a day at a time.")
+        }
+        // Only what is near the screen is drawn. On the Mac every scroll event asks all that can
+        // be clicked where it now is, and macOS then works out anew where the window can be dragged
+        // from: with every conversation of a long matter drawn, that was a fifth of a second per
+        // event.
+        LazyVStack(alignment: .leading, spacing: Theme.cardGap) {
+            ForEach(lines) { line in
+                switch line {
+                case .day(_, let title):
+                    JournalHeading(title: title)
+                case .fold(let fold):
+                    JournalFoldCard(fold: fold) {
+                        withAnimation(.snappy(duration: 0.2)) { if openMonths.remove(fold.id) == nil { openMonths.insert(fold.id) } }
+                    }
+                case .note(let note):
+                    JournalNoteCard(note: note) { part = .notes }
+                case .decision(let decision):
+                    JournalDecisionCard(decision: decision)
+                case .done(let todo):
+                    JournalDoneLine(todo: todo)
+                case .item(let item):
+                    recordItem(item, picked: picked, made: made)
+                }
+            }
+        }
+    }
+
+    private func journalLines(_ items: [RecordBrowse.Item], status: MatterStatus, party: Party?) -> [Journal.Line] {
+        Journal.lines(items: items, notes: party == nil ? matter.sortedNotes : [], decisions: party == nil ? matter.decisions ?? [] : [],
+                      done: party == nil ? status.done : [], opened: openMonths)
+    }
+
+    /// Which mail answers which, and which is still unread in the inbox — asked as the page opens,
+    /// read-only, so the dots are as the mailbox has them now.
+    private var readsTheMailbox: some View {
+        Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) {
+            if !DemoData.isRequested { await UnreadMail.refresh(matter, in: context) }
+            await linkReplies()
+            // A file added before still kept only in the app: into the matter's folder, once.
+            if !DemoData.isRequested, MatterFolders.hasOwnCopies(matter) { FolderSaver.shared.save([matter]) }
+        }
+    }
+
+    /// One conversation, one file of its own, or one link, as a card.
+    @ViewBuilder
+    private func recordItem(_ item: RecordBrowse.Item, picked: RecordBrowse.Picked, made: RecordLinks) -> some View {
+        switch item {
+        case .thread(let thread):
+            let attached = picked.attached[thread.id] ?? []
+            JournalThreadCard(thread: thread, links: made, files: attached.map(\.shownName), isOpen: openThreads.contains(thread.id) || find.isActive,
+                              toggle: { withAnimation(.snappy(duration: 0.2)) { if openThreads.remove(thread.id) == nil { openThreads.insert(thread.id) } } },
+                              talk: { entry in talk(entry.title, "Mail") }) {
+                // Its files right under it, close: one thing.
+                VStack(alignment: .leading, spacing: 4) {
+                    ReadAllLine(count: attached.filter { $0.reading == .kept }.count) { readAll(attached) }
+                    ForEach(attached) { document in fileCard(document) }
+                }
+                .padding(.top, 8)
+            }
+        case .document(let document):
+            fileCard(document, made: made.made(from: document))
+        case .link(let link):
+            Card {
+                LinkRow(link: link, todos: matter.openTodos) { remove(link) }
+                    .findable(.model(link.persistentModelID), link.shownName, link.address)
+            }
+        }
+    }
+
+    /// Mail or files alone, as the two menus have them. Files are followed by the links.
     @ViewBuilder
     private func record(_ status: MatterStatus) -> some View {
         // Built once for this drawing, for the menus' counts and the list alike.
@@ -1436,10 +1468,9 @@ struct MatterStatusView: View {
                                          kind: filter, show: item, made: made).items.count)
             })
         }
-        RecordBar(kind: $filter, show: $show, sort: $sort, counts: counts, person: personParty?.name, clearPerson: { person = nil }) {
-            // Adding a file and opening the folder, on the record's own line: there under
-            // "Everything" as under "Files", and whether or not there is a file yet.
-            if filter == .everything || filter == .files || filter == .scans {
+        RecordBar(kind: filter, show: $show, sort: $sort, counts: counts) {
+            // The folder, on the line of the menus.
+            if filter == .files {
                 if let filesSaid { Text(filesSaid).font(.caption).foregroundStyle(.secondary).transition(.opacity) }
                 // Not in the demo: its made-up matters have no folder among the owner's own.
                 if MatterFolders.root != nil, !DemoData.isRequested {
@@ -1456,26 +1487,14 @@ struct MatterStatusView: View {
         .fileImporter(isPresented: $addingFile, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
             if case .success(let files) = result { addFiles(files) }
         }
-        // Which mail answers which, and which is still unread in the inbox — asked as the record
-        // opens, read-only, so the dots are as the mailbox has them now.
-        Color.clear.frame(width: 0, height: 0).task(id: matter.persistentModelID) {
-            if !DemoData.isRequested { await UnreadMail.refresh(matter, in: context) }
-            await linkReplies()
-            // A file added before still kept only in the app: into the matter's folder, once.
-            if !DemoData.isRequested, MatterFolders.hasOwnCopies(matter) { FolderSaver.shared.save([matter]) }
-        }
-        if filter == .details {
-            DetailsSection(matter: matter, showsEmpty: true).id("details")
-        } else if show == .kept, filter != .mail, filter != .links {
+        readsTheMailbox
+        if show == .kept, filter != .mail {
             // The files kept only, to read one or several at once.
             keptView.id("kept")
-        } else if filter == .files, show == .all, sort == .newest, personParty == nil {
+        } else if filter == .files, show == .all, sort == .newest {
             files.id("files")
-        } else if filter == .links, show == .all, sort == .newest {
             links.id("links")
         } else {
-            // What to have at hand, on top of what came in.
-            if filter == .everything, show == .all, personParty == nil { DetailsSection(matter: matter).id("details") }
             recordList(threads: threads, made: made)
         }
     }
@@ -1547,66 +1566,37 @@ struct MatterStatusView: View {
         .onChange(of: show) { chosen = nil }
     }
 
-    /// The record as the three menus have it: what kind, which of them, in which order — with
-    /// what a person chosen in People wrote or is named in.
-    private func recordShown(threads: [MailThreads.Thread], made: RecordLinks) -> (picked: RecordBrowse.Picked, all: [RecordBrowse.Item], lines: [RecordBrowse.Line], older: Int) {
-        let party = personParty
-        let picked = MatterKept.shared.value(matter, "pick \(filter) \(show) \(party == nil)") {
-            RecordBrowse.pick(threads: threads, documents: shownDocuments, links: party == nil ? keptLinks : [], kind: filter, show: show, made: made)
+    /// Mail or files as the two menus have them: which of them, in which order.
+    @ViewBuilder
+    private func recordList(threads: [MailThreads.Thread], made: RecordLinks) -> some View {
+        let picked = MatterKept.shared.value(matter, "pick \(filter) \(show)") {
+            RecordBrowse.pick(threads: threads, documents: shownDocuments, links: keptLinks, kind: filter, show: show, made: made)
         }
-        let all = party.map { party in
-            picked.items.filter { item in NamedPeople.of(item, in: matter).contains { $0.id == party.persistentModelID } }
-        } ?? picked.items
+        let all = picked.items
         let ordered = all.sorted { sort == .oldest ? $0.date < $1.date : $0.date > $1.date }
         let visible = showsAllHistory || sort == .byPerson || sort == .byKind ? ordered : Array(ordered.prefix(60))
         let groups = RecordBrowse.groups(visible, sort: sort) { item in NamedPeople.of(item, in: matter).map(\.name) }
-        return (picked, all, RecordBrowse.lines(of: groups), all.count - visible.count)
-    }
-
-    @ViewBuilder
-    private func recordList(threads: [MailThreads.Thread], made: RecordLinks) -> some View {
-        let (picked, all, lines, older) = recordShown(threads: threads, made: made)
+        let lines = RecordBrowse.lines(of: groups)
         if all.isEmpty {
-            EmptyBox(text: personParty != nil ? "Nothing here was written by \(personParty?.name ?? "them") or names them."
-                         : show != .all ? "Nothing in the record is \(show.label.lowercased()) here."
-                         : "Mail sorted into this matter, its files and links show here, newest first.")
+            EmptyBox(text: show != .all ? "Nothing here is \(show.label.lowercased())."
+                         : "Mail sorted into this matter shows here, newest first.")
         }
-        // Only what is near the screen is drawn. On the Mac every scroll event asks all that can
-        // be clicked where it now is, and macOS then works out anew where the window can be dragged
-        // from: with every conversation of a long matter drawn, that was a fifth of a second per
-        // event.
-        LazyVStack(alignment: .leading, spacing: 10) {
+        // Only what is near the screen is drawn, as in the journal.
+        LazyVStack(alignment: .leading, spacing: Theme.cardGap) {
             ForEach(lines) { line in
                 switch line {
-                case .title(let group, let first):
-                    SectionHeader(title: group.title, detail: group.items.count == 1 ? "1 entry" : "\(group.items.count) entries")
-                        .padding(.top, first ? 0 : 12)
+                case .title(let group, _):
+                    JournalHeading(title: group.title.uppercased(), detail: group.items.count == 1 ? "1 entry" : "\(group.items.count) entries")
                 case .item(let item, _, let also):
                     VStack(alignment: .leading, spacing: 10) {
                         AlsoUnder(names: also)
-                        switch item {
-                        case .thread(let thread):
-                            // Its files right under it, close: one thing.
-                            VStack(alignment: .leading, spacing: 4) {
-                                ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
-                                let files = picked.attached[thread.id] ?? []
-                                ReadAllLine(count: files.filter { $0.reading == .kept }.count) { readAll(files) }
-                                ForEach(files) { document in fileCard(document) }
-                            }
-                        case .document(let document):
-                            fileCard(document, made: made.made(from: document))
-                        case .link(let link):
-                            Card {
-                                LinkRow(link: link, todos: matter.openTodos) { remove(link) }
-                                    .findable(.model(link.persistentModelID), link.shownName, link.address)
-                            }
-                        }
+                        recordItem(item, picked: picked, made: made)
                     }
                 }
             }
         }
-        if older > 0 {
-            Button("… and \(older) older — show them") { showsAllHistory = true }
+        if all.count > visible.count {
+            Button("… and \(all.count - visible.count) older — show them") { showsAllHistory = true }
                 .buttonStyle(.gold).font(.caption).padding(.horizontal, 4)
         }
     }
@@ -1650,6 +1640,8 @@ struct TodoRow: View {
     let todo: Todo
     let today: String
     var showsOwner = false
+    /// Off where its day stands beside it, on a tile.
+    var showsDue = true
     /// "Nur Info": it is nothing to do, only worth knowing.
     var info: (() -> Void)? = nil
     /// Given where the owner's reminders are shown: then a task of theirs gets its sign.
@@ -1662,30 +1654,20 @@ struct TodoRow: View {
     @State private var choosingWait = false
     @State private var editing = false
     @State private var deleting = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var addingReminder = 0
+
+    /// A task the owner can be reminded of: its offer is in the ⋯, its connection on the row.
+    private var remindable: Bool { !todo.isDone && !todo.isInfo && (todo.owner == .me || todo.owner == .we || todo.reminderID != nil) }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Button {
-                let wasOpen = !todo.isDone
-                toggle()
-                // Ticked by hand: the bee is glad — a little more, when it was the matter's last open task.
-                if wasOpen, todo.isDone {
-                    BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: reduceMotion)
-                }
-            } label: {
-                Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")
-                    .font(.title3)
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(todo.isDone ? Theme.onInk : .secondary, todo.isDone ? Theme.ink : .secondary)
-            }
-            .buttonStyle(.plain)
-            .help(todo.isDone ? "Open again" : "Mark as done")
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top, spacing: 10) {
+            PlanTick(todo: todo, toggle: toggle)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(todo.text)
                     .foregroundStyle(todo.isDone || todo.isBlocked ? .secondary : .primary)
                     .strikethrough(todo.isDone, color: .secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, Theme.planTop)
                 if let links = todo.links, !links.isEmpty {
                     HStack(spacing: 10) {
                         ForEach(links.sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
@@ -1697,9 +1679,9 @@ struct TodoRow: View {
                         }
                     }
                 }
-                if let reminders, !todo.isDone, !todo.isInfo, todo.owner == .me || todo.owner == .we || todo.reminderID != nil {
+                if let reminders, remindable {
                     CalendarChip(kind: .reminder, linkedID: todo.reminderID, title: todo.text, day: todo.due, time: todo.dueTime,
-                                 note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick) { id in
+                                 note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick, asked: addingReminder) { id in
                         todo.reminderID = id
                         todo.reminderStamp = nil
                         try? context.save()
@@ -1726,36 +1708,25 @@ struct TodoRow: View {
                             .help("Makes the address in the note a link on this task, and takes the line out of the note.")
                     }
                 }
-                HStack(spacing: 8) {
-                    if showsOwner {
-                        Text(["me": "Mine", "we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose")
-                            .font(.caption.weight(.medium)).foregroundStyle(.secondary)
-                    }
-                    if let due = todo.due {
-                        Text("by \(Dates.short(due))\(todo.dueTime.map { " at \($0)" } ?? "")")
-                            .font(.caption)
-                            .foregroundStyle(!todo.isDone && due < today ? Theme.warning : .secondary)
-                    }
-                    // Where it came from, a way to it in the record; done, the mail that showed it done.
-                    if todo.isDone {
-                        SourceJump(sources: todo.doneSource.map { [$0] } ?? [],
-                                   label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")",
-                                   matter: todo.matter, color: Theme.done)
-                    } else {
-                        SourceJump(sources: todo.sources, label: Sources.origin(todo.sources.first), matter: todo.matter)
+                // Whose, when that is not the owner; where it came from is in the ⋯. Done, what showed it done.
+                if todo.isDone || !line.isEmpty {
+                    HStack(spacing: 8) {
+                        if !line.isEmpty { Text(line).font(.caption).foregroundStyle(.secondary) }
+                        if todo.isDone {
+                            SourceJump(sources: todo.doneSource.map { [$0] } ?? [],
+                                       label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")",
+                                       matter: todo.matter, color: Theme.done)
+                        }
                     }
                 }
             }
-            Spacer(minLength: 8)
-            HStack(spacing: 4) {
-                MoreMenu { moreItems }
-                    .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
-                        TodoEditor(todo: todo, done: { editing = false; try? context.save() }, cancel: { editing = false })
-                    }
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            PlanMore { moreItems }
+                .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
+                    TodoEditor(todo: todo, done: { editing = false; try? context.save() }, cancel: { editing = false })
+                }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .planRow()
         .contentShape(Rectangle())
         .contextMenu { moreItems }
         .task {
@@ -1773,7 +1744,7 @@ struct TodoRow: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(todo.reminderID == nil ? "It goes from this matter; Edit → Undo brings it back. Something only good to know can go to Info instead."
+            Text(todo.reminderID == nil ? "It goes from this matter; Edit → Undo brings it back. Something only good to know can move to Good to know instead."
                  : "It goes from this matter, and its reminder from Reminders. Edit → Undo brings the task back, not the reminder.")
         }
     }
@@ -1792,12 +1763,28 @@ struct TodoRow: View {
         try? context.save()
     }
 
+    /// Whose, when that is not the owner; by when, where it says so.
+    private var line: String {
+        var parts: [String] = []
+        if showsOwner, todo.owner != .me { parts.append(["we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
+        if showsDue, let due = todo.due {
+            parts.append("by " + Dates.short(due) + (todo.dueTime.map { " at \($0)" } ?? ""))
+        } else if let time = todo.dueTime, todo.due != nil {
+            parts.append("at \(time)")
+        }
+        return parts.joined(separator: " · ")
+    }
+
     /// What the ⋯ and a right-click offer: change it by hand, say it is only worth knowing, and
     /// what it waits for.
     @ViewBuilder
     private var moreItems: some View {
         Button("Ask Causabee", action: talk)
         Button(Say.edit, systemImage: "pencil") { editing = true }
+        if !todo.isDone { SourceItems(sources: todo.sources, matter: todo.matter) }
+        if reminders != nil, remindable, todo.reminderID == nil, Calendars.shared.canReadReminders {
+            Button(Say.addToReminders, systemImage: "bell") { addingReminder += 1 }
+        }
         if let info {
             Button(Say.moveToInfo, systemImage: "info.circle", action: info)
         }
@@ -2033,45 +2020,11 @@ struct TodoEditor: View {
     }
 }
 
-/// Something the mail said that is worth knowing but is nothing to do.
-struct InfoRow: View {
-    let todo: Todo
-    let back: () -> Void
-    let talk: () -> Void
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "info.circle").foregroundStyle(.secondary).font(.title3)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(todo.text).fixedSize(horizontal: false, vertical: true)
-                SourceJump(sources: todo.sources, label: Sources.origin(todo.sources.first), matter: todo.matter)
-            }
-            Spacer(minLength: 8)
-            Button(action: back) { Label("Back to tasks", systemImage: "arrow.uturn.backward") }
-                .buttonStyle(.gold).font(.callout)
-                .tool()
-                .help("A task after all: it goes back to the open tasks")
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .contentShape(Rectangle())
-        .contextMenu {
-            Button("Ask Causabee", action: talk)
-            Button("Back to tasks", action: back)
-        }
-    }
-}
-
 struct DateRow: View {
     struct Item {
         var day: String
         var time: String?
         var what: String
-        /// On the same day: the whole-day ones first, then by the hour, then by name.
-        static func sameDay(_ a: Item, _ b: Item) -> Bool {
-            let (x, y) = (a.time ?? "", b.time ?? "")
-            return x != y ? x < y : alphabetically(a.what, b.what)
-        }
         var place: String?
         var kind: String
         var sources: [Source] = []
@@ -2117,39 +2070,29 @@ struct DateRow: View {
     @Environment(\.undoManager) private var undoManager
     @State private var editing = false
     @State private var deleting = false
+    @State private var addingToCalendar = 0
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
+            PlanDateMark(isDeadline: item.deadline != nil)
             VStack(alignment: .leading, spacing: 2) {
-                Text(Dates.short(item.day)).font(.callout.weight(.semibold))
-                if let hours = item.hours { Text(hours).font(.caption).foregroundStyle(.secondary) }
-                if let last = item.endDay { Text("until \(Dates.short(last))").font(.caption).foregroundStyle(.secondary) }
-            }
-            .frame(width: 74, alignment: .leading)
-            VStack(alignment: .leading, spacing: 4) {
                 Text(item.what).fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    Text(item.kind).font(.caption.weight(.medium))
-                        .foregroundStyle(item.kind == "Deadline" ? Theme.warning : .secondary)
-                    if let place = item.place { Text(place).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
-                    SourceJump(sources: item.sources, label: Sources.origin(item.sources.first), matter: item.appointment?.matter ?? item.deadline?.matter)
-                }
+                    .foregroundStyle(isPast ? .secondary : .primary)
+                    .padding(.top, Theme.planTop)
+                PlanDateLine(isDeadline: item.deadline != nil, hours: item.hours, last: item.endDay, place: item.place)
                 if !isPast || item.calendarID != nil {
                     CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime,
-                                 place: item.place, matterName: matterName, tick: tick) { id in item.connect(id); save() }
+                                 place: item.place, matterName: matterName, tick: tick, asked: addingToCalendar) { id in item.connect(id); save() }
                 }
             }
-            Spacer(minLength: 8)
-            HStack(spacing: 4) {
-                MoreMenu { moreItems }
-                    .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
-                        DateEditor(item: item, done: { editing = false; save() }, cancel: { editing = false })
-                    }
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            PlanMore { moreItems }
+                .popoverWhenAsked(isPresented: $editing, arrowEdge: .bottom) {
+                    DateEditor(item: item, done: { editing = false; save() }, cancel: { editing = false })
+                }
         }
-        .foregroundStyle(isPast ? .secondary : .primary)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .planRow()
+        .planDate()
         .contentShape(Rectangle())
         .contextMenu { moreItems }
         .confirmationDialogWhenAsked("Delete “\(item.what)”?", isPresented: $deleting) {
@@ -2170,6 +2113,10 @@ struct DateRow: View {
     private var moreItems: some View {
         Button("Ask Causabee", action: talk)
         Button(Say.edit, systemImage: "pencil") { editing = true }
+        SourceItems(sources: item.sources, matter: item.appointment?.matter ?? item.deadline?.matter)
+        if !isPast, item.calendarID == nil, Calendars.shared.canReadEvents {
+            Button(Say.addToCalendar, systemImage: "calendar.badge.plus") { addingToCalendar += 1 }
+        }
         Divider()
         Button(Say.delete, systemImage: "trash", role: .destructive) { deleting = true }
     }
@@ -2399,6 +2346,8 @@ struct DocumentRow: View {
     /// Nil, or whether it is chosen while several are being chosen to be read.
     var chosen: Bool? = nil
     var choose: () -> Void = {}
+    /// A tile of the mosaic.
+    var tile = false
     @Environment(\.modelContext) private var context
     @State private var renaming = false
     @State private var deleting = false
@@ -2408,7 +2357,7 @@ struct DocumentRow: View {
     private var isPDF: Bool { document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf") }
 
     var body: some View {
-        FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen) { moreItems }
+        FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen, tile: tile) { moreItems }
             .popoverWhenAsked(isPresented: $renaming, arrowEdge: .bottom) { renameField }
             .confirmationDialogWhenAsked("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
                 Button("Delete", role: .destructive, action: forget)
@@ -2425,7 +2374,7 @@ struct DocumentRow: View {
         Button("Open", action: open)
         if document.reading == .kept {
             Button("Read", action: read)
-                .help("Reads it on this Mac and shows it in the assistant. Nothing is sent until “Sort in” (≈ 4 cents).")
+                .help("Reads it on this Mac and shows it in the assistant. Nothing is sent until “Sort in”.")
         }
         Button("Ask Causabee", action: talk)
         Divider()
@@ -2648,6 +2597,8 @@ struct MoveMailMenu: View {
 
     var body: some View {
         Menu("Move to Another Matter") {
+            Button("New Matter …", action: newMatter)
+            Divider()
             ForEach(MoveMailMenu.order(matters, current: entry.matter)) { matter in
                 if matter === entry.matter {
                     Button { } label: { Label(matter.name, systemImage: "checkmark") }.disabled(true)
@@ -2655,8 +2606,6 @@ struct MoveMailMenu: View {
                     Button(matter.name) { MoveMailMenu.move(entry, to: matter, in: context) }
                 }
             }
-            Divider()
-            Button("New Matter …", action: newMatter)
         }
     }
 
@@ -2691,7 +2640,7 @@ struct EmptyBox: View {
         }
         .padding(.horizontal, 24).padding(.vertical, action == nil ? 18 : 22)
         .frame(maxWidth: .infinity)
-        .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 }
 

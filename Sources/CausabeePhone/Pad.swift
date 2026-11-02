@@ -8,6 +8,8 @@ enum PadMetrics {
     static let assistant: CGFloat = 360
     /// A page of a matter is no wider than is good to read.
     static let page: CGFloat = 700
+    /// What is ahead, in a column of its own beside a matter's page on a wide iPad.
+    static let column: CGFloat = 330
     /// The overview with its cards side by side.
     static let widePage: CGFloat = 1000
     static let twoColumns: CGFloat = 720
@@ -180,6 +182,9 @@ struct PadSidebarButton: View {
 /// can make it wider and let it slide sideways — and on an iPad no wider than is good to read.
 private struct PageWide: ViewModifier {
     let most: CGFloat
+    /// What stands beside the page in its row: left in, the row is wider than its room, and
+    /// stands cut off on both sides.
+    var beside: CGFloat = 0
     @Environment(Navigation.self) private var navigation
 
     func body(content: Content) -> some View {
@@ -188,13 +193,13 @@ private struct PageWide: ViewModifier {
         // container instead (containerRelativeFrame), a page kept the width it had before an
         // iPad's window was made smaller, and stood cut off on both sides. One view for both, so
         // nothing on the page starts anew when a window crosses from wide to narrow.
-        let room: CGFloat? = navigation.whole > 0 ? (navigation.isPad ? navigation.pageWidth : navigation.whole) : nil
+        let room: CGFloat? = navigation.whole > 0 ? (navigation.isPad ? navigation.pageWidth - beside : navigation.whole) : nil
         content.frame(width: room.map { min($0, most) }).frame(width: room)
     }
 }
 
 extension View {
-    func pageWide(_ most: CGFloat) -> some View { modifier(PageWide(most: most)) }
+    func pageWide(_ most: CGFloat, beside: CGFloat = 0) -> some View { modifier(PageWide(most: most, beside: beside)) }
 }
 
 /// Beside the sidebar's Overview: the bee while mail is read, and how many new mails wait there.

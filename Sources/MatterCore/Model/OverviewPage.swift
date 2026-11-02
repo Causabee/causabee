@@ -11,6 +11,17 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         public let text: String
     }
 
+    /// The matter's newest mail: what its day in the overview's journal says.
+    public struct Latest: Equatable, Sendable {
+        public let title: String
+        public let digest: String?
+        public let date: Date
+        /// How many mails came that day.
+        public let mails: Int
+        /// How many files came that day. Only for a matter recent enough to be in the journal.
+        public let files: Int
+    }
+
     /// Something with a day on it: an open task's due day, a deadline, an appointment.
     public struct Dated: Equatable, Sendable {
         public let day: String
@@ -41,12 +52,15 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
     /// Open tasks past their day, the longest overdue first.
     public let overdue: [Overdue]
     public let newMailsSinceClosed: Int
+    /// Of those, the ones the owner has not ignored: what the overview shows.
+    public let mailsToShowSinceClosed: Int
     public let lastDate: Date?
     /// Its first mail's day: "since …" under its name.
     public let firstDate: Date?
     public let dated: [Dated]
     /// What new mail changes, as the brief says, until the owner has seen it: its first line.
     public let news: String?
+    public let latest: Latest?
 
     public var isPinned: Bool { pinnedAt != nil }
     /// Something going on: an open task, or a day ahead.
@@ -84,8 +98,19 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         let dates = quick ? [] : MailDates.of(matter, entries: entries)
         lastDate = dates.last
         firstDate = dates.first
-        newMailsSinceClosed = matter.closedAt.map { closed in dates.count - (dates.firstIndex { $0 > closed } ?? dates.count) } ?? 0
+        let closed = matter.closedAt
+        let after = { (day: Date) in dates.count - (dates.firstIndex { $0 > day } ?? dates.count) }
+        newMailsSinceClosed = closed.map(after) ?? 0
+        mailsToShowSinceClosed = closed.map { after(max($0, matter.ignoredMailUntil ?? $0)) } ?? 0
         news = matter.brief == nil ? nil : matter.shownBrief?.news.flatMap { $0.seen ? nil : $0.lines.first }
+        if let last = dates.last, let newest = entries.first(where: { $0.date == last }) {
+            let onLast = MailDates.onLastDay(of: matter, entries: entries)
+            let files = Date().timeIntervalSince(last) > 15 * 86_400 ? 0
+                : (matter.documents ?? []).filter { onLast.ids.contains($0.messageID) && !$0.isHidden && !$0.isSmallImage }.count
+            latest = Latest(title: newest.title, digest: newest.digest, date: last, mails: onLast.mails, files: files)
+        } else {
+            latest = nil
+        }
     }
 }
 
@@ -103,6 +128,8 @@ public struct OverviewPage: Sendable {
     public let pinned: [MatterSummary]
     public let quiet: [MatterSummary]
     public let closed: [MatterSummary]
+    /// The journal across all matters: the open ones with mail in the last two weeks, the newest first.
+    public let recent: [MatterSummary]
     private let byID: [PersistentIdentifier: MatterSummary]
 
     public init(_ matters: [Matter], today: Date = Date(), quick: Bool = false) {
@@ -127,6 +154,9 @@ public struct OverviewPage: Sendable {
         self.quiet = quiet.filter { !$0.isPinned }
         ordered = active + quiet + closed
         pinned = summaries.filter { !$0.isClosed && $0.isPinned }.sorted { ($0.pinnedAt ?? .distantPast) < ($1.pinnedAt ?? .distantPast) }
+        let limit = today.addingTimeInterval(-14 * 86_400)
+        recent = summaries.filter { !$0.isClosed && ($0.latest?.date ?? .distantPast) >= limit }
+            .sorted { ($0.latest?.date ?? .distantPast) > ($1.latest?.date ?? .distantPast) }
     }
 
     public subscript(id: PersistentIdentifier) -> MatterSummary? { byID[id] }
@@ -279,19 +309,30 @@ public final class OverviewPages {
 /// day, and reading every mail's date of every matter — thousands — was most of preparing the
 /// overview again after any change at all, a task ticked or a brief written.
 enum MailDates {
+    /// The newest day's mails, and the Message-IDs of all that came that day: a file comes by those.
+    typealias LastDay = (mails: Int, ids: Set<String>)
+    private typealias Kept = (count: Int, dates: [Date], lastDay: LastDay)
     private static let lock = NSLock()
-    nonisolated(unsafe) private static var kept: [PersistentIdentifier: (count: Int, dates: [Date])] = [:]
+    nonisolated(unsafe) private static var kept: [PersistentIdentifier: Kept] = [:]
 
-    static func of(_ matter: Matter, entries: [Entry]) -> [Date] {
+    private static func kept(_ matter: Matter, entries: [Entry]) -> Kept {
         let id = matter.persistentModelID
         lock.lock()
         let known = kept[id]
         lock.unlock()
-        if let known, known.count == entries.count { return known.dates }
-        let dates = entries.compactMap(\.date).sorted()
+        if let known, known.count == entries.count { return known }
+        let dated = entries.filter { $0.date != nil }
+        let dates = dated.compactMap(\.date).sorted()
+        let newest = dates.last.map(MatterStatus.day)
+        let onLast = dated.filter { $0.date.map(MatterStatus.day) == newest }
+        let fresh: Kept = (entries.count, dates, (onLast.filter { $0.source.kind == .mail }.count, Set(onLast.map(\.messageID))))
         lock.lock()
-        kept[id] = (entries.count, dates)
+        kept[id] = fresh
         lock.unlock()
-        return dates
+        return fresh
     }
+
+    static func of(_ matter: Matter, entries: [Entry]) -> [Date] { kept(matter, entries: entries).dates }
+
+    static func onLastDay(of matter: Matter, entries: [Entry]) -> LastDay { kept(matter, entries: entries).lastDay }
 }

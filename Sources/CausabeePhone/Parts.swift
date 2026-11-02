@@ -60,7 +60,7 @@ struct PhoneEmptyBox: View {
         }
         .padding(.horizontal, 20).padding(.vertical, action == nil ? 18 : 22)
         .frame(maxWidth: .infinity)
-        .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 }
 
@@ -231,8 +231,8 @@ struct PhoneMatterCard: View {
             }
         }
         .padding(16)
-        .phoneCard()
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .journalRows()
+        .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
         .onTapGesture { open(nil) }
         .accessibilityAddTraits(.isButton)
     }

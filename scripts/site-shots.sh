@@ -14,10 +14,10 @@
 # - scripts/site-assets.py --pictures cuts site/assets/img from scripts/shots, with Pillow from a
 #   small environment of its own under .build-app (nothing is installed into the system's Python).
 #
-# Afterwards, by hand: the animations over the pictures in site/index.html are measured in the
-# pictures' own pixels. When the layout under them has moved — a bar higher, a tab narrower — the
-# crops in site-assets.py and the `--x/--y` of the overlays move with it; look at the page
-# (python3 -m http.server --directory site) before pushing, and raise the `?v=` of what changed.
+# Afterwards, by hand: when the layout has moved the crops in site-assets.py move with it. The
+# animations over the pictures are off (`live--still`); turned on again, their `--x/--y` in
+# site/index.html must be measured anew. Look at the page (python3 -m http.server --directory site)
+# before pushing, and raise the `?v=` of what changed.
 # The iPhone's three pictures are taken in the simulator and are not part of this.
 set -e -u -o pipefail
 cd "$(dirname "$0")/.."
@@ -31,4 +31,4 @@ if [[ ! -x $ENV/bin/python ]]; then
 fi
 print "→ Cutting the website's pictures"
 $ENV/bin/python scripts/site-assets.py --pictures | grep "img/" || true
-print "✓ site/assets/img — now look at the page: the animations over the pictures are measured by hand."
+print "✓ site/assets/img — now look at the page, and raise the ?v= of what changed."

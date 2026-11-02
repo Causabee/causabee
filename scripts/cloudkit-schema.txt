@@ -53,6 +53,7 @@ Matter.documents -> Document
 Matter.entries -> Entry
 Matter.folderName
 Matter.icon
+Matter.ignoredMailUntil
 Matter.key
 Matter.links -> WebLink
 Matter.linksSearchedAt

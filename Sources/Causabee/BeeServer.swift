@@ -63,7 +63,6 @@ final class BeeServer {
 
     /// Hears what the server says after each answer.
     static func listen() {
-        Money.hidden = isSetUp
         Claude.allowanceSeen = { used, renews in
             Task { @MainActor in
                 BeeServer.shared.monthUsed = used
@@ -109,7 +108,6 @@ final class BeeServer {
             if let new = object["token"] as? String, new.hasPrefix("bee_") { try APIKeys.save(new, as: Self.tokenName) }
             take(object)
             problem = nil
-            Money.hidden = true
             return true
         } catch {
             problem = plainWords(error)
@@ -131,7 +129,6 @@ final class BeeServer {
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
         if let new = object["token"] as? String, new.hasPrefix("bee_") {
             try? APIKeys.save(new, as: Self.tokenName)
-            Money.hidden = true
         }
         take(object)
         problem = nil

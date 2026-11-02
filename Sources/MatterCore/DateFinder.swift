@@ -87,24 +87,35 @@ public enum DateFinder {
         }
     }
 
-    /// "26. Oktober" that Apple's detector passed over — since macOS 27 it misses the second day
-    /// of "Anreise … am 16. Oktober, Abreise bis 10:00 Uhr am 26. Oktober". Read by rule, with a
-    /// time said just before it in the same clause.
+    /// "26. Oktober" or "31.10." that Apple's detector passed over — since macOS 27 it misses the
+    /// second day of "Anreise … am 16. Oktober, Abreise bis 10:00 Uhr am 26. Oktober". Read by rule,
+    /// with a time said just before it in the same clause.
+    /// "31.10.", no year: Apple's detector stops seeing it once that day has passed, however long
+    /// before it the mail was sent. Not a part of "1.2.3." or of a longer number.
+    private static let dayDotMonth = try! NSRegularExpression(pattern: #"(?<![\d.])(\d{1,2})\.(\d{1,2})\.(?!\d)"#)
     private static let dayMonth = try! NSRegularExpression(pattern:
         #"\b(\d{1,2})\.?\s+("# + months + #")[a-zäéû]*\.?(?:\s+(20\d{2}))?"#, options: [.caseInsensitive])
 
     static func missed(in text: String, besides seen: [NSRange], sent: Date, calendar: Calendar) -> [Found] {
         let monthStarts = ["jan", "feb", "mär|mar", "apr|avr", "mai|may", "jun|juin", "jul|juil", "aug|aoû|aou", "sep", "okt|oct", "nov", "dez|dec|déc"]
+        let ns = text as NSString
+        let whole = NSRange(text.startIndex..., in: text)
+        var hits: [(range: NSRange, day: Int?, month: Int?, named: Int?)] = dayMonth.matches(in: text, range: whole).map { hit in
+            let word = ns.substring(with: hit.range(at: 2)).lowercased()
+            return (hit.range, Int(ns.substring(with: hit.range(at: 1))),
+                    monthStarts.firstIndex { $0.split(separator: "|").contains { word.hasPrefix($0) } }.map { $0 + 1 },
+                    hit.range(at: 3).location == NSNotFound ? nil : Int(ns.substring(with: hit.range(at: 3))))
+        }
+        hits += dayDotMonth.matches(in: text, range: whole).map { hit in
+            (hit.range, Int(ns.substring(with: hit.range(at: 1))), Int(ns.substring(with: hit.range(at: 2))), nil)
+        }
         var out: [Found] = []
-        for hit in dayMonth.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+        for hit in hits {
             guard !seen.contains(where: { NSIntersectionRange($0, hit.range).length > 0 }), let range = Range(hit.range, in: text) else { continue }
             let lineText = String(text[text.lineRange(for: range)])
             if quotedHeader.firstMatch(in: lineText, range: NSRange(lineText.startIndex..., in: lineText)) != nil { continue }
-            let ns = text as NSString
-            let word = ns.substring(with: hit.range(at: 2)).lowercased()
-            guard let day = Int(ns.substring(with: hit.range(at: 1))), (1...31).contains(day),
-                  let month = monthStarts.firstIndex(where: { $0.split(separator: "|").contains { word.hasPrefix($0) } }).map({ $0 + 1 }) else { continue }
-            let named = hit.range(at: 3).location == NSNotFound ? nil : Int(ns.substring(with: hit.range(at: 3)))
+            guard let day = hit.day, (1...31).contains(day), let month = hit.month, (1...12).contains(month) else { continue }
+            let named = hit.named
             let year = calendar.component(.year, from: sent)
             let candidates = (named.map { [$0] } ?? [year - 1, year, year + 1]).compactMap { calendar.date(from: DateComponents(year: $0, month: month, day: day)) }
             guard let date = candidates.min(by: { abs($0.timeIntervalSince(sent)) < abs($1.timeIntervalSince(sent)) }),

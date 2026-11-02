@@ -77,7 +77,7 @@ struct PhoneMatterRows: View {
                 .contextMenu { MatterMenuItems(matter: matter, all: all).menuSigns() }
             }
         }
-        .phoneCard()
+        .journalRows()
     }
 }
 

@@ -139,9 +139,8 @@ struct AutoButton: View {
         .buttonStyle(.plain)
         // Short, as the glasses': what Auto does is said in Settings and where it works.
         .quickLabel(pro ? "Turn Pro Off" : "Turn Pro On: the bigger AI reads and updates by itself")
-        // What it has spent today, for the asking.
         .help(BeeServer.isSetUp ? (pro ? "Pro is on: GPT-6.1 Sol reads new mail as it comes" : "Pro is off: Apple's model on this device reads new mail — nothing leaves it")
-              : AutoUpdate.spentWords ?? (pro ? "Pro has spent nothing today on next steps and summaries" : "Without Pro, nothing is read by the AI by itself"))
+              : (pro ? "Pro is on: next steps and summaries update by themselves" : "Without Pro, nothing is read by the AI by itself"))
         .accessibilityLabel("Pro")
         .accessibilityValue(pro ? "On" : "Off")
         .accessibilityIdentifier("window.auto")
@@ -229,8 +228,7 @@ struct Card<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) { content }
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 }
 

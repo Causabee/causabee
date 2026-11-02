@@ -4,6 +4,12 @@ import XCTest
 /// stands at the top of the thread, and stays there while the field under it grows and when the
 /// next question is asked. What a screen recording showed by eye, these say in points.
 final class ThreadTests: XCTestCase {
+    /// The overview opens on its journal; the matters are one filter away.
+    private func showMatters() {
+        let filter = app.buttons["part.Matters"]
+        if filter.waitForExistence(timeout: 40) { filter.tap() }
+    }
+
     private var app: XCUIApplication!
     private let stamp = String(Int(Date().timeIntervalSince1970) % 100_000)
 
@@ -14,6 +20,7 @@ final class ThreadTests: XCTestCase {
         // `--answers`: a question gets a made-up answer after a moment, with nothing sent.
         app.launchArguments = ["--demo", "--answers", "-demo.filled", "anew", "-mail.auto", "NO"]
         app.launch()
+        showMatters()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
         matter.tap()

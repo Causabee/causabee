@@ -51,6 +51,9 @@ public final class Matter {
     public var aliases: [String] = []
     public var createdAt: Date = Date()
     public var closedAt: Date?
+    /// The newest mail the owner ignored on the overview after closing it: what came up to then
+    /// stays in the matter, and only later mail shows there again.
+    public var ignoredMailUntil: Date?
     /// When the owner pinned it to the top of the overview; nil when it is not pinned.
     public var pinnedAt: Date?
     /// The icon the owner chose for it, a system symbol's name; nil while Causabee suggests one

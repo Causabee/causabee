@@ -126,13 +126,13 @@ struct FilesSection: View {
                               action: "Add Document", symbol: "doc.badge.plus") { addsScan = true }
             }
             if !shown.isEmpty {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(shown.enumerated()), id: \.element.persistentModelID) { index, document in
-                        if index > 0 { Divider().padding(.leading, 50) }
-                        row(document).findable(.model(document.persistentModelID), document.shownName, document.name)
+                // A mosaic, read at a glance: two across, more where there is room.
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: Theme.cardGap, alignment: .top)], alignment: .leading, spacing: Theme.cardGap) {
+                    ForEach(shown, id: \.persistentModelID) { document in
+                        tile(document).findable(.model(document.persistentModelID), document.shownName, document.name)
+                            .journalRows()
                     }
                 }
-                .phoneCard()
             }
             if !hidden.isEmpty || !small.isEmpty {
                 HStack(spacing: 14) {
@@ -182,7 +182,10 @@ struct FilesSection: View {
         matter.entry(messageID: document.messageID).map { Email.displayName(in: $0.from) ?? Email.address(in: $0.from) }
     }
 
-    private func row(_ document: MatterCore.Document) -> some View {
+    private func row(_ document: MatterCore.Document) -> some View { face(document, tile: false).padding(14) }
+    private func tile(_ document: MatterCore.Document) -> some View { face(document, tile: true) }
+
+    private func face(_ document: MatterCore.Document, tile: Bool) -> some View {
         let id = document.persistentModelID
         return FileFace(document: document, sender: sender(of: document), state: state[id],
                         tap: {
@@ -194,8 +197,7 @@ struct FilesSection: View {
                             }
                         },
                         read: { read(document) }, nameIt: { nameFromContent(document) },
-                        chosen: chosen.map { $0.contains(id) }) { items(document) }
-            .padding(14)
+                        chosen: chosen.map { $0.contains(id) }, tile: tile) { items(document) }
     }
 
     /// Into the assistant, one after the other: each read here, nothing sent until "Sort in".

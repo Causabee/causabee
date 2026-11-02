@@ -59,17 +59,17 @@ enum ModelChoice {
         if proPicks { return "Pro: GPT-6.1 Sol reads new mail as it comes — names disguised first." }
         if case .device = mailReader(for: mail) { return "Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it." }
         if client(for: mail) != nil {
-            return String(format: "%@ reads new mail with your own key — names disguised first. About %.2f cents per mail.", mail.label, mail.perMail * 100)
+            return String(format: "%@ reads new mail with your own key — names disguised first.", mail.label)
         }
         return "Nothing reads new mail yet: Apple Intelligence is off on this device. Turn it on in the system's Settings, or choose Pro."
     }
 
-    /// Under the mails ticked to be sorted in: who reads them, and — with your own keys — about what it costs.
-    static func sortingWords(_ count: Int, estimate: Double, model: Claude.Model) -> String {
+    /// Under the mails ticked to be sorted in: who reads them.
+    static func sortingWords(_ count: Int, model: Claude.Model) -> String {
         let mails = count == 1 ? "mail" : "mails"
         if case .device = mailReader(for: model) { return "Sorting in \(count) \(mails) on this device, with Apple's model: nothing leaves it." }
-        if Money.hidden { return "Sorting in \(count) \(mails) with Causabee Pro. Sent pseudonymised to \(model.label)." }
-        return String(format: "Sorting in %d %@ costs about $%.2f. Sent pseudonymised to %@.", count, mails, estimate, model.label)
+        if BeeServer.isSetUp { return "Sorting in \(count) \(mails) with Causabee Pro. Sent pseudonymised to \(model.label)." }
+        return "Sorting in \(count) \(mails). Sent pseudonymised to \(model.label)."
     }
 
     static func missingKey(_ model: Claude.Model) -> String {
@@ -123,7 +123,7 @@ struct ModelSettingsView: View {
                 DisclosureGroup("Developer", isExpanded: $developer) {
                     picker("Sort mail", selection: $mail)
                     picker("Assistant", selection: $assistant)
-                    Text(ModelChoice.proPicks ? "Pro picks GPT-6.1 Sol while it is on; these are used with your own keys." : estimate(mail) + " Used with your own keys.")
+                    Text(ModelChoice.proPicks ? "Pro picks GPT-6.1 Sol while it is on; these are used with your own keys." : "Used with your own keys.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
                     KeyField(title: "Mistral", name: "MISTRAL_API_KEY")
@@ -148,10 +148,6 @@ struct ModelSettingsView: View {
         }
     }
 
-    private func estimate(_ id: String) -> String {
-        let model = Claude.Model.choices.first { $0.id == id } ?? .opus
-        return String(format: "About %.2f cents per mail.", model.perMail * 100)
-    }
 }
 #endif
 
@@ -466,10 +462,9 @@ struct AutoLine: View {
     var size: CGFloat = 10
 
     var body: some View {
-        let soon = AutoUpdate.shared.pending.contains(matter.key)
         HStack(spacing: 5) {
             Image(systemName: "bolt.fill").font(.system(size: size))
-            Text(soon ? "Changed · Pro updates this in a moment" : "Pro")
+            Text("Pro")
         }
         .font(.caption).foregroundStyle(.secondary)
         .accessibilityElement(children: .combine)
@@ -477,59 +472,12 @@ struct AutoLine: View {
     }
 }
 
-/// What asking for a matter's next step or summary would cost, as the links beside them say it.
-/// Worked out from the matter's last 40 mails — a hundredth of a second and more — so only where
-/// it is shown, and kept until the matter's record or the model is another.
-@MainActor
-enum PriceEstimates {
-    private static var kept: [PersistentIdentifier: (version: Int, key: String, step: Double, summary: Double)] = [:]
-
-    static func of(_ matter: Matter) -> (step: Double, summary: Double) {
-        // Unchanged store: as it was. Changed: worked out anew only when this matter's own record
-        // changed — the facts are the heavy part — told by a cheap mark: its counts, and its notes'.
-        // Not by the store's count of changes: reading it made the whole page of a matter draw again
-        // after every change anywhere.
-        let version = 0
-        let key = [ModelChoice.assistant.id, "\(matter.entries?.count ?? 0)", "\(matter.todos?.count ?? 0)",
-                   "\(matter.documents?.count ?? 0)", "\(matter.noteCount)",
-                   "\((matter.noteBlocks ?? []).reduce(0) { $0 + $1.text.count } + (matter.notes?.count ?? 0))", MatterStatus.day(Date())].joined(separator: "|")
-        if let known = kept[matter.persistentModelID], known.key == key {
-            kept[matter.persistentModelID] = (version, key, known.step, known.summary)
-            return (known.step, known.summary)
-        }
-        // What the facts would come to, told from what goes into them — the whole sheet was made
-        // just to be measured, and was most of opening a matter with many people and mails.
-        let length = Self.factsLength(matter)
-        let model = ModelChoice.assistant
-        let found = (version: version, key: key, step: AssistantAsk.nextStepEstimate(length: length, model: model),
-                     summary: AssistantAsk.adviceEstimate(length: length, model: model))
-        kept[matter.persistentModelID] = found
-        return (found.step, found.summary)
-    }
-
-    /// About as many characters as the matter's facts have: its open tasks, the newest forty mails,
-    /// the notes, the people, the dates and the files, each about as long as the sheet writes it.
-    static func factsLength(_ matter: Matter) -> Int {
-        let mails = (matter.entries ?? []).sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }.prefix(40)
-        let mailText = mails.reduce(0) { $0 + $1.title.count + $1.from.count + ($1.digest?.count ?? 0) + 30 }
-        let todos = (matter.todos ?? []).reduce(0) { $0 + $1.text.count + 60 }
-        let notes = (matter.notesText?.count ?? 0) + (matter.shownBrief?.forFacts?.count ?? 0)
-        let rest = matter.parties.count * 80 + ((matter.appointments ?? []).count + (matter.deadlines ?? []).count) * 60
-            + (matter.documents ?? []).count * 50
-        return 600 + mailText + todos + notes + rest
-    }
-
-    /// " · ≈ 2.4 cents" after a button's words — nothing with Pro, where the plan holds the AI.
-    static func step(_ matter: Matter) -> String { Money.hidden ? "" : String(format: " · ≈ %.1f cents", of(matter).step * 100) }
-    static func summary(_ matter: Matter) -> String { Money.hidden ? "" : String(format: " · ≈ %.1f cents", of(matter).summary * 100) }
-}
-
 /// Auto, the whole circle: when a matter's record has changed, its next step and its summary are
-/// written again by themselves — what "ask again" and "Update" do on a tap.
+/// written again by themselves — what "Update now" does on a tap.
 ///
 /// - What counts as a change: `Matter.recordStamp` is another — a mail, a file, a task, a date, a note.
-/// - Bundled: a matter is written again only once its record has stood still from one look to the
-///   next, so a round of mail that brings three things is one update, not three.
+/// - Bundled: `AutoPace` says when. While the owner works in a matter the next step goes grey and
+///   nothing is sent until they leave, ask for it with "Update now", or it has stood still a while.
 /// - Never for the first sight of a matter: turning Auto on writes nothing; only what changes after.
 /// - What it spent is kept by the day, and which step and summary it wrote, to say so beside them.
 /// - Written on another device meanwhile: taken as it is, not paid for twice.
@@ -553,11 +501,21 @@ final class AutoUpdate {
     private(set) var done = 0
     /// The matters whose record has changed and is coming to rest: written in a moment, and said so.
     private(set) var pending: Set<String> = []
-    /// How often it looks. A matter is written once it has stood still from one look to the next.
+    /// How often it looks: only when something was saved, was asked for, or has come due.
     private static let pace: Duration = .seconds(1)
+    /// When each matter that is waiting last changed.
+    @ObservationIgnored private var changedAt: [String: Date] = [:]
+    /// The matters to write now: "Update now", or the owner has left them.
+    @ObservationIgnored private var asked: Set<String> = []
+    /// The next time a waiting matter comes due.
+    @ObservationIgnored private var wakeAt: Date?
+    /// The matters open on this device, each as often as a page shows it.
+    @ObservationIgnored private var shown: [String: Int] = [:]
 
     private struct Known: Codable {
         var stamp: String
+        /// How many mails it held then, to tell new mail from a ticked task. Nil from before.
+        var mails: Int?
         /// When Auto wrote the step and the summary, as the matter says it: beside them, "Auto".
         var stepAt: Date?
         var summaryAt: Date?
@@ -570,6 +528,25 @@ final class AutoUpdate {
     @ObservationIgnored private var saves = 0
     @ObservationIgnored private var savesLooked = -1
     @ObservationIgnored private var watching = false
+
+    /// Something can have changed, was asked for, or has come due.
+    private var hasReasonToLook: Bool {
+        saves != savesLooked || !asked.isEmpty || (wakeAt.map { $0 <= Date() } ?? false)
+    }
+
+    /// A page shows this matter: while it does, Auto waits for the owner to finish.
+    func show(_ key: String) { shown[key, default: 0] += 1 }
+
+    /// The page has gone: what changed there is written now.
+    func leave(_ key: String) {
+        shown[key, default: 1] -= 1
+        guard shown[key, default: 0] <= 0 else { return }
+        shown[key] = nil
+        asked.insert(key)
+    }
+
+    /// "Update now".
+    func updateNow(_ matter: Matter) { asked.insert(matter.key) }
 
     private func watchSaves() {
         guard !watching else { return }
@@ -619,12 +596,6 @@ final class AutoUpdate {
         try? context.save()
     }
 
-    /// "Auto · $0.12 today", or nil when it spent nothing today.
-    static var spentWords: String? {
-        let spent = spent()
-        return spent > 0 ? String(format: "Pro has spent $%.2f today on next steps and summaries", spent) : nil
-    }
-
     private static func add(_ cost: Double) {
         var all = (UserDefaults.standard.dictionary(forKey: spentKey) as? [String: Double]) ?? [:]
         let today = MatterStatus.day(Date())
@@ -667,9 +638,13 @@ final class AutoUpdate {
             try? await Task.sleep(for: Self.pace)
             // News written here, or come from another device: told once, Auto or not.
             await NewsNotice.tell(await StoreWorker.for(context.container))
-            guard AutoMode.isOn else { lastSeen = [:]; if !pending.isEmpty { pending = [] }; continue }
+            guard AutoMode.isOn else {
+                lastSeen = [:]; changedAt = [:]; asked = []; wakeAt = nil
+                if !pending.isEmpty { pending = [] }
+                continue
+            }
             // Not even the matters fetched when nothing was saved since the last look.
-            guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { continue }
+            guard hasReasonToLook else { continue }
             // The stamps — every matter read whole — by the worker; the screen's thread only compares.
             let stamps = await StoreWorker.for(context.container).recordStamps()
             let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
@@ -681,30 +656,52 @@ final class AutoUpdate {
     /// unless one has changed and come to rest.
     func look(_ matters: [Matter], stamps: [String: String] = [:], context: ModelContext, owner: String?, names: () throws -> Names) {
         guard AutoMode.isOn else { lastSeen = [:]; return }
-        // Nothing saved since the last look, and nothing on its way to rest: nothing can have changed.
-        guard saves != savesLooked || !lastSeen.isEmpty || !pending.isEmpty else { return }
+        // Nothing saved since the last look, and nothing come due: nothing can have changed.
+        guard hasReasonToLook else { return }
         savesLooked = saves
+        wakeAt = nil
         var known = Self.known
         defer { Self.known = known }
         for matter in matters where !matter.isClosed && !working.contains(matter.key) {
             let key = matter.key, stamp = stamps[matter.key] ?? matter.recordStamp
-            guard let before = known[key] else { known[key] = Known(stamp: stamp); continue }
-            guard before.stamp != stamp else { lastSeen[key] = nil; if pending.contains(key) { pending.remove(key) }; continue }
+            let mails = matter.entries?.count ?? 0
+            guard let before = known[key] else { known[key] = Known(stamp: stamp, mails: mails); continue }
+            guard before.stamp != stamp else {
+                lastSeen[key] = nil; changedAt[key] = nil; asked.remove(key)
+                if pending.contains(key) { pending.remove(key) }
+                continue
+            }
             // Both written elsewhere in the last minutes — the other device's Auto: taken as they are.
             if let step = matter.nextStepAt, let summary = matter.summaryAt, step != before.stepAt, summary != before.summaryAt,
                min(step, summary) > Date().addingTimeInterval(-600) {
-                known[key] = Known(stamp: stamp)
+                known[key] = Known(stamp: stamp, mails: mails)
+                lastSeen[key] = nil; changedAt[key] = nil; asked.remove(key)
                 pending.remove(key)
                 continue
             }
-            // Still changing: once more round — and said meanwhile, that it will be written.
-            guard lastSeen[key] == stamp else { lastSeen[key] = stamp; if !pending.contains(key) { pending.insert(key) }; continue }
+            // Changed again: the wait starts anew — and the page says at once that it is out of date.
+            let now = Date()
+            if lastSeen[key] != stamp {
+                lastSeen[key] = stamp
+                changedAt[key] = now
+                if !pending.contains(key) { pending.insert(key) }
+            }
+            let changed = changedAt[key] ?? now
+            let open = shown[key, default: 0] > 0
+            let newMail = mails > (before.mails ?? .max)
+            guard AutoPace.isDue(changed: changed, now: now, open: open, newMail: newMail, asked: asked.contains(key)) else {
+                let due = AutoPace.due(changed: changed, open: open, newMail: newMail)
+                wakeAt = min(wakeAt ?? due, due)
+                continue
+            }
             lastSeen[key] = nil
+            changedAt[key] = nil
+            asked.remove(key)
             pending.remove(key)
             // The demo sends nothing and costs nothing: after a moment, the step worked out on the
             // device and the summary as it stands, marked as Auto's — to see how it goes.
             if DemoData.isRequested {
-                known[key] = Known(stamp: stamp, stepAt: before.stepAt, summaryAt: before.summaryAt)
+                known[key] = Known(stamp: stamp, mails: mails, stepAt: before.stepAt, summaryAt: before.summaryAt)
                 working.insert(key)
                 Task {
                     try? await Task.sleep(for: .seconds(4))
@@ -720,7 +717,7 @@ final class AutoUpdate {
                     if matter.summary != nil { matter.summaryAt = now }
                     try? context.save()
                     var all = Self.known
-                    all[key] = Known(stamp: matter.recordStamp, stepAt: matter.nextStepAt == now ? now : nil, summaryAt: matter.summaryAt == now ? now : nil)
+                    all[key] = Known(stamp: matter.recordStamp, mails: matter.entries?.count, stepAt: matter.nextStepAt == now ? now : nil, summaryAt: matter.summaryAt == now ? now : nil)
                     Self.known = all
                 }
                 continue
@@ -729,7 +726,7 @@ final class AutoUpdate {
             guard ModelChoice.client(for: ModelChoice.assistant) != nil else { continue }
             // Its stamp is kept before anything is sent: an update that fails is not tried again
             // and again, each time for money — the next change tries the next.
-            known[key] = Known(stamp: stamp, stepAt: before.stepAt, summaryAt: before.summaryAt)
+            known[key] = Known(stamp: stamp, mails: mails, stepAt: before.stepAt, summaryAt: before.summaryAt)
             working.insert(key)
             let ahead = queue
             queue = Task {
@@ -743,7 +740,7 @@ final class AutoUpdate {
                     Self.add(cost)
                     Self.shareSpending(in: context)
                     var all = Self.known
-                    all[key] = Known(stamp: matter.recordStamp, stepAt: now, summaryAt: matter.summaryAt)
+                    all[key] = Known(stamp: matter.recordStamp, mails: matter.entries?.count, stepAt: now, summaryAt: matter.summaryAt)
                     Self.known = all
                 } catch {}
             }
@@ -766,9 +763,9 @@ struct AutoQuestion: ViewModifier {
             Button("Turn Pro On") { agreed = true; turnOn() }
             Button("Cancel", role: .cancel) { }
         } message: {
-            // Short, and by name: which model reads, that names are disguised, who decides, what it costs.
+            // Short, and by name: which model reads, that names are disguised, who decides.
             Text("Pro reads new mail and files for you as they arrive, with \(model.label) — names disguised. " +
-                 "You still decide what goes into a matter. " + String(format: "About %.1f cents a mail. ", model.perMail * 100) +
+                 "You still decide what goes into a matter. " +
                  "Without Pro, nothing is read by the AI until you tap.")
         }
     }

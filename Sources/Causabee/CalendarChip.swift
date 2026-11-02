@@ -25,6 +25,8 @@ struct CalendarChip: View {
     var reminders: [Calendars.Reminder] = []
     /// Changes when the calendars change, so what is shown is found again.
     var tick = 0
+    /// Goes up when the row's ⋯ asks to add it: the offer stands there, not on every row.
+    var asked = 0
     let connect: (String?) -> Void
     @State private var error: String?
     /// What Calendar or Reminders said, asked by the worker away from the screen.
@@ -41,13 +43,15 @@ struct CalendarChip: View {
     }
 
     var body: some View {
-        // While reading, only a connection that is there is shown, not the offer to make one.
-        if allowed, !(reading && linkedID == nil) {
+        if allowed {
             let ask = ask
+            let state = answer ?? ChipAnswers.last[ask]
+            // Nothing to say is no line at all: a row is its name.
+            let says = error != nil || linkedID != nil || { if case .found? = state { !reading } else { false } }()
             HStack(spacing: 6) {
                 // The last answer while Calendar or Reminders are asked anew; at first a place the
                 // size of the sign, so the page does not move when it comes.
-                switch answer ?? ChipAnswers.last[ask] {
+                switch state {
                 case .linked(let found)?:
                     if let id = linkedID {
                         Button { open(id) } label: {
@@ -63,21 +67,23 @@ struct CalendarChip: View {
                     Button("Add again", action: add).buttonStyle(.gold).font(.caption)
                     Button("Disconnect") { connect(nil) }.buttonStyle(.gold).font(.caption)
                 case .found(let id, let found, let list)?:
-                    // Which list or calendar it is in, first: a connection to the wrong one is seen before it is made.
-                    Label("found in \(list.isEmpty ? where_ : list): \(found)", systemImage: "link")
-                        .font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    Button("Connect") { connect(id) }.buttonStyle(.gold).font(.caption)
-                        .help("It is there already: connect to it instead of adding a second one.")
+                    if !reading {
+                        // Which list or calendar it is in, first: a connection to the wrong one is seen before it is made.
+                        Label("found in \(list.isEmpty ? where_ : list): \(found)", systemImage: "link")
+                            .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        Button("Connect") { connect(id) }.buttonStyle(.gold).font(.caption)
+                            .help("It is there already: connect to it instead of adding a second one.")
+                    }
                 case .none?:
-                    Button(action: add) { Label("Add to \(where_)", systemImage: "plus") }
-                        .buttonStyle(.gold).font(.caption)
-                        .help(kind == .event ? "Into the calendar chosen in Settings" : "Into the list chosen in Settings")
+                    EmptyView()
                 case nil:
-                    Label("Add to \(where_)", systemImage: "plus").font(.caption).hidden()
+                    if linkedID != nil { Label("in \(where_)", systemImage: "calendar").font(.caption).hidden() }
                 }
                 if let error { Text(error).font(.caption).foregroundStyle(Theme.warning).lineLimit(1) }
             }
+            .padding(.top, says ? 4 : 0)
             .id(tick)
+            .onChange(of: asked) { add() }
             .task(id: ChipAnswers.Asking(ask: ask, generation: ChipAnswers.generation, tick: tick)) {
                 answer = await ChipAnswers.answer(ask, reminders: reminders)
             }
