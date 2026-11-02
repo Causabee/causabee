@@ -261,6 +261,8 @@ struct MatterStatusView: View {
                 .sheetWhenAsked(isPresented: $addingContact) { ContactEditor(matter: matter) }
                 .sheetWhenAsked(isPresented: $addingDetail) { DetailEditor(matter: matter) }
             }
+            // Its bar's glass reaches over the column.
+            .zIndex(1)
             // What is ahead keeps its own column while the journal scrolls beside it.
             if hasColumn, !find.isActive {
                 ScrollView {
@@ -273,10 +275,15 @@ struct MatterStatusView: View {
                         atHandCard
                         BallCard(matter: matter)
                     }
-                    .padding(.top, 24).padding(.trailing, 24).padding(.bottom, 24)
+                    // Under the bar, at its height with the filters in it: the column does not move when they come.
+                    .padding(.top, max(WindowMetrics.topLine, barEdge - given) + 12).padding(.trailing, 24).padding(.bottom, 24)
                 }
-                .frame(width: 330)
+                .frame(width: Self.columnWidth)
             }
+        }
+        // At the page's right edge, always on the window's top line.
+        .overlay(alignment: .topTrailing) {
+            if !renaming { barTools.frame(height: WindowMetrics.topLine).padding(.trailing, 24) }
         }
         .background(Theme.page)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
@@ -1031,6 +1038,11 @@ struct MatterStatusView: View {
     /// assistant put away, and then under the window's controls.
     @State private var barLeft: CGFloat = 400
 
+    /// The width of the bar's tools, kept free beside the name.
+    @State private var toolsWidth: CGFloat = 80
+    /// What is ahead, beside the journal on a wide window.
+    private static let columnWidth: CGFloat = 330
+
     /// How far under the window's top line the name stands while the page is at its top.
     private static let restRoom: CGFloat = 36
     /// How much taller than one line the name is: a long name runs onto a second line, which the
@@ -1040,6 +1052,29 @@ struct MatterStatusView: View {
     private var nameExtra: CGFloat { oneLine > 0 ? max(0, nameHeight - oneLine) : 0 }
     /// What the bar gives up when the page goes under it: the room on top, and the name's further lines.
     private var given: CGFloat { Self.restRoom + nameExtra }
+
+    /// What the bar can do, on glass as a toolbar's: the search, the rest. The bee that brings the
+    /// assistant back is by the window's buttons, on the left.
+    private var barTools: some View {
+        HStack(spacing: 8) {
+            // What is added goes in by the assistant's plus, beside its field: there is none here.
+            PageFindField(find: find)
+            // What is seldom needed sits behind the dots, not in the bar: what the sidebar's
+            // menu has for the matter, as the iPhone's ⋯ has it, and closing it.
+            Menu {
+                matterMenuItems
+            } label: {
+                Image(systemName: "ellipsis").frame(width: 30, height: 30).contentShape(Circle())
+            }
+            .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+            .onGlass(Circle())
+            .help("More: write the next step and summary again, pin, rename, merge, export, close")
+            .accessibilityLabel("More")
+            .accessibilityIdentifier("matter.more")
+            .tool()
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { toolsWidth = $0 }
+    }
 
     private func titleBar(_ status: MatterStatus, count: String, since: Date?) -> some View {
         // Once the page has gone up under it, the bar is a bar: one line high, the name small in
@@ -1105,32 +1140,9 @@ struct MatterStatusView: View {
                         .help("Click to rename. The old name stays as an alias, so new mail still finds the matter.")
                     Spacer()
                 }
-                if !renaming {
-                    // What the bar can do, on glass as a toolbar's: the search, the rest. The bee that
-                    // brings the assistant back is by the window's buttons, on the left.
-                    HStack(spacing: 8) {
-                        // What is added goes in by the assistant's plus, beside its field: there is none here.
-                        PageFindField(find: find)
-                        // What is seldom needed sits behind the dots, not in the bar: what the sidebar's
-                        // menu has for the matter, as the iPhone's ⋯ has it, and closing it.
-                        Menu {
-                            matterMenuItems
-                        } label: {
-                            Image(systemName: "ellipsis").frame(width: 30, height: 30).contentShape(Circle())
-                        }
-                        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
-                        .onGlass(Circle())
-                        .help("More: write the next step and summary again, pin, rename, merge, export, close")
-                        .accessibilityLabel("More")
-                        .accessibilityIdentifier("matter.more")
-                        .tool()
-                    }
-                    // On the line of the window's controls, as the icon is: their middle eight over
-                    // the name's baseline, which is the middle of its capitals.
-                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 8 * Theme.textScale }
-                    // Always on the window's top line: they do not come down with the name, nor go up with it.
-                    .offset(y: scrolledUnder ? 0 : -Self.restRoom)
-                }
+                // The bar's tools stand at the page's right edge, over the column when there is one:
+                // here only their room, so a long name stops short of them.
+                if !renaming, !hasColumn || find.isActive { Color.clear.frame(width: toolsWidth, height: 1) }
             }
             ZStack(alignment: .leading) {
                 HStack(spacing: 6) {
@@ -1182,6 +1194,8 @@ struct MatterStatusView: View {
                     .frame(height: compact && !showsParts ? WindowMetrics.topLine : nil)
                     // With the parts in it, it ends where they end: the room the name left is the page's.
                     .padding(.bottom, compact && !showsParts ? 0 : given)
+                    // One piece of glass across the whole page, over the column too.
+                    .padding(.trailing, hasColumn && !find.isActive ? -Self.columnWidth : 0)
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { barEdge = $0 }

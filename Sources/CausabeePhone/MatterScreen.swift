@@ -166,20 +166,6 @@ struct MatterScreen: View {
                 // Right under the pinned tabs, which stay: the part's start at their lower edge.
                 if scroll.partsUnder { scroller.scrollTo("part", anchor: UnitPoint(x: 0.5, y: 44 / max(pageHeight, 200))) }
             }
-            // Over the page, not in it: the page keeps its place when they come and go.
-            .overlay(alignment: .top) {
-                PinnedParts(scroll: scroll, hidden: find.isActive) {
-                    // The tabs change places without a fade: there is one set of them at a time.
-                    // As wide as they are in the page, on a bar as wide as the column: on an
-                    // iPad the page is narrower than its column.
-                    parts()
-                        .padding(.horizontal, 16)
-                        .frame(maxWidth: PadMetrics.page).frame(maxWidth: .infinity)
-                        .padding(.top, 6).padding(.bottom, 10)
-                        .background(.bar, ignoresSafeAreaEdges: .top)
-                        .overlay(alignment: .bottom) { Divider() }
-                }
-            }
             .onAppear {
                 // `--part record`: starts in that part — for the scroll tour.
                 if let at = CommandLine.arguments.firstIndex(of: "--part"), at + 1 < CommandLine.arguments.count,
@@ -221,6 +207,21 @@ struct MatterScreen: View {
                         .padding(.top, 10).padding(.trailing, 16).padding(.bottom, 90)
                     }
                     .frame(width: PadMetrics.column)
+                }
+            }
+            // Over the page, not in it: the page keeps its place when they come and go.
+            .overlay(alignment: .top) {
+                PinnedParts(scroll: scroll, hidden: find.isActive) {
+                    // The tabs change places without a fade: there is one set of them at a time.
+                    // As wide as they are in the page, on a bar across the whole width: on an
+                    // iPad the page is narrower than its column, and the bar goes on over what is ahead.
+                    parts()
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: PadMetrics.page, alignment: .leading).frame(maxWidth: .infinity)
+                        .padding(.trailing, beside)
+                        .padding(.top, 6).padding(.bottom, 10)
+                        .background(.bar, ignoresSafeAreaEdges: .top)
+                        .overlay(alignment: .bottom) { Divider() }
                 }
             }
         }
