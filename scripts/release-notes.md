@@ -18,7 +18,7 @@ The app and the disk image are signed with a Developer ID and notarized by Apple
 
 - macOS Sequoia 15 or later
 - For your own mail: a Gmail, iCloud or other IMAP account, and a label on the mail Causabee should read (for example “Causabee”). Gmail needs an app password.
-- An API key from Anthropic (Claude), OpenAI or Mistral. You pay the provider directly, and every answer shows what it cost.
+- An API key from Anthropic (Claude), OpenAI or Mistral. You pay the provider directly.
 
 ## Privacy
 
