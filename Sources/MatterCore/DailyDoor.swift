@@ -179,7 +179,7 @@ public struct DailyDoor: Sendable {
     /// matter's, so the replies in its thread follow it there.
     /// `claude` nil: read by Apple's model on this device.
     public func classify(_ look: Look, claude: Claude?, owner: [String], matters: [(key: String, about: String)] = [],
-                         placed: [String: String] = [:], onFile: [String: Extractor.OnFile] = [:],
+                         closed: Set<String> = [], placed: [String: String] = [:], onFile: [String: Extractor.OnFile] = [:],
                          progress: @Sendable (Int, Int, String) -> Void = { _, _, _ in }) async throws -> (judgements: [Judgement], summary: Extractor.Summary) {
         var outcomes = look.report.outcomes
         var summary = Extractor.Summary()
@@ -188,6 +188,7 @@ public struct DailyDoor: Sendable {
             extractor.strict = strict
             extractor.onDevice = claude == nil
             extractor.storeMatters = matters
+            extractor.closedMatters = closed
             extractor.onFile = onFile
             // A mail sent from a draft Causabee opened goes into the draft's matter.
             extractor.assigned = look.intake.fromDraft

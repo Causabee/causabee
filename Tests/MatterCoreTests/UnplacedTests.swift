@@ -36,4 +36,30 @@ struct UnplacedTests {
         #expect(Unplaced.find(log: log, context: context, setAside: []).map(\.emailID) == ["d"])
         #expect(Unplaced.matters(in: context).map(\.key) == ["bayonne-reise"])
     }
+
+    @Test("A mail with no matter starts a new one the owner names, with what it found")
+    func start() throws {
+        let log = FileManager.default.temporaryDirectory.appendingPathComponent("log-\(UUID()).jsonl")
+        defer { try? FileManager.default.removeItem(at: log) }
+        try line("a", matter: nil, daysAgo: 1).write(to: log, atomically: true, encoding: .utf8)
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let mail = try #require(Unplaced.find(log: log, context: context, setAside: []).first)
+        let matter = try Unplaced.start(mail, named: "Neue Reise", context: context, owner: [])
+        #expect(matter.name == "Neue Reise")
+        #expect((matter.entries ?? []).map(\.messageID) == ["a"])
+        #expect((matter.appointments ?? []).first?.what == "Mietwagen abholen")
+        #expect(Unplaced.find(log: log, context: context, setAside: []).isEmpty)
+    }
+
+    @Test("Closed matters answer by key, name and alias; open ones are not among them")
+    func closed() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let done = Matter(key: "alt", name: "Alte Sache")
+        done.aliases = ["Frueher"]
+        done.closedAt = Date()
+        context.insert(done)
+        context.insert(Matter(key: "offen", name: "Offen"))
+        try context.save()
+        #expect(Unplaced.closed(in: context) == ["alt", "alte sache", "frueher"])
+    }
 }

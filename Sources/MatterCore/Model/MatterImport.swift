@@ -272,7 +272,12 @@ extension Matter {
     /// The first new mail's subject, without "Re:" and the like, and without a calendar invitation's
     /// " - date and time" tail: "Einladung: Ralf Chille and Robbie Kerr".
     public static func suggestedName(for mails: [Entry]) -> String {
-        var title = mails.min { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.title ?? ""
+        cleanSubject(mails.min { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.title ?? "")
+    }
+
+    /// A subject as a name: without "Re:" and the like, and without an invitation's date.
+    public static func cleanSubject(_ subject: String) -> String {
+        var title = subject
         let prefixes = ["re:", "aw:", "fwd:", "fw:", "wg:", "[external]"]
         while let prefix = prefixes.first(where: { title.trimmingCharacters(in: .whitespaces).lowercased().hasPrefix($0) }) {
             title = String(title.trimmingCharacters(in: .whitespaces).dropFirst(prefix.count))

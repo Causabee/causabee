@@ -384,7 +384,7 @@ final class PhoneMailCheck {
             guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
             state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
             do {
-                let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), placed: Unplaced.placed(in: context), onFile: Unplaced.onFile(in: context))
+                let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), closed: Unplaced.closed(in: context), placed: Unplaced.placed(in: context), onFile: Unplaced.onFile(in: context))
                 let answered = Answered(judgements: judgements, cost: summary.cost, failed: summary.failed.count, look: look, door: door)
                 // Only newsletters: nothing to decide on.
                 if judgements.allSatisfy(\.isBulk) { take(answered, chosen: [], moved: [:], context: context, owner: owner) }
@@ -529,6 +529,9 @@ struct PhoneMailCheckView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var unplaced: [Judgement] = []
     @State private var showsUnplaced = true
+    /// The mail of "No matter found" that is to start a matter of its own, and that matter's name.
+    @State private var starting: Judgement?
+    @State private var newName = ""
     /// Mail set aside with "Not needed" — on this device, as on the Mac.
     @AppStorage("unplaced.setAside") private var setAsideJSON = "[]"
 
@@ -687,6 +690,8 @@ struct PhoneMailCheckView: View {
                                             refresh()
                                         }
                                     }
+                                    Divider()
+                                    Button("A new matter", systemImage: "plus.circle") { newName = Matter.cleanSubject(mail.subject); starting = mail }
                                 }
                                 .tint(Theme.gold)
                                 Button("Not needed") {
@@ -708,6 +713,19 @@ struct PhoneMailCheckView: View {
             }
             .tint(.secondary)
             .phoneBox()
+            .alertWhenAsked("A new matter", isPresented: Binding(get: { starting != nil }, set: { if !$0 { starting = nil } })) {
+                TextField("Name", text: $newName)
+                Button("Cancel", role: .cancel) {}
+                Button("Start") {
+                    let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !name.isEmpty, let mail = starting, Store.shared.mayStartMatter(in: context),
+                          let matter = try? Unplaced.start(mail, named: name, context: context, owner: profiles.first?.names ?? []) else { return }
+                    PhoneFolderSaver.save([matter])
+                    refresh()
+                }
+            } message: {
+                Text("The mail starts it, with its tasks and dates. Nothing is sent: it was read already.")
+            }
         }
     }
 }
@@ -847,10 +865,12 @@ struct PhoneDemoMailReview: View {
     }
 }
 
-/// One mail of the round: its subject, the matter it went into, and Move — to another matter.
+/// One mail of the round: its subject, the matter it went into, and Move — to another matter or a new one.
 struct PhoneIntakeMailRow: View {
     let mail: IntakeSummary.Mail
     let moved: (String) -> Void
+    @State private var naming = false
+    @State private var newName = ""
     @Query private var matters: [Matter]
     @Environment(\.modelContext) private var context
     @Environment(Navigation.self) private var navigation
@@ -881,10 +901,26 @@ struct PhoneIntakeMailRow: View {
                             moved(matter.name)
                         }
                     }
+                    Divider()
+                    Button("A new matter", systemImage: "plus.circle") { newName = Matter.cleanSubject(mail.subject); naming = true }
                 }
                 .font(.footnote).tint(Theme.gold)
             }
             .padding(.leading, 28)
+        }
+        .alertWhenAsked("Move to a new matter", isPresented: $naming) {
+            TextField("Name", text: $newName)
+            Button("Cancel", role: .cancel) {}
+            Button("Move") {
+                let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let id = mail.messageID
+                guard !name.isEmpty, let entry = try? context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { $0.messageID == id })).first,
+                      let from = entry.matter, Store.shared.mayStartMatter(in: context),
+                      (try? from.split([entry], intoNewMatterNamed: name, turnsSince: nil, in: context)) != nil else { return }
+                moved(name)
+            }
+        } message: {
+            Text("The mail goes, with the tasks, dates and files only it brought.")
         }
     }
 }

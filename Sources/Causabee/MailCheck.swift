@@ -236,7 +236,7 @@ final class MailCheck {
             guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
             state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
             do {
-                let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), placed: Unplaced.placed(in: context), onFile: Unplaced.onFile(in: context))
+                let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), closed: Unplaced.closed(in: context), placed: Unplaced.placed(in: context), onFile: Unplaced.onFile(in: context))
                 let answered = Answered(judgements: judgements, cost: summary.cost, failed: summary.failed.count, look: look, door: door)
                 // Only newsletters: nothing to decide on.
                 if judgements.allSatisfy(\.isBulk) { take(answered, chosen: [], moved: [:], context: context, owner: owner) }
@@ -351,6 +351,9 @@ struct MailCheckView: View {
     /// Mail that was read but found no matter: to put into one, or to set aside.
     @State private var unplaced: [Judgement] = []
     @State private var showsUnplaced = true
+    /// The mail of "No matter found" that is to start a matter of its own, and that matter's name.
+    @State private var starting: Judgement?
+    @State private var newName = ""
     @AppStorage("unplaced.setAside") private var setAsideJSON = "[]"
 
     private var setAside: Set<String> { Set((try? JSONDecoder().decode([String].self, from: Data(setAsideJSON.utf8))) ?? []) }
@@ -381,6 +384,8 @@ struct MailCheckView: View {
                                             refresh()
                                         }
                                     }
+                                    Divider()
+                                    Button("New Matter …") { newName = Matter.cleanSubject(mail.subject); starting = mail }
                                 }
                                 .menuStyle(.borderlessButton).fixedSize().font(.caption)
                                 .help("Into that matter, with its tasks and dates. Nothing is sent: it was read already.")
@@ -399,6 +404,19 @@ struct MailCheckView: View {
                 .padding(.top, 4)
             } label: {
                 Text("No matter found · \(unplaced.count)").font(.caption.weight(.semibold))
+            }
+            .alertWhenAsked("A new matter", isPresented: Binding(get: { starting != nil }, set: { if !$0 { starting = nil } })) {
+                TextField("Name", text: $newName)
+                Button("Cancel", role: .cancel) {}
+                Button("Start") {
+                    let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !name.isEmpty, let mail = starting, Store.shared.mayStartMatter(in: context),
+                          let matter = try? Unplaced.start(mail, named: name, context: context, owner: profiles.first?.names ?? []) else { return }
+                    FolderSaver.shared.save([matter])
+                    refresh()
+                }
+            } message: {
+                Text("The mail starts it, with its tasks and dates. Nothing is sent: it was read already.")
             }
         }
     }
@@ -667,10 +685,12 @@ struct DemoMailReview: View {
     }
 }
 
-/// One mail of the round: its subject, the matter it went into, and Move — to another matter.
+/// One mail of the round: its subject, the matter it went into, and Move — to another matter or a new one.
 struct IntakeMailRow: View {
     let mail: IntakeSummary.Mail
     let moved: (String) -> Void
+    @State private var naming = false
+    @State private var newName = ""
     @Query private var matters: [Matter]
     @Environment(\.modelContext) private var context
     @Environment(Navigation.self) private var navigation
@@ -699,11 +719,25 @@ struct IntakeMailRow: View {
                             moved(matter.name)
                         }
                     }
+                    Divider()
+                    Button("New Matter …") { newName = Matter.cleanSubject(mail.subject); naming = true }
                 }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                 .font(.caption).foregroundStyle(Theme.gold)
             }
             .padding(.leading, 20)
+        }
+        .alertWhenAsked("Move to a new matter", isPresented: $naming) {
+            TextField("Name", text: $newName)
+            Button("Cancel", role: .cancel) {}
+            Button("Move") {
+                let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !name.isEmpty, let entry, let from = entry.matter, Store.shared.mayStartMatter(in: context),
+                      (try? from.split([entry], intoNewMatterNamed: name, turnsSince: nil, in: context)) != nil else { return }
+                moved(name)
+            }
+        } message: {
+            Text("The mail goes, with the tasks, dates and files only it brought.")
         }
     }
 

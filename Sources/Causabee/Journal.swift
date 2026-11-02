@@ -992,11 +992,22 @@ private struct OverviewDayCard: View {
 
 /// A closed matter is out of the overview, unless mail came for it after it was closed. Held, or
 /// right-clicked on the Mac, that mail is ignored here: it stays in the matter and on its row among
-/// the closed ones, and the next mail shows here again.
+/// the closed ones, and the next mail shows here again; or it starts a matter of its own.
 struct ClosedMailRows: View {
     let matters: [Matter]
     let open: (Matter) -> Void
     @Environment(\.modelContext) private var context
+    @State private var splitting: Matter?
+    @State private var name = ""
+
+    private func start() {
+        guard let matter = splitting else { return }
+        let mails = MatterStatus(matter).mailsSinceClosed
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !mails.isEmpty, !name.isEmpty, Store.shared.mayStartMatter(in: context),
+              let new = try? matter.split(mails, intoNewMatterNamed: name, turnsSince: matter.closedAt, in: context) else { return }
+        open(new)
+    }
 
     private func ignore(_ matter: Matter) {
         withAnimation(.snappy(duration: 0.2)) {
@@ -1030,11 +1041,23 @@ struct ClosedMailRows: View {
                     .buttonStyle(.plain)
                     .help("Open the matter")
                     .contextMenu {
+                        Button(Say.startNewMatter, systemImage: "plus.circle") {
+                            name = Matter.suggestedName(for: MatterStatus(matter).mailsSinceClosed)
+                            splitting = matter
+                        }
+                        .tint(Color.secondary)
                         Button(Say.ignoreNewMail, systemImage: "eye.slash") { ignore(matter) }.tint(Color.secondary)
                     }
                 }
             }
             .journalRows()
+            .alertWhenAsked(Say.startNewMatter, isPresented: Binding(get: { splitting != nil }, set: { if !$0 { splitting = nil } })) {
+                TextField("Name", text: $name)
+                Button("Cancel", role: .cancel) {}
+                Button("Start", action: start)
+            } message: {
+                Text("The new mail goes, with what only it brought. The closed matter stays closed.")
+            }
         }
     }
 }
