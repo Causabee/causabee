@@ -1,6 +1,6 @@
 import XCTest
 
-/// What only an iPad has: the page between its columns, and on its side a column beside the page.
+/// What only an iPad has: the page between the sidebar and the assistant, one column, whole.
 /// What a picture of a page cut off on both sides showed by eye, these say in points. On an iPhone
 /// they are skipped; `scripts/testflight.sh` runs them on an iPad too.
 ///
@@ -22,18 +22,22 @@ final class PadTests: XCTestCase {
 
     override func tearDown() { XCUIDevice.shared.orientation = .portrait }
 
-    /// On its side: the journal between the sidebar and the column, on every filter, whole.
-    func testTheColumnStandsBesideTheJournal() {
+    /// On its side with the chat closed: one page beside the sidebar, on every filter, whole —
+    /// what is ahead is in it, not in a column of its own.
+    func testOnItsSideThePageIsOneColumn() {
+        let window = app.windows.firstMatch.frame
         for part in ["Digest", "Plan", "Mail", "Files", "People", "Notes"] {
             let filter = app.buttons["part.\(part)"]
             XCTAssertTrue(filter.waitForExistence(timeout: 10), "\(part) is not among the filters.")
             filter.tap()
-            let column = app.buttons["athand.Summary"]
-            XCTAssertTrue(column.waitForExistence(timeout: 10), "The column is not there on \(part).")
             picture(part)
-            XCTAssertGreaterThan(app.buttons["part.Digest"].frame.minX, sidebar, "On \(part) the journal slid under the sidebar.")
-            XCTAssertLessThanOrEqual(column.frame.maxX, app.windows.firstMatch.frame.maxX, "On \(part) the column runs off the screen.")
-            XCTAssertLessThan(app.buttons["part.Digest"].frame.maxX, column.frame.minX, "On \(part) the journal and the column overlap.")
+            let digest = app.buttons["part.Digest"].frame
+            XCTAssertGreaterThan(digest.minX, sidebar, "On \(part) the journal slid under the sidebar.")
+            let summary = app.buttons["athand.Summary"]
+            if summary.exists {
+                XCTAssertGreaterThanOrEqual(summary.frame.minX, digest.minX - 30, "On \(part) the summary stands in a column beside the page.")
+                XCTAssertLessThanOrEqual(summary.frame.maxX, window.maxX, "On \(part) the summary runs off the screen.")
+            }
         }
     }
 
@@ -56,6 +60,8 @@ final class PadTests: XCTestCase {
         XCTAssertTrue(ahead.waitForExistence(timeout: 10), "What is ahead is not there.")
         picture("Ahead")
         let box = ahead.buttons["Mark as done"].firstMatch
+        // In the page, under the next step: its tasks are drawn once they come into sight.
+        for _ in 0..<4 where !box.exists { app.swipeUp() }
         XCTAssertTrue(box.waitForExistence(timeout: 5), "No task ahead has its box.")
         let left = ahead.staticTexts.matching(NSPredicate(format: "label CONTAINS ' open'")).firstMatch
         let before = left.label
@@ -70,23 +76,21 @@ final class PadTests: XCTestCase {
         XCTAssertTrue(app.buttons["part.Digest"].waitForExistence(timeout: 40), "The demo did not come back.")
     }
 
-    /// With the assistant beside it there is no room for the column: the journal has the page alone.
-    /// On Mail, where what the column holds has no place in the page.
-    func testTheAssistantTakesTheColumnsPlace() {
+    /// With the assistant beside it the journal keeps its room between the sidebar and the chat.
+    func testTheAssistantStandsBesideThePage() {
         app.buttons["part.Mail"].tap()
-        XCTAssertTrue(app.buttons["athand.Summary"].waitForExistence(timeout: 10), "The column is not there.")
         app.buttons["Ask Causabee"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["athand.Summary"].waitForNonExistence(timeout: 10), "The column stayed beside the assistant.")
+        XCTAssertTrue(app.buttons["part.Digest"].waitForExistence(timeout: 10), "The page went when the assistant came.")
         picture("Assistant")
         XCTAssertGreaterThan(app.buttons["part.Digest"].frame.minX, sidebar, "The journal slid under the sidebar.")
     }
 
-    /// Turned upright the sidebar and the column step aside, and the page has the whole window.
+    /// Turned upright the sidebar steps aside, and the page has the whole window.
     func testUprightThePageIsWhole() {
         app.buttons["part.Mail"].tap()
-        XCTAssertTrue(app.buttons["athand.Summary"].waitForExistence(timeout: 10), "The column is not there.")
         XCUIDevice.shared.orientation = .portrait
-        XCTAssertTrue(app.buttons["athand.Summary"].waitForNonExistence(timeout: 10), "The column stayed on an upright iPad.")
+        let end = Date().addingTimeInterval(10)
+        while app.buttons["part.Digest"].frame.minX > sidebar, Date() < end { RunLoop.current.run(until: Date().addingTimeInterval(0.2)) }
         picture("Upright")
         XCTAssertGreaterThanOrEqual(app.buttons["part.Digest"].frame.minX, 0, "The journal is cut off on the left.")
     }

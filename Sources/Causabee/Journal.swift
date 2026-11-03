@@ -267,7 +267,7 @@ struct AheadCard: View {
     let plan: Journal.Plan
     let tick: (Todo) -> Void
     let open: () -> Void
-    /// How many days it shows: on a wide page it stands in its own column and has the room.
+    /// How many days it shows: on the Mac and an iPad the page has the room for more.
     var days = 2
 
     private func name(_ text: String) -> some View {
