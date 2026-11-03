@@ -92,7 +92,8 @@ struct MatterStatusView: View {
     @Environment(\.reading) private var reading
     /// How wide the whole page is: wide, what is ahead has its own column.
     @State private var pageWidth = CGFloat.zero
-    private var hasColumn: Bool { pageWidth >= 800 }
+    /// With the chat closed there is none: the page is one column, read from top to bottom.
+    private var hasColumn: Bool { pageWidth >= 800 && !navigation.assistantHidden }
 
     init(matter: Matter) {
         self.matter = matter
@@ -1145,10 +1146,8 @@ struct MatterStatusView: View {
                 if !renaming, !hasColumn || find.isActive { Color.clear.frame(width: toolsWidth, height: 1) }
             }
             ZStack(alignment: .leading) {
-                HStack(spacing: 6) {
-                    Text(count)
-                    if let since { Text("· since \(Dates.short(since))") }
-                }
+                // One line of text, so the dot before "since" stands as the others do.
+                Text(count + (since.map { " · since \(Dates.short($0))" } ?? ""))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 // With the page under the bar the count is gone: the page is read there, not the bar.

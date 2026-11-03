@@ -396,6 +396,24 @@ final class StoredChanges {
     @ObservationIgnored private var watching = false
     @ObservationIgnored private var pending = false
 
+    @ObservationIgnored private var tidying: Task<Void, Never>?
+
+    /// Mails, tasks, files and dates that came in twice, put right a few seconds after the last of
+    /// what iCloud brought; and once on each device, files added by hand that a mail brought too.
+    func tidyTwins() {
+        guard !DemoData.isRequested, !DemoData.usesReal, let context else { return }
+        tidying?.cancel()
+        tidying = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            let once = "twins.handAdded.1"
+            if !UserDefaults.standard.bool(forKey: once), (try? Twins.putAwayHandAddedTwins(in: context)) != nil {
+                UserDefaults.standard.set(true, forKey: once)
+            }
+            _ = try? Twins.tidy(in: context, device: UserDefaults.standard.string(forKey: "names.device") ?? "")
+        }
+    }
+
     func watch(_ context: ModelContext) {
         self.context = context
         OwnerMe.refresh(context)
@@ -406,8 +424,15 @@ final class StoredChanges {
         PublicNames.refresh(in: context)
         // From the start: what iCloud brings in, so the mail check can wait for it.
         CloudCatchUp.shared.watch()
+        tidyTwins()
         guard !watching else { return }
         watching = true
+        // What two devices sorted before either had the other's work: put right once iCloud has brought it.
+        NotificationCenter.default.addObserver(forName: NSPersistentCloudKitContainer.eventChangedNotification, object: nil, queue: .main) { note in
+            guard let event = note.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event,
+                  event.type == .import, event.endDate != nil, event.succeeded else { return }
+            MainActor.assumeIsolated { StoredChanges.shared.tidyTwins() }
+        }
         NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { StoredChanges.shared.changed() }
         }

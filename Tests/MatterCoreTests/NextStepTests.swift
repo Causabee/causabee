@@ -83,6 +83,11 @@ struct NextStepTests {
         #expect(chase.isMessage)
         #expect(!todo("Antwort des Reisebüros abwarten", .other, in: matter, context).isMessage)
         #expect(!todo("Unterlagen sortieren", .me, in: matter, context).isMessage)
+        #expect(!Todo.isMessage("Reproduce duplicate files and trace the October 30 email imports."))
+        #expect(Todo.isMessage("Mail an die Bank wegen der Kontoauszüge"))
+        #expect(Todo.isMessage("Ask Tanguy Lacroix to confirm receipt"))
+        #expect(Todo.isMessage("Email Maike the dial-in details"))
+        #expect(!Todo.isMessage("Check the email settings"))
         let why = try #require(MatterStatus(matter, today: today).nextStep?.why)
         #expect(why.hasPrefix("Due on Sep 30") && !why.contains(".."))
     }

@@ -23,6 +23,8 @@ public enum MatterImport {
         public var deadlines = 0
         public var parties = 0
         public var documents = 0
+        /// Files added by hand that their matter had already: not taken in.
+        public var filesAlreadyThere = 0
         /// Mails that would have started a matter the plan has no room for: not taken in — they
         /// wait among the mail without a matter.
         public var held: [String] = []
@@ -110,6 +112,14 @@ public enum MatterImport {
             let kind: Source.Kind = judgement.emailID.hasPrefix("screenshot:") ? .screenshot
                 : judgement.emailID.hasPrefix("document:") ? .document : .mail
             let source = Source(kind: kind, pointer: judgement.source, messageID: judgement.emailID, date: judgement.date)
+            // A file added by hand that the matter has already, to the byte — from a mail, or from
+            // its own folder, where it stands with its day in front: not taken in a second time.
+            if isNew, [.screenshot, .document].contains(kind), let file = source.fileURL,
+               let bytes = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+               Twins.has(Document.ownName(of: file), bytes: bytes, in: matter) {
+                summary.filesAlreadyThere += 1
+                continue
+            }
 
             for found in judgement.todos {
                 if let id = found.id, let todo = byRunID[id], found.sameAs != nil {
@@ -137,6 +147,7 @@ public enum MatterImport {
                                         byteCount: attachment.byteCount, source: source)
                 context.insert(document)
                 document.matter = matter
+                Twins.putAway(handAddedTwinsOf: document, in: matter)
                 summary.documents += 1
             }
             // A file the owner dropped in — a scanned letter, a PDF, a screenshot — is a file of the

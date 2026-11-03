@@ -76,7 +76,8 @@ struct MatterScreen: View {
     /// What Mail and Files show of the record.
     private var filter: RecordBrowse.Kind { part == .mail ? .mail : .files }
     /// A wide iPad has room for what is ahead in a column of its own.
-    private var hasColumn: Bool { navigation.isPad && navigation.pageWidth >= 860 }
+    /// With the chat closed there is none: the page is one column, read from top to bottom.
+    private var hasColumn: Bool { navigation.isPad && navigation.pageWidth >= 860 && navigation.showsAssistant }
     /// What that column takes of the page's room. While finding it is away, and the page has it all.
     private var beside: CGFloat { hasColumn && !find.isActive ? PadMetrics.column : 0 }
 
