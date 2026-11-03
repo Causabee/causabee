@@ -21,9 +21,17 @@ Words come from one list in code: `Say` in `Sources/Causabee/MatterMenus.swift`.
 - [ ] A scan or a file brought in opens as the file.
 - [ ] Dropping files and links onto the matter keeps them (Mac, iPad).
 
+## Without Pro
+
+- [ ] The next step is the rule's, labelled "… · from your tasks" when it is a task, with one grey line under it: "Pro reads all n mails for this." and See Pro.
+- [ ] No summary is written; Write the brief and Update now are not offered.
+- [ ] Under the assistant's field: "Stays on this device. Asking needs Pro for now."
+- [ ] A screenshot is read on the device, by Apple's model or by rules.
+- [ ] With the chat closed a matter is one page on the Mac and the iPad, its bar across the whole width.
+
 ## The assistant
 
-- [ ] Under an answer: Copy, Save as note, Try again, Sources, what was sent (tap the price), "read X as Y".
+- [ ] Under an answer: Copy, Save as note, Try again, Sources, what was sent (tap the line under it), "read X as Y".
 - [ ] 20 turns at first, "Show earlier · n more" brings 20 more.
 - [ ] Reading mode hides suggestion cards; a drafted mail stays.
 - [ ] A screenshot pasted (plus → Paste screenshot, ⌘V) or dropped on the assistant is read.
