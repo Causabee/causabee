@@ -117,10 +117,12 @@ final class PhoneShots {
             set(id, .answered(look, judgement))
             return
         }
-        guard let claude = ModelChoice.client(for: door.model) else {
-            set(id, .failed(ModelChoice.missingKey(door.model)))
+        let reader = ModelChoice.mailReader(for: door.model)
+        if case .none(let why) = reader {
+            set(id, .failed(why))
             return
         }
+        let claude = reader.client
         set(id, .sending(look))
         let matters = Unplaced.matters(in: context)
         Task {

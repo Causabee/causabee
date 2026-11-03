@@ -15,10 +15,15 @@ extension Todo {
 
     public static func isMessage(_ text: String) -> Bool {
         let words = text.lowercased()
-        return ["nachfass", "nachfrag", "nachhak", "erinner", "schreib", "anschreib", "mail", "antwort geben", "beantwort",
-                "rückmeld", "zurückmeld", "melden", "kontaktier", "anfrag", "bescheid geben", "mitteil", "informier", "absag", "zusag",
-                "schick", "send", "übermittel", "weiterleit"]
-            .contains { words.contains($0) }
+        // "Mail" alone is no message: "trace the email imports" is not one, "Mail an die Bank" is.
+        let german = ["nachfass", "nachfrag", "nachhak", "erinner", "schreib", "anschreib", "antwort geben", "beantwort",
+                      "rückmeld", "zurückmeld", "melden", "kontaktier", "anfrag", "bescheid geben", "mitteil", "informier", "absag", "zusag",
+                      "schick", "send", "übermittel", "weiterleit", "mail an "]
+        // English: a step that begins with one of these is a message to someone. Further in, "email"
+        // is as often a thing as a deed.
+        let english = ["write to", "reply", "respond", "email ", "e-mail ", "ask ", "tell ", "remind ", "follow up", "contact ", "let ",
+                       "inform ", "forward ", "send "]
+        return (german.contains { words.contains($0) } || english.contains { words.hasPrefix($0) })
             && !words.contains("abwarten")
     }
 
@@ -96,6 +101,9 @@ public struct NextStep: Sendable, Equatable {
         case .wait: "Wait"
         }
     }
+
+    /// The label, and where a step that is one of the owner's tasks comes from.
+    public var heading: String { todo == nil ? label : "\(label) · from your tasks" }
 }
 
 extension MatterStatus {
@@ -113,7 +121,7 @@ extension MatterStatus {
         func then(_ todo: Todo) -> String {
             let waiting = todo.waiting
             guard let first = waiting.first else { return "" }
-            return waiting.count == 1 ? " Then this can go ahead: \(first.text)." : " Then \(waiting.count) more tasks can go ahead."
+            return waiting.count == 1 ? " Then this can go ahead: " + Self.sentence(first.text) : " Then \(waiting.count) more tasks can go ahead."
         }
         func step(_ kind: NextStep.Kind, _ todo: Todo, _ why: String) -> NextStep {
             NextStep(kind: kind, text: todo.text, why: (why + then(todo)).trimmingCharacters(in: .whitespaces), todo: todo.persistentModelID)

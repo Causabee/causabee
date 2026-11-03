@@ -76,7 +76,8 @@ struct MatterScreen: View {
     /// What Mail and Files show of the record.
     private var filter: RecordBrowse.Kind { part == .mail ? .mail : .files }
     /// A wide iPad has room for what is ahead in a column of its own.
-    private var hasColumn: Bool { navigation.isPad && navigation.pageWidth >= 860 }
+    /// With the chat closed there is none: the page is one column, read from top to bottom.
+    private var hasColumn: Bool { navigation.isPad && navigation.pageWidth >= 860 && navigation.showsAssistant }
     /// What that column takes of the page's room. While finding it is away, and the page has it all.
     private var beside: CGFloat { hasColumn && !find.isActive ? PadMetrics.column : 0 }
 
@@ -166,20 +167,6 @@ struct MatterScreen: View {
                 // Right under the pinned tabs, which stay: the part's start at their lower edge.
                 if scroll.partsUnder { scroller.scrollTo("part", anchor: UnitPoint(x: 0.5, y: 44 / max(pageHeight, 200))) }
             }
-            // Over the page, not in it: the page keeps its place when they come and go.
-            .overlay(alignment: .top) {
-                PinnedParts(scroll: scroll, hidden: find.isActive) {
-                    // The tabs change places without a fade: there is one set of them at a time.
-                    // As wide as they are in the page, on a bar as wide as the column: on an
-                    // iPad the page is narrower than its column.
-                    parts()
-                        .padding(.horizontal, 16)
-                        .frame(maxWidth: PadMetrics.page).frame(maxWidth: .infinity)
-                        .padding(.top, 6).padding(.bottom, 10)
-                        .background(.bar, ignoresSafeAreaEdges: .top)
-                        .overlay(alignment: .bottom) { Divider() }
-                }
-            }
             .onAppear {
                 // `--part record`: starts in that part — for the scroll tour.
                 if let at = CommandLine.arguments.firstIndex(of: "--part"), at + 1 < CommandLine.arguments.count,
@@ -221,6 +208,21 @@ struct MatterScreen: View {
                         .padding(.top, 10).padding(.trailing, 16).padding(.bottom, 90)
                     }
                     .frame(width: PadMetrics.column)
+                }
+            }
+            // Over the page, not in it: the page keeps its place when they come and go.
+            .overlay(alignment: .top) {
+                PinnedParts(scroll: scroll, hidden: find.isActive) {
+                    // The tabs change places without a fade: there is one set of them at a time.
+                    // As wide as they are in the page, on a bar across the whole width: on an
+                    // iPad the page is narrower than its column, and the bar goes on over what is ahead.
+                    parts()
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: PadMetrics.page, alignment: .leading).frame(maxWidth: .infinity)
+                        .padding(.trailing, beside)
+                        .padding(.top, 6).padding(.bottom, 10)
+                        .background(.bar, ignoresSafeAreaEdges: .top)
+                        .overlay(alignment: .bottom) { Divider() }
                 }
             }
         }
@@ -617,7 +619,8 @@ struct MatterScreen: View {
         // to act on until it has.
         let coming = AutoUpdate.shared.updating(matter)
         let outOfDate = coming && matter.nextStep != nil
-        let own = fresh && !coming
+        // Without Pro the rule chooses, also over a step written earlier.
+        let own = fresh && !coming && !ModelChoice.reach.isFree
         // Yellow only when something waits for the owner: while it waits for someone else there is
         // nothing to do, and the page says so without a colour.
         let forYou = own ? matter.nextStep != nil : rule.map { $0.kind != .wait } ?? false
@@ -630,7 +633,7 @@ struct MatterScreen: View {
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
             } else if let rule {
-                BeeChip(text: rule.label.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
+                BeeChip(text: rule.heading.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), rule.text, rule.why)
                 Text(rule.why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation()
@@ -657,6 +660,8 @@ struct MatterScreen: View {
                 } else if auto {
                     // Auto asks: no link to ask with.
                     AutoLine(matter: matter, size: 11)
+                } else if ModelChoice.reach != .pro {
+                    ProLine(reach: ModelChoice.reach, mails: matter.entries?.count ?? 0)
                 } else {
                     // An older suggestion says only its day.
                     if let at = matter.nextStepAt, matter.nextStep != nil, !fresh {
@@ -820,10 +825,10 @@ struct MatterScreen: View {
                     AutoLine(matter: matter, size: 11)
                     Spacer()
                 } else if matter.summaryAt != nil {
-                    UpdateNowButton(action: writeSummary)
+                    if ModelChoice.reach == .pro { UpdateNowButton(action: writeSummary) }
                     Spacer()
                     if let at = matter.summaryAt { Text(Dates.short(at)).font(.caption).foregroundStyle(.secondary) }
-                } else {
+                } else if ModelChoice.reach == .pro {
                     Button("Write the brief", action: writeSummary).buttonStyle(.phone)
                     Spacer()
                 }
@@ -842,7 +847,8 @@ struct MatterScreen: View {
         if !matter.isClosed {
             nextStep(status, scroller)
             ForYouCard(matter: matter)
-            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick) { part = .plan } }
+            // On an iPad the page has the room the column had: as many days as it showed.
+            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: navigation.isPad ? 4 : 2) }
         }
         atHandCard
     }

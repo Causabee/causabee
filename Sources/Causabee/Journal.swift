@@ -167,17 +167,51 @@ struct OutOfDateStep: View {
 
 /// The one button that has Causabee write a matter again, wherever that is offered.
 struct UpdateNowButton: View {
+    var title = Say.updateNow
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(Say.updateNow).font(.caption.weight(.medium)).foregroundStyle(.primary)
+            Text(title).font(.caption.weight(.medium)).foregroundStyle(.primary)
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(Theme.box, in: Capsule())
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("update.now")
+    }
+}
+
+/// Where something is out of reach here: it says so before it is tried, and what would do it.
+/// Never yellow: yellow means something waits for the owner.
+struct ProLine: View {
+    let reach: Reach
+    var mails = 0
+    @AppStorage(AutoMode.key) private var auto = false
+    @State private var asks = false
+
+    private var anew: String? {
+        BeeServer.shared.renewsOn.map { IntakeSummary.day($0) }
+    }
+
+    var body: some View {
+        if let line = reach.line(mails: mails, anew: anew) {
+            HStack(spacing: 6) {
+                Image(systemName: "bolt").font(.caption).foregroundStyle(.secondary)
+                Text(line.words).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                UpdateNowButton(title: line.action.title) { run(line.action) }
+            }
+            .asksBeforeAuto($asks) { auto = true }
+        }
+    }
+
+    private func run(_ action: Reach.Action) {
+        switch action {
+        case .seePro: Store.shared.asks = .pro
+        case .topUp: Store.shared.asks = .choose
+        case .turnOn: if AutoMode.asksFirst { asks = true } else { auto = true }
+        }
     }
 }
 
@@ -233,7 +267,7 @@ struct AheadCard: View {
     let plan: Journal.Plan
     let tick: (Todo) -> Void
     let open: () -> Void
-    /// How many days it shows: on a wide page it stands in its own column and has the room.
+    /// How many days it shows: on the Mac and an iPad the page has the room for more.
     var days = 2
 
     private func name(_ text: String) -> some View {

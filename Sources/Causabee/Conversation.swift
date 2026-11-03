@@ -187,10 +187,12 @@ struct Conversation {
         guard let turn = navigation.turns.first(where: { $0.id == id }), case .read(let look) = turn.shot?.stage else { return }
         var door = ScreenshotDoor(besides: navigation.store, model: ModelChoice.mail)
         door.strict = ModelChoice.strict
-        guard let claude = ModelChoice.client(for: door.model) else {
-            Self.set(shot: id, .failed(ModelChoice.missingKey(door.model)), in: navigation)
+        let reader = ModelChoice.mailReader(for: door.model)
+        if case .none(let why) = reader {
+            Self.set(shot: id, .failed(why), in: navigation)
             return
         }
+        let claude = reader.client
         Self.set(shot: id, .sending(look), in: navigation)
         let matters = Unplaced.matters(in: context)
         let navigation = self.navigation
@@ -566,7 +568,8 @@ struct Composer: View {
             // Glass: the thread is seen through it as it passes under.
             .glassBehind(RoundedRectangle(cornerRadius: 24))
             // "more" and "less" are links inside the line, so the full one wraps like a sentence.
-            Text(LocalizedStringKey(showsMore
+            Text(LocalizedStringKey(ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro for now."
+                : showsMore
                 ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen()) · goes pseudonymised, like the mails • [less](causabee://footer)"
                 : "Always pseudonymised sent • [more](causabee://footer)"))
                 .font(.caption2).foregroundStyle(.secondary).tint(Theme.gold)
