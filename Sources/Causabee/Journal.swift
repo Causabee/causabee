@@ -61,9 +61,12 @@ struct JournalPills<Part: Hashable>: View {
     let parts: [Part]
     let label: (Part) -> String
     @Binding var selection: Part
+    /// Onto a second line where they do not fit, not scrolled: in a sheet, whose edge hid the rest.
+    var wraps = false
 
-    private var row: some View {
-        HStack(spacing: 6) {
+    private var row: some View { HStack(spacing: 6) { pills } }
+
+    @ViewBuilder private var pills: some View {
             ForEach(parts, id: \.self) { part in
                 let chosen = part == selection
                 Button { selection = part } label: {
@@ -90,13 +93,18 @@ struct JournalPills<Part: Hashable>: View {
                 .accessibilityAddTraits(chosen ? .isSelected : [])
                 .accessibilityIdentifier("part." + label(part))
             }
-        }
     }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            row
-            ScrollView(.horizontal, showsIndicators: false) { row }
+        Group {
+            if wraps {
+                FlowRow(spacing: 4) { pills }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    row
+                    ScrollView(.horizontal, showsIndicators: false) { row }
+                }
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Filter")
@@ -1300,8 +1308,9 @@ struct ConnectSheet: View {
                 Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
             }
             TextField("Search \(matter.name)", text: $query).textFieldStyle(.roundedBorder)
-            Picker("Kind", selection: $kind) { ForEach(kinds, id: \.self) { Text($0).tag($0) } }
-                .pickerStyle(.segmented).labelsHidden()
+            // The page's own pills, every word whole and every kind in sight — a segmented control
+            // cut "People" to "Peo…", and a scrolled row hid Notes and Links behind the sheet's edge.
+            JournalPills(parts: kinds, label: { $0 }, selection: $kind, wraps: true)
             List(shown, id: \.self) { other in
                 Button {
                     withAnimation {
