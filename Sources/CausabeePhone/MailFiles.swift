@@ -188,7 +188,15 @@ struct FilesSection: View {
         matter.entry(messageID: document.messageID).map { Email.displayName(in: $0.from) ?? Email.address(in: $0.from) }
     }
 
-    private func row(_ document: MatterCore.Document) -> some View { face(document, tile: false).padding(14) }
+    /// A file as a row, with what it belongs with under it — as every other item.
+    private func row(_ document: MatterCore.Document) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            face(document, tile: false)
+            ConnectionChips(item: .file(document), matter: document.matter).padding(.leading, 52).padding(.top, 6)
+        }
+        .padding(14)
+        .dropsOn(.file(document), in: document.matter)
+    }
     private func tile(_ document: MatterCore.Document) -> some View { face(document, tile: true) }
 
     private func face(_ document: MatterCore.Document, tile: Bool) -> some View {

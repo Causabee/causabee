@@ -1444,28 +1444,58 @@ struct ConnectSheet: View {
     }
 
     var body: some View {
-        let connected = Set(matter.connected(to: item).map(\.item))
+        let all = matter.connected(to: item)
+        // Ticked is only what the owner put with it. What Causabee read it came from — a mail's
+        // files, tasks and dates — stands apart on top, without a tick: ticked among the rest, a
+        // mail opened with half the matter chosen, and a task made by hand with nothing.
+        let connected = Set(all.filter { $0.kind == .with }.map(\.item))
+        let cameFrom = all.filter { $0.kind == .cameFrom }.map(\.item).filter { shown.contains($0) }
+        let rest = shown.filter { !cameFrom.contains($0) }
         // As the system's own sheets are: the title and Done on the glass of the bar, the search in
         // the system's field, the list scrolling under both.
         NavigationStack {
-            List(shown, id: \.self) { other in
-                Button {
-                    withAnimation {
-                        if connected.contains(other) { matter.disconnect(item, other, in: context) } else { matter.connect(item, other, in: context) }
+            List {
+                if !cameFrom.isEmpty {
+                    Section {
+                        ForEach(cameFrom, id: \.self) { other in
+                            HStack(spacing: 10) {
+                                Image(systemName: "arrow.turn.down.right").foregroundStyle(.secondary).frame(width: 22)
+                                Image(systemName: other.symbol).foregroundStyle(.secondary).frame(width: 18)
+                                Text(other.title).lineLimit(2)
+                                Spacer(minLength: 8)
+                                if let when = other.when { Text(Dates.short(when)).font(.caption).foregroundStyle(.secondary) }
+                            }
+                        }
+                    } header: {
+                        Text("Read from, by Causabee").font(.footnote).foregroundStyle(.secondary)
+                    } footer: {
+                        Text("Shown with it already. × on its chip takes one away.").font(.caption).foregroundStyle(.secondary)
                     }
-                    try? context.save()
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: connected.contains(other) ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(connected.contains(other) ? Color.primary : Color.secondary)
-                        Image(systemName: other.symbol).foregroundStyle(.secondary).frame(width: 18)
-                        Text(other.title).lineLimit(2)
-                        Spacer(minLength: 8)
-                        if let when = other.when { Text(Dates.short(when)).font(.caption).foregroundStyle(.secondary) }
-                    }
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                Section {
+                    ForEach(rest, id: \.self) { other in
+                        Button {
+                            withAnimation {
+                                if connected.contains(other) { matter.disconnect(item, other, in: context) } else { matter.connect(item, other, in: context) }
+                            }
+                            try? context.save()
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: connected.contains(other) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(connected.contains(other) ? Color.primary : Color.secondary)
+                                    .frame(width: 22)
+                                Image(systemName: other.symbol).foregroundStyle(.secondary).frame(width: 18)
+                                Text(other.title).lineLimit(2)
+                                Spacer(minLength: 8)
+                                if let when = other.when { Text(Dates.short(when)).font(.caption).foregroundStyle(.secondary) }
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    if !cameFrom.isEmpty { Text("Connect").font(.footnote).foregroundStyle(.secondary) }
+                }
             }
             .listStyle(.plain)
             .kindPills { JournalPills(parts: kinds, label: { $0 }, selection: $kind, wraps: true) }
