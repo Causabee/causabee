@@ -1,6 +1,10 @@
 import MatterCore
+import PhotosUI
 import SwiftData
 import SwiftUI
+#if os(iOS)
+import VisionKit
+#endif
 
 // The matter's page as one journal: white cards on a grey page, what waits for the owner on a
 // yellow tile, and everything else only to read. One code for the Mac, the iPhone and the iPad; the
@@ -1384,6 +1388,14 @@ struct ConnectSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var kind = "All"
+    @State private var photo: PhotosPickerItem?
+    @State private var picksPhoto = false
+    @State private var picksFile = false
+    @State private var scanning = false
+    @State private var said: String?
+    #if os(macOS)
+    @Environment(Navigation.self) private var navigation
+    #endif
 
     private var kinds: [String] { ["All"] + ["Mail", "Files", "Tasks", "Dates", "People", "Details", "Notes", "Links"].filter { name in matter.journalItems.contains { $0 != item && $0.kindName == name } } }
 
@@ -1440,15 +1452,113 @@ struct ConnectSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                #if os(iOS)
+                ToolbarItem(placement: .topBarLeading) { newMenu }
+                #else
+                ToolbarItem(placement: .primaryAction) { newMenu }
+                #endif
                 ToolbarItem(placement: .confirmationAction) {
                     SheetConfirm("Done") { dismiss() }
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                if let said {
+                    Text(said).font(.footnote).foregroundStyle(.secondary).padding(8)
+                        .frame(maxWidth: .infinity).background(.bar)
+                }
+            }
+            .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
+            .onChange(of: photo) {
+                guard let photo else { return }
+                self.photo = nil
+                Task {
+                    guard let data = try? await photo.loadTransferable(type: Data.self) else { return }
+                    let ending = photo.supportedContentTypes.compactMap(\.preferredFilenameExtension).first { ["jpeg", "jpg", "png", "heic"].contains($0) } ?? "jpeg"
+                    add(data, named: "Photo " + Self.stamp() + "." + ending)
+                }
+            }
+            .fileImporter(isPresented: $picksFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
+                if case .success(let files) = result { add(files) }
+            }
+            #if os(iOS)
+            .fullScreenCover(isPresented: $scanning) {
+                DocumentCamera { pages in
+                    scanning = false
+                    if let data = Scans.pdf(of: pages) { add(data, named: "Scan " + Self.stamp() + ".pdf") }
+                } cancel: { scanning = false }
+                .ignoresSafeArea()
+            }
+            #endif
         }
         #if os(macOS)
         .frame(width: 460, height: 520)
         #else
         .presentationDetents([.medium, .large])
         #endif
+    }
+
+    /// New: a photo, a scan or a file, added to the matter and connected to the item at once — a
+    /// photo taken for a task after the fact. It is kept as files added by hand are, not read: Read
+    /// on the file reads it.
+    private var newMenu: some View {
+        Menu {
+            Button("Photo", systemImage: "photo") { picksPhoto = true }
+            #if os(iOS)
+            if VNDocumentCameraViewController.isSupported {
+                Button("Scan", systemImage: "doc.viewfinder") { scanning = true }
+            }
+            #endif
+            Button("File", systemImage: "doc") { picksFile = true }
+        } label: {
+            Label("New", systemImage: "plus")
+        }
+        .accessibilityIdentifier("connect.new")
+    }
+
+    /// "2026-11-04 at 16.05.12", as the devices name their own pictures.
+    static func stamp() -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        return formatter.string(from: Date())
+    }
+
+    /// What came from the camera or the photos, through a file of its own, the way a picked one comes.
+    private func add(_ data: Data, named name: String) {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appendingPathComponent(name)
+        guard (try? data.write(to: file)) != nil else { said = "It could not be added."; return }
+        add([file])
+        try? FileManager.default.removeItem(at: folder)
+    }
+
+    /// Each a file of the matter, kept where this device keeps the owner's own files, and connected.
+    private func add(_ files: [URL]) {
+        let before = Set((matter.documents ?? []).map(\.persistentModelID))
+        #if os(iOS)
+        let folder = PhoneShots.folder
+        let result = FolderImport.add(files, to: matter, context: context) { file, name in
+            FolderImport.data(of: file).flatMap { PhoneShots.keep($0, named: name, in: folder) }
+        }
+        #else
+        let folder = ScreenshotDoor.attachments(besides: navigation.store)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let result = FolderImport.add(files, to: matter, context: context) { file, name in
+            let target = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name)
+            var done = false
+            NSFileCoordinator().coordinate(readingItemAt: file, options: [], error: nil) { done = (try? FileManager.default.copyItem(at: $0, to: target)) != nil }
+            return done ? target : nil
+        }
+        #endif
+        let added = (matter.documents ?? []).filter { !before.contains($0.persistentModelID) }
+        withAnimation { for document in added { matter.connect(item, .file(document), in: context) } }
+        try? context.save()
+        #if os(iOS)
+        PhoneFolderSaver.save([matter])
+        #else
+        FolderSaver.shared.save([matter])
+        #endif
+        said = added.isEmpty ? (result.said ?? "It is in the matter already.") : result.said
     }
 }
