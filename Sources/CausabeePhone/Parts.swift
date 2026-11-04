@@ -99,9 +99,9 @@ struct AssistantButton: View {
     /// On, and Pro bought.
     private var pro: Bool { auto && Store.shared.plan == .pro }
 
-    /// Grey, or the bee's yellow as a rim with light inside: which one reads better as "Light" is
-    /// to be chosen — `-bee.light outline` shows the second.
-    private var outlined: Bool { UserDefaults.standard.string(forKey: "bee.light") == "outline" }
+    /// Light as a grey bee on light glass, or the yellow bee's form in grey — a white bee on a solid
+    /// grey disc: which one reads better is to be chosen — `-bee.light inverse` shows the second.
+    private var inverse: Bool { UserDefaults.standard.string(forKey: "bee.light") == "inverse" }
 
     var body: some View {
         bee
@@ -112,44 +112,55 @@ struct AssistantButton: View {
             .asksBeforeAuto($asks) { switchOn() }
     }
 
+    /// Yellow: the chat on a tap, and held, Pro off and what can be added. Grey: one tap, the
+    /// sheet — there is no menu to hold, since what it lists to be read and sorted in is Pro's.
+    @ViewBuilder
     private var bee: some View {
-        Menu {
-            // The button is yellow; what its menu lists is not: yellow signs on the menu's white
-            // could hardly be read.
-            Group {
-                if pro {
+        if pro {
+            Menu {
+                // The button is yellow; what its menu lists is not: yellow signs on the menu's
+                // white could hardly be read.
+                Group {
                     Button("Turn off Pro", systemImage: "bolt.slash") { auto = false; Haptics.tap() }
-                } else {
-                    Button("Turn on Pro", systemImage: "bolt") { turnOn() }
+                    Divider()
+                    PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
                 }
-                Divider()
-                PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+                .menuSigns()
+            } label: {
+                face
+            } primaryAction: {
+                action()
             }
-            .menuSigns()
-        } label: {
-            // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
-            BeeAtHome(size: 24, livesNowAndThen: pro, ink: pro || outlined ? .black : Color(white: 0.45))
-                .frame(width: 46, height: 46)
-        } primaryAction: {
-            if pro { action() } else { light = true }
+            .menuIndicator(.hidden)
+            // The system's own glass button, round: alive under the finger, and the held menu grows
+            // out of it and goes back into it.
+            .menuStyle(.button)
+            .buttonStyle(.glassProminent)
+            .buttonBorderShape(.circle)
+            .tint(Theme.bee)
+            // Held: a small knock in the hand as its menu comes, as the system's own held things give.
+            .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
+            .accessibilityLabel("Causabee")
+            .accessibilityValue("Pro on")
+            .accessibilityHint("Opens the chat. Hold to turn off Pro or to add to a matter")
+            .accessibilityIdentifier("bee")
+            .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+        } else {
+            Button { light = true } label: { face }
+                .buttonStyle(.glassProminent)
+                .buttonBorderShape(.circle)
+                .tint(inverse ? Color(white: 0.56) : Color(white: 0.86))
+                .accessibilityLabel("Causabee")
+                .accessibilityValue("Pro off")
+                .accessibilityHint("Says what Pro adds, and what can be added without it")
+                .accessibilityIdentifier("bee")
         }
-        .menuIndicator(.hidden)
-        // The system's own glass button, round: alive under the finger, and the held menu grows out
-        // of it and goes back into it. Yellow with Pro on; without, grey glass — or a yellow rim.
-        .menuStyle(.button)
-        .buttonStyle(.glassProminent)
-        .buttonBorderShape(.circle)
-        .tint(pro ? Theme.bee : outlined ? Theme.bee.opacity(0.22) : Color(white: 0.86))
-        .overlay {
-            if !pro, outlined { Circle().strokeBorder(Theme.bee, lineWidth: 2.5).allowsHitTesting(false) }
-        }
-        // Held: a small knock in the hand as its menu comes, as the system's own held things give.
-        .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
-        .accessibilityLabel("Causabee")
-        .accessibilityValue(pro ? "Pro on" : "Pro off")
-        .accessibilityHint(pro ? "Opens the chat. Hold to turn off Pro or to add to a matter" : "Says what Pro adds. Hold to turn on Pro or to add to a matter")
-        .accessibilityIdentifier("bee")
-        .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+    }
+
+    /// Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
+    private var face: some View {
+        BeeAtHome(size: 24, livesNowAndThen: pro, ink: pro ? .black : inverse ? .white : Color(white: 0.45))
+            .frame(width: 46, height: 46)
     }
 
     /// As the bolt did: without Pro bought, the plans first; the first time, what Pro does is
@@ -174,9 +185,6 @@ struct LightBeeSheet: View {
     let turnOn: () -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(Navigation.self) private var navigation
-    // Its own pickers: the bee's are under this sheet and cannot open over it.
-    @State private var picksPhoto = false
-    @State private var picksFile = false
     @AppStorage("bee.lightSeen") private var seen = false
 
     var body: some View {
@@ -199,16 +207,15 @@ struct LightBeeSheet: View {
                         Label("Turn on Pro", systemImage: "bolt")
                     }
                 }
-                // The same as the bee's hold menu, as rows: a menu's items do not lay out in a list.
+                // What can be added without Pro, as rows.
                 Section("Add") {
                     add("Task", "checklist", .task)
                     add("Note", "note.text", .note)
                     add("Link", "link", .link)
                     add("Detail", "info.circle", .detail)
                     add("Contact", "person.badge.plus", .contact)
-                    Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
-                    add("Scan a document", "doc.viewfinder", .scan)
-                    Button("File", systemImage: "doc") { picksFile = true }
+                    // Kept only, not read: what is read and sorted in — a photo, a scan, a file —
+                    // is Pro's, and is not offered here.
                     add("Files or a folder", "folder", .files)
                 }
             }
@@ -217,11 +224,8 @@ struct LightBeeSheet: View {
             .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
         }
         .presentationDetents([.medium, .large])
-        .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
-        // A task, a note, a scan picked: its editor comes on the page, which this sheet would cover.
-        // What was brought in is read in the assistant: the same.
+        // A task, a note, a contact picked: its editor comes on the page, which this sheet would cover.
         .onChange(of: navigation.adding) { if navigation.adding != nil { dismiss() } }
-        .onChange(of: navigation.showsAssistant) { if navigation.showsAssistant { dismiss() } }
         .onDisappear { seen = true }
     }
 
