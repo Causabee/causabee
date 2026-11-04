@@ -1185,6 +1185,7 @@ struct PhoneTodoRow: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(Navigation.self) private var navigation
     @State private var editing = false
+    @State private var connecting = false
     @State private var deleting = false
     @State private var choosingWait = false
     @State private var addingReminder = 0
@@ -1195,7 +1196,7 @@ struct PhoneTodoRow: View {
     var body: some View {
         // Taken back with Undo in the assistant, the task is gone while this row is drawn once more:
         // a deleted model must not be read — SwiftData stops the app.
-        if todo.isDeleted || todo.modelContext == nil { EmptyView() } else { row }
+        if todo.isDeleted || todo.modelContext == nil { EmptyView() } else { row.connectSheet(.task(todo), in: todo.matter, isPresented: $connecting) }
     }
 
     private var row: some View {
@@ -1207,6 +1208,7 @@ struct PhoneTodoRow: View {
                     .strikethrough(todo.isDone, color: .secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, Theme.planTop)
+                ConnectionChips(item: .task(todo))
                 if let reminders, remindable {
                     CalendarChip(kind: .reminder, linkedID: todo.reminderID, title: todo.text, day: todo.due, time: todo.dueTime,
                                  note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick, asked: addingReminder) { id in
@@ -1272,6 +1274,7 @@ struct PhoneTodoRow: View {
     private var moreItems: some View {
         // Short, one line each, with an icon; one line only, above Delete.
         if let matter = todo.matter {
+            Button(Say.connect, systemImage: "link") { connecting = true }
             AskCausabeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
         }
         Button(Say.edit, systemImage: "pencil") { editing = true }
@@ -1478,6 +1481,8 @@ struct PhoneDateRow: View {
         var kind: String
         var appointment: Appointment?
         var deadline: Deadline?
+        /// The appointment or deadline it shows, as a journal item.
+        var journalItem: JournalItem? { appointment.map(JournalItem.meeting) ?? deadline.map(JournalItem.deadline) }
         var endDay: String? { appointment?.endDay }
         var endTime: String? { appointment?.endTime }
         /// "10:00–11:30", or the start alone.
@@ -1516,12 +1521,22 @@ struct PhoneDateRow: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(Navigation.self) private var navigation
     @State private var editing = false
+    @State private var connecting = false
     @State private var deleting = false
     @State private var addingToCalendar = 0
 
     private var sources: [Source] { item.appointment?.sources ?? item.deadline?.sources ?? [] }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            if let journalItem = item.journalItem { ConnectionChips(item: journalItem, matter: matter).padding(.leading, 38) }
+        }
+        .connectSheet(item.journalItem, in: matter, isPresented: $connecting)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         HStack(alignment: .top, spacing: 10) {
             PlanDateMark(isDeadline: item.deadline != nil)
             VStack(alignment: .leading, spacing: 2) {
@@ -1557,6 +1572,7 @@ struct PhoneDateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
+        Button(Say.connect, systemImage: "link") { connecting = true }
         AskCausabeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
         Button(Say.edit, systemImage: "pencil") { editing = true }
         SourceItems(sources: sources, matter: matter)

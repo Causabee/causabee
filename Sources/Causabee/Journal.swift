@@ -485,7 +485,7 @@ struct InfoLine: View {
         }
         .contentShape(Rectangle())
         .contextMenu {
-            Button("Ask Causabee", action: talk)
+            Button(Say.useInChat, systemImage: "bubble.left", action: talk)
             Button("Back to tasks", action: back)
         }
     }
@@ -612,7 +612,7 @@ struct JournalThreadCard<Attached: View>: View {
             .padding(.top, 10)
         }
         .journalCard()
-        .contextMenu { Button("Ask Causabee") { if let newest { talk(newest) } } }
+        .contextMenu { Button(Say.useInChat, systemImage: "bubble.left") { if let newest { talk(newest) } } }
     }
 }
 
@@ -1093,5 +1093,207 @@ struct ClosedMailRows: View {
                 Text("The new mail goes, with what only it brought. The closed matter stays closed.")
             }
         }
+    }
+}
+
+/// Chips side by side, wrapping onto the next line when there is no room.
+struct FlowRow: Layout {
+    var spacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(subviews, width: proposal.width ?? .infinity)
+        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: rows.last.map { $0.y + $0.height } ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for row in arrange(subviews, width: bounds.width) {
+            var x = bounds.minX
+            for index in row.items {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: bounds.minY + row.y), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+        }
+    }
+
+    private func arrange(_ subviews: Subviews, width: CGFloat) -> [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] {
+        var rows: [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] = []
+        var items: [Int] = [], x: CGFloat = 0, y: CGFloat = 0, height: CGFloat = 0
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            if x > 0, x + size.width > width {
+                rows.append((items, y, x - spacing, height))
+                y += height + spacing
+                items = []; x = 0; height = 0
+            }
+            items.append(index)
+            x += size.width + spacing
+            height = max(height, size.height)
+        }
+        if !items.isEmpty { rows.append((items, y, x - spacing, height)) }
+        return rows
+    }
+}
+
+// MARK: Connections
+
+extension JournalItem {
+    /// The sign it is shown with, in a chip and in the list to connect from.
+    var symbol: String {
+        switch self {
+        case .mail: "envelope"
+        case .file: "doc"
+        case .task: "checklist"
+        case .meeting: "calendar"
+        case .deadline: "flag"
+        case .note: "note.text"
+        case .link: "link"
+        case .person: "person"
+        case .detail: "key"
+        }
+    }
+
+    /// What kind of thing it is, in words, for the filter of the list.
+    var kindName: String {
+        switch self {
+        case .mail: "Mail"
+        case .file: "Files"
+        case .task: "Tasks"
+        case .meeting, .deadline: "Dates"
+        case .note: "Notes"
+        case .link: "Links"
+        case .person: "People"
+        case .detail: "Details"
+        }
+    }
+
+    /// The matter it is in. A person can be in several: theirs is given where it is shown.
+    var matter: Matter? {
+        switch self {
+        case .mail(let item): item.matter
+        case .file(let item): item.matter
+        case .task(let item): item.matter
+        case .meeting(let item): item.matter
+        case .deadline(let item): item.matter
+        case .note(let item): item.matter
+        case .link(let item): item.matter
+        case .person: nil
+        case .detail(let item): item.matter
+        }
+    }
+}
+
+/// What an item belongs with, as chips under it: what Causabee read it came from, and what the
+/// owner connected, each with × to take it away from both. Nothing at all while there is none:
+/// "Connect …" is in the item's menu, and a row of plans stays quiet.
+struct ConnectionChips: View {
+    let item: JournalItem
+    var matter: Matter? = nil
+    @Environment(\.modelContext) private var context
+    @State private var connecting = false
+
+    private var home: Matter? { matter ?? item.matter }
+
+    var body: some View {
+        if let home, case let connected = home.connected(to: item), !connected.isEmpty {
+            FlowRow(spacing: 6) {
+                ForEach(connected, id: \.self) { other in chip(other, in: home) }
+                Button { connecting = true } label: {
+                    Label(Say.connect, systemImage: "link").font(.caption).foregroundStyle(.secondary)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .overlay(Capsule().stroke(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(.tertiary))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 4)
+            .connectSheet(item, in: home, isPresented: $connecting)
+        }
+    }
+
+    private func chip(_ other: Connected, in home: Matter) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: other.item.symbol).font(.caption2)
+            Text(other.item.title).lineLimit(1).truncationMode(.middle).frame(maxWidth: 220, alignment: .leading)
+            Button {
+                withAnimation { home.disconnect(item, other.item, in: context) }
+                try? context.save()
+            } label: { Image(systemName: "xmark").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary) }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Take away")
+        }
+        .font(.caption)
+        .padding(.leading, 8).padding(.trailing, 6).padding(.vertical, 3)
+        .background(Theme.box, in: Capsule())
+        .help(other.kind == .cameFrom ? "Causabee read it came from this" : "You connected it")
+    }
+}
+
+extension View {
+    /// The list to connect an item from, opened by "Connect …".
+    func connectSheet(_ item: JournalItem?, in matter: Matter?, isPresented: Binding<Bool>) -> some View {
+        sheet(isPresented: isPresented) {
+            if let item, let matter = matter ?? item.matter { ConnectSheet(item: item, matter: matter) }
+        }
+    }
+}
+
+/// "Connect to …": the matter's items, newest first, a tick on what this one belongs with — a
+/// tap puts it with it or takes it away. Search and a filter by kind for a matter with much in it.
+struct ConnectSheet: View {
+    let item: JournalItem
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+    @State private var kind = "All"
+
+    private var kinds: [String] { ["All"] + ["Mail", "Files", "Tasks", "Dates", "People", "Details", "Notes", "Links"].filter { name in matter.journalItems.contains { $0 != item && $0.kindName == name } } }
+
+    private var shown: [JournalItem] {
+        let words = query.trimmingCharacters(in: .whitespaces).lowercased()
+        return matter.journalItems
+            .filter { $0 != item && (kind == "All" || $0.kindName == kind) && (words.isEmpty || $0.title.lowercased().contains(words)) }
+            .sorted { ($0.when ?? .distantPast) > ($1.when ?? .distantPast) }
+    }
+
+    var body: some View {
+        let connected = Set(matter.connected(to: item).map(\.item))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Connect to …").font(.headline)
+                Spacer()
+                Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
+            }
+            TextField("Search \(matter.name)", text: $query).textFieldStyle(.roundedBorder)
+            Picker("Kind", selection: $kind) { ForEach(kinds, id: \.self) { Text($0).tag($0) } }
+                .pickerStyle(.segmented).labelsHidden()
+            List(shown, id: \.self) { other in
+                Button {
+                    withAnimation {
+                        if connected.contains(other) { matter.disconnect(item, other, in: context) } else { matter.connect(item, other, in: context) }
+                    }
+                    try? context.save()
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: connected.contains(other) ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(connected.contains(other) ? Color.primary : Color.secondary)
+                        Image(systemName: other.symbol).foregroundStyle(.secondary).frame(width: 18)
+                        Text(other.title).lineLimit(2)
+                        Spacer(minLength: 8)
+                        if let when = other.when { Text(Dates.short(when)).font(.caption).foregroundStyle(.secondary) }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .listStyle(.plain)
+        }
+        .padding(20)
+        #if os(macOS)
+        .frame(width: 460, height: 520)
+        #else
+        .presentationDetents([.medium, .large])
+        #endif
     }
 }

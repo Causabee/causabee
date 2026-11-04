@@ -130,6 +130,8 @@ enum Say {
     static let useFileName = "Use File Name"
     static let showAgain = "Show Again"
     static let hide = "Hide"
+    static let connect = "Connect …"
+    static let useInChat = "Use in Chat"
 }
 
 /// "Waits For …": the matter's other open tasks, to choose the one this one can only follow. A

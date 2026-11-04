@@ -172,7 +172,7 @@ struct PhoneAutoButton: View {
     }
 }
 
-/// "Ask Causabee" in a row's menu, with the bee — the same mark as the yellow button. A menu only
+/// "Use in Chat" in a row's menu, with the bee — the same mark as the yellow button. A menu only
 /// takes pictures, so the bee is drawn once into one, as a template: grey like the other icons.
 struct AskCausabeeButton: View {
     let action: () -> Void
@@ -185,7 +185,7 @@ struct AskCausabeeButton: View {
     }()
 
     var body: some View {
-        Button(action: action) { Label { Text("Ask Causabee") } icon: { Self.bee } }
+        Button(action: action) { Label { Text(Say.useInChat) } icon: { Self.bee } }
     }
 }
 

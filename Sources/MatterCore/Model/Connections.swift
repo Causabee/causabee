@@ -240,3 +240,21 @@ extension Matter {
         }
     }
 }
+
+extension JournalItem {
+    /// Its moment in the matter, for the newest first: when a mail came, a file was added, a task
+    /// was made, a date is, a note was written. Nil for a person.
+    public var when: Date? {
+        switch self {
+        case .mail(let item): item.date
+        case .file(let item): item.source.date ?? item.readAt
+        case .task(let item): item.createdAt
+        case .meeting(let item): MatterStatus.date(of: item.day)
+        case .deadline(let item): MatterStatus.date(of: item.day)
+        case .note(let item): item.createdAt
+        case .link(let item): item.createdAt
+        case .person: nil
+        case .detail(let item): item.createdAt
+        }
+    }
+}

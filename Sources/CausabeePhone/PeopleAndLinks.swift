@@ -99,6 +99,7 @@ struct PeopleSection: View {
 /// One person, as the Mac's row: name and role, other spellings, the other matters they are in,
 /// how many of its mails name them — and the ⋯.
 struct PhonePartyRow: View {
+    @State private var connecting = false
     let party: Party
     let membership: Membership
     let matter: Matter
@@ -109,6 +110,15 @@ struct PhonePartyRow: View {
     @State private var editing = false
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            ConnectionChips(item: .person(party), matter: matter).padding(.leading, 48)
+        }
+        .connectSheet(.person(party), in: matter, isPresented: $connecting)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "person.crop.circle").font(.title2).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 3) {
@@ -156,6 +166,7 @@ struct PhonePartyRow: View {
     private var items: some View {
         MailAddressItems(addresses: CardActions.addresses(of: party))
         ContactItems(party: party)
+        Button(Say.connect, systemImage: "link") { connecting = true }
         AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
         PublicNameItem(party: party)
         Button(Say.edit, systemImage: "pencil") { editing = true }

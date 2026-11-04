@@ -171,7 +171,7 @@ struct ThreadMailRow: View {
             }
         }
         #if os(macOS)
-        Button("Ask Causabee", action: talk)
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
         MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
         #else
         AskCausabeeButton(action: talk)

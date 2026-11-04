@@ -64,10 +64,16 @@ struct FilesSection: View {
     @State private var showsHidden = false
     @State private var showsSmallImages = false
     @State private var renaming: MatterCore.Document?
+    @State private var connecting: MatterCore.Document?
     @State private var deleting: MatterCore.Document?
     @State private var newName = ""
 
     var body: some View {
+        filesBody.sheet(item: $connecting) { document in ConnectSheet(item: .file(document), matter: matter) }
+    }
+
+    @ViewBuilder
+    private var filesBody: some View {
         // As on the Mac: newest first; a logo in a signature is not a file anyone attached. Only for
         // the list of all files: a single file's card, or a mail's, does not sort them all.
         let listsAll = only == nil && attachments.isEmpty && !keptOnly
@@ -218,6 +224,7 @@ struct FilesSection: View {
     private func items(_ document: MatterCore.Document) -> some View {
         if !document.isOwnFile || document.source.fileURL != nil || MatterFolders.kept(document) != nil { Button("Open", systemImage: "eye") { open(document) } }
         if document.reading == .kept { Button("Read", systemImage: "text.viewfinder") { read(document) } }
+        Button(Say.connect, systemImage: "link") { connecting = document }
         AskCausabeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
         Button(Say.rename, systemImage: "pencil") { newName = document.shownName; renaming = document }
         if isPDF(document) { Button(Say.nameFromContent, systemImage: "text.magnifyingglass") { nameFromContent(document) } }

@@ -1319,7 +1319,7 @@ struct MatterStatusView: View {
                                         Button(other.name) { merging = (party, other) }
                                     }
                                 }
-                                Button("Ask Causabee") { talk(party.name, "Person") }
+                                Button(Say.useInChat, systemImage: "bubble.left") { talk(party.name, "Person") }
                                 PublicNameItem(party: party)
                                 Divider()
                                 Button(Say.removeFromMatter, role: .destructive) {
@@ -1654,6 +1654,7 @@ struct MatterStatusView: View {
 // MARK: Rows
 
 struct TodoRow: View {
+    @State private var connecting = false
     let todo: Todo
     let today: String
     var showsOwner = false
@@ -1677,6 +1678,11 @@ struct TodoRow: View {
     private var remindable: Bool { !todo.isDone && !todo.isInfo && (todo.owner == .me || todo.owner == .we || todo.reminderID != nil) }
 
     var body: some View {
+        rowBody.connectSheet(.task(todo), in: todo.matter, isPresented: $connecting)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         HStack(alignment: .top, spacing: 10) {
             PlanTick(todo: todo, toggle: toggle)
             VStack(alignment: .leading, spacing: 2) {
@@ -1696,6 +1702,7 @@ struct TodoRow: View {
                         }
                     }
                 }
+                ConnectionChips(item: .task(todo))
                 if let reminders, remindable {
                     CalendarChip(kind: .reminder, linkedID: todo.reminderID, title: todo.text, day: todo.due, time: todo.dueTime,
                                  note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick, asked: addingReminder) { id in
@@ -1796,7 +1803,8 @@ struct TodoRow: View {
     /// what it waits for.
     @ViewBuilder
     private var moreItems: some View {
-        Button("Ask Causabee", action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         if !todo.isDone { SourceItems(sources: todo.sources, matter: todo.matter) }
         if reminders != nil, remindable, todo.reminderID == nil, Calendars.shared.canReadReminders {
@@ -2038,6 +2046,7 @@ struct TodoEditor: View {
 }
 
 struct DateRow: View {
+    @State private var connecting = false
     struct Item {
         var day: String
         var time: String?
@@ -2052,6 +2061,8 @@ struct DateRow: View {
         /// "10:00–11:30", or the start alone.
         var hours: String? { time.map { start in endTime.map { "\(start)–\($0)" } ?? start } }
 
+        /// The appointment or deadline it shows, as a journal item.
+        var journalItem: JournalItem? { appointment.map(JournalItem.meeting) ?? deadline.map(JournalItem.deadline) }
         var findID: PageFind.ID {
             if let id = appointment?.persistentModelID ?? deadline?.persistentModelID { return .model(id) }
             return .section("date \(day) \(what)")
@@ -2090,6 +2101,15 @@ struct DateRow: View {
     @State private var addingToCalendar = 0
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            if let journalItem = item.journalItem { ConnectionChips(item: journalItem).padding(.leading, 38) }
+        }
+        .connectSheet(item.journalItem, in: nil, isPresented: $connecting)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         HStack(alignment: .top, spacing: 10) {
             PlanDateMark(isDeadline: item.deadline != nil)
             VStack(alignment: .leading, spacing: 2) {
@@ -2128,7 +2148,8 @@ struct DateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
-        Button("Ask Causabee", action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         SourceItems(sources: item.sources, matter: item.appointment?.matter ?? item.deadline?.matter)
         if !isPast, item.calendarID == nil, Calendars.shared.canReadEvents {
@@ -2220,6 +2241,7 @@ struct DateEditor: View {
 }
 
 struct PartyRow: View {
+    @State private var connecting = false
     let party: Party
     let membership: Membership
     let matter: Matter
@@ -2234,6 +2256,15 @@ struct PartyRow: View {
     @State private var phone = ""
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            ConnectionChips(item: .person(party), matter: matter).padding(.leading, 48)
+        }
+        .connectSheet(.person(party), in: matter, isPresented: $connecting)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         let addresses = CardActions.addresses(of: party)
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "person.crop.circle").font(.title2).foregroundStyle(.secondary)
@@ -2264,7 +2295,8 @@ struct PartyRow: View {
             MoreMenu {
                 MailAddressItems(addresses: addresses)
                 ContactItems(party: party)
-                Button("Ask Causabee", action: talk)
+                Button(Say.connect, systemImage: "link") { connecting = true }
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
                 PublicNameItem(party: party)
                 Button(Say.edit, systemImage: "pencil") {
                     name = party.name
@@ -2351,6 +2383,7 @@ struct SuggestionCard: View {
 /// One conversation of a matter: its subject once, the first mail on top, and each reply
 /// under the mail it answers, joined by a line.
 struct DocumentRow: View {
+    @State private var connecting = false
     let document: MatterCore.Document
     let sender: String?
     let state: String?
@@ -2374,6 +2407,15 @@ struct DocumentRow: View {
     private var isPDF: Bool { document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf") }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            ConnectionChips(item: .file(document), matter: document.matter).padding(.leading, 14)
+        }
+        .connectSheet(.file(document), in: document.matter, isPresented: $connecting)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen, tile: tile) { moreItems }
             .popoverWhenAsked(isPresented: $renaming, arrowEdge: .bottom) { renameField }
             .confirmationDialogWhenAsked("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
@@ -2393,7 +2435,8 @@ struct DocumentRow: View {
             Button("Read", action: read)
                 .help("Reads it on this Mac and shows it in the assistant. Nothing is sent until “Sort in”.")
         }
-        Button("Ask Causabee", action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
         Divider()
         Button(Say.rename, systemImage: "pencil") { newName = document.shownName; renaming = true }
         if isPDF { Button(Say.nameFromContent, systemImage: "text.magnifyingglass", action: nameIt) }
