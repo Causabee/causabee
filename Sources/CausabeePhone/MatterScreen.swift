@@ -444,6 +444,10 @@ struct MatterScreen: View {
     private func showNews(with scroller: ScrollViewProxy) {
         guard navigation.showsNews else { return }
         navigation.showsNews = false
+        // The news stands in the Digest: a matter that opened on its plan, or on one person, goes
+        // there first — else the tap landed on the plan's top and the news was nowhere.
+        part = .all
+        person = nil
         guard matter.shownBrief?.news?.seen == false else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             withAnimation(.snappy) { scroller.scrollTo("news", anchor: UnitPoint(x: 0.5, y: 72 / max(pageHeight, 200))) }
