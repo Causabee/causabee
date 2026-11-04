@@ -163,7 +163,7 @@ struct OutOfDateStep: View {
     let matter: Matter
 
     var body: some View {
-        let done = matter.nextStepTodo.flatMap { origin in (matter.todos ?? []).first { $0.origin == origin } }?.isDone == true
+        let done = matter.nextStepTodo.flatMap { origin in (matter.todos ?? []).shown.first { $0.origin == origin } }?.isDone == true
         BeeChip(text: "OUT OF DATE", tone: .quiet)
         Text(matter.nextStep ?? "").font(Theme.rowTitleFont).foregroundStyle(.secondary)
             .strikethrough(done, color: .secondary)
@@ -681,7 +681,10 @@ struct JournalNoteCard: View {
         .onTapGesture(perform: show)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(.default, show)
-        .contextMenu { Button(Say.connect, systemImage: "link") { connecting = true } }
+        .contextMenu {
+            Button(Say.connect, systemImage: "link") { connecting = true }
+            MoveAndHide(item: .note(note), matter: note.matter)
+        }
         .connectSheet(.note(note), in: note.matter, isPresented: $connecting)
     }
 }
@@ -836,7 +839,7 @@ struct PlanTick: View {
             let wasOpen = !todo.isDone
             toggle()
             if wasOpen, todo.isDone {
-                BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: reduceMotion)
+                BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).shown.allSatisfy(\.isDone), still: reduceMotion)
             }
         } label: {
             Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")
@@ -940,7 +943,7 @@ struct BallCard: View {
     let matter: Matter
 
     var body: some View {
-        let balls = matter.parties.map { ($0.name, Journal.ball(of: $0, in: matter)) }.filter { !$0.1.isEmpty }
+        let balls = matter.shownParties.map { ($0.name, Journal.ball(of: $0, in: matter)) }.filter { !$0.1.isEmpty }
         if !balls.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 Text("WHO HAS THE BALL").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
@@ -1199,6 +1202,100 @@ extension JournalItem {
         case .person: nil
         case .detail(let item): item.matter
         }
+    }
+}
+
+/// "Move to Matter …" and "Hide", the same in every item's menu on every device: the open
+/// matters, the newest mail first, the one it is in ticked; and the item put away. A mail moves
+/// with its own menu; a file, which had Hide first, passes `hides: false`.
+struct MoveAndHide: View {
+    let item: JournalItem?
+    let matter: Matter?
+    var hides = true
+    @Query private var matters: [Matter]
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        if let item, let matter {
+            Menu {
+                ForEach(Self.order(matters, current: matter)) { other in
+                    if other === matter {
+                        Button(other.name, systemImage: "checkmark") { }.disabled(true)
+                    } else {
+                        Button(other.name) { withAnimation { try? matter.move(item, to: other, in: context) } }
+                    }
+                }
+            } label: {
+                Label(Say.moveToMatter, systemImage: "folder")
+            }
+            if hides {
+                Button(Say.hide, systemImage: "eye.slash") {
+                    withAnimation { matter.setHidden(item, true) }
+                    try? context.save()
+                }
+            }
+        }
+    }
+
+    /// The one it is in first, then the open ones by their newest mail.
+    static func order(_ matters: [Matter], current: Matter?) -> [Matter] {
+        let open = matters.filter { !$0.isClosed && $0 !== current }
+            .map { ($0, MatterStatus($0).lastDate ?? .distantPast) }.sorted { $0.1 > $1.1 }.map(\.0)
+        return (current.map { [$0] } ?? []) + open
+    }
+}
+
+/// What the owner hid in a matter, at the foot of its page: "3 hidden", and a sheet with each to
+/// show again. Nothing while nothing is hidden.
+struct HiddenItemsLine: View {
+    let matter: Matter
+    @State private var showing = false
+
+    var body: some View {
+        let count = matter.hiddenItems.count
+        if count > 0 {
+            Button("\(count) hidden · Show") { showing = true }
+                .buttonStyle(.plain).font(.footnote).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .sheetWhenAsked(isPresented: $showing) { HiddenItemsSheet(matter: matter) }
+        }
+    }
+}
+
+struct HiddenItemsSheet: View {
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(matter.hiddenItems, id: \.self) { item in
+                    HStack(spacing: 10) {
+                        Image(systemName: item.symbol).foregroundStyle(.secondary).frame(width: 22)
+                        Text(item.title).lineLimit(2)
+                        Spacer(minLength: 8)
+                        Button(Say.showAgain) {
+                            withAnimation { matter.setHidden(item, false) }
+                            try? context.save()
+                            if matter.hiddenItems.isEmpty { dismiss() }
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+            }
+            .navigationTitle("Hidden")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { dismiss() } } }
+        }
+        #if os(macOS)
+        .frame(width: 440, height: 360)
+        #else
+        .presentationDetents([.medium, .large])
+        #endif
     }
 }
 

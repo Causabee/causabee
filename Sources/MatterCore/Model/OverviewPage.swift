@@ -78,8 +78,8 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         closedAt = matter.closedAt
         // Each relationship read once, here.
         let open = matter.openTodos
-        let deadlines = matter.deadlines ?? []
-        let appointments = matter.appointments ?? []
+        let deadlines = (matter.deadlines ?? []).shown
+        let appointments = (matter.appointments ?? []).shown
         let entries = matter.entries ?? []
         openCount = open.count
         mine = open.filter { $0.owner == .me }.count

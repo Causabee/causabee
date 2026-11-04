@@ -258,7 +258,10 @@ struct NotesPart: View {
                 Spacer()
                 if !isEditing {
                     Menu {
-                        if let note { Button(Say.connect, systemImage: "link") { connecting = .note(note) } }
+                        if let note {
+                            Button(Say.connect, systemImage: "link") { connecting = .note(note) }
+                            MoveAndHide(item: .note(note), matter: note.matter)
+                        }
                         Button("Edit", systemImage: "pencil", action: edit)
                         Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
                         ShareLink(item: text) { Label("Share", systemImage: "square.and.arrow.up") }
@@ -292,7 +295,10 @@ struct NotesPart: View {
         .padding(.horizontal, Theme.cardInset).padding(.vertical, 14)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         .contextMenu {
-            if let note { Button(Say.connect, systemImage: "link") { connecting = .note(note) } }
+            if let note {
+                Button(Say.connect, systemImage: "link") { connecting = .note(note) }
+                MoveAndHide(item: .note(note), matter: note.matter)
+            }
             Button("Edit", systemImage: "pencil", action: edit)
             Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
             ShareLink(item: text) { Label("Share", systemImage: "square.and.arrow.up") }
@@ -438,7 +444,7 @@ struct DetailEditor: View {
     private var whose: some View {
         Picker("Of", selection: $party) {
             Text("no one").tag(PersistentIdentifier?.none)
-            ForEach(matter.parties.sorted { $0.name < $1.name }) { Text($0.name).tag(Optional($0.persistentModelID)) }
+            ForEach(matter.shownParties.sorted { $0.name < $1.name }) { Text($0.name).tag(Optional($0.persistentModelID)) }
         }
     }
 
@@ -450,7 +456,7 @@ struct DetailEditor: View {
                     Section {
                         TextField("What — Versichertennummer, file number", text: $label).accessibilityIdentifier("detail.label")
                         TextField("Value", text: $value).autocorrectionDisabled().accessibilityIdentifier("detail.value")
-                        if !matter.parties.isEmpty { whose }
+                        if !matter.shownParties.isEmpty { whose }
                     } footer: {
                         Text("Kept on your devices. The assistant learns that it is here, never the value.")
                     }
@@ -471,7 +477,7 @@ struct DetailEditor: View {
                 Text(detail == nil ? "New detail" : "Detail").font(.headline)
                 TextField("What — Versichertennummer, file number", text: $label).textFieldStyle(.roundedBorder).accessibilityIdentifier("detail.label")
                 TextField("Value", text: $value).textFieldStyle(.roundedBorder).accessibilityIdentifier("detail.value")
-                if !matter.parties.isEmpty { whose }
+                if !matter.shownParties.isEmpty { whose }
                 Text("Kept on your devices. The assistant learns that it is here, never the value.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 HStack {
@@ -492,7 +498,7 @@ struct DetailEditor: View {
     }
 
     private func save() {
-        let whose = party.flatMap { id in matter.parties.first { $0.persistentModelID == id } }
+        let whose = party.flatMap { id in matter.shownParties.first { $0.persistentModelID == id } }
         if let detail {
             detail.label = label.trimmingCharacters(in: .whitespacesAndNewlines)
             detail.value = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -597,6 +603,7 @@ struct DetailsSection: View {
         .accessibilityLabel("\(detail.label): \(detail.value)").accessibilityHint("Copies it")
         .contextMenu {
             Button(Say.connect, systemImage: "link") { connecting = .detail(detail) }
+            MoveAndHide(item: .detail(detail), matter: detail.matter)
             Button("Copy", systemImage: "doc.on.doc") { copy(detail) }
             Button("Copy with its label", systemImage: "doc.on.doc") { NotesPart.copy("\(detail.label): \(detail.value)") }
             ShareLink(item: "\(detail.label): \(detail.value)") { Label("Share", systemImage: "square.and.arrow.up") }

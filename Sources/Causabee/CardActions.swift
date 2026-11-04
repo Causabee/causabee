@@ -258,13 +258,13 @@ enum CardActions {
                     : entries.first { $0.title == parts[1] && String(Int($0.date?.timeIntervalSince1970 ?? 0)) == parts[2] }
                 if let found { return .entry(found.persistentModelID) }
             case "T":
-                if let found = (matter.todos ?? []).first(where: { $0.text == parts[1] }) { return .todo(found.persistentModelID) }
+                if let found = (matter.todos ?? []).shown.first(where: { $0.text == parts[1] }) { return .todo(found.persistentModelID) }
             case "A":
                 guard parts.count == 3 else { return nil }
-                if let found = (matter.appointments ?? []).first(where: { $0.day == parts[1] && $0.what == parts[2] }) { return .appointment(found.persistentModelID) }
+                if let found = (matter.appointments ?? []).shown.first(where: { $0.day == parts[1] && $0.what == parts[2] }) { return .appointment(found.persistentModelID) }
             case "D":
                 guard parts.count == 3 else { return nil }
-                if let found = (matter.deadlines ?? []).first(where: { $0.day == parts[1] && $0.what == parts[2] }) { return .deadline(found.persistentModelID) }
+                if let found = (matter.deadlines ?? []).shown.first(where: { $0.day == parts[1] && $0.what == parts[2] }) { return .deadline(found.persistentModelID) }
             case "P":
                 if let found = matter.parties.first(where: { $0.name == parts[1] }) { return .party(found.persistentModelID) }
             default: return nil
@@ -387,7 +387,7 @@ enum CardActions {
             case "Mail":
                 if let entry = (matter.entries ?? []).first(where: { $0.title == inHand.text }) { found.append(entry.source) }
             case "Task", "Info":
-                if let todo = (matter.todos ?? []).first(where: { $0.text == inHand.text }), let first = todo.sources.first { found.append(first) }
+                if let todo = (matter.todos ?? []).shown.first(where: { $0.text == inHand.text }), let first = todo.sources.first { found.append(first) }
             default: break
             }
         }
@@ -980,7 +980,7 @@ enum Adviser {
                     in context: ModelContext, at now: Date = Date()) {
         matter.nextStep = advice.step
         matter.nextStepWhy = advice.why
-        if case .todo(let id) = advice.todo { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+        if case .todo(let id) = advice.todo { matter.nextStepTodo = (matter.todos ?? []).shown.first { $0.persistentModelID == id }?.origin }
         else { matter.nextStepTodo = nil }
         matter.nextStepAt = now
         if !advice.summary.isEmpty {
@@ -1078,8 +1078,8 @@ enum Adviser {
             case .correctText:
                 guard let from = card.from, !from.isEmpty, !same(from, card.text) else { continue }
                 subject = todos.first { !$0.isDone && $0.text.contains(from) }
-                guard subject != nil || (matter.appointments ?? []).contains(where: { $0.what.contains(from) })
-                        || (matter.deadlines ?? []).contains(where: { $0.what.contains(from) }) else { continue }
+                guard subject != nil || (matter.appointments ?? []).shown.contains(where: { $0.what.contains(from) })
+                        || (matter.deadlines ?? []).shown.contains(where: { $0.what.contains(from) }) else { continue }
             default:
                 subject = nil
             }

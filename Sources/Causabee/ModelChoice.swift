@@ -743,7 +743,7 @@ final class AutoUpdate {
                     if let rule = MatterStatus(matter).nextStep {
                         matter.nextStep = rule.text
                         matter.nextStepWhy = rule.why
-                        matter.nextStepTodo = rule.todo.flatMap { id in (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+                        matter.nextStepTodo = rule.todo.flatMap { id in (matter.todos ?? []).shown.first { $0.persistentModelID == id }?.origin }
                         matter.nextStepAt = now
                     }
                     if matter.summary != nil { matter.summaryAt = now }

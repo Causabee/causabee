@@ -28,7 +28,7 @@ public enum MatterSearch {
         for matter in matters {
             if all(([matter.name, matter.key] + matter.aliases).joined(separator: " ")) {
                 hits.append((matter.isClosed ? 1 : 0, Hit(matter: matter, because: nil)))
-            } else if let todo = (matter.todos ?? []).first(where: { all($0.text) }) {
+            } else if let todo = (matter.todos ?? []).shown.first(where: { all($0.text) }) {
                 hits.append((matter.isClosed ? 3 : 2, Hit(matter: matter, because: "Task: " + todo.text)))
             } else if let entry = (matter.entries ?? []).first(where: { all($0.title + " " + ($0.digest ?? "")) }) {
                 hits.append((matter.isClosed ? 5 : 4, Hit(matter: matter, because: "Mail: " + entry.title)))

@@ -149,12 +149,90 @@ public struct Connected: Hashable {
 }
 
 extension Matter {
-    /// Every item of the matter that can be connected, the people included.
+    /// Every item of the matter that can be connected, the people included; not what the owner hid.
     public var journalItems: [JournalItem] {
-        (entries ?? []).map(JournalItem.mail) + (documents ?? []).map(JournalItem.file) + (todos ?? []).map(JournalItem.task)
-            + (appointments ?? []).map(JournalItem.meeting) + (deadlines ?? []).map(JournalItem.deadline)
-            + (noteBlocks ?? []).map(JournalItem.note) + (links ?? []).map(JournalItem.link)
-            + parties.map(JournalItem.person) + (details ?? []).map(JournalItem.detail)
+        (entries ?? []).map(JournalItem.mail) + (documents ?? []).shown.map(JournalItem.file) + (todos ?? []).shown.map(JournalItem.task)
+            + (appointments ?? []).shown.map(JournalItem.meeting) + (deadlines ?? []).shown.map(JournalItem.deadline)
+            + (noteBlocks ?? []).shown.map(JournalItem.note) + (links ?? []).shown.map(JournalItem.link)
+            + shownParties.map(JournalItem.person) + (details ?? []).shown.map(JournalItem.detail)
+    }
+
+    /// What the owner hid in the matter, to show again: the newest first, the people last.
+    public var hiddenItems: [JournalItem] {
+        let dated: [JournalItem] = (documents ?? []).filter(\.isHidden).map(JournalItem.file) + (todos ?? []).filter(\.isHidden).map(JournalItem.task)
+            + (appointments ?? []).filter(\.isHidden).map(JournalItem.meeting) + (deadlines ?? []).filter(\.isHidden).map(JournalItem.deadline)
+            + (noteBlocks ?? []).filter(\.isHidden).map(JournalItem.note) + (links ?? []).filter(\.isHidden).map(JournalItem.link)
+            + (details ?? []).filter(\.isHidden).map(JournalItem.detail)
+        let people = (memberships ?? []).filter(\.isHidden).compactMap(\.party).map(JournalItem.person)
+        return dated.sorted { ($0.when ?? .distantPast) > ($1.when ?? .distantPast) } + people
+    }
+
+    /// Whether the owner hid this item here. A mail is never hidden: it is moved, or it stays.
+    public func isHidden(_ item: JournalItem) -> Bool {
+        switch item {
+        case .mail: false
+        case .file(let item): item.isHidden
+        case .task(let item): item.isHidden
+        case .meeting(let item): item.isHidden
+        case .deadline(let item): item.isHidden
+        case .note(let item): item.isHidden
+        case .link(let item): item.isHidden
+        case .person(let party): membership(of: party)?.isHidden ?? false
+        case .detail(let item): item.isHidden
+        }
+    }
+
+    /// Puts an item away, or shows it again. It stays in the matter with its connections, so the
+    /// next mail does not bring it again; a person is hidden in this matter only.
+    public func setHidden(_ item: JournalItem, _ hidden: Bool) {
+        switch item {
+        case .mail: break
+        case .file(let item): item.isHidden = hidden
+        case .task(let item): item.isHidden = hidden
+        case .meeting(let item): item.isHidden = hidden
+        case .deadline(let item): item.isHidden = hidden
+        case .note(let item): item.isHidden = hidden
+        case .link(let item): item.isHidden = hidden
+        case .person(let party): membership(of: party)?.isHidden = hidden
+        case .detail(let item): item.isHidden = hidden
+        }
+    }
+
+    /// One item into another matter, on its own. Its connections stay behind and go, since a
+    /// connection is within one matter; a mail goes the way it always did, with what only it
+    /// brought. A task takes its links along and lets go of what it waited for; a person stays in
+    /// the matters they are in and is here no more.
+    public func move(_ item: JournalItem, to new: Matter, in context: ModelContext) throws {
+        guard new !== self else { return }
+        if case .mail(let entry) = item { try move([entry], into: new, in: context); return }
+        // A person is in other matters too: only this matter's connections go.
+        for end in item.ends { if let connection = end.connection, connection.matter === self { context.delete(connection) } }
+        switch item {
+        case .mail: break
+        case .file(let item): item.matter = new
+        case .task(let todo):
+            todo.matter = new
+            todo.waitsFor = nil
+            for other in todo.unblocks ?? [] { other.waitsFor = nil }
+            for link in todo.links ?? [] { link.matter = new }
+            if nextStepTodo == todo.origin { nextStepTodo = nil }
+        case .meeting(let item): item.matter = new
+        case .deadline(let item): item.matter = new
+        case .note(let item): item.matter = new
+        case .link(let item):
+            item.matter = new
+            item.todo = nil
+        case .person(let party):
+            guard let membership = membership(of: party) else { break }
+            if new.membership(of: party) == nil {
+                membership.matter = new
+                membership.isHidden = false
+            } else {
+                context.delete(membership)
+            }
+        case .detail(let item): item.matter = new
+        }
+        try context.save()
     }
 
     /// The connections of this matter between these two items, of this kind.
@@ -198,7 +276,7 @@ extension Matter {
         for other in cameFrom where !taken.contains(other) && seen.insert(other).inserted { out.append(Connected(item: other, kind: .cameFrom)) }
         let mine = item.ends.compactMap(\.connection).filter { !$0.isDeleted && $0.kind == .with && $0.matter === self }.sorted { $0.createdAt < $1.createdAt }
         for connection in mine {
-            for other in connection.items where seen.insert(other).inserted { out.append(Connected(item: other, kind: .with)) }
+            for other in connection.items where !isHidden(other) && seen.insert(other).inserted { out.append(Connected(item: other, kind: .with)) }
         }
         return out
     }

@@ -43,17 +43,17 @@ public struct MatterStatus {
         }
     }
 
-    public var done: [Todo] { (matter.todos ?? []).filter { $0.isDone && !$0.isInfo }.sorted { ($0.doneAt ?? .distantPast) > ($1.doneAt ?? .distantPast) } }
+    public var done: [Todo] { (matter.todos ?? []).shown.filter { $0.isDone && !$0.isInfo }.sorted { ($0.doneAt ?? .distantPast) > ($1.doneAt ?? .distantPast) } }
 
     public var upcomingAppointments: [Appointment] {
-        (matter.appointments ?? []).filter { $0.day >= today }.sorted { ($0.day, $0.time ?? "") < ($1.day, $1.time ?? "") }
+        (matter.appointments ?? []).shown.filter { $0.day >= today }.sorted { ($0.day, $0.time ?? "") < ($1.day, $1.time ?? "") }
     }
 
     public var pastAppointments: [Appointment] {
-        (matter.appointments ?? []).filter { $0.day < today }.sorted { ($0.day, $0.time ?? "") > ($1.day, $1.time ?? "") }
+        (matter.appointments ?? []).shown.filter { $0.day < today }.sorted { ($0.day, $0.time ?? "") > ($1.day, $1.time ?? "") }
     }
 
-    public var deadlines: [Deadline] { (matter.deadlines ?? []).sorted { $0.day < $1.day } }
+    public var deadlines: [Deadline] { (matter.deadlines ?? []).shown.sorted { $0.day < $1.day } }
 
     public var entries: [Entry] { (matter.entries ?? []).sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) } }
 
@@ -70,8 +70,8 @@ public struct MatterStatus {
     /// The next thing with a date on it: an open to-do's due day, a deadline, an appointment.
     public var next: (day: String, what: String)? {
         var dated: [(String, String)] = matter.openTodos.compactMap { todo in todo.due.map { ($0, todo.text) } }
-        dated += (matter.deadlines ?? []).map { ($0.day, $0.what) }
-        dated += (matter.appointments ?? []).map { ($0.day, $0.what) }
+        dated += (matter.deadlines ?? []).shown.map { ($0.day, $0.what) }
+        dated += (matter.appointments ?? []).shown.map { ($0.day, $0.what) }
         return dated.filter { $0.0 >= today }.min { $0.0 < $1.0 }.map { (day: $0.0, what: $0.1) }
     }
 
@@ -81,7 +81,7 @@ public struct MatterStatus {
 
     public var memberships: [Membership] {
         // Named most often first; people named as often by name, so the order is the same every time.
-        (matter.memberships ?? []).filter { $0.party != nil }.sorted {
+        (matter.memberships ?? []).filter { $0.party != nil && !$0.isHidden }.sorted {
             $0.mentions != $1.mentions ? $0.mentions > $1.mentions
                 : ($0.party?.name ?? "").localizedStandardCompare($1.party?.name ?? "") == .orderedAscending
         }

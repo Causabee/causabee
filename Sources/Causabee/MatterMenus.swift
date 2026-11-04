@@ -130,6 +130,7 @@ enum Say {
     static let useFileName = "Use File Name"
     static let showAgain = "Show Again"
     static let hide = "Hide"
+    static let moveToMatter = "Move to Matter …"
     static let connect = "Connect …"
     static let useInChat = "Use in Chat"
 }

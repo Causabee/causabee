@@ -168,10 +168,11 @@ struct PhonePartyRow: View {
         ContactItems(party: party)
         Button(Say.connect, systemImage: "link") { connecting = true }
         AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
+        MoveAndHide(item: .person(party), matter: matter)
         PublicNameItem(party: party)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         Menu(Say.mergeWith, systemImage: "arrow.triangle.merge") {
-            ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
+            ForEach(matter.shownParties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
                 Button(other.name) { merge(other) }
             }
         }
@@ -277,8 +278,8 @@ struct LinksSection: View {
     private func newestFirst(_ a: WebLink, _ b: WebLink) -> Bool { a.createdAt > b.createdAt }
 
     var body: some View {
-        let all = (matter.links ?? []).filter(\.isKept).sorted(by: newestFirst)
-        let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
+        let all = (matter.links ?? []).shown.filter(\.isKept).sorted(by: newestFirst)
+        let offered = (matter.links ?? []).shown.filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
             if !all.isEmpty {
@@ -333,7 +334,7 @@ struct LinksSection: View {
         }
         .sheetWhenAsked(isPresented: $adding) {
             PhoneLinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
-                guard !(matter.links ?? []).contains(where: { $0.address == address && $0.todo === todo }) else { return }
+                guard !(matter.links ?? []).shown.contains(where: { $0.address == address && $0.todo === todo }) else { return }
                 let link = WebLink(address: address, title: title)
                 context.insert(link)
                 link.matter = matter
@@ -443,6 +444,7 @@ struct PhoneLinkRow: View {
     @ViewBuilder
     private var items: some View {
         Button(Say.connect, systemImage: "link") { connecting = true }
+        MoveAndHide(item: .link(link), matter: link.matter)
         LinkItems(link: link)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         Divider()

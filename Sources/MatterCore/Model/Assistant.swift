@@ -72,11 +72,11 @@ public enum FactSheet {
                 lines.append(text)
                 ownerText += brief.said.map(\.text)
             }
-            ownerText += (matter.todos ?? []).compactMap(\.note)
+            ownerText += (matter.todos ?? []).shown.compactMap(\.note)
             // Of the details only that they are kept, by their label: never a value.
             let labels = matter.sortedDetails.map { $0.label + ($0.party.map { " (\($0.name))" } ?? "") }
             if !labels.isEmpty { lines.append("Details the owner keeps here, values not shown: " + labels.joined(separator: "; ")) }
-            ownerText += (matter.links ?? []).filter(\.isKept).map(\.title).filter { !$0.isEmpty }
+            ownerText += (matter.links ?? []).shown.filter(\.isKept).map(\.title).filter { !$0.isEmpty }
             let open = [Todo.Owner.me, .we, .other, .unknown].flatMap(status.open)
             lines.append(open.isEmpty ? "No open to-dos." : "Open to-dos:")
             // Ids first, so a to-do can say which one it waits for, wherever that one is listed.
@@ -91,13 +91,13 @@ public enum FactSheet {
                 if todo.sources.count > 1 { line += " — asked \(todo.sources.count)×" }
                 if let note = todo.note, !note.isEmpty { line += " — owner's note: \(note.replacingOccurrences(of: "\n", with: "; "))" }
                 // The name of a link only: its address may open a shared doc.
-                for link in todo.links ?? [] { line += " — linked: \(link.forFacts)" }
+                for link in (todo.links ?? []).shown { line += " — linked: \(link.forFacts)" }
                 if detailed, !focused || mentions(todo.text), let quote = todo.sources.first?.quote { line += " — \"\(quote.prefix(160))\"" }
                 if let day = todo.sources.first?.date { line += " — since \(MatterStatus.day(day))" }
                 lines.append(line)
             }
             todos += open.count
-            let links = (matter.links ?? []).filter { $0.todo == nil && $0.isKept }.sorted { $0.createdAt < $1.createdAt }
+            let links = (matter.links ?? []).shown.filter { $0.todo == nil && $0.isKept }.sorted { $0.createdAt < $1.createdAt }
             if detailed, !links.isEmpty {
                 lines.append("The owner's links (names only; the owner opens them):")
                 for link in links { lines.append("- \(link.forFacts)") }
@@ -199,7 +199,7 @@ public enum FactSheet {
         if keptCount > 0 { seen.append("the names of \(keptCount) kept-only \(keptCount == 1 ? "file" : "files")") }
         // What the matter is written in: its own words, not the labels above them.
         let words = matters.flatMap { matter in
-            [matter.notesText ?? ""] + (matter.todos ?? []).map(\.text) + (matter.entries ?? []).prefix(40).flatMap { [$0.title, $0.digest ?? ""] }
+            [matter.notesText ?? ""] + (matter.todos ?? []).shown.map(\.text) + (matter.entries ?? []).prefix(40).flatMap { [$0.title, $0.digest ?? ""] }
         }
         return Facts(text: blocks.joined(separator: "\n\n"), refs: refs, seen: seen.joined(separator: ", "),
                      ownerText: ownerText.joined(separator: "\n"), language: AssistantAsk.language(of: words))
