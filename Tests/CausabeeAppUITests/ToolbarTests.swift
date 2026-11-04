@@ -35,6 +35,10 @@ final class ToolbarTests: XCTestCase {
 
     private func thing(_ id: String) -> XCUIElement { app.descendants(matching: .any).matching(identifier: id).firstMatch }
 
+    /// The bee in the matter's corner, among the buttons only: looked for among every element of a
+    /// full page, the query ran for twelve minutes and XCTest gave up (4 November).
+    private var cornerBee: XCUIElement { app.buttons.matching(identifier: "window.bee").firstMatch }
+
     private func keep(_ name: String) {
         Thread.sleep(forTimeInterval: 0.8)
         // In the test's result, to be taken out of it: `xcrun xcresulttool export attachments`.
@@ -60,7 +64,7 @@ final class ToolbarTests: XCTestCase {
     /// The assistant's column: brought in by the bee in the matter's corner, put away by its own ×.
     private func openAssistant() {
         guard !field.exists else { return }
-        let bee = thing("window.bee")
+        let bee = cornerBee
         XCTAssertTrue(bee.waitForExistence(timeout: 5), "The bee is not in the matter's corner.")
         // By the bee where it can be clicked. On a screen smaller than the window — a laptop's
         // own — the window's lower right corner hangs outside it: there by ⌘K.
@@ -71,7 +75,7 @@ final class ToolbarTests: XCTestCase {
     private func closeAssistant() {
         guard field.exists else { return }
         thing("assistant.close").click()
-        XCTAssertTrue(thing("window.bee").waitForExistence(timeout: 5), "The assistant did not close: the bee is not back.")
+        XCTAssertTrue(cornerBee.waitForExistence(timeout: 5), "The assistant did not close: the bee is not back.")
     }
 
     func testTheNameIsNeverUnderTheControls() {
@@ -85,7 +89,7 @@ final class ToolbarTests: XCTestCase {
         closeAssistant()
         keep("2-sidebar-open-assistant-closed"); nameIsClear("Sidebar open, assistant closed")
         // The bee floats in the matter's lower right corner.
-        let bee = thing("window.bee").frame, window = app.windows.firstMatch.frame
+        let bee = cornerBee.frame, window = app.windows.firstMatch.frame
         XCTAssertGreaterThan(bee.midX, window.midX, "The bee is not on the right.")
         XCTAssertGreaterThan(bee.midY, window.midY, "The bee is not at the bottom.")
         sidebar.click()
