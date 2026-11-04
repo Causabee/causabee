@@ -347,11 +347,13 @@ struct BeeJoyView: View {
 struct BeeAtHome: View {
     var size: CGFloat = 24
     var livesNowAndThen = false
+    /// Black on the yellow; grey on the grey of Light.
+    var ink: Color = .black
     private let joy = BeeJoy.shared
 
     var body: some View {
         ZStack {
-            BeeMark(size: size, livesNowAndThen: livesNowAndThen).foregroundStyle(.black).opacity(joy.beat == nil ? 1 : 0)
+            BeeMark(size: size, livesNowAndThen: livesNowAndThen).foregroundStyle(ink).opacity(joy.beat == nil ? 1 : 0)
             if let beat = joy.beat { BeeJoyView(beat: beat, size: size) }
         }
         .onAppear { joy.beesInSight += 1 }

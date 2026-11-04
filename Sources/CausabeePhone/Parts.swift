@@ -80,56 +80,156 @@ extension View {
     }
 }
 
-/// The yellow round button in the corner, with the bee on it: the assistant, over whatever is open.
-/// Held, it offers what the assistant's plus does — straight to a task, a note, a scan — without
-/// going through the assistant first.
+/// The round button in the corner, with the bee on it: one button for the assistant and for Pro.
+/// Yellow, Pro is on: a tap opens the chat. Grey, Pro is off — Light: a tap says what Pro adds and
+/// offers what can be added here without it. Held, either way: Pro on or off first, then what the
+/// assistant's plus offers — a task, a note, a scan — without going through the assistant. The
+/// bolt that stood over it for Pro is gone: the bee's colour says it.
 struct AssistantButton: View {
     var matter: Matter? = nil
     let action: () -> Void
     @Environment(Navigation.self) private var navigation
+    @Environment(\.modelContext) private var context
+    @AppStorage(AutoMode.key) private var auto = false
     @State private var picksPhoto = false
     @State private var picksFile = false
+    @State private var asks = false
+    @State private var light = false
+
+    /// On, and Pro bought.
+    private var pro: Bool { auto && Store.shared.plan == .pro }
+
+    /// Grey, or the bee's yellow as a rim with light inside: which one reads better as "Light" is
+    /// to be chosen — `-bee.light outline` shows the second.
+    private var outlined: Bool { UserDefaults.standard.string(forKey: "bee.light") == "outline" }
 
     var body: some View {
-        // Over the bee, Auto: how the assistant works is turned on and off where the assistant is.
-        // One glass for both: near each other they are drawn as one material, as the system's own
-        // floating controls are, and not two discs that each catch the light on their own.
-        GlassEffectContainer(spacing: 10) {
-            VStack(spacing: 10) {
-                // On the iPad Auto is in the sidebar's capsule, top left.
-                if !navigation.isPad { PhoneAutoButton() }
-                bee
+        bee
+            .padding(.trailing, 16).padding(.bottom, 8)
+            .sheetWhenAsked(isPresented: $light) {
+                LightBeeSheet(matter: matter) { light = false; turnOn() }
             }
-        }
-        .padding(.trailing, 16).padding(.bottom, 8)
+            .asksBeforeAuto($asks) { switchOn() }
     }
 
     private var bee: some View {
         Menu {
             // The button is yellow; what its menu lists is not: yellow signs on the menu's white
             // could hardly be read.
-            PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
-                .menuSigns()
+            Group {
+                if pro {
+                    Button("Turn off Pro", systemImage: "bolt.slash") { auto = false; Haptics.tap() }
+                } else {
+                    Button("Turn on Pro", systemImage: "bolt") { turnOn() }
+                }
+                Divider()
+                PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+            }
+            .menuSigns()
         } label: {
             // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
-            BeeAtHome(size: 24, livesNowAndThen: true)
+            BeeAtHome(size: 24, livesNowAndThen: pro, ink: pro || outlined ? .black : Color(white: 0.45))
                 .frame(width: 46, height: 46)
         } primaryAction: {
-            action()
+            if pro { action() } else { light = true }
         }
         .menuIndicator(.hidden)
-        // The system's own glass button, in the bee's yellow and round: alive under the finger, and
-        // the held menu grows out of it and goes back into it. Glass of our own on the menu or on
-        // its label stood bare, or black, for a moment as the menu closed.
+        // The system's own glass button, round: alive under the finger, and the held menu grows out
+        // of it and goes back into it. Yellow with Pro on; without, grey glass — or a yellow rim.
         .menuStyle(.button)
         .buttonStyle(.glassProminent)
         .buttonBorderShape(.circle)
-        .tint(Theme.bee)
+        .tint(pro ? Theme.bee : outlined ? Theme.bee.opacity(0.22) : Color(white: 0.86))
+        .overlay {
+            if !pro, outlined { Circle().strokeBorder(Theme.bee, lineWidth: 2.5).allowsHitTesting(false) }
+        }
         // Held: a small knock in the hand as its menu comes, as the system's own held things give.
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
-        .accessibilityLabel("Ask Causabee")
-        .accessibilityHint("Hold to add to a matter")
+        .accessibilityLabel("Causabee")
+        .accessibilityValue(pro ? "Pro on" : "Pro off")
+        .accessibilityHint(pro ? "Opens the chat. Hold to turn off Pro or to add to a matter" : "Says what Pro adds. Hold to turn on Pro or to add to a matter")
+        .accessibilityIdentifier("bee")
         .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+    }
+
+    /// As the bolt did: without Pro bought, the plans first; the first time, what Pro does is
+    /// said and asked before anything is read.
+    private func turnOn() {
+        guard Store.shared.mayTurnOnPro() else { return }
+        if AutoMode.asksFirst { asks = true; return }
+        switchOn()
+    }
+
+    private func switchOn() {
+        auto = true
+        Haptics.tap()
+        PhoneMailCheck.shared.autoTurnedOn(context: context)
+    }
+}
+
+/// A tap on the grey bee: what Pro adds, in two lines, the way to turn it on, and what can be added
+/// to a matter here without it — the same as the bee's hold menu. No price: only the plans cost.
+struct LightBeeSheet: View {
+    let matter: Matter?
+    let turnOn: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @Environment(Navigation.self) private var navigation
+    // Its own pickers: the bee's are under this sheet and cannot open over it.
+    @State private var picksPhoto = false
+    @State private var picksFile = false
+    @AppStorage("bee.lightSeen") private var seen = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Pro reads new mail as it comes, writes the next step and the summary, and answers in the chat.")
+                        if !seen {
+                            Text("Without Pro, Causabee sorts mail on this device and chooses the next step from your own tasks and dates. Nothing is written about a matter by an AI.")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .font(.callout)
+                    .padding(.vertical, 4)
+                    Button {
+                        dismiss()
+                        turnOn()
+                    } label: {
+                        Label("Turn on Pro", systemImage: "bolt")
+                    }
+                }
+                // The same as the bee's hold menu, as rows: a menu's items do not lay out in a list.
+                Section("Add") {
+                    add("Task", "checklist", .task)
+                    add("Note", "note.text", .note)
+                    add("Link", "link", .link)
+                    add("Detail", "info.circle", .detail)
+                    add("Contact", "person.badge.plus", .contact)
+                    Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
+                    add("Scan a document", "doc.viewfinder", .scan)
+                    Button("File", systemImage: "doc") { picksFile = true }
+                    add("Files or a folder", "folder", .files)
+                }
+            }
+            .navigationTitle("Light")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
+        }
+        .presentationDetents([.medium, .large])
+        .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+        // A task, a note, a scan picked: its editor comes on the page, which this sheet would cover.
+        // What was brought in is read in the assistant: the same.
+        .onChange(of: navigation.adding) { if navigation.adding != nil { dismiss() } }
+        .onChange(of: navigation.showsAssistant) { if navigation.showsAssistant { dismiss() } }
+        .onDisappear { seen = true }
+    }
+
+    /// In a matter, for that matter; on the overview, which one is asked.
+    private func add(_ title: String, _ symbol: String, _ plus: Navigation.Plus) -> some View {
+        Button(title, systemImage: symbol) {
+            if let matter { navigation.add(plus, to: matter) } else { dismiss(); navigation.choose(for: plus) }
+        }
     }
 }
 
