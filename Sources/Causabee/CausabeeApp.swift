@@ -786,7 +786,9 @@ struct RootView: View {
             HStack(spacing: 8) {
                 // The yellow round of a button that is on sits in the capsule's own curve: as far
                 // from its end as from its top and bottom.
-                HStack(spacing: 8) { SidebarButton(); ReadingButton(); AutoButton() }
+                // Reading mode is in View › Activate Reading Mode, and the reading state stays for what is
+                // shared later: its button here is gone, the owner seldom used it.
+                HStack(spacing: 8) { SidebarButton(); AutoButton() }
                     .padding(.leading, 7).padding(.trailing, 2).padding(.vertical, 2)
                     .onGlass(Capsule())
                     .accessibilityElement(children: .contain)
