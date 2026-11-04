@@ -99,9 +99,6 @@ struct AssistantButton: View {
     /// On, and Pro bought.
     private var pro: Bool { auto && Store.shared.plan == .pro }
 
-    /// Light as a grey bee on light glass, or the yellow bee's form in grey — a white bee on a solid
-    /// grey disc: which one reads better is to be chosen — `-bee.light inverse` shows the second.
-    private var inverse: Bool { UserDefaults.standard.string(forKey: "bee.light") == "inverse" }
 
     var body: some View {
         bee
@@ -149,7 +146,9 @@ struct AssistantButton: View {
             Button { light = true } label: { face }
                 .buttonStyle(.glassProminent)
                 .buttonBorderShape(.circle)
-                .tint(inverse ? Color(white: 0.30) : Color(white: 0.86))
+                // Light: the yellow bee's form in grey, a white bee on a dark grey disc — chosen by the
+                // owner over a grey bee on light glass and a yellow rim.
+                .tint(Color(white: 0.30))
                 .accessibilityLabel("Causabee")
                 .accessibilityValue("Pro off")
                 .accessibilityHint("Says what Pro adds, and what can be added without it")
@@ -159,7 +158,7 @@ struct AssistantButton: View {
 
     /// Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
     private var face: some View {
-        BeeAtHome(size: 24, livesNowAndThen: pro, ink: pro ? .black : inverse ? .white : Color(white: 0.45))
+        BeeAtHome(size: 24, livesNowAndThen: pro, ink: pro ? .black : .white)
             .frame(width: 46, height: 46)
     }
 
