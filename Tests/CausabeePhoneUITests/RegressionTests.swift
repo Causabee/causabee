@@ -24,6 +24,12 @@ final class RegressionTests: XCTestCase {
         // only with Pro on — grey, it says what Pro adds.
         app.launchArguments = name.contains("Letter") ? ["--demo", "--shot", "letter", "-mail.auto", "NO"] : ["--demo", "-mail.auto", "YES"]
         app.launch()
+        if !name.contains("Letter") {
+            // With Pro on, the demo sorts its new mail in a moment after it opens, and what it sorted
+            // stands on top of the overview, pushing the matters down while the test looks for one.
+            let receipt = app.buttons["receipt.close"]
+            if receipt.waitForExistence(timeout: 8) { receipt.tap() }
+        }
         showMatters()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")

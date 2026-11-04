@@ -20,6 +20,10 @@ final class ThreadTests: XCTestCase {
         // `--answers`: a question gets a made-up answer after a moment, with nothing sent.
         app.launchArguments = ["--demo", "--answers", "-demo.filled", "anew", "-mail.auto", "YES"]
         app.launch()
+        // With Pro on, the demo sorts its new mail in a moment after it opens, and what it sorted
+        // stands on top of the overview, pushing the matters down while the test looks for one.
+        let receipt = app.buttons["receipt.close"]
+        if receipt.waitForExistence(timeout: 8) { receipt.tap() }
         showMatters()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
