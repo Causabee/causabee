@@ -1180,6 +1180,9 @@ struct NewsCard: View {
     let matter: Matter
     @Environment(\.modelContext) private var context
 
+    /// The news in its own words, for what is said to it.
+    static func about(_ news: Brief.News) -> String { "What is new: " + news.lines.joined(separator: " ") }
+
     var body: some View {
         if let news = matter.shownBrief?.news, !news.seen {
             VStack(alignment: .leading, spacing: 0) {
@@ -1188,11 +1191,13 @@ struct NewsCard: View {
                     ForEach(Array(news.lines.enumerated()), id: \.offset) { _, line in
                         Text(line).fixedSize(horizontal: false, vertical: true)
                     }
+                    TileComments(matter: matter, about: Self.about(news))
                 }
                 .waitingTile()
                 HStack(spacing: 8) {
                     Text(news.mails == 1 ? "1 mail" : "\(news.mails) mails").font(.footnote).foregroundStyle(.secondary)
                     Spacer(minLength: 4)
+                    CommentButton(matter: matter, about: Self.about(news))
                     Button("Seen") { withAnimation { matter.sawNews(); try? context.save() } }
                         .quietButton()
                         .accessibilityIdentifier("brief.seen")
@@ -1352,6 +1357,7 @@ private struct ProposalRow: View {
                         .onTapGesture { withAnimation { why.toggle() } }
                 }
                 if gone { Text("What it was about is no longer there.").font(.caption).foregroundStyle(Theme.warning) }
+                TileComments(matter: matter, about: what)
                 HStack(spacing: 12) {
                     Button(take) {
                         withAnimation { gone = !Adviser.take(proposal, in: matter, context: context) }
@@ -1362,6 +1368,7 @@ private struct ProposalRow: View {
                         withAnimation { Adviser.dismiss(proposal, in: matter, context: context) }
                     }
                     .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
+                    CommentButton(matter: matter, about: what)
                 }
                 .padding(.top, 2)
             }
@@ -1446,6 +1453,7 @@ private struct LookupRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("“\(lookup.question)”").fixedSize(horizontal: false, vertical: true)
                 if let problem { Text(problem).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
+                TileComments(matter: matter, about: lookup.question)
                 HStack(spacing: 12) {
                     if looking {
                         BeeLoader(size: 9)
@@ -1458,6 +1466,7 @@ private struct LookupRow: View {
                             withAnimation { matter.settle(lookup.id, dismissed: true); try? context.save() }
                         }
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
+                        CommentButton(matter: matter, about: lookup.question)
                     }
                 }
                 .padding(.top, 2)
@@ -1696,5 +1705,119 @@ struct PublicNameMark: View {
                 .help("Public name — not disguised")
                 .accessibilityLabel("Public name — not disguised")
         }
+    }
+}
+
+// MARK: A comment on what Causabee proposed
+
+/// Under a yellow tile: what the owner said to it, as a quiet quote, with × to take it back. Kept
+/// with the brief, the same on every device, and read first when the matter is written again.
+struct TileComments: View {
+    let matter: Matter
+    /// The proposal in its own words: the comments said to it.
+    let about: String
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        let said = matter.shownBrief?.said.filter { $0.about == about } ?? []
+        ForEach(said) { one in
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("“\(one.text)”").italic().font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 4)
+                Button {
+                    withAnimation { matter.unsay(one.id) }
+                    try? context.save()
+                } label: { Image(systemName: "xmark").font(.caption2.weight(.semibold)) }
+                .buttonStyle(.plain).foregroundStyle(.tertiary)
+                .help("Take it back: the next writing goes without it")
+                .accessibilityLabel("Take back")
+            }
+            .padding(.leading, 10)
+            .overlay(alignment: .leading) { Capsule().fill(Theme.line).frame(width: 2) }
+        }
+    }
+}
+
+/// "Comment": a few words to what Causabee proposed — typed or said — that sharpen how it
+/// understood the matter. Causabee writes it again with them at once.
+struct CommentButton: View {
+    let matter: Matter
+    let about: String
+    @State private var writing = false
+
+    var body: some View {
+        Button { writing = true } label: { Label("Comment", systemImage: "text.bubble") }
+            .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
+            .accessibilityIdentifier("tile.comment")
+            .sheetWhenAsked(isPresented: $writing) { CommentSheet(matter: matter, about: about) }
+    }
+}
+
+/// The few words, with what they are about over them: the field takes the microphone too.
+struct CommentSheet: View {
+    let matter: Matter
+    let about: String
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var voice = VoiceInput()
+    @State private var cursor: TextSelection?
+    @FocusState private var focused: Bool
+
+    private var words: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("“\(about)”").font(.callout).foregroundStyle(.secondary).lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .bottom, spacing: 8) {
+                    if voice.phase == .listening {
+                        ListeningBar(voice: voice)
+                    } else {
+                        TextField(voice.phase == .writing ? voice.writingWords : "What Causabee missed, or how it should be",
+                                  text: $text, selection: $cursor, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .lineLimit(3...8)
+                            .focused($focused)
+                            .accessibilityIdentifier("comment.field")
+                    }
+                    MicButton(voice: voice, text: $text, selection: $cursor) { focused = false }
+                }
+                .padding(.leading, 14).padding(.trailing, 6).padding(.vertical, 8)
+                // Grey on the sheet's white: the card's white could not be told from it.
+                .background(Theme.box, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+                if voice.asksModel { SpeechModelCard(voice: voice) }
+                if let problem = voice.problem { Text(problem).font(.caption).foregroundStyle(Theme.warning) }
+                Text("Causabee writes it again with your words, and keeps them — they are never written over.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+            .navigationTitle("Comment")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .keepsWhatWasTyped([text])
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Send", action: send).disabled(words.isEmpty) }
+            }
+        }
+        #if os(macOS)
+        .frame(width: 440, height: 300)
+        #else
+        .presentationDetents([.medium, .large])
+        #endif
+        .onAppear { focused = true }
+    }
+
+    private func send() {
+        matter.say(words, about: about)
+        try? context.save()
+        // Written again now, with the comment: the owner should not have to ask twice.
+        AutoUpdate.shared.updateNow(matter)
+        dismiss()
     }
 }

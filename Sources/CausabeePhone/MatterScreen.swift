@@ -644,6 +644,9 @@ struct MatterScreen: View {
                 Text(step).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
+                // What the owner said to the step, and the way to say more: Causabee writes it again.
+                TileComments(matter: matter, about: step)
+                CommentButton(matter: matter, about: step)
             } else if let rule {
                 BeeChip(text: rule.heading.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)

@@ -22,7 +22,10 @@ public struct Brief: Codable, Equatable, Sendable {
         public var id = UUID()
         public var text: String
         public var date = Date()
-        public init(text: String) { self.text = text }
+        /// What Causabee proposed that it is said to — a step, a change for the list, the news, a
+        /// question — in the proposal's own words; nil for what was said of the matter as a whole.
+        public var about: String?
+        public init(text: String, about: String? = nil) { self.text = text; self.about = about }
     }
 
     /// A change to the to-do list the adviser proposes: a card like the assistant's, with the
@@ -112,7 +115,9 @@ public struct Brief: Codable, Equatable, Sendable {
     public var forFacts: String? {
         var parts: [String] = []
         if !said.isEmpty {
-            parts.append("What the owner said about this matter (always right):\n" + said.map { "- \($0.text)" }.joined(separator: "\n"))
+            // A comment on a proposal says which: what was proposed is written again with it.
+            parts.append("What the owner said about this matter (always right; a comment on something you proposed is how to write it again):\n"
+                         + said.map { said in "- " + (said.about.map { "On “\($0)”: " } ?? "") + said.text }.joined(separator: "\n"))
         }
         if !answered.isEmpty {
             parts.append("Looked up on the web, general knowledge (check the sources before relying on it):\n"
@@ -159,11 +164,11 @@ extension Matter {
     }
 
     /// Keeps something the owner said about the matter: the next brief is written around it.
-    public func say(_ text: String) {
+    public func say(_ text: String, about: String? = nil) {
         let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !words.isEmpty else { return }
         var brief = shownBrief ?? Brief()
-        brief.said.append(Brief.Said(text: words))
+        brief.said.append(Brief.Said(text: words, about: about))
         shownBrief = brief
     }
 
