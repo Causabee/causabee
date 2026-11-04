@@ -1252,6 +1252,18 @@ struct ConnectionChips: View {
 
 extension JournalItem: Identifiable {}
 
+private extension View {
+    /// The kinds to filter by, held over the list: on the iPhone and iPad in the bar's own glass —
+    /// the list softens under it as it does under the title — on the Mac above it.
+    @ViewBuilder func kindPills<Pills: View>(@ViewBuilder _ pills: () -> Pills) -> some View {
+        #if os(iOS)
+        safeAreaBar(edge: .top) { pills().padding(.horizontal, 16).padding(.bottom, 4).frame(maxWidth: .infinity, alignment: .leading) }
+        #else
+        safeAreaInset(edge: .top) { pills().padding(.horizontal, 16).padding(.vertical, 6).frame(maxWidth: .infinity, alignment: .leading).background(.bar) }
+        #endif
+    }
+}
+
 extension View {
     /// The list to connect an item from, for whichever item asked: one sheet for a list of rows.
     func connectSheet(_ item: Binding<JournalItem?>, in matter: Matter) -> some View {
@@ -1301,16 +1313,9 @@ struct ConnectSheet: View {
 
     var body: some View {
         let connected = Set(matter.connected(to: item).map(\.item))
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Connect to …").font(.headline)
-                Spacer()
-                Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
-            }
-            TextField("Search \(matter.name)", text: $query).textFieldStyle(.roundedBorder)
-            // The page's own pills, every word whole and every kind in sight — a segmented control
-            // cut "People" to "Peo…", and a scrolled row hid Notes and Links behind the sheet's edge.
-            JournalPills(parts: kinds, label: { $0 }, selection: $kind, wraps: true)
+        // As the system's own sheets are: the title and Done on the glass of the bar, the search in
+        // the system's field, the list scrolling under both.
+        NavigationStack {
             List(shown, id: \.self) { other in
                 Button {
                     withAnimation {
@@ -1331,8 +1336,23 @@ struct ConnectSheet: View {
                 .buttonStyle(.plain)
             }
             .listStyle(.plain)
+            .kindPills { JournalPills(parts: kinds, label: { $0 }, selection: $kind, wraps: true) }
+            .searchable(text: $query, prompt: "Search this matter")
+            .navigationTitle("Connect to …")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    #if os(iOS)
+                    // The system's check on prominent glass, as in Apple's own sheets.
+                    Button(role: .confirm) { dismiss() }
+                    #else
+                    Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
+                    #endif
+                }
+            }
         }
-        .padding(20)
         #if os(macOS)
         .frame(width: 460, height: 520)
         #else
