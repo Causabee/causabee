@@ -1236,6 +1236,7 @@ struct MoveAndHide: View {
             }
             if hides {
                 Button(Say.hide, systemImage: "eye.slash") {
+                    Self.unlink(item)
                     withAnimation { matter.setHidden(item, true) }
                     try? context.save()
                 }
@@ -1248,6 +1249,26 @@ struct MoveAndHide: View {
         let open = matters.filter { !$0.isClosed && $0 !== current }
             .map { ($0, MatterStatus($0).lastDate ?? .distantPast) }.sorted { $0.1 > $1.1 }.map(\.0)
         return (current.map { [$0] } ?? []) + open
+    }
+
+    /// Hidden, a task leaves Reminders and a date leaves Calendar, as when deleted: put away here,
+    /// it is not to remind of anything there. Shown again, it can be added again from its menu.
+    static func unlink(_ item: JournalItem) {
+        switch item {
+        case .task(let todo):
+            Calendars.shared.removeReminder(todo.reminderID)
+            todo.reminderID = nil
+            todo.reminderStamp = nil
+        case .meeting(let appointment):
+            Calendars.shared.removeEvent(appointment.calendarID)
+            appointment.calendarID = nil
+            appointment.calendarStamp = nil
+        case .deadline(let deadline):
+            Calendars.shared.removeEvent(deadline.calendarID)
+            deadline.calendarID = nil
+            deadline.calendarStamp = nil
+        default: break
+        }
     }
 }
 
