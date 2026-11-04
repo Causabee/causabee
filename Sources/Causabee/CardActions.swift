@@ -1140,23 +1140,28 @@ extension Notification.Name {
 /// news first, Auto's or a sync's. Allowed by the owner when the first news comes; nothing without.
 @MainActor
 enum NewsNotice {
-    private static let toldKey = "news.told"
+    /// By matter, the day of the newest mail its news was told for.
+    private static let toldKey = "news.toldNewest"
     private static var looked = -1
 
-    /// Each matter's news not told yet, as a notification: looked at once per change to the store,
-    /// every brief read by the worker.
+    /// Each matter's news, told as a notification only when a mail newer than the last one told
+    /// has come. A summary written again — by Auto, or after mails that came in twice were put
+    /// right — is not news: on 3 Nov 2026 that told three matters again that had been seen.
     static func tell(_ worker: StoreWorker) async {
         guard !DemoData.isRequested, looked != StoredChanges.shared.count else { return }
         looked = StoredChanges.shared.count
         let all = await worker.news()
-        var told = UserDefaults.standard.stringArray(forKey: toldKey) ?? []
+        let saved = UserDefaults.standard.dictionary(forKey: toldKey) as? [String: Double]
+        var told = saved ?? [:]
         for news in all {
-            let mark = "\(news.key)|\(Int(news.since.timeIntervalSince1970))|\(news.mails)"
-            guard !told.contains(mark) else { continue }
-            told.append(mark)
-            post(title: news.name, body: news.line, mails: news.mails, key: news.key)
+            guard let newest = news.newest?.timeIntervalSince1970 else { continue }
+            // The first time on a device, what is there now counts as told: nothing old comes again.
+            if saved != nil, newest > told[news.key] ?? 0 {
+                post(title: news.name, body: news.line, mails: news.mails, key: news.key)
+            }
+            told[news.key] = max(newest, told[news.key] ?? 0)
         }
-        UserDefaults.standard.setIfChanged(Array(told.suffix(200)), forKey: toldKey)
+        if told != saved { UserDefaults.standard.set(told, forKey: toldKey) }
     }
 
     private static func post(title: String, body: String, mails: Int, key: String) {
