@@ -101,11 +101,15 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .phoneSettings)) { _ in showsSettings = true }
         // Auto, the whole circle, as on the Mac: a matter whose record has changed and come to rest
         // gets its next step and its summary written again — while Causabee is open.
-        // A notification of news tapped: its matter opens.
+        // A notification of news tapped: its matter opens. Of new mail: the overview, where it
+        // waits to be sorted in.
         .onReceive(NotificationCenter.default.publisher(for: .openMatterKey)) { note in
             if let key = note.object as? String, let matter = matters.first(where: { $0.key == key }) {
                 navigation.showsNews = true
                 navigation.open(matter)
+            } else if note.object == nil {
+                if !navigation.isPad { navigation.showsAssistant = false }
+                navigation.go([])
             }
         }
         .task {

@@ -1207,9 +1207,13 @@ enum NewsNotice {
 
         func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                     withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
-            let key = response.notification.request.content.userInfo["matter"] as? String
+            let info = response.notification.request.content.userInfo
+            let key = info["matter"] as? String
+            let overview = info["open"] as? String == "overview"
             DispatchQueue.main.async {
-                if let key { NotificationCenter.default.post(name: .openMatterKey, object: key) }
+                // A matter's news: its key. New mail, sorted into no matter yet: no key, and the
+                // overview opens, where it waits.
+                if key != nil || overview { NotificationCenter.default.post(name: .openMatterKey, object: key) }
                 completionHandler()
             }
         }
@@ -1238,6 +1242,7 @@ enum MailNotice {
         content.body = senders.prefix(3).joined(separator: ", ") + (senders.count > 3 ? " and \(senders.count - 3) more" : "")
         content.sound = .default
         content.threadIdentifier = "new-mail"
+        content.userInfo = ["open": "overview"]
         let request = UNNotificationRequest(identifier: "new-mail", content: content, trigger: nil)
         let center = UNUserNotificationCenter.current()
         Task {
