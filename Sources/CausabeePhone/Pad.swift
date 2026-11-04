@@ -106,8 +106,9 @@ struct PadSidebar: View {
     }
 }
 
-/// The sidebar's button and reading in one capsule of glass, as by the Mac's window buttons — a
-/// finger high. Pro is the bee's colour, in the corner, as on the iPhone: no bolt here.
+/// The sidebar's button, reading and the bee in one capsule of glass, as by the Mac's window
+/// buttons — a finger high. The bee says whether Pro is on, as the one in the corner does, and is
+/// there while the chat's column hides that one.
 struct PadControls: View {
     @Environment(Navigation.self) private var navigation
 
@@ -117,6 +118,7 @@ struct PadControls: View {
             round("eyeglasses", on: navigation.reading, label: navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode") {
                 withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
             }
+            PadBee()
         }
         // The yellow round of one that is on sits in the capsule's own curve.
         // As high as the page's own find and ⋯, and as black: beside them a smaller, greyer
@@ -206,5 +208,61 @@ struct PadMailSign: View {
             .background(Theme.bee, in: Capsule())
             .foregroundStyle(.black)
             .accessibilityLabel("\(number) new \(number == 1 ? "mail" : "mails")")
+    }
+}
+
+/// The bee in the sidebar's capsule: yellow with Pro, white on dark grey without — as on the Mac.
+/// A tap says which it is and what Pro adds, and turns it on or off; the first time it is turned
+/// on, what it does is said and asked.
+struct PadBee: View {
+    @AppStorage(AutoMode.key) private var auto = false
+    @Environment(\.modelContext) private var context
+    @State private var shows = false
+    @State private var asks = false
+    private var pro: Bool { auto && Store.shared.plan == .pro }
+
+    var body: some View {
+        Button { shows = true } label: {
+            BeeAtHome(size: 18, livesNowAndThen: pro, ink: pro ? .black : .white)
+                .frame(width: 38, height: 38)
+                .background(pro ? Theme.bee : Color(white: 0.30), in: Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Causabee")
+        .accessibilityValue(pro ? "Pro on" : "Pro off")
+        .accessibilityIdentifier("pad.bee")
+        .popover(isPresented: $shows, arrowEdge: .top) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(pro ? "Pro is on" : "Light").font(.headline)
+                Text(pro ? "New mail is read as it comes, the next step and the summary are written, and the chat answers."
+                         : "Pro reads new mail as it comes, writes the next step and the summary, and answers in the chat. Without it, Causabee sorts mail on this iPad and chooses the next step from your own tasks and dates.")
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Spacer()
+                    if pro {
+                        Button("Turn off Pro") { shows = false; auto = false; Haptics.tap() }
+                    } else {
+                        Button("Turn on Pro") { shows = false; turnOn() }.buttonStyle(.glassProminent).tint(Theme.bee).foregroundStyle(.black)
+                    }
+                }
+            }
+            .padding(16)
+            .frame(width: 320)
+            .presentationCompactAdaptation(.popover)
+        }
+        .asksBeforeAuto($asks) { switchOn() }
+    }
+
+    private func turnOn() {
+        guard Store.shared.mayTurnOnPro() else { return }
+        if AutoMode.asksFirst { asks = true; return }
+        switchOn()
+    }
+
+    private func switchOn() {
+        auto = true
+        Haptics.tap()
+        PhoneMailCheck.shared.autoTurnedOn(context: context)
     }
 }
