@@ -19,16 +19,17 @@ final class RegressionTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         // The letter test is handed a letter as the camera would bring it.
-        // Auto off, whatever this simulator was left with: with it on, a letter is read at once
-        // and nothing waits for "Sort in".
-        app.launchArguments = (name.contains("Letter") ? ["--demo", "--shot", "letter"] : ["--demo"]) + ["-mail.auto", "NO"]
+        // Pro off for the letter, whatever this simulator was left with: with it on, a letter is
+        // read at once and nothing waits for "Sort in". On for the rest: the bee opens the chat
+        // only with Pro on — grey, it says what Pro adds.
+        app.launchArguments = name.contains("Letter") ? ["--demo", "--shot", "letter", "-mail.auto", "NO"] : ["--demo", "-mail.auto", "YES"]
         app.launch()
         showMatters()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
         matter.tap()
         if name.contains("Letter") { return }
-        XCTAssertTrue(app.buttons["Ask Causabee"].waitForExistence(timeout: 10), "The matter's page did not open.")
+        XCTAssertTrue(app.buttons["bee"].waitForExistence(timeout: 10), "The matter's page did not open.")
     }
 
     /// A photo brought in on a matter opens the assistant, is read, and offers what it found: its
@@ -53,7 +54,7 @@ final class RegressionTests: XCTestCase {
 
     /// What is added goes in by the assistant: its bee, then the plus beside its field.
     private func plus(_ item: String) {
-        app.buttons["Ask Causabee"].firstMatch.tap()
+        app.buttons["bee"].firstMatch.tap()
         let add = app.buttons["assistant.plus"].firstMatch
         XCTAssertTrue(add.waitForExistence(timeout: 8), "The assistant has no plus.")
         add.tap()
@@ -136,7 +137,7 @@ final class RegressionTests: XCTestCase {
     }
 
     func testTheAssistantOpens() {
-        app.buttons["Ask Causabee"].firstMatch.tap()
+        app.buttons["bee"].firstMatch.tap()
         XCTAssertTrue(app.buttons["Speak"].waitForExistence(timeout: 8), "The assistant did not open with its field.")
     }
 }
