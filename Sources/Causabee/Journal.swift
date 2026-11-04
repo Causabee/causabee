@@ -630,6 +630,7 @@ struct JournalThreadCard<Attached: View>: View {
             Button(Say.useInChat, systemImage: "bubble.left") { if let newest { talk(newest) } }
         }
         .connectSheet(newest.map(JournalItem.mail), in: nil, isPresented: $connecting)
+        .dropsOn(newest.map(JournalItem.mail), in: nil)
     }
 }
 
@@ -690,6 +691,7 @@ struct JournalNoteCard: View {
             MoveAndHide(item: .note(note), matter: note.matter)
         }
         .connectSheet(.note(note), in: note.matter, isPresented: $connecting)
+        .dropsOn(.note(note), in: note.matter)
     }
 }
 
@@ -1523,18 +1525,42 @@ struct ConnectSheet: View {
         return formatter.string(from: Date())
     }
 
-    /// What came from the camera or the photos, through a file of its own, the way a picked one comes.
     private func add(_ data: Data, named name: String) {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let file = folder.appendingPathComponent(name)
-        guard (try? data.write(to: file)) != nil else { said = "It could not be added."; return }
-        add([file])
-        try? FileManager.default.removeItem(at: folder)
+        said = ItemFiles.add(data, named: name, to: item, in: matter, context: context, store: store)
     }
 
-    /// Each a file of the matter, kept where this device keeps the owner's own files, and connected.
     private func add(_ files: [URL]) {
+        said = ItemFiles.add(files, to: item, in: matter, context: context, store: store)
+    }
+
+    private var store: URL? {
+        #if os(macOS)
+        navigation.store
+        #else
+        nil
+        #endif
+    }
+}
+
+/// Files brought to one item — from "New" in "Connect to …", or dropped on it: each a file of the
+/// matter, kept where this device keeps the owner's own files and in the matter's folder, not read,
+/// and connected to the item at once.
+@MainActor
+enum ItemFiles {
+    /// What came from the camera, the photos or another app as data, through a file of its own.
+    /// What is to be said after, or nil.
+    @discardableResult
+    static func add(_ data: Data, named name: String, to item: JournalItem, in matter: Matter, context: ModelContext, store: URL?) -> String? {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appendingPathComponent(name)
+        guard (try? data.write(to: file)) != nil else { return "It could not be added." }
+        return add([file], to: item, in: matter, context: context, store: store)
+    }
+
+    @discardableResult
+    static func add(_ files: [URL], to item: JournalItem, in matter: Matter, context: ModelContext, store: URL?) -> String? {
         let before = Set((matter.documents ?? []).map(\.persistentModelID))
         #if os(iOS)
         let folder = PhoneShots.folder
@@ -1542,7 +1568,7 @@ struct ConnectSheet: View {
             FolderImport.data(of: file).flatMap { PhoneShots.keep($0, named: name, in: folder) }
         }
         #else
-        let folder = ScreenshotDoor.attachments(besides: navigation.store)
+        let folder = ScreenshotDoor.attachments(besides: store ?? CausabeeApp.storeLocation())
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let result = FolderImport.add(files, to: matter, context: context) { file, name in
             let target = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name)
@@ -1559,6 +1585,84 @@ struct ConnectSheet: View {
         #else
         FolderSaver.shared.save([matter])
         #endif
-        said = added.isEmpty ? (result.said ?? "It is in the matter already.") : result.said
+        return added.isEmpty ? (result.said ?? "It is in the matter already.") : result.said
+    }
+
+    /// A page dragged from the browser: a link of the matter, connected to the item.
+    static func add(link address: String, to item: JournalItem, in matter: Matter, context: ModelContext) {
+        let link = (matter.links ?? []).shown.first { $0.address == address } ?? {
+            let link = WebLink(address: address, title: "")
+            context.insert(link)
+            link.matter = matter
+            return link
+        }()
+        withAnimation { matter.connect(item, .link(link), in: context) }
+        try? context.save()
+    }
+}
+
+/// What can be dropped on an item: a file from the Finder or Files, a page from the browser, a
+/// picture or a PDF from another app.
+enum DroppedThing: Transferable {
+    case url(URL)
+    case file(BroughtFile)
+
+    static var transferRepresentation: some TransferRepresentation {
+        ProxyRepresentation(importing: { (url: URL) in DroppedThing.url(url) })
+        ProxyRepresentation(importing: { (file: BroughtFile) in DroppedThing.file(file) })
+    }
+}
+
+extension View {
+    /// Files or a page dropped on an item become the matter's and are connected to it; the item is
+    /// outlined while something is held over it. On the Mac and the iPad, where things are dragged.
+    func dropsOn(_ item: JournalItem?, in matter: Matter?) -> some View {
+        modifier(DropsOnItem(item: item, matter: matter))
+    }
+}
+
+private struct DropsOnItem: ViewModifier {
+    let item: JournalItem?
+    let matter: Matter?
+    @Environment(\.modelContext) private var context
+    #if os(macOS)
+    @Environment(Navigation.self) private var navigation
+    #endif
+    @State private var over = false
+
+    func body(content: Content) -> some View {
+        if let item, let matter = matter ?? item.matter {
+            content
+                .dropDestination(for: DroppedThing.self) { things, _ in
+                    take(things, to: item, in: matter)
+                    return !things.isEmpty
+                } isTargeted: { over = $0 }
+                .overlay {
+                    if over {
+                        RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                            .strokeBorder(Color.accentColor, lineWidth: 2).allowsHitTesting(false)
+                    }
+                }
+        } else {
+            content
+        }
+    }
+
+    private func take(_ things: [DroppedThing], to item: JournalItem, in matter: Matter) {
+        #if os(macOS)
+        let store: URL? = navigation.store
+        #else
+        let store: URL? = nil
+        #endif
+        var files: [URL] = []
+        for thing in things {
+            switch thing {
+            case .url(let url) where url.isFileURL: files.append(url)
+            case .url(let url):
+                if let address = WebLink.address(in: url.absoluteString) { ItemFiles.add(link: address, to: item, in: matter, context: context) }
+            case .file(let file): ItemFiles.add(file.data, named: file.name, to: item, in: matter, context: context, store: store)
+            }
+        }
+        if !files.isEmpty { ItemFiles.add(files, to: item, in: matter, context: context, store: store) }
     }
 }

@@ -304,6 +304,7 @@ struct NotesPart: View {
             ShareLink(item: text) { Label("Share", systemImage: "square.and.arrow.up") }
             Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { delete(); try? context.save() } }
         }
+        .dropsOn(note.map(JournalItem.note), in: note?.matter)
     }
 
     private func add() {
@@ -613,6 +614,7 @@ struct DetailsSection: View {
             Divider()
             Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { context.deleteByHand([detail], undo: undoManager, named: "Delete Detail") } }
         }
+        .dropsOn(.detail(detail), in: detail.matter)
     }
 
     private func copy(_ detail: MatterDetail) {

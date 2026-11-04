@@ -115,6 +115,7 @@ struct PhonePartyRow: View {
             ConnectionChips(item: .person(party), matter: matter).padding(.leading, 48)
         }
         .connectSheet(.person(party), in: matter, isPresented: $connecting)
+        .dropsOn(.person(party), in: matter)
     }
 
     @ViewBuilder
@@ -431,6 +432,7 @@ struct PhoneLinkRow: View {
         .contextMenu { Group { items }.menuSigns() }
         .findable(.model(link.persistentModelID), link.shownName, link.address)
         .connectSheet(.link(link), in: link.matter, isPresented: $connecting)
+        .dropsOn(.link(link), in: link.matter)
         .sheetWhenAsked(isPresented: $editing) {
             PhoneLinkEditor(link: link, todos: todos) { address, title, todo in
                 link.address = address

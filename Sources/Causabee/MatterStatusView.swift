@@ -1683,6 +1683,7 @@ struct TodoRow: View {
 
     var body: some View {
         rowBody.connectSheet(.task(todo), in: todo.matter, isPresented: $connecting)
+            .dropsOn(.task(todo), in: todo.matter)
     }
 
     @ViewBuilder
@@ -2111,6 +2112,7 @@ struct DateRow: View {
             if let journalItem = item.journalItem { ConnectionChips(item: journalItem).padding(.leading, 38) }
         }
         .connectSheet(item.journalItem, in: nil, isPresented: $connecting)
+        .dropsOn(item.journalItem, in: nil)
     }
 
     @ViewBuilder
@@ -2267,6 +2269,7 @@ struct PartyRow: View {
             ConnectionChips(item: .person(party), matter: matter).padding(.leading, 48)
         }
         .connectSheet(.person(party), in: matter, isPresented: $connecting)
+        .dropsOn(.person(party), in: matter)
     }
 
     @ViewBuilder
@@ -2555,6 +2558,7 @@ struct LinkRow: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .connectSheet(.link(link), in: link.matter, isPresented: $connecting)
+        .dropsOn(.link(link), in: link.matter)
     }
 }
 

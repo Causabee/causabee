@@ -1212,7 +1212,7 @@ struct PhoneTodoRow: View {
     var body: some View {
         // Taken back with Undo in the assistant, the task is gone while this row is drawn once more:
         // a deleted model must not be read — SwiftData stops the app.
-        if todo.isDeleted || todo.modelContext == nil { EmptyView() } else { row.connectSheet(.task(todo), in: todo.matter, isPresented: $connecting) }
+        if todo.isDeleted || todo.modelContext == nil { EmptyView() } else { row.connectSheet(.task(todo), in: todo.matter, isPresented: $connecting).dropsOn(.task(todo), in: todo.matter) }
     }
 
     private var row: some View {
@@ -1550,6 +1550,7 @@ struct PhoneDateRow: View {
             if let journalItem = item.journalItem { ConnectionChips(item: journalItem, matter: matter).padding(.leading, 38) }
         }
         .connectSheet(item.journalItem, in: matter, isPresented: $connecting)
+        .dropsOn(item.journalItem, in: matter)
     }
 
     @ViewBuilder

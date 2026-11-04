@@ -289,6 +289,7 @@ struct ThreadMailRow: View {
         }
         .contentShape(Rectangle())
         .connectSheet(.mail(row.entry), in: row.entry.matter, isPresented: $connecting)
+        .dropsOn(.mail(row.entry), in: row.entry.matter)
         .task(id: row.entry.messageID) { hasText = KeptTexts.store.map { MailText.has(row.entry.messageID, besides: $0) } ?? false }
         #if os(iOS)
         .quickLookPreview($preview)
