@@ -518,6 +518,7 @@ struct JournalThreadCard<Attached: View>: View {
     let toggle: () -> Void
     let talk: (Entry) -> Void
     @ViewBuilder let attached: Attached
+    @State private var connecting = false
 
     private var newest: Entry? {
         thread.rows.map(\.entry).max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
@@ -612,7 +613,11 @@ struct JournalThreadCard<Attached: View>: View {
             .padding(.top, 10)
         }
         .journalCard()
-        .contextMenu { Button(Say.useInChat, systemImage: "bubble.left") { if let newest { talk(newest) } } }
+        .contextMenu {
+            Button(Say.connect, systemImage: "link") { connecting = true }
+            Button(Say.useInChat, systemImage: "bubble.left") { if let newest { talk(newest) } }
+        }
+        .connectSheet(newest.map(JournalItem.mail), in: nil, isPresented: $connecting)
     }
 }
 
@@ -647,23 +652,29 @@ struct JournalNoteCard: View {
     let note: MatterNote
     let show: () -> Void
 
+    @State private var connecting = false
+
     var body: some View {
-        Button(action: show) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(note.text).foregroundStyle(.primary).lineLimit(6).multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Divider().padding(.top, 12)
-                HStack {
-                    Text(note.fromAssistant ? "From the assistant" : "Your note")
-                    Spacer(minLength: 8)
-                    Text(Dates.short(note.createdAt)).monospacedDigit()
-                }
-                .font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
+        // A tap on the card shows it under Notes; the chips' own buttons come first.
+        VStack(alignment: .leading, spacing: 0) {
+            Text(note.text).foregroundStyle(.primary).lineLimit(6).multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            ConnectionChips(item: .note(note))
+            Divider().padding(.top, 12)
+            HStack {
+                Text(note.fromAssistant ? "From the assistant" : "Your note")
+                Spacer(minLength: 8)
+                Text(Dates.short(note.createdAt)).monospacedDigit()
             }
-            .journalCard()
-            .contentShape(Rectangle())
+            .font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
         }
-        .buttonStyle(.plain)
+        .journalCard()
+        .contentShape(Rectangle())
+        .onTapGesture(perform: show)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.default, show)
+        .contextMenu { Button(Say.connect, systemImage: "link") { connecting = true } }
+        .connectSheet(.note(note), in: note.matter, isPresented: $connecting)
     }
 }
 
@@ -1189,13 +1200,15 @@ extension JournalItem {
 struct ConnectionChips: View {
     let item: JournalItem
     var matter: Matter? = nil
+    /// Only what the owner connected: where what Causabee read is shown already, as under a mail.
+    var ownOnly = false
     @Environment(\.modelContext) private var context
     @State private var connecting = false
 
     private var home: Matter? { matter ?? item.matter }
 
     var body: some View {
-        if let home, case let connected = home.connected(to: item), !connected.isEmpty {
+        if let home, case let connected = home.connected(to: item).filter({ !ownOnly || $0.kind == .with }), !connected.isEmpty {
             FlowRow(spacing: 6) {
                 ForEach(connected, id: \.self) { other in chip(other, in: home) }
                 Button { connecting = true } label: {
@@ -1229,7 +1242,14 @@ struct ConnectionChips: View {
     }
 }
 
+extension JournalItem: Identifiable {}
+
 extension View {
+    /// The list to connect an item from, for whichever item asked: one sheet for a list of rows.
+    func connectSheet(_ item: Binding<JournalItem?>, in matter: Matter) -> some View {
+        sheet(item: item) { ConnectSheet(item: $0, matter: matter) }
+    }
+
     /// The list to connect an item from, opened by "Connect …".
     func connectSheet(_ item: JournalItem?, in matter: Matter?, isPresented: Binding<Bool>) -> some View {
         sheet(isPresented: isPresented) {
@@ -1254,7 +1274,21 @@ struct ConnectSheet: View {
         let words = query.trimmingCharacters(in: .whitespaces).lowercased()
         return matter.journalItems
             .filter { $0 != item && (kind == "All" || $0.kindName == kind) && (words.isEmpty || $0.title.lowercased().contains(words)) }
-            .sorted { ($0.when ?? .distantPast) > ($1.when ?? .distantPast) }
+            .sorted(by: Self.order)
+    }
+
+    /// What came and was made lately first, newest on top; then what is ahead, soonest first; the
+    /// people last. A date three weeks off is seldom what a photo taken today belongs with.
+    static func order(_ a: JournalItem, _ b: JournalItem) -> Bool {
+        let now = Date()
+        switch (a.when, b.when) {
+        case (nil, nil): return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+        case (nil, _): return false
+        case (_, nil): return true
+        case let (x?, y?):
+            if (x > now) != (y > now) { return y > now }
+            return x > now ? x < y : x > y
+        }
     }
 
     var body: some View {

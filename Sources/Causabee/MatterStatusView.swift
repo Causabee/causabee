@@ -2495,6 +2495,7 @@ struct LinkRow: View {
     let remove: () -> Void
     @Environment(\.modelContext) private var context
     @State private var editing = false
+    @State private var connecting = false
 
     static func icon(_ link: WebLink) -> String {
         switch link.kind {
@@ -2522,9 +2523,11 @@ struct LinkRow: View {
                     Text("· \(Dates.short(link.createdAt))")
                 }
                 .font(.caption).foregroundStyle(.secondary)
+                ConnectionChips(item: .link(link))
             }
             Spacer(minLength: 8)
             MoreMenu {
+                Button(Say.connect, systemImage: "link") { connecting = true }
                 LinkItems(link: link)
                 Button(Say.edit, systemImage: "pencil") { editing = true }
                 Button(Say.removeLink, systemImage: "trash", role: .destructive, action: remove)
@@ -2542,6 +2545,7 @@ struct LinkRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+        .connectSheet(.link(link), in: link.matter, isPresented: $connecting)
     }
 }
 

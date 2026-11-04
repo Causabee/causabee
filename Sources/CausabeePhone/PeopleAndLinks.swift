@@ -397,6 +397,7 @@ struct PhoneLinkRow: View {
     @Environment(\.modelContext) private var context
     @Environment(\.openURL) private var openURL
     @State private var editing = false
+    @State private var connecting = false
 
     var body: some View {
         // A link a card kept and Undo took out again: gone while this row is drawn once more.
@@ -413,6 +414,7 @@ struct PhoneLinkRow: View {
                 .foregroundStyle(Theme.gold)
                 Text("\(link.kind)\(link.todo.map { " · for: \($0.text)" } ?? "") · \(Dates.short(link.createdAt))")
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                ConnectionChips(item: .link(link))
             }
             Spacer(minLength: 0)
             Menu { items } label: {
@@ -427,6 +429,7 @@ struct PhoneLinkRow: View {
         .padding(.vertical, 10)
         .contextMenu { Group { items }.menuSigns() }
         .findable(.model(link.persistentModelID), link.shownName, link.address)
+        .connectSheet(.link(link), in: link.matter, isPresented: $connecting)
         .sheetWhenAsked(isPresented: $editing) {
             PhoneLinkEditor(link: link, todos: todos) { address, title, todo in
                 link.address = address
@@ -439,6 +442,7 @@ struct PhoneLinkRow: View {
 
     @ViewBuilder
     private var items: some View {
+        Button(Say.connect, systemImage: "link") { connecting = true }
         LinkItems(link: link)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         Divider()

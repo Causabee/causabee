@@ -93,6 +93,7 @@ struct ThreadMailRow: View {
     /// A scan or a file brought in, opened here: shown in place on the iPhone and iPad.
     @State private var preview: URL?
     @State private var cannotOpen = false
+    @State private var connecting = false
 
     /// The file a scan or a dropped mail is, when it is an entry of its own: the same on every device —
     /// here, or in the matter's folder in iCloud Drive.
@@ -170,6 +171,7 @@ struct ThreadMailRow: View {
                 openURL(url)
             }
         }
+        Button(Say.connect, systemImage: "link") { connecting = true }
         #if os(macOS)
         Button(Say.useInChat, systemImage: "bubble.left", action: talk)
         MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
@@ -236,6 +238,8 @@ struct ThreadMailRow: View {
                     }
                 }
                 MadeChips(made: made).padding(.top, made.isEmpty ? 0 : 2)
+                // What Causabee made of it the chips above say; here only what the owner put with it.
+                ConnectionChips(item: .mail(entry), ownOnly: true)
                 // What each of them was read out of, in its own words: a quiet quote, a thin line
                 // on its left — the chips above already say what came of it.
                 let quotes = quotes
@@ -284,6 +288,7 @@ struct ThreadMailRow: View {
             }
         }
         .contentShape(Rectangle())
+        .connectSheet(.mail(row.entry), in: row.entry.matter, isPresented: $connecting)
         .task(id: row.entry.messageID) { hasText = KeptTexts.store.map { MailText.has(row.entry.messageID, besides: $0) } ?? false }
         #if os(iOS)
         .quickLookPreview($preview)

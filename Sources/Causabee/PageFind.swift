@@ -185,6 +185,7 @@ struct NotesPart: View {
     @FocusState private var focused: Bool
     @State private var voice = VoiceInput()
     @State private var cursor: TextSelection?
+    @State private var connecting: JournalItem?
 
     #if os(iOS)
     private let radius: CGFloat = 12, inset: CGFloat = 16
@@ -227,7 +228,7 @@ struct NotesPart: View {
                 .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.bottom, 4)
 
             ForEach(matter.sortedNotes) { note in
-                block(Self.label(note.createdAt) + (note.fromAssistant ? " · from the assistant" : ""), note.text, isEditing: editing == note.persistentModelID,
+                block(Self.label(note.createdAt) + (note.fromAssistant ? " · from the assistant" : ""), note.text, note: note, isEditing: editing == note.persistentModelID,
                       edit: { edited = note.text; editing = note.persistentModelID; editingEarlier = false },
                       save: { text in if text.isEmpty { context.delete(note) } else { note.text = text } },
                       delete: { context.deleteByHand([note], undo: undoManager, named: "Delete Note") })
@@ -243,11 +244,13 @@ struct NotesPart: View {
         }
         .onChange(of: writing) { if writing { focused = true; writing = false } }
         .onAppear { if writing { focused = true; writing = false } }
+        .connectSheet($connecting, in: matter)
     }
 
     /// One note: its day, its words, and what can be done with it. Being put right, it is a field.
+    /// A note of its own — not the earlier notes in one — can be connected.
     @ViewBuilder
-    private func block(_ day: String, _ text: String, isEditing: Bool, edit: @escaping () -> Void,
+    private func block(_ day: String, _ text: String, note: MatterNote? = nil, isEditing: Bool, edit: @escaping () -> Void,
                        save: @escaping (String) -> Void, delete: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -255,6 +258,7 @@ struct NotesPart: View {
                 Spacer()
                 if !isEditing {
                     Menu {
+                        if let note { Button(Say.connect, systemImage: "link") { connecting = .note(note) } }
                         Button("Edit", systemImage: "pencil", action: edit)
                         Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
                         ShareLink(item: text) { Label("Share", systemImage: "square.and.arrow.up") }
@@ -282,11 +286,13 @@ struct NotesPart: View {
             } else {
                 Text(Self.linked(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                if let note { ConnectionChips(item: .note(note), matter: matter) }
             }
         }
         .padding(.horizontal, Theme.cardInset).padding(.vertical, 14)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         .contextMenu {
+            if let note { Button(Say.connect, systemImage: "link") { connecting = .note(note) } }
             Button("Edit", systemImage: "pencil", action: edit)
             Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
             ShareLink(item: text) { Label("Share", systemImage: "square.and.arrow.up") }
@@ -517,6 +523,7 @@ struct DetailsSection: View {
     @State private var adding = false
     @State private var editing: MatterDetail?
     @State private var copied: PersistentIdentifier?
+    @State private var connecting: JournalItem?
 
     #if os(iOS)
     private let radius: CGFloat = 12
@@ -537,6 +544,7 @@ struct DetailsSection: View {
             }
             .sheetWhenAsked(isPresented: $adding) { DetailEditor(matter: matter) }
             .sheet(item: $editing) { DetailEditor(matter: matter, detail: $0) }
+            .connectSheet($connecting, in: matter)
         } else if !details.isEmpty || showsEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
@@ -559,10 +567,19 @@ struct DetailsSection: View {
             }
             .sheetWhenAsked(isPresented: $adding) { DetailEditor(matter: matter) }
             .sheet(item: $editing) { DetailEditor(matter: matter, detail: $0) }
+            .connectSheet($connecting, in: matter)
         }
     }
 
     private func row(_ detail: MatterDetail, inset: CGFloat = 14) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            copyButton(detail, inset: inset)
+            ConnectionChips(item: .detail(detail), matter: matter)
+                .padding(.horizontal, inset).padding(.top, -6).padding(.bottom, 10)
+        }
+    }
+
+    private func copyButton(_ detail: MatterDetail, inset: CGFloat) -> some View {
         Button { copy(detail) } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -579,6 +596,7 @@ struct DetailsSection: View {
         .findable(.model(detail.persistentModelID), detail.label, detail.value)
         .accessibilityLabel("\(detail.label): \(detail.value)").accessibilityHint("Copies it")
         .contextMenu {
+            Button(Say.connect, systemImage: "link") { connecting = .detail(detail) }
             Button("Copy", systemImage: "doc.on.doc") { copy(detail) }
             Button("Copy with its label", systemImage: "doc.on.doc") { NotesPart.copy("\(detail.label): \(detail.value)") }
             ShareLink(item: "\(detail.label): \(detail.value)") { Label("Share", systemImage: "square.and.arrow.up") }
