@@ -149,7 +149,7 @@ struct AssistantButton: View {
             Button { light = true } label: { face }
                 .buttonStyle(.glassProminent)
                 .buttonBorderShape(.circle)
-                .tint(inverse ? Color(white: 0.56) : Color(white: 0.86))
+                .tint(inverse ? Color(white: 0.36) : Color(white: 0.86))
                 .accessibilityLabel("Causabee")
                 .accessibilityValue("Pro off")
                 .accessibilityHint("Says what Pro adds, and what can be added without it")
