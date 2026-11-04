@@ -1380,10 +1380,14 @@ private extension View {
     /// The kinds to filter by, held over the list: on the iPhone and iPad in the bar's own glass —
     /// the list softens under it as it does under the title — on the Mac above it.
     @ViewBuilder func kindPills<Pills: View>(@ViewBuilder _ pills: () -> Pills) -> some View {
+        // One line, scrolled sideways, across the sheet's whole width: the margin is inside the
+        // scroll, so the last pill scrolls to the same 16 points from the edge as the first stands.
+        let line = ScrollView(.horizontal, showsIndicators: false) { pills() }
+            .contentMargins(.horizontal, 16, for: .scrollContent)
         #if os(iOS)
-        safeAreaBar(edge: .top) { pills().padding(.horizontal, 16).padding(.bottom, 4).frame(maxWidth: .infinity, alignment: .leading) }
+        safeAreaBar(edge: .top) { line.padding(.bottom, 4) }
         #else
-        safeAreaInset(edge: .top) { pills().padding(.horizontal, 16).padding(.vertical, 6).frame(maxWidth: .infinity, alignment: .leading).background(.bar) }
+        safeAreaInset(edge: .top) { line.padding(.vertical, 6).background(.bar) }
         #endif
     }
 }
@@ -1498,7 +1502,7 @@ struct ConnectSheet: View {
                 }
             }
             .listStyle(.plain)
-            .kindPills { JournalPills(parts: kinds, label: { $0 }, selection: $kind, wraps: true) }
+            .kindPills { JournalPills(parts: kinds, label: { $0 }, selection: $kind) }
             .searchable(text: $query, prompt: "Search this matter")
             .navigationTitle("Connect to …")
             #if os(iOS)
