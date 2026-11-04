@@ -96,6 +96,8 @@ public final class Matter {
     @Relationship(deleteRule: .cascade, inverse: \MatterDetail.matter) public var details: [MatterDetail]? = []
     /// The assistant's turns about this matter. A matter that goes leaves them in the thread.
     @Relationship(deleteRule: .nullify, inverse: \ThreadTurn.matter) public var turns: [ThreadTurn]? = []
+    /// What the owner connected in it, and what Causabee's own links the owner took away.
+    @Relationship(deleteRule: .cascade, inverse: \Connection.matter) public var connections: [Connection]? = []
 
     public init(key: String, name: String? = nil) {
         self.key = key
@@ -139,6 +141,8 @@ public final class Entry {
     /// a scan, a mail dropped in, a mail not looked at yet. Synced, so every device shows the same.
     public var isUnread: Bool?
     public var matter: Matter?
+    /// Its ends of connections to other items of the matter.
+    @Relationship(deleteRule: .cascade, inverse: \ConnectionEnd.entry) public var connectionEnds: [ConnectionEnd]? = []
 
     public init(title: String, from: String, date: Date?, source: Source) {
         self.title = title
@@ -177,6 +181,8 @@ public final class Todo {
     public var origin: String = ""
     public var createdAt: Date = Date()
     public var matter: Matter?
+    /// Its ends of connections to other items of the matter.
+    @Relationship(deleteRule: .cascade, inverse: \ConnectionEnd.todo) public var connectionEnds: [ConnectionEnd]? = []
     /// The to-do this one can only be done after: the proof waits for the answer it needs.
     public var waitsFor: Todo?
     /// The to-dos that wait for this one.
@@ -222,6 +228,8 @@ public final class Appointment {
     /// What it and its event agreed on when they were last in step.
     public var calendarStamp: String?
     public var matter: Matter?
+    /// Its ends of connections to other items of the matter.
+    @Relationship(deleteRule: .cascade, inverse: \ConnectionEnd.appointment) public var connectionEnds: [ConnectionEnd]? = []
 
     public init(what: String, day: String, time: String?, place: String?, source: Source) {
         self.what = what
@@ -244,6 +252,8 @@ public final class Deadline {
     /// What it and its event agreed on when they were last in step.
     public var calendarStamp: String?
     public var matter: Matter?
+    /// Its ends of connections to other items of the matter.
+    @Relationship(deleteRule: .cascade, inverse: \ConnectionEnd.deadline) public var connectionEnds: [ConnectionEnd]? = []
 
     public init(what: String, day: String, source: Source) {
         self.what = what
@@ -272,6 +282,8 @@ public final class Party {
     /// When the owner added them by hand; nil for those who came in with mail.
     public var addedAt: Date?
     @Relationship(deleteRule: .nullify, inverse: \MatterDetail.party) public var details: [MatterDetail]? = []
+    /// Its ends of connections to other items of a matter.
+    @Relationship(deleteRule: .cascade, inverse: \ConnectionEnd.person) public var connectionEnds: [ConnectionEnd]? = []
 
     public init(name: String) {
         self.name = name
@@ -415,6 +427,8 @@ public final class Document {
     /// file's name is shown. The file keeps its own name in the mail and in its folder.
     public var title: String?
     public var matter: Matter?
+    /// Its ends of connections to other items of the matter.
+    @Relationship(deleteRule: .cascade, inverse: \ConnectionEnd.document) public var connectionEnds: [ConnectionEnd]? = []
 
     /// What the file is called on screen.
     public var shownName: String {
@@ -503,6 +517,8 @@ public final class MatterDetail {
     public var value: String = ""
     public var createdAt: Date = Date()
     public var matter: Matter?
+    /// Its ends of connections to other items of the matter.
+    @Relationship(deleteRule: .cascade, inverse: \ConnectionEnd.detail) public var connectionEnds: [ConnectionEnd]? = []
     public var party: Party?
 
     public init(label: String, value: String, createdAt: Date = Date()) {
@@ -572,6 +588,8 @@ public final class MatterNote {
     /// An answer of the assistant's the owner kept, not the owner's own words.
     public var fromAssistant: Bool = false
     public var matter: Matter?
+    /// Its ends of connections to other items of the matter.
+    @Relationship(deleteRule: .cascade, inverse: \ConnectionEnd.note) public var connectionEnds: [ConnectionEnd]? = []
 
     public init(text: String, createdAt: Date = Date(), fromAssistant: Bool = false) {
         self.text = text
@@ -614,6 +632,8 @@ public final class WebLink {
     public var title: String = ""
     public var createdAt: Date = Date()
     public var matter: Matter?
+    /// Its ends of connections to other items of the matter.
+    @Relationship(deleteRule: .cascade, inverse: \ConnectionEnd.link) public var connectionEnds: [ConnectionEnd]? = []
     public var todo: Todo?
     /// The mail it was found in, when it was: then it is offered, not yet kept.
     public var messageID: String = ""
@@ -784,7 +804,7 @@ public enum MatterSchema {
     public static let models: [any PersistentModel.Type] = [
         Matter.self, Entry.self, Todo.self, Appointment.self, Deadline.self, Party.self, Membership.self,
         Decision.self, Rule.self, Profile.self, Document.self, WebLink.self, ThreadTurn.self, NameList.self,
-        SortedMail.self, MatterNote.self, MatterDetail.self, KeptText.self,
+        SortedMail.self, MatterNote.self, MatterDetail.self, KeptText.self, Connection.self, ConnectionEnd.self,
     ]
 
     /// A store on disk, or in memory when `url` is nil.
