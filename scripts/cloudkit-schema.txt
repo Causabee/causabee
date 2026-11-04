@@ -1,5 +1,6 @@
 Appointment.calendarID
 Appointment.calendarStamp
+Appointment.connectionEnds -> ConnectionEnd
 Appointment.day
 Appointment.endDay
 Appointment.endTime
@@ -8,8 +9,23 @@ Appointment.place
 Appointment.sources
 Appointment.time
 Appointment.what
+Connection.createdAt
+Connection.ends -> ConnectionEnd
+Connection.kindRaw
+Connection.matter -> Matter
+ConnectionEnd.appointment -> Appointment
+ConnectionEnd.connection -> Connection
+ConnectionEnd.deadline -> Deadline
+ConnectionEnd.detail -> MatterDetail
+ConnectionEnd.document -> Document
+ConnectionEnd.entry -> Entry
+ConnectionEnd.link -> WebLink
+ConnectionEnd.note -> MatterNote
+ConnectionEnd.person -> Party
+ConnectionEnd.todo -> Todo
 Deadline.calendarID
 Deadline.calendarStamp
+Deadline.connectionEnds -> ConnectionEnd
 Deadline.day
 Deadline.matter -> Matter
 Deadline.sources
@@ -20,6 +36,7 @@ Decision.sources
 Decision.what
 Decision.why
 Document.byteCount
+Document.connectionEnds -> ConnectionEnd
 Document.contentType
 Document.isHidden
 Document.matter -> Matter
@@ -28,6 +45,7 @@ Document.name
 Document.readAt
 Document.source
 Document.title
+Entry.connectionEnds -> ConnectionEnd
 Entry.date
 Entry.digest
 Entry.from
@@ -45,6 +63,7 @@ Matter.appointments -> Appointment
 Matter.brief
 Matter.briefAt
 Matter.closedAt
+Matter.connections -> Connection
 Matter.createdAt
 Matter.deadlines -> Deadline
 Matter.decisions -> Decision
@@ -71,11 +90,13 @@ Matter.summary
 Matter.summaryAt
 Matter.todos -> Todo
 Matter.turns -> ThreadTurn
+MatterDetail.connectionEnds -> ConnectionEnd
 MatterDetail.createdAt
 MatterDetail.label
 MatterDetail.matter -> Matter
 MatterDetail.party -> Party
 MatterDetail.value
+MatterNote.connectionEnds -> ConnectionEnd
 MatterNote.createdAt
 MatterNote.fromAssistant
 MatterNote.matter -> Matter
@@ -91,6 +112,7 @@ NameList.digest
 NameList.updatedAt
 Party.addedAt
 Party.address
+Party.connectionEnds -> ConnectionEnd
 Party.details -> MatterDetail
 Party.keys
 Party.memberships -> Membership
@@ -125,6 +147,7 @@ ThreadTurn.date
 ThreadTurn.id
 ThreadTurn.matter -> Matter
 ThreadTurn.payload
+Todo.connectionEnds -> ConnectionEnd
 Todo.createdAt
 Todo.doneAt
 Todo.doneSource
@@ -144,6 +167,7 @@ Todo.text
 Todo.unblocks -> Todo
 Todo.waitsFor -> Todo
 WebLink.address
+WebLink.connectionEnds -> ConnectionEnd
 WebLink.createdAt
 WebLink.isDismissed
 WebLink.isSuggestion
