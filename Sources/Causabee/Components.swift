@@ -124,7 +124,10 @@ struct AutoButton: View {
 
     var body: some View {
         Button { shows.toggle() } label: {
-            MacBeeFace(pro: pro, size: 26, bee: 15)
+            // The bee alone, small, without a round of its own: yellow with Pro, grey in Light.
+            BeeAtHome(size: 12, livesNowAndThen: pro, ink: pro ? Theme.bee : Color.secondary)
+                .frame(width: 24, height: 24)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .quickLabel(pro ? "Pro is on" : "Light: Pro is off")

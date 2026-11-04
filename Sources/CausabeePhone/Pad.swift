@@ -106,17 +106,14 @@ struct PadSidebar: View {
     }
 }
 
-/// The sidebar's button and reading in one capsule of glass, as by the Mac's window buttons — a
-/// finger high. Pro is the bee's colour, in the corner, as on the iPhone: no bolt here.
+/// The sidebar's button on glass, as by the Mac's window buttons — a finger high. Reading mode is in
+/// the matter's ⋯ menu, and Pro is the bee's colour in the corner, as on the iPhone.
 struct PadControls: View {
     @Environment(Navigation.self) private var navigation
 
     var body: some View {
         HStack(spacing: 10) {
             PadSidebarButton()
-            round("eyeglasses", on: navigation.reading, label: navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode") {
-                withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
-            }
         }
         // The yellow round of one that is on sits in the capsule's own curve.
         // As high as the page's own find and ⋯, and as black: beside them a smaller, greyer

@@ -346,21 +346,6 @@ struct MatterScreen: View {
                     .tint(.primary)
                     .accessibilityLabel("Find in this matter")
             }
-            // On the iPad the glasses are in the sidebar's capsule, with the sidebar's button and Auto.
-            if !navigation.isPad {
-            ToolbarItem(placement: .topBarTrailing) {
-                // Glasses, as on the Mac: on, black on the bee's yellow.
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
-                } label: {
-                    Image(systemName: "eyeglasses")
-                        .foregroundStyle(navigation.reading ? Color.black : Color.primary)
-                        .frame(width: 30, height: 30)
-                        .background { if navigation.reading { Circle().fill(Theme.bee) } }
-                }
-                .accessibilityLabel(navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode")
-            }
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Group {
@@ -370,6 +355,11 @@ struct MatterScreen: View {
                         MatterMenuItems(matter: matter, all: nil)
                         // Everything the matter holds, as one document: what is gathered here can leave at any time.
                         Button(Say.exportRTF, systemImage: "square.and.arrow.up", action: export)
+                        // Reading mode: no button of its own in the bar any more, the owner seldom used it;
+                        // here, as in the Mac's View menu, and kept for what is shared later.
+                        Button(navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode", systemImage: "eyeglasses") {
+                            withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
+                        }
                         Divider()
                         if matter.isClosed {
                             Button(Say.openAgain, systemImage: "arrow.uturn.backward") { matter.reopen(); try? context.save() }
