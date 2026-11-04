@@ -1,6 +1,10 @@
 import MatterCore
+import PhotosUI
 import SwiftData
 import SwiftUI
+#if os(iOS)
+import VisionKit
+#endif
 
 // The matter's page as one journal: white cards on a grey page, what waits for the owner on a
 // yellow tile, and everything else only to read. One code for the Mac, the iPhone and the iPad; the
@@ -61,9 +65,12 @@ struct JournalPills<Part: Hashable>: View {
     let parts: [Part]
     let label: (Part) -> String
     @Binding var selection: Part
+    /// Onto a second line where they do not fit, not scrolled: in a sheet, whose edge hid the rest.
+    var wraps = false
 
-    private var row: some View {
-        HStack(spacing: 6) {
+    private var row: some View { HStack(spacing: 6) { pills } }
+
+    @ViewBuilder private var pills: some View {
             ForEach(parts, id: \.self) { part in
                 let chosen = part == selection
                 Button { selection = part } label: {
@@ -90,13 +97,18 @@ struct JournalPills<Part: Hashable>: View {
                 .accessibilityAddTraits(chosen ? .isSelected : [])
                 .accessibilityIdentifier("part." + label(part))
             }
-        }
     }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            row
-            ScrollView(.horizontal, showsIndicators: false) { row }
+        Group {
+            if wraps {
+                FlowRow(spacing: 4) { pills }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    row
+                    ScrollView(.horizontal, showsIndicators: false) { row }
+                }
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Filter")
@@ -155,7 +167,7 @@ struct OutOfDateStep: View {
     let matter: Matter
 
     var body: some View {
-        let done = matter.nextStepTodo.flatMap { origin in (matter.todos ?? []).first { $0.origin == origin } }?.isDone == true
+        let done = matter.nextStepTodo.flatMap { origin in (matter.todos ?? []).shown.first { $0.origin == origin } }?.isDone == true
         BeeChip(text: "OUT OF DATE", tone: .quiet)
         Text(matter.nextStep ?? "").font(Theme.rowTitleFont).foregroundStyle(.secondary)
             .strikethrough(done, color: .secondary)
@@ -485,7 +497,7 @@ struct InfoLine: View {
         }
         .contentShape(Rectangle())
         .contextMenu {
-            Button("Ask Causabee", action: talk)
+            Button(Say.useInChat, systemImage: "bubble.left", action: talk)
             Button("Back to tasks", action: back)
         }
     }
@@ -518,6 +530,7 @@ struct JournalThreadCard<Attached: View>: View {
     let toggle: () -> Void
     let talk: (Entry) -> Void
     @ViewBuilder let attached: Attached
+    @State private var connecting = false
 
     private var newest: Entry? {
         thread.rows.map(\.entry).max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
@@ -612,7 +625,12 @@ struct JournalThreadCard<Attached: View>: View {
             .padding(.top, 10)
         }
         .journalCard()
-        .contextMenu { Button("Ask Causabee") { if let newest { talk(newest) } } }
+        .contextMenu {
+            Button(Say.connect, systemImage: "link") { connecting = true }
+            Button(Say.useInChat, systemImage: "bubble.left") { if let newest { talk(newest) } }
+        }
+        .connectSheet(newest.map(JournalItem.mail), in: nil, isPresented: $connecting)
+        .dropsOn(newest.map(JournalItem.mail), in: nil)
     }
 }
 
@@ -647,23 +665,33 @@ struct JournalNoteCard: View {
     let note: MatterNote
     let show: () -> Void
 
+    @State private var connecting = false
+
     var body: some View {
-        Button(action: show) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(note.text).foregroundStyle(.primary).lineLimit(6).multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Divider().padding(.top, 12)
-                HStack {
-                    Text(note.fromAssistant ? "From the assistant" : "Your note")
-                    Spacer(minLength: 8)
-                    Text(Dates.short(note.createdAt)).monospacedDigit()
-                }
-                .font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
+        // A tap on the card shows it under Notes; the chips' own buttons come first.
+        VStack(alignment: .leading, spacing: 0) {
+            Text(note.text).foregroundStyle(.primary).lineLimit(6).multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            ConnectionChips(item: .note(note))
+            Divider().padding(.top, 12)
+            HStack {
+                Text(note.fromAssistant ? "From the assistant" : "Your note")
+                Spacer(minLength: 8)
+                Text(Dates.short(note.createdAt)).monospacedDigit()
             }
-            .journalCard()
-            .contentShape(Rectangle())
+            .font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
         }
-        .buttonStyle(.plain)
+        .journalCard()
+        .contentShape(Rectangle())
+        .onTapGesture(perform: show)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.default, show)
+        .contextMenu {
+            Button(Say.connect, systemImage: "link") { connecting = true }
+            MoveAndHide(item: .note(note), matter: note.matter)
+        }
+        .connectSheet(.note(note), in: note.matter, isPresented: $connecting)
+        .dropsOn(.note(note), in: note.matter)
     }
 }
 
@@ -817,7 +845,7 @@ struct PlanTick: View {
             let wasOpen = !todo.isDone
             toggle()
             if wasOpen, todo.isDone {
-                BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: reduceMotion)
+                BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).shown.allSatisfy(\.isDone), still: reduceMotion)
             }
         } label: {
             Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")
@@ -921,7 +949,7 @@ struct BallCard: View {
     let matter: Matter
 
     var body: some View {
-        let balls = matter.parties.map { ($0.name, Journal.ball(of: $0, in: matter)) }.filter { !$0.1.isEmpty }
+        let balls = matter.shownParties.map { ($0.name, Journal.ball(of: $0, in: matter)) }.filter { !$0.1.isEmpty }
         if !balls.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 Text("WHO HAS THE BALL").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
@@ -1093,5 +1121,603 @@ struct ClosedMailRows: View {
                 Text("The new mail goes, with what only it brought. The closed matter stays closed.")
             }
         }
+    }
+}
+
+/// Chips side by side, wrapping onto the next line when there is no room.
+struct FlowRow: Layout {
+    var spacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(subviews, width: proposal.width ?? .infinity)
+        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: rows.last.map { $0.y + $0.height } ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for row in arrange(subviews, width: bounds.width) {
+            var x = bounds.minX
+            for index in row.items {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: bounds.minY + row.y), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+        }
+    }
+
+    private func arrange(_ subviews: Subviews, width: CGFloat) -> [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] {
+        var rows: [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] = []
+        var items: [Int] = [], x: CGFloat = 0, y: CGFloat = 0, height: CGFloat = 0
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            if x > 0, x + size.width > width {
+                rows.append((items, y, x - spacing, height))
+                y += height + spacing
+                items = []; x = 0; height = 0
+            }
+            items.append(index)
+            x += size.width + spacing
+            height = max(height, size.height)
+        }
+        if !items.isEmpty { rows.append((items, y, x - spacing, height)) }
+        return rows
+    }
+}
+
+// MARK: Connections
+
+extension JournalItem {
+    /// The sign it is shown with, in a chip and in the list to connect from.
+    var symbol: String {
+        switch self {
+        case .mail: "envelope"
+        case .file: "doc"
+        case .task: "checklist"
+        case .meeting: "calendar"
+        case .deadline: "flag"
+        case .note: "note.text"
+        case .link: "link"
+        case .person: "person"
+        case .detail: "key"
+        }
+    }
+
+    /// What kind of thing it is, in words, for the filter of the list.
+    var kindName: String {
+        switch self {
+        case .mail: "Mail"
+        case .file: "Files"
+        case .task: "Tasks"
+        case .meeting, .deadline: "Dates"
+        case .note: "Notes"
+        case .link: "Links"
+        case .person: "People"
+        case .detail: "Details"
+        }
+    }
+
+    /// The matter it is in. A person can be in several: theirs is given where it is shown.
+    var matter: Matter? {
+        switch self {
+        case .mail(let item): item.matter
+        case .file(let item): item.matter
+        case .task(let item): item.matter
+        case .meeting(let item): item.matter
+        case .deadline(let item): item.matter
+        case .note(let item): item.matter
+        case .link(let item): item.matter
+        case .person: nil
+        case .detail(let item): item.matter
+        }
+    }
+}
+
+/// "Move to Matter …" and "Hide", the same in every item's menu on every device: the open
+/// matters, the newest mail first, the one it is in ticked; and the item put away. A mail moves
+/// with its own menu; a file, which had Hide first, passes `hides: false`.
+struct MoveAndHide: View {
+    let item: JournalItem?
+    let matter: Matter?
+    var hides = true
+    @Query private var matters: [Matter]
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        if let item, let matter {
+            Menu {
+                ForEach(Self.order(matters, current: matter)) { other in
+                    if other === matter {
+                        Button(other.name, systemImage: "checkmark") { }.disabled(true)
+                    } else {
+                        Button(other.name) { withAnimation { try? matter.move(item, to: other, in: context) } }
+                    }
+                }
+            } label: {
+                Label(Say.moveToMatter, systemImage: "folder")
+            }
+            if hides {
+                Button(Say.hide, systemImage: "eye.slash") {
+                    Self.unlink(item)
+                    withAnimation { matter.setHidden(item, true) }
+                    try? context.save()
+                }
+            }
+        }
+    }
+
+    /// The one it is in first, then the open ones by their newest mail.
+    static func order(_ matters: [Matter], current: Matter?) -> [Matter] {
+        let open = matters.filter { !$0.isClosed && $0 !== current }
+            .map { ($0, MatterStatus($0).lastDate ?? .distantPast) }.sorted { $0.1 > $1.1 }.map(\.0)
+        return (current.map { [$0] } ?? []) + open
+    }
+
+    /// Hidden, a task leaves Reminders and a date leaves Calendar, as when deleted: put away here,
+    /// it is not to remind of anything there. Shown again, it can be added again from its menu.
+    static func unlink(_ item: JournalItem) {
+        switch item {
+        case .task(let todo):
+            Calendars.shared.removeReminder(todo.reminderID)
+            todo.reminderID = nil
+            todo.reminderStamp = nil
+        case .meeting(let appointment):
+            Calendars.shared.removeEvent(appointment.calendarID)
+            appointment.calendarID = nil
+            appointment.calendarStamp = nil
+        case .deadline(let deadline):
+            Calendars.shared.removeEvent(deadline.calendarID)
+            deadline.calendarID = nil
+            deadline.calendarStamp = nil
+        default: break
+        }
+    }
+}
+
+/// What the owner hid in a matter, at the foot of its page: "3 hidden", and a sheet with each to
+/// show again. Nothing while nothing is hidden.
+struct HiddenItemsLine: View {
+    let matter: Matter
+    @State private var showing = false
+
+    var body: some View {
+        let count = matter.hiddenItems.count
+        if count > 0 {
+            Button("\(count) hidden · Show") { showing = true }
+                .buttonStyle(.plain).font(.footnote).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .sheetWhenAsked(isPresented: $showing) { HiddenItemsSheet(matter: matter) }
+        }
+    }
+}
+
+struct HiddenItemsSheet: View {
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(matter.hiddenItems, id: \.self) { item in
+                    HStack(spacing: 10) {
+                        Image(systemName: item.symbol).foregroundStyle(.secondary).frame(width: 22)
+                        Text(item.title).lineLimit(2)
+                        Spacer(minLength: 8)
+                        Button(Say.showAgain) {
+                            withAnimation { matter.setHidden(item, false) }
+                            try? context.save()
+                            if matter.hiddenItems.isEmpty { dismiss() }
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+            }
+            .navigationTitle("Hidden")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { dismiss() } } }
+        }
+        #if os(macOS)
+        .frame(width: 440, height: 360)
+        #else
+        .presentationDetents([.medium, .large])
+        #endif
+    }
+}
+
+/// What an item belongs with, as chips under it: what Causabee read it came from, and what the
+/// owner connected, each with × to take it away from both. Nothing at all while there is none:
+/// "Connect …" is in the item's menu, and a row of plans stays quiet.
+struct ConnectionChips: View {
+    let item: JournalItem
+    var matter: Matter? = nil
+    /// Only what the owner connected: where what Causabee read is shown already, as under a mail.
+    var ownOnly = false
+    @Environment(\.modelContext) private var context
+    @State private var connecting = false
+
+    private var home: Matter? { matter ?? item.matter }
+
+    var body: some View {
+        if let home, case let connected = home.connected(to: item).filter({ !ownOnly || $0.kind == .with }), !connected.isEmpty {
+            FlowRow(spacing: 6) {
+                ForEach(connected, id: \.self) { other in chip(other, in: home) }
+                Button { connecting = true } label: {
+                    Label(Say.connect, systemImage: "link").font(.caption).foregroundStyle(.secondary)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .overlay(Capsule().stroke(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(.tertiary))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 4)
+            .connectSheet(item, in: home, isPresented: $connecting)
+        }
+    }
+
+    private func chip(_ other: Connected, in home: Matter) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: other.item.symbol).font(.caption2)
+            Text(other.item.title).lineLimit(1).truncationMode(.middle).frame(maxWidth: 220, alignment: .leading)
+            Button {
+                withAnimation { home.disconnect(item, other.item, in: context) }
+                try? context.save()
+            } label: { Image(systemName: "xmark").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary) }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Take away")
+        }
+        .font(.caption)
+        .padding(.leading, 8).padding(.trailing, 6).padding(.vertical, 3)
+        .background(Theme.box, in: Capsule())
+        .help(other.kind == .cameFrom ? "Causabee read it came from this" : "You connected it")
+    }
+}
+
+extension JournalItem: Identifiable {}
+
+private extension View {
+    /// The kinds to filter by, held over the list: on the iPhone and iPad in the bar's own glass —
+    /// the list softens under it as it does under the title — on the Mac above it.
+    @ViewBuilder func kindPills<Pills: View>(@ViewBuilder _ pills: () -> Pills) -> some View {
+        // One line, scrolled sideways, across the sheet's whole width: the margin is inside the
+        // scroll, so the last pill scrolls to the same 16 points from the edge as the first stands.
+        let line = ScrollView(.horizontal, showsIndicators: false) { pills() }
+            .contentMargins(.horizontal, 16, for: .scrollContent)
+        #if os(iOS)
+        safeAreaBar(edge: .top) { line.padding(.bottom, 4) }
+        #else
+        safeAreaInset(edge: .top) { line.padding(.vertical, 6).background(.bar) }
+        #endif
+    }
+}
+
+extension View {
+    /// The list to connect an item from, for whichever item asked: one sheet for a list of rows.
+    func connectSheet(_ item: Binding<JournalItem?>, in matter: Matter) -> some View {
+        sheet(item: item) { ConnectSheet(item: $0, matter: matter) }
+    }
+
+    /// The list to connect an item from, opened by "Connect …".
+    func connectSheet(_ item: JournalItem?, in matter: Matter?, isPresented: Binding<Bool>) -> some View {
+        sheet(isPresented: isPresented) {
+            if let item, let matter = matter ?? item.matter { ConnectSheet(item: item, matter: matter) }
+        }
+    }
+}
+
+/// "Connect to …": the matter's items, newest first, a tick on what this one belongs with — a
+/// tap puts it with it or takes it away. Search and a filter by kind for a matter with much in it.
+struct ConnectSheet: View {
+    let item: JournalItem
+    let matter: Matter
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+    @State private var kind = "All"
+    @State private var photo: PhotosPickerItem?
+    @State private var picksPhoto = false
+    @State private var picksFile = false
+    @State private var scanning = false
+    @State private var said: String?
+    #if os(macOS)
+    @Environment(Navigation.self) private var navigation
+    #endif
+
+    private var kinds: [String] { ["All"] + ["Mail", "Files", "Tasks", "Dates", "People", "Details", "Notes", "Links"].filter { name in matter.journalItems.contains { $0 != item && $0.kindName == name } } }
+
+    private var shown: [JournalItem] {
+        let words = query.trimmingCharacters(in: .whitespaces).lowercased()
+        return matter.journalItems
+            .filter { $0 != item && (kind == "All" || $0.kindName == kind) && (words.isEmpty || $0.title.lowercased().contains(words)) }
+            .sorted(by: Self.order)
+    }
+
+    /// What came and was made lately first, newest on top; then what is ahead, soonest first; the
+    /// people last. A date three weeks off is seldom what a photo taken today belongs with.
+    static func order(_ a: JournalItem, _ b: JournalItem) -> Bool {
+        let now = Date()
+        switch (a.when, b.when) {
+        case (nil, nil): return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+        case (nil, _): return false
+        case (_, nil): return true
+        case let (x?, y?):
+            if (x > now) != (y > now) { return y > now }
+            return x > now ? x < y : x > y
+        }
+    }
+
+    var body: some View {
+        let all = matter.connected(to: item)
+        // Ticked is only what the owner put with it. What Causabee read it came from — a mail's
+        // files, tasks and dates — stands apart on top, without a tick: ticked among the rest, a
+        // mail opened with half the matter chosen, and a task made by hand with nothing.
+        let connected = Set(all.filter { $0.kind == .with }.map(\.item))
+        let cameFrom = all.filter { $0.kind == .cameFrom }.map(\.item).filter { shown.contains($0) }
+        let rest = shown.filter { !cameFrom.contains($0) }
+        // As the system's own sheets are: the title and Done on the glass of the bar, the search in
+        // the system's field, the list scrolling under both.
+        NavigationStack {
+            List {
+                if !cameFrom.isEmpty {
+                    Section {
+                        ForEach(cameFrom, id: \.self) { other in
+                            HStack(spacing: 10) {
+                                Image(systemName: "arrow.turn.down.right").foregroundStyle(.secondary).frame(width: 22)
+                                Image(systemName: other.symbol).foregroundStyle(.secondary).frame(width: 18)
+                                Text(other.title).lineLimit(2)
+                                Spacer(minLength: 8)
+                                if let when = other.when { Text(Dates.short(when)).font(.caption).foregroundStyle(.secondary) }
+                            }
+                        }
+                    } header: {
+                        Text("Read from, by Causabee").font(.footnote).foregroundStyle(.secondary)
+                    } footer: {
+                        Text("Shown with it already. × on its chip takes one away.").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Section {
+                    ForEach(rest, id: \.self) { other in
+                        Button {
+                            withAnimation {
+                                if connected.contains(other) { matter.disconnect(item, other, in: context) } else { matter.connect(item, other, in: context) }
+                            }
+                            try? context.save()
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: connected.contains(other) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(connected.contains(other) ? Color.primary : Color.secondary)
+                                    .frame(width: 22)
+                                Image(systemName: other.symbol).foregroundStyle(.secondary).frame(width: 18)
+                                Text(other.title).lineLimit(2)
+                                Spacer(minLength: 8)
+                                if let when = other.when { Text(Dates.short(when)).font(.caption).foregroundStyle(.secondary) }
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    if !cameFrom.isEmpty { Text("Connect").font(.footnote).foregroundStyle(.secondary) }
+                }
+            }
+            .listStyle(.plain)
+            .kindPills { JournalPills(parts: kinds, label: { $0 }, selection: $kind) }
+            .searchable(text: $query, prompt: "Search this matter")
+            .navigationTitle("Connect to …")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                #if os(iOS)
+                ToolbarItem(placement: .topBarLeading) { newMenu }
+                #else
+                ToolbarItem(placement: .primaryAction) { newMenu }
+                #endif
+                ToolbarItem(placement: .confirmationAction) {
+                    SheetConfirm("Done") { dismiss() }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if let said {
+                    Text(said).font(.footnote).foregroundStyle(.secondary).padding(8)
+                        .frame(maxWidth: .infinity).background(.bar)
+                }
+            }
+            .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
+            .onChange(of: photo) {
+                guard let photo else { return }
+                self.photo = nil
+                Task {
+                    guard let data = try? await photo.loadTransferable(type: Data.self) else { return }
+                    let ending = photo.supportedContentTypes.compactMap(\.preferredFilenameExtension).first { ["jpeg", "jpg", "png", "heic"].contains($0) } ?? "jpeg"
+                    add(data, named: "Photo " + Self.stamp() + "." + ending)
+                }
+            }
+            .fileImporter(isPresented: $picksFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
+                if case .success(let files) = result { add(files) }
+            }
+            #if os(iOS)
+            .fullScreenCover(isPresented: $scanning) {
+                DocumentCamera { pages in
+                    scanning = false
+                    if let data = Scans.pdf(of: pages) { add(data, named: "Scan " + Self.stamp() + ".pdf") }
+                } cancel: { scanning = false }
+                .ignoresSafeArea()
+            }
+            #endif
+        }
+        #if os(macOS)
+        .frame(width: 460, height: 520)
+        #else
+        .presentationDetents([.medium, .large])
+        #endif
+    }
+
+    /// New: a photo, a scan or a file, added to the matter and connected to the item at once — a
+    /// photo taken for a task after the fact. It is kept as files added by hand are, not read: Read
+    /// on the file reads it.
+    private var newMenu: some View {
+        Menu {
+            Button("Photo", systemImage: "photo") { picksPhoto = true }
+            #if os(iOS)
+            if VNDocumentCameraViewController.isSupported {
+                Button("Scan", systemImage: "doc.viewfinder") { scanning = true }
+            }
+            #endif
+            Button("File", systemImage: "doc") { picksFile = true }
+        } label: {
+            Label("New", systemImage: "plus")
+        }
+        .accessibilityIdentifier("connect.new")
+    }
+
+    /// "2026-11-04 at 16.05.12", as the devices name their own pictures.
+    static func stamp() -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        return formatter.string(from: Date())
+    }
+
+    private func add(_ data: Data, named name: String) {
+        said = ItemFiles.add(data, named: name, to: item, in: matter, context: context, store: store)
+    }
+
+    private func add(_ files: [URL]) {
+        said = ItemFiles.add(files, to: item, in: matter, context: context, store: store)
+    }
+
+    private var store: URL? {
+        #if os(macOS)
+        navigation.store
+        #else
+        nil
+        #endif
+    }
+}
+
+/// Files brought to one item — from "New" in "Connect to …", or dropped on it: each a file of the
+/// matter, kept where this device keeps the owner's own files and in the matter's folder, not read,
+/// and connected to the item at once.
+@MainActor
+enum ItemFiles {
+    /// What came from the camera, the photos or another app as data, through a file of its own.
+    /// What is to be said after, or nil.
+    @discardableResult
+    static func add(_ data: Data, named name: String, to item: JournalItem, in matter: Matter, context: ModelContext, store: URL?) -> String? {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appendingPathComponent(name)
+        guard (try? data.write(to: file)) != nil else { return "It could not be added." }
+        return add([file], to: item, in: matter, context: context, store: store)
+    }
+
+    @discardableResult
+    static func add(_ files: [URL], to item: JournalItem, in matter: Matter, context: ModelContext, store: URL?) -> String? {
+        let before = Set((matter.documents ?? []).map(\.persistentModelID))
+        #if os(iOS)
+        let folder = PhoneShots.folder
+        let result = FolderImport.add(files, to: matter, context: context) { file, name in
+            FolderImport.data(of: file).flatMap { PhoneShots.keep($0, named: name, in: folder) }
+        }
+        #else
+        let folder = ScreenshotDoor.attachments(besides: store ?? CausabeeApp.storeLocation())
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let result = FolderImport.add(files, to: matter, context: context) { file, name in
+            let target = folder.appendingPathComponent(UUID().uuidString.prefix(8) + "-" + name)
+            var done = false
+            NSFileCoordinator().coordinate(readingItemAt: file, options: [], error: nil) { done = (try? FileManager.default.copyItem(at: $0, to: target)) != nil }
+            return done ? target : nil
+        }
+        #endif
+        let added = (matter.documents ?? []).filter { !before.contains($0.persistentModelID) }
+        withAnimation { for document in added { matter.connect(item, .file(document), in: context) } }
+        try? context.save()
+        #if os(iOS)
+        PhoneFolderSaver.save([matter])
+        #else
+        FolderSaver.shared.save([matter])
+        #endif
+        return added.isEmpty ? (result.said ?? "It is in the matter already.") : result.said
+    }
+
+    /// A page dragged from the browser: a link of the matter, connected to the item.
+    static func add(link address: String, to item: JournalItem, in matter: Matter, context: ModelContext) {
+        let link = (matter.links ?? []).shown.first { $0.address == address } ?? {
+            let link = WebLink(address: address, title: "")
+            context.insert(link)
+            link.matter = matter
+            return link
+        }()
+        withAnimation { matter.connect(item, .link(link), in: context) }
+        try? context.save()
+    }
+}
+
+/// What can be dropped on an item: a file from the Finder or Files, a page from the browser, a
+/// picture or a PDF from another app.
+enum DroppedThing: Transferable {
+    case url(URL)
+    case file(BroughtFile)
+
+    static var transferRepresentation: some TransferRepresentation {
+        ProxyRepresentation(importing: { (url: URL) in DroppedThing.url(url) })
+        ProxyRepresentation(importing: { (file: BroughtFile) in DroppedThing.file(file) })
+    }
+}
+
+extension View {
+    /// Files or a page dropped on an item become the matter's and are connected to it; the item is
+    /// outlined while something is held over it. On the Mac and the iPad, where things are dragged.
+    func dropsOn(_ item: JournalItem?, in matter: Matter?) -> some View {
+        modifier(DropsOnItem(item: item, matter: matter))
+    }
+}
+
+private struct DropsOnItem: ViewModifier {
+    let item: JournalItem?
+    let matter: Matter?
+    @Environment(\.modelContext) private var context
+    #if os(macOS)
+    @Environment(Navigation.self) private var navigation
+    #endif
+    @State private var over = false
+
+    func body(content: Content) -> some View {
+        if let item, let matter = matter ?? item.matter {
+            content
+                .dropDestination(for: DroppedThing.self) { things, _ in
+                    take(things, to: item, in: matter)
+                    return !things.isEmpty
+                } isTargeted: { over = $0 }
+                .overlay {
+                    if over {
+                        RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                            .strokeBorder(Color.accentColor, lineWidth: 2).allowsHitTesting(false)
+                    }
+                }
+        } else {
+            content
+        }
+    }
+
+    private func take(_ things: [DroppedThing], to item: JournalItem, in matter: Matter) {
+        #if os(macOS)
+        let store: URL? = navigation.store
+        #else
+        let store: URL? = nil
+        #endif
+        var files: [URL] = []
+        for thing in things {
+            switch thing {
+            case .url(let url) where url.isFileURL: files.append(url)
+            case .url(let url):
+                if let address = WebLink.address(in: url.absoluteString) { ItemFiles.add(link: address, to: item, in: matter, context: context) }
+            case .file(let file): ItemFiles.add(file.data, named: file.name, to: item, in: matter, context: context, store: store)
+            }
+        }
+        if !files.isEmpty { ItemFiles.add(files, to: item, in: matter, context: context, store: store) }
     }
 }

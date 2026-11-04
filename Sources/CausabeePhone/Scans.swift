@@ -62,9 +62,9 @@ struct ScanSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([title, file?.name])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add", action: add).disabled(file == nil)
+                    SheetConfirm("Add", action: add).disabled(file == nil)
                 }
             }
             .fullScreenCover(isPresented: $scanning) {

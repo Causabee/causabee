@@ -65,7 +65,7 @@ struct MergeChooser: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
         }
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 440)
@@ -130,6 +130,9 @@ enum Say {
     static let useFileName = "Use File Name"
     static let showAgain = "Show Again"
     static let hide = "Hide"
+    static let moveToMatter = "Move to Matter …"
+    static let connect = "Connect …"
+    static let useInChat = "Use in Chat"
 }
 
 /// "Waits For …": the matter's other open tasks, to choose the one this one can only follow. A
@@ -164,7 +167,7 @@ struct WaitsForChooser: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
         }
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 360)

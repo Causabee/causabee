@@ -112,39 +112,80 @@ private struct QuickLabel: ViewModifier {
     }
 }
 
-/// Beside the glasses: Auto on and off — new mail and files read by the AI as soon as they are
-/// there, or only when the owner says so; what is taken in stays theirs either way. Theirs to
-/// choose, and plain to see which it is.
+/// Beside the glasses: the bee, which says whether Pro is on — yellow, Pro; dark grey, Light — as
+/// the iPhone's and the iPad's bee does. The bolt that stood here is gone. A click says which it is
+/// and turns Pro on or off; the first time it is turned on, what it does is said and asked.
 struct AutoButton: View {
     @AppStorage(AutoMode.key) private var auto = false
     @State private var asks = false
+    @State private var shows = false
     /// On, and Pro bought.
     private var pro: Bool { auto && Store.shared.plan == .pro }
 
     var body: some View {
-        Button {
-            // The first time it is turned on, what it does is said and asked.
-            if pro { withAnimation(.easeInOut(duration: 0.2)) { auto = false }; return }
-            // Without Pro bought: the plans first. The first time it is turned on, what it does is said and asked.
-            guard Store.shared.mayTurnOnPro() else { return }
-            if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
-        } label: {
-            // On: a black bolt on the bee's yellow, round, as the glasses while reading.
-            Image(systemName: pro ? "bolt.fill" : "bolt").font(.body)
-                .foregroundStyle(pro ? Color.black : Color.secondary)
-                .frame(width: 26, height: 26)
-                .background { if pro { Circle().fill(Theme.bee) } }
-                .contentShape(Circle())
+        Button { shows.toggle() } label: {
+            MacBeeFace(pro: pro, size: 26, bee: 15)
         }
         .buttonStyle(.plain)
-        // Short, as the glasses': what Auto does is said in Settings and where it works.
-        .quickLabel(pro ? "Turn Pro Off" : "Turn Pro On: the bigger AI reads and updates by itself")
-        .help(BeeServer.isSetUp ? (pro ? "Pro is on: GPT-6.1 Sol reads new mail as it comes" : "Pro is off: Apple's model on this device reads new mail — nothing leaves it")
-              : (pro ? "Pro is on: next steps and summaries update by themselves" : "Without Pro, nothing is read by the AI by itself"))
-        .accessibilityLabel("Pro")
-        .accessibilityValue(pro ? "On" : "Off")
+        .quickLabel(pro ? "Pro is on" : "Light: Pro is off")
+        .accessibilityLabel("Causabee")
+        .accessibilityValue(pro ? "Pro on" : "Pro off")
         .accessibilityIdentifier("window.auto")
+        .popover(isPresented: $shows, arrowEdge: .bottom) {
+            ProPopover(pro: pro) { shows = false; turnOn() } turnOff: {
+                shows = false
+                withAnimation(.easeInOut(duration: 0.2)) { auto = false }
+            }
+        }
         .asksBeforeAuto($asks) { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
+    }
+
+    private func turnOn() {
+        // Without Pro bought: the plans first.
+        guard Store.shared.mayTurnOnPro() else { return }
+        if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
+    }
+}
+
+/// The bee on its round: black on the bee's yellow with Pro, white on dark grey without — the
+/// same on every device.
+struct MacBeeFace: View {
+    let pro: Bool
+    var size: CGFloat = 48
+    var bee: CGFloat = 20
+
+    var body: some View {
+        BeeAtHome(size: bee, livesNowAndThen: pro, ink: pro ? .black : .white)
+            .frame(width: size, height: size)
+            .background(pro ? Theme.bee : Color(white: 0.30), in: Circle())
+            .contentShape(Circle())
+    }
+}
+
+/// What a click on the bee says: Pro or Light, what Pro adds, and the switch. No price: only the
+/// plans cost.
+struct ProPopover: View {
+    let pro: Bool
+    let turnOn: () -> Void
+    let turnOff: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(pro ? "Pro is on" : "Light").font(.headline)
+            Text(pro ? "New mail is read as it comes, the next step and the summary are written, and the chat answers."
+                     : "Pro reads new mail as it comes, writes the next step and the summary, and answers in the chat. Without it, Causabee sorts mail on this Mac and chooses the next step from your own tasks and dates.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Spacer()
+                if pro {
+                    Button("Turn Off Pro", action: turnOff)
+                } else {
+                    Button("Turn On Pro", action: turnOn).keyboardShortcut(.defaultAction)
+                }
+            }
+        }
+        .padding(16)
+        .frame(width: 300)
     }
 }
 
@@ -300,5 +341,34 @@ struct SourceLink: View {
         } else {
             Text(label).font(.caption).foregroundStyle(.secondary).tool()
         }
+    }
+}
+
+/// The bee in the matter's corner while the assistant is put away: yellow with Pro, a click brings
+/// the chat; dark grey without, a click says what Pro adds and turns it on — there is no chat to
+/// bring.
+struct CornerBee: View {
+    let open: () -> Void
+    @AppStorage(AutoMode.key) private var auto = false
+    @State private var shows = false
+    @State private var asks = false
+    private var pro: Bool { auto && Store.shared.plan == .pro }
+
+    var body: some View {
+        Button { if pro { open() } else { shows = true } } label: {
+            MacBeeFace(pro: pro).shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Causabee")
+        .accessibilityValue(pro ? "Pro on" : "Pro off")
+        .accessibilityIdentifier("window.bee")
+        .popover(isPresented: $shows, arrowEdge: .top) {
+            ProPopover(pro: pro) {
+                shows = false
+                guard Store.shared.mayTurnOnPro() else { return }
+                if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
+            } turnOff: { shows = false; auto = false }
+        }
+        .asksBeforeAuto($asks) { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
     }
 }

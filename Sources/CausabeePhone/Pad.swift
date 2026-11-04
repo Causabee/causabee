@@ -106,36 +106,16 @@ struct PadSidebar: View {
     }
 }
 
-/// The sidebar's button, reading and Auto in one capsule of glass, as by the Mac's window buttons —
-/// a finger high. Only they are on glass: the list under them is the sidebar's own ground.
+/// The sidebar's button and reading in one capsule of glass, as by the Mac's window buttons — a
+/// finger high. Pro is the bee's colour, in the corner, as on the iPhone: no bolt here.
 struct PadControls: View {
     @Environment(Navigation.self) private var navigation
-    @AppStorage(AutoMode.key) private var auto = false
-    @Environment(\.modelContext) private var context
-    @State private var asksAuto = false
-    /// On, and Pro bought.
-    private var pro: Bool { auto && Store.shared.plan == .pro }
 
     var body: some View {
         HStack(spacing: 10) {
             PadSidebarButton()
             round("eyeglasses", on: navigation.reading, label: navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode") {
                 withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
-            }
-            round(pro ? "bolt.fill" : "bolt", on: pro, label: "Pro") {
-                if pro { auto = false; Haptics.tap(); return }
-                // Without Pro bought: the plans first. The first time it is turned on, what it does is said and asked.
-                guard Store.shared.mayTurnOnPro() else { return }
-                if AutoMode.asksFirst { asksAuto = true; return }
-                auto = true
-                Haptics.tap()
-                PhoneMailCheck.shared.autoTurnedOn(context: context)
-            }
-            .accessibilityValue(pro ? "On" : "Off")
-            .asksBeforeAuto($asksAuto) {
-                auto = true
-                Haptics.tap()
-                PhoneMailCheck.shared.autoTurnedOn(context: context)
             }
         }
         // The yellow round of one that is on sits in the capsule's own curve.

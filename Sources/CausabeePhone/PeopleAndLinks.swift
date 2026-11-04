@@ -99,6 +99,7 @@ struct PeopleSection: View {
 /// One person, as the Mac's row: name and role, other spellings, the other matters they are in,
 /// how many of its mails name them — and the ⋯.
 struct PhonePartyRow: View {
+    @State private var connecting = false
     let party: Party
     let membership: Membership
     let matter: Matter
@@ -109,6 +110,16 @@ struct PhonePartyRow: View {
     @State private var editing = false
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            ConnectionChips(item: .person(party), matter: matter).padding(.leading, 48)
+        }
+        .connectSheet(.person(party), in: matter, isPresented: $connecting)
+        .dropsOn(.person(party), in: matter)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "person.crop.circle").font(.title2).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 3) {
@@ -156,11 +167,13 @@ struct PhonePartyRow: View {
     private var items: some View {
         MailAddressItems(addresses: CardActions.addresses(of: party))
         ContactItems(party: party)
+        Button(Say.connect, systemImage: "link") { connecting = true }
         AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
+        MoveAndHide(item: .person(party), matter: matter)
         PublicNameItem(party: party)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         Menu(Say.mergeWith, systemImage: "arrow.triangle.merge") {
-            ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
+            ForEach(matter.shownParties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
                 Button(other.name) { merge(other) }
             }
         }
@@ -205,9 +218,9 @@ struct PartyEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    SheetConfirm("Save") {
                         save(name, role)
                         let mail = address.trimmingCharacters(in: .whitespacesAndNewlines), number = phone.trimmingCharacters(in: .whitespacesAndNewlines)
                         party.address = mail.isEmpty ? nil : mail
@@ -266,8 +279,8 @@ struct LinksSection: View {
     private func newestFirst(_ a: WebLink, _ b: WebLink) -> Bool { a.createdAt > b.createdAt }
 
     var body: some View {
-        let all = (matter.links ?? []).filter(\.isKept).sorted(by: newestFirst)
-        let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
+        let all = (matter.links ?? []).shown.filter(\.isKept).sorted(by: newestFirst)
+        let offered = (matter.links ?? []).shown.filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
             if !all.isEmpty {
@@ -322,7 +335,7 @@ struct LinksSection: View {
         }
         .sheetWhenAsked(isPresented: $adding) {
             PhoneLinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
-                guard !(matter.links ?? []).contains(where: { $0.address == address && $0.todo === todo }) else { return }
+                guard !(matter.links ?? []).shown.contains(where: { $0.address == address && $0.todo === todo }) else { return }
                 let link = WebLink(address: address, title: title)
                 context.insert(link)
                 link.matter = matter
@@ -386,6 +399,7 @@ struct PhoneLinkRow: View {
     @Environment(\.modelContext) private var context
     @Environment(\.openURL) private var openURL
     @State private var editing = false
+    @State private var connecting = false
 
     var body: some View {
         // A link a card kept and Undo took out again: gone while this row is drawn once more.
@@ -402,6 +416,7 @@ struct PhoneLinkRow: View {
                 .foregroundStyle(Theme.gold)
                 Text("\(link.kind)\(link.todo.map { " · for: \($0.text)" } ?? "") · \(Dates.short(link.createdAt))")
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                ConnectionChips(item: .link(link))
             }
             Spacer(minLength: 0)
             Menu { items } label: {
@@ -416,6 +431,8 @@ struct PhoneLinkRow: View {
         .padding(.vertical, 10)
         .contextMenu { Group { items }.menuSigns() }
         .findable(.model(link.persistentModelID), link.shownName, link.address)
+        .connectSheet(.link(link), in: link.matter, isPresented: $connecting)
+        .dropsOn(.link(link), in: link.matter)
         .sheetWhenAsked(isPresented: $editing) {
             PhoneLinkEditor(link: link, todos: todos) { address, title, todo in
                 link.address = address
@@ -428,6 +445,8 @@ struct PhoneLinkRow: View {
 
     @ViewBuilder
     private var items: some View {
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        MoveAndHide(item: .link(link), matter: link.matter)
         LinkItems(link: link)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         Divider()
@@ -474,9 +493,9 @@ struct PhoneLinkEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([address, title, todo])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    SheetConfirm("Save") {
                         guard let valid else { return }
                         save(valid, title.trimmingCharacters(in: .whitespacesAndNewlines), todos.first { $0.persistentModelID == todo })
                         dismiss()

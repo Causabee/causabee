@@ -161,6 +161,7 @@ struct MatterStatusView: View {
                                 case .notes:
                                     notesPart.id("notes")
                                 }
+                                HiddenItemsLine(matter: matter)
                             }
                             // As tall as the page shows, so its top can stand right under the title bar
                             // with the parts above it out of sight — and the ones in the bar stay.
@@ -453,6 +454,9 @@ struct MatterStatusView: View {
                 Text(step).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
+                // What the owner said to the step, and the way to say more: Causabee writes it again.
+                TileComments(matter: matter, about: step)
+                CommentButton(matter: matter, about: step)
             } else if let rule {
                 BeeChip(text: rule.heading.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
@@ -524,7 +528,7 @@ struct MatterStatusView: View {
             if !waiting {
                 Button("Done") {
                     withAnimation { toggle(todo) }
-                    if todo.isDone { BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: BeeJoy.reducesMotion) }
+                    if todo.isDone { BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).shown.allSatisfy(\.isDone), still: BeeJoy.reducesMotion) }
                 }
                 .fixedSize()
             }
@@ -549,7 +553,7 @@ struct MatterStatusView: View {
                                                                           mapping: mapping, claude: claude, model: model)
                 matter.nextStep = step
                 matter.nextStepWhy = why
-                if case .todo(let id) = ref { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+                if case .todo(let id) = ref { matter.nextStepTodo = (matter.todos ?? []).shown.first { $0.persistentModelID == id }?.origin }
                 else { matter.nextStepTodo = nil }
                 matter.nextStepAt = Date()
                 try? context.save()
@@ -678,8 +682,8 @@ struct MatterStatusView: View {
     /// app never opens them itself, and the assistant only hears their names.
     @ViewBuilder
     private var links: some View {
-        let all = (matter.links ?? []).filter(\.isKept).sorted(by: newestFirst)
-        let offered = (matter.links ?? []).filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
+        let all = (matter.links ?? []).shown.filter(\.isKept).sorted(by: newestFirst)
+        let offered = (matter.links ?? []).shown.filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 // Added by the plus — beside the assistant's field — or dragged from the browser.
@@ -803,7 +807,7 @@ struct MatterStatusView: View {
     }
 
     private func addLink(_ address: String, title: String, todo: Todo?) {
-        guard !(matter.links ?? []).contains(where: { $0.address == address && $0.todo === todo }) else { return }
+        guard !(matter.links ?? []).shown.contains(where: { $0.address == address && $0.todo === todo }) else { return }
         let link = WebLink(address: address, title: title)
         context.insert(link)
         link.matter = matter
@@ -919,11 +923,11 @@ struct MatterStatusView: View {
         var line: String?
         if matter.infos.contains(where: { $0.persistentModelID == todo }) {
             part = .all; person = nil; atHand.insert(.info)
-        } else if (matter.todos ?? []).contains(where: { $0.persistentModelID == todo })
-            || (matter.appointments ?? []).contains(where: { $0.persistentModelID == todo })
-            || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == todo }) {
+        } else if (matter.todos ?? []).shown.contains(where: { $0.persistentModelID == todo })
+            || (matter.appointments ?? []).shown.contains(where: { $0.persistentModelID == todo })
+            || (matter.deadlines ?? []).shown.contains(where: { $0.persistentModelID == todo }) {
             part = .plan
-        } else if matter.parties.contains(where: { $0.persistentModelID == todo }) {
+        } else if matter.shownParties.contains(where: { $0.persistentModelID == todo }) {
             part = .people
         } else {
             part = .all; person = nil
@@ -936,10 +940,10 @@ struct MatterStatusView: View {
             }
         }
         // What is folded away — done, past — is unfolded for it.
-        if (matter.todos ?? []).contains(where: { $0.persistentModelID == todo && $0.isDone }) { showsDone = true }
+        if (matter.todos ?? []).shown.contains(where: { $0.persistentModelID == todo && $0.isDone }) { showsDone = true }
         let today = MatterStatus(matter).today
-        if (matter.appointments ?? []).contains(where: { $0.persistentModelID == todo && $0.day < today })
-            || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == todo && $0.day < today }) { showsPast = true }
+        if (matter.appointments ?? []).shown.contains(where: { $0.persistentModelID == todo && $0.day < today })
+            || (matter.deadlines ?? []).shown.contains(where: { $0.persistentModelID == todo && $0.day < today }) { showsPast = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             // The journal draws what is near the screen: to its line first, so that it is there to go to.
             if let line {
@@ -1315,11 +1319,11 @@ struct MatterStatusView: View {
                             .contextMenu {
                                 MailAddressItems(addresses: CardActions.addresses(of: party))
                                 Menu(Say.mergeWith, systemImage: "arrow.triangle.merge") {
-                                    ForEach(matter.parties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
+                                    ForEach(matter.shownParties.filter { $0 !== party }.sorted { $0.name < $1.name }) { other in
                                         Button(other.name) { merging = (party, other) }
                                     }
                                 }
-                                Button("Ask Causabee") { talk(party.name, "Person") }
+                                Button(Say.useInChat, systemImage: "bubble.left") { talk(party.name, "Person") }
                                 PublicNameItem(party: party)
                                 Divider()
                                 Button(Say.removeFromMatter, role: .destructive) {
@@ -1329,7 +1333,7 @@ struct MatterStatusView: View {
                                 .help("Takes them out of this matter only. A later mail naming them will not put them back.")
                             }
                             .dropDestination(for: String.self) { names, _ in
-                                guard let name = names.first, let dropped = matter.parties.first(where: { $0.name == name }),
+                                guard let name = names.first, let dropped = matter.shownParties.first(where: { $0.name == name }),
                                       dropped !== party else { return false }
                                 merging = (dropped, party)
                                 return true
@@ -1367,8 +1371,8 @@ struct MatterStatusView: View {
     // MARK: Parts
 
     private var shownDocuments: [MatterCore.Document] { (matter.documents ?? []).filter { !$0.isHidden && !$0.isSmallImage } }
-    private var keptLinks: [WebLink] { (matter.links ?? []).filter(\.isKept) }
-    private var personParty: Party? { person.flatMap { id in matter.parties.first { $0.persistentModelID == id } } }
+    private var keptLinks: [WebLink] { (matter.links ?? []).shown.filter(\.isKept) }
+    private var personParty: Party? { person.flatMap { id in matter.shownParties.first { $0.persistentModelID == id } } }
 
     /// The filters over the journal, as on the iPhone.
     private func parts(choosing: Binding<Journal.Part>? = nil) -> some View {
@@ -1654,6 +1658,7 @@ struct MatterStatusView: View {
 // MARK: Rows
 
 struct TodoRow: View {
+    @State private var connecting = false
     let todo: Todo
     let today: String
     var showsOwner = false
@@ -1677,6 +1682,12 @@ struct TodoRow: View {
     private var remindable: Bool { !todo.isDone && !todo.isInfo && (todo.owner == .me || todo.owner == .we || todo.reminderID != nil) }
 
     var body: some View {
+        rowBody.connectSheet(.task(todo), in: todo.matter, isPresented: $connecting)
+            .dropsOn(.task(todo), in: todo.matter)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         HStack(alignment: .top, spacing: 10) {
             PlanTick(todo: todo, toggle: toggle)
             VStack(alignment: .leading, spacing: 2) {
@@ -1696,6 +1707,7 @@ struct TodoRow: View {
                         }
                     }
                 }
+                ConnectionChips(item: .task(todo))
                 if let reminders, remindable {
                     CalendarChip(kind: .reminder, linkedID: todo.reminderID, title: todo.text, day: todo.due, time: todo.dueTime,
                                  note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick, asked: addingReminder) { id in
@@ -1717,7 +1729,7 @@ struct TodoRow: View {
                     // The owner's note under the task, as words alone: an icon would only add clutter.
                     Text(Linked.text(note)).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
-                    let loose = WebLink.split(note: note).links.filter { found in !(todo.links ?? []).contains { $0.address == found.address } }
+                    let loose = WebLink.split(note: note).links.filter { found in !(todo.links ?? []).shown.contains { $0.address == found.address } }
                     if !loose.isEmpty {
                         Button(loose.count == 1 ? "Save as link" : "Save \(loose.count) links") { keepLinks(from: note) }
                             .buttonStyle(.gold).font(.caption)
@@ -1770,7 +1782,7 @@ struct TodoRow: View {
     private func keepLinks(from note: String) {
         guard let matter = todo.matter else { return }
         let (found, rest) = WebLink.split(note: note)
-        for item in found where !(todo.links ?? []).contains(where: { $0.address == item.address }) {
+        for item in found where !(todo.links ?? []).shown.contains(where: { $0.address == item.address }) {
             let link = WebLink(address: item.address, title: item.title)
             context.insert(link)
             link.matter = matter
@@ -1796,7 +1808,9 @@ struct TodoRow: View {
     /// what it waits for.
     @ViewBuilder
     private var moreItems: some View {
-        Button("Ask Causabee", action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
+        MoveAndHide(item: .task(todo), matter: todo.matter)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         if !todo.isDone { SourceItems(sources: todo.sources, matter: todo.matter) }
         if reminders != nil, remindable, todo.reminderID == nil, Calendars.shared.canReadReminders {
@@ -1971,7 +1985,7 @@ struct TodoEditor: View {
     @ViewBuilder
     private var linkControl: some View {
         VStack(alignment: .leading, spacing: 6) {
-            ForEach((todo.links ?? []).sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
+            ForEach((todo.links ?? []).shown.sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
                 HStack(spacing: 6) {
                     Label(link.shownName, systemImage: LinkRow.icon(link)).lineLimit(1)
                     Spacer(minLength: 4)
@@ -2016,7 +2030,7 @@ struct TodoEditor: View {
         let written = note.trimmingCharacters(in: .whitespacesAndNewlines)
         todo.note = written.isEmpty ? nil : written
         if let address = WebLink.address(in: newLink), let matter = todo.matter,
-           !(todo.links ?? []).contains(where: { $0.address == address }) {
+           !(todo.links ?? []).shown.contains(where: { $0.address == address }) {
             let link = WebLink(address: address)
             context.insert(link)
             link.matter = matter
@@ -2038,6 +2052,7 @@ struct TodoEditor: View {
 }
 
 struct DateRow: View {
+    @State private var connecting = false
     struct Item {
         var day: String
         var time: String?
@@ -2052,6 +2067,8 @@ struct DateRow: View {
         /// "10:00–11:30", or the start alone.
         var hours: String? { time.map { start in endTime.map { "\(start)–\($0)" } ?? start } }
 
+        /// The appointment or deadline it shows, as a journal item.
+        var journalItem: JournalItem? { appointment.map(JournalItem.meeting) ?? deadline.map(JournalItem.deadline) }
         var findID: PageFind.ID {
             if let id = appointment?.persistentModelID ?? deadline?.persistentModelID { return .model(id) }
             return .section("date \(day) \(what)")
@@ -2090,6 +2107,16 @@ struct DateRow: View {
     @State private var addingToCalendar = 0
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            if let journalItem = item.journalItem { ConnectionChips(item: journalItem).padding(.leading, 38) }
+        }
+        .connectSheet(item.journalItem, in: nil, isPresented: $connecting)
+        .dropsOn(item.journalItem, in: nil)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         HStack(alignment: .top, spacing: 10) {
             PlanDateMark(isDeadline: item.deadline != nil)
             VStack(alignment: .leading, spacing: 2) {
@@ -2128,7 +2155,9 @@ struct DateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
-        Button("Ask Causabee", action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
+        MoveAndHide(item: item.journalItem, matter: item.appointment?.matter ?? item.deadline?.matter)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         SourceItems(sources: item.sources, matter: item.appointment?.matter ?? item.deadline?.matter)
         if !isPast, item.calendarID == nil, Calendars.shared.canReadEvents {
@@ -2220,6 +2249,7 @@ struct DateEditor: View {
 }
 
 struct PartyRow: View {
+    @State private var connecting = false
     let party: Party
     let membership: Membership
     let matter: Matter
@@ -2234,6 +2264,16 @@ struct PartyRow: View {
     @State private var phone = ""
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            ConnectionChips(item: .person(party), matter: matter).padding(.leading, 48)
+        }
+        .connectSheet(.person(party), in: matter, isPresented: $connecting)
+        .dropsOn(.person(party), in: matter)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         let addresses = CardActions.addresses(of: party)
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "person.crop.circle").font(.title2).foregroundStyle(.secondary)
@@ -2264,7 +2304,9 @@ struct PartyRow: View {
             MoreMenu {
                 MailAddressItems(addresses: addresses)
                 ContactItems(party: party)
-                Button("Ask Causabee", action: talk)
+                Button(Say.connect, systemImage: "link") { connecting = true }
+                Button(Say.useInChat, systemImage: "bubble.left", action: talk)
+                MoveAndHide(item: .person(party), matter: matter)
                 PublicNameItem(party: party)
                 Button(Say.edit, systemImage: "pencil") {
                     name = party.name
@@ -2351,6 +2393,7 @@ struct SuggestionCard: View {
 /// One conversation of a matter: its subject once, the first mail on top, and each reply
 /// under the mail it answers, joined by a line.
 struct DocumentRow: View {
+    @State private var connecting = false
     let document: MatterCore.Document
     let sender: String?
     let state: String?
@@ -2374,6 +2417,15 @@ struct DocumentRow: View {
     private var isPDF: Bool { document.contentType == "application/pdf" || document.name.lowercased().hasSuffix(".pdf") }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            ConnectionChips(item: .file(document), matter: document.matter).padding(.leading, 14)
+        }
+        .connectSheet(.file(document), in: document.matter, isPresented: $connecting)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen, tile: tile) { moreItems }
             .popoverWhenAsked(isPresented: $renaming, arrowEdge: .bottom) { renameField }
             .confirmationDialogWhenAsked("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
@@ -2393,7 +2445,9 @@ struct DocumentRow: View {
             Button("Read", action: read)
                 .help("Reads it on this Mac and shows it in the assistant. Nothing is sent until “Sort in”.")
         }
-        Button("Ask Causabee", action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
+        MoveAndHide(item: .file(document), matter: document.matter, hides: false)
         Divider()
         Button(Say.rename, systemImage: "pencil") { newName = document.shownName; renaming = true }
         if isPDF { Button(Say.nameFromContent, systemImage: "text.magnifyingglass", action: nameIt) }
@@ -2452,6 +2506,7 @@ struct LinkRow: View {
     let remove: () -> Void
     @Environment(\.modelContext) private var context
     @State private var editing = false
+    @State private var connecting = false
 
     static func icon(_ link: WebLink) -> String {
         switch link.kind {
@@ -2479,9 +2534,12 @@ struct LinkRow: View {
                     Text("· \(Dates.short(link.createdAt))")
                 }
                 .font(.caption).foregroundStyle(.secondary)
+                ConnectionChips(item: .link(link))
             }
             Spacer(minLength: 8)
             MoreMenu {
+                Button(Say.connect, systemImage: "link") { connecting = true }
+                MoveAndHide(item: .link(link), matter: link.matter)
                 LinkItems(link: link)
                 Button(Say.edit, systemImage: "pencil") { editing = true }
                 Button(Say.removeLink, systemImage: "trash", role: .destructive, action: remove)
@@ -2499,6 +2557,8 @@ struct LinkRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+        .connectSheet(.link(link), in: link.matter, isPresented: $connecting)
+        .dropsOn(.link(link), in: link.matter)
     }
 }
 

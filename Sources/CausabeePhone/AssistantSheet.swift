@@ -1231,8 +1231,8 @@ private struct PhoneToNewestButton: View {
                     .foregroundStyle(newAnswer ? .primary : .secondary)
                     .padding(.horizontal, newAnswer ? 16 : 0)
                     .frame(minWidth: 40, minHeight: 40)
-                    .background(.regularMaterial, in: Capsule())
-                    .overlay(Capsule().stroke(Theme.line))
+                    // Glass, as what floats over the chat is: it was a material with a drawn edge.
+                    .glassEffect(.regular.interactive(), in: .capsule)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(newAnswer ? "To the new answer" : "To the newest")

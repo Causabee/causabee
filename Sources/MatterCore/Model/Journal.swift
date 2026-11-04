@@ -35,7 +35,7 @@ public enum Journal {
 
     public static func opening(_ matter: Matter, today: String) -> Part {
         guard !matter.isClosed else { return .all }
-        let coming = (matter.appointments ?? []).filter { $0.day >= today }.count + (matter.deadlines ?? []).filter { $0.day >= today }.count
+        let coming = (matter.appointments ?? []).shown.filter { $0.day >= today }.count + (matter.deadlines ?? []).shown.filter { $0.day >= today }.count
         return matter.openTodos.count + coming >= manyOpen ? .plan : .all
     }
 
@@ -46,11 +46,11 @@ public enum Journal {
             switch part {
             case .all: true
             case _ where part == open: true
-            case .plan: !(matter.todos ?? []).filter { !$0.isInfo }.isEmpty || !(matter.appointments ?? []).isEmpty || !(matter.deadlines ?? []).isEmpty
+            case .plan: !(matter.todos ?? []).shown.filter { !$0.isInfo }.isEmpty || !(matter.appointments ?? []).shown.isEmpty || !(matter.deadlines ?? []).shown.isEmpty
             case .mail: !(matter.entries ?? []).isEmpty
-            case .files: !(matter.documents ?? []).filter { !$0.isHidden }.isEmpty || !(matter.links ?? []).filter(\.isKept).isEmpty
-            case .people: !(matter.memberships ?? []).isEmpty
-            case .notes: !(matter.noteBlocks ?? []).isEmpty || matter.earlierNote != nil || !(matter.decisions ?? []).isEmpty
+            case .files: !(matter.documents ?? []).filter { !$0.isHidden }.isEmpty || !(matter.links ?? []).shown.filter(\.isKept).isEmpty
+            case .people: !(matter.memberships ?? []).shown.isEmpty
+            case .notes: !(matter.noteBlocks ?? []).shown.isEmpty || matter.earlierNote != nil || !(matter.decisions ?? []).isEmpty
             }
         }
     }

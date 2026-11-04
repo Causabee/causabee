@@ -15,7 +15,7 @@ final class PadTests: XCTestCase {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "Only an iPad has columns.")
         XCUIDevice.shared.orientation = .landscapeLeft
         app = XCUIApplication()
-        app.launchArguments = ["--demo", "--open", "Care for Mum (Helga) after her fall", "--part", "all", "-mail.auto", "NO"]
+        app.launchArguments = ["--demo", "--open", "Care for Mum (Helga) after her fall", "--part", "all", "-mail.auto", "YES"]
         app.launch()
         XCTAssertTrue(app.buttons["part.Digest"].waitForExistence(timeout: 40), "The matter's page did not open.")
     }
@@ -79,7 +79,7 @@ final class PadTests: XCTestCase {
     /// With the assistant beside it the journal keeps its room between the sidebar and the chat.
     func testTheAssistantStandsBesideThePage() {
         app.buttons["part.Mail"].tap()
-        app.buttons["Ask Causabee"].firstMatch.tap()
+        app.buttons["bee"].firstMatch.tap()
         XCTAssertTrue(app.buttons["part.Digest"].waitForExistence(timeout: 10), "The page went when the assistant came.")
         picture("Assistant")
         XCTAssertGreaterThan(app.buttons["part.Digest"].frame.minX, sidebar, "The journal slid under the sidebar.")

@@ -64,10 +64,16 @@ struct FilesSection: View {
     @State private var showsHidden = false
     @State private var showsSmallImages = false
     @State private var renaming: MatterCore.Document?
+    @State private var connecting: MatterCore.Document?
     @State private var deleting: MatterCore.Document?
     @State private var newName = ""
 
     var body: some View {
+        filesBody.sheet(item: $connecting) { document in ConnectSheet(item: .file(document), matter: matter) }
+    }
+
+    @ViewBuilder
+    private var filesBody: some View {
         // As on the Mac: newest first; a logo in a signature is not a file anyone attached. Only for
         // the list of all files: a single file's card, or a mail's, does not sort them all.
         let listsAll = only == nil && attachments.isEmpty && !keptOnly
@@ -182,7 +188,15 @@ struct FilesSection: View {
         matter.entry(messageID: document.messageID).map { Email.displayName(in: $0.from) ?? Email.address(in: $0.from) }
     }
 
-    private func row(_ document: MatterCore.Document) -> some View { face(document, tile: false).padding(14) }
+    /// A file as a row, with what it belongs with under it — as every other item.
+    private func row(_ document: MatterCore.Document) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            face(document, tile: false)
+            ConnectionChips(item: .file(document), matter: document.matter).padding(.leading, 52).padding(.top, 6)
+        }
+        .padding(14)
+        .dropsOn(.file(document), in: document.matter)
+    }
     private func tile(_ document: MatterCore.Document) -> some View { face(document, tile: true) }
 
     private func face(_ document: MatterCore.Document, tile: Bool) -> some View {
@@ -218,7 +232,9 @@ struct FilesSection: View {
     private func items(_ document: MatterCore.Document) -> some View {
         if !document.isOwnFile || document.source.fileURL != nil || MatterFolders.kept(document) != nil { Button("Open", systemImage: "eye") { open(document) } }
         if document.reading == .kept { Button("Read", systemImage: "text.viewfinder") { read(document) } }
+        Button(Say.connect, systemImage: "link") { connecting = document }
         AskCausabeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
+        MoveAndHide(item: .file(document), matter: document.matter, hides: false)
         Button(Say.rename, systemImage: "pencil") { newName = document.shownName; renaming = document }
         if isPDF(document) { Button(Say.nameFromContent, systemImage: "text.magnifyingglass") { nameFromContent(document) } }
         if document.title != nil {
@@ -327,7 +343,7 @@ struct MailAccountSheet: View {
                 }
                 .navigationTitle("Mail account")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+                .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { dismiss() } } }
                 // Asked first: the password goes from the Macs too, and cannot be brought back.
                 .confirmationDialogWhenAsked("Remove the password for \(removing ?? "")?",
                                     isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),

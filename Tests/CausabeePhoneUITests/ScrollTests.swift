@@ -56,7 +56,7 @@ final class ScrollTests: XCTestCase {
     func testScrollingEveryScreen() {
         scroll("overview")
         app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["Ask Causabee"].waitForExistence(timeout: 20), "The matter's page did not open.")
+        XCTAssertTrue(app.buttons["bee"].waitForExistence(timeout: 20), "The matter's page did not open.")
         sleep(2)
         scroll("matter · plan")
         for (part, name) in [("Digest", "matter · journal"), ("Mail", "matter · mail"), ("People", "matter · people"), ("Notes", "matter · notes")] {

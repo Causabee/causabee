@@ -52,9 +52,9 @@ public enum MatterExport {
         add("Done", status.done.map { Line($0.text, joined([whose($0), $0.doneAt.map { "done " + MatterStatus.short($0) }, $0.note])) })
         add("Good to know", matter.infos.map { Line($0.text, $0.note) })
 
-        let appointments = (matter.appointments ?? []).sorted { ($0.day, $0.time ?? "") < ($1.day, $1.time ?? "") }
+        let appointments = (matter.appointments ?? []).shown.sorted { ($0.day, $0.time ?? "") < ($1.day, $1.time ?? "") }
         add("Appointments", appointments.map { Line($0.what, joined([when($0.day, $0.time), $0.place])) })
-        add("Deadlines", (matter.deadlines ?? []).sorted { $0.day < $1.day }.map { (deadline: Deadline) in Line(deadline.what, "by " + MatterStatus.short(deadline.day)) })
+        add("Deadlines", (matter.deadlines ?? []).shown.sorted { $0.day < $1.day }.map { (deadline: Deadline) in Line(deadline.what, "by " + MatterStatus.short(deadline.day)) })
         add("Decisions", (matter.decisions ?? []).sorted { $0.decidedAt < $1.decidedAt }.map {
             Line($0.what, joined([MatterStatus.short($0.decidedAt), $0.why]))
         })
@@ -70,7 +70,7 @@ public enum MatterExport {
         notes += matter.sortedNotes.reversed().filter { !$0.text.isEmpty }.map { Line($0.text, MatterStatus.short($0.createdAt)) }
         add("Notes", notes)
 
-        add("Links", (matter.links ?? []).filter(\.isKept).sorted { $0.createdAt < $1.createdAt }.map { Line($0.shownName, $0.address) })
+        add("Links", (matter.links ?? []).shown.filter(\.isKept).sorted { $0.createdAt < $1.createdAt }.map { Line($0.shownName, $0.address) })
         add("Files", (matter.documents ?? []).filter { !$0.isHidden && !$0.isSmallImage }.sorted { ($0.source.date ?? .distantPast) < ($1.source.date ?? .distantPast) }.map {
             Line($0.shownName, joined([$0.source.date.map { MatterStatus.short($0) }, $0.says]))
         })

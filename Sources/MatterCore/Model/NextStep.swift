@@ -49,7 +49,7 @@ extension Todo {
 
 extension Matter {
     /// When its to-dos last changed: one came in, one was done.
-    public var lastChange: Date? { (todos ?? []).flatMap { [$0.createdAt, $0.doneAt].compactMap { $0 } }.max() }
+    public var lastChange: Date? { (todos ?? []).shown.flatMap { [$0.createdAt, $0.doneAt].compactMap { $0 } }.max() }
 
     /// What the matter's record holds, as one short word that is another whenever the record is:
     /// a mail taken in or moved away, a file, a task added, changed or done, a date, a note. Not
@@ -59,9 +59,9 @@ extension Matter {
         var parts: [String] = []
         parts += (entries ?? []).map { "m|" + $0.messageID }
         parts += (documents ?? []).filter { !$0.isHidden }.map { "f|" + $0.messageID + "|" + $0.name }
-        parts += (todos ?? []).map { "t|\($0.origin)|\($0.text)|\($0.isDone)|\($0.due ?? "")|\($0.dueTime ?? "")|\($0.owner.rawValue)|\($0.note ?? "")" }
-        parts += (appointments ?? []).map { "a|\($0.what)|\($0.day)|\($0.time ?? "")|\($0.place ?? "")" }
-        parts += (deadlines ?? []).map { "d|\($0.what)|\($0.day)" }
+        parts += (todos ?? []).shown.map { "t|\($0.origin)|\($0.text)|\($0.isDone)|\($0.due ?? "")|\($0.dueTime ?? "")|\($0.owner.rawValue)|\($0.note ?? "")" }
+        parts += (appointments ?? []).shown.map { "a|\($0.what)|\($0.day)|\($0.time ?? "")|\($0.place ?? "")" }
+        parts += (deadlines ?? []).shown.map { "d|\($0.what)|\($0.day)" }
         parts.append("n|" + (notesText ?? ""))
         // What the owner said of the matter: the brief is written again around it.
         parts += (shownBrief?.said ?? []).map { "s|" + $0.text }
@@ -131,8 +131,8 @@ extension MatterStatus {
             return step(.overdue, late, "Overdue since \(Self.short(late.due ?? today)).")
         }
         let horizon = Self.day(Calendar.current.date(byAdding: .day, value: Self.soon, to: Self.date(today) ?? Date()) ?? Date())
-        var dates: [(day: String, time: String?, what: String, kind: String)] = (matter.appointments ?? []).map { ($0.day, $0.time, $0.what, "Appointment") }
-        dates += (matter.deadlines ?? []).map { ($0.day, nil, $0.what, "Deadline") }
+        var dates: [(day: String, time: String?, what: String, kind: String)] = (matter.appointments ?? []).shown.map { ($0.day, $0.time, $0.what, "Appointment") }
+        dates += (matter.deadlines ?? []).shown.map { ($0.day, nil, $0.what, "Deadline") }
         let upcoming = dates.filter { $0.day >= today }.sorted { ($0.day, $0.time ?? "") < ($1.day, $1.time ?? "") }
         if let near = upcoming.first(where: { $0.day <= horizon }) {
             let when = near.day == today ? "today" : "on \(Self.short(near.day))"

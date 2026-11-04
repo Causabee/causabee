@@ -80,52 +80,159 @@ extension View {
     }
 }
 
-/// The yellow round button in the corner, with the bee on it: the assistant, over whatever is open.
-/// Held, it offers what the assistant's plus does — straight to a task, a note, a scan — without
-/// going through the assistant first.
+/// The round button in the corner, with the bee on it: one button for the assistant and for Pro.
+/// Yellow, Pro is on: a tap opens the chat. Grey, Pro is off — Light: a tap says what Pro adds and
+/// offers what can be added here without it. Held, either way: Pro on or off first, then what the
+/// assistant's plus offers — a task, a note, a scan — without going through the assistant. The
+/// bolt that stood over it for Pro is gone: the bee's colour says it.
 struct AssistantButton: View {
     var matter: Matter? = nil
     let action: () -> Void
     @Environment(Navigation.self) private var navigation
+    @Environment(\.modelContext) private var context
+    @AppStorage(AutoMode.key) private var auto = false
     @State private var picksPhoto = false
     @State private var picksFile = false
+    @State private var asks = false
+    @State private var light = false
+
+    /// On, and Pro bought.
+    private var pro: Bool { auto && Store.shared.plan == .pro }
+
 
     var body: some View {
-        // Over the bee, Auto: how the assistant works is turned on and off where the assistant is.
-        VStack(spacing: 10) {
-            // On the iPad Auto is in the sidebar's capsule, top left.
-            if !navigation.isPad { PhoneAutoButton() }
-            bee
-        }
-        .padding(.trailing, 16).padding(.bottom, 8)
+        bee
+            .padding(.trailing, 16).padding(.bottom, 8)
+            .sheetWhenAsked(isPresented: $light) {
+                LightBeeSheet(matter: matter) { light = false; turnOn() }
+            }
+            .asksBeforeAuto($asks) { switchOn() }
     }
 
+    /// Yellow: the chat on a tap, and held, Pro off and what can be added. Grey: one tap, the
+    /// sheet — there is no menu to hold, since what it lists to be read and sorted in is Pro's.
+    @ViewBuilder
     private var bee: some View {
-        Menu {
-            // The button is yellow; what its menu lists is not: yellow signs on the menu's white
-            // could hardly be read.
-            PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+        if pro {
+            Menu {
+                // The button is yellow; what its menu lists is not: yellow signs on the menu's
+                // white could hardly be read.
+                Group {
+                    Button("Turn off Pro", systemImage: "bolt.slash") { auto = false; Haptics.tap() }
+                    Divider()
+                    PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+                }
                 .menuSigns()
-        } label: {
-            // Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
-            BeeAtHome(size: 24, livesNowAndThen: true)
-                .frame(width: 46, height: 46)
-        } primaryAction: {
-            action()
+            } label: {
+                face
+            } primaryAction: {
+                action()
+            }
+            .menuIndicator(.hidden)
+            // The system's own glass button, round: alive under the finger, and the held menu grows
+            // out of it and goes back into it.
+            .menuStyle(.button)
+            .buttonStyle(.glassProminent)
+            .buttonBorderShape(.circle)
+            .tint(Theme.bee)
+            // Held: a small knock in the hand as its menu comes, as the system's own held things give.
+            .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
+            .accessibilityLabel("Causabee")
+            .accessibilityValue("Pro on")
+            .accessibilityHint("Opens the chat. Hold to turn off Pro or to add to a matter")
+            .accessibilityIdentifier("bee")
+            .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+        } else {
+            Button { light = true } label: { face }
+                .buttonStyle(.glassProminent)
+                .buttonBorderShape(.circle)
+                // Light: the yellow bee's form in grey, a white bee on a dark grey disc — chosen by the
+                // owner over a grey bee on light glass and a yellow rim.
+                .tint(Color(white: 0.30))
+                .accessibilityLabel("Causabee")
+                .accessibilityValue("Pro off")
+                .accessibilityHint("Says what Pro adds, and what can be added without it")
+                .accessibilityIdentifier("bee")
         }
-        .menuIndicator(.hidden)
-        // The system's own glass button, in the bee's yellow and round: alive under the finger, and
-        // the held menu grows out of it and goes back into it. Glass of our own on the menu or on
-        // its label stood bare, or black, for a moment as the menu closed.
-        .menuStyle(.button)
-        .buttonStyle(.glassProminent)
-        .buttonBorderShape(.circle)
-        .tint(Theme.bee)
-        // Held: a small knock in the hand as its menu comes, as the system's own held things give.
-        .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
-        .accessibilityLabel("Ask Causabee")
-        .accessibilityHint("Hold to add to a matter")
-        .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+    }
+
+    /// Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
+    private var face: some View {
+        BeeAtHome(size: 24, livesNowAndThen: pro, ink: pro ? .black : .white)
+            .frame(width: 46, height: 46)
+    }
+
+    /// As the bolt did: without Pro bought, the plans first; the first time, what Pro does is
+    /// said and asked before anything is read.
+    private func turnOn() {
+        guard Store.shared.mayTurnOnPro() else { return }
+        if AutoMode.asksFirst { asks = true; return }
+        switchOn()
+    }
+
+    private func switchOn() {
+        auto = true
+        Haptics.tap()
+        PhoneMailCheck.shared.autoTurnedOn(context: context)
+    }
+}
+
+/// A tap on the grey bee: what Pro adds, in two lines, the way to turn it on, and what can be added
+/// to a matter here without it — the same as the bee's hold menu. No price: only the plans cost.
+struct LightBeeSheet: View {
+    let matter: Matter?
+    let turnOn: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @Environment(Navigation.self) private var navigation
+    @AppStorage("bee.lightSeen") private var seen = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Pro reads new mail as it comes, writes the next step and the summary, and answers in the chat.")
+                        if !seen {
+                            Text("Without Pro, Causabee sorts mail on this device and chooses the next step from your own tasks and dates. Nothing is written about a matter by an AI.")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .font(.callout)
+                    .padding(.vertical, 4)
+                    Button {
+                        dismiss()
+                        turnOn()
+                    } label: {
+                        Label("Turn on Pro", systemImage: "bolt")
+                    }
+                }
+                // What can be added without Pro, as rows.
+                Section("Add") {
+                    add("Task", "checklist", .task)
+                    add("Note", "note.text", .note)
+                    add("Link", "link", .link)
+                    add("Detail", "info.circle", .detail)
+                    add("Contact", "person.badge.plus", .contact)
+                    // Kept only, not read: what is read and sorted in — a photo, a scan, a file —
+                    // is Pro's, and is not offered here.
+                    add("Files or a folder", "folder", .files)
+                }
+            }
+            .navigationTitle("Light")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
+        }
+        .presentationDetents([.medium, .large])
+        // A task, a note, a contact picked: its editor comes on the page, which this sheet would cover.
+        .onChange(of: navigation.adding) { if navigation.adding != nil { dismiss() } }
+        .onDisappear { seen = true }
+    }
+
+    /// In a matter, for that matter; on the overview, which one is asked.
+    private func add(_ title: String, _ symbol: String, _ plus: Navigation.Plus) -> some View {
+        Button(title, systemImage: symbol) {
+            if let matter { navigation.add(plus, to: matter) } else { dismiss(); navigation.choose(for: plus) }
+        }
     }
 }
 
@@ -172,7 +279,7 @@ struct PhoneAutoButton: View {
     }
 }
 
-/// "Ask Causabee" in a row's menu, with the bee — the same mark as the yellow button. A menu only
+/// "Use in Chat" in a row's menu, with the bee — the same mark as the yellow button. A menu only
 /// takes pictures, so the bee is drawn once into one, as a template: grey like the other icons.
 struct AskCausabeeButton: View {
     let action: () -> Void
@@ -185,7 +292,7 @@ struct AskCausabeeButton: View {
     }()
 
     var body: some View {
-        Button(action: action) { Label { Text("Ask Causabee") } icon: { Self.bee } }
+        Button(action: action) { Label { Text(Say.useInChat) } icon: { Self.bee } }
     }
 }
 

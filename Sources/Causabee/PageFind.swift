@@ -185,6 +185,7 @@ struct NotesPart: View {
     @FocusState private var focused: Bool
     @State private var voice = VoiceInput()
     @State private var cursor: TextSelection?
+    @State private var connecting: JournalItem?
 
     #if os(iOS)
     private let radius: CGFloat = 12, inset: CGFloat = 16
@@ -227,7 +228,7 @@ struct NotesPart: View {
                 .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.bottom, 4)
 
             ForEach(matter.sortedNotes) { note in
-                block(Self.label(note.createdAt) + (note.fromAssistant ? " · from the assistant" : ""), note.text, isEditing: editing == note.persistentModelID,
+                block(Self.label(note.createdAt) + (note.fromAssistant ? " · from the assistant" : ""), note.text, note: note, isEditing: editing == note.persistentModelID,
                       edit: { edited = note.text; editing = note.persistentModelID; editingEarlier = false },
                       save: { text in if text.isEmpty { context.delete(note) } else { note.text = text } },
                       delete: { context.deleteByHand([note], undo: undoManager, named: "Delete Note") })
@@ -243,11 +244,13 @@ struct NotesPart: View {
         }
         .onChange(of: writing) { if writing { focused = true; writing = false } }
         .onAppear { if writing { focused = true; writing = false } }
+        .connectSheet($connecting, in: matter)
     }
 
     /// One note: its day, its words, and what can be done with it. Being put right, it is a field.
+    /// A note of its own — not the earlier notes in one — can be connected.
     @ViewBuilder
-    private func block(_ day: String, _ text: String, isEditing: Bool, edit: @escaping () -> Void,
+    private func block(_ day: String, _ text: String, note: MatterNote? = nil, isEditing: Bool, edit: @escaping () -> Void,
                        save: @escaping (String) -> Void, delete: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -255,6 +258,10 @@ struct NotesPart: View {
                 Spacer()
                 if !isEditing {
                     Menu {
+                        if let note {
+                            Button(Say.connect, systemImage: "link") { connecting = .note(note) }
+                            MoveAndHide(item: .note(note), matter: note.matter)
+                        }
                         Button("Edit", systemImage: "pencil", action: edit)
                         Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
                         ShareLink(item: text) { Label("Share", systemImage: "square.and.arrow.up") }
@@ -282,16 +289,22 @@ struct NotesPart: View {
             } else {
                 Text(Self.linked(text)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                if let note { ConnectionChips(item: .note(note), matter: matter) }
             }
         }
         .padding(.horizontal, Theme.cardInset).padding(.vertical, 14)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         .contextMenu {
+            if let note {
+                Button(Say.connect, systemImage: "link") { connecting = .note(note) }
+                MoveAndHide(item: .note(note), matter: note.matter)
+            }
             Button("Edit", systemImage: "pencil", action: edit)
             Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
             ShareLink(item: text) { Label("Share", systemImage: "square.and.arrow.up") }
             Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { delete(); try? context.save() } }
         }
+        .dropsOn(note.map(JournalItem.note), in: note?.matter)
     }
 
     private func add() {
@@ -382,8 +395,8 @@ struct ContactEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Add", action: add).disabled(!canAdd) }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Add", action: add).disabled(!canAdd) }
             }
         }
         #else
@@ -432,7 +445,7 @@ struct DetailEditor: View {
     private var whose: some View {
         Picker("Of", selection: $party) {
             Text("no one").tag(PersistentIdentifier?.none)
-            ForEach(matter.parties.sorted { $0.name < $1.name }) { Text($0.name).tag(Optional($0.persistentModelID)) }
+            ForEach(matter.shownParties.sorted { $0.name < $1.name }) { Text($0.name).tag(Optional($0.persistentModelID)) }
         }
     }
 
@@ -444,7 +457,7 @@ struct DetailEditor: View {
                     Section {
                         TextField("What — Versichertennummer, file number", text: $label).accessibilityIdentifier("detail.label")
                         TextField("Value", text: $value).autocorrectionDisabled().accessibilityIdentifier("detail.value")
-                        if !matter.parties.isEmpty { whose }
+                        if !matter.shownParties.isEmpty { whose }
                     } footer: {
                         Text("Kept on your devices. The assistant learns that it is here, never the value.")
                     }
@@ -456,8 +469,8 @@ struct DetailEditor: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .keepsWhatWasTyped([label, value, party])
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                    ToolbarItem(placement: .confirmationAction) { Button(detail == nil ? "Add" : "Save", action: save).disabled(!canSave) }
+                    ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) { SheetConfirm(detail == nil ? "Add" : "Save", action: save).disabled(!canSave) }
                 }
             }
             #else
@@ -465,7 +478,7 @@ struct DetailEditor: View {
                 Text(detail == nil ? "New detail" : "Detail").font(.headline)
                 TextField("What — Versichertennummer, file number", text: $label).textFieldStyle(.roundedBorder).accessibilityIdentifier("detail.label")
                 TextField("Value", text: $value).textFieldStyle(.roundedBorder).accessibilityIdentifier("detail.value")
-                if !matter.parties.isEmpty { whose }
+                if !matter.shownParties.isEmpty { whose }
                 Text("Kept on your devices. The assistant learns that it is here, never the value.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 HStack {
@@ -486,7 +499,7 @@ struct DetailEditor: View {
     }
 
     private func save() {
-        let whose = party.flatMap { id in matter.parties.first { $0.persistentModelID == id } }
+        let whose = party.flatMap { id in matter.shownParties.first { $0.persistentModelID == id } }
         if let detail {
             detail.label = label.trimmingCharacters(in: .whitespacesAndNewlines)
             detail.value = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -517,6 +530,7 @@ struct DetailsSection: View {
     @State private var adding = false
     @State private var editing: MatterDetail?
     @State private var copied: PersistentIdentifier?
+    @State private var connecting: JournalItem?
 
     #if os(iOS)
     private let radius: CGFloat = 12
@@ -537,6 +551,7 @@ struct DetailsSection: View {
             }
             .sheetWhenAsked(isPresented: $adding) { DetailEditor(matter: matter) }
             .sheet(item: $editing) { DetailEditor(matter: matter, detail: $0) }
+            .connectSheet($connecting, in: matter)
         } else if !details.isEmpty || showsEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
@@ -559,10 +574,19 @@ struct DetailsSection: View {
             }
             .sheetWhenAsked(isPresented: $adding) { DetailEditor(matter: matter) }
             .sheet(item: $editing) { DetailEditor(matter: matter, detail: $0) }
+            .connectSheet($connecting, in: matter)
         }
     }
 
     private func row(_ detail: MatterDetail, inset: CGFloat = 14) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            copyButton(detail, inset: inset)
+            ConnectionChips(item: .detail(detail), matter: matter)
+                .padding(.horizontal, inset).padding(.top, -6).padding(.bottom, 10)
+        }
+    }
+
+    private func copyButton(_ detail: MatterDetail, inset: CGFloat) -> some View {
         Button { copy(detail) } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -579,6 +603,8 @@ struct DetailsSection: View {
         .findable(.model(detail.persistentModelID), detail.label, detail.value)
         .accessibilityLabel("\(detail.label): \(detail.value)").accessibilityHint("Copies it")
         .contextMenu {
+            Button(Say.connect, systemImage: "link") { connecting = .detail(detail) }
+            MoveAndHide(item: .detail(detail), matter: detail.matter)
             Button("Copy", systemImage: "doc.on.doc") { copy(detail) }
             Button("Copy with its label", systemImage: "doc.on.doc") { NotesPart.copy("\(detail.label): \(detail.value)") }
             ShareLink(item: "\(detail.label): \(detail.value)") { Label("Share", systemImage: "square.and.arrow.up") }
@@ -588,6 +614,7 @@ struct DetailsSection: View {
             Divider()
             Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { context.deleteByHand([detail], undo: undoManager, named: "Delete Detail") } }
         }
+        .dropsOn(.detail(detail), in: detail.matter)
     }
 
     private func copy(_ detail: MatterDetail) {

@@ -136,6 +136,7 @@ struct MatterScreen: View {
                             case .notes:
                                 notesPart
                             }
+                            HiddenItemsLine(matter: matter)
                         }
                         .frame(maxWidth: .infinity, minHeight: max(0, pageHeight - 120), alignment: .topLeading)
                         // Where a part begins: a part chosen from the pinned tabs is shown from here.
@@ -232,7 +233,10 @@ struct MatterScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: .phoneFind)) { _ in
             if navigation.path.last == matter.persistentModelID { startFinding() }
         }
-        .safeAreaInset(edge: .top) { if finding { findBar } }
+        .safeAreaBar(edge: .top) { if finding { findBar } }
+        // While finding, the hard edge: the page under the field is held back enough for the words
+        // typed to be read on the glass; the soft one let the text under it show through.
+        .scrollEdgeEffectStyle(finding ? .hard : .automatic, for: .top)
         .background(Theme.page)
         .overlay(alignment: .bottomTrailing) {
             // Not over the keyboard while finding. The bee asks, and adds: the plus is beside its field.
@@ -249,7 +253,7 @@ struct MatterScreen: View {
             let files = urls.filter(\.isFileURL)
             if !files.isEmpty { bring(files) }
             let web = urls.filter { !$0.isFileURL }.compactMap { WebLink.address(in: $0.absoluteString) }
-            for address in web where !(matter.links ?? []).contains(where: { $0.address == address && $0.todo == nil }) {
+            for address in web where !(matter.links ?? []).shown.contains(where: { $0.address == address && $0.todo == nil }) {
                 let link = WebLink(address: address, title: "")
                 context.insert(link)
                 link.matter = matter
@@ -292,7 +296,7 @@ struct MatterScreen: View {
         .sheetWhenAsked(isPresented: $addingDetail, onDismiss: { part = .all; atHand.insert(.details) }) { DetailEditor(matter: matter) }
         .sheetWhenAsked(isPresented: $addingLink, onDismiss: { part = .files }) {
             PhoneLinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
-                guard !(matter.links ?? []).contains(where: { $0.address == address && $0.todo === todo }) else { return }
+                guard !(matter.links ?? []).shown.contains(where: { $0.address == address && $0.todo === todo }) else { return }
                 let link = WebLink(address: address, title: title)
                 context.insert(link)
                 link.matter = matter
@@ -458,11 +462,11 @@ struct MatterScreen: View {
         var line: String?
         if matter.infos.contains(where: { $0.persistentModelID == id }) {
             part = .all; person = nil; atHand.insert(.info)
-        } else if (matter.todos ?? []).contains(where: { $0.persistentModelID == id })
-            || (matter.appointments ?? []).contains(where: { $0.persistentModelID == id })
-            || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == id }) {
+        } else if (matter.todos ?? []).shown.contains(where: { $0.persistentModelID == id })
+            || (matter.appointments ?? []).shown.contains(where: { $0.persistentModelID == id })
+            || (matter.deadlines ?? []).shown.contains(where: { $0.persistentModelID == id }) {
             part = .plan
-        } else if matter.parties.contains(where: { $0.persistentModelID == id }) {
+        } else if matter.shownParties.contains(where: { $0.persistentModelID == id }) {
             part = .people
         } else {
             part = .all; person = nil
@@ -476,8 +480,8 @@ struct MatterScreen: View {
         }
         // A source of an answer can be anything on the page: what is folded away is unfolded for it.
         let today = MatterStatus(matter).today
-        if (matter.appointments ?? []).contains(where: { $0.persistentModelID == id && $0.day < today })
-            || (matter.deadlines ?? []).contains(where: { $0.persistentModelID == id && $0.day < today }) { showsPast = true }
+        if (matter.appointments ?? []).shown.contains(where: { $0.persistentModelID == id && $0.day < today })
+            || (matter.deadlines ?? []).shown.contains(where: { $0.persistentModelID == id && $0.day < today }) { showsPast = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             // The journal draws what is near the screen: to its line first, so that it is there to go to.
             if let line { scroller.scrollTo(line, anchor: .center) }
@@ -489,7 +493,7 @@ struct MatterScreen: View {
         }
     }
 
-    private func status(of id: PersistentIdentifier) -> Todo? { (matter.todos ?? []).first { $0.persistentModelID == id } }
+    private func status(of id: PersistentIdentifier) -> Todo? { (matter.todos ?? []).shown.first { $0.persistentModelID == id } }
 
     // MARK: Header
 
@@ -527,32 +531,41 @@ struct MatterScreen: View {
 
     // MARK: Find
 
-    /// Under the bar while finding: the words, how many rows have them, and the way between them.
+    /// Under the bar while finding: the words, how many rows have them, and the way between them —
+    /// on glass, as Safari's find is: the page goes on under it, softened by the bar.
     private var findBar: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Find in this matter", text: $find.query)
-                    .focused($findFocused)
-                    .submitLabel(.next)
-                    .onSubmit { find.next(); findFocused = true }
-                    .autocorrectionDisabled()
-                if find.isActive {
-                    Text(find.matches.isEmpty ? "none" : "\(find.index + 1) of \(find.matches.count)")
-                        .font(.footnote.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
+        GlassEffectContainer(spacing: 8) {
+            HStack(spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                    TextField("Find in this matter", text: $find.query)
+                        .focused($findFocused)
+                        .submitLabel(.next)
+                        .onSubmit { find.next(); findFocused = true }
+                        .autocorrectionDisabled()
+                    if find.isActive {
+                        Text(find.matches.isEmpty ? "none" : "\(find.index + 1) of \(find.matches.count)")
+                            .font(.footnote.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
+                    }
                 }
+                .padding(.horizontal, 14).frame(height: 44)
+                .glassEffect(.regular.interactive(), in: .capsule)
+                // The way between what was found: one glass piece, as the system groups its arrows.
+                HStack(spacing: 0) {
+                    Button(action: find.previous) { Image(systemName: "chevron.up").frame(width: 40, height: 44).contentShape(Rectangle()) }
+                        .disabled(find.matches.isEmpty).accessibilityLabel("Previous")
+                    Button(action: find.next) { Image(systemName: "chevron.down").frame(width: 40, height: 44).contentShape(Rectangle()) }
+                        .disabled(find.matches.isEmpty).accessibilityLabel("Next")
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: .capsule)
+                Button(role: .confirm) { stopFinding() }
+                    .buttonStyle(.glassProminent).buttonBorderShape(.circle).controlSize(.large)
+                    .accessibilityLabel("Done")
             }
-            .padding(.horizontal, 12).padding(.vertical, 9)
-            .background(Theme.box, in: Capsule())
-            Button(action: find.previous) { Image(systemName: "chevron.up") }
-                .disabled(find.matches.isEmpty).accessibilityLabel("Previous")
-            Button(action: find.next) { Image(systemName: "chevron.down") }
-                .disabled(find.matches.isEmpty).accessibilityLabel("Next")
-            Button("Done") { stopFinding() }.fontWeight(.semibold)
+            .tint(.primary)
         }
-        .tint(.primary)
-        .padding(.horizontal, 16).padding(.vertical, 8)
-        .background(Theme.canvas)
+        .padding(.horizontal, 16).padding(.vertical, 6)
     }
 
     private func startFinding() {
@@ -632,6 +645,9 @@ struct MatterScreen: View {
                 Text(step).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
+                // What the owner said to the step, and the way to say more: Causabee writes it again.
+                TileComments(matter: matter, about: step)
+                CommentButton(matter: matter, about: step)
             } else if let rule {
                 BeeChip(text: rule.heading.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
@@ -699,7 +715,7 @@ struct MatterScreen: View {
                                                                           mapping: list.mapping, others: list.others, claude: claude, model: model)
                 matter.nextStep = step
                 matter.nextStepWhy = why
-                if case .todo(let id) = ref { matter.nextStepTodo = (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+                if case .todo(let id) = ref { matter.nextStepTodo = (matter.todos ?? []).shown.first { $0.persistentModelID == id }?.origin }
                 else { matter.nextStepTodo = nil }
                 matter.nextStepAt = Date()
                 try? context.save()
@@ -739,7 +755,7 @@ struct MatterScreen: View {
                 if !matter.isClosed, let rule = MatterStatus(matter).nextStep {
                     matter.nextStep = rule.text
                     matter.nextStepWhy = rule.why
-                    matter.nextStepTodo = rule.todo.flatMap { id in (matter.todos ?? []).first { $0.persistentModelID == id }?.origin }
+                    matter.nextStepTodo = rule.todo.flatMap { id in (matter.todos ?? []).shown.first { $0.persistentModelID == id }?.origin }
                     matter.nextStepAt = now
                 }
                 if matter.summary != nil { matter.summaryAt = now }
@@ -796,7 +812,7 @@ struct MatterScreen: View {
                 if !waiting {
                     Button("Done") {
                         withAnimation { toggle(todo) }
-                        if todo.isDone { BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).allSatisfy(\.isDone), still: BeeJoy.reducesMotion) }
+                        if todo.isDone { BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).shown.allSatisfy(\.isDone), still: BeeJoy.reducesMotion) }
                     }
                     .buttonStyle(.phone)
                 }
@@ -948,8 +964,8 @@ struct MatterScreen: View {
     // MARK: Parts
 
     private var shownDocuments: [MatterCore.Document] { (matter.documents ?? []).filter { !$0.isHidden && !$0.isSmallImage } }
-    private var keptLinks: [WebLink] { (matter.links ?? []).filter(\.isKept) }
-    private var personParty: Party? { person.flatMap { id in matter.parties.first { $0.persistentModelID == id } } }
+    private var keptLinks: [WebLink] { (matter.links ?? []).shown.filter(\.isKept) }
+    private var personParty: Party? { person.flatMap { id in matter.shownParties.first { $0.persistentModelID == id } } }
 
     /// The filters over the journal, as on the Mac.
     private func parts() -> some View {
@@ -1185,6 +1201,7 @@ struct PhoneTodoRow: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(Navigation.self) private var navigation
     @State private var editing = false
+    @State private var connecting = false
     @State private var deleting = false
     @State private var choosingWait = false
     @State private var addingReminder = 0
@@ -1195,7 +1212,7 @@ struct PhoneTodoRow: View {
     var body: some View {
         // Taken back with Undo in the assistant, the task is gone while this row is drawn once more:
         // a deleted model must not be read — SwiftData stops the app.
-        if todo.isDeleted || todo.modelContext == nil { EmptyView() } else { row }
+        if todo.isDeleted || todo.modelContext == nil { EmptyView() } else { row.connectSheet(.task(todo), in: todo.matter, isPresented: $connecting).dropsOn(.task(todo), in: todo.matter) }
     }
 
     private var row: some View {
@@ -1207,6 +1224,7 @@ struct PhoneTodoRow: View {
                     .strikethrough(todo.isDone, color: .secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, Theme.planTop)
+                ConnectionChips(item: .task(todo))
                 if let reminders, remindable {
                     CalendarChip(kind: .reminder, linkedID: todo.reminderID, title: todo.text, day: todo.due, time: todo.dueTime,
                                  note: todo.note, matterName: todo.matter?.name ?? "", reminders: reminders, tick: calendarTick, asked: addingReminder) { id in
@@ -1226,13 +1244,13 @@ struct PhoneTodoRow: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 if let note = todo.note, !note.isEmpty {
-                    let loose = WebLink.split(note: note).links.filter { found in !(todo.links ?? []).contains { $0.address == found.address } }
+                    let loose = WebLink.split(note: note).links.filter { found in !(todo.links ?? []).shown.contains { $0.address == found.address } }
                     if !loose.isEmpty {
                         Button(loose.count == 1 ? "Save as link" : "Save \(loose.count) links") { keepLinks(from: note) }
                             .font(.caption).foregroundStyle(Theme.gold)
                     }
                 }
-                ForEach((todo.links ?? []).sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
+                ForEach((todo.links ?? []).shown.sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
                     if let url = link.url {
                         Link(destination: url) { Label(link.shownName, systemImage: "link").font(.footnote).lineLimit(1) }
                     }
@@ -1272,7 +1290,9 @@ struct PhoneTodoRow: View {
     private var moreItems: some View {
         // Short, one line each, with an icon; one line only, above Delete.
         if let matter = todo.matter {
+            Button(Say.connect, systemImage: "link") { connecting = true }
             AskCausabeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
+            MoveAndHide(item: .task(todo), matter: matter)
         }
         Button(Say.edit, systemImage: "pencil") { editing = true }
         if !todo.isDone { SourceItems(sources: todo.sources, matter: todo.matter) }
@@ -1302,7 +1322,7 @@ struct PhoneTodoRow: View {
     private func keepLinks(from note: String) {
         guard let matter = todo.matter else { return }
         let (found, rest) = WebLink.split(note: note)
-        for item in found where !(todo.links ?? []).contains(where: { $0.address == item.address }) {
+        for item in found where !(todo.links ?? []).shown.contains(where: { $0.address == item.address }) {
             let link = WebLink(address: item.address, title: item.title)
             context.insert(link)
             link.matter = matter
@@ -1378,7 +1398,7 @@ struct PhoneTodoEditor: View {
                     }
                 }
                 Section {
-                    ForEach((todo.links ?? []).sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
+                    ForEach((todo.links ?? []).shown.sorted { $0.createdAt < $1.createdAt }, id: \.persistentModelID) { link in
                         HStack {
                             Label(link.shownName, systemImage: "link").lineLimit(1)
                             Spacer()
@@ -1407,9 +1427,9 @@ struct PhoneTodoEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isNew ? "Add" : "Save", action: save)
+                    SheetConfirm(isNew ? "Add" : "Save", action: save)
                         .disabled(isNew && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
@@ -1445,7 +1465,7 @@ struct PhoneTodoEditor: View {
         let written = note.trimmingCharacters(in: .whitespacesAndNewlines)
         todo.note = written.isEmpty ? nil : written
         if let address = WebLink.address(in: newLink), let matter = todo.matter,
-           !(todo.links ?? []).contains(where: { $0.address == address }) {
+           !(todo.links ?? []).shown.contains(where: { $0.address == address }) {
             let link = WebLink(address: address)
             context.insert(link)
             link.matter = matter
@@ -1478,6 +1498,8 @@ struct PhoneDateRow: View {
         var kind: String
         var appointment: Appointment?
         var deadline: Deadline?
+        /// The appointment or deadline it shows, as a journal item.
+        var journalItem: JournalItem? { appointment.map(JournalItem.meeting) ?? deadline.map(JournalItem.deadline) }
         var endDay: String? { appointment?.endDay }
         var endTime: String? { appointment?.endTime }
         /// "10:00–11:30", or the start alone.
@@ -1516,12 +1538,23 @@ struct PhoneDateRow: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(Navigation.self) private var navigation
     @State private var editing = false
+    @State private var connecting = false
     @State private var deleting = false
     @State private var addingToCalendar = 0
 
     private var sources: [Source] { item.appointment?.sources ?? item.deadline?.sources ?? [] }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowBody
+            if let journalItem = item.journalItem { ConnectionChips(item: journalItem, matter: matter).padding(.leading, 38) }
+        }
+        .connectSheet(item.journalItem, in: matter, isPresented: $connecting)
+        .dropsOn(item.journalItem, in: matter)
+    }
+
+    @ViewBuilder
+    private var rowBody: some View {
         HStack(alignment: .top, spacing: 10) {
             PlanDateMark(isDeadline: item.deadline != nil)
             VStack(alignment: .leading, spacing: 2) {
@@ -1557,7 +1590,9 @@ struct PhoneDateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
+        Button(Say.connect, systemImage: "link") { connecting = true }
         AskCausabeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
+        MoveAndHide(item: item.journalItem, matter: matter)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         SourceItems(sources: sources, matter: matter)
         if !isPast, item.calendarID == nil, Calendars.shared.canReadEvents {
@@ -1598,9 +1633,9 @@ struct PhoneDateEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([what, day, hasTime, time, place])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: saveChanges).disabled(what.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    SheetConfirm("Save", action: saveChanges).disabled(what.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .onAppear(perform: load)

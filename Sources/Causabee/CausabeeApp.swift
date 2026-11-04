@@ -775,20 +775,9 @@ struct RootView: View {
         })
         .overlay(alignment: .bottomTrailing) {
             if !showsAssistant, case .matter = navigation.place {
-                Button {
-                    withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() }
-                } label: {
-                    BeeAtHome(size: 20)
-                        .frame(width: 48, height: 48)
-                        .background(Theme.bee, in: Circle())
-                        .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Ask Causabee")
-                .accessibilityIdentifier("window.bee")
-                .padding(20)
-                .transition(.scale(scale: 0.6).combined(with: .opacity))
+                CornerBee { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } }
+                    .padding(20)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
         }
         // On glass, as the matter's own controls on the right: the sidebar, reading and Auto in one

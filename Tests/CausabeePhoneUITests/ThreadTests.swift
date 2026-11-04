@@ -18,14 +18,18 @@ final class ThreadTests: XCTestCase {
         app = XCUIApplication()
         // The demo filled anew at every start: what an earlier run asked is not in the thread.
         // `--answers`: a question gets a made-up answer after a moment, with nothing sent.
-        app.launchArguments = ["--demo", "--answers", "-demo.filled", "anew", "-mail.auto", "NO"]
+        app.launchArguments = ["--demo", "--answers", "-demo.filled", "anew", "-mail.auto", "YES"]
         app.launch()
+        // With Pro on, the demo sorts its new mail in a moment after it opens, and what it sorted
+        // stands on top of the overview, pushing the matters down while the test looks for one.
+        let receipt = app.buttons["receipt.close"]
+        if receipt.waitForExistence(timeout: 8) { receipt.tap() }
         showMatters()
         let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's overview did not come up.")
         matter.tap()
-        XCTAssertTrue(app.buttons["Ask Causabee"].waitForExistence(timeout: 10), "The matter's page did not open.")
-        app.buttons["Ask Causabee"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["bee"].waitForExistence(timeout: 10), "The matter's page did not open.")
+        app.buttons["bee"].firstMatch.tap()
     }
 
     private var field: XCUIElement {

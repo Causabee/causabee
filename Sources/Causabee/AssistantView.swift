@@ -1137,44 +1137,6 @@ struct MatterCard: View {
     }
 }
 
-/// Chips side by side, wrapping onto the next line when there is no room.
-struct FlowRow: Layout {
-    var spacing: CGFloat = 4
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let rows = arrange(subviews, width: proposal.width ?? .infinity)
-        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: rows.last.map { $0.y + $0.height } ?? 0)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        for row in arrange(subviews, width: bounds.width) {
-            var x = bounds.minX
-            for index in row.items {
-                let size = subviews[index].sizeThatFits(.unspecified)
-                subviews[index].place(at: CGPoint(x: x, y: bounds.minY + row.y), proposal: ProposedViewSize(size))
-                x += size.width + spacing
-            }
-        }
-    }
-
-    private func arrange(_ subviews: Subviews, width: CGFloat) -> [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] {
-        var rows: [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] = []
-        var items: [Int] = [], x: CGFloat = 0, y: CGFloat = 0, height: CGFloat = 0
-        for index in subviews.indices {
-            let size = subviews[index].sizeThatFits(.unspecified)
-            if x > 0, x + size.width > width {
-                rows.append((items, y, x - spacing, height))
-                y += height + spacing
-                items = []; x = 0; height = 0
-            }
-            items.append(index)
-            x += size.width + spacing
-            height = max(height, size.height)
-        }
-        if !items.isEmpty { rows.append((items, y, x - spacing, height)) }
-        return rows
-    }
-}
 
 
 /// Counts the frames the main thread is in time for, by the screen's own clock: a frame's callback
