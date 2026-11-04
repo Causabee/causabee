@@ -559,7 +559,7 @@ struct MatterChooser: View {
             .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Find a matter")
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
         }
         .tint(Theme.gold)
     }

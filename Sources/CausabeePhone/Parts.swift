@@ -92,10 +92,14 @@ struct AssistantButton: View {
 
     var body: some View {
         // Over the bee, Auto: how the assistant works is turned on and off where the assistant is.
-        VStack(spacing: 10) {
-            // On the iPad Auto is in the sidebar's capsule, top left.
-            if !navigation.isPad { PhoneAutoButton() }
-            bee
+        // One glass for both: near each other they are drawn as one material, as the system's own
+        // floating controls are, and not two discs that each catch the light on their own.
+        GlassEffectContainer(spacing: 10) {
+            VStack(spacing: 10) {
+                // On the iPad Auto is in the sidebar's capsule, top left.
+                if !navigation.isPad { PhoneAutoButton() }
+                bee
+            }
         }
         .padding(.trailing, 16).padding(.bottom, 8)
     }

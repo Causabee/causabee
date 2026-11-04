@@ -232,7 +232,10 @@ struct MatterScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: .phoneFind)) { _ in
             if navigation.path.last == matter.persistentModelID { startFinding() }
         }
-        .safeAreaInset(edge: .top) { if finding { findBar } }
+        .safeAreaBar(edge: .top) { if finding { findBar } }
+        // While finding, the hard edge: the page under the field is held back enough for the words
+        // typed to be read on the glass; the soft one let the text under it show through.
+        .scrollEdgeEffectStyle(finding ? .hard : .automatic, for: .top)
         .background(Theme.page)
         .overlay(alignment: .bottomTrailing) {
             // Not over the keyboard while finding. The bee asks, and adds: the plus is beside its field.
@@ -527,32 +530,41 @@ struct MatterScreen: View {
 
     // MARK: Find
 
-    /// Under the bar while finding: the words, how many rows have them, and the way between them.
+    /// Under the bar while finding: the words, how many rows have them, and the way between them —
+    /// on glass, as Safari's find is: the page goes on under it, softened by the bar.
     private var findBar: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Find in this matter", text: $find.query)
-                    .focused($findFocused)
-                    .submitLabel(.next)
-                    .onSubmit { find.next(); findFocused = true }
-                    .autocorrectionDisabled()
-                if find.isActive {
-                    Text(find.matches.isEmpty ? "none" : "\(find.index + 1) of \(find.matches.count)")
-                        .font(.footnote.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
+        GlassEffectContainer(spacing: 8) {
+            HStack(spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                    TextField("Find in this matter", text: $find.query)
+                        .focused($findFocused)
+                        .submitLabel(.next)
+                        .onSubmit { find.next(); findFocused = true }
+                        .autocorrectionDisabled()
+                    if find.isActive {
+                        Text(find.matches.isEmpty ? "none" : "\(find.index + 1) of \(find.matches.count)")
+                            .font(.footnote.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
+                    }
                 }
+                .padding(.horizontal, 14).frame(height: 44)
+                .glassEffect(.regular.interactive(), in: .capsule)
+                // The way between what was found: one glass piece, as the system groups its arrows.
+                HStack(spacing: 0) {
+                    Button(action: find.previous) { Image(systemName: "chevron.up").frame(width: 40, height: 44).contentShape(Rectangle()) }
+                        .disabled(find.matches.isEmpty).accessibilityLabel("Previous")
+                    Button(action: find.next) { Image(systemName: "chevron.down").frame(width: 40, height: 44).contentShape(Rectangle()) }
+                        .disabled(find.matches.isEmpty).accessibilityLabel("Next")
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: .capsule)
+                Button(role: .confirm) { stopFinding() }
+                    .buttonStyle(.glassProminent).buttonBorderShape(.circle).controlSize(.large)
+                    .accessibilityLabel("Done")
             }
-            .padding(.horizontal, 12).padding(.vertical, 9)
-            .background(Theme.box, in: Capsule())
-            Button(action: find.previous) { Image(systemName: "chevron.up") }
-                .disabled(find.matches.isEmpty).accessibilityLabel("Previous")
-            Button(action: find.next) { Image(systemName: "chevron.down") }
-                .disabled(find.matches.isEmpty).accessibilityLabel("Next")
-            Button("Done") { stopFinding() }.fontWeight(.semibold)
+            .tint(.primary)
         }
-        .tint(.primary)
-        .padding(.horizontal, 16).padding(.vertical, 8)
-        .background(Theme.canvas)
+        .padding(.horizontal, 16).padding(.vertical, 6)
     }
 
     private func startFinding() {
@@ -1410,9 +1422,9 @@ struct PhoneTodoEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isNew ? "Add" : "Save", action: save)
+                    SheetConfirm(isNew ? "Add" : "Save", action: save)
                         .disabled(isNew && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
@@ -1614,9 +1626,9 @@ struct PhoneDateEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([what, day, hasTime, time, place])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: saveChanges).disabled(what.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    SheetConfirm("Save", action: saveChanges).disabled(what.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .onAppear(perform: load)

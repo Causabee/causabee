@@ -75,6 +75,21 @@ struct PlanSheet: View {
     static let topUpWords = "Adds a third of a month's Pro use, kept until it is used."
 
     var body: some View {
+        #if os(iOS)
+        // The bar's own glass, with the system's cross: the plans are only looked at, nothing to save.
+        NavigationStack {
+            page
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .topBarTrailing) { Button(role: .close) { dismiss() }.accessibilityLabel("Done") } }
+        }
+        #else
+        page.overlay(alignment: .topTrailing) {
+            Button("Done") { dismiss() }.quietButton().padding(16)
+        }
+        #endif
+    }
+
+    private var page: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
@@ -131,9 +146,6 @@ struct PlanSheet: View {
         #if os(macOS)
         .frame(width: 520, height: 620)
         #endif
-        .overlay(alignment: .topTrailing) {
-            Button("Done") { dismiss() }.quietButton().padding(16)
-        }
         .task { if store.products.isEmpty { await store.load() } }
     }
 

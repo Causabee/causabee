@@ -55,7 +55,7 @@ struct WelcomeSheet: View {
             // The dots and the buttons stay at the foot, whatever the page.
             .safeAreaInset(edge: .bottom) { foot }
             .background(Theme.canvas)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { finish() } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { finish() } } }
             .sheet(isPresented: $addsAccount, onDismiss: { tick += 1 }) { MailAccountSheet() }
             .sheet(isPresented: $opensSettings, onDismiss: { tick += 1 }) { SettingsSheet() }
             .onAppear { tick += 1 }

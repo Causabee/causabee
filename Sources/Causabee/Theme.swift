@@ -1229,3 +1229,37 @@ struct DrawnApart<Content: View>: View {
     init(@ViewBuilder _ content: @escaping () -> Content) { self.content = content }
     var body: some View { content() }
 }
+
+// MARK: A sheet's bar
+
+/// What saves or ends a sheet, in its bar: on the iPhone and iPad the system's check on prominent
+/// glass, as Apple's own sheets have it; on the Mac its word, on Return. Called by its word still,
+/// for VoiceOver and the tests.
+struct SheetConfirm: View {
+    let title: String
+    let action: () -> Void
+    init(_ title: String, action: @escaping () -> Void) { self.title = title; self.action = action }
+
+    var body: some View {
+        #if os(iOS)
+        Button(role: .confirm, action: action).accessibilityLabel(title)
+        #else
+        Button(title, action: action).keyboardShortcut(.defaultAction)
+        #endif
+    }
+}
+
+/// What leaves a sheet without keeping anything: the system's cross on glass on the iPhone and
+/// iPad, "Cancel" on Esc on the Mac.
+struct SheetCancel: View {
+    var title = "Cancel"
+    let action: () -> Void
+
+    var body: some View {
+        #if os(iOS)
+        Button(role: .cancel, action: action).accessibilityLabel(title)
+        #else
+        Button(title, action: action).keyboardShortcut(.cancelAction)
+        #endif
+    }
+}

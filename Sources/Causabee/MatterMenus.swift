@@ -65,7 +65,7 @@ struct MergeChooser: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
         }
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 440)
@@ -166,7 +166,7 @@ struct WaitsForChooser: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
         }
         #if os(macOS)
         .frame(minWidth: 380, minHeight: 360)

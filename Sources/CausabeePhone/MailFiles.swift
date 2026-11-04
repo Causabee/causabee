@@ -334,7 +334,7 @@ struct MailAccountSheet: View {
                 }
                 .navigationTitle("Mail account")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+                .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { dismiss() } } }
                 // Asked first: the password goes from the Macs too, and cannot be brought back.
                 .confirmationDialogWhenAsked("Remove the password for \(removing ?? "")?",
                                     isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),

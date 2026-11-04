@@ -166,8 +166,8 @@ struct ShareView: View {
             .navigationTitle("Causabee")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { model.cancel() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Add") { model.add() }.fontWeight(.semibold) }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { model.cancel() } }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Add") { model.add() } }
             }
         }
     }

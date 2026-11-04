@@ -559,7 +559,7 @@ struct MadeList: View {
         ScrollView { list.padding(.horizontal, 20) }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", action: close) } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done", action: close) } }
         #endif
     }
 }

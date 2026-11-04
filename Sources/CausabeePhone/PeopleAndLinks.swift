@@ -216,9 +216,9 @@ struct PartyEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    SheetConfirm("Save") {
                         save(name, role)
                         let mail = address.trimmingCharacters(in: .whitespacesAndNewlines), number = phone.trimmingCharacters(in: .whitespacesAndNewlines)
                         party.address = mail.isEmpty ? nil : mail
@@ -489,9 +489,9 @@ struct PhoneLinkEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([address, title, todo])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    SheetConfirm("Save") {
                         guard let valid else { return }
                         save(valid, title.trimmingCharacters(in: .whitespacesAndNewlines), todos.first { $0.persistentModelID == todo })
                         dismiss()

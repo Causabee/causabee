@@ -1344,12 +1344,7 @@ struct ConnectSheet: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    #if os(iOS)
-                    // The system's check on prominent glass, as in Apple's own sheets.
-                    Button(role: .confirm) { dismiss() }
-                    #else
-                    Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
-                    #endif
+                    SheetConfirm("Done") { dismiss() }
                 }
             }
         }

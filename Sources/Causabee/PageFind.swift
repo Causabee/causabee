@@ -388,8 +388,8 @@ struct ContactEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Add", action: add).disabled(!canAdd) }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Add", action: add).disabled(!canAdd) }
             }
         }
         #else
@@ -462,8 +462,8 @@ struct DetailEditor: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .keepsWhatWasTyped([label, value, party])
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                    ToolbarItem(placement: .confirmationAction) { Button(detail == nil ? "Add" : "Save", action: save).disabled(!canSave) }
+                    ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) { SheetConfirm(detail == nil ? "Add" : "Save", action: save).disabled(!canSave) }
                 }
             }
             #else
