@@ -4,6 +4,7 @@ Appointment.connectionEnds -> ConnectionEnd
 Appointment.day
 Appointment.endDay
 Appointment.endTime
+Appointment.isHidden
 Appointment.matter -> Matter
 Appointment.place
 Appointment.sources
@@ -27,6 +28,7 @@ Deadline.calendarID
 Deadline.calendarStamp
 Deadline.connectionEnds -> ConnectionEnd
 Deadline.day
+Deadline.isHidden
 Deadline.matter -> Matter
 Deadline.sources
 Deadline.what
@@ -92,6 +94,7 @@ Matter.todos -> Todo
 Matter.turns -> ThreadTurn
 MatterDetail.connectionEnds -> ConnectionEnd
 MatterDetail.createdAt
+MatterDetail.isHidden
 MatterDetail.label
 MatterDetail.matter -> Matter
 MatterDetail.party -> Party
@@ -99,8 +102,10 @@ MatterDetail.value
 MatterNote.connectionEnds -> ConnectionEnd
 MatterNote.createdAt
 MatterNote.fromAssistant
+MatterNote.isHidden
 MatterNote.matter -> Matter
 MatterNote.text
+Membership.isHidden
 Membership.matter -> Matter
 Membership.mentions
 Membership.party -> Party
@@ -154,6 +159,7 @@ Todo.doneSource
 Todo.due
 Todo.dueTime
 Todo.isDone
+Todo.isHidden
 Todo.isInfo
 Todo.links -> WebLink
 Todo.matter -> Matter
@@ -170,6 +176,7 @@ WebLink.address
 WebLink.connectionEnds -> ConnectionEnd
 WebLink.createdAt
 WebLink.isDismissed
+WebLink.isHidden
 WebLink.isSuggestion
 WebLink.matter -> Matter
 WebLink.messageID
