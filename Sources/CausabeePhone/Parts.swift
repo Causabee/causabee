@@ -185,53 +185,114 @@ struct LightBeeSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(Navigation.self) private var navigation
     @AppStorage("bee.lightSeen") private var seen = false
+    @AppStorage(AutoMode.agreedKey) private var agreed = false
+    @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
+    /// "Turn on Pro" tapped the first time, with Pro bought: the question is asked here, in the
+    /// sheet — not as a second dialog at the bee once the sheet has gone.
+    @State private var confirming = false
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Pro reads new mail as it comes, writes the next step and the summary, and answers in the chat.")
-                        if !seen {
-                            Text("Without Pro, Causabee sorts mail on this device and chooses the next step from your own tasks and dates. Nothing is written about a matter by an AI.")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .font(.callout)
-                    .padding(.vertical, 4)
-                    Button {
-                        dismiss()
-                        turnOn()
-                    } label: {
-                        Label("Turn on Pro", systemImage: "bolt")
-                    }
+                    if confirming { question } else { about }
                 }
                 // What can be added without Pro, as rows.
-                Section("Add") {
-                    add("Task", "checklist", .task)
-                    add("Note", "note.text", .note)
-                    add("Link", "link", .link)
-                    add("Detail", "info.circle", .detail)
-                    add("Contact", "person.badge.plus", .contact)
-                    // Kept only, not read: what is read and sorted in — a photo, a scan, a file —
-                    // is Pro's, and is not offered here.
-                    add("Files or a folder", "folder", .files)
+                // While Pro is asked about, only the question: the rows went under the sheet's edge.
+                if !confirming {
+                    Section("Add") {
+                        add("Task", "checklist", .task)
+                        add("Note", "note.text", .note)
+                        add("Link", "link", .link)
+                        add("Detail", "info.circle", .detail)
+                        add("Contact", "person.badge.plus", .contact)
+                        // Kept only, not read: what is read and sorted in — a photo, a scan, a file —
+                        // is Pro's, and is not offered here.
+                        add("Files or a folder", "folder", .files)
+                    }
                 }
             }
             .navigationTitle("Light")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
         }
-        .presentationDetents([.medium, .large])
+        .modifier(LightSheetSize(pad: navigation.isPad))
         // A task, a note, a contact picked: its editor comes on the page, which this sheet would cover.
         .onChange(of: navigation.adding) { if navigation.adding != nil { dismiss() } }
         .onDisappear { seen = true }
+    }
+
+    /// What Pro adds, and the way to turn it on.
+    @ViewBuilder private var about: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Pro reads new mail as it comes, writes the next step and the summary, and answers in the chat.")
+            if !seen {
+                Text("Without Pro, Causabee sorts mail on this device and chooses the next step from your own tasks and dates. Nothing is written about a matter by an AI.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.callout)
+        .padding(.vertical, 4)
+        Button {
+            // Not bought: the plans, as before. Agreed to once: on at once. Else asked here.
+            let bought = Store.shared.plan == .pro || BeeServer.hasCredit
+            if agreed || !bought {
+                dismiss()
+                turnOn()
+            } else {
+                withAnimation(.snappy(duration: 0.2)) { confirming = true }
+            }
+        } label: {
+            Label("Turn on Pro", systemImage: "bolt")
+        }
+    }
+
+    /// The question the bolt asked (AutoQuestion), in the sheet: which model reads, that names are
+    /// disguised, who decides.
+    @ViewBuilder private var question: some View {
+        let model = Claude.Model.choices.first { $0.id == mail } ?? .opus
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Turn on Pro?").font(.headline)
+            Text("Pro reads new mail and files for you as they arrive, with \(model.label) — names disguised. " +
+                 "You still decide what goes into a matter. " +
+                 "Without Pro, nothing is read by the AI until you tap.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+        Button {
+            agreed = true
+            dismiss()
+            turnOn()
+        } label: {
+            Label("Turn Pro On", systemImage: "bolt.fill")
+        }
+        .accessibilityIdentifier("light.turnProOn")
+        Button("Cancel", role: .cancel) {
+            withAnimation(.snappy(duration: 0.2)) { confirming = false }
+        }
+        .foregroundStyle(.secondary)
     }
 
     /// In a matter, for that matter; on the overview, which one is asked.
     private func add(_ title: String, _ symbol: String, _ plus: Navigation.Plus) -> some View {
         Button(title, systemImage: symbol) {
             if let matter { navigation.add(plus, to: matter) } else { dismiss(); navigation.choose(for: plus) }
+        }
+    }
+}
+
+/// The Light sheet's size: on the iPhone half the screen, pulled up for the rest; on the iPad a
+/// centred form, as high as everything in it — at the bottom as on the iPhone, "Files or a folder"
+/// stood under its edge.
+private struct LightSheetSize: ViewModifier {
+    let pad: Bool
+
+    func body(content: Content) -> some View {
+        if pad {
+            content.presentationSizing(.form)
+        } else {
+            content.presentationDetents([.medium, .large])
         }
     }
 }
