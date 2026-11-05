@@ -140,12 +140,15 @@ public enum AssistantPrompt {
         var parts = ["Today: \(today)."]
         if let owner { parts.append("The owner: \(owner).") }
         parts.append(facts)
+        // What is above is the same for every question about the matter for a while: cached.
+        let cached = parts.joined(separator: "\n\n")
+        parts = []
         for turn in earlier.suffix(4) {
             parts.append("<earlier>\nOwner: \(turn.question)\nYou: \(turn.answer)\n</earlier>")
         }
         if let inHand { parts.append("<in_hand kind=\"\(inHand.kind)\">\(inHand.text)</in_hand>") }
         parts.append("<question>\n\(question)\n</question>")
-        return parts.joined(separator: "\n\n")
+        return cached + Claude.cacheBreak + parts.joined(separator: "\n\n")
     }
 
     public static var schema: [String: Any] {

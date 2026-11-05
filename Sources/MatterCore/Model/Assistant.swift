@@ -454,7 +454,9 @@ public enum AssistantAsk {
             return prepared.forChat ? asChatMessage(card, owner: prepared.owner) : card
         }
         reply.notInFacts = reply.notInFacts.map(real)
-        return Answer(reply: reply, sent: sent, cost: answer.cost, seconds: answer.seconds, newNames: newNames,
+        // As read: without the mark where the cached facts end.
+        return Answer(reply: reply, sent: sent.replacingOccurrences(of: Claude.cacheBreak, with: "\n\n"), cost: answer.cost,
+                      seconds: answer.seconds, newNames: newNames,
                       links: prepared.links.isEmpty ? nil : prepared.links, servedBy: answer.servedBy,
                       disguisedInQuestion: prepared.disguisedInQuestion, disguised: prepared.disguised)
     }

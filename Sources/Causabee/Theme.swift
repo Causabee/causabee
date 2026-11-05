@@ -809,6 +809,8 @@ struct CardFace: View {
     var serif = false
     /// Small lines under it: why, what goes along. Each with its sign, or none.
     var notes: [(text: String, symbol: String?)] = []
+    /// A draft's way to choose the matter's files to send along: "Attach …" under its lines.
+    var attach: (() -> Void)? = nil
     let verb: String
     let closeLabel: String
     let close: () -> Void
@@ -862,6 +864,19 @@ struct CardFace: View {
                     if let symbol = note.symbol { Label(note.text, systemImage: symbol) } else { Text(note.text) }
                 }
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10).padding(.leading, 4)
+            }
+            if let attach {
+                // As "Connect …" under an item: a dashed chip, quiet beside the card's one button.
+                Button(action: attach) {
+                    Label("Attach …", systemImage: "paperclip").font(.footnote)
+                        .padding(.vertical, 6).padding(.horizontal, 12)
+                        .overlay(Capsule().strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(.secondary))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("draft.attach")
                 .padding(.top, 10).padding(.leading, 4)
             }
             HStack {

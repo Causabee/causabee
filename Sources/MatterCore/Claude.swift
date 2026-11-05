@@ -209,6 +209,22 @@ public struct Claude: Sendable {
 
     // MARK: The request
 
+    /// Where a question's own words begin, after the facts it is asked about. What stands before
+    /// it — today, the owner, the matter's facts — is the same for every question about the matter
+    /// for a while, and is cached as the instructions are: a follow-up pays a tenth for it. A
+    /// character no text holds, so neither the disguise nor a mail changes it.
+    public static let cacheBreak = "\n\n\u{1E}\n\n"
+
+    /// The user's message as Anthropic takes it: the facts as a block of their own, marked for the
+    /// cache, and the question after it. Without the break, or for another service, one text.
+    static func content(_ user: String, model: Model) -> Any {
+        guard let range = user.range(of: cacheBreak) else { return user }
+        let head = String(user[..<range.lowerBound]), tail = String(user[range.upperBound...])
+        // OpenAI caches a beginning it has seen by itself; Mistral not at all: one text for both.
+        guard !model.isOpenAI, !model.isMistral else { return head + "\n\n" + tail }
+        return [["type": "text", "text": head, "cache_control": ["type": "ephemeral"]], ["type": "text", "text": tail]]
+    }
+
     /// The request body, built separately so a dry run can write exactly what would be sent.
     public static func body(model: Model, system: String, user: String, schema: [String: Any],
                             effort: String?) -> [String: Any] {
@@ -224,7 +240,7 @@ public struct Claude: Sendable {
             // Opus 5 caches from 512 tokens; Haiku 4.5 only from 4,096, so there it does nothing —
             // no error, no saving.
             "system": [["type": "text", "text": system, "cache_control": ["type": "ephemeral"]]],
-            "messages": [["role": "user", "content": user]],
+            "messages": [["role": "user", "content": content(user, model: model)]],
             "output_config": outputConfig,
         ]
         if model.takesFallbacks { body["fallbacks"] = "default" }
@@ -384,9 +400,12 @@ public struct Claude: Sendable {
                     throw Failure.unreadable("no text in OpenAI's answer")
                 }
                 let usage = object["usage"] as? [String: Any] ?? [:]
+                // What OpenAI had cached of the beginning is in its input, and costs a tenth.
+                let input = usage["input_tokens"] as? Int ?? 0
+                let cached = min(input, (usage["input_tokens_details"] as? [String: Any])?["cached_tokens"] as? Int ?? 0)
                 return Answer(json: Data(text.utf8), servedBy: object["model"] as? String ?? model.id,
-                              inputTokens: usage["input_tokens"] as? Int ?? 0, outputTokens: usage["output_tokens"] as? Int ?? 0,
-                              seconds: Date().timeIntervalSince(started))
+                              inputTokens: input - cached, outputTokens: usage["output_tokens"] as? Int ?? 0,
+                              seconds: Date().timeIntervalSince(started), cacheReadTokens: cached)
             }
             guard status == 429 || status >= 500, attempt < 6, !Self.isOutOfCredit(data) else {
                 throw Failure.http(status: status, body: String(decoding: data, as: UTF8.self))

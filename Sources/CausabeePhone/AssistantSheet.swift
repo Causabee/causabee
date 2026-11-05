@@ -894,6 +894,9 @@ struct PhoneActionCard: View {
     @Environment(\.openURL) private var openURL
     @State private var text = ""
     @State private var subject = ""
+    /// The matter's files the owner picked for a draft, besides those it names.
+    @State private var attached: [PersistentIdentifier] = []
+    @State private var attaching = false
     /// A draft opened in Mail folds to a few lines; "Edit" unfolds it again.
     @State private var editingDraft = false
     /// Taken in, the card turns into its small quiet box in three steps, so nothing jumps: its
@@ -967,8 +970,8 @@ struct PhoneActionCard: View {
     /// merging two people means.
     private var notes: [(text: String, symbol: String?)] {
         if card.kind == .draftMessage {
-            let line = StoredChanges.shared.kept("along \(turn.id) \(index) \(text)") {
-                CardActions.attachmentLine(text: text, question: turn.question, scope: scope, attach: card.attach ?? [])
+            let line = StoredChanges.shared.kept("along \(turn.id) \(index) \(text) \(attached.count)") {
+                CardActions.attachmentLine(text: text, question: turn.question, scope: scope, attach: card.attach ?? [], chosen: chosenFiles)
             }
             return line.map { [($0, "paperclip")] } ?? []
         }
@@ -986,6 +989,7 @@ struct PhoneActionCard: View {
                         text: draft || editable ? $text : nil,
                         serif: draft,
                         notes: notes,
+                        attach: draft && scope != nil ? { attaching = true } : nil,
                         verb: verb,
                         closeLabel: quiet ? "Cancel" : "Dismiss",
                         close: {
@@ -998,6 +1002,12 @@ struct PhoneActionCard: View {
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background { RoundedRectangle(cornerRadius: 20).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
+            .sheet(isPresented: $attaching) {
+                if let scope {
+                    AttachSheet(matter: scope, named: CardActions.attachments(text: text, question: turn.question, scope: scope, attach: card.attach ?? []).files,
+                                chosen: $attached)
+                }
+            }
             .transition(.opacity)
     }
 
@@ -1113,10 +1123,15 @@ struct PhoneActionCard: View {
         return card.cites.lazy.compactMap { turn.refs[$0] }.compactMap { CardActions.matter(of: $0, in: context) }.first
     }
 
+    /// The files picked for the draft, as they are now: one taken away meanwhile is left out.
+    private var chosenFiles: [MatterCore.Document] {
+        attached.compactMap { CardActions.live($0, as: MatterCore.Document.self, in: context) }
+    }
+
     private func take() {
         switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: turn.answer?.links, scope: scope,
                                  question: turn.question, mail: mailInHand,
-                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, in: context) {
+                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, chosen: chosenFiles, in: context) {
         case .nothing:
             return
         case .openMail(let url, let draft):
@@ -1494,5 +1509,68 @@ private struct AddCard: View {
         // The cursor into the card as it comes: given to the field it takes the place of, it went
         // with that field, and what was typed went nowhere.
         .onAppear { DispatchQueue.main.async { typing.wrappedValue = true } }
+    }
+}
+
+
+/// "Attach …" under a draft: the matter's files, newest first, a tick on each one going along — as
+/// "Connect to …" is for an item. What the draft names is ticked already, and stays.
+private struct AttachSheet: View {
+    let matter: Matter
+    /// The files the draft takes along by itself: named in it, or chosen by the assistant.
+    let named: [URL]
+    @Binding var chosen: [PersistentIdentifier]
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+
+    private var files: [MatterCore.Document] {
+        let words = query.trimmingCharacters(in: .whitespaces).lowercased()
+        return (matter.documents ?? [])
+            .filter { !$0.isHidden && (words.isEmpty || $0.shownName.lowercased().contains(words)) }
+            .sorted { ($0.source.date ?? .distantPast) > ($1.source.date ?? .distantPast) }
+    }
+
+    private func isNamed(_ document: MatterCore.Document) -> Bool {
+        named.contains { $0.lastPathComponent == document.name || $0.lastPathComponent == document.shownName }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if files.isEmpty {
+                    Text(query.isEmpty ? "This matter has no files yet." : "No file is called that.").foregroundStyle(.secondary)
+                }
+                ForEach(files) { document in
+                    let id = document.persistentModelID
+                    let on = isNamed(document) || chosen.contains(id)
+                    Button {
+                        guard !isNamed(document) else { return }
+                        withAnimation { if let at = chosen.firstIndex(of: id) { chosen.remove(at: at) } else { chosen.append(id) } }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(on ? Color.primary : Color.secondary).frame(width: 22)
+                            Image(systemName: document.contentType.contains("pdf") || document.name.lowercased().hasSuffix(".pdf") ? "doc.richtext" : "doc")
+                                .foregroundStyle(.secondary).frame(width: 18)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(document.shownName).lineLimit(2)
+                                if isNamed(document) { Text("Named in the draft").font(.caption).foregroundStyle(.secondary) }
+                            }
+                            Spacer(minLength: 8)
+                            if let date = document.source.date { Text(Dates.short(date)).font(.caption).foregroundStyle(.secondary) }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("attach." + document.shownName)
+                }
+            }
+            .listStyle(.plain)
+            .searchable(text: $query, prompt: "Search this matter's files")
+            .navigationTitle("Attach to the mail")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { dismiss() } } }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
