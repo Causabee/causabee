@@ -1250,7 +1250,15 @@ private struct PhoneToNewestButton: View {
 @Observable
 final class TypedWords {
     var text = ""
-    var cursor: TextSelection?
+    /// Where the cursor is, as the field last said: for dictation to put its words there. Read
+    /// back into the field it was not: on the iPad, typed quickly, the cursor of a keystroke
+    /// before came back after the next one, and "Who has the" was written "Who has he…t".
+    @ObservationIgnored var cursor: TextSelection?
+
+    /// The field tells where its cursor is and is never told: the cursor stays the field's own.
+    var reportedCursor: Binding<TextSelection?> {
+        Binding(get: { nil }, set: { [weak self] in self?.cursor = $0 })
+    }
 }
 
 /// The assistant's field, the microphone and the send button: the only views that read what is
@@ -1266,7 +1274,7 @@ private struct TypingField: View {
     let stop: () -> Void
 
     var body: some View {
-        TextField(placeholder, text: $typed.text, selection: $typed.cursor, axis: .vertical)
+        TextField(placeholder, text: $typed.text, selection: typed.reportedCursor, axis: .vertical)
             .lineLimit(1...5)
             // The keyboard's Return starts a new line; the button sends. With a keyboard
             // of keys, Return sends and Shift-Return starts a new line, as on the Mac.
