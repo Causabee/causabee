@@ -80,11 +80,10 @@ extension View {
     }
 }
 
-/// The round button in the corner, with the bee on it: one button for the assistant and for Pro.
-/// Yellow, Pro is on: a tap opens the chat. Grey, Pro is off — Light: a tap says what Pro adds and
-/// offers what can be added here without it. Held, either way: Pro on or off first, then what the
-/// assistant's plus offers — a task, a note, a scan — without going through the assistant. The
-/// bolt that stood over it for Pro is gone: the bee's colour says it.
+/// The round button in the corner, with the bee on it: always yellow, always the chat on a tap —
+/// everything is added there, with Pro or without, and Pro is offered on top of the chat, not by
+/// the bee's colour. Held: Pro on or off, then what the assistant's plus offers, without going
+/// through the assistant.
 struct AssistantButton: View {
     var matter: Matter? = nil
     let action: () -> Void
@@ -94,76 +93,60 @@ struct AssistantButton: View {
     @State private var picksPhoto = false
     @State private var picksFile = false
     @State private var asks = false
-    @State private var light = false
 
     /// On, and Pro bought.
     private var pro: Bool { auto && Store.shared.plan == .pro }
 
-
     var body: some View {
         bee
             .padding(.trailing, 16).padding(.bottom, 8)
-            .sheetWhenAsked(isPresented: $light) {
-                LightBeeSheet(matter: matter) { light = false; turnOn() }
-            }
             .asksBeforeAuto($asks) { switchOn() }
     }
 
-    /// Yellow: the chat on a tap, and held, Pro off and what can be added. Grey: one tap, the
-    /// sheet — there is no menu to hold, since what it lists to be read and sorted in is Pro's.
-    @ViewBuilder
     private var bee: some View {
-        if pro {
-            Menu {
-                // The button is yellow; what its menu lists is not: yellow signs on the menu's
-                // white could hardly be read.
-                Group {
+        Menu {
+            // The button is yellow; what its menu lists is not: yellow signs on the menu's
+            // white could hardly be read.
+            Group {
+                if pro {
                     Button("Turn off Pro", systemImage: "bolt.slash") { auto = false; Haptics.tap() }
-                    Divider()
-                    PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+                } else {
+                    Button("Turn on Pro", systemImage: "bolt") { turnOn() }
                 }
-                .menuSigns()
-            } label: {
-                face
-            } primaryAction: {
-                action()
+                Divider()
+                PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
             }
-            .menuIndicator(.hidden)
-            // The system's own glass button, round: alive under the finger, and the held menu grows
-            // out of it and goes back into it.
-            .menuStyle(.button)
-            .buttonStyle(.glassProminent)
-            .buttonBorderShape(.circle)
-            .tint(Theme.bee)
-            // Held: a small knock in the hand as its menu comes, as the system's own held things give.
-            .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
-            .accessibilityLabel("Causabee")
-            .accessibilityValue("Pro on")
-            .accessibilityHint("Opens the chat. Hold to turn off Pro or to add to a matter")
-            .accessibilityIdentifier("bee")
-            .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
-        } else {
-            Button { light = true } label: { face }
-                .buttonStyle(.glassProminent)
-                .buttonBorderShape(.circle)
-                // Light: the yellow bee's form in grey, a white bee on a dark grey disc — chosen by the
-                // owner over a grey bee on light glass and a yellow rim.
-                .tint(Color(white: 0.30))
-                .accessibilityLabel("Causabee")
-                .accessibilityValue("Pro off")
-                .accessibilityHint("Says what Pro adds, and what can be added without it")
-                .accessibilityIdentifier("bee")
+            .menuSigns()
+        } label: {
+            face
+        } primaryAction: {
+            action()
         }
+        .menuIndicator(.hidden)
+        // The system's own glass button, round: alive under the finger, and the held menu grows
+        // out of it and goes back into it.
+        .menuStyle(.button)
+        .buttonStyle(.glassProminent)
+        .buttonBorderShape(.circle)
+        .tint(Theme.bee)
+        // Held: a small knock in the hand as its menu comes, as the system's own held things give.
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
+        .accessibilityLabel("Causabee")
+        .accessibilityValue(pro ? "Pro on" : "Pro off")
+        .accessibilityHint(pro ? "Opens the chat. Hold to turn off Pro or to add to a matter" : "Opens the chat. Hold to turn on Pro or to add to a matter")
+        .accessibilityIdentifier("bee")
+        .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
     }
 
-    /// Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble.
+    /// Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble. It
+    /// moves now and then while Pro is on, and keeps still without it.
     private var face: some View {
-        BeeAtHome(size: 24, livesNowAndThen: pro, ink: pro ? .black : .white)
+        BeeAtHome(size: 24, livesNowAndThen: pro, ink: .black)
             .frame(width: 46, height: 46)
     }
 
-    /// As the bolt did: without Pro bought, the plans first; the first time, what Pro does is
-    /// said and asked before anything is read.
+    /// Without Pro bought, the plans first; the first time, what Pro does is said and asked before
+    /// anything is read.
     private func turnOn() {
         guard Store.shared.mayTurnOnPro() else { return }
         if AutoMode.asksFirst { asks = true; return }
@@ -177,123 +160,44 @@ struct AssistantButton: View {
     }
 }
 
-/// A tap on the grey bee: what Pro adds, in two lines, the way to turn it on, and what can be added
-/// to a matter here without it — the same as the bee's hold menu. No price: only the plans cost.
-struct LightBeeSheet: View {
-    let matter: Matter?
-    let turnOn: () -> Void
-    @Environment(\.dismiss) private var dismiss
-    @Environment(Navigation.self) private var navigation
-    @AppStorage("bee.lightSeen") private var seen = false
-    @AppStorage(AutoMode.agreedKey) private var agreed = false
-    @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
-    /// "Turn on Pro" tapped the first time, with Pro bought: the question is asked here, in the
-    /// sheet — not as a second dialog at the bee once the sheet has gone.
-    @State private var confirming = false
+/// On top of the chat while Pro is off: what Pro adds, in one line, and the one way to it. Start
+/// Pro opens the plans without Pro bought; bought, it asks once what Pro does, then turns it on.
+struct ProOffer: View {
+    @AppStorage(AutoMode.key) private var auto = false
+    @Environment(\.modelContext) private var context
+    @State private var asks = false
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    if confirming { question } else { about }
-                }
-                // What can be added without Pro, as rows.
-                // While Pro is asked about, only the question: the rows went under the sheet's edge.
-                if !confirming {
-                    Section("Add") {
-                        add("Task", "checklist", .task)
-                        add("Note", "note.text", .note)
-                        add("Link", "link", .link)
-                        add("Detail", "info.circle", .detail)
-                        add("Contact", "person.badge.plus", .contact)
-                        // Kept only, not read: what is read and sorted in — a photo, a scan, a file —
-                        // is Pro's, and is not offered here.
-                        add("Files or a folder", "folder", .files)
-                    }
-                }
+        HStack(spacing: 10) {
+            Image(systemName: "bolt.fill").font(.system(size: 15, weight: .semibold))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Causabee Pro").font(.subheadline.weight(.semibold))
+                Text("Reads your mail, fills the cards from it, answers.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .navigationTitle("Light")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
+            Spacer(minLength: 4)
+            Button("Start Pro") { start() }
+                .buttonStyle(PhoneButtonStyle(filled: true))
+                .accessibilityIdentifier("pro.start")
         }
-        .modifier(LightSheetSize(pad: navigation.isPad))
-        // A task, a note, a contact picked: its editor comes on the page, which this sheet would cover.
-        .onChange(of: navigation.adding) { if navigation.adding != nil { dismiss() } }
-        .onDisappear { seen = true }
+        .padding(.vertical, 12).padding(.leading, 14).padding(.trailing, 12)
+        .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 16))
+        .asksBeforeAuto($asks) { switchOn() }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("pro.line")
     }
 
-    /// What Pro adds, and the way to turn it on.
-    @ViewBuilder private var about: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Pro reads new mail as it comes, writes the next step and the summary, and answers in the chat.")
-            if !seen {
-                Text("Without Pro, Causabee sorts mail on this device and chooses the next step from your own tasks and dates. Nothing is written about a matter by an AI.")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .font(.callout)
-        .padding(.vertical, 4)
-        Button {
-            // Not bought: the plans, as before. Agreed to once: on at once. Else asked here.
-            let bought = Store.shared.plan == .pro || BeeServer.hasCredit
-            if agreed || !bought {
-                dismiss()
-                turnOn()
-            } else {
-                withAnimation(.snappy(duration: 0.2)) { confirming = true }
-            }
-        } label: {
-            Label("Turn on Pro", systemImage: "bolt")
-        }
+    private func start() {
+        guard Store.shared.mayTurnOnPro() else { return }
+        if AutoMode.asksFirst { asks = true; return }
+        switchOn()
     }
 
-    /// The question the bolt asked (AutoQuestion), in the sheet: which model reads, that names are
-    /// disguised, who decides.
-    @ViewBuilder private var question: some View {
-        let model = Claude.Model.choices.first { $0.id == mail } ?? .opus
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Turn on Pro?").font(.headline)
-            Text("Pro reads new mail and files for you as they arrive, with \(model.label) — names disguised. " +
-                 "You still decide what goes into a matter. " +
-                 "Without Pro, nothing is read by the AI until you tap.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 4)
-        Button {
-            agreed = true
-            dismiss()
-            turnOn()
-        } label: {
-            Label("Turn Pro On", systemImage: "bolt.fill")
-        }
-        .accessibilityIdentifier("light.turnProOn")
-        Button("Cancel", role: .cancel) {
-            withAnimation(.snappy(duration: 0.2)) { confirming = false }
-        }
-        .foregroundStyle(.secondary)
-    }
-
-    /// In a matter, for that matter; on the overview, which one is asked.
-    private func add(_ title: String, _ symbol: String, _ plus: Navigation.Plus) -> some View {
-        Button(title, systemImage: symbol) {
-            if let matter { navigation.add(plus, to: matter) } else { dismiss(); navigation.choose(for: plus) }
-        }
-    }
-}
-
-/// The Light sheet's size: on the iPhone half the screen, pulled up for the rest; on the iPad a
-/// centred form, as high as everything in it — at the bottom as on the iPhone, "Files or a folder"
-/// stood under its edge.
-private struct LightSheetSize: ViewModifier {
-    let pad: Bool
-
-    func body(content: Content) -> some View {
-        if pad {
-            content.presentationSizing(.form)
-        } else {
-            content.presentationDetents([.medium, .large])
-        }
+    private func switchOn() {
+        auto = true
+        Haptics.tap()
+        PhoneMailCheck.shared.autoTurnedOn(context: context)
     }
 }
 
