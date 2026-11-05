@@ -62,7 +62,10 @@ struct AssistantSheet: View {
     private var pro: Bool { auto && Store.shared.plan == .pro }
     /// A task or a note picked without Pro: it is typed in its card, over where the field was —
     /// the card is the form, and the field steps back until it is added or put away.
-    private var typesInCard: Bool { !pro && navigation.pinned.flatMap { AssistantAdd(rawValue: $0.kind) } != nil }
+    private var typesInCard: Bool {
+        guard let add = navigation.pinned.flatMap({ AssistantAdd(rawValue: $0.kind) }) else { return false }
+        return !pro || !add.asksAssistant
+    }
 
     init(matter: Matter?) {
         self.matter = matter
@@ -315,8 +318,21 @@ struct AssistantSheet: View {
         .frame(height: navigation.isPad ? PadMetrics.bar : nil)
     }
 
-    /// The field as the Mac has it: what is typed goes out pseudonymised, and only on send.
+    /// What can be added, over the field — on the thread, each chip on its own ground — and the
+    /// field, on the page's ground from its middle down.
     private var composer: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // A tap each: its card comes where the field was, and what is typed goes into it — kept
+            // as written, but a task with Pro, which the assistant reads for its day.
+            if navigation.pinned == nil, let matter {
+                AddChips(matter: matter) { typing = true }.padding(.horizontal, 16)
+            }
+            field
+        }
+    }
+
+    /// The field as the Mac has it: what is typed goes out pseudonymised, and only on send.
+    private var field: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let pinned = navigation.pinned, !typesInCard {
                 // What is in hand, on a pale honey: the pin and its kind in gold, the words as any
@@ -335,9 +351,6 @@ struct AssistantSheet: View {
                 .padding(10)
                 .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 10))
             }
-            // Without Pro, what can be added stands over the field, a tap each: the card for it comes
-            // over the field, and what is typed goes into it, kept as written.
-            if !pro, navigation.pinned == nil, let matter { AddChips(matter: matter) { typing = true } }
             // As on the Mac: the send button sits in the pill's round end, as far from the right as
             // from the top and bottom, and the corner's radius is that and half the button — 7 + 34 / 2.
             // `--demo --shot listening`: the picture of the field while it listens.
@@ -347,7 +360,7 @@ struct AssistantSheet: View {
                 Text(problem).font(.caption).foregroundStyle(Theme.warning).padding(.horizontal, 8)
             }
             if typesInCard, let add = navigation.pinned.flatMap({ AssistantAdd(rawValue: $0.kind) }) {
-                AddCard(add: add, typed: typed, typing: $typing, take: send) { navigation.pinned = nil; draft = "" }
+                AddCard(add: add, typed: typed, typing: $typing, take: send) { navigation.pinned = nil; draft = ""; typed.second = "" }
             } else {
             HStack(alignment: .bottom, spacing: 6) {
               if voice.phase == .listening {
@@ -380,7 +393,7 @@ struct AssistantSheet: View {
         .padding(.horizontal, 16).padding(.top, 0).padding(.bottom, 8)
         // The page's ground from the field's middle down, thinning out upwards to its upper edge.
         .background {
-            LinearGradient(stops: [.init(color: Theme.canvas.opacity(0), location: 0), .init(color: Theme.canvas, location: pro ? 0.45 : 0.06), .init(color: Theme.canvas, location: 1)],
+            LinearGradient(stops: [.init(color: Theme.canvas.opacity(0), location: 0), .init(color: Theme.canvas, location: 0.45), .init(color: Theme.canvas, location: 1)],
                            startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea(edges: .bottom)
         }
@@ -399,10 +412,13 @@ extension AssistantSheet {
         let today = MatterStatus.day(Date())
         // "Task" or "Note" picked from the plus: what was typed is that, and says so in the thread.
         let add = navigation.pinned.flatMap { AssistantAdd(rawValue: $0.kind) }
+        let second = self.typed.second
         if let add {
-            question = add.question(typed)
+            guard add.isComplete(typed, second) else { return }
+            question = add.question(typed, second)
             readAs = []
             navigation.pinned = nil
+            self.typed.second = ""
         }
         let pinned = navigation.pinned
         let place = PhoneCloud.storeLocation()
@@ -423,7 +439,7 @@ extension AssistantSheet {
             failure = nil
             draft = ""
             fieldKey += 1
-            var answer = add.asTyped(typed)
+            var answer = add.asTyped(typed, second)
             // A day or a time in the words is the task's date, found by rule, and taken out of them.
             if add == .task, !answer.reply.cards.isEmpty {
                 let filled = DeviceTask.card(typed)
@@ -1318,6 +1334,8 @@ private struct PhoneToNewestButton: View {
 @Observable
 final class TypedWords {
     var text = ""
+    /// A card's second field: a link's name, a detail's value, a contact's role.
+    var second = ""
     /// Where dictation puts its words: at the end. The field is not bound to its cursor — bound,
     /// typed quickly, the cursor of a keystroke before came back after the next one: "Who has the"
     /// was written "Who has he…t" on the iPad, and words went missing on the iPhone, even with the
@@ -1372,12 +1390,17 @@ private struct AddChips: View {
     @Environment(Navigation.self) private var navigation
 
     var body: some View {
-        HStack(spacing: 8) {
-            chip("Task", "checklist", .task)
-            chip("Note", "note.text", .note)
-            Spacer(minLength: 0)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                chip("Task", "checklist", .task)
+                chip("Note", "note.text", .note)
+                chip("Link", "link", .link)
+                chip("Detail", "info.circle", .detail)
+                chip("Contact", "person.badge.plus", .contact)
+            }
+            .padding(.horizontal, 4)
         }
-        .padding(.horizontal, 4)
+        .scrollClipDisabled()
     }
 
     private func chip(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
@@ -1388,11 +1411,14 @@ private struct AddChips: View {
         } label: {
             Label(title, systemImage: symbol).font(.subheadline)
                 .padding(.vertical, 8).padding(.leading, 11).padding(.trailing, 14)
-                .background(Color.secondary.opacity(0.12), in: Capsule())
+                // On the thread, not under the field's glass: a ground of its own, not see-through.
+                .background(Theme.box, in: Capsule())
+                .overlay(Capsule().stroke(Theme.line, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier("add." + (add == .task ? "task" : "note"))
+        .accessibilityIdentifier("add." + title.lowercased())
     }
 }
 
@@ -1407,12 +1433,13 @@ private struct AddCard: View {
     let take: () -> Void
     let close: () -> Void
 
-    private var empty: Bool { typed.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    private var empty: Bool { !add.isComplete(typed.text, typed.second) }
+    @FocusState private var onSecond: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
-                Text(add == .task ? "Task" : "Note").font(.caption).foregroundStyle(.secondary)
+                Text(add.title).font(.caption).foregroundStyle(.secondary)
                     .padding(.leading, 4)
                     .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
                 Button(action: close) {
@@ -1424,17 +1451,33 @@ private struct AddCard: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Put it away")
             }
-            TextField(add == .task ? "What needs doing?" : "What to keep", text: $typed.text, axis: .vertical)
-                .textFieldStyle(.plain)
-                .font(add == .task ? .headline : .body)
-                .lineLimit(1...6)
-                .focused(typing)
-                .submitLabel(.done)
-                .onSubmit { if !empty { take() } }
-                .accessibilityIdentifier("add.text")
-                .padding(.horizontal, 16).padding(.vertical, 14)
-                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
-                .padding(.top, 10)
+            VStack(alignment: .leading, spacing: 0) {
+                TextField(add.fields.first, text: $typed.text, axis: add.fields.second == nil ? .vertical : .horizontal)
+                    .textFieldStyle(.plain)
+                    .font(add == .note ? .body : .headline)
+                    .lineLimit(1...6)
+                    .keyboardType(add == .link ? .URL : .default)
+                    .textInputAutocapitalization(add == .link ? .never : .sentences)
+                    .autocorrectionDisabled(add == .link)
+                    .focused(typing)
+                    .submitLabel(add.fields.second == nil ? .done : .next)
+                    // One line where a second field follows: Return goes on to it, not to a new line.
+                    .onSubmit { if add.fields.second != nil { onSecond = true } else if !empty { take() } }
+                    .accessibilityIdentifier("add.text")
+                    .padding(.horizontal, 16).padding(.vertical, 14)
+                if let second = add.fields.second {
+                    Divider().padding(.leading, 16)
+                    TextField(second, text: $typed.second)
+                        .textFieldStyle(.plain)
+                        .focused($onSecond)
+                        .submitLabel(.done)
+                        .onSubmit { if !empty { take() } }
+                        .accessibilityIdentifier("add.second")
+                        .padding(.horizontal, 16).padding(.vertical, 14)
+                }
+            }
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+            .padding(.top, 10)
             Text(add.hint).font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 10).padding(.leading, 4)

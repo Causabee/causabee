@@ -58,15 +58,35 @@ final class RegressionTests: XCTestCase {
         segment.tap()
     }
 
-    /// What is added goes in by the assistant: its bee, then the plus beside its field.
-    private func plus(_ item: String) {
-        app.buttons["bee"].firstMatch.tap()
-        let add = app.buttons["assistant.plus"].firstMatch
-        XCTAssertTrue(add.waitForExistence(timeout: 8), "The assistant has no plus.")
-        add.tap()
+    /// The forms, where they still are: held on the bee, its menu offers what can be added, and
+    /// each opens its own editor on the page.
+    private func held(_ item: String) {
+        let bee = app.buttons["bee"].firstMatch
+        XCTAssertTrue(bee.waitForExistence(timeout: 8), "The matter's page has no bee.")
+        bee.press(forDuration: 1.0)
         let entry = app.buttons["plus." + item]
-        XCTAssertTrue(entry.waitForExistence(timeout: 5), "The plus has no \(item).")
+        XCTAssertTrue(entry.waitForExistence(timeout: 5), "Held, the bee offers no \(item).")
         entry.tap()
+    }
+
+    /// In the chat: its chip over the field, and the card that comes for it, typed in and added.
+    private func chip(_ item: String, _ first: String, _ second: String) {
+        app.buttons["bee"].firstMatch.tap()
+        let chip = app.buttons["add." + item]
+        XCTAssertTrue(chip.waitForExistence(timeout: 8), "The chat has no \(item) over its field.")
+        chip.tap()
+        let one = field("add.text")
+        XCTAssertTrue(one.waitForExistence(timeout: 5), "The \(item)'s card has no field.")
+        // Return goes on to the second field, as one types it.
+        one.typeText(first + "\n")
+        let two = field("add.second")
+        XCTAssertTrue(two.waitForExistence(timeout: 5), "The \(item)'s card has no second field.")
+        for _ in 0..<25 where !(two.value(forKey: "hasKeyboardFocus") as? Bool ?? false) { Thread.sleep(forTimeInterval: 0.2) }
+        if !(two.value(forKey: "hasKeyboardFocus") as? Bool ?? false) { two.tap() }
+        two.typeText(second)
+        let take = app.buttons["add.take"]
+        for _ in 0..<50 where !take.isEnabled { Thread.sleep(forTimeInterval: 0.2) }
+        take.tap()
     }
 
     /// A field by its identifier, whichever kind SwiftUI made of it.
@@ -87,8 +107,8 @@ final class RegressionTests: XCTestCase {
 
     func testATaskAddedStays() {
         let words = "Call the pharmacy \(stamp)"
-        // "Task" from the plus opens the task's own editor: added, it is in the list.
-        plus("task")
+        // "Task" held on the bee opens the task's own editor: added, it is in the list.
+        held("task")
         let text = field("task.text")
         XCTAssertTrue(text.waitForExistence(timeout: 5), "“Task” was picked and its editor did not open.")
         text.tap()
@@ -102,33 +122,22 @@ final class RegressionTests: XCTestCase {
         // In letters: a name that differs only in digits is the same contact, and would be found, not made.
         // The same holds for the address: one address is one contact.
         let letters = String(stamp.compactMap { $0.wholeNumberValue.map { Character(UnicodeScalar(UInt8(97 + $0))) } })
-        let name = "Kasse " + letters, address = letters + "@hkk.de"
-        plus("contact")
-        let nameField = field("contact.name")
-        XCTAssertTrue(nameField.waitForExistence(timeout: 5), "The contact's editor did not open.")
-        nameField.tap()
-        nameField.typeText(name)
-        let mail = field("contact.mail")
-        mail.tap()
-        mail.typeText(address)
-        app.buttons["Add"].firstMatch.tap()
+        let name = "Kasse " + letters, role = "Insurer " + letters
+        // Its card in the chat: the name, and what they are to the matter.
+        chip("contact", name, role)
+        let kept = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Contact saved")).firstMatch
+        XCTAssertTrue(kept.waitForExistence(timeout: 10), "The contact was not saved from its card.")
+        app.buttons["Close"].firstMatch.tap()
+        tab("People")
         shows(name, "The contact was added and is not under People.")
-        shows(address, "The contact's address is not shown.")
     }
 
     func testADetailAdded() {
         let value = "A 123 \(stamp)"
-        plus("detail")
-        let label = field("detail.label")
-        XCTAssertTrue(label.waitForExistence(timeout: 5), "The detail's editor did not open.")
-        label.tap()
-        label.typeText("Versichertennummer")
-        let valueField = field("detail.value")
-        valueField.tap()
-        valueField.typeText(value)
-        app.buttons["Add"].firstMatch.tap()
-        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", value)).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 8), "The detail was added and is not in its card.")
+        // Its card in the chat: what it is, and what it says.
+        chip("detail", "Versichertennummer", value)
+        let kept = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Detail saved")).firstMatch
+        XCTAssertTrue(kept.waitForExistence(timeout: 10), "The detail was not saved from its card.")
     }
 
     func testANoteAdded() {

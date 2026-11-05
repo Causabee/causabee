@@ -3,6 +3,7 @@ import PhotosUI
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
+import VisionKit
 
 /// A file brought into the assistant on the iPhone — a chat screenshot, a photo of a letter, a PDF
 /// from Files, or a matter's file taken out of its mail with "Scan" — the way the Mac brings one
@@ -500,17 +501,41 @@ private struct BringsIn: ViewModifier {
     }
 }
 
-/// The plus beside the assistant's field: everything `PlusItems` offers.
+/// The plus beside the assistant's field: what is brought in — files or a folder, a scan, a photo
+/// or a screenshot. Picked, it asks what becomes of it: read and sorted in, or only imported, kept
+/// with the matter unread. A task, a note, a link, a detail and a contact are cards over the field.
 struct AttachButton: View {
     let matter: Matter?
     /// "Task" or "Note" was picked: the field takes the cursor.
     var picked: () -> Void = {}
+    @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
+    @Query private var profiles: [Profile]
+    @AppStorage(AutoMode.key) private var auto = false
+    @State private var picksFiles = false
+    @State private var scans = false
     @State private var picksPhoto = false
-    @State private var picksFile = false
+    @State private var photo: PhotosPickerItem?
+    /// What was picked, waiting for the answer: read, or only import.
+    @State private var waiting: [Picked] = []
+    @State private var asks = false
+    @State private var said: String?
+
+    /// A file picked from Files, kept on the device until it is read or imported.
+    private struct Picked { let file: URL; let name: String }
+
+    private var pro: Bool { auto && Store.shared.plan == .pro }
 
     var body: some View {
         Menu {
-            PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile, picked: picked)
+            Button("Files or a folder", systemImage: "folder") { picksFiles = true }
+                .accessibilityIdentifier("plus.files")
+            if VNDocumentCameraViewController.isSupported {
+                Button("Scan a document", systemImage: "doc.viewfinder") { scans = true }
+                    .accessibilityIdentifier("plus.scan")
+            }
+            Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
+                .accessibilityIdentifier("plus.photo")
         } label: {
             // A plus, as on the Mac (Figma "Composer"): quiet, so the send button is the one loud thing.
             Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary)
@@ -518,9 +543,100 @@ struct AttachButton: View {
         }
         // A menu's label takes the app's gold; the plus stays grey.
         .tint(Color.secondary)
-        .accessibilityLabel(matter == nil ? "Bring in or add to a matter" : "Add to this matter")
+        .accessibilityLabel("Bring in files, a scan or a photo")
         .accessibilityIdentifier("assistant.plus")
-        .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
+        .fileImporter(isPresented: $picksFiles, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
+            guard case .success(let urls) = result else { return }
+            ask(about: kept(urls))
+        }
+        .fullScreenCover(isPresented: $scans) {
+            DocumentCamera { pages in
+                scans = false
+                if let data = Scans.pdf(of: pages) { ask(about: keep(data, named: "Scan \(MatterStatus.day(Date())).pdf")) }
+            } cancel: { scans = false }
+            .ignoresSafeArea()
+        }
+        .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
+        .onChange(of: photo) {
+            guard let photo else { return }
+            self.photo = nil
+            Task {
+                guard let data = try? await photo.loadTransferable(type: Data.self) else { return }
+                let type = photo.supportedContentTypes.first { ["png", "jpeg", "heic"].contains($0.preferredFilenameExtension ?? "") }
+                // As the iPhone names its own: "Screenshot 2026-09-30 at 23.37.01", in local time.
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+                ask(about: keep(data, named: "Screenshot \(formatter.string(from: Date())).\(type?.preferredFilenameExtension ?? "png")"))
+            }
+        }
+        .confirmationDialog(question, isPresented: $asks, titleVisibility: .visible) {
+            if pro { Button("Read and sort in") { read() } }
+            if matter != nil { Button("Only import") { importOnly() } }
+            Button("Cancel", role: .cancel) { waiting = [] }
+        } message: {
+            Text(pro ? "Read: Pro reads it and offers its tasks and dates. Only import: it is kept with the matter, unread."
+                     : matter == nil ? "Open a matter to import it there. Reading needs Pro."
+                     : "Only import: it is kept with the matter, unread. Reading it needs Pro.")
+        }
+        .alert(said ?? "", isPresented: Binding(get: { said != nil }, set: { if !$0 { said = nil } })) {
+            Button("OK", role: .cancel) { }
+        }
+    }
+
+    /// With Pro the choice; without it, only importing is offered, and asked as that.
+    private var question: String {
+        let one = waiting.count == 1, name = waiting.first?.name ?? ""
+        guard pro else { return one ? "Import “\(name)”?" : "Import \(waiting.count) files?" }
+        return one ? "Read “\(name)”, or only import it?" : "Read \(waiting.count) files, or only import them?"
+    }
+
+    private func ask(about picked: [Picked]) {
+        guard !picked.isEmpty else { return }
+        waiting = picked
+        asks = true
+    }
+
+    /// Picked from Files: every file of a folder with it, copied onto the device, where reading and
+    /// importing both find it.
+    private func kept(_ urls: [URL]) -> [Picked] {
+        urls.flatMap { url -> [Picked] in
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            return FolderImport.files(in: [url]).flatMap { file -> [Picked] in
+                guard let data = FolderImport.data(of: file) else { return [] }
+                return keep(data, named: file.lastPathComponent)
+            }
+        }
+    }
+
+    private func keep(_ data: Data, named name: String) -> [Picked] {
+        guard let file = PhoneShots.shared.keep(data, named: name) else { return [] }
+        return [Picked(file: file, name: name)]
+    }
+
+    /// Read on the device and by Pro, and shown in the assistant, where it waits for "Sort in".
+    private func read() {
+        for item in waiting {
+            PhoneShots.shared.bring(item.file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first)
+        }
+        waiting = []
+        navigation.showsAssistant = true
+    }
+
+    /// Kept with the matter as files, unread — as "Files or a folder" did.
+    private func importOnly() {
+        guard let matter else { waiting = []; return }
+        let files = waiting.map(\.file)
+        waiting = []
+        let folder = PhoneShots.folder
+        let result = FolderImport.add(files, to: matter, context: context) { file, name in
+            FolderImport.data(of: file).flatMap { PhoneShots.keep($0, named: name, in: folder) }
+        }
+        try? context.save()
+        PhoneFolderSaver.save([matter])
+        Haptics.success()
+        said = result.said ?? (files.count == 1 ? "Imported into “\(matter.name)”, unread." : nil)
     }
 }
 
