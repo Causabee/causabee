@@ -687,6 +687,8 @@ struct MatterScreen: View {
             .tool()
             if let stepError { Text(stepError).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
         }
+        // "Comment" is the card's long press: only to a step Causabee wrote.
+        .commentsOnHold(matter, about: own && !outOfDate ? matter.nextStep : nil)
     }
 
     /// The facts the step and the summary are asked from: this matter's, the last 40 mails.

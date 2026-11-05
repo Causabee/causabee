@@ -124,6 +124,20 @@ final class RegressionTests: XCTestCase {
         }
     }
 
+    /// No "Comment" line under the yellow card on the iPhone: held, the card offers it, and it opens
+    /// the field for the few words.
+    func testTheNextStepsCommentIsItsLongPress() {
+        tab("Digest")
+        let chip = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "NEXT")).firstMatch
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), "The Digest has no next step.")
+        XCTAssertFalse(app.buttons["tile.comment"].exists, "“Comment” still stands under the card.")
+        chip.press(forDuration: 1.2)
+        let comment = app.buttons["tile.comment"].firstMatch
+        XCTAssertTrue(comment.waitForExistence(timeout: 5), "Held, the next step offers no “Comment”.")
+        comment.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["comment.field"].waitForExistence(timeout: 5), "“Comment” opened no field.")
+    }
+
     /// "Set day" where an undated task's day would stand: a day picked, the task leaves No day yet.
     func testSetDayGivesATaskItsDay() {
         tab("Plan")

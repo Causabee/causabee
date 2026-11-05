@@ -1211,6 +1211,7 @@ struct NewsCard: View {
                 .padding(.horizontal, 16).padding(.vertical, 10)
             }
             .journalCard(inset: Theme.tileInset)
+            .commentsOnHold(matter, about: Self.about(news))
             // A notification of news tapped goes here.
             .id("news")
         }
@@ -1379,6 +1380,7 @@ private struct ProposalRow: View {
                 .padding(.top, 2)
             }
         }
+        .commentsOnHold(matter, about: what)
     }
 
     private var refs: [String: FactRef] { CardActions.local(proposal.refs, keys: proposal.keys, matter: matter, in: context) }
@@ -1478,6 +1480,7 @@ private struct LookupRow: View {
                 .padding(.top, 2)
             }
         }
+        .commentsOnHold(matter, about: lookup.question)
     }
 
     private func look() {
@@ -1753,10 +1756,47 @@ struct CommentButton: View {
     @State private var writing = false
 
     var body: some View {
+        #if os(iOS)
+        // On the iPhone and iPad it is the yellow card's long press: `commentsOnHold`.
+        EmptyView()
+        #else
         Button { writing = true } label: { Label("Comment", systemImage: "text.bubble") }
             .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
             .accessibilityIdentifier("tile.comment")
             .sheetWhenAsked(isPresented: $writing) { CommentSheet(matter: matter, about: about) }
+        #endif
+    }
+}
+
+extension View {
+    /// "Comment" held on a yellow card, on the iPhone and iPad: a line under every card said it
+    /// once more. On the Mac the card keeps its "Comment" button and this does nothing.
+    func commentsOnHold(_ matter: Matter, about: String?) -> some View {
+        modifier(CommentHold(matter: matter, about: about))
+    }
+}
+
+private struct CommentHold: ViewModifier {
+    let matter: Matter
+    let about: String?
+    @State private var writing = false
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        if let about {
+            content
+                .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+                .contextMenu {
+                    Button("Comment", systemImage: "text.bubble") { writing = true }
+                        .accessibilityIdentifier("tile.comment")
+                }
+                .sheetWhenAsked(isPresented: $writing) { CommentSheet(matter: matter, about: about) }
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
     }
 }
 
