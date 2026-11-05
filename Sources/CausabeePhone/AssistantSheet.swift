@@ -1407,19 +1407,60 @@ private struct AddChips: View {
     let matter: Matter
     let picked: () -> Void
     @Environment(Navigation.self) private var navigation
+    /// Folded, only the plus is left over the field; it stays as it was left.
+    @AppStorage("addChipsOpen") private var open = true
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                chip("Task", "checklist", .task)
-                chip("Note", "note.text", .note)
-                chip("Link", "link", .link)
-                chip("Detail", "info.circle", .detail)
-                chip("Contact", "person.badge.plus", .contact)
+                // Over the chips, so that they go in under it.
+                toggle.zIndex(1)
+                if open {
+                    // Fanned out from the chevron one after another, and folded back the last first.
+                    ForEach(Array(Self.chips.enumerated()), id: \.offset) { index, item in
+                        chip(item.title, item.symbol, item.add)
+                            .transition(fan(index))
+                    }
+                }
             }
             .padding(.horizontal, 4)
         }
         .scrollClipDisabled()
+    }
+
+    private static let chips: [(title: String, symbol: String, add: AssistantAdd)] = [
+        ("Task", "checklist", .task), ("Note", "note.text", .note), ("Link", "link", .link),
+        ("Detail", "info.circle", .detail), ("Contact", "person.badge.plus", .contact),
+    ]
+
+    /// Each chip comes from the left, small and faint, a moment after the one before it.
+    private func fan(_ index: Int) -> AnyTransition {
+        let step = 0.035, last = Self.chips.count - 1
+        let shrink = AnyTransition.scale(scale: 0.6, anchor: .leading).combined(with: .opacity)
+        // Going, they only shrink where they stand: moved, the first ran into the chevron.
+        return .asymmetric(
+            insertion: AnyTransition.offset(x: -24).combined(with: shrink)
+                .animation(.spring(response: 0.32, dampingFraction: 0.78).delay(Double(index) * step)),
+            removal: shrink.animation(.easeIn(duration: 0.16).delay(Double(last - index) * step * 0.6)))
+    }
+
+    /// A chevron, as a drawer has: › while the chips are in, ‹ while they are out.
+    private var toggle: some View {
+        Button {
+            Haptics.tap()
+            withAnimation(.snappy) { open.toggle() }
+        } label: {
+            Image(systemName: "chevron.right").font(.subheadline.weight(.semibold))
+                .rotationEffect(.degrees(open ? 180 : 0))
+                .frame(width: 36, height: 36)
+                .background(Theme.box, in: Circle())
+                .overlay(Circle().stroke(Theme.line, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(open ? "Hide Add" : "Add")
+        .accessibilityIdentifier("add.toggle")
     }
 
     private func chip(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
