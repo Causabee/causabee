@@ -39,8 +39,10 @@ public enum AssistantAdd: String, CaseIterable, Sendable {
     /// The answer with nothing asked: the words as they were typed. For a note, and for a task when
     /// there is no key to ask with.
     public func asTyped(_ words: String) -> AssistantAsk.Answer {
-        AssistantAsk.Answer(reply: AssistantPrompt.Reply(lines: [], cards: [card(words)], notInFacts: nil),
-                            sent: "", cost: 0, seconds: 0, newNames: 0)
+        var answer = AssistantAsk.Answer(reply: AssistantPrompt.Reply(lines: [], cards: [card(words)], notInFacts: nil),
+                                         sent: "", cost: 0, seconds: 0, newNames: 0)
+        answer.servedBy = DeviceTask.onDevice
+        return answer
     }
 
     /// The assistant's answer, and which of its cards to take in. If it sent none of the kind picked,

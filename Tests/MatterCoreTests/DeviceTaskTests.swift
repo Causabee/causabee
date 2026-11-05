@@ -54,3 +54,18 @@ struct DeviceTaskTests {
         #expect(answer.reply.cards.first?.reason.contains("iPhone") == true)
     }
 }
+
+/// Without Apple's model, the words' own shape says whether they are something to do.
+struct DeviceTaskShapeTests {
+    @Test func aLineThatBeginsWithAVerbIsATask() {
+        #expect(DeviceTask.readsAsTask("Call the plumber on Monday about the boiler"))
+        #expect(DeviceTask.readsAsTask("Book Carry & Co for the 25th"))
+        #expect(DeviceTask.readsAsTask("Frau Adler am Freitag anrufen"))
+    }
+
+    @Test func aQuestionIsNot() {
+        #expect(!DeviceTask.readsAsTask("When does the van come?"))
+        #expect(!DeviceTask.readsAsTask("Who has the spare key"))
+        #expect(!DeviceTask.readsAsTask("Wann kommt der Umzugswagen"))
+    }
+}

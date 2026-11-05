@@ -380,7 +380,7 @@ struct AssistantSheet: View {
         .padding(.horizontal, 16).padding(.top, 0).padding(.bottom, 8)
         // The page's ground from the field's middle down, thinning out upwards to its upper edge.
         .background {
-            LinearGradient(stops: [.init(color: Theme.canvas.opacity(0), location: 0), .init(color: Theme.canvas, location: 0.45), .init(color: Theme.canvas, location: 1)],
+            LinearGradient(stops: [.init(color: Theme.canvas.opacity(0), location: 0), .init(color: Theme.canvas, location: pro ? 0.45 : 0.06), .init(color: Theme.canvas, location: 1)],
                            startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea(edges: .bottom)
         }
@@ -789,7 +789,7 @@ struct PhoneTurnView: View {
                 }
                 Spacer(minLength: 8)
                 // Kept as typed — a task or a note with nothing asked: no AI answered, and none is named.
-                if answer.sent.isEmpty, answer.reply.lines.isEmpty {
+                if answer.servedBy == DeviceTask.onDevice || (answer.sent.isEmpty && answer.reply.lines.isEmpty) {
                     Text("On this device").font(.caption2).foregroundStyle(.secondary).frame(minHeight: 32)
                 } else {
                 // What the disguise found in the question — so it is seen that it looked.
@@ -1318,15 +1318,11 @@ private struct PhoneToNewestButton: View {
 @Observable
 final class TypedWords {
     var text = ""
-    /// Where the cursor is, as the field last said: for dictation to put its words there. Read
-    /// back into the field it was not: on the iPad, typed quickly, the cursor of a keystroke
-    /// before came back after the next one, and "Who has the" was written "Who has he…t".
+    /// Where dictation puts its words: at the end. The field is not bound to its cursor — bound,
+    /// typed quickly, the cursor of a keystroke before came back after the next one: "Who has the"
+    /// was written "Who has he…t" on the iPad, and words went missing on the iPhone, even with the
+    /// cursor only told and never read back.
     @ObservationIgnored var cursor: TextSelection?
-
-    /// The field tells where its cursor is and is never told: the cursor stays the field's own.
-    var reportedCursor: Binding<TextSelection?> {
-        Binding(get: { nil }, set: { [weak self] in self?.cursor = $0 })
-    }
 }
 
 /// The assistant's field, the microphone and the send button: the only views that read what is
@@ -1342,7 +1338,7 @@ private struct TypingField: View {
     let stop: () -> Void
 
     var body: some View {
-        TextField(placeholder, text: $typed.text, selection: typed.reportedCursor, axis: .vertical)
+        TextField(placeholder, text: $typed.text, axis: .vertical)
             .lineLimit(1...5)
             // The keyboard's Return starts a new line; the button sends. With a keyboard
             // of keys, Return sends and Shift-Return starts a new line, as on the Mac.

@@ -246,6 +246,7 @@ public enum AssistantAsk {
         /// The name a person reads: "Mistral Large 3".
         public var modelLabel: String {
             guard let servedBy else { return Claude.Model.opus.label }
+            if servedBy == DeviceTask.onDevice { return "On this device" }
             return Claude.Model.serving(servedBy)?.label ?? servedBy
         }
 
