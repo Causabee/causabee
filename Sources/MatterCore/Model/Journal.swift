@@ -29,15 +29,10 @@ public enum Journal {
         }
     }
 
-    /// With this many tasks and dates open, a matter opens on its plan: the page is about what is
-    /// left, and the story is one tap away.
-    public static let manyOpen = 5
-
-    public static func opening(_ matter: Matter, today: String) -> Part {
-        guard !matter.isClosed else { return .all }
-        let coming = (matter.appointments ?? []).shown.filter { $0.day >= today }.count + (matter.deadlines ?? []).shown.filter { $0.day >= today }.count
-        return matter.openTodos.count + coming >= manyOpen ? .plan : .all
-    }
+    /// A matter opens on its digest, however much is open: the next step lives there and nowhere
+    /// else, and the plan is one tap away. A busy matter opened on its plan once, and its next step
+    /// was not on the page (5 November).
+    public static func opening(_ matter: Matter, today: String) -> Part { .all }
 
     /// The filters that have something behind them, and the one that is open whatever it has: a
     /// new matter does not look empty, and a part does not go away under the owner's hand.

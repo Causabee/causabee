@@ -37,15 +37,15 @@ struct JournalTests {
         return entry
     }
 
-    @Test("A matter with five or more open opens on its plan; a closed one on its story, however much is open")
+    @Test("A matter opens on its digest, where its next step is, however much is open; a closed one too")
     func opening() throws {
         let (context, matter) = try matter()
         for index in 0..<3 { _ = task("Task \(index)", in: matter, context) }
         date("Physio", "2026-10-01", in: matter, context)
-        date("Long ago", "2026-01-01", in: matter, context)
         #expect(Journal.opening(matter, today: "2026-09-30") == .all)
+        for index in 3..<9 { _ = task("Task \(index)", in: matter, context) }
         date("Visit", "2026-10-06", in: matter, context)
-        #expect(Journal.opening(matter, today: "2026-09-30") == .plan)
+        #expect(Journal.opening(matter, today: "2026-09-30") == .all)
         matter.closedAt = day("2026-09-30")
         #expect(Journal.opening(matter, today: "2026-09-30") == .all)
     }

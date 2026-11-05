@@ -65,9 +65,10 @@ public enum AssistantAdd: String, CaseIterable, Sendable {
         }
     }
 
-    /// A note, a link, a detail and a contact are kept as they are, on the device. A task goes to
-    /// the assistant, for its day and time — with Pro.
-    public var asksAssistant: Bool { self == .task }
+    /// A link, a detail and a contact are kept as they are, on the device. A task goes to the
+    /// assistant with Pro, for its day and time; a note too, for the task it belongs with — both
+    /// in their words, and as typed without Pro.
+    public var asksAssistant: Bool { self == .task || self == .note }
 
     /// What goes into the thread, and to the assistant: "New task: Online check-in from 25 Oct, 15:10".
     public func question(_ words: String, _ second: String = "") -> String {

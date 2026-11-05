@@ -49,7 +49,10 @@ public enum AssistantPrompt {
     right one.
     - `add_note`: the owner wants something written down — a list, what was agreed, something to \
     remember. `text` is the note, in the owner's words. `todo` is the id of the to-do it belongs \
-    with, or null: then it is kept in the matter's notes.
+    with, or null: then it is kept in the matter's notes. A question that begins with `New note:` \
+    is one the owner chose to add: answer with exactly one `add_note` for it — its words kept as \
+    written; `todo` the id of the open to-do it plainly belongs with, else null — and one short \
+    line at most.
     - `new_appointment`: a meeting, call or visit at a set day that is not among the dates yet. \
     `text` is what it is, `due` the day, `time` the time (HH:MM) or null; `end_time` when it \
     ends (HH:MM), `end_date` its last day when it lasts several days — each null when not said, \

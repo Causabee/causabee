@@ -41,10 +41,31 @@ struct AssistantAddTests {
     }
 
     @Test func keptOnTheDeviceAndSaidSo() {
-        for add in [AssistantAdd.link, .detail, .contact, .note] {
+        for add in [AssistantAdd.link, .detail, .contact] {
             #expect(!add.asksAssistant)
-            #expect(add.asTyped("a", "b").servedBy == DeviceTask.onDevice)
         }
+        // With Pro, a task and a note go to the assistant, as typed in the chat; without, kept as typed.
+        #expect(AssistantAdd.task.asksAssistant && AssistantAdd.note.asksAssistant)
+        for add in AssistantAdd.allCases { #expect(add.asTyped("a", "b").servedBy == DeviceTask.onDevice) }
         #expect(AssistantAdd.of("New detail: Customer number — FN-20391")?.add == .detail)
+    }
+}
+
+/// With Pro, what the assistant answers for a note picked from the chips: its own `add_note`, or
+/// the words as typed when it sent none — never lost to the answer.
+struct AssistantAddNoteTests {
+    @Test func theAssistantsNoteIsTaken() {
+        let card = AssistantPrompt.Reply.Card(kind: .addNote, todo: "t1", text: "Mum prefers mornings", owner: "me", due: nil, reason: "", cites: [])
+        let answer = AssistantAsk.Answer(reply: AssistantPrompt.Reply(lines: [], cards: [card], notInFacts: nil), sent: "x", cost: 0, seconds: 0, newNames: 0)
+        let settled = AssistantAdd.note.settled(answer, words: "Mum prefers mornings")
+        #expect(settled.card == 0)
+        #expect(settled.answer.reply.cards[0].todo == "t1")
+    }
+
+    @Test func withoutOneTheWordsAreKept() {
+        let answer = AssistantAsk.Answer(reply: AssistantPrompt.Reply(lines: [], cards: [], notInFacts: nil), sent: "x", cost: 0, seconds: 0, newNames: 0)
+        let settled = AssistantAdd.note.settled(answer, words: "Mum prefers mornings")
+        #expect(settled.answer.reply.cards[settled.card].kind == .addNote)
+        #expect(settled.answer.reply.cards[settled.card].text == "Mum prefers mornings")
     }
 }

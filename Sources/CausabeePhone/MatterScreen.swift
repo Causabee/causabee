@@ -124,8 +124,10 @@ struct MatterScreen: View {
                                 }
                                 journal(status)
                             case .plan:
+                                // The next step lives in the digest only: here, over the plan it is
+                                // one of, it read as a second plan.
                                 if !hasColumn {
-                                    if matter.isClosed { closedBanner(status) } else { nextStep(status, scroller); ForYouCard(matter: matter, folds: true) }
+                                    if matter.isClosed { closedBanner(status) } else { ForYouCard(matter: matter, folds: true) }
                                 }
                                 planList(status, plan)
                                 CalendarAccessBanner { loadCalendars() }
@@ -199,11 +201,13 @@ struct MatterScreen: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: Theme.cardGap) {
                             if !matter.isClosed {
-                                nextStep(status, scroller)
+                                // The next step with the digest only, as on the iPhone.
+                                if part == .all { nextStep(status, scroller) }
                                 ForYouCard(matter: matter, folds: part != .all)
-                                if part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
                             }
+                            // The summary over what is ahead: what the matter is, then its dates.
                             atHandCard
+                            if !matter.isClosed, part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
                             BallCard(matter: matter)
                         }
                         .padding(.top, 10).padding(.trailing, 16).padding(.bottom, 90)
@@ -849,7 +853,8 @@ struct MatterScreen: View {
     }
 
     /// What stands on top of the journal: the closed matter's line, what is new, what comes next
-    /// and what waits for an answer; then what is ahead, and what has no date.
+    /// and what waits for an answer; then the summary with what has no date, and under it what is
+    /// ahead — what the matter is first, then its dates.
     @ViewBuilder
     private func top(_ status: MatterStatus, _ plan: Journal.Plan, _ scroller: ScrollViewProxy) -> some View {
         if matter.isClosed { closedBanner(status) }
@@ -857,10 +862,10 @@ struct MatterScreen: View {
         if !matter.isClosed {
             nextStep(status, scroller)
             ForYouCard(matter: matter)
-            // On an iPad the page has the room the column had: as many days as it showed.
-            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: navigation.isPad ? 4 : 2) }
         }
         atHandCard
+        // On an iPad the page has the room the column had: as many days as it showed.
+        if !matter.isClosed, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: navigation.isPad ? 4 : 2) }
     }
 
     /// The owner's own words on the matter: small dated blocks, read by the assistant too.

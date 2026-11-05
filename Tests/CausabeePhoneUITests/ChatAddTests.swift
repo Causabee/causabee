@@ -36,8 +36,12 @@ final class ChatAddTests: XCTestCase {
         if !kept.waitForExistence(timeout: 5), take.exists { take.tap() }
         XCTAssertTrue(kept.waitForExistence(timeout: 10), "The task was not kept in the thread.")
         XCTAssertFalse(app.staticTexts["Claude Opus 5"].exists, "A task kept as typed names an AI that never saw it.")
-        // In the matter too, as written.
+        // In the matter too, as written: in its plan — the matter opens on its digest, which has
+        // only the days ahead.
         app.buttons["Close"].firstMatch.tap()
+        let plan = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Plan")).firstMatch
+        XCTAssertTrue(plan.waitForExistence(timeout: 10), "The matter has no Plan.")
+        plan.tap()
         let task = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", words)).firstMatch
         XCTAssertTrue(task.waitForExistence(timeout: 10), "The task is not on the matter's page.")
     }
