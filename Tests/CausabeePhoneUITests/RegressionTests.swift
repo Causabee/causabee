@@ -24,7 +24,8 @@ final class RegressionTests: XCTestCase {
         // only with Pro on — grey, it says what Pro adds.
         app.launchArguments = name.contains("Letter") ? ["--demo", "--shot", "letter", "-mail.auto", "NO"] : ["--demo", "-mail.auto", "YES"]
         // Setting a day stays in the demo's store: filled anew, the task is undated again.
-        if name.contains("SetDay") { app.launchArguments += ["-demo.filled", "anew"] }
+        // So is "Seen" on the news: filled anew, the news is new again.
+        if name.contains("SetDay") || name.contains("Comment") { app.launchArguments += ["-demo.filled", "anew"] }
         app.launch()
         if !name.contains("Letter") {
             // With Pro on, the demo sorts its new mail in a moment after it opens, and what it sorted
@@ -124,16 +125,16 @@ final class RegressionTests: XCTestCase {
         }
     }
 
-    /// No "Comment" line under the yellow card on the iPhone: held, the card offers it, and it opens
+    /// No "Comment" line under a yellow card on the iPhone: held, the news offers it, and it opens
     /// the field for the few words.
-    func testTheNextStepsCommentIsItsLongPress() {
+    func testAYellowCardsCommentIsItsLongPress() {
         tab("Digest")
-        let chip = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "NEXT")).firstMatch
-        XCTAssertTrue(chip.waitForExistence(timeout: 10), "The Digest has no next step.")
+        let chip = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "NEW")).firstMatch
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), "The Digest has no news.")
         XCTAssertFalse(app.buttons["tile.comment"].exists, "“Comment” still stands under the card.")
         chip.press(forDuration: 1.2)
         let comment = app.buttons["tile.comment"].firstMatch
-        XCTAssertTrue(comment.waitForExistence(timeout: 5), "Held, the next step offers no “Comment”.")
+        XCTAssertTrue(comment.waitForExistence(timeout: 5), "Held, the news offers no “Comment”.")
         comment.tap()
         XCTAssertTrue(app.descendants(matching: .any)["comment.field"].waitForExistence(timeout: 5), "“Comment” opened no field.")
     }
