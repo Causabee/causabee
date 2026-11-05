@@ -896,6 +896,8 @@ struct PhoneActionCard: View {
     @State private var subject = ""
     /// The matter's files the owner picked for a draft, besides those it names.
     @State private var attached: [PersistentIdentifier] = []
+    /// What the draft named by itself and the owner took away.
+    @State private var leftOut: Set<PersistentIdentifier> = []
     @State private var attaching = false
     /// A draft opened in Mail folds to a few lines; "Edit" unfolds it again.
     @State private var editingDraft = false
@@ -970,8 +972,9 @@ struct PhoneActionCard: View {
     /// merging two people means.
     private var notes: [(text: String, symbol: String?)] {
         if card.kind == .draftMessage {
-            let line = StoredChanges.shared.kept("along \(turn.id) \(index) \(text) \(attached.count)") {
-                CardActions.attachmentLine(text: text, question: turn.question, scope: scope, attach: card.attach ?? [], chosen: chosenFiles)
+            let line = StoredChanges.shared.kept("along \(turn.id) \(index) \(text) \(attached.count) \(leftOut.count)") {
+                CardActions.attachmentLine(text: text, question: turn.question, scope: scope, attach: card.attach ?? [], chosen: chosenFiles,
+                                           leftOut: leftOut)
             }
             return line.map { [($0, "paperclip")] } ?? []
         }
@@ -1004,8 +1007,9 @@ struct PhoneActionCard: View {
             .background { RoundedRectangle(cornerRadius: 20).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
             .sheet(isPresented: $attaching) {
                 if let scope {
-                    AttachSheet(matter: scope, named: CardActions.attachments(text: text, question: turn.question, scope: scope, attach: card.attach ?? []).files,
-                                chosen: $attached)
+                    AttachSheet(matter: scope, named: Set(DraftAttachments.named(in: [text, turn.question] + (card.attach ?? []),
+                                                                                    among: scope.documents ?? []).map(\.persistentModelID)),
+                                chosen: $attached, leftOut: $leftOut)
                 }
             }
             .transition(.opacity)
@@ -1131,7 +1135,7 @@ struct PhoneActionCard: View {
     private func take() {
         switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: turn.answer?.links, scope: scope,
                                  question: turn.question, mail: mailInHand,
-                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, chosen: chosenFiles, in: context) {
+                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, chosen: chosenFiles, leftOut: leftOut, in: context) {
         case .nothing:
             return
         case .openMail(let url, let draft):
@@ -1514,12 +1518,13 @@ private struct AddCard: View {
 
 
 /// "Attach …" under a draft: the matter's files, newest first, a tick on each one going along — as
-/// "Connect to …" is for an item. What the draft names is ticked already, and stays.
+/// "Connect to …" is for an item. What the draft names is ticked already; a tap takes it away too.
 private struct AttachSheet: View {
     let matter: Matter
     /// The files the draft takes along by itself: named in it, or chosen by the assistant.
-    let named: [URL]
+    let named: Set<PersistentIdentifier>
     @Binding var chosen: [PersistentIdentifier]
+    @Binding var leftOut: Set<PersistentIdentifier>
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
 
@@ -1530,9 +1535,7 @@ private struct AttachSheet: View {
             .sorted { ($0.source.date ?? .distantPast) > ($1.source.date ?? .distantPast) }
     }
 
-    private func isNamed(_ document: MatterCore.Document) -> Bool {
-        named.contains { $0.lastPathComponent == document.name || $0.lastPathComponent == document.shownName }
-    }
+    private func isNamed(_ document: MatterCore.Document) -> Bool { named.contains(document.persistentModelID) }
 
     var body: some View {
         NavigationStack {
@@ -1542,10 +1545,13 @@ private struct AttachSheet: View {
                 }
                 ForEach(files) { document in
                     let id = document.persistentModelID
-                    let on = isNamed(document) || chosen.contains(id)
+                    let on = isNamed(document) ? !leftOut.contains(id) : chosen.contains(id)
                     Button {
-                        guard !isNamed(document) else { return }
-                        withAnimation { if let at = chosen.firstIndex(of: id) { chosen.remove(at: at) } else { chosen.append(id) } }
+                        withAnimation {
+                            if isNamed(document) {
+                                if leftOut.contains(id) { leftOut.remove(id) } else { leftOut.insert(id) }
+                            } else if let at = chosen.firstIndex(of: id) { chosen.remove(at: at) } else { chosen.append(id) }
+                        }
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: on ? "checkmark.circle.fill" : "circle")
@@ -1554,7 +1560,9 @@ private struct AttachSheet: View {
                                 .foregroundStyle(.secondary).frame(width: 18)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(document.shownName).lineLimit(2)
-                                if isNamed(document) { Text("Named in the draft").font(.caption).foregroundStyle(.secondary) }
+                                if isNamed(document) {
+                                    Text(on ? "Named in the draft" : "Named in the draft · left out").font(.caption).foregroundStyle(.secondary)
+                                }
                             }
                             Spacer(minLength: 8)
                             if let date = document.source.date { Text(Dates.short(date)).font(.caption).foregroundStyle(.secondary) }

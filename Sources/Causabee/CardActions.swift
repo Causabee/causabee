@@ -63,8 +63,9 @@ enum CardActions {
 
     /// What a draft's card says of its files before it is opened: "Attached: memo.pdf", and what is
     /// named but not on this device. Nil when the draft names no file of the matter.
-    static func attachmentLine(text: String, question: String?, scope: Matter?, attach: [String] = [], chosen: [MatterCore.Document] = []) -> String? {
-        let along = attachments(text: text, question: question, scope: scope, attach: attach, chosen: chosen)
+    static func attachmentLine(text: String, question: String?, scope: Matter?, attach: [String] = [], chosen: [MatterCore.Document] = [],
+                               leftOut: Set<PersistentIdentifier> = []) -> String? {
+        let along = attachments(text: text, question: question, scope: scope, attach: attach, chosen: chosen, leftOut: leftOut)
         var parts: [String] = []
         if !along.files.isEmpty { parts.append("Attached: " + along.files.map(\.lastPathComponent).joined(separator: ", ")) }
         if !along.missing.isEmpty { parts.append("Not on this \(ThisDevice.name), attach by hand: " + along.missing.joined(separator: ", ")) }
@@ -74,10 +75,11 @@ enum CardActions {
     /// The files a draft takes along: those its card lists to attach, the matter's files named in
     /// its words or in what was asked, and those the owner picked for it — each from the matter's
     /// folder, where every device keeps them.
-    static func attachments(text: String, question: String?, scope: Matter?, attach: [String] = [], chosen: [MatterCore.Document] = [])
-        -> (files: [URL], missing: [String]) {
+    /// `leftOut`: what the draft named and the owner took away — it does not go along.
+    static func attachments(text: String, question: String?, scope: Matter?, attach: [String] = [], chosen: [MatterCore.Document] = [],
+                            leftOut: Set<PersistentIdentifier> = []) -> (files: [URL], missing: [String]) {
         var files: [URL] = [], missing: [String] = []
-        var seen = Set<PersistentIdentifier>()
+        var seen = leftOut
         let named = DraftAttachments.named(in: [text, question ?? ""] + attach, among: scope?.documents ?? [])
         for document in named + chosen where seen.insert(document.persistentModelID).inserted {
             let own = document.source.fileURL.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
@@ -408,7 +410,8 @@ enum CardActions {
 
     static func apply(_ card: AssistantPrompt.Reply.Card, text: String, subject: String?, refs: [String: FactRef],
                       links: [String: String]?, scope: Matter?, question: String = "", mail: String? = nil,
-                      inHand: (kind: String, text: String)? = nil, chosen: [MatterCore.Document] = [], in context: ModelContext) -> Outcome {
+                      inHand: (kind: String, text: String)? = nil, chosen: [MatterCore.Document] = [],
+                      leftOut: Set<PersistentIdentifier> = [], in context: ModelContext) -> Outcome {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let source = Source(kind: .conversation, pointer: "assistant", date: Date(), quote: card.reason)
         func model<T: PersistentModel>(_ id: String?, as type: T.Type) -> T? {
@@ -485,7 +488,7 @@ enum CardActions {
             parts.path = to
             parts.queryItems = [URLQueryItem(name: "subject", value: subject ?? card.subject ?? ""), URLQueryItem(name: "body", value: text)]
             guard let url = parts.url else { return .nothing }
-            let along = attachments(text: text, question: question, scope: scope, attach: card.attach ?? [], chosen: chosen)
+            let along = attachments(text: text, question: question, scope: scope, attach: card.attach ?? [], chosen: chosen, leftOut: leftOut)
             return .openMail(url, MailDraft(to: to, subject: subject ?? card.subject ?? "", body: text, files: along.files, missing: along.missing))
         case .newMatter:
             guard !text.isEmpty, Store.shared.mayStartMatter(in: context), let matter = try? Matter.make(named: text, in: context) else { return .nothing }
