@@ -141,6 +141,75 @@ struct DayTile: View {
     }
 }
 
+/// "Set day": in a task's place for its day while it has none — dashed, as something still to
+/// fill. A calendar to pick it from; the task goes to that day in the plan.
+struct SetDayTile: View {
+    let todo: Todo
+    @Environment(\.modelContext) private var context
+    @State private var picking = false
+    @State private var day = Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now
+
+    var body: some View {
+        Button { picking = true } label: {
+            VStack(spacing: 2) {
+                Image(systemName: "calendar.badge.plus").font(.footnote)
+                Text("Set day").font(.system(size: 9, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(.secondary)
+            .frame(width: Theme.dayTile, height: 46)
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.secondary.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Set a day for \(todo.text)")
+        #if os(iOS)
+        .sheet(isPresented: $picking) { picker.presentationDetents([.medium, .large]) }
+        #else
+        .popover(isPresented: $picking, arrowEdge: .trailing) { picker.frame(width: 300) }
+        #endif
+    }
+
+    private func set() {
+        withAnimation { todo.due = MatterStatus.day(day) }
+        try? context.save()
+        picking = false
+    }
+
+    private var calendar: some View {
+        DatePicker("Day", selection: $day, displayedComponents: .date)
+            .datePickerStyle(.graphical).labelsHidden()
+            .tint(Theme.gold)
+    }
+
+    /// As every sheet of the app: × and ✓ in its bar, the task's name under its title.
+    @ViewBuilder private var picker: some View {
+        #if os(iOS)
+        NavigationStack {
+            ScrollView { calendar.padding(.horizontal, 16) }
+            .navigationTitle("Set day")
+            .navigationSubtitle(todo.text)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { picking = false } }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Set", action: set) }
+            }
+        }
+        #else
+        VStack(spacing: 12) {
+            Text(todo.text).font(.headline).lineLimit(2).multilineTextAlignment(.center)
+            calendar
+            HStack {
+                Button("Cancel") { picking = false }.keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Set Day", action: set).keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        #endif
+    }
+}
+
 /// What comes next, on its tile, with what can be done about it under it on the white.
 struct NextCard<Head: View, Foot: View>: View {
     /// There is something for the owner to do: yellow. Nothing is: no colour at all.
@@ -801,7 +870,19 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
             }
             if !plan.noDay.isEmpty {
                 JournalHeading(title: "NO DAY YET")
-                card(plan.noDay, owner: true)
+                // A task at a time, each with "Set day" where its day would stand: the empty
+                // column was where to give it one.
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(plan.noDay.enumerated()), id: \.element.persistentModelID) { index, todo in
+                        if index > 0 { Divider().padding(.horizontal, 12) }
+                        HStack(alignment: .top, spacing: 6) {
+                            SetDayTile(todo: todo)
+                            VStack(alignment: .leading, spacing: 2) { task(todo, true) }
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 10)
+                    }
+                }
+                .journalRows()
             }
             if !plan.waiting.isEmpty {
                 JournalHeading(title: "WAITING FOR OTHERS")

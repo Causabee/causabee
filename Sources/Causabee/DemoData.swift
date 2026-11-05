@@ -767,6 +767,8 @@ enum DemoData {
                quote: "Tuesdays and Fridays at 11:00", note: "The visit on the 6th starts at 10:00 and may run long.")
         c.todo("karl", "Ask Karl about Monday mornings", .other, due: 3, from: split, quote: "Uncle Karl could help on Monday mornings")
         c.todo("plan", "Agree who is with Mum when", .we, due: 1, from: rota, quote: "Who does what this week?")
+        // No day yet: the plan shows its "Set day".
+        c.todo("shopping", "Find help with shopping", .me, from: discharge, quote: "help with showering and shopping")
         c.todo("decision", "Decision within 25 working days", .unknown, from: received,
                quote: "The insurer decides within 25 working days", info: true)
         c.todo("budget", "A care level pays part of home care", .unknown, from: offer,
