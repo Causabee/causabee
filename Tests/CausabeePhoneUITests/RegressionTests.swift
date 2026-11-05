@@ -23,6 +23,8 @@ final class RegressionTests: XCTestCase {
         // read at once and nothing waits for "Sort in". On for the rest: the bee opens the chat
         // only with Pro on — grey, it says what Pro adds.
         app.launchArguments = name.contains("Letter") ? ["--demo", "--shot", "letter", "-mail.auto", "NO"] : ["--demo", "-mail.auto", "YES"]
+        // Setting a day stays in the demo's store: filled anew, the task is undated again.
+        if name.contains("SetDay") { app.launchArguments += ["-demo.filled", "anew"] }
         app.launch()
         if !name.contains("Letter") {
             // With Pro on, the demo sorts its new mail in a moment after it opens, and what it sorted
@@ -103,6 +105,36 @@ final class RegressionTests: XCTestCase {
     func testTheFilters() {
         for name in ["Digest", "Mail", "Files", "People", "Notes", "Plan"] { tab(name) }
         shows("WAITING FOR OTHERS", "Back on Plan, the plan is not shown.")
+    }
+
+    /// No ⋯ on the iPhone: a task's and a date's menu is their long press, the same four on top.
+    func testARowsMenuIsItsLongPress() {
+        tab("Plan")
+        for words in ["Physio", "Agree who is with Mum when"] {
+            let row = app.staticTexts[words].firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 8), "“\(words)” is not on the plan.")
+            row.press(forDuration: 1.2)
+            let chat = app.buttons["Use in Chat"].firstMatch
+            XCTAssertTrue(chat.waitForExistence(timeout: 5), "Held, “\(words)” opened no menu.")
+            XCTAssertTrue(app.buttons["Connect …"].exists, "“\(words)”'s menu has no Connect.")
+            // Away again, as one would: a tap outside the menu.
+            let away = app.otherElements["PopoverDismissRegion"].firstMatch
+            if away.exists { away.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.92)).tap() }
+            XCTAssertTrue(chat.waitForNonExistence(timeout: 5), "“\(words)”'s menu did not close.")
+        }
+    }
+
+    /// "Set day" where an undated task's day would stand: a day picked, the task leaves No day yet.
+    func testSetDayGivesATaskItsDay() {
+        tab("Plan")
+        let tile = app.buttons["Set a day for Find help with shopping"].firstMatch
+        for _ in 0..<4 where !tile.isHittable { app.swipeUp() }
+        XCTAssertTrue(tile.waitForExistence(timeout: 8), "The undated task has no “Set day”.")
+        tile.tap()
+        let set = app.buttons["Set"].firstMatch
+        XCTAssertTrue(set.waitForExistence(timeout: 5), "“Set day” opened no calendar.")
+        set.tap()
+        XCTAssertTrue(tile.waitForNonExistence(timeout: 8), "A day was set and the task still has none.")
     }
 
     func testATaskAddedStays() {

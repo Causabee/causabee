@@ -948,6 +948,15 @@ struct PlanMore<Items: View>: View {
     @ViewBuilder let items: Items
 
     var body: some View {
+        #if os(iOS)
+        // On the iPhone and iPad a row's menu is its long press: a ⋯ on every row only added noise.
+        EmptyView()
+        #else
+        menu
+        #endif
+    }
+
+    private var menu: some View {
         Menu { items } label: {
             Image(systemName: "ellipsis")
                 .font(.caption.weight(.semibold))
