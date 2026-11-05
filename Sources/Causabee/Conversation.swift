@@ -12,23 +12,56 @@ struct Conversation {
     let owner: String?
 
 
-    /// Asks, and adds the question to the thread at once; the answer arrives into it.
-    func ask(_ question: String, about scope: [Matter], pinnedMatter: Matter?) {
+    /// Asks, and adds the question to the thread at once; the answer arrives into it. `second` is a
+    /// card's second field — a link's name, what a detail says, a contact's role. `pro`: on, and
+    /// bought — without it nothing typed goes to an AI, as on the iPhone and the iPad.
+    func ask(_ question: String, second: String = "", about scope: [Matter], pinnedMatter: Matter?, pro: Bool) {
         let typed = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !typed.isEmpty else { return }
         // "Geor" is Georg when Georg is the only one near it: read on the device, and said.
         let names = scope.flatMap { $0.parties.map(\.name) }
         var (question, readAs) = NameHints.correct(typed, knowing: names)
-        // "Task" or "Note" picked from the plus: what was typed is that, and says so in the thread.
+        // Picked from the chips over the field: what was typed is that, and says so in the thread.
         let add = navigation.pinned.flatMap { AssistantAdd(rawValue: $0.kind) }
         if let add {
-            question = add.question(typed)
+            guard add.isComplete(typed, second) else { return }
+            question = add.question(typed, second)
             readAs = []
             navigation.pinned = nil
         }
         var turn = Navigation.Turn(question: question, scope: pinnedMatter.map { "about \($0.name)" } ?? "about all matters",
                                    inHand: navigation.pinned, seen: "", refs: [:], matter: pinnedMatter?.persistentModelID)
         turn.readAs = readAs.map { "read “\($0.typed)” as “\($0.known)”" }
+        // A link, a detail and a contact are kept as typed; a task and a note too without Pro or a
+        // key to ask with. Nothing is sent, and it is in the matter at once.
+        if let add, !add.asksAssistant || !pro || ModelChoice.client(for: ModelChoice.assistant) == nil {
+            var answer = add.asTyped(typed, second)
+            // A day or a time in a task's words is its date, found by rule, and taken out of them.
+            if add == .task, !answer.reply.cards.isEmpty {
+                let filled = DeviceTask.card(typed)
+                answer.reply.cards[0].text = filled.text
+                answer.reply.cards[0].due = filled.due
+                answer.reply.cards[0].time = filled.time
+            }
+            turn.state = .answered(answer)
+            navigation.turns.append(turn)
+            take(0, of: turn.id)
+            return
+        }
+        // Without Pro nothing is asked: Apple's model on the Mac says whether the words are
+        // something to do, and a task's card comes for it, to add; a question waits for Pro.
+        if !pro, add == nil {
+            turn.onDevice = true
+            navigation.turns.append(turn)
+            let id = turn.id, inMatter = pinnedMatter != nil, navigation = self.navigation
+            navigation.asks[id] = Task {
+                let filled = await DeviceTask.understood(typed)
+                guard !Task.isCancelled else { return }
+                Conversation.set(id, .answered(DeviceTask.answer(filled, device: "Mac", inMatter: inMatter)), in: navigation)
+                navigation.asks[id] = nil
+            }
+            return
+        }
         navigation.turns.append(turn)
         send(turn.id, about: scope)
     }
@@ -330,17 +363,11 @@ struct Conversation {
         }
     }
 
-    /// What a draft of this turn would take along, said on its card.
-    /// Once per change and per wording — not with every keystroke's drawing of every card.
-    func attachmentLine(_ text: String, in turn: Navigation.Turn) -> String? {
-        StoredChanges.shared.kept("along \(turn.id) \(text)") {
-            CardActions.attachmentLine(text: text, question: turn.question, scope: turn.matter.flatMap { live($0, as: Matter.self) })
-        }
-    }
-
     /// A card the owner ticked: what it does is CardActions' — the same on the iPhone; the turn
     /// keeps that it was taken in, and how to take it back.
-    func apply(_ index: Int, text: String, subject: String? = nil, in turn: Navigation.Turn) {
+    /// `chosen` and `leftOut`: a draft's files, picked by hand under "Attach …" and named in it but taken away.
+    func apply(_ index: Int, text: String, subject: String? = nil, chosen: [MatterCore.Document] = [],
+               leftOut: Set<PersistentIdentifier> = [], in turn: Navigation.Turn) {
         guard case .answered(let answer) = turn.state, answer.reply.cards.indices.contains(index),
               let position = navigation.turns.firstIndex(where: { $0.id == turn.id }) else { return }
         let card = answer.reply.cards[index]
@@ -350,7 +377,7 @@ struct Conversation {
         let scope = made ?? turn.matter.flatMap { live($0, as: Matter.self) } ?? cited
         switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: answer.links, scope: scope,
                                  question: turn.question, mail: turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil },
-                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, in: context) {
+                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, chosen: chosen, leftOut: leftOut, in: context) {
         case .nothing:
             return
         case .openMail(let url, let draft):
@@ -429,7 +456,17 @@ struct Composer: View {
     var addTo: ((Matter, MatterAction) -> Void)? = nil
     /// Set while an answer is on its way: one question at a time, and the send button stops it.
     var stop: (() -> Void)? = nil
+    /// A card's second field: a link's name, what a detail says, a contact's role.
+    var second: Binding<String> = .constant("")
+    /// On, and Pro bought: without it the chips' cards are the form, and nothing typed goes to an AI.
+    var pro = true
     let send: () -> Void
+    /// Picked from the chips, and typed in its card where the field was: always without Pro, and a
+    /// link, a detail or a contact with it too — only a task's and a note's words go to the assistant.
+    private var typesInCard: AssistantAdd? {
+        guard let add = pinned.flatMap({ AssistantAdd(rawValue: $0.kind) }), !pro || !add.asksAssistant else { return nil }
+        return add
+    }
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
     @State private var voice = VoiceInput()
@@ -464,7 +501,9 @@ struct Composer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let pinned {
+            // In a matter, what can be added stands over the field, as on the iPhone and the iPad.
+            if pinned == nil, let add { MacAddChips(pick: add) }
+            if let pinned, typesInCard == nil {
                 // What is in hand, on a pale honey: the pin and its kind in gold, the words as any
                 // words. Calm, so the send button stays the one yellow thing (Figma "bg/bee-soft").
                 HStack(spacing: 8) {
@@ -489,6 +528,13 @@ struct Composer: View {
             if let problem = voice.problem {
                 Text(problem).font(.caption).foregroundStyle(Theme.warning).padding(.horizontal, 8)
             }
+            if let typing = typesInCard {
+                MacAddCard(add: typing, text: $draft, second: second, take: send) {
+                    unpin()
+                    draft = ""
+                    second.wrappedValue = ""
+                }
+            } else {
             HStack(alignment: .bottom, spacing: 6) {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
@@ -498,12 +544,16 @@ struct Composer: View {
                     // iPhone and the iPad: to do, to keep at hand, and to bring in — read, or only kept.
                     // Each opens its editor on the page, by the Matter menu's way in.
                     Menu {
-                        addItem("Task", "checklist", .newTask)
-                        addItem("Note", "note.text", .writeNote)
-                        Divider()
-                        addItem("Link", "link", .addLink)
-                        addItem("Detail", "info.circle", .addDetail)
-                        addItem("Contact", "person.badge.plus", .addContact)
+                        // In a matter these are the chips over the field; on the overview each asks
+                        // which matter it is for.
+                        if add == nil {
+                            addItem("Task", "checklist", .newTask)
+                            addItem("Note", "note.text", .writeNote)
+                            Divider()
+                            addItem("Link", "link", .addLink)
+                            addItem("Detail", "info.circle", .addDetail)
+                            addItem("Contact", "person.badge.plus", .addContact)
+                        }
                         // What is brought in, under what becomes of it — said once, over the part.
                         // What is read finds its matter itself.
                         Section("Read and sorted in") {
@@ -567,8 +617,9 @@ struct Composer: View {
             .padding(7)
             // Glass: the thread is seen through it as it passes under.
             .glassBehind(RoundedRectangle(cornerRadius: 24))
+            }
             // "more" and "less" are links inside the line, so the full one wraps like a sentence.
-            Text(LocalizedStringKey(ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro for now."
+            Text(LocalizedStringKey(!pro || ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro."
                 : showsMore
                 ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen()) · goes pseudonymised, like the mails • [less](causabee://footer)"
                 : "Always pseudonymised sent • [more](causabee://footer)"))

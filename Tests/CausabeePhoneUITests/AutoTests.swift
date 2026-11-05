@@ -59,7 +59,16 @@ final class AutoTests: XCTestCase {
         Thread.sleep(forTimeInterval: 6)
         done.tap()
         XCTAssertTrue(app.staticTexts["OUT OF DATE"].waitForExistence(timeout: 5), "Nothing says the step is out of date.")
-        app.navigationBars.buttons.firstMatch.tap()
+        // Out of the matter: on the iPhone back, on the iPad to the overview by the sidebar — there
+        // the bar has no way back, and its first button is the matter's icon.
+        let sidebar = app.buttons["sidebar.toggle"]
+        if sidebar.exists {
+            if !app.buttons["sidebar.overview"].exists { sidebar.tap() }
+            XCTAssertTrue(app.buttons["sidebar.overview"].waitForExistence(timeout: 5), "The sidebar has no Overview.")
+            app.buttons["sidebar.overview"].tap()
+        } else {
+            app.navigationBars.buttons.firstMatch.tap()
+        }
         // Back in after it was written: grey no more.
         XCTAssertTrue(matter.waitForExistence(timeout: 10), "The overview did not come back.")
         Thread.sleep(forTimeInterval: 8)

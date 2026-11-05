@@ -25,7 +25,7 @@ Words come from one list in code: `Say` in `Sources/Causabee/MatterMenus.swift`.
 
 - [ ] The next step is the rule's, labelled "… · from your tasks" when it is a task, with one grey line under it: "Pro reads all n mails for this." and See Pro.
 - [ ] No summary is written; Write the brief and Update now are not offered.
-- [ ] Under the assistant's field: "Stays on this device. Asking needs Pro for now."
+- [ ] Under the assistant's field: "Stays on this device. Asking needs Pro." — and on top of the chat, Causabee Pro with Start Pro.
 - [ ] A screenshot is read on the device, by Apple's model or by rules.
 - [ ] With the chat closed a matter is one page on the Mac and the iPad, its bar across the whole width.
 

@@ -164,6 +164,17 @@ struct ThreadMailRow: View {
     private var items: some View {
         // To see the mail itself: first in its menu, as "Open" is for a file. A scan or a file
         // brought in opens as the file, on every device.
+        // Every item's menu begins alike: Use in Chat, Connect, Move to Matter — then its own.
+        #if os(macOS)
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
+        #else
+        AskCausabeeButton(action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        PhoneMoveMail(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
+        #endif
+        if ownFile != nil || outside != nil { Divider() }
         if let document = ownFile {
             Button(Self.openLabel(row.entry.source.kind), systemImage: "arrow.up.forward.app") { openOwn(document) }
         } else if let url = outside {
@@ -171,14 +182,6 @@ struct ThreadMailRow: View {
                 openURL(url)
             }
         }
-        Button(Say.connect, systemImage: "link") { connecting = true }
-        #if os(macOS)
-        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
-        MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
-        #else
-        AskCausabeeButton(action: talk)
-        PhoneMoveMail(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
-        #endif
     }
 
     var body: some View {
@@ -425,7 +428,9 @@ struct SourceItems: View {
     @Environment(\.openURL) private var openURL
 
     private func title(_ source: Source) -> String {
-        let words = Sources.origin(source)
+        // One line in a menu: "Mail of Oct 8", not "From the mail of Oct 8".
+        var words = Sources.origin(source)
+        if words.hasPrefix("from the ") { words.removeFirst("from the ".count) }
         return words.prefix(1).uppercased() + words.dropFirst()
     }
 
@@ -1198,7 +1203,6 @@ struct NewsCard: View {
                 HStack(spacing: 8) {
                     Text(news.mails == 1 ? "1 mail" : "\(news.mails) mails").font(.footnote).foregroundStyle(.secondary)
                     Spacer(minLength: 4)
-                    CommentButton(matter: matter, about: Self.about(news))
                     Button("Seen") { withAnimation { matter.sawNews(); try? context.save() } }
                         .quietButton()
                         .accessibilityIdentifier("brief.seen")
@@ -1206,6 +1210,7 @@ struct NewsCard: View {
                 .padding(.horizontal, 16).padding(.vertical, 10)
             }
             .journalCard(inset: Theme.tileInset)
+            .commentsOnHold(matter, about: Self.about(news))
             // A notification of news tapped goes here.
             .id("news")
         }
@@ -1369,11 +1374,11 @@ private struct ProposalRow: View {
                         withAnimation { Adviser.dismiss(proposal, in: matter, context: context) }
                     }
                     .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
-                    CommentButton(matter: matter, about: what)
                 }
                 .padding(.top, 2)
             }
         }
+        .commentsOnHold(matter, about: what)
     }
 
     private var refs: [String: FactRef] { CardActions.local(proposal.refs, keys: proposal.keys, matter: matter, in: context) }
@@ -1467,12 +1472,12 @@ private struct LookupRow: View {
                             withAnimation { matter.settle(lookup.id, dismissed: true); try? context.save() }
                         }
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
-                        CommentButton(matter: matter, about: lookup.question)
                     }
                 }
                 .padding(.top, 2)
             }
         }
+        .commentsOnHold(matter, about: lookup.question)
     }
 
     private func look() {
@@ -1651,7 +1656,7 @@ struct PublicNameItem: View {
     var body: some View {
         let isPublic = PublicNames.covers(party.name)
         Toggle(isOn: Binding(get: { isPublic }, set: { PublicNames.mark(party.name, public: $0, in: context) })) {
-            Label("Public Name — Not Disguised", systemImage: "globe")
+            Label("Public Name", systemImage: "globe")
         }
         .help("For a big company or a brand: its name goes to the AI as it is, and may be named in a question looked up on the web.")
     }
@@ -1740,18 +1745,35 @@ struct TileComments: View {
     }
 }
 
-/// "Comment": a few words to what Causabee proposed — typed or said — that sharpen how it
-/// understood the matter. Causabee writes it again with them at once.
-struct CommentButton: View {
+extension View {
+    /// "Comment": a few words to what Causabee proposed — typed or said — that sharpen how it
+    /// understood the matter; Causabee writes it again with them at once. It is the yellow card's
+    /// own menu, held on the iPhone and iPad and right-clicked on the Mac: a line under every card
+    /// said it once more.
+    func commentsOnHold(_ matter: Matter, about: String?) -> some View {
+        modifier(CommentHold(matter: matter, about: about))
+    }
+}
+
+private struct CommentHold: ViewModifier {
     let matter: Matter
-    let about: String
+    let about: String?
     @State private var writing = false
 
-    var body: some View {
-        Button { writing = true } label: { Label("Comment", systemImage: "text.bubble") }
-            .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
-            .accessibilityIdentifier("tile.comment")
-            .sheetWhenAsked(isPresented: $writing) { CommentSheet(matter: matter, about: about) }
+    func body(content: Content) -> some View {
+        if let about {
+            content
+                #if os(iOS)
+                .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+                #endif
+                .contextMenu {
+                    Button("Comment", systemImage: "text.bubble") { writing = true }
+                        .accessibilityIdentifier("tile.comment")
+                }
+                .sheetWhenAsked(isPresented: $writing) { CommentSheet(matter: matter, about: about) }
+        } else {
+            content
+        }
     }
 }
 

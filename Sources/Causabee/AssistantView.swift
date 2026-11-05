@@ -27,6 +27,11 @@ struct AssistantColumn: View {
     #else
     @State private var draft = ""
     #endif
+    /// A card's second field, from the chips: a link's name, what a detail says, a contact's role.
+    @State private var second = ""
+    @AppStorage(AutoMode.key) private var auto = false
+    /// On, and Pro bought: without it the line on top offers Pro, and nothing typed goes to an AI.
+    private var pro: Bool { auto && Store.shared.plan == .pro }
     /// Where the thread stands and when it moves by itself: the one rule, kept with the iPhone's.
     /// The window's top line stands over the thread; what is put "at the top" stands under it.
     @State private var placement = ThreadPlacement()
@@ -76,7 +81,15 @@ struct AssistantColumn: View {
     /// and shows through only blurred.
     /// No title and no bar: only the room the window's buttons need on top.
     private var header: some View {
-        Color.clear.frame(height: WindowMetrics.topLine)
+        VStack(spacing: 0) {
+            Color.clear.frame(height: WindowMetrics.topLine)
+            // While Pro is off, on top of the chat, as on the iPhone and the iPad.
+            if !pro {
+                MacProOffer().padding(.horizontal, 16).padding(.bottom, 8)
+                    .background(Theme.canvas)
+                    .transition(.opacity)
+            }
+        }
     }
 
     /// The newest: the thread's last.
@@ -174,6 +187,8 @@ struct AssistantColumn: View {
                          }
                      } : nil,
                      stop: asking.map { turn in { conversation.stop(turn.id) } },
+                     second: $second,
+                     pro: pro,
                      send: send)
     }
 
@@ -220,14 +235,13 @@ struct AssistantColumn: View {
                                     .id(turn.id).transition(.opacity)
                             } else {
                                 TurnView(turn: turn, open: conversation.open, label: conversation.label,
-                                         apply: { conversation.apply($0, text: $1, subject: $2, in: turn) },
+                                         apply: { conversation.apply($0, text: $1, subject: $2, chosen: $3, leftOut: $4, in: turn) },
                                          undo: { conversation.undo($0, in: turn) },
                                          dismiss: { index, dismissed in
                                              guard let at = navigation.turns.firstIndex(where: { $0.id == turn.id }) else { return }
                                              if dismissed { navigation.turns[at].dismissedCards.insert(index) } else { navigation.turns[at].dismissedCards.remove(index) }
                                          },
                                          recipient: { conversation.recipient($0, in: turn) },
-                                         along: { conversation.attachmentLine($0, in: turn) },
                                          again: turn.id == newestQuestion && asking == nil ? { conversation.again(turn, all: matters) } : nil)
                                     .id(turn.id).transition(.opacity)
                             }
@@ -354,10 +368,13 @@ struct AssistantColumn: View {
     private func send() {
         // One question at a time: what is typed meanwhile waits in the field.
         guard asking == nil, !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        let question = draft
+        // A card picked from the chips needs what it asks for: a detail both its fields, a link an address.
+        if let add = navigation.pinned.flatMap({ AssistantAdd(rawValue: $0.kind) }), !add.isComplete(draft, second) { return }
+        let question = draft, second = self.second
         draft = ""
+        self.second = ""
         let scope = scopeMatter
-        conversation.ask(question, about: scope.map { [$0] } ?? activeMatters(matters), pinnedMatter: scope)
+        conversation.ask(question, second: second, about: scope.map { [$0] } ?? activeMatters(matters), pinnedMatter: scope, pro: pro)
     }
 }
 
@@ -609,12 +626,11 @@ struct TurnView: View {
     let turn: Navigation.Turn
     let open: (FactRef) -> Void
     let label: (FactRef) -> String
-    let apply: (Int, String, String?) -> Void
+    /// A card's index, its words, a draft's subject, and a draft's files picked and left out.
+    let apply: (Int, String, String?, [MatterCore.Document], Set<PersistentIdentifier>) -> Void
     let undo: (Int) -> Void
     var dismiss: (Int, Bool) -> Void = { _, _ in }
     var recipient: (String?) -> (name: String, address: String?)? = { _ in nil }
-    /// What a draft with these words takes along.
-    var along: (String) -> String? = { _ in nil }
     /// Asks the same question once more — for the newest question, while nothing else is on its way.
     var again: (() -> Void)? = nil
     @State private var showsSent = false
@@ -625,6 +641,12 @@ struct TurnView: View {
     /// Kept as a note of its matter: the button says so, and does not keep it twice.
     @State private var savedNote = false
     @Environment(\.modelContext) private var context
+
+    /// The matter a draft's files come from: the turn's, else the one the card rests on.
+    private func draftScope(_ card: AssistantPrompt.Reply.Card) -> Matter? {
+        if let matter = turn.matter.flatMap({ CardActions.live($0, as: Matter.self, in: context) }) { return matter }
+        return card.cites.lazy.compactMap { turn.refs[$0] }.compactMap { CardActions.matter(of: $0, in: context) }.first
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -643,7 +665,13 @@ struct TurnView: View {
 
             switch turn.state {
             case .asking:
-                AskSteps(step: turn.step ?? .disguising, sentAt: turn.sentAt).modifier(FadesIn(fresh: Date().timeIntervalSince(turn.date) < 2))
+                // Read on the Mac, not asked: there are no names to disguise and nothing is sent.
+                if turn.onDevice {
+                    Label("Reading on this Mac …", systemImage: "desktopcomputer").font(.callout).foregroundStyle(.secondary)
+                        .modifier(FadesIn(fresh: Date().timeIntervalSince(turn.date) < 2))
+                } else {
+                    AskSteps(step: turn.step ?? .disguising, sentAt: turn.sentAt).modifier(FadesIn(fresh: Date().timeIntervalSince(turn.date) < 2))
+                }
             case .failed(let message):
                 // Stopped by the owner is no failure: said quietly.
                 if AssistantAsk.wasStopped(message) {
@@ -689,8 +717,9 @@ struct TurnView: View {
                 } else {
                     // Asked for, so it stays while reading too: an answer that is only a card showed nothing.
                     ActionCard(card: card, done: turn.applied.contains(index), refs: turn.refs, open: open, label: label,
-                               apply: { apply(index, $0, $1) }, undo: turn.undos[index] == nil ? nil : { undo(index) },
-                               recipient: card.kind == .draftMessage ? recipient(card.party) : nil, along: along,
+                               apply: { apply(index, $0, $1, $2, $3) }, undo: turn.undos[index] == nil ? nil : { undo(index) },
+                               recipient: card.kind == .draftMessage ? recipient(card.party) : nil,
+                               scope: card.kind == .draftMessage ? draftScope(card) : nil, question: turn.question,
                                preparing: card.kind == .draftMessage ? MailPreparing.shared.notes[MailPreparing.key(turn.id, index)] : nil,
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
@@ -719,8 +748,9 @@ struct TurnView: View {
                     .help(savedNote ? "Saved in the notes of \(kept.name)" : "Save as a note in \(kept.name)")
                     .accessibilityLabel("Save as note")
                 }
-                // Another answer would take the place of this one: not once a card of it is taken in.
-                if let again, turn.applied.isEmpty {
+                // Another answer would take the place of this one: not once a card of it is taken in,
+                // and not for what was read on this Mac or kept as typed — nothing was asked.
+                if let again, turn.applied.isEmpty, answer.servedBy != DeviceTask.onDevice {
                     Button(action: again) {
                         Image(systemName: "arrow.clockwise").frame(width: 16, height: 16).contentShape(Rectangle())
                     }
@@ -741,6 +771,10 @@ struct TurnView: View {
                     .help(showsSources ? "Hide the sources" : "What this rests on: mails, tasks, dates")
                 }
                 Spacer(minLength: 8)
+                // Read on this Mac or kept as typed: no AI answered, and none is named — as on the iPhone.
+                if answer.servedBy == DeviceTask.onDevice {
+                    Text("On this device").font(.caption2)
+                } else {
                 // Only what it cost; who answered and what was sent are behind it.
                 Button {
                     withAnimation(.easeOut(duration: 0.15)) { showsSent.toggle() }
@@ -749,6 +783,7 @@ struct TurnView: View {
                     Text(answer.disguiseLine ?? (BeeServer.isSetUp ? "Pro" : answer.modelLabel)).font(.caption2).contentShape(Rectangle())
                 }
                 .help(showsSent ? "Hide what was sent" : (answer.disguiseSentence.map { $0 + " " } ?? "") + "\(answer.modelLabel) — shows what was sent, pseudonymised")
+                }
             }
             .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
             .tool()
@@ -789,14 +824,23 @@ struct ActionCard: View {
     let refs: [String: FactRef]
     let open: (FactRef) -> Void
     let label: (FactRef) -> String
-    let apply: (String, String?) -> Void
+    /// The words, a draft's subject, and its files: picked by hand, and named in it but taken away.
+    let apply: (String, String?, [MatterCore.Document], Set<PersistentIdentifier>) -> Void
     let undo: (() -> Void)?
     var recipient: (name: String, address: String?)? = nil
-    var along: (String) -> String? = { _ in nil }
+    /// A draft's matter and the question it answers: what it takes along is worked out from them.
+    var scope: Matter? = nil
+    var question = ""
     /// What its files wait for before the mail opens: fetched from iCloud, made smaller.
     var preparing: String? = nil
     @State private var text: String
     @State private var subject: String
+    /// The matter's files the owner picked for a draft, besides those it names.
+    @State private var attached: [PersistentIdentifier] = []
+    /// What the draft named by itself and the owner took away.
+    @State private var leftOut: Set<PersistentIdentifier> = []
+    @State private var attaching = false
+    @Environment(\.modelContext) private var context
     /// Dismissed, as the thread keeps it.
     var dismissed = false
     var setDismissed: (Bool) -> Void = { _ in }
@@ -820,12 +864,12 @@ struct ActionCard: View {
     }
 
     init(card: AssistantPrompt.Reply.Card, done: Bool, refs: [String: FactRef], open: @escaping (FactRef) -> Void,
-         label: @escaping (FactRef) -> String, apply: @escaping (String, String?) -> Void, undo: (() -> Void)?,
-         recipient: (name: String, address: String?)? = nil, along: @escaping (String) -> String? = { _ in nil },
+         label: @escaping (FactRef) -> String, apply: @escaping (String, String?, [MatterCore.Document], Set<PersistentIdentifier>) -> Void,
+         undo: (() -> Void)?, recipient: (name: String, address: String?)? = nil, scope: Matter? = nil, question: String = "",
          preparing: String? = nil, dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
         (self.card, self.done, self.refs, self.open, self.label, self.apply, self.undo) = (card, done, refs, open, label, apply, undo)
         self.recipient = recipient
-        self.along = along
+        (self.scope, self.question) = (scope, question)
         self.preparing = preparing
         (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
         _text = State(initialValue: card.text)
@@ -867,6 +911,7 @@ struct ActionCard: View {
                      text: draft || editable ? $text : nil,
                      serif: draft,
                      notes: notes,
+                     attach: draft && scope != nil ? { attaching = true } : nil,
                      verb: verb,
                      closeLabel: quiet ? "Cancel" : "Dismiss",
                      close: {
@@ -874,9 +919,16 @@ struct ActionCard: View {
                          if quiet { step { editingDraft = false } } else { withAnimation { setDismissed(true) } }
                      },
                      take: {
-                         apply(text, draft ? subject : nil)
+                         apply(text, draft ? subject : nil, chosenFiles, leftOut)
                          if quiet { step { editingDraft = false } }
                      })
+                .popover(isPresented: $attaching, arrowEdge: .bottom) {
+                    if let scope {
+                        AttachList(matter: scope, named: Set(DraftAttachments.named(in: [text, question] + (card.attach ?? []),
+                                                                                   among: scope.documents ?? []).map(\.persistentModelID)),
+                                   chosen: $attached, leftOut: $leftOut)
+                    }
+                }
                 .opacity(showsContent ? 1 : 0)
                 .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 18)
                 .background { RoundedRectangle(cornerRadius: 16).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
@@ -887,11 +939,21 @@ struct ActionCard: View {
         .onChange(of: done) { if quiet != done { step { quiet = done; editingDraft = false } } }
     }
 
+    /// The files picked for the draft, as they are now: one taken away meanwhile is left out.
+    private var chosenFiles: [MatterCore.Document] {
+        attached.compactMap { CardActions.live($0, as: MatterCore.Document.self, in: context) }
+    }
+
     /// The small lines under the card: the files a draft takes along; for the rest, why — and what
     /// merging two people means.
     private var notes: [(text: String, symbol: String?)] {
-        // What it takes along: the files the card lists, and those its words name.
-        if card.kind == .draftMessage { return along(([text] + (card.attach ?? [])).joined(separator: "\n")).map { [($0, "paperclip")] } ?? [] }
+        // What it takes along: the files the card lists, those its words name, and those picked by hand.
+        if card.kind == .draftMessage {
+            let line = StoredChanges.shared.kept("along \(question) \(card.text) \(text) \(attached.count) \(leftOut.count)") {
+                CardActions.attachmentLine(text: text, question: question, scope: scope, attach: card.attach ?? [], chosen: chosenFiles, leftOut: leftOut)
+            }
+            return line.map { [($0, "paperclip")] } ?? []
+        }
         var notes: [(text: String, symbol: String?)] = card.reason.isEmpty ? [] : [(card.reason, nil)]
         if card.kind == .sameParty { notes.append(("Later you can only turn merging off for new mail; you cannot split it again.", nil)) }
         return notes
@@ -985,7 +1047,7 @@ struct ActionCard: View {
         .padding(.horizontal, 10).padding(.vertical, 8)
         .background { RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.05)).matchedGeometryEffect(id: "box", in: morph, isSource: quiet && !editingDraft) }
         .contentShape(RoundedRectangle(cornerRadius: 10))
-        .onTapGesture { apply(text, subject) }
+        .onTapGesture { apply(text, subject, chosenFiles, leftOut) }
         .help("Opens it in Mail again")
         .transition(.opacity)
     }

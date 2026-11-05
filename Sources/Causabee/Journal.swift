@@ -28,8 +28,6 @@ extension Theme {
     /// The plan's one grid: a day's tile, and beside it what a task is ticked in and a date marked with.
     static let dayTile: CGFloat = 44
     static let planMark: CGFloat = 26
-    /// A row's ⋯: this narrow, so that the title has the width.
-    static let planMore: CGFloat = 20
 }
 
 extension View {
@@ -138,6 +136,75 @@ struct DayTile: View {
         .frame(width: Theme.dayTile, height: 46)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// "Set day": in a task's place for its day while it has none — dashed, as something still to
+/// fill. A calendar to pick it from; the task goes to that day in the plan.
+struct SetDayTile: View {
+    let todo: Todo
+    @Environment(\.modelContext) private var context
+    @State private var picking = false
+    @State private var day = Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now
+
+    var body: some View {
+        Button { picking = true } label: {
+            VStack(spacing: 2) {
+                Image(systemName: "calendar.badge.plus").font(.footnote)
+                Text("Set day").font(.system(size: 9, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(.secondary)
+            .frame(width: Theme.dayTile, height: 46)
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.secondary.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Set a day for \(todo.text)")
+        #if os(iOS)
+        .sheet(isPresented: $picking) { picker.presentationDetents([.medium, .large]) }
+        #else
+        .popover(isPresented: $picking, arrowEdge: .trailing) { picker.frame(width: 300) }
+        #endif
+    }
+
+    private func set() {
+        withAnimation { todo.due = MatterStatus.day(day) }
+        try? context.save()
+        picking = false
+    }
+
+    private var calendar: some View {
+        DatePicker("Day", selection: $day, displayedComponents: .date)
+            .datePickerStyle(.graphical).labelsHidden()
+            .tint(Theme.gold)
+    }
+
+    /// As every sheet of the app: × and ✓ in its bar, the task's name under its title.
+    @ViewBuilder private var picker: some View {
+        #if os(iOS)
+        NavigationStack {
+            ScrollView { calendar.padding(.horizontal, 16) }
+            .navigationTitle("Set day")
+            .navigationSubtitle(todo.text)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { SheetCancel { picking = false } }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Set", action: set) }
+            }
+        }
+        #else
+        VStack(spacing: 12) {
+            Text(todo.text).font(.headline).lineLimit(2).multilineTextAlignment(.center)
+            calendar
+            HStack {
+                Button("Cancel") { picking = false }.keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Set Day", action: set).keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        #endif
     }
 }
 
@@ -626,8 +693,8 @@ struct JournalThreadCard<Attached: View>: View {
         }
         .journalCard()
         .contextMenu {
-            Button(Say.connect, systemImage: "link") { connecting = true }
             Button(Say.useInChat, systemImage: "bubble.left") { if let newest { talk(newest) } }
+            Button(Say.connect, systemImage: "link") { connecting = true }
         }
         .connectSheet(newest.map(JournalItem.mail), in: nil, isPresented: $connecting)
         .dropsOn(newest.map(JournalItem.mail), in: nil)
@@ -801,7 +868,19 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
             }
             if !plan.noDay.isEmpty {
                 JournalHeading(title: "NO DAY YET")
-                card(plan.noDay, owner: true)
+                // A task at a time, each with "Set day" where its day would stand: the empty
+                // column was where to give it one.
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(plan.noDay.enumerated()), id: \.element.persistentModelID) { index, todo in
+                        if index > 0 { Divider().padding(.horizontal, 12) }
+                        HStack(alignment: .top, spacing: 6) {
+                            SetDayTile(todo: todo)
+                            VStack(alignment: .leading, spacing: 2) { task(todo, true) }
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 10)
+                    }
+                }
+                .journalRows()
             }
             if !plan.waiting.isEmpty {
                 JournalHeading(title: "WAITING FOR OTHERS")
@@ -861,30 +940,18 @@ struct PlanTick: View {
     }
 }
 
-/// A task's or a date's ⋯: small, at the row's end, close to the title, which keeps the width. The
-/// target is larger than what is drawn. All of it is also there held, or right-clicked on the Mac.
+/// Where a task's or a date's ⋯ stood: nothing now, on every device. A row's menu is its long
+/// press on the iPhone and the iPad and its right-click on the Mac — a ⋯ on every row only added noise.
 struct PlanMore<Items: View>: View {
     @ViewBuilder let items: Items
 
     var body: some View {
-        Menu { items } label: {
-            Image(systemName: "ellipsis")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: Theme.planMore, height: Theme.planMark)
-                .padding(10)
-                .contentShape(Rectangle())
-        }
         #if os(macOS)
-        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
-        .help("More")
+        // Nothing to see, but where a row's editor opens its popover: at the row's end, as before.
+        Color.clear.frame(width: 1, height: Theme.planMark).accessibilityHidden(true)
+        #else
+        EmptyView()
         #endif
-        .tint(.secondary)
-        .padding(-10)
-        .padding(.leading, -6)
-        .accessibilityLabel("More")
-        // While reading, holding it still has everything.
-        .tool()
     }
 }
 
@@ -1133,11 +1200,19 @@ struct FlowRow: Layout {
         return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: rows.last.map { $0.y + $0.height } ?? 0)
     }
 
+    /// Its own size, but never wider than the row: a chip with a long mail's name is shortened —
+    /// "Fwd: Ihre Reise Ba…7. Dezember 2026" — instead of running out of its card.
+    private func fitted(_ subview: LayoutSubview, width: CGFloat) -> CGSize {
+        let own = subview.sizeThatFits(.unspecified)
+        guard width.isFinite, own.width > width else { return own }
+        return subview.sizeThatFits(ProposedViewSize(width: width, height: nil))
+    }
+
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         for row in arrange(subviews, width: bounds.width) {
             var x = bounds.minX
             for index in row.items {
-                let size = subviews[index].sizeThatFits(.unspecified)
+                let size = fitted(subviews[index], width: bounds.width)
                 subviews[index].place(at: CGPoint(x: x, y: bounds.minY + row.y), proposal: ProposedViewSize(size))
                 x += size.width + spacing
             }
@@ -1148,7 +1223,7 @@ struct FlowRow: Layout {
         var rows: [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] = []
         var items: [Int] = [], x: CGFloat = 0, y: CGFloat = 0, height: CGFloat = 0
         for index in subviews.indices {
-            let size = subviews[index].sizeThatFits(.unspecified)
+            let size = fitted(subviews[index], width: width)
             if x > 0, x + size.width > width {
                 rows.append((items, y, x - spacing, height))
                 y += height + spacing
@@ -1335,31 +1410,35 @@ struct ConnectionChips: View {
     /// Only what the owner connected: where what Causabee read is shown already, as under a mail.
     var ownOnly = false
     @Environment(\.modelContext) private var context
-    @State private var connecting = false
+    /// Optional: a chip in a sheet with no page behind it just stays a chip.
+    @Environment(Navigation.self) private var navigation: Navigation?
 
     private var home: Matter? { matter ?? item.matter }
 
     var body: some View {
         if let home, case let connected = home.connected(to: item).filter({ !ownOnly || $0.kind == .with }), !connected.isEmpty {
+            // Only what it is connected with: "Connect …" is in the item's ⋯ and its held menu — a
+            // dashed pill under every row said it once more.
             FlowRow(spacing: 6) {
                 ForEach(connected, id: \.self) { other in chip(other, in: home) }
-                Button { connecting = true } label: {
-                    Label(Say.connect, systemImage: "link").font(.caption).foregroundStyle(.secondary)
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .overlay(Capsule().stroke(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(.tertiary))
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
             }
             .padding(.top, 4)
-            .connectSheet(item, in: home, isPresented: $connecting)
         }
     }
 
     private func chip(_ other: Connected, in home: Matter) -> some View {
         HStack(spacing: 4) {
-            Image(systemName: other.item.symbol).font(.caption2)
-            Text(other.item.title).lineLimit(1).truncationMode(.middle).frame(maxWidth: 220, alignment: .leading)
+            // The chip itself goes to what it is connected with, as "Show" does: its part of the
+            // page, scrolled to and marked. Only the × takes the connection away.
+            Button { navigation?.showing = other.item.id } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: other.item.symbol).font(.caption2)
+                    Text(other.item.title).lineLimit(1).truncationMode(.middle).frame(maxWidth: 220, alignment: .leading)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Show \(other.item.title)")
             Button {
                 withAnimation { home.disconnect(item, other.item, in: context) }
                 try? context.save()
@@ -1369,7 +1448,9 @@ struct ConnectionChips: View {
         }
         .font(.caption)
         .padding(.leading, 8).padding(.trailing, 6).padding(.vertical, 3)
-        .background(Theme.box, in: Capsule())
+        // A touch darker than what it stands on — the white of a task's row or the grey of a
+        // date's box: the box's own grey made it vanish in a date.
+        .background(Color.primary.opacity(0.07), in: Capsule())
         .help(other.kind == .cameFrom ? "Causabee read it came from this" : "You connected it")
     }
 }

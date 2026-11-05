@@ -43,6 +43,8 @@ struct AssistantSheet: View {
     @State private var sentAt: Date?
     /// The task that asks: Stop cancels it.
     @State private var ask: Task<Void, Never>?
+    /// The words on their way are read on this device, by Apple's model — nothing is sent.
+    @State private var readsOnDevice = false
     @State private var failure: String?
     /// The footer in full — what is seen and where it goes — or only that it goes pseudonymised.
     @State private var showsMore = false
@@ -54,6 +56,16 @@ struct AssistantSheet: View {
     /// whole at once, a thread of weeks took seconds to open.
     /// How many of the newest are shown: twenty, and twenty more at a time — as on the Mac.
     @State private var showsNewest = AssistantPage.size
+    @AppStorage(AutoMode.key) private var auto = false
+    /// On, and Pro bought: without it the line on top offers Pro, the chips under the thread offer
+    /// what can be added, and nothing typed goes to an AI.
+    private var pro: Bool { auto && Store.shared.plan == .pro }
+    /// A task or a note picked without Pro: it is typed in its card, over where the field was —
+    /// the card is the form, and the field steps back until it is added or put away.
+    private var typesInCard: Bool {
+        guard let add = navigation.pinned.flatMap({ AssistantAdd(rawValue: $0.kind) }) else { return false }
+        return !pro || !add.asksAssistant
+    }
 
     init(matter: Matter?) {
         self.matter = matter
@@ -177,7 +189,7 @@ struct AssistantSheet: View {
                                               again: newest && asking == nil ? { again(record, turn) } : nil)
                             // A file brought in here: read on the iPhone, sorted in on a yes.
                             case .shot(let shot): PhoneShotCard(shot: shot)
-                            case .pending(_, let question, _): PendingTurn(question: question, step: step, sentAt: sentAt)
+                            case .pending(_, let question, _): PendingTurn(question: question, step: step, sentAt: sentAt, onDevice: readsOnDevice)
                             }
                             // A question that could not go out says why, under the newest.
                             if newest, let failure { failed(failure) }
@@ -278,6 +290,13 @@ struct AssistantSheet: View {
     }
 
     private var header: some View {
+        VStack(spacing: 8) {
+            closeRow
+            if !pro { ProOffer().padding(.horizontal, 16).padding(.bottom, 4) }
+        }
+    }
+
+    private var closeRow: some View {
         ZStack {
             // Nothing but the way out, on the iPhone and the iPad: that this is Causabee is known, and
             // what it is asked about stands in the field below.
@@ -299,10 +318,23 @@ struct AssistantSheet: View {
         .frame(height: navigation.isPad ? PadMetrics.bar : nil)
     }
 
-    /// The field as the Mac has it: what is typed goes out pseudonymised, and only on send.
+    /// What can be added, over the field — on the thread, each chip on its own ground — and the
+    /// field, on the page's ground from its middle down.
     private var composer: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // A tap each: its card comes where the field was, and what is typed goes into it — kept
+            // as written, but a task with Pro, which the assistant reads for its day.
+            if navigation.pinned == nil, let matter {
+                AddChips(matter: matter) { typing = true }.padding(.horizontal, 16)
+            }
+            field
+        }
+    }
+
+    /// The field as the Mac has it: what is typed goes out pseudonymised, and only on send.
+    private var field: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if let pinned = navigation.pinned {
+            if let pinned = navigation.pinned, !typesInCard {
                 // What is in hand, on a pale honey: the pin and its kind in gold, the words as any
                 // words — as on the Mac. Calm, so the send button stays the one yellow thing.
                 HStack(spacing: 8) {
@@ -327,6 +359,9 @@ struct AssistantSheet: View {
             if let problem = voice.problem {
                 Text(problem).font(.caption).foregroundStyle(Theme.warning).padding(.horizontal, 8)
             }
+            if typesInCard, let add = navigation.pinned.flatMap({ AssistantAdd(rawValue: $0.kind) }) {
+                AddCard(add: add, typed: typed, typing: $typing, take: send) { navigation.pinned = nil; draft = ""; typed.second = "" }
+            } else {
             HStack(alignment: .bottom, spacing: 6) {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
@@ -345,8 +380,9 @@ struct AssistantSheet: View {
             .padding(.leading, 7).padding(.trailing, 7).padding(.vertical, 7)
             // The field itself is glass: the thread is seen through it as it passes under.
             .glassBehind(RoundedRectangle(cornerRadius: 24))
+            }
             // As on the Mac: "more" and "less" are links inside the line, so the full one wraps like a sentence.
-            Text(LocalizedStringKey(ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro for now."
+            Text(LocalizedStringKey(!pro || ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro."
                 : showsMore
                 ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen) · goes pseudonymised, like the mails • [less](causabee://footer)"
                 : "Always pseudonymised sent • [more](causabee://footer)"))
@@ -376,10 +412,13 @@ extension AssistantSheet {
         let today = MatterStatus.day(Date())
         // "Task" or "Note" picked from the plus: what was typed is that, and says so in the thread.
         let add = navigation.pinned.flatMap { AssistantAdd(rawValue: $0.kind) }
+        let second = self.typed.second
         if let add {
-            question = add.question(typed)
+            guard add.isComplete(typed, second) else { return }
+            question = add.question(typed, second)
             readAs = []
             navigation.pinned = nil
+            self.typed.second = ""
         }
         let pinned = navigation.pinned
         let place = PhoneCloud.storeLocation()
@@ -396,16 +435,48 @@ extension AssistantSheet {
         let client = ModelChoice.client(for: model)
         // A note is kept as typed, and so is a task when there is no key to ask for its day with:
         // nothing is sent, and it is in the matter at once.
-        if let add, !add.asksAssistant || client == nil {
+        if let add, !add.asksAssistant || client == nil || !pro {
             failure = nil
             draft = ""
             fieldKey += 1
-            let answer = add.asTyped(typed)
+            var answer = add.asTyped(typed, second)
+            // A day or a time in the words is the task's date, found by rule, and taken out of them.
+            if add == .task, !answer.reply.cards.isEmpty {
+                let filled = DeviceTask.card(typed)
+                answer.reply.cards[0].text = filled.text
+                answer.reply.cards[0].due = filled.due
+                answer.reply.cards[0].time = filled.time
+            }
             var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
                                        inHand: nil, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
             turn.keys = CardActions.keys(of: facts.refs, in: context)
             turn.state = .answered(answer)
             keep(turn, taking: 0)
+            return
+        }
+        // Without Pro nothing is asked: Apple's model on the device says whether the words are
+        // something to do, and a task's card comes for it, to add; a question waits for Pro.
+        if !pro, add == nil {
+            failure = nil
+            draft = ""
+            fieldKey += 1
+            let id = UUID(), date = Date()
+            readsOnDevice = true
+            asking = (id, question, date)
+            let matter = self.matter
+            let onPad = navigation.isPad
+            ask = Task {
+                let filled = await DeviceTask.understood(typed)
+                guard !Task.isCancelled else { return }
+                var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
+                                           inHand: nil, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)
+                turn.id = id
+                turn.date = date
+                turn.state = .answered(DeviceTask.answer(filled, onPad: onPad, inMatter: matter != nil))
+                keep(turn, taking: nil)
+                asking = nil
+                readsOnDevice = false
+            }
             return
         }
         // `--demo --answers`: an answer made up after a moment, with nothing sent — for the tests that
@@ -537,6 +608,7 @@ extension AssistantSheet {
         ask?.cancel()
         ask = nil
         self.asking = nil
+        readsOnDevice = false
         if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             draft = asking.question
             fieldKey += 1
@@ -549,6 +621,8 @@ struct PendingTurn: View {
     let question: String
     let step: AssistantAsk.Step
     let sentAt: Date?
+    /// Read on the device, not asked: there are no names to disguise and nothing is sent.
+    var onDevice = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -559,7 +633,12 @@ struct PendingTurn: View {
                 .modifier(Lands(fresh: true))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.leading, 40)
-            AskSteps(step: step, sentAt: sentAt, size: 12).modifier(FadesIn(fresh: true))
+            if onDevice {
+                Label(UIDevice.current.userInterfaceIdiom == .pad ? "Reading on this iPad …" : "Reading on this iPhone …", systemImage: "iphone")
+                    .font(.footnote).foregroundStyle(.secondary).modifier(FadesIn(fresh: true))
+            } else {
+                AskSteps(step: step, sentAt: sentAt, size: 12).modifier(FadesIn(fresh: true))
+            }
         }
     }
 }
@@ -725,6 +804,10 @@ struct PhoneTurnView: View {
                     .buttonStyle(.plain)
                 }
                 Spacer(minLength: 8)
+                // Kept as typed — a task or a note with nothing asked: no AI answered, and none is named.
+                if answer.servedBy == DeviceTask.onDevice || (answer.sent.isEmpty && answer.reply.lines.isEmpty) {
+                    Text("On this device").font(.caption2).foregroundStyle(.secondary).frame(minHeight: 32)
+                } else {
                 // What the disguise found in the question — so it is seen that it looked.
                 // A tap shows who answered and what went out, disguised — as on the Mac.
                 Button { withAnimation(.snappy) { showsSent.toggle() } } label: {
@@ -735,6 +818,7 @@ struct PhoneTurnView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("\(answer.disguiseSentence ?? "") \(answer.modelLabel)")
                 .accessibilityHint(showsSent ? "Hides what was sent" : "Shows what was sent, pseudonymised")
+                }
             }
             .padding(.leading, -8)
             .padding(.vertical, -6)
@@ -810,6 +894,11 @@ struct PhoneActionCard: View {
     @Environment(\.openURL) private var openURL
     @State private var text = ""
     @State private var subject = ""
+    /// The matter's files the owner picked for a draft, besides those it names.
+    @State private var attached: [PersistentIdentifier] = []
+    /// What the draft named by itself and the owner took away.
+    @State private var leftOut: Set<PersistentIdentifier> = []
+    @State private var attaching = false
     /// A draft opened in Mail folds to a few lines; "Edit" unfolds it again.
     @State private var editingDraft = false
     /// Taken in, the card turns into its small quiet box in three steps, so nothing jumps: its
@@ -883,8 +972,9 @@ struct PhoneActionCard: View {
     /// merging two people means.
     private var notes: [(text: String, symbol: String?)] {
         if card.kind == .draftMessage {
-            let line = StoredChanges.shared.kept("along \(turn.id) \(index) \(text)") {
-                CardActions.attachmentLine(text: text, question: turn.question, scope: scope, attach: card.attach ?? [])
+            let line = StoredChanges.shared.kept("along \(turn.id) \(index) \(text) \(attached.count) \(leftOut.count)") {
+                CardActions.attachmentLine(text: text, question: turn.question, scope: scope, attach: card.attach ?? [], chosen: chosenFiles,
+                                           leftOut: leftOut)
             }
             return line.map { [($0, "paperclip")] } ?? []
         }
@@ -902,6 +992,7 @@ struct PhoneActionCard: View {
                         text: draft || editable ? $text : nil,
                         serif: draft,
                         notes: notes,
+                        attach: draft && scope != nil ? { attaching = true } : nil,
                         verb: verb,
                         closeLabel: quiet ? "Cancel" : "Dismiss",
                         close: {
@@ -914,6 +1005,13 @@ struct PhoneActionCard: View {
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background { RoundedRectangle(cornerRadius: 20).fill(Theme.box).matchedGeometryEffect(id: "box", in: morph, isSource: !quiet || editingDraft) }
+            .sheet(isPresented: $attaching) {
+                if let scope {
+                    AttachSheet(matter: scope, named: Set(DraftAttachments.named(in: [text, turn.question] + (card.attach ?? []),
+                                                                                    among: scope.documents ?? []).map(\.persistentModelID)),
+                                chosen: $attached, leftOut: $leftOut)
+                }
+            }
             .transition(.opacity)
     }
 
@@ -1029,10 +1127,15 @@ struct PhoneActionCard: View {
         return card.cites.lazy.compactMap { turn.refs[$0] }.compactMap { CardActions.matter(of: $0, in: context) }.first
     }
 
+    /// The files picked for the draft, as they are now: one taken away meanwhile is left out.
+    private var chosenFiles: [MatterCore.Document] {
+        attached.compactMap { CardActions.live($0, as: MatterCore.Document.self, in: context) }
+    }
+
     private func take() {
         switch CardActions.apply(card, text: text, subject: subject, refs: turn.refs, links: turn.answer?.links, scope: scope,
                                  question: turn.question, mail: mailInHand,
-                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, in: context) {
+                                 inHand: turn.inHand.map { ($0.kind, $0.text) }, chosen: chosenFiles, leftOut: leftOut, in: context) {
         case .nothing:
             return
         case .openMail(let url, let draft):
@@ -1250,7 +1353,13 @@ private struct PhoneToNewestButton: View {
 @Observable
 final class TypedWords {
     var text = ""
-    var cursor: TextSelection?
+    /// A card's second field: a link's name, a detail's value, a contact's role.
+    var second = ""
+    /// Where dictation puts its words: at the end. The field is not bound to its cursor — bound,
+    /// typed quickly, the cursor of a keystroke before came back after the next one: "Who has the"
+    /// was written "Who has he…t" on the iPad, and words went missing on the iPhone, even with the
+    /// cursor only told and never read back.
+    @ObservationIgnored var cursor: TextSelection?
 }
 
 /// The assistant's field, the microphone and the send button: the only views that read what is
@@ -1266,7 +1375,7 @@ private struct TypingField: View {
     let stop: () -> Void
 
     var body: some View {
-        TextField(placeholder, text: $typed.text, selection: $typed.cursor, axis: .vertical)
+        TextField(placeholder, text: $typed.text, axis: .vertical)
             .lineLimit(1...5)
             // The keyboard's Return starts a new line; the button sends. With a keyboard
             // of keys, Return sends and Shift-Return starts a new line, as on the Mac.
@@ -1288,5 +1397,229 @@ private struct TypingField: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(asking ? "Stop" : "Send")
+    }
+}
+
+
+/// What can be added to a matter without Pro, over the assistant's field: a tap puts its card over
+/// the field — "New task", "New note" — and what is typed next is that, kept as written.
+private struct AddChips: View {
+    let matter: Matter
+    let picked: () -> Void
+    @Environment(Navigation.self) private var navigation
+    /// Folded, only the plus is left over the field; it stays as it was left.
+    @AppStorage("addChipsOpen") private var open = true
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                // Over the chips, so that they go in under it.
+                toggle.zIndex(1)
+                if open {
+                    // Fanned out from the chevron one after another, and folded back the last first.
+                    ForEach(Array(Self.chips.enumerated()), id: \.offset) { index, item in
+                        chip(item.title, item.symbol, item.add)
+                            .transition(fan(index))
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+        .scrollClipDisabled()
+    }
+
+    private static let chips: [(title: String, symbol: String, add: AssistantAdd)] = [
+        ("Task", "checklist", .task), ("Note", "note.text", .note), ("Link", "link", .link),
+        ("Detail", "info.circle", .detail), ("Contact", "person.badge.plus", .contact),
+    ]
+
+    /// Each chip comes from the left, small and faint, a moment after the one before it.
+    private func fan(_ index: Int) -> AnyTransition {
+        let step = 0.035, last = Self.chips.count - 1
+        let shrink = AnyTransition.scale(scale: 0.6, anchor: .leading).combined(with: .opacity)
+        // Going, they only shrink where they stand: moved, the first ran into the chevron.
+        return .asymmetric(
+            insertion: AnyTransition.offset(x: -24).combined(with: shrink)
+                .animation(.spring(response: 0.32, dampingFraction: 0.78).delay(Double(index) * step)),
+            removal: shrink.animation(.easeIn(duration: 0.16).delay(Double(last - index) * step * 0.6)))
+    }
+
+    /// A chevron, as a drawer has: › while the chips are in, ‹ while they are out.
+    private var toggle: some View {
+        Button {
+            Haptics.tap()
+            withAnimation(.snappy) { open.toggle() }
+        } label: {
+            Image(systemName: "chevron.right").font(.subheadline.weight(.semibold))
+                .rotationEffect(.degrees(open ? 180 : 0))
+                .frame(width: 36, height: 36)
+                .background(Theme.box, in: Circle())
+                .overlay(Circle().stroke(Theme.line, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(open ? "Hide Add" : "Add")
+        .accessibilityIdentifier("add.toggle")
+    }
+
+    private func chip(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
+        Button {
+            Haptics.tap()
+            navigation.pinned = Navigation.Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
+            picked()
+        } label: {
+            Label(title, systemImage: symbol).font(.subheadline)
+                .padding(.vertical, 8).padding(.leading, 11).padding(.trailing, 14)
+                // On the thread, not under the field's glass: a ground of its own, not see-through.
+                .background(Theme.box, in: Capsule())
+                .overlay(Capsule().stroke(Theme.line, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("add." + title.lowercased())
+    }
+}
+
+
+/// A new task or note, typed in its own card over where the field was: what it is, small, the
+/// words on the writing area with the cursor in it, what becomes of a day in it, and Add. × puts it
+/// away. Nothing in it goes to an AI: it is kept as written.
+private struct AddCard: View {
+    let add: AssistantAdd
+    @Bindable var typed: TypedWords
+    var typing: FocusState<Bool>.Binding
+    let take: () -> Void
+    let close: () -> Void
+
+    private var empty: Bool { !add.isComplete(typed.text, typed.second) }
+    @FocusState private var onSecond: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                Text(add.title).font(.caption).foregroundStyle(.secondary)
+                    .padding(.leading, 4)
+                    .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
+                Button(action: close) {
+                    Image(systemName: "xmark").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
+                        .frame(width: 30, height: 30)
+                        .background(Color.primary.opacity(0.08), in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Put it away")
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                TextField(add.fields.first, text: $typed.text, axis: add.fields.second == nil ? .vertical : .horizontal)
+                    .textFieldStyle(.plain)
+                    .font(add == .note ? .body : .headline)
+                    .lineLimit(1...6)
+                    .keyboardType(add == .link ? .URL : .default)
+                    .textInputAutocapitalization(add == .link ? .never : .sentences)
+                    .autocorrectionDisabled(add == .link)
+                    .focused(typing)
+                    .submitLabel(add.fields.second == nil ? .done : .next)
+                    // One line where a second field follows: Return goes on to it, not to a new line.
+                    .onSubmit { if add.fields.second != nil { onSecond = true } else if !empty { take() } }
+                    .accessibilityIdentifier("add.text")
+                    .padding(.horizontal, 16).padding(.vertical, 14)
+                if let second = add.fields.second {
+                    Divider().padding(.leading, 16)
+                    TextField(second, text: $typed.second)
+                        .textFieldStyle(.plain)
+                        .focused($onSecond)
+                        .submitLabel(.done)
+                        .onSubmit { if !empty { take() } }
+                        .accessibilityIdentifier("add.second")
+                        .padding(.horizontal, 16).padding(.vertical, 14)
+                }
+            }
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
+            .padding(.top, 10)
+            Text(add.hint).font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10).padding(.leading, 4)
+            HStack {
+                Spacer(minLength: 0)
+                Button("Add", action: take).buttonStyle(.phoneFilled).disabled(empty)
+                    .accessibilityIdentifier("add.take")
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 14)
+        }
+        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 18)
+        .background(Theme.box, in: RoundedRectangle(cornerRadius: 20))
+        // The cursor into the card as it comes: given to the field it takes the place of, it went
+        // with that field, and what was typed went nowhere.
+        .onAppear { DispatchQueue.main.async { typing.wrappedValue = true } }
+    }
+}
+
+
+/// "Attach …" under a draft: the matter's files, newest first, a tick on each one going along — as
+/// "Connect to …" is for an item. What the draft names is ticked already; a tap takes it away too.
+private struct AttachSheet: View {
+    let matter: Matter
+    /// The files the draft takes along by itself: named in it, or chosen by the assistant.
+    let named: Set<PersistentIdentifier>
+    @Binding var chosen: [PersistentIdentifier]
+    @Binding var leftOut: Set<PersistentIdentifier>
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+
+    private var files: [MatterCore.Document] {
+        let words = query.trimmingCharacters(in: .whitespaces).lowercased()
+        return (matter.documents ?? [])
+            .filter { !$0.isHidden && (words.isEmpty || $0.shownName.lowercased().contains(words)) }
+            .sorted { ($0.source.date ?? .distantPast) > ($1.source.date ?? .distantPast) }
+    }
+
+    private func isNamed(_ document: MatterCore.Document) -> Bool { named.contains(document.persistentModelID) }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if files.isEmpty {
+                    Text(query.isEmpty ? "This matter has no files yet." : "No file is called that.").foregroundStyle(.secondary)
+                }
+                ForEach(files) { document in
+                    let id = document.persistentModelID
+                    let on = isNamed(document) ? !leftOut.contains(id) : chosen.contains(id)
+                    Button {
+                        withAnimation {
+                            if isNamed(document) {
+                                if leftOut.contains(id) { leftOut.remove(id) } else { leftOut.insert(id) }
+                            } else if let at = chosen.firstIndex(of: id) { chosen.remove(at: at) } else { chosen.append(id) }
+                        }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(on ? Color.primary : Color.secondary).frame(width: 22)
+                            Image(systemName: document.contentType.contains("pdf") || document.name.lowercased().hasSuffix(".pdf") ? "doc.richtext" : "doc")
+                                .foregroundStyle(.secondary).frame(width: 18)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(document.shownName).lineLimit(2)
+                                if isNamed(document) {
+                                    Text(on ? "Named in the draft" : "Named in the draft · left out").font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer(minLength: 8)
+                            if let date = document.source.date { Text(Dates.short(date)).font(.caption).foregroundStyle(.secondary) }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("attach." + document.shownName)
+                }
+            }
+            .listStyle(.plain)
+            .searchable(text: $query, prompt: "Search this matter's files")
+            .navigationTitle("Attach to the mail")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { dismiss() } } }
+        }
+        .presentationDetents([.medium, .large])
     }
 }

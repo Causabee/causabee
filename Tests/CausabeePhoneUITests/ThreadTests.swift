@@ -143,7 +143,11 @@ final class ThreadTests: XCTestCase {
         // Back into what came before.
         let before = question("What do I need to do before")
         let finger = asked.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        finger.press(forDuration: 0.05, thenDragTo: finger.withOffset(CGVector(dx: 0, dy: 260)))
+        // Far enough that the question is out of sight: moved only a little, the answer is seen
+        // coming and nothing has to say so — and the iPad's column is a good deal taller than the
+        // iPhone's sheet.
+        let far: CGFloat = app.windows.firstMatch.frame.height > 1000 ? 700 : 260
+        finger.press(forDuration: 0.05, thenDragTo: finger.withOffset(CGVector(dx: 0, dy: far)))
         XCTAssertTrue(before.waitForExistence(timeout: 5), "The thread did not scroll back.")
         let read = top(of: before)
         let back = app.buttons["thread.toNewest"]

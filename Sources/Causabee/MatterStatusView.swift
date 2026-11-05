@@ -7,7 +7,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// C2 · a matter as one journal: what happened, a day at a time, with what is new on top; what comes
-/// next, what is ahead and what has no date beside it on a wide window, over it on a narrow one.
+/// next, what is ahead and what has no date over it — one column, read from top to bottom, as on the
+/// iPhone and the iPad.
 /// The filters show the plan, the mail, the files, the people and the notes alone — every row with
 /// a door back into the assistant.
 struct MatterStatusView: View {
@@ -90,10 +91,6 @@ struct MatterStatusView: View {
     @State private var pageHeight = CGFloat.zero
     @State private var barEdge = CGFloat.zero
     @Environment(\.reading) private var reading
-    /// How wide the whole page is: wide, what is ahead has its own column.
-    @State private var pageWidth = CGFloat.zero
-    /// With the chat closed there is none: the page is one column, read from top to bottom.
-    private var hasColumn: Bool { pageWidth >= 800 && !navigation.assistantHidden }
 
     init(matter: Matter) {
         self.matter = matter
@@ -143,15 +140,13 @@ struct MatterStatusView: View {
                                 switch part {
                                 case .all:
                                     if personParty == nil {
-                                        // Wide, the column has what comes next: the journal begins with what is new.
-                                        if hasColumn { closedBanner(status); NewsCard(matter: matter) } else { top(status, plan) }
+                                        top(status, plan)
                                     }
                                     journal(status)
                                 case .plan:
-                                    if !hasColumn {
-                                        closedBanner(status)
-                                        if !matter.isClosed { nextStep(status); ForYouCard(matter: matter, folds: true) }
-                                    }
+                                    // The next step lives in the digest only: here, over the plan it is
+                                    // one of, it read as a second plan — as on the iPhone and the iPad.
+                                    if matter.isClosed { closedBanner(status) } else { ForYouCard(matter: matter, folds: true) }
                                     planList(status, plan).id("tasks")
                                     CalendarAccessBanner { loadCalendars() }.tool()
                                 case .mail, .files:
@@ -263,32 +258,14 @@ struct MatterStatusView: View {
                 .sheetWhenAsked(isPresented: $addingContact) { ContactEditor(matter: matter) }
                 .sheetWhenAsked(isPresented: $addingDetail) { DetailEditor(matter: matter) }
             }
-            // Its bar's glass reaches over the column.
+            // Its bar's glass over the page.
             .zIndex(1)
-            // What is ahead keeps its own column while the journal scrolls beside it.
-            if hasColumn, !find.isActive {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: Theme.cardGap) {
-                        if !matter.isClosed {
-                            nextStep(status)
-                            ForYouCard(matter: matter, folds: part != .all)
-                            if part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
-                        }
-                        atHandCard
-                        BallCard(matter: matter)
-                    }
-                    // Under the bar, at its height with the filters in it: the column does not move when they come.
-                    .padding(.top, max(WindowMetrics.topLine, barEdge - given) + 12).padding(.trailing, 24).padding(.bottom, 24)
-                }
-                .frame(width: Self.columnWidth)
-            }
         }
         // At the page's right edge, always on the window's top line.
         .overlay(alignment: .topTrailing) {
             if !renaming { barTools.frame(height: WindowMetrics.topLine).padding(.trailing, 24) }
         }
         .background(Theme.page)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
         .environment(find)
         .shownToAuto(matter)
         .focusedSceneValue(\.openMatter, matter.persistentModelID)
@@ -379,6 +356,7 @@ struct MatterStatusView: View {
             if plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
         }
         atHandCard
+        BallCard(matter: matter)
     }
 
     /// The matter's ⋯: what can be added and written again, then the matter itself.
@@ -454,9 +432,8 @@ struct MatterStatusView: View {
                 Text(step).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
-                // What the owner said to the step, and the way to say more: Causabee writes it again.
+                // What the owner said to the step; more is said from the card's menu, and Causabee writes it again.
                 TileComments(matter: matter, about: step)
-                CommentButton(matter: matter, about: step)
             } else if let rule {
                 BeeChip(text: rule.heading.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
@@ -504,6 +481,8 @@ struct MatterStatusView: View {
             .tool()
             if let stepError { Text(stepError).font(.caption).foregroundStyle(Theme.warning).textSelection(.enabled) }
         }
+        // "Comment" is the card's right-click, as its long press on the iPhone: only to a step Causabee wrote.
+        .commentsOnHold(matter, about: own && !outOfDate ? matter.nextStep : nil)
     }
 
     /// What can be done with the step right here: write the message it is, tick it off, see it.
@@ -1050,8 +1029,6 @@ struct MatterStatusView: View {
 
     /// The width of the bar's tools, kept free beside the name.
     @State private var toolsWidth: CGFloat = 80
-    /// What is ahead, beside the journal on a wide window.
-    private static let columnWidth: CGFloat = 330
 
     /// How far under the window's top line the name stands while the page is at its top.
     private static let restRoom: CGFloat = 36
@@ -1150,9 +1127,9 @@ struct MatterStatusView: View {
                         .help("Click to rename. The old name stays as an alias, so new mail still finds the matter.")
                     Spacer()
                 }
-                // The bar's tools stand at the page's right edge, over the column when there is one:
-                // here only their room, so a long name stops short of them.
-                if !renaming, !hasColumn || find.isActive { Color.clear.frame(width: toolsWidth, height: 1) }
+                // The bar's tools stand at the page's right edge: here only their room, so a long name
+                // stops short of them.
+                if !renaming { Color.clear.frame(width: toolsWidth, height: 1) }
             }
             ZStack(alignment: .leading) {
                 // One line of text, so the dot before "since" stands as the others do.
@@ -1202,8 +1179,6 @@ struct MatterStatusView: View {
                     .frame(height: compact && !showsParts ? WindowMetrics.topLine : nil)
                     // With the parts in it, it ends where they end: the room the name left is the page's.
                     .padding(.bottom, compact && !showsParts ? 0 : given)
-                    // One piece of glass across the whole page, over the column too.
-                    .padding(.trailing, hasColumn && !find.isActive ? -Self.columnWidth : 0)
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { barEdge = $0 }

@@ -124,8 +124,10 @@ struct MatterScreen: View {
                                 }
                                 journal(status)
                             case .plan:
+                                // The next step lives in the digest only: here, over the plan it is
+                                // one of, it read as a second plan.
                                 if !hasColumn {
-                                    if matter.isClosed { closedBanner(status) } else { nextStep(status, scroller); ForYouCard(matter: matter, folds: true) }
+                                    if matter.isClosed { closedBanner(status) } else { ForYouCard(matter: matter, folds: true) }
                                 }
                                 planList(status, plan)
                                 CalendarAccessBanner { loadCalendars() }
@@ -199,11 +201,13 @@ struct MatterScreen: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: Theme.cardGap) {
                             if !matter.isClosed {
-                                nextStep(status, scroller)
+                                // The next step with the digest only, as on the iPhone.
+                                if part == .all { nextStep(status, scroller) }
                                 ForYouCard(matter: matter, folds: part != .all)
-                                if part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
                             }
+                            // The summary over what is ahead: what the matter is, then its dates.
                             atHandCard
+                            if !matter.isClosed, part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
                             BallCard(matter: matter)
                         }
                         .padding(.top, 10).padding(.trailing, 16).padding(.bottom, 90)
@@ -639,9 +643,8 @@ struct MatterScreen: View {
                 Text(step).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
-                // What the owner said to the step, and the way to say more: Causabee writes it again.
+                // What the owner said to the step; more is said from the card's menu, and Causabee writes it again.
                 TileComments(matter: matter, about: step)
-                CommentButton(matter: matter, about: step)
             } else if let rule {
                 BeeChip(text: rule.heading.uppercased(), tone: rule.kind == .overdue || rule.kind == .followUp ? .warning : .bee)
                 Text(rule.text).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
@@ -683,6 +686,8 @@ struct MatterScreen: View {
             .tool()
             if let stepError { Text(stepError).font(.caption).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true) }
         }
+        // "Comment" is the card's long press: only to a step Causabee wrote.
+        .commentsOnHold(matter, about: own && !outOfDate ? matter.nextStep : nil)
     }
 
     /// The facts the step and the summary are asked from: this matter's, the last 40 mails.
@@ -849,7 +854,8 @@ struct MatterScreen: View {
     }
 
     /// What stands on top of the journal: the closed matter's line, what is new, what comes next
-    /// and what waits for an answer; then what is ahead, and what has no date.
+    /// and what waits for an answer; then the summary with what has no date, and under it what is
+    /// ahead — what the matter is first, then its dates.
     @ViewBuilder
     private func top(_ status: MatterStatus, _ plan: Journal.Plan, _ scroller: ScrollViewProxy) -> some View {
         if matter.isClosed { closedBanner(status) }
@@ -857,10 +863,10 @@ struct MatterScreen: View {
         if !matter.isClosed {
             nextStep(status, scroller)
             ForYouCard(matter: matter)
-            // On an iPad the page has the room the column had: as many days as it showed.
-            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: navigation.isPad ? 4 : 2) }
         }
         atHandCard
+        // On an iPad the page has the room the column had: as many days as it showed.
+        if !matter.isClosed, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: navigation.isPad ? 4 : 2) }
     }
 
     /// The owner's own words on the matter: small dated blocks, read by the assistant too.
@@ -1283,10 +1289,12 @@ struct PhoneTodoRow: View {
     @ViewBuilder
     private var moreItems: some View {
         // Short, one line each, with an icon; one line only, above Delete.
+        // Every item's menu begins alike: Use in Chat, Connect, Move to Matter, Hide — then its own.
         if let matter = todo.matter {
-            Button(Say.connect, systemImage: "link") { connecting = true }
             AskCausabeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
+            Button(Say.connect, systemImage: "link") { connecting = true }
             MoveAndHide(item: .task(todo), matter: matter)
+            Divider()
         }
         Button(Say.edit, systemImage: "pencil") { editing = true }
         if !todo.isDone { SourceItems(sources: todo.sources, matter: todo.matter) }
@@ -1539,10 +1547,7 @@ struct PhoneDateRow: View {
     private var sources: [Source] { item.appointment?.sources ?? item.deadline?.sources ?? [] }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            rowBody
-            if let journalItem = item.journalItem { ConnectionChips(item: journalItem, matter: matter).padding(.leading, 38) }
-        }
+        rowBody
         .connectSheet(item.journalItem, in: matter, isPresented: $connecting)
         .dropsOn(item.journalItem, in: matter)
     }
@@ -1560,6 +1565,9 @@ struct PhoneDateRow: View {
                     CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime,
                                  place: item.place, matterName: matter.name, tick: tick, asked: addingToCalendar) { id in item.connect(id); try? context.save() }
                 }
+                // Under its words, in its box, as a task's are: outside it they began a little left
+                // of the words and ran out of the card.
+                if let journalItem = item.journalItem { ConnectionChips(item: journalItem, matter: matter) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             PlanMore { moreItems }
@@ -1584,9 +1592,10 @@ struct PhoneDateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
-        Button(Say.connect, systemImage: "link") { connecting = true }
         AskCausabeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
+        Button(Say.connect, systemImage: "link") { connecting = true }
         MoveAndHide(item: item.journalItem, matter: matter)
+        Divider()
         Button(Say.edit, systemImage: "pencil") { editing = true }
         SourceItems(sources: sources, matter: matter)
         if !isPast, item.calendarID == nil, Calendars.shared.canReadEvents {

@@ -75,7 +75,7 @@ enum DemoData {
     /// Counts up whenever the demo's words or matters change: a demo store filled with an older
     /// version is emptied and filled again — with today's dates too. Two things are overdue in it, in
     /// the care matter and the trip: enough to show what overdue looks like, not a page of it. Only ever the demo's own store.
-    static let contentVersion = 9
+    static let contentVersion = 10
     private static let seededKey = "demo.filled"
 
     /// The demo's own talk, where it stands ahead of the clock, is put an hour behind it — in the
@@ -767,6 +767,8 @@ enum DemoData {
                quote: "Tuesdays and Fridays at 11:00", note: "The visit on the 6th starts at 10:00 and may run long.")
         c.todo("karl", "Ask Karl about Monday mornings", .other, due: 3, from: split, quote: "Uncle Karl could help on Monday mornings")
         c.todo("plan", "Agree who is with Mum when", .we, due: 1, from: rota, quote: "Who does what this week?")
+        // No day yet: the plan shows its "Set day".
+        c.todo("shopping", "Find help with shopping", .me, from: discharge, quote: "help with showering and shopping")
         c.todo("decision", "Decision within 25 working days", .unknown, from: received,
                quote: "The insurer decides within 25 working days", info: true)
         c.todo("budget", "A care level pays part of home care", .unknown, from: offer,

@@ -49,7 +49,10 @@ public enum AssistantPrompt {
     right one.
     - `add_note`: the owner wants something written down — a list, what was agreed, something to \
     remember. `text` is the note, in the owner's words. `todo` is the id of the to-do it belongs \
-    with, or null: then it is kept in the matter's notes.
+    with, or null: then it is kept in the matter's notes. A question that begins with `New note:` \
+    is one the owner chose to add: answer with exactly one `add_note` for it — its words kept as \
+    written; `todo` the id of the open to-do it plainly belongs with, else null — and one short \
+    line at most.
     - `new_appointment`: a meeting, call or visit at a set day that is not among the dates yet. \
     `text` is what it is, `due` the day, `time` the time (HH:MM) or null; `end_time` when it \
     ends (HH:MM), `end_date` its last day when it lasts several days — each null when not said, \
@@ -137,12 +140,15 @@ public enum AssistantPrompt {
         var parts = ["Today: \(today)."]
         if let owner { parts.append("The owner: \(owner).") }
         parts.append(facts)
+        // What is above is the same for every question about the matter for a while: cached.
+        let cached = parts.joined(separator: "\n\n")
+        parts = []
         for turn in earlier.suffix(4) {
             parts.append("<earlier>\nOwner: \(turn.question)\nYou: \(turn.answer)\n</earlier>")
         }
         if let inHand { parts.append("<in_hand kind=\"\(inHand.kind)\">\(inHand.text)</in_hand>") }
         parts.append("<question>\n\(question)\n</question>")
-        return parts.joined(separator: "\n\n")
+        return cached + Claude.cacheBreak + parts.joined(separator: "\n\n")
     }
 
     public static var schema: [String: Any] {

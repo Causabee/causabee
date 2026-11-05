@@ -327,6 +327,8 @@ final class Navigation {
         /// While asking: what it is doing now, and since when the question is out. Not kept.
         var step: AssistantAsk.Step?
         var sentAt: Date?
+        /// While asking: read on this Mac by Apple's model, not asked — nothing is sent. Not kept.
+        var onDevice = false
 
         /// A question — not a file, not a note — whose answer is on its way.
         var isAsking: Bool {
@@ -775,21 +777,26 @@ struct RootView: View {
         })
         .overlay(alignment: .bottomTrailing) {
             if !showsAssistant, case .matter = navigation.place {
-                CornerBee { withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() } }
+                CornerBee {
+                    withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() }
+                } add: { add in
+                    // The chat, with that card over its field: what is typed in it is that.
+                    guard case .matter(let id) = navigation.place, let matter = matters.first(where: { $0.persistentModelID == id }) else { return }
+                    navigation.pinned = Navigation.Pinned(matter: id, matterName: matter.name, kind: add.rawValue, text: add.hint)
+                    withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() }
+                }
                     .padding(20)
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
         }
-        // On glass, as the matter's own controls on the right: the sidebar, reading and Auto in one
-        // capsule.
+        // On glass, as the matter's own controls on the right: the sidebar's button. Pro is the
+        // chat's line on top and the bee in the matter's corner, not a bee up here.
         .overlay(alignment: .topLeading) {
             HStack(spacing: 8) {
-                // The yellow round of a button that is on sits in the capsule's own curve: as far
-                // from its end as from its top and bottom.
                 // Reading mode is in View › Activate Reading Mode, and the reading state stays for what is
                 // shared later: its button here is gone, the owner seldom used it.
-                HStack(spacing: 8) { SidebarButton(); AutoButton() }
-                    .padding(.leading, 7).padding(.trailing, 2).padding(.vertical, 2)
+                SidebarButton()
+                    .padding(.horizontal, 5).padding(.vertical, 2)
                     .onGlass(Capsule())
                     .accessibilityElement(children: .contain)
                     .accessibilityIdentifier("window.controls")
