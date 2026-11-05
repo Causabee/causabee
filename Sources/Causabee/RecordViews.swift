@@ -164,6 +164,17 @@ struct ThreadMailRow: View {
     private var items: some View {
         // To see the mail itself: first in its menu, as "Open" is for a file. A scan or a file
         // brought in opens as the file, on every device.
+        // Every item's menu begins alike: Use in Chat, Connect, Move to Matter — then its own.
+        #if os(macOS)
+        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
+        #else
+        AskCausabeeButton(action: talk)
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        PhoneMoveMail(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
+        #endif
+        if ownFile != nil || outside != nil { Divider() }
         if let document = ownFile {
             Button(Self.openLabel(row.entry.source.kind), systemImage: "arrow.up.forward.app") { openOwn(document) }
         } else if let url = outside {
@@ -171,14 +182,6 @@ struct ThreadMailRow: View {
                 openURL(url)
             }
         }
-        Button(Say.connect, systemImage: "link") { connecting = true }
-        #if os(macOS)
-        Button(Say.useInChat, systemImage: "bubble.left", action: talk)
-        MoveMailMenu(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
-        #else
-        AskCausabeeButton(action: talk)
-        PhoneMoveMail(entry: row.entry) { newName = Matter.suggestedName(for: [row.entry]); naming = true }
-        #endif
     }
 
     var body: some View {
@@ -425,7 +428,9 @@ struct SourceItems: View {
     @Environment(\.openURL) private var openURL
 
     private func title(_ source: Source) -> String {
-        let words = Sources.origin(source)
+        // One line in a menu: "Mail of Oct 8", not "From the mail of Oct 8".
+        var words = Sources.origin(source)
+        if words.hasPrefix("from the ") { words.removeFirst("from the ".count) }
         return words.prefix(1).uppercased() + words.dropFirst()
     }
 
@@ -1651,7 +1656,7 @@ struct PublicNameItem: View {
     var body: some View {
         let isPublic = PublicNames.covers(party.name)
         Toggle(isOn: Binding(get: { isPublic }, set: { PublicNames.mark(party.name, public: $0, in: context) })) {
-            Label("Public Name — Not Disguised", systemImage: "globe")
+            Label("Public Name", systemImage: "globe")
         }
         .help("For a big company or a brand: its name goes to the AI as it is, and may be named in a question looked up on the web.")
     }

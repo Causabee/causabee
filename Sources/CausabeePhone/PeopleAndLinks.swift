@@ -165,11 +165,13 @@ struct PhonePartyRow: View {
 
     @ViewBuilder
     private var items: some View {
+        // Every item's menu begins alike: Use in Chat, Connect, Move to Matter, Hide — then its own.
+        AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
+        Button(Say.connect, systemImage: "link") { connecting = true }
+        MoveAndHide(item: .person(party), matter: matter)
+        Divider()
         MailAddressItems(addresses: CardActions.addresses(of: party))
         ContactItems(party: party)
-        Button(Say.connect, systemImage: "link") { connecting = true }
-        AskCausabeeButton { navigation.talk(party.name, kind: "Person", in: matter) }
-        MoveAndHide(item: .person(party), matter: matter)
         PublicNameItem(party: party)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         Menu(Say.mergeWith, systemImage: "arrow.triangle.merge") {
@@ -447,6 +449,7 @@ struct PhoneLinkRow: View {
     private var items: some View {
         Button(Say.connect, systemImage: "link") { connecting = true }
         MoveAndHide(item: .link(link), matter: link.matter)
+        Divider()
         LinkItems(link: link)
         Button(Say.edit, systemImage: "pencil") { editing = true }
         Divider()

@@ -230,19 +230,21 @@ struct FilesSection: View {
 
     @ViewBuilder
     private func items(_ document: MatterCore.Document) -> some View {
+        // Every item's menu begins alike: Use in Chat, Connect, Move to Matter, Hide — then its own.
+        AskCausabeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
+        Button(Say.connect, systemImage: "link") { connecting = document }
+        MoveAndHide(item: .file(document), matter: document.matter, hides: false)
+        Button(document.isHidden ? Say.showAgain : Say.hide, systemImage: document.isHidden ? "eye" : "eye.slash") {
+            withAnimation { document.isHidden.toggle() }
+            try? context.save()
+        }
+        Divider()
         if !document.isOwnFile || document.source.fileURL != nil || MatterFolders.kept(document) != nil { Button("Open", systemImage: "eye") { open(document) } }
         if document.reading == .kept { Button("Read", systemImage: "text.viewfinder") { read(document) } }
-        Button(Say.connect, systemImage: "link") { connecting = document }
-        AskCausabeeButton { navigation.talk(document.shownName, kind: "File", in: matter) }
-        MoveAndHide(item: .file(document), matter: document.matter, hides: false)
         Button(Say.rename, systemImage: "pencil") { newName = document.shownName; renaming = document }
         if isPDF(document) { Button(Say.nameFromContent, systemImage: "text.magnifyingglass") { nameFromContent(document) } }
         if document.title != nil {
             Button(Say.useFileName, systemImage: "arrow.uturn.backward") { document.title = nil; try? context.save() }
-        }
-        Button(document.isHidden ? Say.showAgain : Say.hide, systemImage: document.isHidden ? "eye" : "eye.slash") {
-            withAnimation { document.isHidden.toggle() }
-            try? context.save()
         }
         // One the owner brought in can go for good — an outdated letter; a mail's file would come back with its mail.
         if document.isOwnFile {

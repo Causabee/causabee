@@ -1288,10 +1288,12 @@ struct PhoneTodoRow: View {
     @ViewBuilder
     private var moreItems: some View {
         // Short, one line each, with an icon; one line only, above Delete.
+        // Every item's menu begins alike: Use in Chat, Connect, Move to Matter, Hide — then its own.
         if let matter = todo.matter {
-            Button(Say.connect, systemImage: "link") { connecting = true }
             AskCausabeeButton { navigation.talk(todo.text, kind: todo.isInfo ? "Info" : "Task", in: matter) }
+            Button(Say.connect, systemImage: "link") { connecting = true }
             MoveAndHide(item: .task(todo), matter: matter)
+            Divider()
         }
         Button(Say.edit, systemImage: "pencil") { editing = true }
         if !todo.isDone { SourceItems(sources: todo.sources, matter: todo.matter) }
@@ -1544,10 +1546,7 @@ struct PhoneDateRow: View {
     private var sources: [Source] { item.appointment?.sources ?? item.deadline?.sources ?? [] }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            rowBody
-            if let journalItem = item.journalItem { ConnectionChips(item: journalItem, matter: matter).padding(.leading, 38) }
-        }
+        rowBody
         .connectSheet(item.journalItem, in: matter, isPresented: $connecting)
         .dropsOn(item.journalItem, in: matter)
     }
@@ -1565,6 +1564,9 @@ struct PhoneDateRow: View {
                     CalendarChip(kind: .event, linkedID: item.calendarID, title: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime,
                                  place: item.place, matterName: matter.name, tick: tick, asked: addingToCalendar) { id in item.connect(id); try? context.save() }
                 }
+                // Under its words, in its box, as a task's are: outside it they began a little left
+                // of the words and ran out of the card.
+                if let journalItem = item.journalItem { ConnectionChips(item: journalItem, matter: matter) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             PlanMore { moreItems }
@@ -1589,9 +1591,10 @@ struct PhoneDateRow: View {
 
     @ViewBuilder
     private var moreItems: some View {
-        Button(Say.connect, systemImage: "link") { connecting = true }
         AskCausabeeButton { navigation.talk(item.what, kind: item.kind, in: matter) }
+        Button(Say.connect, systemImage: "link") { connecting = true }
         MoveAndHide(item: item.journalItem, matter: matter)
+        Divider()
         Button(Say.edit, systemImage: "pencil") { editing = true }
         SourceItems(sources: sources, matter: matter)
         if !isPast, item.calendarID == nil, Calendars.shared.canReadEvents {

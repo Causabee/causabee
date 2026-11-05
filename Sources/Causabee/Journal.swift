@@ -626,8 +626,8 @@ struct JournalThreadCard<Attached: View>: View {
         }
         .journalCard()
         .contextMenu {
-            Button(Say.connect, systemImage: "link") { connecting = true }
             Button(Say.useInChat, systemImage: "bubble.left") { if let newest { talk(newest) } }
+            Button(Say.connect, systemImage: "link") { connecting = true }
         }
         .connectSheet(newest.map(JournalItem.mail), in: nil, isPresented: $connecting)
         .dropsOn(newest.map(JournalItem.mail), in: nil)
@@ -1133,11 +1133,19 @@ struct FlowRow: Layout {
         return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: rows.last.map { $0.y + $0.height } ?? 0)
     }
 
+    /// Its own size, but never wider than the row: a chip with a long mail's name is shortened —
+    /// "Fwd: Ihre Reise Ba…7. Dezember 2026" — instead of running out of its card.
+    private func fitted(_ subview: LayoutSubview, width: CGFloat) -> CGSize {
+        let own = subview.sizeThatFits(.unspecified)
+        guard width.isFinite, own.width > width else { return own }
+        return subview.sizeThatFits(ProposedViewSize(width: width, height: nil))
+    }
+
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         for row in arrange(subviews, width: bounds.width) {
             var x = bounds.minX
             for index in row.items {
-                let size = subviews[index].sizeThatFits(.unspecified)
+                let size = fitted(subviews[index], width: bounds.width)
                 subviews[index].place(at: CGPoint(x: x, y: bounds.minY + row.y), proposal: ProposedViewSize(size))
                 x += size.width + spacing
             }
@@ -1148,7 +1156,7 @@ struct FlowRow: Layout {
         var rows: [(items: [Int], y: CGFloat, width: CGFloat, height: CGFloat)] = []
         var items: [Int] = [], x: CGFloat = 0, y: CGFloat = 0, height: CGFloat = 0
         for index in subviews.indices {
-            let size = subviews[index].sizeThatFits(.unspecified)
+            let size = fitted(subviews[index], width: width)
             if x > 0, x + size.width > width {
                 rows.append((items, y, x - spacing, height))
                 y += height + spacing
@@ -1335,24 +1343,17 @@ struct ConnectionChips: View {
     /// Only what the owner connected: where what Causabee read is shown already, as under a mail.
     var ownOnly = false
     @Environment(\.modelContext) private var context
-    @State private var connecting = false
 
     private var home: Matter? { matter ?? item.matter }
 
     var body: some View {
         if let home, case let connected = home.connected(to: item).filter({ !ownOnly || $0.kind == .with }), !connected.isEmpty {
+            // Only what it is connected with: "Connect …" is in the item's ⋯ and its held menu — a
+            // dashed pill under every row said it once more.
             FlowRow(spacing: 6) {
                 ForEach(connected, id: \.self) { other in chip(other, in: home) }
-                Button { connecting = true } label: {
-                    Label(Say.connect, systemImage: "link").font(.caption).foregroundStyle(.secondary)
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .overlay(Capsule().stroke(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(.tertiary))
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
             }
             .padding(.top, 4)
-            .connectSheet(item, in: home, isPresented: $connecting)
         }
     }
 
@@ -1369,7 +1370,9 @@ struct ConnectionChips: View {
         }
         .font(.caption)
         .padding(.leading, 8).padding(.trailing, 6).padding(.vertical, 3)
-        .background(Theme.box, in: Capsule())
+        // A touch darker than what it stands on — the white of a task's row or the grey of a
+        // date's box: the box's own grey made it vanish in a date.
+        .background(Color.primary.opacity(0.07), in: Capsule())
         .help(other.kind == .cameFrom ? "Causabee read it came from this" : "You connected it")
     }
 }

@@ -261,6 +261,7 @@ struct NotesPart: View {
                         if let note {
                             Button(Say.connect, systemImage: "link") { connecting = .note(note) }
                             MoveAndHide(item: .note(note), matter: note.matter)
+                            Divider()
                         }
                         Button("Edit", systemImage: "pencil", action: edit)
                         Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
@@ -298,6 +299,7 @@ struct NotesPart: View {
             if let note {
                 Button(Say.connect, systemImage: "link") { connecting = .note(note) }
                 MoveAndHide(item: .note(note), matter: note.matter)
+                Divider()
             }
             Button("Edit", systemImage: "pencil", action: edit)
             Button("Copy", systemImage: "doc.on.doc") { Self.copy(text) }
@@ -605,6 +607,7 @@ struct DetailsSection: View {
         .contextMenu {
             Button(Say.connect, systemImage: "link") { connecting = .detail(detail) }
             MoveAndHide(item: .detail(detail), matter: detail.matter)
+            Divider()
             Button("Copy", systemImage: "doc.on.doc") { copy(detail) }
             Button("Copy with its label", systemImage: "doc.on.doc") { NotesPart.copy("\(detail.label): \(detail.value)") }
             ShareLink(item: "\(detail.label): \(detail.value)") { Label("Share", systemImage: "square.and.arrow.up") }
