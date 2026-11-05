@@ -112,86 +112,6 @@ private struct QuickLabel: ViewModifier {
     }
 }
 
-/// Beside the glasses: the bee, which says whether Pro is on — yellow, Pro; dark grey, Light — as
-/// the iPhone's and the iPad's bee does. The bolt that stood here is gone. A click says which it is
-/// and turns Pro on or off; the first time it is turned on, what it does is said and asked.
-struct AutoButton: View {
-    @AppStorage(AutoMode.key) private var auto = false
-    @State private var asks = false
-    @State private var shows = false
-    /// On, and Pro bought.
-    private var pro: Bool { auto && Store.shared.plan == .pro }
-
-    var body: some View {
-        Button { shows.toggle() } label: {
-            // The bee alone, small, without a round of its own: yellow with Pro, grey in Light.
-            BeeAtHome(size: 12, livesNowAndThen: pro, ink: pro ? Theme.bee : Color.secondary)
-                .frame(width: 24, height: 24)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .quickLabel(pro ? "Pro is on" : "Light: Pro is off")
-        .accessibilityLabel("Causabee")
-        .accessibilityValue(pro ? "Pro on" : "Pro off")
-        .accessibilityIdentifier("window.auto")
-        .popover(isPresented: $shows, arrowEdge: .bottom) {
-            ProPopover(pro: pro) { shows = false; turnOn() } turnOff: {
-                shows = false
-                withAnimation(.easeInOut(duration: 0.2)) { auto = false }
-            }
-        }
-        .asksBeforeAuto($asks) { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
-    }
-
-    private func turnOn() {
-        // Without Pro bought: the plans first.
-        guard Store.shared.mayTurnOnPro() else { return }
-        if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
-    }
-}
-
-/// The bee on its round: black on the bee's yellow with Pro, white on dark grey without — the
-/// same on every device.
-struct MacBeeFace: View {
-    let pro: Bool
-    var size: CGFloat = 48
-    var bee: CGFloat = 20
-
-    var body: some View {
-        BeeAtHome(size: bee, livesNowAndThen: pro, ink: pro ? .black : .white)
-            .frame(width: size, height: size)
-            .background(pro ? Theme.bee : Color(white: 0.30), in: Circle())
-            .contentShape(Circle())
-    }
-}
-
-/// What a click on the bee says: Pro or Light, what Pro adds, and the switch. No price: only the
-/// plans cost.
-struct ProPopover: View {
-    let pro: Bool
-    let turnOn: () -> Void
-    let turnOff: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(pro ? "Pro is on" : "Light").font(.headline)
-            Text(pro ? "New mail is read as it comes, the next step and the summary are written, and the chat answers."
-                     : "Pro reads new mail as it comes, writes the next step and the summary, and answers in the chat. Without it, Causabee sorts mail on this Mac and chooses the next step from your own tasks and dates.")
-                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            HStack {
-                Spacer()
-                if pro {
-                    Button("Turn Off Pro", action: turnOff)
-                } else {
-                    Button("Turn On Pro", action: turnOn).keyboardShortcut(.defaultAction)
-                }
-            }
-        }
-        .padding(16)
-        .frame(width: 300)
-    }
-}
-
 /// Beside the sidebar's button: reading on and off. Its label comes quicker than the Mac's own
 /// tooltip, which waits about a second.
 struct ReadingButton: View {
@@ -347,31 +267,56 @@ struct SourceLink: View {
     }
 }
 
-/// The bee in the matter's corner while the assistant is put away: yellow with Pro, a click brings
-/// the chat; dark grey without, a click says what Pro adds and turns it on — there is no chat to
-/// bring.
+/// The bee in the matter's corner while the assistant is put away, as the iPhone's and the iPad's:
+/// always yellow, always the chat on a click — everything is added there, with Pro or without, and
+/// Pro is offered on top of the chat, not by the bee's colour. Right-clicked, as held there: Pro on
+/// or off, then what can be added, each opening its card in the chat.
 struct CornerBee: View {
     let open: () -> Void
+    /// The chat opened with that card over its field.
+    let add: (AssistantAdd) -> Void
     @AppStorage(AutoMode.key) private var auto = false
-    @State private var shows = false
     @State private var asks = false
     private var pro: Bool { auto && Store.shared.plan == .pro }
 
     var body: some View {
-        Button { if pro { open() } else { shows = true } } label: {
-            MacBeeFace(pro: pro).shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+        Button(action: open) {
+            // Yellow with or without Pro; it moves now and then while Pro is on, and keeps still without.
+            BeeAtHome(size: 20, livesNowAndThen: pro, ink: .black)
+                .frame(width: 48, height: 48)
+                .background(Theme.bee, in: Circle())
+                .contentShape(Circle())
+                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            if pro {
+                Button("Turn off Pro", systemImage: "bolt.slash") { withAnimation(.easeInOut(duration: 0.2)) { auto = false } }
+            } else {
+                Button("Turn on Pro", systemImage: "bolt") { turnOn() }
+            }
+            Divider()
+            Button("Task", systemImage: "checklist") { add(.task) }
+            Button("Note", systemImage: "note.text") { add(.note) }
+            Button("Link", systemImage: "link") { add(.link) }
+            Button("Detail", systemImage: "info.circle") { add(.detail) }
+            Button("Contact", systemImage: "person.badge.plus") { add(.contact) }
+            Divider()
+            Button("Files or a Folder …", systemImage: "folder") {
+                NotificationCenter.default.post(name: .matterAction, object: MatterAction.addFile.rawValue)
+            }
+        }
+        .help(pro ? "Opens the chat. Right-click to turn off Pro or to add to the matter"
+                  : "Opens the chat. Right-click to turn on Pro or to add to the matter")
         .accessibilityLabel("Causabee")
         .accessibilityValue(pro ? "Pro on" : "Pro off")
         .accessibilityIdentifier("window.bee")
-        .popover(isPresented: $shows, arrowEdge: .top) {
-            ProPopover(pro: pro) {
-                shows = false
-                guard Store.shared.mayTurnOnPro() else { return }
-                if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
-            } turnOff: { shows = false; auto = false }
-        }
         .asksBeforeAuto($asks) { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
+    }
+
+    /// Without Pro bought, the plans first; the first time, what Pro does is said and asked.
+    private func turnOn() {
+        guard Store.shared.mayTurnOnPro() else { return }
+        if AutoMode.asksFirst { asks = true } else { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
     }
 }

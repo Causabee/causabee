@@ -1203,7 +1203,6 @@ struct NewsCard: View {
                 HStack(spacing: 8) {
                     Text(news.mails == 1 ? "1 mail" : "\(news.mails) mails").font(.footnote).foregroundStyle(.secondary)
                     Spacer(minLength: 4)
-                    CommentButton(matter: matter, about: Self.about(news))
                     Button("Seen") { withAnimation { matter.sawNews(); try? context.save() } }
                         .quietButton()
                         .accessibilityIdentifier("brief.seen")
@@ -1375,7 +1374,6 @@ private struct ProposalRow: View {
                         withAnimation { Adviser.dismiss(proposal, in: matter, context: context) }
                     }
                     .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
-                    CommentButton(matter: matter, about: what)
                 }
                 .padding(.top, 2)
             }
@@ -1474,7 +1472,6 @@ private struct LookupRow: View {
                             withAnimation { matter.settle(lookup.id, dismissed: true); try? context.save() }
                         }
                         .buttonStyle(.plain).font(.caption).underline().foregroundStyle(.secondary)
-                        CommentButton(matter: matter, about: lookup.question)
                     }
                 }
                 .padding(.top, 2)
@@ -1748,29 +1745,11 @@ struct TileComments: View {
     }
 }
 
-/// "Comment": a few words to what Causabee proposed — typed or said — that sharpen how it
-/// understood the matter. Causabee writes it again with them at once.
-struct CommentButton: View {
-    let matter: Matter
-    let about: String
-    @State private var writing = false
-
-    var body: some View {
-        #if os(iOS)
-        // On the iPhone and iPad it is the yellow card's long press: `commentsOnHold`.
-        EmptyView()
-        #else
-        Button { writing = true } label: { Label("Comment", systemImage: "text.bubble") }
-            .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
-            .accessibilityIdentifier("tile.comment")
-            .sheetWhenAsked(isPresented: $writing) { CommentSheet(matter: matter, about: about) }
-        #endif
-    }
-}
-
 extension View {
-    /// "Comment" held on a yellow card, on the iPhone and iPad: a line under every card said it
-    /// once more. On the Mac the card keeps its "Comment" button and this does nothing.
+    /// "Comment": a few words to what Causabee proposed — typed or said — that sharpen how it
+    /// understood the matter; Causabee writes it again with them at once. It is the yellow card's
+    /// own menu, held on the iPhone and iPad and right-clicked on the Mac: a line under every card
+    /// said it once more.
     func commentsOnHold(_ matter: Matter, about: String?) -> some View {
         modifier(CommentHold(matter: matter, about: about))
     }
@@ -1782,10 +1761,11 @@ private struct CommentHold: ViewModifier {
     @State private var writing = false
 
     func body(content: Content) -> some View {
-        #if os(iOS)
         if let about {
             content
+                #if os(iOS)
                 .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+                #endif
                 .contextMenu {
                     Button("Comment", systemImage: "text.bubble") { writing = true }
                         .accessibilityIdentifier("tile.comment")
@@ -1794,9 +1774,6 @@ private struct CommentHold: ViewModifier {
         } else {
             content
         }
-        #else
-        content
-        #endif
     }
 }
 

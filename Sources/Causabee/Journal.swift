@@ -28,8 +28,6 @@ extension Theme {
     /// The plan's one grid: a day's tile, and beside it what a task is ticked in and a date marked with.
     static let dayTile: CGFloat = 44
     static let planMark: CGFloat = 26
-    /// A row's ⋯: this narrow, so that the title has the width.
-    static let planMore: CGFloat = 20
 }
 
 extension View {
@@ -942,39 +940,18 @@ struct PlanTick: View {
     }
 }
 
-/// A task's or a date's ⋯: small, at the row's end, close to the title, which keeps the width. The
-/// target is larger than what is drawn. All of it is also there held, or right-clicked on the Mac.
+/// Where a task's or a date's ⋯ stood: nothing now, on every device. A row's menu is its long
+/// press on the iPhone and the iPad and its right-click on the Mac — a ⋯ on every row only added noise.
 struct PlanMore<Items: View>: View {
     @ViewBuilder let items: Items
 
     var body: some View {
-        #if os(iOS)
-        // On the iPhone and iPad a row's menu is its long press: a ⋯ on every row only added noise.
-        EmptyView()
-        #else
-        menu
-        #endif
-    }
-
-    private var menu: some View {
-        Menu { items } label: {
-            Image(systemName: "ellipsis")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: Theme.planMore, height: Theme.planMark)
-                .padding(10)
-                .contentShape(Rectangle())
-        }
         #if os(macOS)
-        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
-        .help("More")
+        // Nothing to see, but where a row's editor opens its popover: at the row's end, as before.
+        Color.clear.frame(width: 1, height: Theme.planMark).accessibilityHidden(true)
+        #else
+        EmptyView()
         #endif
-        .tint(.secondary)
-        .padding(-10)
-        .padding(.leading, -6)
-        .accessibilityLabel("More")
-        // While reading, holding it still has everything.
-        .tool()
     }
 }
 

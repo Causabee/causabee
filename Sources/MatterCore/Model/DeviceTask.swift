@@ -78,7 +78,11 @@ public enum DeviceTask {
     /// What the thread shows for words read on the device: a task's card to add, or that a
     /// question needs Pro. Nothing was sent, and the answer says so by having nothing sent.
     public static func answer(_ filled: Filled?, onPad: Bool, inMatter: Bool) -> AssistantAsk.Answer {
-        let device = onPad ? "iPad" : "iPhone"
+        answer(filled, device: onPad ? "iPad" : "iPhone", inMatter: inMatter)
+    }
+
+    /// The same, said of the device it was read on by name: "iPhone", "iPad", "Mac".
+    public static func answer(_ filled: Filled?, device: String, inMatter: Bool) -> AssistantAsk.Answer {
         var lines: [AssistantPrompt.Reply.Line] = []
         var cards: [AssistantPrompt.Reply.Card] = []
         if let filled, inMatter {
