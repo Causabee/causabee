@@ -1343,6 +1343,8 @@ struct ConnectionChips: View {
     /// Only what the owner connected: where what Causabee read is shown already, as under a mail.
     var ownOnly = false
     @Environment(\.modelContext) private var context
+    /// Optional: a chip in a sheet with no page behind it just stays a chip.
+    @Environment(Navigation.self) private var navigation: Navigation?
 
     private var home: Matter? { matter ?? item.matter }
 
@@ -1359,8 +1361,17 @@ struct ConnectionChips: View {
 
     private func chip(_ other: Connected, in home: Matter) -> some View {
         HStack(spacing: 4) {
-            Image(systemName: other.item.symbol).font(.caption2)
-            Text(other.item.title).lineLimit(1).truncationMode(.middle).frame(maxWidth: 220, alignment: .leading)
+            // The chip itself goes to what it is connected with, as "Show" does: its part of the
+            // page, scrolled to and marked. Only the × takes the connection away.
+            Button { navigation?.showing = other.item.id } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: other.item.symbol).font(.caption2)
+                    Text(other.item.title).lineLimit(1).truncationMode(.middle).frame(maxWidth: 220, alignment: .leading)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Show \(other.item.title)")
             Button {
                 withAnimation { home.disconnect(item, other.item, in: context) }
                 try? context.save()
