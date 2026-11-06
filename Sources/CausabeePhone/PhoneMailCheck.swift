@@ -365,8 +365,8 @@ final class PhoneMailCheck {
         state = .idle
     }
 
-    /// Sends what is new, pseudonymised, and keeps what came back as an offer: nothing is in a
-    /// matter until the owner takes it in.
+    /// Sends what is new, pseudonymised, and takes it in at once: the label was the yes, and the
+    /// receipt says where each went (docs/digest-and-chat.md).
     func classify(_ look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
         // Asked once more right before anything is sent: another device may have sorted some of it
         // while this one looked — read twice, its tasks came twice.
@@ -387,8 +387,9 @@ final class PhoneMailCheck {
                 let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), closed: Unplaced.closed(in: context), placed: Unplaced.placed(in: context), onFile: Unplaced.onFile(in: context))
                 let answered = Answered(judgements: judgements, cost: summary.cost, failed: summary.failed.count, look: look, door: door)
                 // Only newsletters: nothing to decide on.
-                if judgements.allSatisfy(\.isBulk) { take(answered, chosen: [], moved: [:], context: context, owner: owner) }
-                else { Haptics.success(); state = .answered(answered) }
+                // Labelled is the yes: straight into the matters, and the receipt says where each
+                // went, with Move. A mail no matter was found for is among the mail without one.
+                take(answered, chosen: Set(judgements.filter { !$0.isBulk }.map(\.emailID)), moved: [:], context: context, owner: owner)
             } catch {
                 Haptics.failure()
                 state = .failed(plainWords(error))
