@@ -3,14 +3,48 @@
 Written 6 November 2026, from the owner's words. A principle to design by, and a check of the app
 as it is against it.
 
+## What Causabee is for
+
+Causabee takes the mental load. The owner puts things in and knows they are there, sorted, and
+not forgotten — and has them when they are needed.
+
+- **The owner brings everything in by hand**, so the owner already knows what came in. Causabee
+  never announces back what the owner just gave it: no "new mail", no "look what I found".
+- **Causabee is on the owner's side, not a coach.** No "you should do this, think of that". It
+  says what is due, what is waiting, and what it remembers that the owner could not.
+- **Short, precise sentences, on point, on time.** One line that says the fact, at the moment it
+  matters — not when the thing arrived.
+
+What makes it smart is what the owner cannot hold in their head:
+
+1. **The typing it saves.** Deadlines, amounts, reference numbers, people and the right matter
+   come out of the file by themselves.
+2. **Memory across time and matters.** "Third reminder." "Paid in October." "Clashes with the
+   physio on Tuesday." "Changes what the landlord wrote in March." Causabee speaks up only when it
+   adds something the owner could not see at a glance.
+3. **Time, not arrival.** A thing comes back when its day is near, when it is overdue, or when a
+   fact may be outdated.
+
+### When Causabee confirms
+
+Once, when the owner adds something — and only if Causabee made something from it (a task, a date,
+a fact): "Filed under Kita. Pay €120 by 20 Nov." with change and undo, right where it was added.
+Filed with nothing made: no confirmation. After that it does not come up again until its time.
+
+### Notifications
+
+Off for now. Nothing arrives without the owner, so there is nothing to tell. The first ones worth
+having are reminders by time ("Kita fee due tomorrow"), scheduled on the device when the date is
+made — no background work needed.
+
 ## The principle
 
 Causabee is used in two places: **a matter's Digest** and **the chat**. Everything else is there to
 look things up.
 
 1. **Bring it in.** Mail comes by itself; files, scans and screenshots through the chat's plus.
-2. **Check what Causabee made of it.** The tasks, dates and facts it found, on the Digest: keep,
-   correct, or put away.
+2. **Check what Causabee made of it — once, when adding.** The tasks, dates and facts it found,
+   confirmed in one line where the thing was added: change or undo. Not again later.
 3. **Add the odd thing.** A task, a note, a detail — in the chat, by its panel or in words.
 4. **Day to day: the Digest and the chat.** What is next, what is new, what is good to know, and
    asking. The owner is fine without ever opening another tab.
@@ -24,8 +58,10 @@ The overview is the same idea across all matters: the Digest of everything.
 
 - **Nothing routine needs another tab.** If a regular action only works in Plan, Mail, Files,
   People or Notes, it is in the wrong place — or it needs a way in from the Digest or the chat.
-- **What Causabee made is shown where it is checked.** New tasks, dates and facts appear on the
-  Digest as new until the owner has seen them, with keep, correct and put away right there.
+- **What Causabee made is checked where it was added.** One confirmation line at add time, with
+  change and undo. The Digest does not repeat it as "new". (Replaces the "New" card of 6 November.)
+- **The Digest is about time and memory, not arrival.** What is due, what is waiting on the owner,
+  and what Causabee noticed across the matter's history. With nothing of that, it is calm.
 - **The chat can do what the Digest can't show.** A change in words — "move the physio to Tuesday",
   "that one is done", "forget the insurer's letter" — ends in a card to tick, never in "go to Plan".
 - **Jumps out are for looking, not for doing.** "Show", a source, a mail: they open the archive to
@@ -86,3 +122,92 @@ What the code does today, against the four steps. ✅ holds · ⚠️ partly · 
 5. **Decide what the free Digest is.** Either the rule-based Digest is enough without Pro, or the
    principle is Pro's — and the free app says so.
 6. **One order on every device** for the Digest's cards.
+
+## Open: the hand work of bringing things in
+
+Written 6 November 2026. The concept stands; the cost is the intake. Today every mail needs the
+"Causabee" label or folder, and every screenshot or file is shared or added by hand. The owner
+says yes to each thing. That is a lot of hand work for a product meant to take load away.
+
+Where the hand work could shrink, most leverage first — none decided:
+
+1. **Say yes once per sender, not per mail.** When a mail from the school lands in Kita, Causabee
+   offers: "Always take mail from the school?" After that, that sender's mail comes in by itself.
+   Needs Causabee to look at the inbox's senders (headers only) — a deliberate widening of what it
+   reads, opt-in per sender. On Gmail it could set the label filter itself.
+2. **Never ask where it goes.** The share sheet and the chat file it into the right matter by
+   themselves; the confirmation line names the matter, with a way to move it. Choosing a matter is
+   for when Causabee is unsure.
+3. **Many at once.** A batch of screenshots or a folder of PDFs in one go, sorted and confirmed in
+   one summary line per matter.
+4. **Threads follow by themselves** (already true for Gmail labels): once a thread is in, its
+   replies are too.
+
+The test for each: does the owner do less, and does the owner still know everything that is in?
+
+## Sketch: never ask which matter
+
+Written 6 November 2026, chosen by the owner as the first intake idea to work out.
+
+### Today: five decisions for one screenshot
+
+From another app's share sheet: (1) choose a matter or "Causabee decides", (2) Add, (3) open
+Causabee, (4) "Sort in" on the scanned card, (5) untick what it found, choose where it goes, "Take
+in". In the chat the same card asks (4) and (5). Each step is a yes the owner already gave by
+sharing.
+
+### The flow
+
+1. **Share → Causabee.** The share sheet shows the picture and one button, **Add**. No list of
+   matters. Done in one tap. (A small "Into…" under it for the rare case the owner wants to say.)
+2. **Causabee sorts it in by itself** when it next runs — scan, read, file, make the tasks and
+   dates. Sharing is the yes; there is no "Sort in" any more. In the chat of a matter, a file added
+   there goes into that matter without asking.
+3. **One line confirms it**, at the top of the chat or the overview, once:
+   - made something: "Kita · Pay €120 by 20 Nov." — tap to see it, **Change** or **Undo**.
+   - only filed: "Kita · filed." — fades after a moment.
+   - several at once: one line per matter: "Kita · 3 screenshots · 2 tasks."
+4. **Only when unsure, ask — with the answer ready.** "Kita or Steuer?" as two buttons with the
+   likelier first, and "New matter". Never a list of all matters. Unsure means: no matter fits
+   clearly, or two fit about the same.
+
+### What decides the matter
+
+The same reading as "Sort in" today, plus what Causabee already knows about each matter: its people
+and senders, reference numbers, amounts, places, recent mail. A reference number or a known sender
+is enough on its own; topic alone is not.
+
+### Change and undo
+
+- **Change** opens the item's own sheet (as from the Digest): words, day, whose, and **Move to…**,
+  which takes the file and everything made from it to another matter.
+- **Undo** takes it all back out. The file stays in Files as unsorted for a day, then goes.
+
+### Decided: bringing it in is the yes
+
+Decided by the owner, 6 November 2026: putting a mail under the label, sharing a screenshot or a
+PDF, adding a file in the chat — that is the yes to sort it in. No "Sort in", no "Take in", no
+"Read or only import". Privacy that costs five steps is not a product. The promise stays in what
+is sent, not in asking: with Pro, pseudonymised; without, read on the device, nothing leaves it.
+
+### Still to settle
+- **When it runs.** The share extension cannot do the work; it waits until Causabee is opened (or
+  a background task, later). The line is there when the owner next looks — which is when they want
+  to know.
+- **The Mac.** A file dropped on the window or the dock: the same, no "Sort in".
+
+### Built, 6 November 2026
+
+- Files, scans, photos and screenshots — from the chat's plus, the share sheet, or dropped on the
+  Mac — sort themselves in. No "Sort in", no "Take in". The plus asks "read or only import" only
+  for more than five files at once.
+- Sure of the matter (brought in from a matter, or Pro's model names an open one at 0.6 or more —
+  the device's model never decides the matter alone, the owner does not trust it with that):
+  filed, with what the matter already has left out. Not sure: "Which matter?" with the likelier one
+  as the button and "Other".
+- One line says it: "Care for Mum · Answer “hkk Krankenkasse”", what else it brought, the file, and
+  Change (open, Move to …) and Undo. Kept in the thread, the same on every device.
+- The share sheet: one Add; the matters folded under "Into a matter …".
+
+Not yet: mail without Pro still waits for "Sort in" (with Pro it sorts itself in already); the
+Digest's "New" card is still there, though the line at add time now does its job.

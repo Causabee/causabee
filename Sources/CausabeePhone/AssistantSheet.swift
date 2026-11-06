@@ -696,27 +696,22 @@ struct PhoneTurnView: View {
         if let note = turn.note {
             intake(note)
         } else if let shot = turn.shot {
-            // What became of a file brought in, on any device — as the Mac shows it.
-            HStack(spacing: 8) {
-                Image(systemName: "doc.text.viewfinder").foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Document.ownName(of: shot.file)).font(.footnote.weight(.medium)).lineLimit(1)
-                    if let name = shot.taken {
-                        Label("Taken into “\(name)”", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.done)
-                    } else if shot.dismissed {
-                        Text("Dismissed — nothing was taken into a matter.").font(.caption).foregroundStyle(.secondary)
-                    } else {
-                        Text("Not finished before the app was closed.").font(.caption).foregroundStyle(.secondary)
+            // What became of a file brought in, on any device: one line, with Undo and Change.
+            if let name = shot.taken {
+                TakenLine(name: name, made: shot.made, file: shot.file, fileID: shot.fileID, matter: record.matter, record: record)
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "doc.text.viewfinder").foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Document.ownName(of: shot.file)).font(.footnote.weight(.medium)).lineLimit(1)
+                        Text(shot.dismissed ? "Dismissed — nothing was taken into a matter." : "Not finished before the app was closed.")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
-                // The matter by the record's own link, which is the same on every device.
-                if shot.taken != nil, let taken = record.matter {
-                    Button("Open") { navigation.open(taken) }.font(.caption.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain)
-                }
+                .padding(.horizontal, 12).padding(.vertical, 10)
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
             }
-            .padding(.horizontal, 12).padding(.vertical, 10)
-            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
         } else {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .trailing, spacing: 6) {

@@ -206,6 +206,10 @@ final class Navigation {
             var taken: String?
             var into: PersistentIdentifier?
             var dismissed = false
+            /// What it brought, a line each, and its file's id in the record: for the line that
+            /// says it, with Undo and Move. Nil in turns from before Causabee sorted in by itself.
+            var made: [String]? = nil
+            var fileID: String? = nil
         }
         var shot: ShotOutcome?
         var hasShot: Bool { shot != nil }
@@ -275,7 +279,7 @@ final class Navigation {
 extension Navigation.Turn: Codable {
     enum CodingKeys: String, CodingKey {
         case id, date, question, scope, inHand, seen, refs, keys, matter, answer, failed, applied, readAs, dismissedCards, note
-        case shotCopied, shotTaken, shotTakenInto, shotDismissed, shotFile
+        case shotCopied, shotTaken, shotTakenInto, shotDismissed, shotFile, shotMade, shotFileID
     }
 
     init(from decoder: any Decoder) throws {
@@ -295,7 +299,9 @@ extension Navigation.Turn: Codable {
         if let file = try? c.decodeIfPresent(URL.self, forKey: .shotFile) {
             shot = ShotOutcome(file: file, taken: try? c.decodeIfPresent(String.self, forKey: .shotTaken),
                                into: (try? c.decodeIfPresent(PersistentIdentifier.self, forKey: .shotTakenInto)) ?? nil,
-                               dismissed: (try? c.decodeIfPresent(Bool.self, forKey: .shotDismissed)) == true)
+                               dismissed: (try? c.decodeIfPresent(Bool.self, forKey: .shotDismissed)) == true,
+                               made: (try? c.decodeIfPresent([String].self, forKey: .shotMade)) ?? nil,
+                               fileID: (try? c.decodeIfPresent(String.self, forKey: .shotFileID)) ?? nil)
         }
         if let answer = try? c.decodeIfPresent(AssistantAsk.Answer.self, forKey: .answer) {
             state = .answered(answer)
@@ -331,6 +337,8 @@ extension Navigation.Turn: Codable {
             try c.encodeIfPresent(shot.taken, forKey: .shotTaken)
             try c.encodeIfPresent(shot.into, forKey: .shotTakenInto)
             if shot.dismissed { try c.encode(true, forKey: .shotDismissed) }
+            try c.encodeIfPresent(shot.made, forKey: .shotMade)
+            try c.encodeIfPresent(shot.fileID, forKey: .shotFileID)
         }
     }
 }

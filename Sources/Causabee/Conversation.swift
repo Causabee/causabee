@@ -210,12 +210,12 @@ struct Conversation {
                 do { return .read(try door.look(at: file, owner: owner)) } catch { return .failed(plainWords(error)) }
             }.value
             Conversation.set(shot: id, stage, in: navigation)
-            // Auto: it is sent at once, without "Sort in"; what of it is taken in stays to be said.
-            if AutoMode.isOn, case .read = stage { classify(shot: id, owner: AutoMode.owner(in: context)) }
+            // Brought in is the yes: sorted in at once, no "Sort in".
+            if case .read = stage { classify(shot: id, owner: AutoMode.owner(in: context)) }
         }
     }
 
-    /// Sends it, pseudonymised, after "Einordnen".
+    /// Sorts it in: pseudonymised to the cloud with Pro, on this Mac without.
     func classify(shot id: UUID, owner: [String]) {
         guard let turn = navigation.turns.first(where: { $0.id == id }), case .read(let look) = turn.shot?.stage else { return }
         var door = ScreenshotDoor(besides: navigation.store, model: ModelChoice.mail)
@@ -233,10 +233,20 @@ struct Conversation {
             do {
                 let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context))
                 Conversation.set(shot: id, .answered(look, judgement), in: navigation)
+                settle(shot: id, owner: owner)
             } catch {
                 Conversation.set(shot: id, .failed(plainWords(error)), in: navigation)
             }
         }
+    }
+
+    /// Into its matter by itself when Causabee is sure which; otherwise the card asks.
+    func settle(shot id: UUID, owner: [String]) {
+        guard let turn = navigation.turns.first(where: { $0.id == id }), case .answered(let look, let judgement) = turn.shot?.stage,
+              let matter = SortsIn.matter(for: judgement, from: turn.matter, in: context) else { return }
+        let all = Set(judgement.todos.indices.map { "t\($0)" } + judgement.appointments.indices.map { "a\($0)" }
+                      + judgement.deadlines.indices.map { "d\($0)" } + look.offers(own: owner).lines.map(\.id))
+        take(shot: id, into: matter, newName: "", owner: owner, keep: all.subtracting(SortsIn.doubles(judgement, in: matter)))
     }
 
     /// Takes what the screenshot said into a matter: the one the owner chose, or a new one with
@@ -305,6 +315,10 @@ struct Conversation {
                 }
                 try context.save()
             }
+            if let index = navigation.turns.firstIndex(where: { $0.id == id }) {
+                navigation.turns[index].shot?.made = SortsIn.lines(of: judgement, offers: look.offers(own: owner).keeping { keep?.contains($0) ?? true })
+                navigation.turns[index].shot?.fileID = judgement.emailID
+            }
             Self.set(shot: id, .taken(taken?.name ?? judgement.matter ?? "", taken?.persistentModelID), in: navigation)
             if let index = navigation.turns.firstIndex(where: { $0.id == id }) { navigation.turns[index].matter = taken?.persistentModelID }
             if let document = turn.shot?.document.flatMap({ live($0, as: MatterCore.Document.self) }) {
@@ -314,6 +328,31 @@ struct Conversation {
         } catch {
             Self.set(shot: id, .failed(plainWords(error)), in: navigation)
         }
+    }
+
+    /// The file taken back out of its matter, with what only it brought, and gone from the thread.
+    func undo(shot id: UUID) {
+        guard let (matter, document) = takenFile(id) else { return }
+        matter.forget(document, besides: navigation.store, in: context)
+        try? context.save()
+        navigation.turns.removeAll { $0.id == id }
+    }
+
+    /// The file into another matter, with what only it brought; the line says the new one.
+    func move(shot id: UUID, to other: Matter) {
+        guard let (matter, document) = takenFile(id) else { return }
+        try? matter.carry(document, to: other, in: context)
+        FolderSaver.shared.save([other])
+        Self.set(shot: id, .taken(other.name, other.persistentModelID), in: navigation)
+        if let index = navigation.turns.firstIndex(where: { $0.id == id }) { navigation.turns[index].matter = other.persistentModelID }
+    }
+
+    /// The matter a file was taken into, and its file there.
+    private func takenFile(_ id: UUID) -> (Matter, MatterCore.Document)? {
+        guard let shot = navigation.turns.first(where: { $0.id == id })?.shot, case .taken(_, let into) = shot.stage,
+              let into, let fileID = shot.fileID, let matter = live(into, as: Matter.self),
+              let document = matter.documents?.first(where: { $0.messageID == fileID }) else { return nil }
+        return (matter, document)
     }
 
     static func set(shot id: UUID, _ stage: Navigation.Shot.Stage, in navigation: Navigation) {

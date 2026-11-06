@@ -605,7 +605,7 @@ struct FileFace<Items: View>: View {
     private var readButton: some View {
         Button("Read", action: read)
             .quietButton().fixedSize()
-            .help("Reads it on this device and shows it in the assistant. Nothing is sent until “Sort in”.")
+            .help("Reads it on this device and sorts it in, in the assistant.")
     }
 
     /// Where it is and where it came from — its own name too, when it has a name of ours.
@@ -902,7 +902,7 @@ struct ReadAllLine: View {
         if count > 1 {
             Button("Read all \(count) attachments", action: read)
                 .buttonStyle(.gold).font(.caption)
-                .help("Reads each on this device and shows it in the assistant. Nothing is sent until “Sort in”.")
+                .help("Reads each on this device and sorts it in, in the assistant.")
                 .padding(.horizontal, 4)
         }
     }

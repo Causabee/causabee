@@ -357,6 +357,10 @@ final class Navigation {
         var stage: Stage = .reading
         /// Set when it is a file taken out of a mail of a matter: marked read once taken in.
         var document: PersistentIdentifier? = nil
+        /// Once taken in: what it brought, a line each, and its file's id in the record — for the
+        /// line that says so, with Undo and Move. Nil from before it sorted in by itself.
+        var made: [String]? = nil
+        var fileID: String? = nil
     }
 
     /// What a ticked card changed, kept so it can be put back as it was — the same on the iPhone.
@@ -976,7 +980,7 @@ struct MatterRow: View {
 extension Navigation.Turn: Codable {
     enum CodingKeys: String, CodingKey {
         case id, date, question, scope, inHand, seen, refs, keys, matter, answer, failed, applied, readAs, dismissedCards, note
-        case shotFile, shotCopied, shotTaken, shotTakenInto, shotDismissed, shotDocument
+        case shotFile, shotCopied, shotTaken, shotTakenInto, shotDismissed, shotDocument, shotMade, shotFileID
     }
 
     init(from decoder: any Decoder) throws {
@@ -1000,6 +1004,8 @@ extension Navigation.Turn: Codable {
         if let file = try c.decodeIfPresent(URL.self, forKey: .shotFile) {
             var shot = Navigation.Shot(file: file, copied: try c.decodeIfPresent(Bool.self, forKey: .shotCopied) ?? false)
             shot.document = try c.decodeIfPresent(PersistentIdentifier.self, forKey: .shotDocument)
+            shot.made = try c.decodeIfPresent([String].self, forKey: .shotMade)
+            shot.fileID = try c.decodeIfPresent(String.self, forKey: .shotFileID)
             if let name = try c.decodeIfPresent(String.self, forKey: .shotTaken) {
                 shot.stage = .taken(name, try c.decodeIfPresent(PersistentIdentifier.self, forKey: .shotTakenInto))
             } else if try c.decodeIfPresent(Bool.self, forKey: .shotDismissed) == true {
@@ -1035,6 +1041,8 @@ extension Navigation.Turn: Codable {
             try c.encode(shot.file, forKey: .shotFile)
             try c.encode(shot.copied, forKey: .shotCopied)
             try c.encodeIfPresent(shot.document, forKey: .shotDocument)
+            try c.encodeIfPresent(shot.made, forKey: .shotMade)
+            try c.encodeIfPresent(shot.fileID, forKey: .shotFileID)
             switch shot.stage {
             case .taken(let name, let into):
                 try c.encode(name, forKey: .shotTaken)

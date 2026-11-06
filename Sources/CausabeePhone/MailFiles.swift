@@ -216,7 +216,7 @@ struct FilesSection: View {
                         chosen: chosen.map { $0.contains(id) }, tile: tile) { items(document) }
     }
 
-    /// Into the assistant, one after the other: each read here, nothing sent until "Sort in".
+    /// Into the assistant, one after the other: each read here and sorted in by itself.
     private func readAll(_ documents: [MatterCore.Document]) {
         for document in documents where document.reading == .kept { read(document) }
     }

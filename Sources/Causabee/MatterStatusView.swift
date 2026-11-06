@@ -1532,7 +1532,7 @@ struct MatterStatusView: View {
         .fileCardFrame(kept: document.reading != .read)
     }
 
-    /// Into the assistant, one after the other: each read on this Mac, nothing sent until "Sort in".
+    /// Into the assistant, one after the other: each read on this Mac and sorted in by itself.
     private func readAll(_ documents: [MatterCore.Document]) {
         for document in documents where document.reading == .kept {
             fetch(document, then: { conversation.bring($0, document: document) })
@@ -2434,7 +2434,7 @@ struct DocumentRow: View {
         Button("Open", action: open)
         if document.reading == .kept {
             Button("Read", action: read)
-                .help("Reads it on this Mac and shows it in the assistant. Nothing is sent until “Sort in”.")
+                .help("Reads it on this Mac and sorts it in, in the assistant.")
         }
         Button(Say.connect, systemImage: "link") { connecting = true }
         Button(Say.useInChat, systemImage: "bubble.left", action: talk)

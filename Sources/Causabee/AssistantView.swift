@@ -231,7 +231,9 @@ struct AssistantColumn: View {
                                          take: { conversation.take(shot: turn.id, into: $0, newName: $1, owner: profiles.first?.names ?? [], keep: $2) },
                                          dismiss: { Conversation.set(shot: turn.id, .dismissed, in: navigation) },
                                          open: { id in if let matter = matters.first(where: { $0.persistentModelID == id }) { navigation.open(matter) } },
-                                         bringBack: { conversation.bring(shot.file) })
+                                         bringBack: { conversation.bring(shot.file) },
+                                         undo: { conversation.undo(shot: turn.id) },
+                                         move: { conversation.move(shot: turn.id, to: $0) })
                                     .id(turn.id).transition(.opacity)
                             } else {
                                 TurnView(turn: turn, open: conversation.open, label: conversation.label,
@@ -342,7 +344,7 @@ struct AssistantColumn: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.png, .jpeg, .heic, .tiff, .pdf, UTType(filenameExtension: "eml") ?? .emailMessage]
         panel.allowsMultipleSelection = true
-        panel.message = "Choose a screenshot, a mail (.eml) or a PDF — it is scanned on the Mac, and sent only after “Sort in”."
+        panel.message = "Choose a screenshot, a mail (.eml) or a PDF — it is read on the Mac and sorts itself in."
         guard panel.runModal() == .OK else { return }
         for url in panel.urls { conversation.bring(url) }
     }

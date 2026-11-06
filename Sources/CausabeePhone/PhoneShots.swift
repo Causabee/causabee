@@ -7,8 +7,9 @@ import VisionKit
 
 /// A file brought into the assistant on the iPhone — a chat screenshot, a photo of a letter, a PDF
 /// from Files, or a matter's file taken out of its mail with "Scan" — the way the Mac brings one
-/// in: read on the iPhone, shown before anything is sent, sent pseudonymised only on "Sort in",
-/// and taken into a matter the owner chooses. A picture or a scan is kept on this iPhone, in Files
+/// in: bringing it in is the yes, so it is read on the iPhone, sorted in — pseudonymised with
+/// Pro, on the device without — and taken into its matter by itself; the owner is asked only when
+/// Causabee is not sure which matter it is (docs/digest-and-chat.md). A picture or a scan is kept on this iPhone, in Files
 /// (On My iPhone › Causabee), as the Mac's stay on the Mac; what it said — tasks, dates, people —
 /// goes to every device.
 @MainActor
@@ -33,6 +34,10 @@ final class PhoneShots {
         var document: PersistentIdentifier?
         var stage: Stage = .reading
         let date = Date()
+        /// What it brought, once taken in, in a line each — and its file's id in the record, for
+        /// Undo and Move.
+        var made: [String] = []
+        var fileID: String?
         /// How far it is, as a number: the thread follows its card down as it grows.
         var step: Int {
             switch stage {
@@ -102,8 +107,8 @@ final class PhoneShots {
                 do { return .read(try door.look(at: file, owner: owner)) } catch { return .failed(plainWords(error)) }
             }.value
             set(id, stage)
-            // Auto: it is sent at once, without "Sort in"; what of it is taken in stays to be said.
-            if AutoMode.isOn, case .read = stage { classify(id, context: context, owner: AutoMode.owner(in: context)) }
+            // Brought in is the yes: sorted in at once, no "Sort in".
+            if case .read = stage { classify(id, context: context, owner: AutoMode.owner(in: context)) }
         }
     }
 
@@ -116,6 +121,7 @@ final class PhoneShots {
         if DemoData.isRequested, var judgement = look.report.outcomes.first?.judgement {
             judgement.todos = [.init(text: "Answer “\(look.heading)”", owner: .me, due: nil, sourceQuote: look.heading)]
             set(id, .answered(look, judgement))
+            settle(id, owner: owner, context: context)
             return
         }
         let reader = ModelChoice.mailReader(for: door.model)
@@ -130,10 +136,19 @@ final class PhoneShots {
             do {
                 let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context))
                 set(id, .answered(look, judgement))
+                settle(id, owner: owner, context: context)
             } catch {
                 set(id, .failed(plainWords(error)))
             }
         }
+    }
+
+    /// Sorted in: into its matter by itself when Causabee is sure which — the one it was brought
+    /// in from, or the one the answer names with confidence. Otherwise the card asks.
+    func settle(_ id: UUID, owner: [String], context: ModelContext) {
+        guard let shot = shots.first(where: { $0.id == id }), case .answered(_, let judgement) = shot.stage,
+              let matter = SortsIn.matter(for: judgement, from: shot.matter, in: context) else { return }
+        take(id, into: matter, newName: "", owner: owner, skipping: SortsIn.doubles(judgement, in: matter), context: context)
     }
 
     /// Takes what it said into a matter: the one chosen, or a new one with the name given.
@@ -192,7 +207,14 @@ final class PhoneShots {
             if !DemoData.isRequested { _ = try? SortedMails.record([judgement], device: PhoneNames.device, in: context) }
             try context.save()
             if !DemoData.isRequested { PhoneNames.publish(in: context) }
+            let offered = look.offers(own: owner).keeping { !skipped.contains($0) }
+            let made = SortsIn.lines(of: judgement, offers: offered)
+            if let index = shots.firstIndex(where: { $0.id == id }) {
+                shots[index].made = made
+                shots[index].fileID = judgement.emailID
+            }
             set(id, .taken(taken?.name ?? judgement.matter ?? "", taken?.persistentModelID))
+            Haptics.success()
             // Kept in the thread, as the Mac keeps it: every device shows what became of it, also
             // after a restart. The card here gives way to it.
             if !DemoData.isRequested {
@@ -200,7 +222,8 @@ final class PhoneShots {
                 turn.id = id
                 turn.date = shot.date
                 turn.state = .failed("")
-                turn.shot = .init(file: shot.file, taken: taken?.name ?? judgement.matter ?? "", into: taken?.persistentModelID)
+                turn.shot = .init(file: shot.file, taken: taken?.name ?? judgement.matter ?? "", into: taken?.persistentModelID,
+                                  made: made, fileID: judgement.emailID)
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = .sortedKeys
                 if let payload = try? encoder.encode(turn) {
@@ -232,11 +255,10 @@ struct PhoneShotCard: View {
     @Environment(Navigation.self) private var navigation
     @Query private var matters: [Matter]
     @Query private var profiles: [Profile]
-    /// The matter to take it into: nil for a new one, with `newName`.
-    @State private var target: PersistentIdentifier?
     /// What the owner untick: "t0", "a1", "d0" — left out when it is taken in.
     @State private var skipped: Set<String> = []
-    @State private var chosen = false
+    /// "A new matter …" was picked: its name is asked.
+    @State private var makesNew = false
     @State private var newName = ""
 
     private var shots: PhoneShots { PhoneShots.shared }
@@ -248,6 +270,18 @@ struct PhoneShotCard: View {
     }
 
     var body: some View {
+        // Taken in: only the line that says so, as the thread keeps it.
+        if case .taken(let name, let id) = shot.stage {
+            TakenLine(name: name, made: shot.made, file: shot.file, fileID: shot.fileID,
+                      matter: id.flatMap { id in matters.first { $0.persistentModelID == id } }, record: nil) {
+                shots.remove(shot.id)
+            }
+        } else {
+            card
+        }
+    }
+
+    private var card: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label(name, systemImage: shot.file.pathExtension.lowercased() == "pdf" ? "doc.text" : "photo")
                 .font(.caption).foregroundStyle(.secondary).lineLimit(1)
@@ -257,35 +291,17 @@ struct PhoneShotCard: View {
             switch shot.stage {
             case .reading:
                 HStack(spacing: 8) { BeeLoader(size: 15); Text("Scanning it on this \(ThisDevice.name) …").font(.subheadline).foregroundStyle(.secondary) }
-            case .read(let look):
-                preview(look)
-                Text(look.earlier != nil ? "Scanned before: its answer is kept, nothing is sent again."
-                     : "Sent pseudonymised to \(ModelChoice.mail.label) when you sort it in.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                HStack(spacing: 10) {
-                    Button("Not now") { shots.remove(shot.id) }.buttonStyle(.phone)
-                    Button("Sort in") { shots.classify(shot.id, context: context, owner: profiles.first?.names ?? []) }.buttonStyle(.phoneFilled)
-                }
-            case .sending(let look):
+            case .read(let look), .sending(let look):
+                // Brought in is the yes: it is sorting itself in already.
                 preview(look)
                 HStack(spacing: 8) { BeeLoader(size: 15); Text("Sorting it in …").font(.subheadline).foregroundStyle(.secondary) }
             case .answered(let look, let judgement):
+                // Only here when Causabee is not sure which matter: what it brought, and the question.
                 Text(look.heading).font(.headline).fixedSize(horizontal: false, vertical: true)
                 found(judgement, look.offers(own: profiles.first?.names ?? []))
-                destination(judgement)
-                HStack(spacing: 10) {
-                    Button("Not needed") { shots.remove(shot.id) }.buttonStyle(.phone)
-                    Button("Take in") { take(judgement) }.buttonStyle(.phoneFilled)
-                        .disabled(target == nil && newName.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            case .taken(let name, let id):
-                HStack {
-                    Label("Taken into “\(name)”", systemImage: "checkmark.circle").font(.subheadline).foregroundStyle(Theme.done)
-                    Spacer()
-                    if let id, let matter = matters.first(where: { $0.persistentModelID == id }) {
-                        Button("Open") { navigation.open(matter) }.buttonStyle(.phone)
-                    }
-                }
+                ask(judgement)
+            case .taken:
+                EmptyView()
             case .failed(let message):
                 Label(message, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.warning)
                     .fixedSize(horizontal: false, vertical: true)
@@ -344,32 +360,45 @@ struct PhoneShotCard: View {
         }
     }
 
-    /// Into the matter it came from or the answer suggests, another, or a new one.
+    /// Which matter, when Causabee is not sure: the likelier one as the button, the others and a
+    /// new one under "Other". Never the whole list first.
     @ViewBuilder
-    private func destination(_ judgement: Judgement) -> some View {
+    private func ask(_ judgement: Judgement) -> some View {
         let open = matters.filter { !$0.isClosed }.sorted { $0.name < $1.name }
-        Picker("Into", selection: $target) {
-            ForEach(open) { matter in Text(matter.name).tag(Optional(matter.persistentModelID)) }
-            Text("A new matter …").tag(PersistentIdentifier?.none)
-        }
-        .pickerStyle(.menu)
-        .tint(.primary)
-        .onAppear {
-            guard !chosen else { return }
-            chosen = true
-            let suggested = judgement.matter.flatMap { key in open.first { $0.answers(to: key) } }
-            target = shot.matter.flatMap { id in open.first { $0.persistentModelID == id } }?.persistentModelID ?? suggested?.persistentModelID
-            newName = judgement.matterTitle ?? ""
-        }
-        if target == nil {
+        let likely = judgement.matter.flatMap { key in open.first { $0.answers(to: key) } }
+        let proposed = (judgement.matterTitle ?? "").trimmingCharacters(in: .whitespaces)
+        Text("Which matter?").font(.subheadline.weight(.semibold))
+        if makesNew {
             TextField("Name of the new matter", text: $newName)
                 .padding(.horizontal, 12).padding(.vertical, 9)
                 .background(Theme.canvas, in: RoundedRectangle(cornerRadius: 10))
+                .onAppear { if newName.isEmpty { newName = proposed } }
+        }
+        HStack(spacing: 10) {
+            Menu {
+                ForEach(open.filter { $0 !== likely }) { matter in
+                    Button(matter.name) { take(into: matter) }
+                }
+                Divider()
+                Button("A new matter …", systemImage: "plus") { makesNew = true }
+                Button("Not needed", role: .destructive) { shots.remove(shot.id) }
+            } label: { Text("Other").frame(maxWidth: .infinity) }
+            .buttonStyle(.phone)
+            .accessibilityIdentifier("shot.other")
+            if makesNew {
+                Button("Make it") { take(into: nil) }.buttonStyle(.phoneFilled)
+                    .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
+            } else if let likely {
+                Button(likely.name) { take(into: likely) }.buttonStyle(.phoneFilled).lineLimit(1)
+                    .accessibilityIdentifier("shot.likely")
+            } else if !proposed.isEmpty {
+                Button("New: \(proposed)") { newName = proposed; take(into: nil) }.buttonStyle(.phoneFilled).lineLimit(1)
+                    .accessibilityIdentifier("shot.likely")
+            }
         }
     }
 
-    private func take(_ judgement: Judgement) {
-        let matter = target.flatMap { id in matters.first { $0.persistentModelID == id } }
+    private func take(into matter: Matter?) {
         shots.take(shot.id, into: matter, newName: newName, owner: profiles.first?.names ?? [], skipping: skipped, context: context)
     }
 }
@@ -483,13 +512,12 @@ struct AttachButton: View {
             }
         }
         .confirmationDialog(question, isPresented: $asks, titleVisibility: .visible) {
-            if pro { Button("Read and sort in") { read() } }
+            Button("Read and sort in") { read() }
             if matter != nil { Button("Only import") { importOnly() } }
             Button("Cancel", role: .cancel) { waiting = [] }
         } message: {
-            Text(pro ? "Read: Pro reads it and offers its tasks and dates. Only import: it is kept with the matter, unread."
-                     : matter == nil ? "Open a matter to import it there. Reading needs Pro."
-                     : "Only import: it is kept with the matter, unread. Reading it needs Pro.")
+            Text(pro ? "Read: Pro sorts each in, with its tasks and dates. Only import: kept with the matter, unread."
+                     : "Read: each is sorted in on this \(ThisDevice.name). Only import: kept with the matter, unread.")
         }
         .alert(said ?? "", isPresented: Binding(get: { said != nil }, set: { if !$0 { said = nil } })) {
             Button("OK", role: .cancel) { }
@@ -499,15 +527,19 @@ struct AttachButton: View {
     /// With Pro the choice; without it, only importing is offered, and asked as that.
     private var question: String {
         let one = waiting.count == 1, name = waiting.first?.name ?? ""
-        guard pro else { return one ? "Import “\(name)”?" : "Import \(waiting.count) files?" }
         return one ? "Read “\(name)”, or only import it?" : "Read \(waiting.count) files, or only import them?"
     }
 
+    /// Picked is the yes: a photo, a scan or a few files are read and sorted in at once. Only a
+    /// pile — a folder — asks first whether to read it all or only keep it with the matter.
     private func ask(about picked: [Picked]) {
         guard !picked.isEmpty else { return }
         waiting = picked
-        asks = true
+        if picked.count <= Self.readsWithoutAsking || matter == nil { read() } else { asks = true }
     }
+
+    /// How many files picked at once are read without asking.
+    static let readsWithoutAsking = 5
 
     /// Picked from Files: every file of a folder with it, copied onto the device, where reading and
     /// importing both find it.
@@ -695,4 +727,93 @@ private struct ReceivesFiles: ViewModifier {
 
 extension View {
     func receivesFiles(matter: Matter?) -> some View { modifier(ReceivesFiles(matter: matter)) }
+}
+
+/// The one line that says where a file went and what it brought — "Kita · Pay €120 by 20 Nov" —
+/// with Undo, which takes it all back out, and Change: open the matter, or move it with what it
+/// brought into another. Said once, where it was brought in (docs/digest-and-chat.md).
+struct TakenLine: View {
+    let name: String
+    let made: [String]?
+    let file: URL
+    let fileID: String?
+    let matter: Matter?
+    /// The thread's record of it, when it is kept: changed with a move, gone with Undo.
+    let record: ThreadTurn?
+    var gone: () -> Void = {}
+    @Environment(\.modelContext) private var context
+    @Environment(Navigation.self) private var navigation
+    @Query private var matters: [Matter]
+
+    private var document: MatterCore.Document? {
+        guard let fileID else { return nil }
+        return matter?.documents?.first { $0.messageID == fileID }
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.done).font(.body)
+            VStack(alignment: .leading, spacing: 3) {
+                // Older turns, from before it sorted in by itself, say only where it went.
+                let lines = made ?? []
+                Text(SortsIn.headline(name, made))
+                    .font(.subheadline.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                ForEach(Array(lines.dropFirst().prefix(3).enumerated()), id: \.offset) { _, line in
+                    Text(line).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                if lines.count > 4 { Text("and \(lines.count - 4) more").font(.footnote).foregroundStyle(.secondary) }
+                Text(Document.ownName(of: file)).font(.caption2).foregroundStyle(.tertiary).lineLimit(1)
+                HStack(spacing: 18) {
+                    Menu {
+                        if let matter { Button("Open \(matter.name)", systemImage: "arrow.right") { navigation.open(matter) } }
+                        if document != nil {
+                            Menu("Move to …") {
+                                ForEach(matters.filter { !$0.isClosed && $0 !== matter }.sorted { $0.name < $1.name }) { other in
+                                    Button(other.name) { move(to: other) }
+                                }
+                            }
+                        }
+                    } label: { Text("Change") }
+                    .accessibilityIdentifier("taken.change")
+                    if document != nil {
+                        Button("Undo") { undo() }.accessibilityIdentifier("taken.undo")
+                    }
+                }
+                .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain).padding(.top, 2)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("taken.line")
+    }
+
+    /// Back out: the file and what only it brought, and this line. A copy Causabee kept is deleted.
+    private func undo() {
+        guard let matter, let document else { return }
+        matter.forget(document, besides: PhoneCloud.storeLocation(), in: context)
+        if PhoneShots.isKept(file) { try? FileManager.default.removeItem(at: file) }
+        if let record { context.delete(record) }
+        try? context.save()
+        Haptics.tap()
+        gone()
+    }
+
+    /// Into another matter, with what it brought; the line says the new one.
+    private func move(to other: Matter) {
+        guard let matter, let document else { return }
+        try? matter.carry(document, to: other, in: context)
+        if let record, var turn = try? JSONDecoder().decode(Navigation.Turn.self, from: record.payload) {
+            turn.shot?.taken = other.name
+            turn.shot?.into = other.persistentModelID
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            if let payload = try? encoder.encode(turn) { record.payload = payload }
+            record.matter = other
+        }
+        try? context.save()
+        Haptics.success()
+        if record == nil { gone() }
+    }
 }

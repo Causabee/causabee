@@ -3,9 +3,10 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// Causabee in the share sheet: a screenshot, a photo or a PDF shared from any app goes into the
-/// matter chosen here — or Causabee decides — and waits until Causabee opens, where it comes up
-/// scanned in that matter's assistant. Nothing is read or sent here (Figma "iOS/ShareSheet").
+/// Causabee in the share sheet: a screenshot, a photo or a PDF shared from any app, in one tap —
+/// sharing it is the yes. It waits until Causabee opens, which sorts it in by itself and says where
+/// it went; a matter can be chosen here, folded away, for when the owner wants to say. Nothing is
+/// read or sent here (Figma "iOS/ShareSheet", docs/digest-and-chat.md).
 final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -116,6 +117,8 @@ final class ShareModel {
 
 struct ShareView: View {
     @Bindable var model: ShareModel
+    /// The matters, folded away: Causabee sorts it in by itself, and this is for saying where.
+    @State private var showsMatters = false
 
     var body: some View {
         Group {
@@ -143,21 +146,31 @@ struct ShareView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     what
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("INTO").font(.caption).foregroundStyle(.secondary).kerning(0.5)
-                        VStack(spacing: 0) {
-                            row(key: nil, title: "Causabee decides", sub: "it suggests the matter when you sort it in", bee: true)
-                            ForEach(model.choices) { choice in
-                                Divider().padding(.leading, 50)
-                                row(key: choice.key, title: choice.name,
-                                    sub: choice.last.map { "last mail " + $0.formatted(.dateTime.month(.abbreviated).day().locale(Locale(identifier: "en_US"))) }, bee: false)
+                    if model.choices.isEmpty || !showsMatters {
+                        if !model.choices.isEmpty {
+                            Button { withAnimation(.snappy) { showsMatters = true } } label: {
+                                Label(model.chosen.flatMap { key in model.choices.first { $0.key == key }?.name }.map { "Into “\($0)”" } ?? "Into a matter …",
+                                      systemImage: "folder")
+                                    .font(.subheadline)
                             }
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("share.into")
                         }
-                        .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
-                        Text(model.choices.isEmpty ? "Open Causabee once, and your matters are here to choose."
-                                                   : "Your open matters, the latest first.")
-                            .font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("INTO").font(.caption).foregroundStyle(.secondary).kerning(0.5)
+                            VStack(spacing: 0) {
+                                row(key: nil, title: "Causabee decides", sub: "it sorts it in by itself", bee: true)
+                                ForEach(model.choices) { choice in
+                                    Divider().padding(.leading, 50)
+                                    row(key: choice.key, title: choice.name,
+                                        sub: choice.last.map { "last mail " + $0.formatted(.dateTime.month(.abbreviated).day().locale(Locale(identifier: "en_US"))) }, bee: false)
+                                }
+                            }
+                            .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+                            Text("Your open matters, the latest first.").font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 24)
@@ -191,7 +204,7 @@ struct ShareView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(summary).fontWeight(.medium)
-                Text("Scanned on this \(ThisDevice.name). Nothing is sent until you tap “Sort in” in Causabee.")
+                Text("Causabee sorts it in when it next opens, and says where it went.")
                     .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -230,7 +243,7 @@ struct ShareView: View {
         VStack(spacing: 10) {
             BeeMark(size: 28, livesNowAndThen: false).tight().foregroundStyle(Theme.beeMark)
             Text(name.isEmpty ? "In Causabee" : "In “\(name)”").font(.headline).multilineTextAlignment(.center)
-            Text("Open Causabee to see what it says and sort it in.").font(.subheadline).foregroundStyle(.secondary)
+            Text("It is sorted in when Causabee opens.").font(.subheadline).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .padding(24)

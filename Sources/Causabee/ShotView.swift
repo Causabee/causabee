@@ -43,8 +43,9 @@ struct ShotThumbnail: View {
     }
 }
 
-/// C5–C7 · a screenshot in the thread: what was read on the Mac, what was left out and why, and
-/// only on "Einordnen" what it means — as a card to take into a matter, or not.
+/// C5–C7 · a file in the thread: read on the Mac and sorted in by itself — bringing it in is the
+/// yes. Once in, one line says where and what it brought, with Undo and Change; only when Causabee
+/// is not sure of the matter, the card asks (docs/digest-and-chat.md).
 struct ShotView: View {
     let turn: Navigation.Turn
     let shot: Navigation.Shot
@@ -57,6 +58,8 @@ struct ShotView: View {
     let open: (PersistentIdentifier) -> Void
     /// Reads the file again, after a dismissal: what was answered is in the record, and free.
     var bringBack: (() -> Void)? = nil
+    var undo: () -> Void = {}
+    var move: (Matter) -> Void = { _ in }
     @Query private var profiles: [Profile]
     @State private var showsChat = true
     @State private var showsSent = false
@@ -67,6 +70,53 @@ struct ShotView: View {
     @State private var skipped: Set<String> = []
 
     var body: some View {
+        if case .taken(let name, let id) = shot.stage {
+            takenLine(name, id).padding(.top, 8)
+        } else {
+            card
+        }
+    }
+
+    /// "Kita · Pay €120 by 20 Nov", what else it brought, and Undo and Change.
+    private func takenLine(_ name: String, _ id: PersistentIdentifier?) -> some View {
+        let lines = shot.made ?? []
+        return HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.done)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(SortsIn.headline(name, shot.made)).fontWeight(.medium).fixedSize(horizontal: false, vertical: true)
+                ForEach(Array(lines.dropFirst().prefix(3).enumerated()), id: \.offset) { _, line in
+                    Text(line).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                if lines.count > 4 { Text("and \(lines.count - 4) more").font(.callout).foregroundStyle(.secondary) }
+                Text(Document.ownName(of: shot.file)).font(.caption).foregroundStyle(.tertiary).lineLimit(1)
+                HStack(spacing: 14) {
+                    Menu("Change") {
+                        if let id { Button("Open \(name)") { open(id) } }
+                        if shot.fileID != nil {
+                            Menu("Move to …") {
+                                ForEach(matters.filter { !$0.isClosed && $0.persistentModelID != id }.sorted { $0.name < $1.name }) { other in
+                                    Button(other.name) { move(other) }
+                                }
+                            }
+                        }
+                    }
+                    .menuStyle(.borderlessButton).fixedSize()
+                    .accessibilityIdentifier("taken.change")
+                    if shot.fileID != nil {
+                        Button("Undo", action: undo).buttonStyle(.plain).accessibilityIdentifier("taken.undo")
+                    }
+                }
+                .font(.callout.weight(.medium)).foregroundStyle(Theme.gold).padding(.top, 2)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("taken.line")
+    }
+
+    private var card: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 if ScreenshotDoor.chatTypes.contains(shot.file.pathExtension.lowercased()) {
@@ -91,21 +141,14 @@ struct ShotView: View {
             switch shot.stage {
             case .reading:
                 progress("Scanning on the Mac …")
-            case .read(let look):
+            case .read(let look), .sending(let look):
                 read(look)
-                buttons(primary: look.earlier == nil ? "Sort in" : "Sort in · already scanned",
-                        action: classify)
-            case .sending(let look):
-                read(look)
-                progress("Sending, pseudonymised …")
+                progress("Sorting it in …")
             case .answered(let look, let judgement):
                 read(look)
                 answered(judgement, look.offers(own: profiles.first?.names ?? []))
-            case .taken(let name, let id):
-                HStack {
-                    Label("Taken into “\(name)”", systemImage: "checkmark").foregroundStyle(Theme.done)
-                    if let id { Button("open ›") { open(id) }.buttonStyle(.plain).foregroundStyle(.secondary) }
-                }
+            case .taken:
+                EmptyView()
             case .failed(let message):
                 Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.warning).textSelection(.enabled)
             case .dismissed:
@@ -240,7 +283,7 @@ struct ShotView: View {
             ?? turn.matter.flatMap { id in matters.first { $0.persistentModelID == id } }
             ?? judgement.matter.flatMap { key in matters.first { $0.answers(to: key) } }
         VStack(alignment: .leading, spacing: 8) {
-            Text(known == nil ? "New matter?" : "Belongs to a matter").font(.caption.weight(.semibold))
+            Text("Which matter?").font(.caption.weight(.semibold))
             Picker("Matter", selection: $choice) {
                 Text("New matter").tag(PersistentIdentifier?.none)
                 ForEach(matters) { matter in Text(matter.name).tag(Optional(matter.persistentModelID)) }

@@ -395,6 +395,28 @@ extension Matter {
         return true
     }
 
+    /// A file the owner brought in, into another matter, with what it brought alone — its entry,
+    /// its links, and the tasks, dates and decisions read out of it and nothing else. "Move to…"
+    /// on the line that said where Causabee put it.
+    public func carry(_ document: Document, to new: Matter, in context: ModelContext) throws {
+        guard new !== self, document.matter === self else { return }
+        let id = document.messageID
+        let only: ([Source]) -> Bool = { !$0.isEmpty && $0.allSatisfy { $0.messageID == id } }
+        let found = brought(by: document)
+        for item in found.todos {
+            item.matter = new
+            item.waitsFor = nil
+            if nextStepTodo == item.origin { nextStepTodo = nil }
+        }
+        for item in found.appointments { item.matter = new }
+        for item in found.deadlines { item.matter = new }
+        for item in decisions ?? [] where only(item.sources) { item.matter = new }
+        for item in links ?? [] where item.messageID == id { item.matter = new }
+        for entry in entries ?? [] where entry.messageID == id { entry.matter = new }
+        for other in documents ?? [] where other.messageID == id { other.matter = new }
+        try context.save()
+    }
+
     /// Everything of `other` becomes this matter's, and `other` is gone. Its names are kept as
     /// aliases: the model will go on filing mail under `reisestornierungmutter`, and that mail
     /// has to arrive here.

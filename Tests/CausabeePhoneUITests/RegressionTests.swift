@@ -19,9 +19,9 @@ final class RegressionTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         // The letter test is handed a letter as the camera would bring it.
-        // Pro off for the letter, whatever this simulator was left with: with it on, a letter is
-        // read at once and nothing waits for "Sort in". On for the rest: the bee opens the chat
-        // only with Pro on — grey, it says what Pro adds.
+        // Pro off for the letter, whatever this simulator was left with: it sorts itself in either
+        // way, read on the device. On for the rest: the bee opens the chat only with Pro on — grey,
+        // it says what Pro adds.
         app.launchArguments = name.contains("Letter") ? ["--demo", "--shot", "letter", "-mail.auto", "NO"] : ["--demo", "-mail.auto", "YES"]
         // Setting a day stays in the demo's store: filled anew, the task is undated again.
         // So is "Seen" on the news: filled anew, the news is new again.
@@ -41,18 +41,24 @@ final class RegressionTests: XCTestCase {
         XCTAssertTrue(app.buttons["bee"].waitForExistence(timeout: 10), "The matter's page did not open.")
     }
 
-    /// A photo brought in on a matter opens the assistant, is read, and offers what it found: its
-    /// task, who wrote, and the number it is filed under. Taken in, the contact is in People.
-    func testALetterOffersItsTaskContactAndDetail() {
-        let sort = app.buttons["Sort in"]
-        XCTAssertTrue(sort.waitForExistence(timeout: 30), "The letter was not read, or the assistant did not open with it.")
-        sort.tap()
-        shows("Contact: HKK", "The letter's sender was not offered as a contact.")
-        shows("reha@hkk.de", "The contact was offered without its address.")
-        shows("Versichertennummer: A123456789", "The membership number was not offered as a detail.")
-        shows("Answer", "The letter's task was not offered.")
-        app.buttons["Take in"].tap()
-        shows("Taken into", "The letter was not taken into the matter.")
+    /// A photo brought in on a matter opens the assistant and sorts itself into that matter — no
+    /// "Sort in", no "Take in" — and one line says what it brought: its task, who wrote, and the
+    /// number it is filed under. Undo takes it all back out.
+    func testALetterSortsItselfIn() {
+        let line = app.otherElements["taken.line"].firstMatch
+        XCTAssertTrue(line.waitForExistence(timeout: 40), "The letter was not sorted in by itself, or the assistant did not open with it.")
+        XCTAssertFalse(app.buttons["Sort in"].exists, "The letter still waits for “Sort in”.")
+        shows("Answer", "The line does not say the letter's task.")
+        shows("Contact: HKK", "The line does not say who wrote.")
+        shows("Versichertennummer: A123456789", "The line does not say the membership number.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/taken-line.png"))
+        }
+        XCTAssertTrue(app.buttons["taken.change"].exists, "The line has no Change.")
+        let undo = app.buttons["taken.undo"]
+        XCTAssertTrue(undo.exists, "The line has no Undo.")
+        undo.tap()
+        XCTAssertTrue(line.waitForNonExistence(timeout: 5), "Undo did not take the letter back out.")
     }
 
     private func tab(_ name: String) {

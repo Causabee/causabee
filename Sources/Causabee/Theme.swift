@@ -947,6 +947,51 @@ enum AutoMode {
     }
 }
 
+/// A file brought in sorts itself in — bringing it in is the yes (docs/digest-and-chat.md). The
+/// same on every device: when it is sure enough of the matter, and the line that says what it brought.
+@MainActor
+enum SortsIn {
+    /// How sure the cloud model's answer has to be of an existing matter to file it there without
+    /// asking.
+    static let sureEnough = 0.6
+
+    /// The matter a file surely goes into — the one it was brought in from, or the open one the
+    /// cloud model names with confidence — or none, when the owner has to say. The device's model
+    /// is not trusted with the matter: its 0.7 says only that the matter was on its list, so what
+    /// it reads with no matter given is asked (the owner, 6 November 2026).
+    static func matter(for judgement: Judgement, from: PersistentIdentifier?, in context: ModelContext) -> Matter? {
+        let open = ((try? context.fetch(FetchDescriptor<Matter>())) ?? []).filter { !$0.isClosed }
+        if let from, let matter = open.first(where: { $0.persistentModelID == from }) { return matter }
+        guard judgement.decidedBy == .claude, judgement.matterConfidence >= sureEnough, let key = judgement.matter else { return nil }
+        return open.first { $0.answers(to: key) }
+    }
+
+    /// What it brought, a line each: the tasks, the dates, who wrote and its numbers.
+    static func lines(of judgement: Judgement, offers: VaultOffers) -> [String] {
+        judgement.todos.map(\.text)
+            + judgement.appointments.map { "\(Dates.short($0.date))\($0.time.map { " \($0)" } ?? "") \($0.what)" }
+            + judgement.deadlines.map { "by \(Dates.short($0.date)) \($0.what)" }
+            + offers.lines.map(\.text)
+    }
+
+    /// What the matter has already, by its place in the answer — "t0", "a1", "d0": left out
+    /// when it sorts itself in, so nothing is in the matter twice.
+    static func doubles(_ judgement: Judgement, in matter: Matter) -> Set<String> {
+        var out: Set<String> = []
+        for (index, todo) in judgement.todos.enumerated() where Duplicates.todo(todo.text, in: matter) != nil { out.insert("t\(index)") }
+        for (index, item) in judgement.appointments.enumerated() where Duplicates.appointment(on: item.date, at: item.time, item.what, in: matter) != nil {
+            out.insert("a\(index)")
+        }
+        for (index, item) in judgement.deadlines.enumerated() where Duplicates.deadline(on: item.date, item.what, in: matter) != nil { out.insert("d\(index)") }
+        return out
+    }
+
+    /// The line's first words: "Kita · Pay €120 by 20 Nov", or "Kita · filed".
+    static func headline(_ name: String, _ made: [String]?) -> String {
+        "\(name) · \(made == nil ? "taken in" : made?.first ?? "filed")"
+    }
+}
+
 /// Mail that was read and found no matter, or that the owner left out: put aside on this device —
 /// and in the store too (`SortedMails.setAside`), for the others.
 enum UnplacedAside {
