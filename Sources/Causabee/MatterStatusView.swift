@@ -898,6 +898,7 @@ struct MatterStatusView: View {
     private func show(_ todo: PersistentIdentifier?, with scroller: ScrollViewProxy) {
         guard let todo else { return }
         navigation.showing = nil
+        defer { navigation.showsInItsPart = false }
         marked = todo
         find.shown = todo
         // The part of the page it is in, with nothing filtered away.
@@ -912,6 +913,9 @@ struct MatterStatusView: View {
             part = .plan
         } else if matter.shownParties.contains(where: { $0.persistentModelID == todo }) {
             part = .people
+        } else if navigation.showsInItsPart, let own = Self.ownPart(of: todo, in: matter) {
+            // A connection's chip: the item in its own part, as the owner would look it up.
+            part = own; person = nil
         } else {
             part = .all; person = nil
             // What is folded away — an old month, the conversation — is unfolded for it.
@@ -1228,6 +1232,14 @@ struct MatterStatusView: View {
     /// A folded group stays open while the page is searched, so what it holds can be found.
     private func open(_ shown: Binding<Bool>) -> Binding<Bool> {
         Binding(get: { shown.wrappedValue || find.isActive }, set: { shown.wrappedValue = $0 })
+    }
+
+    /// The part of the page an item has of its own: a file's is Files, a mail's Mail, a note's Notes.
+    static func ownPart(of id: PersistentIdentifier, in matter: Matter) -> Journal.Part? {
+        if (matter.documents ?? []).contains(where: { $0.persistentModelID == id }) { return .files }
+        if (matter.entries ?? []).contains(where: { $0.persistentModelID == id }) { return .mail }
+        if (matter.noteBlocks ?? []).contains(where: { $0.persistentModelID == id }) { return .notes }
+        return nil
     }
 
     /// What is new, corrected in place: the task's or the date's own editor, as in Plan.

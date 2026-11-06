@@ -1498,7 +1498,7 @@ struct ConnectionChips: View {
         HStack(spacing: 4) {
             // The chip itself goes to what it is connected with, as "Show" does: its part of the
             // page, scrolled to and marked. Only the × takes the connection away.
-            Button { navigation?.showing = other.item.id } label: {
+            Button { navigation?.showsInItsPart = true; navigation?.showing = other.item.id } label: {
                 HStack(spacing: 4) {
                     Image(systemName: other.item.symbol).font(.caption2)
                     Text(other.item.title).lineLimit(1).truncationMode(.middle).frame(maxWidth: 220, alignment: .leading)

@@ -364,6 +364,9 @@ final class Navigation {
 
     /// A to-do to scroll to and mark when a matter opens: the one "überfällig" pointed at.
     var showing: PersistentIdentifier?
+    /// Shown in its own part of the page — a file under Files, a mail under Mail, a note under
+    /// Notes — not where the journal has it: a connection's chip asks for that.
+    var showsInItsPart = false
     /// Opened from a notification of news: the page goes to what is new in the brief.
     var showsNews = false
 
