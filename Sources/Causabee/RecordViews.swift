@@ -1264,8 +1264,9 @@ private struct NewsComments: ViewModifier {
     }
 }
 
-/// One new thing: what it is, its day and whose, where it came from — and ✓ to keep it as it is
-/// (off the card, in the matter), ✎ to correct it in place, × to put it away for good.
+/// One new thing: what it is, its day and whose, where it came from — and 👍 to keep it as it is
+/// (seen: off the card, in the matter — a ✓ read as "done"), ✎ to correct it in place, × to put
+/// it away for good.
 struct NewItemRow: View {
     let item: NewItem
     let matter: Matter
@@ -1281,10 +1282,10 @@ struct NewItemRow: View {
                 Text(line).font(.caption).foregroundStyle(.secondary).lineLimit(2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Button { keep() } label: { Image(systemName: "checkmark").font(.body.weight(.semibold)).frame(width: 30, height: 30).contentShape(Rectangle()) }
+            Button { keep() } label: { Image(systemName: "hand.thumbsup").font(.body.weight(.semibold)).frame(width: 30, height: 30).contentShape(Rectangle()) }
                 .buttonStyle(.plain).foregroundStyle(Theme.gold)
-                .help("Keep it: it stays in the matter, and is not new any more")
-                .accessibilityLabel("Keep")
+                .help("Seen: it stays in the matter as it is, and is not new any more")
+                .accessibilityLabel("Seen, keep it")
                 .accessibilityIdentifier("new.keep")
             if let editor, !isFact {
                 Button { editing = true } label: { Image(systemName: "pencil").font(.body.weight(.semibold)).frame(width: 30, height: 30).contentShape(Rectangle()) }
