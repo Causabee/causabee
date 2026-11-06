@@ -1154,13 +1154,17 @@ struct MatterCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(matter.name).font(Theme.cardTitleFont).foregroundStyle(.primary)
                     // All that is open, as the other matters' rows say it — the chip counts only the owner's.
-                    if summary.openCount > 0 { Text("\(summary.openCount) open").font(.caption).foregroundStyle(.secondary) }
+                    if summary.openCount > 0 || summary.next != nil {
+                        Text(["\(summary.openCount) open", summary.next.map { Dates.short($0.day) }].compactMap { $0 }.joined(separator: " · "))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             // What new mail changes, first: the brief's news, until it is seen.
             if let news = summary.news { NewsLine(text: news) }
             if let next = summary.next {
-                Text("Next, on \(Dates.short(next.day)): \(next.what)").foregroundStyle(.secondary).lineLimit(2)
+                // Its day stands up by the count, as on every other row.
+                Text("Next: \(next.what)").foregroundStyle(.secondary).lineLimit(2)
             }
             let overdue = summary.overdue
             ForEach(overdue.prefix(3), id: \.todo) { todo in
