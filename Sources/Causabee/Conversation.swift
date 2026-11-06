@@ -472,6 +472,15 @@ struct Composer: View {
     @State private var voice = VoiceInput()
     @State private var cursor: TextSelection?
     @State private var fieldHeight: CGFloat = 0
+    /// The panel over the field, in a matter: open by itself the first time, after that from the plus.
+    @State private var panelOpen = false
+    @AppStorage("addPanelShown") private var panelShown = false
+    private static let panelMotion = Animation.spring(response: 0.36, dampingFraction: 0.86)
+
+    private func closePanel() {
+        guard panelOpen else { return }
+        withAnimation(Self.panelMotion) { panelOpen = false }
+    }
 
     /// In a matter, for that matter; on the overview, the matters to choose from.
     @ViewBuilder
@@ -501,8 +510,23 @@ struct Composer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // In a matter, what can be added stands over the field, as on the iPhone and the iPad.
-            if pinned == nil, let add { MacAddChips(pick: add) }
+            // In a matter, what can be added and brought in stands over the field when the plus
+            // opens it, as on the iPhone and the iPad.
+            Color.clear.frame(height: 0)
+                .onAppear {
+                    guard add != nil, !panelShown else { return }
+                    panelShown = true
+                    withAnimation(Self.panelMotion.delay(0.3)) { panelOpen = true }
+                }
+                // Typing puts it away: the field is what is wanted then.
+                .onChange(of: focused.wrappedValue) { if focused.wrappedValue { closePanel() } }
+            if panelOpen, pinned == nil, let add, let attach {
+                MacAddPanel(read: { closePanel(); attach() },
+                            keep: { closePanel(); NotificationCenter.default.post(name: .matterAction, object: MatterAction.addFile.rawValue) },
+                            pick: { kind in closePanel(); add(kind) })
+                    // Out of the plus, under its lower left corner, and back into it.
+                    .transition(.scale(scale: 0.08, anchor: UnitPoint(x: 0.05, y: 1.2)).combined(with: .opacity))
+            }
             if let pinned, typesInCard == nil {
                 // What is in hand, on a pale honey: the pin and its kind in gold, the words as any
                 // words. Calm, so the send button stays the one yellow thing (Figma "bg/bee-soft").
@@ -539,7 +563,21 @@ struct Composer: View {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
               } else {
-                if let attach, add != nil || addTo != nil {
+                if attach != nil, add != nil {
+                    // In a matter: the plus opens the panel over the field, and is its × while it is open.
+                    Button {
+                        withAnimation(Self.panelMotion) { panelOpen.toggle() }
+                    } label: {
+                        Image(systemName: "plus").font(.system(size: 15))
+                            .rotationEffect(.degrees(panelOpen ? 45 : 0))
+                            .frame(width: 34, height: 34).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help(panelOpen ? "Close" : "Add to this matter: a task, a note, a link, a detail, a contact, a file — or something for Causabee to read")
+                    .accessibilityLabel(panelOpen ? "Close" : "Add to this matter")
+                    .accessibilityIdentifier("assistant.plus")
+                } else if let attach, addTo != nil {
                     // The one place things are added, in three parts, the same as the bee held on the
                     // iPhone and the iPad: to do, to keep at hand, and to bring in — read, or only kept.
                     // Each opens its editor on the page, by the Matter menu's way in.

@@ -60,6 +60,14 @@ final class RegressionTests: XCTestCase {
         entry.click()
     }
 
+    /// A pill of the panel over the chat's field, the panel opened with the plus when it is closed.
+    private func pill(_ item: String) {
+        let pill = element("add." + item)
+        if !pill.waitForExistence(timeout: 2) { element("assistant.plus").click() }
+        XCTAssertTrue(pill.waitForExistence(timeout: 5), "The panel over the field has no \(item).")
+        pill.click()
+    }
+
     private func field(_ id: String) -> XCUIElement {
         let single = app.textFields[id].firstMatch
         return single.waitForExistence(timeout: 5) ? single : app.textViews[id].firstMatch
@@ -94,7 +102,7 @@ final class RegressionTests: XCTestCase {
     /// "Task" from the plus opens the task's own editor: added, it is in the list.
     func testATaskAddedStays() {
         let words = "Call the pharmacy \(stamp)"
-        choose("Task", from: "assistant.plus")
+        pill("task")
         type(words, into: "task.text", "“Task” was picked and its editor did not open.")
         press("Add")
         let row = app.staticTexts.matching(NSPredicate(format: "value == %@ OR label == %@", words, words)).firstMatch
@@ -104,7 +112,7 @@ final class RegressionTests: XCTestCase {
     /// The same for a note: its own field, under Notes, kept word for word.
     func testANoteAdded() {
         let words = "Mum prefers mornings \(stamp)"
-        choose("Note", from: "assistant.plus")
+        pill("note")
         type(words, into: "note.field", "“Note” was picked and the note's field did not open.")
         // The note's own round arrow, "Add note": a plain "Add" is another card's.
         let add = element("note.add")
@@ -116,7 +124,7 @@ final class RegressionTests: XCTestCase {
 
     func testADetailAdded() {
         let value = "A 123 \(stamp)"
-        choose("Detail", from: "assistant.plus")
+        pill("detail")
         type("Versichertennummer", into: "detail.label", "The detail's editor did not open.")
         type(value, into: "detail.value", "The detail's editor has no value field.")
         press("Add")
@@ -129,7 +137,7 @@ final class RegressionTests: XCTestCase {
         // In letters: a name that differs only in digits is the same contact, and would be found, not made.
         let letters = String(stamp.compactMap { $0.wholeNumberValue.map { Character(UnicodeScalar(UInt8(97 + $0))) } })
         let name = "Kasse " + letters
-        choose("Contact", from: "assistant.plus")
+        pill("contact")
         type(name, into: "contact.name", "The contact's editor did not open.")
         type(letters + "@hkk.de", into: "contact.mail", "The contact's editor has no address field.")
         press("Add")

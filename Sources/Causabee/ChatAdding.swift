@@ -3,71 +3,63 @@ import MatterCore
 import SwiftData
 import SwiftUI
 
-/// What can be added to a matter over the assistant's field, as on the iPhone and the iPad: a click
-/// puts its card where the field was — "Task", "Note", "Link", "Detail", "Contact" — and what is typed
-/// in it is that. Folded, only the chevron is left; it stays as it was left.
-struct MacAddChips: View {
+/// Over the assistant's field in a matter, on glass, as on the iPhone and the iPad: what is brought
+/// in — read by Causabee, or only kept — as cards, and under them what can be added, a row of pills.
+/// It comes out of the plus and goes back into it.
+struct MacAddPanel: View {
+    /// A screenshot, a mail or a PDF, for Causabee to read.
+    let read: () -> Void
+    /// Files or a folder, kept with the matter unread.
+    let keep: () -> Void
     let pick: (AssistantAdd) -> Void
-    @AppStorage("addChipsOpen") private var open = true
 
-    private static let chips: [(title: String, symbol: String, add: AssistantAdd)] = [
+    private static let pills: [(title: String, symbol: String, add: AssistantAdd)] = [
         ("Task", "checklist", .task), ("Note", "note.text", .note), ("Link", "link", .link),
         ("Detail", "info.circle", .detail), ("Contact", "person.badge.plus", .contact),
     ]
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                // Over the chips, so that they go in under it.
-                toggle.zIndex(1)
-                if open {
-                    // Fanned out from the chevron one after another, and folded back the last first.
-                    ForEach(Array(Self.chips.enumerated()), id: \.offset) { index, item in
-                        chip(item.title, item.symbol, item.add).transition(fan(index))
-                    }
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                card("Screenshot, Mail or PDF", "doc.viewfinder", id: "read", help: "Causabee reads it, and offers its tasks and dates", action: read)
+                card("Files or a Folder", "folder", id: "files", help: "Kept with the matter, unread", action: keep)
             }
-            .padding(.horizontal, 2).padding(.vertical, 4)
+            .padding(.horizontal, 12)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Self.pills, id: \.title) { pill($0.title, $0.symbol, $0.add) }
+                }
+                .padding(.horizontal, 12)
+            }
         }
-        .scrollClipDisabled()
+        .padding(.vertical, 12)
+        .glassBehind(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("add.panel")
     }
 
-    /// Each chip comes from the left, small and faint, a moment after the one before it; going, it
-    /// only shrinks where it stands.
-    private func fan(_ index: Int) -> AnyTransition {
-        let step = 0.035, last = Self.chips.count - 1
-        let shrink = AnyTransition.scale(scale: 0.6, anchor: .leading).combined(with: .opacity)
-        return .asymmetric(
-            insertion: AnyTransition.offset(x: -18).combined(with: shrink)
-                .animation(.spring(response: 0.32, dampingFraction: 0.78).delay(Double(index) * step)),
-            removal: shrink.animation(.easeIn(duration: 0.16).delay(Double(last - index) * step * 0.6)))
-    }
-
-    /// A chevron, as a drawer has: › while the chips are in, ‹ while they are out.
-    private var toggle: some View {
-        Button { withAnimation(.snappy) { open.toggle() } } label: {
-            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
-                .rotationEffect(.degrees(open ? 180 : 0))
-                .frame(width: 26, height: 26)
-                .background(Theme.box, in: Circle())
-                .overlay(Circle().stroke(Theme.line, lineWidth: 0.5))
-                .contentShape(Circle())
+    /// The icon over its name, in a card of its own.
+    private func card(_ title: String, _ symbol: String, id: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 5) {
+                Image(systemName: symbol).font(.title3)
+                Text(title).font(.callout.weight(.medium)).multilineTextAlignment(.center)
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity, minHeight: 60)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
-        // Folded away, it stands back: half there, until it is wanted.
-        .opacity(open ? 1 : 0.5)
-        .foregroundStyle(.secondary)
-        .help(open ? "Fold away what can be added" : "Add a task, a note, a link, a detail or a contact")
-        .accessibilityLabel(open ? "Hide Add" : "Add")
-        .accessibilityIdentifier("add.toggle")
+        .help(help)
+        .accessibilityIdentifier("plus." + id)
     }
 
-    private func chip(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
+    private func pill(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
         Button { pick(add) } label: {
             Label(title, systemImage: symbol).font(.callout)
-                .padding(.vertical, 4).padding(.leading, 8).padding(.trailing, 10)
-                .background(Theme.box, in: Capsule())
-                .overlay(Capsule().stroke(Theme.line, lineWidth: 0.5))
+                .padding(.vertical, 5).padding(.leading, 9).padding(.trailing, 11)
+                .background(Color.primary.opacity(0.06), in: Capsule())
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
