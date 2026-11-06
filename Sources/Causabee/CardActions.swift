@@ -1248,6 +1248,51 @@ enum NewsNotice {
     }
 }
 
+/// The one kind of notification worth having: the day before a task's day or a deadline, at nine
+/// — "Kita · Tomorrow: pay the fee". Planned on the iPhone itself whenever the matters change, so
+/// it comes with Causabee closed; nothing goes to Reminders, nothing is sent. Asked for once, the
+/// first time there is something to tell (docs/digest-and-chat.md, 6 November 2026).
+@MainActor
+enum DueReminders {
+    private static var planned = -1
+
+    static func plan(_ context: ModelContext) async {
+        #if os(iOS)
+        guard !DemoData.isRequested || CommandLine.arguments.contains("--due-reminders") else { return }
+        guard planned != StoredChanges.shared.count else { return }
+        planned = StoredChanges.shared.count
+        let matters = (try? context.fetch(FetchDescriptor<Matter>())) ?? []
+        let reminders = Planning.reminders(matters)
+        let center = UNUserNotificationCenter.current()
+        if reminders.isEmpty { center.removePendingNotificationRequests(withIdentifiers: await pending(center)); return }
+        if await center.notificationSettings().authorizationStatus == .notDetermined {
+            _ = try? await center.requestAuthorization(options: [.alert, .sound])
+        }
+        guard await center.notificationSettings().authorizationStatus == .authorized else { return }
+        // Planned anew each time: a day changed or ticked off takes its reminder with it.
+        center.removePendingNotificationRequests(withIdentifiers: await pending(center))
+        let calendar = Calendar.current
+        for reminder in reminders {
+            let content = UNMutableNotificationContent()
+            content.title = reminder.matter
+            content.body = (reminder.isDeadline ? "Deadline tomorrow: " : "Tomorrow: ") + reminder.text
+            content.sound = .default
+            content.threadIdentifier = reminder.matterKey
+            content.userInfo = ["matter": reminder.matterKey]
+            let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: reminder.at)
+            let request = UNNotificationRequest(identifier: reminder.id, content: content,
+                                                trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false))
+            try? await center.add(request)
+        }
+        #endif
+    }
+
+    /// What this planned before: every request whose id starts "due-".
+    private static func pending(_ center: UNUserNotificationCenter) async -> [String] {
+        await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix("due-") }
+    }
+}
+
 /// New mail found while Causabee was away — in the background on the iPhone and the iPad, behind
 /// other windows on the Mac: "3 new mails", once per mail, on the device that found it. Only how
 /// many and who from; nothing of what they say. Nothing is read or sent: that waits for the owner.

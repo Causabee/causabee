@@ -670,6 +670,8 @@ final class AutoUpdate {
             try? await Task.sleep(for: Self.pace)
             // News written here, or come from another device: told once, Auto or not.
             await NewsNotice.tell(await StoreWorker.for(context.container))
+            // The day-before reminders, planned again when something changed.
+            await DueReminders.plan(context)
             guard AutoMode.isOn else {
                 lastSeen = [:]; changedAt = [:]; asked = []; wakeAt = nil
                 if !pending.isEmpty { pending = [] }

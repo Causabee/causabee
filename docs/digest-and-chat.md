@@ -244,3 +244,8 @@ What Causabee does with it (built 6 November 2026, no iCloud schema change):
    it done ticks it off by itself (the extraction prompt's `done`).
 3. **The week in a sentence**, over the overview's week: "This week: 3 things · waiting on 2 ·
    nothing slipping" — what is overdue or unanswered said in orange.
+
+4. **Reminders the day before** (iPhone): at nine the day before a task's day or a deadline —
+   "Kita · Tomorrow: pay the fee". Planned on the phone whenever the matters change, so it comes
+   with Causabee closed; nothing goes to Reminders. Someone else's task is not told — it comes
+   back as "No answer yet". The only notifications Causabee sends.

@@ -56,4 +56,34 @@ struct PlanningTests {
         #expect(late.map(\.warns) == [false, true, true])
         #expect(Planning.week(things: 0, waiting: 0, overdue: 0, unanswered: 0).map(\.text) == ["Nothing this week", "nothing slipping"])
     }
+
+    @Test("Reminded the day before at nine: the owner's tasks and the deadlines still to come — not someone else's, not what is done")
+    func reminders() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "kita", name: "Kita")
+        context.insert(matter)
+        func task(_ text: String, _ owner: Todo.Owner, due: String?, done: Bool = false) {
+            let todo = Todo(text: text, owner: owner, due: due, source: Source(kind: .mail, pointer: text), origin: text)
+            todo.isDone = done
+            context.insert(todo)
+            todo.matter = matter
+        }
+        task("Pay the fee", .me, due: "2026-11-10")
+        task("Bring the form", .we, due: "2026-11-08")
+        task("Teacher sends the list", .other, due: "2026-11-09")
+        task("Already paid", .me, due: "2026-11-09", done: true)
+        task("No day", .me, due: nil)
+        task("Was yesterday", .me, due: "2026-11-05")
+        let deadline = Deadline(what: "Registration closes", day: "2026-11-12", source: Source(kind: .mail, pointer: "d"))
+        context.insert(deadline)
+        deadline.matter = matter
+        let now = MatterStatus.date(of: "2026-11-06")!.addingTimeInterval(12 * 3600)
+        let reminders = Planning.reminders([matter], now: now)
+        #expect(reminders.map(\.text) == ["Bring the form", "Pay the fee", "Registration closes"])
+        #expect(reminders.map(\.isDeadline) == [false, false, true])
+        let first = Calendar.current.dateComponents([.day, .hour], from: reminders[0].at)
+        #expect(first.day == 7 && first.hour == 9)
+        // The same thing planned again has the same id: it replaces itself.
+        #expect(Planning.reminders([matter], now: now).map(\.id) == reminders.map(\.id))
+    }
 }
