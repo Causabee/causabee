@@ -54,6 +54,8 @@ struct MacAddChips: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        // Folded away, it stands back: half there, until it is wanted.
+        .opacity(open ? 1 : 0.5)
         .foregroundStyle(.secondary)
         .help(open ? "Fold away what can be added" : "Add a task, a note, a link, a detail or a contact")
         .accessibilityLabel(open ? "Hide Add" : "Add")

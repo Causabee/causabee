@@ -21,6 +21,8 @@ enum PadMetrics {
     /// from the edge, the capsule round the sidebar's button (38 and 3 around it), and 12 to the
     /// matter's icon. It held three buttons once, and the name stood 100 points off to the right.
     static let controls: CGFloat = 16 + 44 + 12
+    /// What the bar puts before its first item by itself.
+    static let barInset: CGFloat = 10
 }
 
 /// The iPad's sidebar: its controls on top, the overview, and every matter that is going on — the

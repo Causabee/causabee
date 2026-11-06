@@ -385,7 +385,7 @@ struct ToNewestLabel: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: newAnswer ? "arrow.down" : "chevron.down").font(.body.weight(.semibold))
+            Image(systemName: "arrow.down").font(.body.weight(.semibold))
             if newAnswer { Text("New answer").font(.callout.weight(.medium)) }
         }
         .foregroundStyle(newAnswer ? .primary : .secondary)

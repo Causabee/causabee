@@ -1328,14 +1328,17 @@ private struct PhoneToNewestButton: View {
                 let newAnswer = placement.newAnswer != nil
                 Button { placement.button(newest, with: scroller) } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: newAnswer ? "arrow.down" : "chevron.down").font(.body.weight(.semibold))
+                        Image(systemName: "arrow.down").font(.body.weight(.semibold))
                         if newAnswer { Text("New answer").font(.subheadline.weight(.medium)) }
                     }
                     .foregroundStyle(newAnswer ? .primary : .secondary)
                     .padding(.horizontal, newAnswer ? 16 : 0)
                     .frame(minWidth: 40, minHeight: 40)
                     // Glass, as what floats over the chat is: it was a material with a drawn edge.
-                    .glassEffect(.regular.interactive(), in: .capsule)
+                    // Not interactive glass: on the iPad that let the tap through to the thread, and
+                    // the button did nothing (6 November).
+                    .glassEffect(.regular, in: .capsule)
+                    .contentShape(.capsule)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(newAnswer ? "To the new answer" : "To the newest")
@@ -1459,6 +1462,8 @@ private struct AddChips: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        // Folded away, it stands back: half there, until it is wanted.
+        .opacity(open ? 1 : 0.5)
         .accessibilityLabel(open ? "Hide Add" : "Add")
         .accessibilityIdentifier("add.toggle")
     }

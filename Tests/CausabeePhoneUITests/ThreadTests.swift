@@ -111,6 +111,20 @@ final class ThreadTests: XCTestCase {
         XCTAssertEqual(top(of: asked), place, accuracy: 1, "The question moved when its long answer came.")
     }
 
+    /// An answer longer than the screen: the button offers the way down, takes the reader to its
+    /// end, and is gone there — on the iPad it stood and did nothing (6 November).
+    func testTheButtonTakesALongAnswerToItsEnd() {
+        ask("Give me the long version")
+        let last = question("Point 14")
+        XCTAssertTrue(last.waitForExistence(timeout: 15), "No answer came.")
+        let down = app.buttons["thread.toNewest"]
+        XCTAssertTrue(down.waitForExistence(timeout: 5), "Under a long answer, nothing offers the way down.")
+        down.tap()
+        _ = top(of: last)
+        XCTAssertLessThan(last.frame.maxY, field.frame.minY, "The button did not bring the end of the answer over the field.")
+        XCTAssertFalse(down.waitForExistence(timeout: 1), "At the answer's end, the button is still there.")
+    }
+
     /// The keyboard coming up over an answer longer than the screen shows its end, right over the
     /// field — that is what is being answered; going, it gives the beginning back.
     func testTheKeyboardShowsTheEndOfALongAnswer() {

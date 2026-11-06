@@ -337,8 +337,11 @@ struct MatterScreen: View {
                     // the page's width: left to the bar, the name got the width of a letter.
                     // On the page's own left edge, over its first line — and clear of the sidebar's
                     // capsule where that lies over the page.
-                    .padding(.leading, max((navigation.pageWidth - beside - min(navigation.pageWidth - beside, PadMetrics.page)) / 2,
-                                           navigation.showsSidebar ? 0 : PadMetrics.controls))
+                    // Where the page's words begin, 16 in from its edge; less the 10 the bar puts
+                    // before its first item by itself — counted twice, the icon and the name stood
+                    // a little right of the page's words, and 22 points off the capsule (6 November).
+                    .padding(.leading, max((navigation.pageWidth - beside - min(navigation.pageWidth - beside, PadMetrics.page)) / 2 + 16,
+                                           navigation.showsSidebar ? 0 : PadMetrics.controls) - PadMetrics.barInset)
                     .frame(width: max(120, navigation.pageWidth - 172), alignment: .leading)
                     // Moved with the page, not by a transition of the bar's own.
                     .animation(nil, value: navigation.showsSidebar)
