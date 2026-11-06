@@ -340,14 +340,19 @@ extension View {
     func shownToAuto(_ matter: Matter) -> some View { modifier(ShownToAuto(key: matter.key)) }
 }
 
-/// What is ahead, in one card, on the plan's grid: the next days, and how much more there is. A
-/// task's box ticks it; a tap on anything else opens the plan.
+/// What is ahead, in one card, on the plan's grid: the next days, the first tasks with no day yet,
+/// and how much more there is. A task's box ticks it; a tap on a task or a date opens its own
+/// editor in place — the Digest is where it is corrected, not Plan; a day or the count opens the plan.
 struct AheadCard: View {
     let plan: Journal.Plan
     let tick: (Todo) -> Void
     let open: () -> Void
     /// How many days it shows: on the Mac and an iPad the page has the room for more.
     var days = 2
+    /// A task's or a date's own editor, each device's; without one a tap opens the plan.
+    var editor: ((NewItem, @escaping () -> Void) -> AnyView)? = nil
+    /// The tasks with no day it shows, the oldest first: nothing open is out of sight.
+    static let noDay = 3
 
     private func name(_ text: String) -> some View {
         Text(text).foregroundStyle(.primary).lineLimit(2).multilineTextAlignment(.leading).padding(.top, Theme.planTop)
@@ -359,8 +364,8 @@ struct AheadCard: View {
             .buttonStyle(.plain)
     }
 
-    private func date(_ what: String, isDeadline: Bool, hours: String? = nil, place: String? = nil) -> some View {
-        opens {
+    private func date(_ item: NewItem, _ what: String, isDeadline: Bool, hours: String? = nil, place: String? = nil) -> some View {
+        EditsInPlace(item: item, editor: editor, otherwise: open) {
             HStack(alignment: .top, spacing: 10) {
                 PlanDateMark(isDeadline: isDeadline)
                 VStack(alignment: .leading, spacing: 2) {
@@ -378,19 +383,23 @@ struct AheadCard: View {
     private func row(_ item: Journal.Plan.Item) -> some View {
         switch item {
         case .task(let todo):
-            HStack(alignment: .top, spacing: 10) {
-                PlanTick(todo: todo) { tick(todo) }
-                opens {
-                    VStack(alignment: .leading, spacing: 2) {
-                        name(todo.text)
-                        if todo.owner == .we { Text("together").font(.footnote).foregroundStyle(.secondary).lineLimit(1) }
-                    }
+            task(todo)
+        case .appointment(let appointment): date(.appointment(appointment), appointment.what, isDeadline: false, hours: appointment.time, place: appointment.place)
+        case .deadline(let deadline): date(.deadline(deadline), deadline.what, isDeadline: true)
+        }
+    }
+
+    private func task(_ todo: Todo, noDay: Bool = false) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            PlanTick(todo: todo) { tick(todo) }
+            EditsInPlace(item: .task(todo), editor: editor, otherwise: open) {
+                VStack(alignment: .leading, spacing: 2) {
+                    name(todo.text)
+                    if todo.owner == .we { Text("together").font(.footnote).foregroundStyle(.secondary).lineLimit(1) }
                 }
             }
-            .planRow()
-        case .appointment(let appointment): date(appointment.what, isDeadline: false, hours: appointment.time, place: appointment.place)
-        case .deadline(let deadline): date(deadline.what, isDeadline: true)
         }
+        .planRow()
     }
 
     var body: some View {
@@ -409,6 +418,21 @@ struct AheadCard: View {
                     }
                     .padding(.horizontal, 12).padding(.vertical, 10)
                 }
+                Divider().padding(.horizontal, 12)
+            }
+            // What has no day yet, the oldest first: a tap opens it, where its day is set.
+            if !plan.noDay.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("No day yet").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                        .padding(.horizontal, 12).padding(.top, 10)
+                    ForEach(plan.noDay.prefix(Self.noDay), id: \.persistentModelID) { todo in
+                        task(todo, noDay: true).padding(.horizontal, 12).padding(.vertical, 6)
+                    }
+                }
+                .padding(.bottom, 4)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("ahead.noDay")
                 Divider().padding(.horizontal, 12)
             }
             opens {
@@ -438,6 +462,28 @@ struct AheadCard: View {
         var words = ["\(tasks) \(tasks == 1 ? "task" : "tasks") open"]
         if dates > 0 { words.append("\(dates) more \(dates == 1 ? "date" : "dates")") }
         return words.joined(separator: " · ")
+    }
+}
+
+/// A task or a date that opens its own editor where it stands: a sheet on the iPhone and the iPad,
+/// a popover on the Mac. Without an editor, a tap does what it did before.
+struct EditsInPlace<Label: View>: View {
+    let item: NewItem
+    let editor: ((NewItem, @escaping () -> Void) -> AnyView)?
+    let otherwise: () -> Void
+    @ViewBuilder let label: () -> Label
+    @State private var editing = false
+
+    var body: some View {
+        Button { if editor != nil { editing = true } else { otherwise() } } label: {
+            label().frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        #if os(iOS)
+        .sheet(isPresented: $editing) { editor?(item) { editing = false } }
+        #else
+        .popover(isPresented: $editing, arrowEdge: .bottom) { editor?(item) { editing = false } }
+        #endif
     }
 }
 

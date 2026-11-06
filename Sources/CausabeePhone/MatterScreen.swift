@@ -207,7 +207,7 @@ struct MatterScreen: View {
                             }
                             // The summary over what is ahead: what the matter is, then its dates.
                             atHandCard
-                            if !matter.isClosed, part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
+                            if !matter.isClosed, part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4, editor: Self.newEditor) }
                             BallCard(matter: matter)
                         }
                         .padding(.top, 10).padding(.trailing, 16).padding(.bottom, 90)
@@ -878,7 +878,7 @@ struct MatterScreen: View {
         }
         atHandCard
         // On an iPad the page has the room the column had: as many days as it showed.
-        if !matter.isClosed, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: navigation.isPad ? 4 : 2) }
+        if !matter.isClosed, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: navigation.isPad ? 4 : 2, editor: Self.newEditor) }
     }
 
     /// The owner's own words on the matter: small dated blocks, read by the assistant too.

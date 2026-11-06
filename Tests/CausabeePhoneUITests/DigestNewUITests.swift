@@ -24,4 +24,27 @@ final class DigestNewUITests: XCTestCase {
         }
         XCTAssertFalse(app.buttons["brief.seen"].exists, "Nothing new left, the card is still there.")
     }
+
+    /// Tasks with no day stand on the Digest too, the oldest first; a tap opens the task's own
+    /// editor there — not Plan.
+    func testATaskWithNoDayOpensInPlace() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Care for Mum (Helga) after her fall"]
+        app.launch()
+        let noDay = app.descendants(matching: .any)["ahead.noDay"]
+        for _ in 0..<4 where !noDay.waitForExistence(timeout: 3) { app.swipeUp() }
+        XCTAssertTrue(noDay.exists, "The Digest shows no task without a day.")
+        // The task's words are its button; its box is the other one.
+        let first = noDay.buttons.matching(NSPredicate(format: "label != 'Mark as done'")).firstMatch
+        XCTAssertTrue(first.exists, "“No day yet” lists no task.")
+        for _ in 0..<6 where !first.isHittable { app.swipeUp() }
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/no-day.png"))
+        }
+        first.tap()
+        let text = app.textFields["task.text"].exists ? app.textFields["task.text"] : app.textViews["task.text"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5), "Tapped, the task did not open its editor.")
+        XCTAssertFalse(app.buttons["part.Plan"].isSelected, "Tapped, the task went to Plan.")
+    }
 }

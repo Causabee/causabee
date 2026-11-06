@@ -353,7 +353,7 @@ struct MatterStatusView: View {
             nextStep(status)
             ForYouCard(matter: matter)
             // The page has the room the column had: as many days as it showed.
-            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
+            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4, editor: newEditor) }
         }
         atHandCard
         BallCard(matter: matter)
