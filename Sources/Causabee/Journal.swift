@@ -457,7 +457,10 @@ struct AheadCard: View {
             ForEach(shown) { day in
                 if let item = day.items.first {
                     HStack(alignment: .top, spacing: 6) {
-                        Button(action: open) { DayTile(day: day.day) }.buttonStyle(.plain)
+                        // The day is the item's: a tap changes it, in its own editor.
+                        EditsInPlace(item: item.newItem, editor: editor, otherwise: open) { DayTile(day: day.day) }
+                            .fixedSize()
+                            .accessibilityIdentifier("ahead.day")
                         row(item)
                     }
                     .padding(.horizontal, 12).padding(.vertical, 10)
@@ -552,6 +555,17 @@ struct AheadCard: View {
 
 /// A task or a date that opens its own editor where it stands: a sheet on the iPhone and the iPad,
 /// a popover on the Mac. Without an editor, a tap does what it did before.
+extension Journal.Plan.Item {
+    /// The same thing, as its editor knows it.
+    var newItem: NewItem {
+        switch self {
+        case .task(let todo): .task(todo)
+        case .appointment(let appointment): .appointment(appointment)
+        case .deadline(let deadline): .deadline(deadline)
+        }
+    }
+}
+
 struct EditsInPlace<Label: View>: View {
     let item: NewItem
     let editor: ((NewItem, @escaping () -> Void) -> AnyView)?
@@ -955,13 +969,24 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
     @ViewBuilder let date: (Journal.Plan.Item, Bool) -> DateRow
     /// Over the dates: asks for the calendar when it is needed.
     @ViewBuilder let empty: Empty
+    /// The day's own item's editor, each device's: a tap on the day of a day with one item changes it.
+    var editor: ((NewItem, @escaping () -> Void) -> AnyView)? = nil
     @Environment(PageFind.self) private var find
 
     /// A day on the plan's grid: its tile, and beside it what is on it. With no day the tile's place
     /// stays empty: what is ticked stands under what is ticked, in every card.
-    private func onDay<Rows: View>(_ day: String?, month: Bool = false, late: Bool = false, @ViewBuilder rows: () -> Rows) -> some View {
+    private func onDay<Rows: View>(_ day: String?, month: Bool = false, late: Bool = false, only: NewItem? = nil, @ViewBuilder rows: () -> Rows) -> some View {
         HStack(alignment: .top, spacing: 6) {
-            if let day { DayTile(day: day, month: month, late: late) } else { Color.clear.frame(width: Theme.dayTile, height: 0) }
+            if let day {
+                // One thing on the day: its day is its own, and a tap changes it.
+                if let only, editor != nil {
+                    EditsInPlace(item: only, editor: editor, otherwise: {}) { DayTile(day: day, month: month, late: late) }
+                        .fixedSize()
+                        .accessibilityIdentifier("plan.day")
+                } else {
+                    DayTile(day: day, month: month, late: late)
+                }
+            } else { Color.clear.frame(width: Theme.dayTile, height: 0) }
             VStack(alignment: .leading, spacing: 2) { rows() }
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
@@ -973,7 +998,7 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
         return VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { index, day in
                 if index > 0 { Divider().padding(.horizontal, 12) }
-                onDay(day.day, month: true, late: late) {
+                onDay(day.day, month: true, late: late, only: day.things.count == 1 ? .task(day.things[0]) : nil) {
                     ForEach(day.things, id: \.persistentModelID) { task($0, owner) }
                 }
             }
@@ -1010,7 +1035,7 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(stretch.days.enumerated()), id: \.element.id) { index, day in
                         if index > 0 { Divider().padding(.horizontal, 12) }
-                        onDay(day.day) {
+                        onDay(day.day, only: day.items.count == 1 ? day.items[0].newItem : nil) {
                             ForEach(day.items) { entry in self.item(entry) }
                         }
                     }

@@ -953,6 +953,8 @@ struct MatterScreen: View {
         } empty: {
             PhoneEmptyBox(text: "What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in.",
                           action: "Add Task", symbol: "checklist", run: addTodo)
+        } editor: { item, close in
+            Self.newEditor(item, close: close)
         }
     }
 
@@ -1644,6 +1646,7 @@ struct PhoneDateEditor: View {
         NavigationStack {
             Form {
                 TextField("What", text: $what, axis: .vertical).lineLimit(1...4)
+                    .accessibilityIdentifier("date.what")
                 DatePicker("Day", selection: $day, displayedComponents: .date)
                 if isAppointment {
                     Toggle("Time", isOn: $hasTime)

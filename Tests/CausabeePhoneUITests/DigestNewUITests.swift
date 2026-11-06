@@ -195,5 +195,23 @@ final class DigestNewUITests: XCTestCase {
             XCTAssertFalse(row.exists, "Opened again, “\(text)” lost its day.")
         }
     }
+
+    /// A tap on the day of a task or a date on the Digest changes it, in its own editor — not Plan.
+    func testTheDayOfADateOpensItsEditor() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Care for Mum (Helga) after her fall"]
+        app.launch()
+        let day = app.buttons["ahead.day"].firstMatch
+        for _ in 0..<5 where !day.waitForExistence(timeout: 3) || !day.isHittable { app.swipeUp() }
+        XCTAssertTrue(day.exists, "The Digest's days have no tappable day.")
+        day.tap()
+        let editor = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'task.' OR identifier BEGINSWITH 'date.'")).firstMatch
+        XCTAssertTrue(editor.waitForExistence(timeout: 5), "Tapped, the day did not open its item's editor.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/day-editor.png"))
+        }
+        XCTAssertFalse(app.buttons["part.Plan"].isSelected, "Tapped, the day went to Plan.")
+    }
 }
 
