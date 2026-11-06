@@ -1161,6 +1161,11 @@ extension Notification.Name {
 /// news first, Auto's or a sync's. Allowed by the owner when the first news comes; nothing without.
 @MainActor
 enum NewsNotice {
+    /// Off: everything that comes in, the owner brought in — a label, a share, a file — so there
+    /// is nothing to tell them (docs/digest-and-chat.md, 6 November 2026). Kept for reminders by
+    /// time, the first notifications worth having.
+    static let tellsArrivals = false
+
     /// By matter, the day of the newest mail its news was told for.
     private static let toldKey = "news.toldNewest"
     private static var looked = -1
@@ -1169,7 +1174,7 @@ enum NewsNotice {
     /// has come. A summary written again — by Auto, or after mails that came in twice were put
     /// right — is not news: on 3 Nov 2026 that told three matters again that had been seen.
     static func tell(_ worker: StoreWorker) async {
-        guard !DemoData.isRequested, looked != StoredChanges.shared.count else { return }
+        guard tellsArrivals, !DemoData.isRequested, looked != StoredChanges.shared.count else { return }
         looked = StoredChanges.shared.count
         let all = await worker.news()
         let saved = UserDefaults.standard.dictionary(forKey: toldKey) as? [String: Double]
@@ -1206,6 +1211,7 @@ enum NewsNotice {
 
     /// Asked once, while Causabee is in front: from the background, iOS shows no question.
     static func ask() {
+        guard tellsArrivals else { return }
         let center = UNUserNotificationCenter.current()
         Task {
             if await center.notificationSettings().authorizationStatus == .notDetermined {
@@ -1250,7 +1256,7 @@ enum MailNotice {
     private static let toldKey = "mail.told"
 
     static func tell(_ look: DailyDoor.Look) {
-        guard !DemoData.isRequested else { return }
+        guard NewsNotice.tellsArrivals, !DemoData.isRequested else { return }
         var told = UserDefaults.standard.stringArray(forKey: toldKey) ?? []
         let fresh = look.newMails.filter { !told.contains($0.judgement.emailID) }
         guard !fresh.isEmpty else { return }

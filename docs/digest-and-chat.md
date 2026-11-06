@@ -213,6 +213,9 @@ is sent, not in asking: with Pro, pseudonymised; without, read on the device, no
   into its matters — no "N mails read · Take in" card. The receipt says where each went, with Move;
   a mail with no matter found is among the mail without a matter, not dropped.
 
+- Notifications off: no "1 new mail", no matter news. Nothing comes in that the owner did not
+  bring, so there is nothing to tell. Causabee no longer asks to send notifications.
+
 Not yet: mail without Pro still waits for "Sort in" — the device's model is not trusted to start
 on its own (the owner, 6 November 2026); the
 Digest's "New" card is still there, though the line at add time now does its job.
