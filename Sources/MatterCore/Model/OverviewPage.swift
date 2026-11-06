@@ -111,7 +111,9 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         news = matter.brief == nil ? nil : matter.shownBrief?.news.flatMap { $0.seen ? nil : $0.lines.first }
         let new = quick ? [] : matter.newItems()
         newCount = new.count
-        fresh = new.prefix(2).map(Self.line)
+        // Something to do or a day first; what is only good to know after them.
+        let ordered = new.filter { if case .fact = $0 { false } else { true } } + new.filter { if case .fact = $0 { true } else { false } }
+        fresh = ordered.prefix(2).map(Self.line)
         if let last = dates.last, let newest = entries.first(where: { $0.date == last }) {
             let onLast = MailDates.onLastDay(of: matter, entries: entries)
             let files = Date().timeIntervalSince(last) > 15 * 86_400 ? 0

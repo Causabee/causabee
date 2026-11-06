@@ -1168,7 +1168,8 @@ private struct OverviewDayCard: View {
                         #else
                         .font(.subheadline)
                         #endif
-                        .foregroundStyle(.secondary).lineLimit(3).multilineTextAlignment(.leading)
+                        // What happened is the card's news: read in the text's own colour, not grey.
+                        .foregroundStyle(.primary).lineLimit(3).multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Divider().padding(.top, 4)
                     HStack(spacing: 8) {
