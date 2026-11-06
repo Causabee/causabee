@@ -117,7 +117,7 @@ struct MatterScreen: View {
                                     // Wide, the column has what comes next: the journal begins with what is new.
                                     if hasColumn {
                                         if matter.isClosed { closedBanner(status) }
-                                        NewsCard(matter: matter)
+                                        NewsCard(matter: matter, editor: Self.newEditor)
                                     } else {
                                         top(status, plan, scroller)
                                     }
@@ -494,6 +494,15 @@ struct MatterScreen: View {
         }
     }
 
+    /// What is new, corrected in place: the task's or the date's own editor, as in Plan.
+    static func newEditor(_ item: NewItem, close: @escaping () -> Void) -> AnyView {
+        switch item {
+        case .task(let todo), .fact(let todo): AnyView(PhoneTodoEditor(todo: todo))
+        case .appointment(let date): AnyView(PhoneDateEditor(item: PhoneDateRow.Item(date)))
+        case .deadline(let date): AnyView(PhoneDateEditor(item: PhoneDateRow.Item(date)))
+        }
+    }
+
     private func status(of id: PersistentIdentifier) -> Todo? { (matter.todos ?? []).shown.first { $0.persistentModelID == id } }
 
     // MARK: Header
@@ -862,7 +871,7 @@ struct MatterScreen: View {
     @ViewBuilder
     private func top(_ status: MatterStatus, _ plan: Journal.Plan, _ scroller: ScrollViewProxy) -> some View {
         if matter.isClosed { closedBanner(status) }
-        NewsCard(matter: matter)
+        NewsCard(matter: matter, editor: Self.newEditor)
         if !matter.isClosed {
             nextStep(status, scroller)
             ForYouCard(matter: matter)

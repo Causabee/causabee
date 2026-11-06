@@ -53,6 +53,8 @@ public struct Brief: Codable, Equatable, Sendable {
     /// mails of the matter are read knowing the owner does not want things of that kind.
     public var unwanted: [String] = []
     public var writtenAt: Date?
+    /// When the owner last said "Seen" to what is new on the Digest: what came after is new.
+    public var newSeenAt: Date?
 
     public struct News: Codable, Equatable, Sendable {
         public var lines: [String]
@@ -67,7 +69,7 @@ public struct Brief: Codable, Equatable, Sendable {
         self.lines = lines; self.said = said; self.proposals = proposals; self.lookups = lookups; self.writtenAt = writtenAt
     }
 
-    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, unwanted, writtenAt }
+    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, unwanted, writtenAt, newSeenAt }
 
     /// A brief kept before there were lookups reads as one without any.
     public init(from decoder: any Decoder) throws {
@@ -79,6 +81,7 @@ public struct Brief: Codable, Equatable, Sendable {
         news = try c.decodeIfPresent(News.self, forKey: .news)
         unwanted = try c.decodeIfPresent([String].self, forKey: .unwanted) ?? []
         writtenAt = try c.decodeIfPresent(Date.self, forKey: .writtenAt)
+        newSeenAt = try c.decodeIfPresent(Date.self, forKey: .newSeenAt)
     }
 
     public func lines(_ part: Part) -> [String] { lines.filter { $0.part == part }.map(\.text) }
@@ -102,6 +105,7 @@ public struct Brief: Codable, Equatable, Sendable {
         var brief = Brief(lines: lines, said: said, proposals: Array(decided) + new, lookups: Array(kept) + asked, writtenAt: date)
         brief.news = fresh ?? (news?.seen == false ? news : nil)
         brief.unwanted = unwanted
+        brief.newSeenAt = newSeenAt
         return brief
     }
 

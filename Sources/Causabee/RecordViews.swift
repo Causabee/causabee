@@ -1181,39 +1181,173 @@ struct BroughtFile: Transferable {
     }
 }
 
-/// What is new, on top of the journal until it is seen: what the new mail changes, on yellow.
+/// What is new, on top of the Digest until it is seen: what the new mail changes, on yellow (Pro),
+/// and the tasks, dates and facts mail and files brought since the last "Seen" — each corrected in
+/// place or put away, where the owner looks every day. One "Seen" for all of it.
 struct NewsCard: View {
     let matter: Matter
+    /// A task's or a date's own editor, shown over the card: each device has its own. Given the
+    /// item, and what closes it.
+    var editor: ((NewItem, @escaping () -> Void) -> AnyView)? = nil
     @Environment(\.modelContext) private var context
+    @State private var showsAll = false
 
     /// The news in its own words, for what is said to it.
     static func about(_ news: Brief.News) -> String { "What is new: " + news.lines.joined(separator: " ") }
+    static let most = 5
 
     var body: some View {
-        if let news = matter.shownBrief?.news, !news.seen {
+        let news = matter.shownBrief?.news.flatMap { $0.seen ? nil : $0 }
+        let items = matter.newItems()
+        if news != nil || !items.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 8) {
-                    BeeChip(text: "NEW · SINCE \(Dates.short(news.since).uppercased())")
-                    ForEach(Array(news.lines.enumerated()), id: \.offset) { _, line in
-                        Text(line).fixedSize(horizontal: false, vertical: true)
+                if let news {
+                    VStack(alignment: .leading, spacing: 8) {
+                        BeeChip(text: "NEW · SINCE \(Dates.short(news.since).uppercased())")
+                        ForEach(Array(news.lines.enumerated()), id: \.offset) { _, line in
+                            Text(line).fixedSize(horizontal: false, vertical: true)
+                        }
+                        TileComments(matter: matter, about: Self.about(news))
                     }
-                    TileComments(matter: matter, about: Self.about(news))
+                    .waitingTile()
+                } else {
+                    BeeChip(text: "NEW")
+                        .padding(.horizontal, 16).padding(.top, 14)
                 }
-                .waitingTile()
+                if !items.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array((showsAll ? items : Array(items.prefix(Self.most))).enumerated()), id: \.element.id) { index, item in
+                            if index > 0 { Divider() }
+                            NewItemRow(item: item, matter: matter, editor: editor)
+                        }
+                        if items.count > Self.most {
+                            Button(showsAll ? "Fewer" : "and \(items.count - Self.most) more") { withAnimation { showsAll.toggle() } }
+                                .buttonStyle(.gold).font(.footnote)
+                                .padding(.vertical, 8)
+                        }
+                    }
+                    .padding(.horizontal, 16).padding(.top, 6)
+                }
                 HStack(spacing: 8) {
-                    Text(news.mails == 1 ? "1 mail" : "\(news.mails) mails").font(.footnote).foregroundStyle(.secondary)
+                    Text(Self.from(items, news: news)).font(.footnote).foregroundStyle(.secondary)
                     Spacer(minLength: 4)
-                    Button("Seen") { withAnimation { matter.sawNews(); try? context.save() } }
+                    Button("Seen") { withAnimation { matter.sawNew(); try? context.save() } }
                         .quietButton()
                         .accessibilityIdentifier("brief.seen")
                 }
                 .padding(.horizontal, 16).padding(.vertical, 10)
             }
             .journalCard(inset: Theme.tileInset)
-            .commentsOnHold(matter, about: Self.about(news))
+            .modifier(NewsComments(matter: matter, news: news))
             // A notification of news tapped goes here.
             .id("news")
         }
+    }
+
+    /// "From 2 mails", by the mails and files what is new came from; with nothing listed, the news's own count.
+    static func from(_ items: [NewItem], news: Brief.News?) -> String {
+        let count = Set(items.compactMap { item in item.source.map { $0.messageID ?? $0.pointer } }).count
+        let mails = count > 0 ? count : news?.mails ?? 0
+        return mails == 1 ? "From 1 mail" : "From \(mails) mails"
+    }
+}
+
+/// Held, the news is commented on, as before: only when there is news.
+private struct NewsComments: ViewModifier {
+    let matter: Matter
+    let news: Brief.News?
+    func body(content: Content) -> some View {
+        if let news { content.commentsOnHold(matter, about: NewsCard.about(news)) } else { content }
+    }
+}
+
+/// One new thing: what it is, its day and whose, where it came from — and ✎ to correct it in
+/// place, × to put it away. A fact is only put away.
+struct NewItemRow: View {
+    let item: NewItem
+    let matter: Matter
+    let editor: ((NewItem, @escaping () -> Void) -> AnyView)?
+    @Environment(\.modelContext) private var context
+    @State private var editing = false
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: symbol).font(.body).foregroundStyle(.secondary).frame(width: 22).padding(.top, 1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(text).fixedSize(horizontal: false, vertical: true)
+                Text(line).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if let editor, !isFact {
+                Button { editing = true } label: { Image(systemName: "pencil").frame(width: 30, height: 30).contentShape(Rectangle()) }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                    .help("Correct it")
+                    .accessibilityLabel("Correct")
+                    .accessibilityIdentifier("new.correct")
+                    #if os(iOS)
+                    .sheet(isPresented: $editing) { editor(item) { editing = false } }
+                    #else
+                    .popover(isPresented: $editing, arrowEdge: .bottom) { editor(item) { editing = false } }
+                    #endif
+            }
+            Button { putAway() } label: { Image(systemName: "xmark").frame(width: 30, height: 30).contentShape(Rectangle()) }
+                .buttonStyle(.plain).foregroundStyle(.secondary)
+                .help("Not wanted: it goes, and is not brought back")
+                .accessibilityLabel("Put away")
+                .accessibilityIdentifier("new.putAway")
+        }
+        .padding(.vertical, 9)
+    }
+
+    private var isFact: Bool { if case .fact = item { true } else { false } }
+
+    private var symbol: String {
+        switch item {
+        case .task: "checklist"
+        case .fact: "info.circle"
+        case .appointment: "calendar"
+        case .deadline: "flag"
+        }
+    }
+
+    private var text: String {
+        switch item {
+        case .task(let todo), .fact(let todo): todo.text
+        case .appointment(let date): date.time.map { "\(date.what), \($0)" } ?? date.what
+        case .deadline(let date): date.what
+        }
+    }
+
+    /// "Task · yours · by Nov 20 · from the mail of Nov 6".
+    private var line: String {
+        var parts: [String] = []
+        switch item {
+        case .task(let todo):
+            parts.append("Task")
+            switch todo.owner {
+            case .me: parts.append("yours")
+            case .we: parts.append("together")
+            case .other: parts.append("someone else's")
+            case .unknown: break
+            }
+            parts.append(todo.due.map { "by \(Dates.short($0))" } ?? "no day yet")
+        case .fact: parts.append("Good to know")
+        case .appointment(let date): parts.append("Date · \(Dates.short(date.day))")
+        case .deadline(let date): parts.append("Deadline · \(Dates.short(date.day))")
+        }
+        if let source = item.source { parts.append(Sources.origin(source)) }
+        return parts.joined(separator: " · ")
+    }
+
+    private func putAway() {
+        let journal: JournalItem
+        switch item {
+        case .task(let todo), .fact(let todo): journal = .task(todo)
+        case .appointment(let date): journal = .meeting(date)
+        case .deadline(let date): journal = .deadline(date)
+        }
+        withAnimation { matter.setHidden(journal, true) }
+        try? context.save()
     }
 }
 

@@ -348,7 +348,7 @@ struct MatterStatusView: View {
     @ViewBuilder
     private func top(_ status: MatterStatus, _ plan: Journal.Plan) -> some View {
         closedBanner(status)
-        NewsCard(matter: matter)
+        NewsCard(matter: matter, editor: newEditor)
         if !matter.isClosed {
             nextStep(status)
             ForYouCard(matter: matter)
@@ -1228,6 +1228,16 @@ struct MatterStatusView: View {
     /// A folded group stays open while the page is searched, so what it holds can be found.
     private func open(_ shown: Binding<Bool>) -> Binding<Bool> {
         Binding(get: { shown.wrappedValue || find.isActive }, set: { shown.wrappedValue = $0 })
+    }
+
+    /// What is new, corrected in place: the task's or the date's own editor, as in Plan.
+    private func newEditor(_ item: NewItem, close: @escaping () -> Void) -> AnyView {
+        let save = { close(); try? context.save() }
+        switch item {
+        case .task(let todo), .fact(let todo): return AnyView(TodoEditor(todo: todo, done: { save() }, cancel: close))
+        case .appointment(let date): return AnyView(DateEditor(item: DateRow.Item(date), done: { save() }, cancel: close))
+        case .deadline(let date): return AnyView(DateEditor(item: DateRow.Item(date), done: { save() }, cancel: close))
+        }
     }
 
     private func tick(_ todo: Todo) { toggle(todo) }
