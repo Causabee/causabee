@@ -38,6 +38,9 @@ final class Navigation {
     }
     /// A task to scroll to when its matter opens: the one an overdue line pointed at.
     var showing: PersistentIdentifier?
+    /// Shown in its own part of the page — a file under Files, a mail under Mail, a note under
+    /// Notes — not where the journal has it: a connection's chip asks for that.
+    var showsInItsPart = false
     /// Opened from a notification of news: the page goes to what is new in the brief.
     var showsNews = false
     /// The item "Talk about it" put into the assistant: shown above the field, taken off with ×.
