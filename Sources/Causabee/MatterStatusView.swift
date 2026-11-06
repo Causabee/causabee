@@ -348,12 +348,12 @@ struct MatterStatusView: View {
     @ViewBuilder
     private func top(_ status: MatterStatus, _ plan: Journal.Plan) -> some View {
         closedBanner(status)
-        NewsCard(matter: matter)
+        NewsCard(matter: matter, editor: newEditor)
         if !matter.isClosed {
             nextStep(status)
             ForYouCard(matter: matter)
             // The page has the room the column had: as many days as it showed.
-            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
+            if plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4, editor: newEditor) }
         }
         atHandCard
         BallCard(matter: matter)
@@ -1230,6 +1230,16 @@ struct MatterStatusView: View {
         Binding(get: { shown.wrappedValue || find.isActive }, set: { shown.wrappedValue = $0 })
     }
 
+    /// What is new, corrected in place: the task's or the date's own editor, as in Plan.
+    private func newEditor(_ item: NewItem, close: @escaping () -> Void) -> AnyView {
+        let save = { close(); try? context.save() }
+        switch item {
+        case .task(let todo), .fact(let todo): return AnyView(TodoEditor(todo: todo, done: { save() }, cancel: close))
+        case .appointment(let date): return AnyView(DateEditor(item: DateRow.Item(date), done: { save() }, cancel: close))
+        case .deadline(let date): return AnyView(DateEditor(item: DateRow.Item(date), done: { save() }, cancel: close))
+        }
+    }
+
     private func tick(_ todo: Todo) { toggle(todo) }
 
     private func toggle(_ todo: Todo) {
@@ -1504,7 +1514,8 @@ struct MatterStatusView: View {
                         talk: { talk(document.shownName, "File") })
                 .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
             // What came from it — a file on its own; one that came with a mail counts with its mail.
-            if !made.isEmpty { MadeChips(made: made).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.bottom, 10) }
+            let fresh = made.without(connectedTo: .file(document), in: document.matter)
+            if !fresh.isEmpty { MadeChips(made: fresh).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.bottom, 10) }
         }
         .fileCardFrame(kept: document.reading != .read)
     }

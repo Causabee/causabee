@@ -117,7 +117,7 @@ struct MatterScreen: View {
                                     // Wide, the column has what comes next: the journal begins with what is new.
                                     if hasColumn {
                                         if matter.isClosed { closedBanner(status) }
-                                        NewsCard(matter: matter)
+                                        NewsCard(matter: matter, editor: Self.newEditor)
                                     } else {
                                         top(status, plan, scroller)
                                     }
@@ -207,7 +207,7 @@ struct MatterScreen: View {
                             }
                             // The summary over what is ahead: what the matter is, then its dates.
                             atHandCard
-                            if !matter.isClosed, part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4) }
+                            if !matter.isClosed, part != .plan, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: 4, editor: Self.newEditor) }
                             BallCard(matter: matter)
                         }
                         .padding(.top, 10).padding(.trailing, 16).padding(.bottom, 90)
@@ -491,6 +491,15 @@ struct MatterScreen: View {
             find.shown = id
             Haptics.landed()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { withAnimation { marked = nil; if find.shown == id { find.shown = nil } } }
+        }
+    }
+
+    /// What is new, corrected in place: the task's or the date's own editor, as in Plan.
+    static func newEditor(_ item: NewItem, close: @escaping () -> Void) -> AnyView {
+        switch item {
+        case .task(let todo), .fact(let todo): AnyView(PhoneTodoEditor(todo: todo))
+        case .appointment(let date): AnyView(PhoneDateEditor(item: PhoneDateRow.Item(date)))
+        case .deadline(let date): AnyView(PhoneDateEditor(item: PhoneDateRow.Item(date)))
         }
     }
 
@@ -862,14 +871,14 @@ struct MatterScreen: View {
     @ViewBuilder
     private func top(_ status: MatterStatus, _ plan: Journal.Plan, _ scroller: ScrollViewProxy) -> some View {
         if matter.isClosed { closedBanner(status) }
-        NewsCard(matter: matter)
+        NewsCard(matter: matter, editor: Self.newEditor)
         if !matter.isClosed {
             nextStep(status, scroller)
             ForYouCard(matter: matter)
         }
         atHandCard
         // On an iPad the page has the room the column had: as many days as it showed.
-        if !matter.isClosed, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: navigation.isPad ? 4 : 2) }
+        if !matter.isClosed, plan.openCount > 0 { AheadCard(plan: plan, tick: tick, open: { part = .plan }, days: navigation.isPad ? 4 : 2, editor: Self.newEditor) }
     }
 
     /// The owner's own words on the matter: small dated blocks, read by the assistant too.

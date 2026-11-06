@@ -336,6 +336,9 @@ enum DemoData {
             made.dueTime = time
             made.note = note
             made.isInfo = info
+            // Made when its mail came, as an imported one is: what is new on the Digest is then
+            // what the demo's last mails brought.
+            made.createdAt = mail.date ?? made.createdAt
             for (source, words) in again { made.sources.append(source.quoting(words)) }
             if let done {
                 made.isDone = true

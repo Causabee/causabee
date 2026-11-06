@@ -277,6 +277,8 @@ public enum Journal {
     /// The journal, newest first. `opened` holds the folds the owner opened.
     public static func lines(items: [RecordBrowse.Item], notes: [MatterNote] = [], decisions: [Decision] = [], done: [Todo] = [],
                              today: Date = Date(), opened: Set<String> = []) -> [Line] {
+        // A note with no words — one the assistant saved empty — is no card at all.
+        let notes = notes.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         let all: [Line] = items.map(Line.item) + notes.map(Line.note) + decisions.map(Line.decision) + done.filter { $0.doneAt != nil }.map(Line.done)
         let ordered = all.sorted { $0.date > $1.date }
         let start = monday.startOfDay(for: today)
