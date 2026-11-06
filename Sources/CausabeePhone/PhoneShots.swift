@@ -750,6 +750,12 @@ struct TakenLine: View {
         return matter?.documents?.first { $0.messageID == fileID }
     }
 
+    /// The owner's tasks it brought that have no day yet.
+    private var undated: [Todo] {
+        guard let matter, let document else { return [] }
+        return matter.brought(by: document).todos.filter { $0.due == nil && $0.owner != .other && !$0.isDone && !$0.isInfo }
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.done).font(.body)
@@ -763,6 +769,19 @@ struct TakenLine: View {
                 }
                 if lines.count > 4 { Text("and \(lines.count - 4) more").font(.footnote).foregroundStyle(.secondary) }
                 Text(Document.ownName(of: file)).font(.caption2).foregroundStyle(.tertiary).lineLimit(1)
+                // Its tasks with no day: given one here, where it came in, they are a plan.
+                if !undated.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(undated.count == 1 ? "When?" : "When, for its \(undated.count) tasks?").font(.footnote.weight(.medium))
+                        WhenChips { when in
+                            let day = Planning.day(when, today: MatterStatus.day(Date()))
+                            for todo in undated { todo.due = day }
+                            try? context.save()
+                            Haptics.tap()
+                        }
+                    }
+                    .padding(.top, 4)
+                }
                 HStack(spacing: 18) {
                     Menu {
                         if let matter { Button("Open \(matter.name)", systemImage: "arrow.right") { navigation.open(matter) } }

@@ -31,6 +31,7 @@ struct OverviewWeek: View {
         // On a full day what is done with leaves the tiles: it stayed as crowded at night as in the morning.
         let (things, over) = Week.asTheDayGoes(StoredChanges.shared.things(on: day, in: matters), on: day, now: now)
         return VStack(alignment: .leading, spacing: 10) {
+            WeekSentence(matters: matters, now: now)
             // As Figma's "Mac · Overview" has them: at most 72 wide each, and from the left.
             HStack(spacing: 6) {
                 ForEach(days, id: \.self) { each in

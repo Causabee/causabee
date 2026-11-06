@@ -343,6 +343,49 @@ extension View {
 /// What is ahead, in one card, on the plan's grid: the next days, the first tasks with no day yet,
 /// and how much more there is. A task's box ticks it; a tap on a task or a date opens its own
 /// editor in place — the Digest is where it is corrected, not Plan; a day or the count opens the plan.
+/// The week in one sentence, over the week's days on the overview: "This week: 3 things · waiting
+/// on 2 · nothing slipping". The calm answer to "have I forgotten something?" — what is overdue and
+/// what has no answer said in orange, when there is any.
+struct WeekSentence: View {
+    let matters: [Matter]
+    let now: Date
+
+    var body: some View {
+        let today = MatterStatus.day(now)
+        let days = Week.days(from: now, count: Planning.daysLeftInWeek(today: today))
+        let things = days.reduce(0) { $0 + Week.asTheDayGoes(StoredChanges.shared.things(on: $1, in: matters), on: $1, now: now).ahead.count }
+        let theirs = matters.filter { !$0.isClosed }.flatMap(\.openTodos).filter { $0.owner == .other && !$0.isBlocked }
+        let unanswered = theirs.filter { Planning.isBack($0, today: today) }.count
+        let parts = Planning.week(things: things, waiting: theirs.count - unanswered,
+                                  overdue: StoredChanges.shared.overdue(in: matters).count, unanswered: unanswered)
+        parts.enumerated().reduce(Text("")) { line, part in
+            line + Text(part.offset == 0 ? "" : " · ") + Text(part.element.text).foregroundColor(part.element.warns ? Theme.warning : nil)
+        }
+        .font(.subheadline).foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityIdentifier("week.sentence")
+    }
+}
+
+/// "When?" in one tap: this week, next week, later — each a day, so the task is a plan.
+struct WhenChips: View {
+    let set: (Planning.When) -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(Planning.When.allCases, id: \.self) { when in
+                Button(when.label) { set(when) }
+                    .font(.footnote.weight(.medium))
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(Theme.gold.opacity(0.14), in: Capsule())
+                    .foregroundStyle(.primary)
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("when.\(when.rawValue)")
+            }
+        }
+    }
+}
+
 struct AheadCard: View {
     let plan: Journal.Plan
     let tick: (Todo) -> Void
@@ -353,6 +396,7 @@ struct AheadCard: View {
     var editor: ((NewItem, @escaping () -> Void) -> AnyView)? = nil
     /// The tasks with no day it shows, the oldest first: nothing open is out of sight.
     static let noDay = 3
+    @Environment(\.modelContext) private var context
 
     private func name(_ text: String) -> some View {
         Text(text).foregroundStyle(.primary).lineLimit(2).multilineTextAlignment(.leading).padding(.top, Theme.planTop)
@@ -427,12 +471,50 @@ struct AheadCard: View {
                         .textCase(.uppercase)
                         .padding(.horizontal, 12).padding(.top, 10)
                     ForEach(plan.noDay.prefix(Self.noDay), id: \.persistentModelID) { todo in
-                        task(todo, noDay: true).padding(.horizontal, 12).padding(.vertical, 6)
+                        VStack(alignment: .leading, spacing: 6) {
+                            task(todo, noDay: true)
+                            // A day in one tap: then it is a plan, and off the mind.
+                            WhenChips { when in
+                                todo.due = Planning.day(when, today: MatterStatus.day(Date()))
+                                try? context.save()
+                            }
+                            .padding(.leading, 34)
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 6)
                     }
                 }
                 .padding(.bottom, 4)
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("ahead.noDay")
+                Divider().padding(.horizontal, 12)
+            }
+            // Someone else's with no answer by its day: back with the owner, once — wait a week more,
+            // or tick it when it came after all.
+            if !plan.noAnswer.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("No answer yet").font(.caption.weight(.semibold)).foregroundStyle(Theme.warning)
+                        .textCase(.uppercase)
+                        .padding(.horizontal, 12).padding(.top, 10)
+                    ForEach(plan.noAnswer.prefix(Self.noDay), id: \.persistentModelID) { todo in
+                        VStack(alignment: .leading, spacing: 6) {
+                            task(todo)
+                            HStack(spacing: 8) {
+                                Text("since \(Dates.short(MatterStatus.day(todo.createdAt)))").font(.footnote).foregroundStyle(.secondary)
+                                Button("Wait a week") {
+                                    Planning.waitAWeek(todo, today: MatterStatus.day(Date()))
+                                    try? context.save()
+                                }
+                                .font(.footnote.weight(.medium)).foregroundStyle(Theme.gold).buttonStyle(.plain)
+                                .accessibilityIdentifier("noAnswer.wait")
+                            }
+                            .padding(.leading, 34)
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                    }
+                }
+                .padding(.bottom, 4)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("ahead.noAnswer")
                 Divider().padding(.horizontal, 12)
             }
             opens {

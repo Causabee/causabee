@@ -120,15 +120,17 @@ public enum Journal {
         public var noDay: [Todo] = []
         /// Someone else's: the owner is waiting for them.
         public var waiting: [Todo] = []
+        /// Someone else's with no answer by its day: back with the owner (`Planning.isBack`).
+        public var noAnswer: [Todo] = []
         /// Tasks that wait for another one: they cannot be done yet.
         public var blocked: [Todo] = []
         /// Dates gone by, the latest first.
         public var past: [Item] = []
         public var done: [Todo] = []
 
-        public var isEmpty: Bool { overdue.isEmpty && stretches.isEmpty && noDay.isEmpty && waiting.isEmpty && blocked.isEmpty && past.isEmpty && done.isEmpty }
+        public var isEmpty: Bool { overdue.isEmpty && stretches.isEmpty && noDay.isEmpty && waiting.isEmpty && noAnswer.isEmpty && blocked.isEmpty && past.isEmpty && done.isEmpty }
         /// How many days, tasks and dates stand on the plan: tasks and dates left.
-        public var openCount: Int { stretches.flatMap(\.days).flatMap(\.items).count + overdue.count + noDay.count + waiting.count + blocked.count }
+        public var openCount: Int { stretches.flatMap(\.days).flatMap(\.items).count + overdue.count + noDay.count + waiting.count + noAnswer.count + blocked.count }
 
         /// What stands in order, a day at a time: what comes on one day together, what has no day
         /// together too.
@@ -149,8 +151,10 @@ public enum Journal {
         plan.overdue = status.overdue.sorted { ($0.due ?? "") < ($1.due ?? "") }
         let late = Set(plan.overdue.map(\.persistentModelID))
         plan.blocked = open.filter(\.isBlocked).sorted { ($0.due ?? "9999", $0.createdAt) < ($1.due ?? "9999", $1.createdAt) }
-        plan.waiting = open.filter { $0.owner == .other && !$0.isBlocked && !late.contains($0.persistentModelID) }
+        let theirs = open.filter { $0.owner == .other && !$0.isBlocked && !late.contains($0.persistentModelID) }
             .sorted { ($0.due ?? "9999", $0.createdAt) < ($1.due ?? "9999", $1.createdAt) }
+        plan.noAnswer = theirs.filter { Planning.isBack($0, today: status.today) }
+        plan.waiting = theirs.filter { !Planning.isBack($0, today: status.today) }
         let others = open.filter { $0.owner != .other && !$0.isBlocked && !late.contains($0.persistentModelID) }
         plan.noDay = others.filter { $0.due == nil }.sorted { $0.createdAt < $1.createdAt }
 

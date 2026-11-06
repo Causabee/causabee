@@ -61,6 +61,7 @@ struct ShotView: View {
     var undo: () -> Void = {}
     var move: (Matter) -> Void = { _ in }
     @Query private var profiles: [Profile]
+    @Environment(\.modelContext) private var context
     @State private var showsChat = true
     @State private var showsSent = false
     @State private var choice: PersistentIdentifier?
@@ -89,6 +90,19 @@ struct ShotView: View {
                 }
                 if lines.count > 4 { Text("and \(lines.count - 4) more").font(.callout).foregroundStyle(.secondary) }
                 Text(Document.ownName(of: shot.file)).font(.caption).foregroundStyle(.tertiary).lineLimit(1)
+                // Its tasks with no day: given one here, where it came in, they are a plan.
+                let undated = undated(in: id)
+                if !undated.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(undated.count == 1 ? "When?" : "When, for its \(undated.count) tasks?").font(.callout.weight(.medium))
+                        WhenChips { when in
+                            let day = Planning.day(when, today: MatterStatus.day(Date()))
+                            for todo in undated { todo.due = day }
+                            try? context.save()
+                        }
+                    }
+                    .padding(.top, 4)
+                }
                 HStack(spacing: 14) {
                     Menu("Change") {
                         if let id { Button("Open \(name)") { open(id) } }
@@ -114,6 +128,13 @@ struct ShotView: View {
         .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("taken.line")
+    }
+
+    /// The owner's tasks the file brought that have no day yet.
+    private func undated(in id: PersistentIdentifier?) -> [Todo] {
+        guard let id, let fileID = shot.fileID, let matter = matters.first(where: { $0.persistentModelID == id }),
+              let document = matter.documents?.first(where: { $0.messageID == fileID }) else { return [] }
+        return matter.brought(by: document).todos.filter { $0.due == nil && $0.owner != .other && !$0.isDone && !$0.isInfo }
     }
 
     private var card: some View {

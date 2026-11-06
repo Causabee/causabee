@@ -219,3 +219,28 @@ is sent, not in asking: with Pro, pseudonymised; without, read on the device, no
 Not yet: mail without Pro still waits for "Sort in" — the device's model is not trusted to start
 on its own (the owner, 6 November 2026); the
 Digest's "New" card is still there, though the line at add time now does its job.
+
+## Taking the monitoring too: a day for everything, answers that come back, the week in a sentence
+
+Written 6 November 2026, from research the owner asked for and liked:
+
+- Mental load is the planning, anticipating and monitoring — not the doing. An app that takes the
+  doing but leaves the monitoring takes "a sliver" of it (Ruppanner, in The Spinoff, Sept 2026).
+- An unfinished goal stops intruding once there is a plan for it — a when — even before it is done
+  (Masicampo and Baumeister 2011, "Consider it done!").
+- A trusted system is one with no hidden gaps: GTD's weekly review closes open loops and checks
+  what one waits for from others.
+- Help nobody asked for backfires, even when right; proactivity is selective, on time, and shows
+  what it rests on.
+
+What Causabee does with it (built 6 November 2026, no iCloud schema change):
+
+1. **Every task gets a day.** A task with no day shows "When? This week · Next week · Later" — on
+   the confirmation line where it came in, and under "No day yet" on the Digest. This week is
+   Friday (today at the weekend), next week the Friday after, later four weeks on: a day each, so
+   even "later" is a plan.
+2. **Waiting-for comes back.** Someone else's task comes back on its day, or a week after it came
+   in: "No answer yet" on the Digest, with "Wait a week" or the tick. With Pro, a reply that shows
+   it done ticks it off by itself (the extraction prompt's `done`).
+3. **The week in a sentence**, over the overview's week: "This week: 3 things · waiting on 2 ·
+   nothing slipping" — what is overdue or unanswered said in orange.

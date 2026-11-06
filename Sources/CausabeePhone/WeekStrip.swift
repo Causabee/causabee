@@ -30,6 +30,7 @@ struct PhoneWeek: View {
         let (things, over) = Week.asTheDayGoes(StoredChanges.shared.things(on: day, in: matters), on: day, now: now)
         let lateToday = day == today ? overdue : []
         return VStack(alignment: .leading, spacing: 8) {
+            WeekSentence(matters: matters, now: now)
             HStack(spacing: 4) {
                 ForEach(days, id: \.self) { each in
                     cell(each, isToday: each == today, isChosen: each == day,

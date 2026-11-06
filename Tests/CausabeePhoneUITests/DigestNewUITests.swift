@@ -108,5 +108,37 @@ final class DigestNewUITests: XCTestCase {
         let task = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'Ask Ms. Adler'")).firstMatch
         XCTAssertTrue(task.waitForExistence(timeout: 8), "Kept, the task is not in the plan.")
     }
+
+    /// A task with no day gets one in a tap — This week, Next week, Later — and leaves "No day yet".
+    func testATaskWithNoDayGetsOneInATap() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Care for Mum (Helga) after her fall"]
+        app.launch()
+        let chips = app.buttons.matching(identifier: "when.thisWeek")
+        for _ in 0..<5 where !chips.firstMatch.waitForExistence(timeout: 3) { app.swipeUp() }
+        XCTAssertTrue(chips.firstMatch.exists, "A task with no day has no “This week”.")
+        for _ in 0..<4 where !chips.firstMatch.isHittable { app.swipeUp() }
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/when-chips.png"))
+        }
+        let before = chips.count
+        chips.firstMatch.tap()
+        for _ in 0..<25 where chips.count >= before { Thread.sleep(forTimeInterval: 0.2) }
+        XCTAssertLessThan(chips.count, before, "Given a day, the task is still under “No day yet”.")
+    }
+
+    /// The overview's week says in one sentence whether anything slips.
+    func testTheWeekSaysWhetherAnythingSlips() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO"]
+        app.launch()
+        let sentence = app.staticTexts["week.sentence"]
+        XCTAssertTrue(sentence.waitForExistence(timeout: 40), "The overview's week has no sentence.")
+        XCTAssertTrue(sentence.label.contains("this week") || sentence.label.contains("This week"), "The sentence does not say the week: \(sentence.label)")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/week-sentence.png"))
+        }
+    }
 }
 
