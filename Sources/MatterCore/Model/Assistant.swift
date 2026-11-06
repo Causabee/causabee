@@ -106,7 +106,7 @@ public enum FactSheet {
                 // Worth knowing, and not to do: the owner said so.
                 lines.append("Worth knowing (not to-dos):")
                 for info in matter.infos.prefix(focused ? 10 : 30) {
-                    lines.append("\(id("T", .todo(info.persistentModelID))) \(info.text)")
+                    lines.append("\(id("T", .todo(info.persistentModelID))) \(info.text)" + (info.holdsUntil.map { " (holds until \($0))" } ?? ""))
                 }
             }
             if detailed {

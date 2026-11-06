@@ -1196,7 +1196,7 @@ struct MatterStatusView: View {
     private func planList(_ status: MatterStatus, _ plan: Journal.Plan) -> some View {
         PlanList(plan: plan, showsDone: $showsDone, showsPast: $showsPast) { todo, showsOwner in
             TodoRow(todo: todo, today: status.today, showsOwner: showsOwner, showsDue: todo.isDone,
-                    info: todo.isDone ? nil : { setInfo(todo, true) }, reminders: todo.isDone ? nil : reminders, calendarTick: calendarTick) { toggle(todo) } talk: { talk(todo.text, "Task") }
+                    reminders: todo.isDone ? nil : reminders, calendarTick: calendarTick) { toggle(todo) } talk: { talk(todo.text, "Task") }
                 .background(marked == todo.persistentModelID ? Theme.mark : .clear)
                 .findable(.model(todo.persistentModelID), todo.text, todo.note)
         } date: { item, past in
@@ -1228,12 +1228,6 @@ struct MatterStatusView: View {
     /// A folded group stays open while the page is searched, so what it holds can be found.
     private func open(_ shown: Binding<Bool>) -> Binding<Bool> {
         Binding(get: { shown.wrappedValue || find.isActive }, set: { shown.wrappedValue = $0 })
-    }
-
-    /// Not a to-do, only worth knowing — or a to-do after all. Nothing is deleted either way.
-    private func setInfo(_ todo: Todo, _ isInfo: Bool) {
-        withAnimation { todo.isInfo = isInfo }
-        try? context.save()
     }
 
     private func tick(_ todo: Todo) { toggle(todo) }
@@ -1643,8 +1637,6 @@ struct TodoRow: View {
     var showsOwner = false
     /// Off where its day stands beside it, on a tile.
     var showsDue = true
-    /// "Nur Info": it is nothing to do, only worth knowing.
-    var info: (() -> Void)? = nil
     /// Given where the owner's reminders are shown: then a task of theirs gets its sign.
     var reminders: [Calendars.Reminder]? = nil
     var calendarTick = 0
@@ -1752,7 +1744,7 @@ struct TodoRow: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(todo.reminderID == nil ? "It goes from this matter; Edit → Undo brings it back. Something only good to know can move to Good to know instead."
+            Text(todo.reminderID == nil ? "It goes from this matter; Edit → Undo brings it back."
                  : "It goes from this matter, and its reminder from Reminders. Edit → Undo brings the task back, not the reminder.")
         }
     }
@@ -1794,9 +1786,6 @@ struct TodoRow: View {
         if !todo.isDone { SourceItems(sources: todo.sources, matter: todo.matter) }
         if reminders != nil, remindable, todo.reminderID == nil, Calendars.shared.canReadReminders {
             Button(Say.addToReminders, systemImage: "bell") { addingReminder += 1 }
-        }
-        if let info {
-            Button(Say.moveToInfo, systemImage: "info.circle", action: info)
         }
         if !todo.isDone {
             Divider()

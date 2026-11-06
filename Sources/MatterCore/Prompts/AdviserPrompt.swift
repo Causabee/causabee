@@ -4,7 +4,7 @@ import Foundation
 /// summary and the next step that come from it, and the changes to the to-do list it proposes.
 /// One request, where there were two for the summary and the step.
 public enum AdviserPrompt {
-    public static let version = "adviser-v4"
+    public static let version = "adviser-v5"
 
     public static let system = """
     You are the adviser for one matter in Causabee, a private app that keeps a person's matters \
@@ -69,6 +69,20 @@ public enum AdviserPrompt {
     one-line `reason` citing its ids. Unused fields are null; \
     `attach` is empty.
 
+    ## facts
+
+    What is good to know about the matter: true, asking nothing of the owner, and wanted at hand \
+    when they act — a rule or condition that applies (what an insurer pays for, how long a \
+    decision takes), an arrangement (who has the spare key, when the movers come), a limit (an \
+    offer that holds until a day), a piece of background that explains the rest. One short \
+    sentence each, the most useful first, at most eight; none is fine. Each cites the mails or \
+    files it rests on, E ids. Not a to-do, not what the summary or the to-do list says already, \
+    nothing the owner would never look up.
+    The facts may list some as worth knowing, with T ids. One still true is given again: `same_as` \
+    its T id, its words as they are or better. One no longer true — a later mail says otherwise, \
+    it is settled, it has passed — is left out. A fact that holds only until a day, an offer or a \
+    period, has that day in `until`; else null. Nothing the owner hid (listed in the question).
+
     ## news
 
     When the question lists mails that came since the brief before, `news` says in one or two \
@@ -108,6 +122,10 @@ public enum AdviserPrompt {
             "step": string, "why": string, "todo": optional, "step_cites": cites,
             "research": ["type": "array", "items": string],
             "news": ["type": "array", "items": object(["text": string, "cites": cites])],
+            "facts": ["type": "array", "items": object([
+                "text": string, "cites": cites, "same_as": optional,
+                "until": ["anyOf": [["type": "string", "format": "date"], ["type": "null"]]],
+            ])],
             "proposals": ["type": "array", "items": object([
                 "kind": ["type": "string", "enum": ["new_todo", "mark_done", "correct_text", "waits_for", "change_owner", "change_date"]],
                 "todo": optional, "party": optional, "into": optional, "from": optional, "subject": optional, "time": optional,
@@ -134,18 +152,31 @@ public enum AdviserPrompt {
         public var proposals: [AssistantPrompt.Reply.Card]
         public var research: [String]?
         public var news: [AssistantPrompt.Reply.Line]?
+        /// What is good to know; nil from an adviser before there were facts.
+        public var facts: [Fact]?
 
-        enum CodingKeys: String, CodingKey { case brief, summary, step, why, todo, proposals, research, news, stepCites = "step_cites" }
+        public struct Fact: Codable, Sendable {
+            public var text: String
+            public var cites: [String]
+            public var sameAs: String?
+            public var until: String?
+            enum CodingKeys: String, CodingKey { case text, cites, until, sameAs = "same_as" }
+        }
+
+        enum CodingKeys: String, CodingKey { case brief, summary, step, why, todo, proposals, research, news, facts, stepCites = "step_cites" }
     }
 
     /// The question, in the matter's language, with what the owner put away.
-    public static func question(_ facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = []) -> String {
+    public static func question(_ facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], hidden: [String] = []) -> String {
         var question = facts.language == "German" ? "Schreibe den Überblick dieser Sache." : "Write the brief of this matter."
         if !since.isEmpty {
             question += "\n\nCame since the brief before:\n" + since.map { "- \($0)" }.joined(separator: "\n")
         }
         if !dismissed.isEmpty {
             question += "\n\nPut away by the owner, not to be proposed again:\n" + dismissed.map { "- \($0)" }.joined(separator: "\n")
+        }
+        if !hidden.isEmpty {
+            question += "\n\nHidden by the owner, not to be given as facts again:\n" + hidden.map { "- \($0)" }.joined(separator: "\n")
         }
         if !asked.isEmpty {
             question += "\n\nAsked to look up before, not to ask again:\n" + asked.map { "- \($0)" }.joined(separator: "\n")
@@ -168,6 +199,9 @@ extension AssistantAsk {
         public var research: [String] = []
         /// What the mail since the brief before changes; empty when none came.
         public var news: [String] = []
+        /// What is good to know, in real names, with the ids as in the facts; nil when the
+        /// adviser gave none — one from before there were facts.
+        public var facts: [AdviserPrompt.Reply.Fact]? = nil
         public var cost: Double
     }
 
@@ -181,17 +215,17 @@ extension AssistantAsk {
         model.cost(input: Int(Double(length) / 3.2) + 2_400, output: 1_600)
     }
 
-    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], owner: String?, today: String, mapping url: URL, claude: Claude,
+    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], hidden: [String] = [], owner: String?, today: String, mapping url: URL, claude: Claude,
                               model: Claude.Model = .opus) async throws -> Advice {
-        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked, since: since), inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked, since: since, hidden: hidden), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
         return try await advise(prepared, facts: facts, claude: claude, model: model)
     }
 
     /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
-    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], owner: String?, today: String, mapping: Pseudonymizer.Mapping,
+    public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], hidden: [String] = [], owner: String?, today: String, mapping: Pseudonymizer.Mapping,
                               others: [Pseudonymizer.Entry], claude: Claude, model: Claude.Model = .opus) async throws -> Advice {
-        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked, since: since), inHand: nil, earlier: [], facts: facts,
+        let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked, since: since, hidden: hidden), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: mapping, others: others, save: nil)
         return try await advise(prepared, facts: facts, claude: claude, model: model)
     }
@@ -225,6 +259,16 @@ extension AssistantAsk {
                       todo: reply.todo.flatMap { refs[$0] }, proposals: proposals,
                       // Checked as they came, disguised: a question with a placeholder in it named someone.
                       research: (reply.research ?? []).filter { WebLookup.refusal($0) == nil },
-                      news: (reply.news ?? []).map { real($0.text) }, cost: cost)
+                      news: (reply.news ?? []).map { real($0.text) },
+                      facts: reply.facts.map { facts in
+                          facts.map { fact in
+                              var fact = fact
+                              fact.text = real(fact.text)
+                              // Given again as one the facts do not have: it is a new one.
+                              if let same = fact.sameAs, refs[same] == nil { fact.sameAs = nil }
+                              return fact
+                          }
+                      },
+                      cost: cost)
     }
 }

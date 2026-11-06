@@ -960,9 +960,9 @@ enum Adviser {
         let advice: AssistantAsk.Advice
         switch names {
         case .file(let url):
-            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, since: since, owner: owner, today: today, mapping: url, claude: claude, model: model)
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, since: since, hidden: matter.hiddenFacts, owner: owner, today: today, mapping: url, claude: claude, model: model)
         case .list(let mapping, let others):
-            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, since: since, owner: owner, today: today, mapping: mapping,
+            advice = try await AssistantAsk.advise(facts: facts, dismissed: dismissed, asked: asked, since: since, hidden: matter.hiddenFacts, owner: owner, today: today, mapping: mapping,
                                                    others: others, claude: claude, model: model)
         }
         let before = matter.shownBrief?.writtenAt
@@ -1003,6 +1003,20 @@ enum Adviser {
         let personal = WebLookup.personal(matter.parties.flatMap { [$0.name] + $0.spellings } + [owner].compactMap { $0 })
         let questions = advice.research.filter { WebLookup.refusal($0, personal: personal) == nil }
         matter.shownBrief = (matter.shownBrief ?? Brief()).rewritten(lines: advice.lines, proposals: proposals, questions: questions, news: news, at: now)
+        // What is good to know, from the mail each rests on.
+        if let given = advice.facts {
+            let facts = given.map { fact -> GoodToKnowFact in
+                let sources = fact.cites.compactMap { cite -> Source? in
+                    guard case .entry(let id) = facts.refs[cite], let entry = context.model(for: id) as? Entry else { return nil }
+                    var source = entry.source
+                    if source.date == nil { source.date = entry.date }
+                    return source
+                }
+                let same: PersistentIdentifier? = fact.sameAs.flatMap { if case .todo(let id) = facts.refs[$0] { id } else { nil } }
+                return GoodToKnowFact(text: fact.text, sources: sources, same: same, until: fact.until)
+            }
+            matter.putFacts(facts, in: context, at: now)
+        }
         try? context.save()
     }
 
