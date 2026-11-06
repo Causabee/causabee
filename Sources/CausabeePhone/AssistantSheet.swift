@@ -3,6 +3,7 @@ import MessageUI
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
+import VisionKit
 
 /// The assistant's thread, one with the Mac's, over a matter: that matter's part of it. Asked here,
 /// a question goes out disguised by the Mac's own list of names — the copy the Mac put into the
@@ -35,6 +36,12 @@ struct AssistantSheet: View {
     /// A field nobody sees, which holds the keyboard for the moment the real one is made anew after
     /// a send: without it the keyboard began to go and came back, and everything over it dipped.
     @FocusState private var keepsKeyboard: Bool
+    /// The panel over the field: what can be brought in and added. Open by itself the first time
+    /// the assistant is opened, after that from the plus.
+    @State private var panelOpen = false
+    @AppStorage("addPanelShown") private var panelShown = false
+    /// What the panel asked the plus to bring in.
+    @State private var attachRequest: AttachKind?
     /// The question on its way, until its answer is in the thread. Its id is its turn's: asked and
     /// answered, it is one thing in the thread, in one place.
     @State private var asking: (id: UUID, question: String, date: Date)?
@@ -318,17 +325,40 @@ struct AssistantSheet: View {
         .frame(height: navigation.isPad ? PadMetrics.bar : nil)
     }
 
-    /// What can be added, over the field — on the thread, each chip on its own ground — and the
-    /// field, on the page's ground from its middle down.
+    /// The panel of what can be brought in and added, over the field when it is open, and the field,
+    /// on the page's ground from its middle down.
     private var composer: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // A tap each: its card comes where the field was, and what is typed goes into it — kept
-            // as written, but a task with Pro, which the assistant reads for its day.
-            if navigation.pinned == nil, let matter {
-                AddChips(matter: matter) { typing = true }.padding(.horizontal, 16)
+            if panelOpen, navigation.pinned == nil {
+                AddPanel(matter: matter) { kind in
+                    closePanel()
+                    attachRequest = kind
+                } add: { add in
+                    // Its card comes where the field was, and what is typed goes into it — kept as
+                    // written, but a task with Pro, which the assistant reads for its day.
+                    guard let matter else { return }
+                    closePanel()
+                    navigation.pinned = Navigation.Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
+                    typing = true
+                }
+                .padding(.horizontal, 16)
+                // Out of the plus, under its lower left corner, and back into it.
+                .transition(.scale(scale: 0.08, anchor: UnitPoint(x: 0.07, y: 1.2)).combined(with: .opacity))
             }
             field
         }
+        .onAppear {
+            guard !panelShown else { return }
+            panelShown = true
+            withAnimation(AttachButton.panelMotion.delay(0.3)) { panelOpen = true }
+        }
+        // Typing puts it away: the field is what is wanted then.
+        .onChange(of: typing) { if typing { closePanel() } }
+    }
+
+    private func closePanel() {
+        guard panelOpen else { return }
+        withAnimation(AttachButton.panelMotion) { panelOpen = false }
     }
 
     /// The field as the Mac has it: what is typed goes out pseudonymised, and only on send.
@@ -367,7 +397,7 @@ struct AssistantSheet: View {
                 ListeningBar(voice: voice)
               } else {
                 // "Task" or "Note" picked: the chip says what comes; to type or to speak is chosen after.
-                AttachButton(matter: matter)
+                AttachButton(matter: matter, panel: $panelOpen, request: $attachRequest)
                     .background {
                         TextField("", text: .constant("")).focused($keepsKeyboard)
                             .frame(width: 1, height: 1).opacity(0).allowsHitTesting(false).accessibilityHidden(true)
@@ -1404,82 +1434,64 @@ private struct TypingField: View {
 }
 
 
-/// What can be added to a matter without Pro, over the assistant's field: a tap puts its card over
-/// the field — "New task", "New note" — and what is typed next is that, kept as written.
-private struct AddChips: View {
-    let matter: Matter
-    let picked: () -> Void
-    @Environment(Navigation.self) private var navigation
-    /// Folded, only the plus is left over the field; it stays as it was left.
-    @AppStorage("addChipsOpen") private var open = true
+/// Over the assistant's field, on glass: what is brought in — a photo, a scan, files — as three
+/// cards, and under them what can be added to a matter, a row of pills to scroll. It comes out of
+/// the plus and goes back into it.
+private struct AddPanel: View {
+    let matter: Matter?
+    let bring: (AttachKind) -> Void
+    let add: (AssistantAdd) -> Void
 
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                // Over the chips, so that they go in under it.
-                toggle.zIndex(1)
-                if open {
-                    // Fanned out from the chevron one after another, and folded back the last first.
-                    ForEach(Array(Self.chips.enumerated()), id: \.offset) { index, item in
-                        chip(item.title, item.symbol, item.add)
-                            .transition(fan(index))
-                    }
-                }
-            }
-            .padding(.horizontal, 4)
-        }
-        .scrollClipDisabled()
-    }
-
-    private static let chips: [(title: String, symbol: String, add: AssistantAdd)] = [
+    private static let pills: [(title: String, symbol: String, add: AssistantAdd)] = [
         ("Task", "checklist", .task), ("Note", "note.text", .note), ("Link", "link", .link),
         ("Detail", "info.circle", .detail), ("Contact", "person.badge.plus", .contact),
     ]
 
-    /// Each chip comes from the left, small and faint, a moment after the one before it.
-    private func fan(_ index: Int) -> AnyTransition {
-        let step = 0.035, last = Self.chips.count - 1
-        let shrink = AnyTransition.scale(scale: 0.6, anchor: .leading).combined(with: .opacity)
-        // Going, they only shrink where they stand: moved, the first ran into the chevron.
-        return .asymmetric(
-            insertion: AnyTransition.offset(x: -24).combined(with: shrink)
-                .animation(.spring(response: 0.32, dampingFraction: 0.78).delay(Double(index) * step)),
-            removal: shrink.animation(.easeIn(duration: 0.16).delay(Double(last - index) * step * 0.6)))
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                card("Photo", "photo", .photo)
+                if VNDocumentCameraViewController.isSupported { card("Scan", "doc.viewfinder", .scan) }
+                card("Files", "folder", .files)
+            }
+            .padding(.horizontal, 14)
+            // A matter's own: in the thread about all matters there is none to add to.
+            if matter != nil {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Self.pills, id: \.title) { pill($0.title, $0.symbol, $0.add) }
+                    }
+                    .padding(.horizontal, 14)
+                }
+            }
+        }
+        .padding(.vertical, 14)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("add.panel")
     }
 
-    /// A chevron, as a drawer has: › while the chips are in, ‹ while they are out.
-    private var toggle: some View {
-        Button {
-            Haptics.tap()
-            withAnimation(.snappy) { open.toggle() }
-        } label: {
-            Image(systemName: "chevron.right").font(.subheadline.weight(.semibold))
-                .rotationEffect(.degrees(open ? 180 : 0))
-                .frame(width: 36, height: 36)
-                .background(Theme.box, in: Circle())
-                .overlay(Circle().stroke(Theme.line, lineWidth: 0.5))
-                .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
-                .contentShape(Circle())
+    /// The icon over its name, in a card of its own.
+    private func card(_ title: String, _ symbol: String, _ kind: AttachKind) -> some View {
+        Button { Haptics.tap(); bring(kind) } label: {
+            VStack(spacing: 6) {
+                Image(systemName: symbol).font(.title3)
+                Text(title).font(.footnote.weight(.medium))
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity, minHeight: 68)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
-        // Folded away, it stands back: half there, until it is wanted.
-        .opacity(open ? 1 : 0.5)
-        .accessibilityLabel(open ? "Hide Add" : "Add")
-        .accessibilityIdentifier("add.toggle")
+        .accessibilityIdentifier("plus." + title.lowercased())
     }
 
-    private func chip(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
-        Button {
-            Haptics.tap()
-            navigation.pinned = Navigation.Pinned(matter: matter.persistentModelID, matterName: matter.name, kind: add.rawValue, text: add.hint)
-            picked()
-        } label: {
+    private func pill(_ title: String, _ symbol: String, _ kind: AssistantAdd) -> some View {
+        Button { Haptics.tap(); add(kind) } label: {
             Label(title, systemImage: symbol).font(.subheadline)
                 .padding(.vertical, 8).padding(.leading, 11).padding(.trailing, 14)
-                // On the thread, not under the field's glass: a ground of its own, not see-through.
-                .background(Theme.box, in: Capsule())
-                .overlay(Capsule().stroke(Theme.line, lineWidth: 0.5))
-                .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+                .background(Color.primary.opacity(0.06), in: Capsule())
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
