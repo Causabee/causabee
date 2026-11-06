@@ -14,6 +14,15 @@ public enum NewItem: Identifiable {
         }
     }
 
+    /// The same thing on every device: what it is made of, not its id here.
+    public var key: String {
+        switch self {
+        case .task(let item), .fact(let item): "t|" + (item.origin.isEmpty ? item.text : item.origin)
+        case .appointment(let item): "a|" + (item.sources.first?.messageID ?? "") + "|" + item.day + "|" + item.what
+        case .deadline(let item): "d|" + (item.sources.first?.messageID ?? "") + "|" + item.day + "|" + item.what
+        }
+    }
+
     /// Where it came from, for its line: the first mail or file.
     public var source: Source? {
         switch self {
@@ -49,6 +58,7 @@ extension Matter {
         guard !isClosed else { return [] }
         let since = newSince(now: now)
         let today = MatterStatus.day(now)
+        let kept = Set(shownBrief?.newKept ?? [])
         func brought(_ sources: [Source]) -> Bool { sources.contains { $0.kind != .conversation } }
         var items: [NewItem] = []
         for todo in (todos ?? []) where !todo.isHidden && !todo.isDone && todo.createdAt > since {
@@ -66,13 +76,22 @@ extension Matter {
             && (item.sources.first?.date ?? .distantPast) > since {
             items.append(.deadline(item))
         }
-        return items.sorted { $0.came > $1.came }
+        return items.filter { !kept.contains($0.key) }.sorted { $0.came > $1.came }
+    }
+
+    /// ✓ on one new thing: kept as it is, and not new any more — the rest stays new.
+    public func keepNew(_ item: NewItem) {
+        var brief = shownBrief ?? Brief()
+        guard !brief.newKept.contains(item.key) else { return }
+        brief.newKept = Array((brief.newKept + [item.key]).suffix(200))
+        shownBrief = brief
     }
 
     /// "Seen": what is new now is not new any more, and the news with it.
     public func sawNew(at now: Date = Date()) {
         var brief = shownBrief ?? Brief()
         brief.newSeenAt = now
+        brief.newKept = []
         brief.news?.seen = true
         shownBrief = brief
     }

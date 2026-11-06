@@ -1264,8 +1264,9 @@ private struct NewsComments: ViewModifier {
     }
 }
 
-/// One new thing: what it is, its day and whose, where it came from — and ✎ to correct it in
-/// place, × to put it away. A fact is only put away.
+/// One new thing: what it is, its day and whose, where it came from — and 👍 to keep it as it is
+/// (seen: off the card, in the matter — a ✓ read as "done"), ✎ to correct it in place, × to put
+/// it away for good.
 struct NewItemRow: View {
     let item: NewItem
     let matter: Matter
@@ -1281,8 +1282,13 @@ struct NewItemRow: View {
                 Text(line).font(.caption).foregroundStyle(.secondary).lineLimit(2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            Button { keep() } label: { Image(systemName: "hand.thumbsup").font(.body.weight(.semibold)).frame(width: 30, height: 30).contentShape(Rectangle()) }
+                .buttonStyle(.plain).foregroundStyle(Theme.gold)
+                .help("Seen: it stays in the matter as it is, and is not new any more")
+                .accessibilityLabel("Seen, keep it")
+                .accessibilityIdentifier("new.keep")
             if let editor, !isFact {
-                Button { editing = true } label: { Image(systemName: "pencil").frame(width: 30, height: 30).contentShape(Rectangle()) }
+                Button { editing = true } label: { Image(systemName: "pencil").font(.body.weight(.semibold)).frame(width: 30, height: 30).contentShape(Rectangle()) }
                     .buttonStyle(.plain).foregroundStyle(.secondary)
                     .help("Correct it")
                     .accessibilityLabel("Correct")
@@ -1293,7 +1299,7 @@ struct NewItemRow: View {
                     .popover(isPresented: $editing, arrowEdge: .bottom) { editor(item) { editing = false } }
                     #endif
             }
-            Button { putAway() } label: { Image(systemName: "xmark").frame(width: 30, height: 30).contentShape(Rectangle()) }
+            Button { putAway() } label: { Image(systemName: "xmark").font(.body.weight(.semibold)).frame(width: 30, height: 30).contentShape(Rectangle()) }
                 .buttonStyle(.plain).foregroundStyle(.secondary)
                 .help("Not wanted: it goes, and is not brought back")
                 .accessibilityLabel("Put away")
@@ -1340,6 +1346,11 @@ struct NewItemRow: View {
         }
         if let source = item.source { parts.append(Sources.origin(source)) }
         return parts.joined(separator: " · ")
+    }
+
+    private func keep() {
+        withAnimation { matter.keepNew(item) }
+        try? context.save()
     }
 
     private func putAway() {

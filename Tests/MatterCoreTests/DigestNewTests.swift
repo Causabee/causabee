@@ -118,3 +118,27 @@ struct NewsCameTests {
         #expect(Brief.News(lines: [], mails: 1, since: Date(), screenshots: 0, files: 1).came == "New info")
     }
 }
+
+@Suite("Kept one by one")
+@MainActor
+struct KeptNewTests {
+    @Test("✓ takes one off what is new and keeps it in the matter; the others stay new; Seen forgets the list")
+    func keep() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "move", name: "Move")
+        context.insert(matter)
+        let mail = Source(kind: .mail, pointer: "imap://x;UID=1", messageID: "<1@x>", date: Date())
+        for text in ["Book the van", "Pack the boxes"] {
+            let todo = Todo(text: text, owner: .me, due: nil, source: mail, origin: "<1@x>#" + text)
+            context.insert(todo)
+            todo.matter = matter
+        }
+        let first = try #require(matter.newItems().first)
+        matter.keepNew(first)
+        #expect(matter.newItems().count == 1)
+        #expect(matter.openTodos.count == 2)
+        matter.sawNew()
+        #expect(matter.shownBrief?.newKept.isEmpty == true)
+        #expect(matter.newItems().isEmpty)
+    }
+}
