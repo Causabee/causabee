@@ -20,6 +20,8 @@ struct MacAddPanel: View {
     @State private var position = ScrollPosition(edge: .leading)
     @State private var offset: CGFloat = 0
     @State private var dragFrom: CGFloat?
+    /// A drag just ended: the mouse let go over a pill is the end of the drag, not a click on it.
+    @State private var justDragged = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -40,13 +42,17 @@ struct MacAddPanel: View {
             // trackpad or the wheel. A click still picks its pill.
             .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { drag in
                 if dragFrom == nil { dragFrom = offset }
+                // Set while it moves, too: the pill's click may come before the drag's end.
+                justDragged = true
                 position.scrollTo(x: max(0, (dragFrom ?? 0) - drag.translation.width))
-            }.onEnded { _ in dragFrom = nil })
+            }.onEnded { _ in
+                dragFrom = nil
+                justDragged = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { justDragged = false }
+            })
         }
         .padding(.vertical, 12)
         .glassBehind(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("add.panel")
     }
 
     /// The icon over its name, in a card of its own.
@@ -67,7 +73,7 @@ struct MacAddPanel: View {
     }
 
     private func pill(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
-        Button { pick(add) } label: {
+        Button { if !justDragged { pick(add) } } label: {
             Label(title, systemImage: symbol).font(.callout)
                 .padding(.vertical, 5).padding(.leading, 9).padding(.trailing, 11)
                 .background(Color.primary.opacity(0.06), in: Capsule())
