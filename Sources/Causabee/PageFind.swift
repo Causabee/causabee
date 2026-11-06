@@ -321,6 +321,9 @@ struct NotesPart: View {
 
     /// An answer of the assistant's, kept as a note of the matter it was about.
     static func keep(_ answer: String, in matter: Matter, context: ModelContext) {
+        // An answer with no words — a card only — is no note: it stood empty in the journal.
+        let answer = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !answer.isEmpty else { return }
         let note = MatterNote(text: answer, fromAssistant: true)
         context.insert(note)
         note.matter = matter

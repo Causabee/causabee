@@ -1514,7 +1514,8 @@ struct MatterStatusView: View {
                         talk: { talk(document.shownName, "File") })
                 .findable(.model(document.persistentModelID), document.shownName, document.name, sender(of: document))
             // What came from it — a file on its own; one that came with a mail counts with its mail.
-            if !made.isEmpty { MadeChips(made: made).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.bottom, 10) }
+            let fresh = made.without(connectedTo: .file(document), in: document.matter)
+            if !fresh.isEmpty { MadeChips(made: fresh).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.bottom, 10) }
         }
         .fileCardFrame(kept: document.reading != .read)
     }

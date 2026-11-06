@@ -15,6 +15,18 @@ public struct RecordLinks {
         public init() {}
         public var isEmpty: Bool { todos.isEmpty && appointments.isEmpty && deadlines.isEmpty }
         public var count: Int { todos.count + appointments.count + deadlines.count }
+
+        /// Without what is shown already as connected to the same item: one task said twice under
+        /// a file — as its connection and as "1 task" — was one too many.
+        public func without(connectedTo item: JournalItem, in matter: Matter?) -> Made {
+            guard let matter else { return self }
+            let linked = Set(matter.connected(to: item).map(\.item.id))
+            var made = self
+            made.todos.removeAll { linked.contains(JournalItem.task($0).id) }
+            made.appointments.removeAll { linked.contains(JournalItem.meeting($0).id) }
+            made.deadlines.removeAll { linked.contains(JournalItem.deadline($0).id) }
+            return made
+        }
     }
 
     private var made: [String: Made] = [:]

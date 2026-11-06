@@ -90,7 +90,9 @@ struct FilesSection: View {
             if let only {
                 VStack(alignment: .leading, spacing: 0) {
                     row(only)
-                    if !made.isEmpty { MadeChips(made: made).padding(.leading, 52).padding(.trailing, 14).padding(.bottom, 12).padding(.top, -6) }
+                    // Under the file's words, as its connections are: the row's own 14, and the thumbnail's 52.
+                    let fresh = made.without(connectedTo: .file(only), in: only.matter ?? matter)
+                    if !fresh.isEmpty { MadeChips(made: fresh).padding(.leading, 14 + 52).padding(.trailing, 14).padding(.bottom, 12).padding(.top, -6) }
                 }
                 .findable(.model(only.persistentModelID), only.shownName, only.name).fileCardFrame(kept: only.reading != .read)
             } else if !attachments.isEmpty {
