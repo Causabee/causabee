@@ -1211,8 +1211,6 @@ struct MatterStatusView: View {
         } empty: {
             EmptyBox(text: "What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in.",
                      action: "Add Task", symbol: "checklist", run: addTodo)
-        } editor: { item, close in
-            newEditor(item, close: close)
         }
         // A task of one's own is said to the assistant, from its plus, or written from the menu —
         // whose editor opens at the plan's top.

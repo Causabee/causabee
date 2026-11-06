@@ -953,8 +953,6 @@ struct MatterScreen: View {
         } empty: {
             PhoneEmptyBox(text: "What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in.",
                           action: "Add Task", symbol: "checklist", run: addTodo)
-        } editor: { item, close in
-            Self.newEditor(item, close: close)
         }
     }
 

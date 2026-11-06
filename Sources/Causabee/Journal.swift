@@ -143,9 +143,7 @@ struct DayTile: View {
 /// fill. A calendar to pick it from; the task goes to that day in the plan.
 struct SetDayTile: View {
     let todo: Todo
-    @Environment(\.modelContext) private var context
     @State private var picking = false
-    @State private var day = Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now
 
     var body: some View {
         Button { picking = true } label: {
@@ -161,44 +159,111 @@ struct SetDayTile: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Set a day for \(todo.text)")
+        .daySheet(isPresented: $picking, item: .task(todo))
+    }
+}
+
+/// A day's tile that is its item's own: a tap opens the calendar, and the day picked is its new
+/// day. Only the day: the time, the words and the rest stay as they are.
+struct ChangesDay<Label: View>: View {
+    let item: NewItem
+    @ViewBuilder let label: () -> Label
+    @State private var picking = false
+
+    var body: some View {
+        Button { picking = true } label: { label().contentShape(Rectangle()) }
+            .buttonStyle(.plain)
+            .accessibilityHint("Changes the day")
+            .daySheet(isPresented: $picking, item: item)
+    }
+}
+
+extension View {
+    /// The calendar for an item's day, as a sheet on the iPhone and a popover on the Mac.
+    func daySheet(isPresented: Binding<Bool>, item: NewItem) -> some View {
         #if os(iOS)
-        .sheet(isPresented: $picking) { picker.presentationDetents([.medium, .large]) }
+        sheet(isPresented: isPresented) {
+            DaySheet(item: item) { isPresented.wrappedValue = false }.presentationDetents([.medium, .large])
+        }
         #else
-        .popover(isPresented: $picking, arrowEdge: .trailing) { picker.frame(width: 300) }
+        popover(isPresented: isPresented, arrowEdge: .trailing) {
+            DaySheet(item: item) { isPresented.wrappedValue = false }.frame(width: 300)
+        }
         #endif
     }
+}
+
+/// Just the calendar: the item's day picked, Set puts it there.
+struct DaySheet: View {
+    let item: NewItem
+    let close: () -> Void
+    @Environment(\.modelContext) private var context
+    @State private var day: Date
+
+    init(item: NewItem, close: @escaping () -> Void) {
+        self.item = item
+        self.close = close
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now
+        _day = State(initialValue: Self.current(item).flatMap(MatterStatus.date(of:)) ?? tomorrow)
+    }
+
+    private static func current(_ item: NewItem) -> String? {
+        switch item {
+        case .task(let todo), .fact(let todo): todo.due
+        case .appointment(let appointment): appointment.day
+        case .deadline(let deadline): deadline.day
+        }
+    }
+
+    private var name: String {
+        switch item {
+        case .task(let todo), .fact(let todo): todo.text
+        case .appointment(let appointment): appointment.what
+        case .deadline(let deadline): deadline.what
+        }
+    }
+
+    private var title: String { Self.current(item) == nil ? "Set day" : "Change day" }
 
     private func set() {
-        withAnimation { todo.due = MatterStatus.day(day) }
+        let text = MatterStatus.day(day)
+        withAnimation {
+            switch item {
+            case .task(let todo), .fact(let todo): todo.due = text
+            case .appointment(let appointment): appointment.day = text
+            case .deadline(let deadline): deadline.day = text
+            }
+        }
         try? context.save()
-        picking = false
+        close()
     }
 
     private var calendar: some View {
         DatePicker("Day", selection: $day, displayedComponents: .date)
             .datePickerStyle(.graphical).labelsHidden()
             .tint(Theme.gold)
+            .accessibilityIdentifier("day.calendar")
     }
 
-    /// As every sheet of the app: × and ✓ in its bar, the task's name under its title.
-    @ViewBuilder private var picker: some View {
+    /// As every sheet of the app: × and ✓ in its bar, the item's name under its title.
+    var body: some View {
         #if os(iOS)
         NavigationStack {
             ScrollView { calendar.padding(.horizontal, 16) }
-            .navigationTitle("Set day")
-            .navigationSubtitle(todo.text)
+            .navigationTitle(title)
+            .navigationSubtitle(name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { SheetCancel { picking = false } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancel(action: close) }
                 ToolbarItem(placement: .confirmationAction) { SheetConfirm("Set", action: set) }
             }
         }
         #else
         VStack(spacing: 12) {
-            Text(todo.text).font(.headline).lineLimit(2).multilineTextAlignment(.center)
+            Text(name).font(.headline).lineLimit(2).multilineTextAlignment(.center)
             calendar
             HStack {
-                Button("Cancel") { picking = false }.keyboardShortcut(.cancelAction)
+                Button("Cancel", action: close).keyboardShortcut(.cancelAction)
                 Spacer()
                 Button("Set Day", action: set).keyboardShortcut(.defaultAction)
             }
@@ -457,8 +522,8 @@ struct AheadCard: View {
             ForEach(shown) { day in
                 if let item = day.items.first {
                     HStack(alignment: .top, spacing: 6) {
-                        // The day is the item's: a tap changes it, in its own editor.
-                        EditsInPlace(item: item.newItem, editor: editor, otherwise: open) { DayTile(day: day.day) }
+                        // The day is the item's: a tap changes it, on the calendar.
+                        ChangesDay(item: item.newItem) { DayTile(day: day.day) }
                             .fixedSize()
                             .accessibilityIdentifier("ahead.day")
                         row(item)
@@ -969,8 +1034,6 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
     @ViewBuilder let date: (Journal.Plan.Item, Bool) -> DateRow
     /// Over the dates: asks for the calendar when it is needed.
     @ViewBuilder let empty: Empty
-    /// The day's own item's editor, each device's: a tap on the day of a day with one item changes it.
-    var editor: ((NewItem, @escaping () -> Void) -> AnyView)? = nil
     @Environment(PageFind.self) private var find
 
     /// A day on the plan's grid: its tile, and beside it what is on it. With no day the tile's place
@@ -979,8 +1042,8 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
         HStack(alignment: .top, spacing: 6) {
             if let day {
                 // One thing on the day: its day is its own, and a tap changes it.
-                if let only, editor != nil {
-                    EditsInPlace(item: only, editor: editor, otherwise: {}) { DayTile(day: day, month: month, late: late) }
+                if let only {
+                    ChangesDay(item: only) { DayTile(day: day, month: month, late: late) }
                         .fixedSize()
                         .accessibilityIdentifier("plan.day")
                 } else {

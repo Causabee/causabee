@@ -197,7 +197,7 @@ final class DigestNewUITests: XCTestCase {
     }
 
     /// A tap on the day of a task or a date on the Digest changes it, in its own editor — not Plan.
-    func testTheDayOfADateOpensItsEditor() {
+    func testTheDayOfADateOpensTheCalendar() {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Care for Mum (Helga) after her fall"]
@@ -206,11 +206,19 @@ final class DigestNewUITests: XCTestCase {
         for _ in 0..<5 where !day.waitForExistence(timeout: 3) || !day.isHittable { app.swipeUp() }
         XCTAssertTrue(day.exists, "The Digest's days have no tappable day.")
         day.tap()
-        let editor = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'task.' OR identifier BEGINSWITH 'date.'")).firstMatch
-        XCTAssertTrue(editor.waitForExistence(timeout: 5), "Tapped, the day did not open its item's editor.")
+        let calendar = app.datePickers["day.calendar"]
+        XCTAssertTrue(calendar.waitForExistence(timeout: 5), "Tapped, the day did not open the calendar.")
+        XCTAssertTrue(app.navigationBars["Change day"].exists, "The calendar is not the day's own.")
+        // Another day of the month, then Set.
+        let days = calendar.buttons.matching(NSPredicate(format: "label CONTAINS ', '"))
+        let other = (0..<days.count).map { days.element(boundBy: $0) }.last { $0.isHittable && !$0.isSelected }
+        XCTAssertNotNil(other, "The calendar shows no other day.")
+        other?.tap()
         if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
-            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/day-editor.png"))
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/day-calendar.png"))
         }
+        app.navigationBars["Change day"].buttons.element(boundBy: app.navigationBars["Change day"].buttons.count - 1).tap()
+        XCTAssertTrue(calendar.waitForNonExistence(timeout: 5), "Set, the calendar stayed open.")
         XCTAssertFalse(app.buttons["part.Plan"].isSelected, "Tapped, the day went to Plan.")
     }
 }
