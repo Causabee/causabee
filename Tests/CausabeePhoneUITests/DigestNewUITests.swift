@@ -63,5 +63,31 @@ final class DigestNewUITests: XCTestCase {
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/overview-latest.png"))
         }
     }
+
+    /// A pinned matter says how much is open and its next day on one line, as every other row does.
+    func testAPinnedCardSaysItsNextDayByItsCount() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO"]
+        app.launch()
+        let matters = app.buttons["part.Matters"]
+        XCTAssertTrue(matters.waitForExistence(timeout: 40), "The overview did not come up.")
+        matters.tap()
+        // The demo pins none: one is pinned as the owner does it, held.
+        let row = app.staticTexts["Moving to Birch Road 12"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "The demo's move is not among the matters.")
+        row.press(forDuration: 1.0)
+        let pin = app.buttons["Pin to Top"].firstMatch
+        XCTAssertTrue(pin.waitForExistence(timeout: 5), "Held, a matter cannot be pinned.")
+        pin.tap()
+        // The card is one button to the test: its words are found in it, whatever they are made of.
+        let next = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'Next: '")).firstMatch
+        XCTAssertTrue(next.waitForExistence(timeout: 10), "No matter card says what is next.")
+        for _ in 0..<3 where !next.isHittable { app.swipeUp() }
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/pinned-date.png"))
+        }
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label MATCHES '.*[0-9]+ open · [A-Z][a-z]+ [0-9]+.*'")).firstMatch.exists,
+                      "The card's count has no day beside it.")
+    }
 }
 
