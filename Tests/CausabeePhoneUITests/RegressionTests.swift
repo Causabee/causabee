@@ -72,11 +72,11 @@ final class RegressionTests: XCTestCase {
         entry.tap()
     }
 
-    /// In the chat: its chip over the field, and the card that comes for it, typed in and added.
+    /// In the chat: its pill in the panel over the field, and the card that comes for it, typed in and added.
     private func chip(_ item: String, _ first: String, _ second: String) {
         app.buttons["bee"].firstMatch.tap()
-        let chip = app.buttons["add." + item]
-        XCTAssertTrue(chip.waitForExistence(timeout: 8), "The chat has no \(item) over its field.")
+        let chip = app.addPill(item)
+        XCTAssertTrue(chip.exists, "The chat has no \(item) over its field.")
         chip.tap()
         let one = field("add.text")
         XCTAssertTrue(one.waitForExistence(timeout: 5), "The \(item)'s card has no field.")

@@ -501,11 +501,18 @@ private struct BringsIn: ViewModifier {
     }
 }
 
+/// What the panel over the field brings in: a photo or a screenshot, a scan, files or a folder.
+enum AttachKind: Hashable { case photo, scan, files }
+
 /// The plus beside the assistant's field: what is brought in — files or a folder, a scan, a photo
 /// or a screenshot. Picked, it asks what becomes of it: read and sorted in, or only imported, kept
 /// with the matter unread. A task, a note, a link, a detail and a contact are cards over the field.
+/// With a panel over the field, the plus opens it and is its × while it is open; the panel asks for
+/// what is brought in through `request`.
 struct AttachButton: View {
     let matter: Matter?
+    var panel: Binding<Bool>? = nil
+    var request: Binding<AttachKind?> = .constant(nil)
     /// "Task" or "Note" was picked: the field takes the cursor.
     var picked: () -> Void = {}
     @Environment(\.modelContext) private var context
@@ -526,25 +533,57 @@ struct AttachButton: View {
 
     private var pro: Bool { auto && Store.shared.plan == .pro }
 
-    var body: some View {
-        Menu {
-            Button("Files or a folder", systemImage: "folder") { picksFiles = true }
-                .accessibilityIdentifier("plus.files")
-            if VNDocumentCameraViewController.isSupported {
-                Button("Scan a document", systemImage: "doc.viewfinder") { scans = true }
-                    .accessibilityIdentifier("plus.scan")
+    /// How the panel comes out of the plus, and goes back into it.
+    static let panelMotion = Animation.spring(response: 0.36, dampingFraction: 0.86)
+
+    /// With a panel: a plain plus that opens it, turned into an × while it is open. Without: the menu.
+    @ViewBuilder private var opener: some View {
+        if let panel {
+            Button {
+                Haptics.tap()
+                withAnimation(Self.panelMotion) { panel.wrappedValue.toggle() }
+            } label: {
+                // A plus, as on the Mac (Figma "Composer"): quiet, so the send button is the one loud thing.
+                Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(panel.wrappedValue ? 45 : 0))
+                    .frame(width: 34, height: 34)
+                    .contentShape(Rectangle())
             }
-            Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
-                .accessibilityIdentifier("plus.photo")
-        } label: {
-            // A plus, as on the Mac (Figma "Composer"): quiet, so the send button is the one loud thing.
-            Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary)
-                .frame(width: 34, height: 34)
+            .buttonStyle(.plain)
+            .accessibilityLabel(panel.wrappedValue ? "Close" : "Add or bring in")
+        } else {
+            Menu {
+                Button("Files or a folder", systemImage: "folder") { picksFiles = true }
+                    .accessibilityIdentifier("plus.files")
+                if VNDocumentCameraViewController.isSupported {
+                    Button("Scan a document", systemImage: "doc.viewfinder") { scans = true }
+                        .accessibilityIdentifier("plus.scan")
+                }
+                Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
+                    .accessibilityIdentifier("plus.photo")
+            } label: {
+                Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary)
+                    .frame(width: 34, height: 34)
+            }
+            // A menu's label takes the app's gold; the plus stays grey.
+            .tint(Color.secondary)
+            .accessibilityLabel("Bring in files, a scan or a photo")
         }
-        // A menu's label takes the app's gold; the plus stays grey.
-        .tint(Color.secondary)
-        .accessibilityLabel("Bring in files, a scan or a photo")
+    }
+
+    var body: some View {
+        opener
         .accessibilityIdentifier("assistant.plus")
+        // Asked for by the panel: the picker it names.
+        .onChange(of: request.wrappedValue) {
+            guard let kind = request.wrappedValue else { return }
+            request.wrappedValue = nil
+            switch kind {
+            case .photo: picksPhoto = true
+            case .scan: scans = true
+            case .files: picksFiles = true
+            }
+        }
         .fileImporter(isPresented: $picksFiles, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
             guard case .success(let urls) = result else { return }
             ask(about: kept(urls))

@@ -125,6 +125,30 @@ final class ThreadTests: XCTestCase {
         XCTAssertFalse(down.waitForExistence(timeout: 1), "At the answer's end, the button is still there.")
     }
 
+    /// The plus opens the panel over the field — the three cards and the pills — and, turned into an
+    /// ×, closes it; a pill puts its card where the field was.
+    func testThePlusOpensThePanel() {
+        let plus = app.buttons["assistant.plus"]
+        XCTAssertTrue(plus.waitForExistence(timeout: 8), "There is no plus beside the field.")
+        let panel = app.descendants(matching: .any)["add.panel"]
+        if panel.exists { plus.tap(); XCTAssertFalse(panel.waitForExistence(timeout: 1.5), "The × did not close the panel.") }
+        plus.tap()
+        XCTAssertTrue(panel.waitForExistence(timeout: 3), "The plus did not open the panel.")
+        XCTAssertTrue(app.buttons["plus.photo"].exists, "The panel has no Photo card.")
+        XCTAssertTrue(app.buttons["plus.files"].exists, "The panel has no Files card.")
+        XCTAssertTrue(app.buttons["add.task"].exists, "The panel has no Task pill.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            Thread.sleep(forTimeInterval: 0.6)
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/panel-open.png"))
+        }
+        app.buttons["add.task"].tap()
+        XCTAssertFalse(panel.waitForExistence(timeout: 1.5), "A pill picked, the panel stayed.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            Thread.sleep(forTimeInterval: 0.6)
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/task-card.png"))
+        }
+    }
+
     /// The keyboard coming up over an answer longer than the screen shows its end, right over the
     /// field — that is what is being answered; going, it gives the beginning back.
     func testTheKeyboardShowsTheEndOfALongAnswer() {
