@@ -1264,8 +1264,8 @@ private struct NewsComments: ViewModifier {
     }
 }
 
-/// One new thing: what it is, its day and whose, where it came from — and ✎ to correct it in
-/// place, × to put it away. A fact is only put away.
+/// One new thing: what it is, its day and whose, where it came from — and ✓ to keep it as it is
+/// (off the card, in the matter), ✎ to correct it in place, × to put it away for good.
 struct NewItemRow: View {
     let item: NewItem
     let matter: Matter
@@ -1281,6 +1281,11 @@ struct NewItemRow: View {
                 Text(line).font(.caption).foregroundStyle(.secondary).lineLimit(2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            Button { keep() } label: { Image(systemName: "checkmark").frame(width: 30, height: 30).contentShape(Rectangle()) }
+                .buttonStyle(.plain).foregroundStyle(Theme.gold)
+                .help("Keep it: it stays in the matter, and is not new any more")
+                .accessibilityLabel("Keep")
+                .accessibilityIdentifier("new.keep")
             if let editor, !isFact {
                 Button { editing = true } label: { Image(systemName: "pencil").frame(width: 30, height: 30).contentShape(Rectangle()) }
                     .buttonStyle(.plain).foregroundStyle(.secondary)
@@ -1340,6 +1345,11 @@ struct NewItemRow: View {
         }
         if let source = item.source { parts.append(Sources.origin(source)) }
         return parts.joined(separator: " · ")
+    }
+
+    private func keep() {
+        withAnimation { matter.keepNew(item) }
+        try? context.save()
     }
 
     private func putAway() {

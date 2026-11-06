@@ -55,6 +55,9 @@ public struct Brief: Codable, Equatable, Sendable {
     public var writtenAt: Date?
     /// When the owner last said "Seen" to what is new on the Digest: what came after is new.
     public var newSeenAt: Date?
+    /// What the owner kept one by one from what is new — ✓ on its line: off the New card, in the
+    /// matter. By key, so every device knows it; emptied by "Seen", after which none of it is new.
+    public var newKept: [String] = []
 
     public struct News: Codable, Equatable, Sendable {
         public var lines: [String]
@@ -90,7 +93,7 @@ public struct Brief: Codable, Equatable, Sendable {
         self.lines = lines; self.said = said; self.proposals = proposals; self.lookups = lookups; self.writtenAt = writtenAt
     }
 
-    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, unwanted, writtenAt, newSeenAt }
+    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, unwanted, writtenAt, newSeenAt, newKept }
 
     /// A brief kept before there were lookups reads as one without any.
     public init(from decoder: any Decoder) throws {
@@ -103,6 +106,7 @@ public struct Brief: Codable, Equatable, Sendable {
         unwanted = try c.decodeIfPresent([String].self, forKey: .unwanted) ?? []
         writtenAt = try c.decodeIfPresent(Date.self, forKey: .writtenAt)
         newSeenAt = try c.decodeIfPresent(Date.self, forKey: .newSeenAt)
+        newKept = try c.decodeIfPresent([String].self, forKey: .newKept) ?? []
     }
 
     public func lines(_ part: Part) -> [String] { lines.filter { $0.part == part }.map(\.text) }
@@ -127,6 +131,7 @@ public struct Brief: Codable, Equatable, Sendable {
         brief.news = fresh ?? (news?.seen == false ? news : nil)
         brief.unwanted = unwanted
         brief.newSeenAt = newSeenAt
+        brief.newKept = newKept
         return brief
     }
 

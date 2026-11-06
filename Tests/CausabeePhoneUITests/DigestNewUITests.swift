@@ -89,5 +89,24 @@ final class DigestNewUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label MATCHES '.*[0-9]+ open · [A-Z][a-z]+ [0-9]+.*'")).firstMatch.exists,
                       "The card's count has no day beside it.")
     }
+
+    /// ✓ keeps a new task as it is: off the card, and still in the matter's plan.
+    func testANewTaskIsKept() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Moving to Birch Road 12"]
+        app.launch()
+        let keep = app.buttons.matching(identifier: "new.keep")
+        XCTAssertTrue(keep.firstMatch.waitForExistence(timeout: 40), "A new line has no ✓.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/new-keep.png"))
+        }
+        let before = keep.count
+        keep.firstMatch.tap()
+        for _ in 0..<25 where keep.count >= before { Thread.sleep(forTimeInterval: 0.2) }
+        XCTAssertEqual(keep.count, before - 1, "Kept, the line is still new.")
+        app.buttons["part.Plan"].tap()
+        let task = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'Ask Ms. Adler'")).firstMatch
+        XCTAssertTrue(task.waitForExistence(timeout: 8), "Kept, the task is not in the plan.")
+    }
 }
 
