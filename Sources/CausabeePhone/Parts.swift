@@ -269,7 +269,11 @@ struct PhoneMatterCard: View {
             BeeChip(text: Self.line(mine: summary.mine, ours: summary.ours, waiting: summary.waiting))
             HStack(spacing: 10) {
                 MatterIconTile(matter: matter, size: 38)
-                Text(matter.name).font(Theme.phoneCardTitleFont).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(matter.name).font(Theme.phoneCardTitleFont).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+                    // All that is open, as the other matters' rows say it — the chip counts only the owner's.
+                    if summary.openCount > 0 { Text("\(summary.openCount) open").font(.caption).foregroundStyle(.secondary) }
+                }
             }
             // What new mail changes, first: the brief's news, until it is seen.
             if let news = summary.news { NewsLine(text: news).font(.subheadline) }

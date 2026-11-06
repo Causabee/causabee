@@ -1151,7 +1151,11 @@ struct MatterCard: View {
             BeeChip(text: line(mine: mine, ours: ours, waiting: waiting))
             HStack(spacing: 10) {
                 MatterIconTile(matter: matter, size: 34)
-                Text(matter.name).font(Theme.cardTitleFont).foregroundStyle(.primary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(matter.name).font(Theme.cardTitleFont).foregroundStyle(.primary)
+                    // All that is open, as the other matters' rows say it — the chip counts only the owner's.
+                    if summary.openCount > 0 { Text("\(summary.openCount) open").font(.caption).foregroundStyle(.secondary) }
+                }
             }
             // What new mail changes, first: the brief's news, until it is seen.
             if let news = summary.news { NewsLine(text: news) }
