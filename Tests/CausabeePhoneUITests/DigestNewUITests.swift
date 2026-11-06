@@ -25,7 +25,7 @@ final class DigestNewUITests: XCTestCase {
         XCTAssertFalse(app.buttons["brief.seen"].exists, "Nothing new left, the card is still there.")
     }
 
-    /// Tasks with no day stand on the Digest too, the oldest first; a tap opens the task's own
+    /// Tasks with no day stand on the Digest too, the newest first; a tap opens the task's own
     /// editor there — not Plan.
     func testATaskWithNoDayOpensInPlace() {
         continueAfterFailure = false
@@ -138,6 +138,61 @@ final class DigestNewUITests: XCTestCase {
         XCTAssertTrue(sentence.label.contains("this week") || sentence.label.contains("This week"), "The sentence does not say the week: \(sentence.label)")
         if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/week-sentence.png"))
+        }
+    }
+
+    /// Three tasks added in the chat, then given a day one after the other under "No day yet":
+    /// each keeps its day — also after Causabee is opened again.
+    func testEachTaskKeepsTheDayItWasGiven() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        let matter = "Moving to Birch Road 12"
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", matter]
+        app.launch()
+        let stamp = String(Int(Date().timeIntervalSince1970) % 100_000)
+        let words = ["Alpha \(stamp)", "Bravo \(stamp)", "Charlie \(stamp)"]
+        let bee = app.buttons["bee"]
+        XCTAssertTrue(bee.waitForExistence(timeout: 40), "The matter's page did not open.")
+        bee.firstMatch.tap()
+        for text in words {
+            let pill = app.addPill("task")
+            XCTAssertTrue(pill.exists, "No Task over the field.")
+            pill.tap()
+            let field = app.textFields["add.text"].exists ? app.textFields["add.text"] : app.textViews["add.text"]
+            XCTAssertTrue(field.waitForExistence(timeout: 5), "The task's card has no field.")
+            field.typeText(text)
+            let take = app.buttons["add.take"]
+            for _ in 0..<50 where !take.isEnabled { Thread.sleep(forTimeInterval: 0.2) }
+            take.tap()
+            for _ in 0..<25 where take.exists { Thread.sleep(forTimeInterval: 0.2) }
+            if take.exists { take.tap() }
+        }
+        app.buttons["Close"].firstMatch.tap()
+        // Each, by its own row: This week, Next week, Later.
+        let whens = ["thisWeek", "nextWeek", "later"]
+        for (text, when) in zip(words, whens) {
+            let row = app.descendants(matching: .any).matching(identifier: "noDay.row").containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+            for _ in 0..<6 where !(row.exists && row.isHittable) { app.swipeUp() }
+            if !row.exists, let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+                try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/no-row.png"))
+            }
+            XCTAssertTrue(row.exists, "“\(text)” is not under “No day yet”.")
+            row.buttons["when." + when].tap()
+            for _ in 0..<25 where row.exists { Thread.sleep(forTimeInterval: 0.2) }
+            XCTAssertFalse(row.exists, "Given a day, “\(text)” is still under “No day yet”.")
+        }
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/kept-days.png"))
+        }
+        // Opened again: each still has its day.
+        app.terminate()
+        app.launchArguments = ["--demo", "-mail.auto", "NO", "--open", matter]
+        app.launch()
+        XCTAssertTrue(app.buttons["bee"].waitForExistence(timeout: 40), "The matter did not open again.")
+        Thread.sleep(forTimeInterval: 2)
+        for text in words {
+            let row = app.descendants(matching: .any).matching(identifier: "noDay.row").containing(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+            XCTAssertFalse(row.exists, "Opened again, “\(text)” lost its day.")
         }
     }
 }

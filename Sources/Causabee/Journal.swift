@@ -394,7 +394,7 @@ struct AheadCard: View {
     var days = 2
     /// A task's or a date's own editor, each device's; without one a tap opens the plan.
     var editor: ((NewItem, @escaping () -> Void) -> AnyView)? = nil
-    /// The tasks with no day it shows, the oldest first: nothing open is out of sight.
+    /// The tasks with no day it shows, the newest first: what was just added wants its day now.
     static let noDay = 3
     @Environment(\.modelContext) private var context
 
@@ -464,13 +464,14 @@ struct AheadCard: View {
                 }
                 Divider().padding(.horizontal, 12)
             }
-            // What has no day yet, the oldest first: a tap opens it, where its day is set.
+            // What has no day yet, the newest first: a tap opens it; When gives it a day.
             if !plan.noDay.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("No day yet").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         .textCase(.uppercase)
                         .padding(.horizontal, 12).padding(.top, 10)
-                    ForEach(plan.noDay.prefix(Self.noDay), id: \.persistentModelID) { todo in
+                    // The newest first: what was just added is what wants its day now.
+                    ForEach(plan.noDay.reversed().prefix(Self.noDay), id: \.persistentModelID) { todo in
                         VStack(alignment: .leading, spacing: 6) {
                             task(todo, noDay: true)
                             // A day in one tap: then it is a plan, and off the mind.
@@ -481,6 +482,8 @@ struct AheadCard: View {
                             .padding(.leading, 34)
                         }
                         .padding(.horizontal, 12).padding(.vertical, 6)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("noDay.row")
                     }
                 }
                 .padding(.bottom, 4)
