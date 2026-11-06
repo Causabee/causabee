@@ -107,3 +107,14 @@ struct OverviewHappenedTests {
         #expect(MatterSummary(matter, today: today).happened == "The move is confirmed.")
     }
 }
+
+@Suite("What came, in a notification")
+struct NewsCameTests {
+    @Test("Mails are counted; a screenshot or a file makes it new info")
+    func came() {
+        #expect(Brief.News(lines: [], mails: 1, since: Date()).came == "1 new mail")
+        #expect(Brief.News(lines: [], mails: 2, since: Date(), screenshots: 0, files: 0).came == "2 new mails")
+        #expect(Brief.News(lines: [], mails: 0, since: Date(), screenshots: 1, files: 0).came == "New info")
+        #expect(Brief.News(lines: [], mails: 1, since: Date(), screenshots: 0, files: 1).came == "New info")
+    }
+}

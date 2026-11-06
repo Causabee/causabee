@@ -124,6 +124,8 @@ public actor StoreWorker {
         public let line: String
         public let since: Date
         public let mails: Int
+        /// "1 new mail", "1 new screenshot": what the notification says came.
+        public let came: String
         /// The day of the matter's newest mail: news is told again only for a mail newer than that.
         public let newest: Date?
     }
@@ -134,7 +136,7 @@ public actor StoreWorker {
         return ((try? modelContext.fetch(FetchDescriptor<Matter>())) ?? []).compactMap { matter -> News? in
             guard !matter.isClosed, matter.brief != nil, let news = matter.shownBrief?.news, !news.seen, let line = news.lines.first else { return nil }
             let newest = (matter.entries ?? []).compactMap(\.date).max()
-            return News(key: matter.key, name: matter.name, line: line, since: news.since, mails: news.mails, newest: newest)
+            return News(key: matter.key, name: matter.name, line: line, since: news.since, mails: news.mails, came: news.came, newest: newest)
         }
     }
 

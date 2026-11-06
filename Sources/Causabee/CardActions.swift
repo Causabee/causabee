@@ -967,7 +967,7 @@ enum Adviser {
         }
         let before = matter.shownBrief?.writtenAt
         put(advice, facts: facts, into: matter, owner: owner,
-            news: advice.news.isEmpty || new.isEmpty ? nil : Brief.News(lines: advice.news, mails: new.count, since: before ?? Date()), in: context)
+            news: advice.news.isEmpty || new.isEmpty ? nil : Brief.News.of(advice.news, came: new, since: before ?? Date()), in: context)
         return advice.cost
     }
 
@@ -1178,17 +1178,18 @@ enum NewsNotice {
             guard let newest = news.newest?.timeIntervalSince1970 else { continue }
             // The first time on a device, what is there now counts as told: nothing old comes again.
             if saved != nil, newest > told[news.key] ?? 0 {
-                post(title: news.name, body: news.line, mails: news.mails, key: news.key)
+                post(title: news.name, body: news.line, came: news.came, key: news.key)
             }
             told[news.key] = max(newest, told[news.key] ?? 0)
         }
         if told != saved { UserDefaults.standard.set(told, forKey: toldKey) }
     }
 
-    private static func post(title: String, body: String, mails: Int, key: String) {
+    private static func post(title: String, body: String, came: String, key: String) {
         let content = UNMutableNotificationContent()
         content.title = title
-        content.subtitle = mails == 1 ? "1 new mail" : "\(mails) new mails"
+        // What came, as it is: a screenshot from a chat is not "1 new mail".
+        content.subtitle = came
         content.body = body
         content.sound = .default
         content.threadIdentifier = key
