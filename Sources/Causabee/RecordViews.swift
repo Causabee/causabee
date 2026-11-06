@@ -1281,13 +1281,13 @@ struct NewItemRow: View {
                 Text(line).font(.caption).foregroundStyle(.secondary).lineLimit(2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Button { keep() } label: { Image(systemName: "checkmark").frame(width: 30, height: 30).contentShape(Rectangle()) }
+            Button { keep() } label: { Image(systemName: "checkmark").font(.body.weight(.semibold)).frame(width: 30, height: 30).contentShape(Rectangle()) }
                 .buttonStyle(.plain).foregroundStyle(Theme.gold)
                 .help("Keep it: it stays in the matter, and is not new any more")
                 .accessibilityLabel("Keep")
                 .accessibilityIdentifier("new.keep")
             if let editor, !isFact {
-                Button { editing = true } label: { Image(systemName: "pencil").frame(width: 30, height: 30).contentShape(Rectangle()) }
+                Button { editing = true } label: { Image(systemName: "pencil").font(.body.weight(.semibold)).frame(width: 30, height: 30).contentShape(Rectangle()) }
                     .buttonStyle(.plain).foregroundStyle(.secondary)
                     .help("Correct it")
                     .accessibilityLabel("Correct")
@@ -1298,7 +1298,7 @@ struct NewItemRow: View {
                     .popover(isPresented: $editing, arrowEdge: .bottom) { editor(item) { editing = false } }
                     #endif
             }
-            Button { putAway() } label: { Image(systemName: "xmark").frame(width: 30, height: 30).contentShape(Rectangle()) }
+            Button { putAway() } label: { Image(systemName: "xmark").font(.body.weight(.semibold)).frame(width: 30, height: 30).contentShape(Rectangle()) }
                 .buttonStyle(.plain).foregroundStyle(.secondary)
                 .help("Not wanted: it goes, and is not brought back")
                 .accessibilityLabel("Put away")
