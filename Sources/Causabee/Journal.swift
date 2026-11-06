@@ -1139,7 +1139,8 @@ struct OverviewJournal: View {
     }
 }
 
-/// One matter's day: its name, what its newest mail says, what came that day and what is left to do.
+/// One matter's day: its name, what happened — the news, what is new, or who wrote about what —
+/// what came that day and what is left to do.
 private struct OverviewDayCard: View {
     let summary: MatterSummary
     let matter: Matter
@@ -1160,7 +1161,8 @@ private struct OverviewDayCard: View {
                     Spacer(minLength: 0)
                 }
                 if let latest = summary.latest {
-                    Text(latest.digest ?? latest.title)
+                    // What happened, not what the matter is about: the owner knows that.
+                    Text(summary.happened ?? latest.title)
                         #if os(macOS)
                         .font(.callout)
                         #else
@@ -1170,7 +1172,7 @@ private struct OverviewDayCard: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Divider().padding(.top, 4)
                     HStack(spacing: 8) {
-                        Text(Self.came(latest))
+                        Text([Self.came(latest), summary.newCount > 0 ? "\(summary.newCount) new" : ""].filter { !$0.isEmpty }.joined(separator: " · "))
                         Spacer(minLength: 8)
                         if summary.openCount > 0 { Text("\(summary.openCount) \(summary.openCount == 1 ? "task" : "tasks") open") }
                     }
@@ -1496,7 +1498,7 @@ struct ConnectionChips: View {
         HStack(spacing: 4) {
             // The chip itself goes to what it is connected with, as "Show" does: its part of the
             // page, scrolled to and marked. Only the × takes the connection away.
-            Button { navigation?.showing = other.item.id } label: {
+            Button { navigation?.showsInItsPart = true; navigation?.showing = other.item.id } label: {
                 HStack(spacing: 4) {
                     Image(systemName: other.item.symbol).font(.caption2)
                     Text(other.item.title).lineLimit(1).truncationMode(.middle).frame(maxWidth: 220, alignment: .leading)

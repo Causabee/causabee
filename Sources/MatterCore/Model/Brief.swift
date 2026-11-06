@@ -62,7 +62,28 @@ public struct Brief: Codable, Equatable, Sendable {
         public var mails: Int
         public var since: Date
         public var seen = false
-        public init(lines: [String], mails: Int, since: Date) { self.lines = lines; self.mails = mails; self.since = since }
+        /// Of what came, how many were screenshots and how many files: not mails, and not said as
+        /// mails — a WhatsApp screenshot was "1 new mail". Nil in news from before they were counted.
+        public var screenshots: Int?
+        public var files: Int?
+        public init(lines: [String], mails: Int, since: Date, screenshots: Int? = nil, files: Int? = nil) {
+            self.lines = lines; self.mails = mails; self.since = since; self.screenshots = screenshots; self.files = files
+        }
+
+        /// "1 new mail", "2 new mails" — and "New info" once a screenshot or a file is among it: one
+        /// word for all of it, not a count of each kind.
+        public var came: String {
+            if (screenshots ?? 0) + (files ?? 0) > 0 || mails == 0 { return "New info" }
+            return mails == 1 ? "1 new mail" : "\(mails) new mails"
+        }
+
+        /// The news of what came since the brief before: mails, screenshots and files counted apart.
+        public static func of(_ lines: [String], came entries: [Entry], since: Date) -> News {
+            let kinds = entries.map(\.source.kind)
+            let screenshots = kinds.filter { $0 == .screenshot || $0 == .photo }.count
+            let files = kinds.filter { $0 == .document }.count
+            return News(lines: lines, mails: entries.count - screenshots - files, since: since, screenshots: screenshots, files: files)
+        }
     }
 
     public init(lines: [Line] = [], said: [Said] = [], proposals: [Proposal] = [], lookups: [WebLookup.Lookup] = [], writtenAt: Date? = nil) {

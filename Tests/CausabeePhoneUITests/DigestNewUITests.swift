@@ -47,4 +47,21 @@ final class DigestNewUITests: XCTestCase {
         XCTAssertTrue(text.waitForExistence(timeout: 5), "Tapped, the task did not open its editor.")
         XCTAssertFalse(app.buttons["part.Plan"].isSelected, "Tapped, the task went to Plan.")
     }
+
+    /// The overview's latest updates say what happened, and a pinned matter how much is open.
+    func testTheOverviewSaysWhatHappened() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO"]
+        app.launch()
+        let updates = app.buttons["part.Latest updates"]
+        XCTAssertTrue(updates.waitForExistence(timeout: 40), "The overview did not come up.")
+        updates.tap()
+        let card = app.buttons["overview.day"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "Latest updates show no matter.")
+        for _ in 0..<3 where !card.isHittable { app.swipeUp() }
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/overview-latest.png"))
+        }
+    }
 }
+

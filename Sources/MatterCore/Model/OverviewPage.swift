@@ -15,6 +15,8 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
     public struct Latest: Equatable, Sendable {
         public let title: String
         public let digest: String?
+        /// Who wrote it, by name where the mail gives one.
+        public let from: String?
         public let date: Date
         /// How many mails came that day.
         public let mails: Int
@@ -60,6 +62,10 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
     public let dated: [Dated]
     /// What new mail changes, as the brief says, until the owner has seen it: its first line.
     public let news: String?
+    /// What is new on its Digest, the first two as lines — "New task: …", "Date Nov 26: …" — and
+    /// how many there are: what the overview says happened, until it is seen.
+    public let fresh: [String]
+    public let newCount: Int
     public let latest: Latest?
 
     public var isPinned: Bool { pinnedAt != nil }
@@ -103,14 +109,40 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         newMailsSinceClosed = closed.map(after) ?? 0
         mailsToShowSinceClosed = closed.map { after(max($0, matter.ignoredMailUntil ?? $0)) } ?? 0
         news = matter.brief == nil ? nil : matter.shownBrief?.news.flatMap { $0.seen ? nil : $0.lines.first }
+        let new = quick ? [] : matter.newItems()
+        newCount = new.count
+        fresh = new.prefix(2).map(Self.line)
         if let last = dates.last, let newest = entries.first(where: { $0.date == last }) {
             let onLast = MailDates.onLastDay(of: matter, entries: entries)
             let files = Date().timeIntervalSince(last) > 15 * 86_400 ? 0
                 : (matter.documents ?? []).filter { onLast.ids.contains($0.messageID) && !$0.isHidden && !$0.isSmallImage }.count
-            latest = Latest(title: newest.title, digest: newest.digest, date: last, mails: onLast.mails, files: files)
+            latest = Latest(title: newest.title, digest: newest.digest,
+                            from: Email.displayName(in: newest.from) ?? Email.address(in: newest.from).nilIfEmpty,
+                            date: last, mails: onLast.mails, files: files)
         } else {
             latest = nil
         }
+    }
+}
+
+extension MatterSummary {
+    /// One new thing in a line of its own: "New task: Book a parking permit".
+    static func line(_ item: NewItem) -> String {
+        switch item {
+        case .task(let todo): "New task: " + todo.text
+        case .fact(let todo): "Good to know: " + todo.text
+        case .appointment(let date): "Date \(MatterStatus.short(date.day)): " + date.what
+        case .deadline(let date): "Deadline \(MatterStatus.short(date.day)): " + date.what
+        }
+    }
+
+    /// What the overview's card says happened: the news, what is new, or who wrote about what —
+    /// not the newest mail's digest, which read as what the matter is about.
+    public var happened: String? {
+        if let news { return news }
+        if !fresh.isEmpty { return fresh.joined(separator: " · ") }
+        guard let latest else { return nil }
+        return latest.from.map { "\($0) · \(latest.title)" } ?? latest.title
     }
 }
 

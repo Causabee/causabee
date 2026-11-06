@@ -78,3 +78,43 @@ struct DigestNewTests {
         #expect(again.newSeenAt == now)
     }
 }
+
+/// The overview's card says what happened — the news, what is new, or who wrote about what — not
+/// the newest mail's digest.
+@Suite("What happened, on the overview")
+@MainActor
+struct OverviewHappenedTests {
+    @Test("What is new before who wrote; the news before both")
+    func order() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "move", name: "Move")
+        context.insert(matter)
+        let mail = Source(kind: .mail, pointer: "imap://x;UID=1", messageID: "<1@x>", date: Date())
+        let entry = Entry(title: "Your move is confirmed", from: "Carry & Co <info@carry.example>", date: Date(), source: mail)
+        entry.digest = "Two movers and a van from 8 to 12."
+        context.insert(entry)
+        entry.matter = matter
+        let today = MatterStatus.day(Date())
+        #expect(MatterSummary(matter, today: today).happened == "Carry & Co · Your move is confirmed")
+        let todo = Todo(text: "Book a parking permit", owner: .me, due: nil, source: mail, origin: "p")
+        context.insert(todo)
+        todo.matter = matter
+        let fresh = MatterSummary(matter, today: today)
+        #expect(fresh.happened == "New task: Book a parking permit" && fresh.newCount == 1)
+        var brief = Brief()
+        brief.news = Brief.News(lines: ["The move is confirmed."], mails: 1, since: Date())
+        matter.shownBrief = brief
+        #expect(MatterSummary(matter, today: today).happened == "The move is confirmed.")
+    }
+}
+
+@Suite("What came, in a notification")
+struct NewsCameTests {
+    @Test("Mails are counted; a screenshot or a file makes it new info")
+    func came() {
+        #expect(Brief.News(lines: [], mails: 1, since: Date()).came == "1 new mail")
+        #expect(Brief.News(lines: [], mails: 2, since: Date(), screenshots: 0, files: 0).came == "2 new mails")
+        #expect(Brief.News(lines: [], mails: 0, since: Date(), screenshots: 1, files: 0).came == "New info")
+        #expect(Brief.News(lines: [], mails: 1, since: Date(), screenshots: 0, files: 1).came == "New info")
+    }
+}

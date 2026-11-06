@@ -456,6 +456,7 @@ struct MatterScreen: View {
     private func show(_ id: PersistentIdentifier?, with scroller: ScrollViewProxy) {
         guard let id else { return }
         navigation.showing = nil
+        defer { navigation.showsInItsPart = false }
         if status(of: id)?.isDone == true { showsDone = true }
         // The part of the page it is in, with nothing filtered away.
         let (threads, _) = StoredChanges.shared.record(matter)
@@ -469,6 +470,9 @@ struct MatterScreen: View {
             part = .plan
         } else if matter.shownParties.contains(where: { $0.persistentModelID == id }) {
             part = .people
+        } else if navigation.showsInItsPart, let own = Self.ownPart(of: id, in: matter) {
+            // A connection's chip: the item in its own part, as the owner would look it up.
+            part = own; person = nil
         } else {
             part = .all; person = nil
             // What is folded away is unfolded for it: its month, and its conversation.
@@ -492,6 +496,14 @@ struct MatterScreen: View {
             Haptics.landed()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { withAnimation { marked = nil; if find.shown == id { find.shown = nil } } }
         }
+    }
+
+    /// The part of the page an item has of its own: a file's is Files, a mail's Mail, a note's Notes.
+    static func ownPart(of id: PersistentIdentifier, in matter: Matter) -> Journal.Part? {
+        if (matter.documents ?? []).contains(where: { $0.persistentModelID == id }) { return .files }
+        if (matter.entries ?? []).contains(where: { $0.persistentModelID == id }) { return .mail }
+        if (matter.noteBlocks ?? []).contains(where: { $0.persistentModelID == id }) { return .notes }
+        return nil
     }
 
     /// What is new, corrected in place: the task's or the date's own editor, as in Plan.

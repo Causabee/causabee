@@ -1244,10 +1244,13 @@ struct NewsCard: View {
         }
     }
 
-    /// "From 2 mails", by the mails and files what is new came from; with nothing listed, the news's own count.
+    /// "From 2 mails", by the mails what is new came from — "New info" once a screenshot or a file is
+    /// among them, as the notification says it; with nothing listed, what the news came from.
     static func from(_ items: [NewItem], news: Brief.News?) -> String {
-        let count = Set(items.compactMap { item in item.source.map { $0.messageID ?? $0.pointer } }).count
-        let mails = count > 0 ? count : news?.mails ?? 0
+        let sources = items.compactMap(\.source)
+        guard !sources.isEmpty else { return news.map { $0.came == "New info" ? "New info" : "From " + $0.came.replacingOccurrences(of: " new", with: "") } ?? "" }
+        guard sources.allSatisfy({ $0.kind == .mail }) else { return "New info" }
+        let mails = Set(sources.map { $0.messageID ?? $0.pointer }).count
         return mails == 1 ? "From 1 mail" : "From \(mails) mails"
     }
 }
