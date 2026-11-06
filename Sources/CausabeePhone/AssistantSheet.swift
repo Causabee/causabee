@@ -1531,7 +1531,8 @@ private struct AddCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 TextField(add.fields.first, text: $typed.text, axis: add.fields.second == nil ? .vertical : .horizontal)
                     .textFieldStyle(.plain)
-                    .font(add == .note ? .body : .headline)
+                    // A task's words stand out; a note, an address, a label or a name are plain.
+                    .font(add == .task ? .headline : .body)
                     .lineLimit(1...6)
                     .keyboardType(add == .link ? .URL : .default)
                     .textInputAutocapitalization(add == .link ? .never : .sentences)

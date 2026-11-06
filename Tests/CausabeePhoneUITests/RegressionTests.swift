@@ -61,17 +61,6 @@ final class RegressionTests: XCTestCase {
         segment.tap()
     }
 
-    /// The forms, where they still are: held on the bee, its menu offers what can be added, and
-    /// each opens its own editor on the page.
-    private func held(_ item: String) {
-        let bee = app.buttons["bee"].firstMatch
-        XCTAssertTrue(bee.waitForExistence(timeout: 8), "The matter's page has no bee.")
-        bee.press(forDuration: 1.0)
-        let entry = app.buttons["plus." + item]
-        XCTAssertTrue(entry.waitForExistence(timeout: 5), "Held, the bee offers no \(item).")
-        entry.tap()
-    }
-
     /// In the chat: its pill in the panel over the field, and the card that comes for it, typed in and added.
     private func chip(_ item: String, _ first: String, _ second: String) {
         app.buttons["bee"].firstMatch.tap()
@@ -150,19 +139,6 @@ final class RegressionTests: XCTestCase {
         XCTAssertTrue(set.waitForExistence(timeout: 5), "“Set day” opened no calendar.")
         set.tap()
         XCTAssertTrue(tile.waitForNonExistence(timeout: 8), "A day was set and the task still has none.")
-    }
-
-    func testATaskAddedStays() {
-        let words = "Call the pharmacy \(stamp)"
-        // "Task" held on the bee opens the task's own editor: added, it is in the list.
-        held("task")
-        let text = field("task.text")
-        XCTAssertTrue(text.waitForExistence(timeout: 5), "“Task” was picked and its editor did not open.")
-        text.tap()
-        text.typeText(words)
-        app.buttons["Add"].firstMatch.tap()
-        let row = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", words)).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 8), "The task was added and is not in the list.")
     }
 
     func testAContactAddedByHand() {

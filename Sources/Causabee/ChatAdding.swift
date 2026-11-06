@@ -17,6 +17,9 @@ struct MacAddPanel: View {
         ("Task", "checklist", .task), ("Note", "note.text", .note), ("Link", "link", .link),
         ("Detail", "info.circle", .detail), ("Contact", "person.badge.plus", .contact),
     ]
+    @State private var position = ScrollPosition(edge: .leading)
+    @State private var offset: CGFloat = 0
+    @State private var dragFrom: CGFloat?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -31,6 +34,14 @@ struct MacAddPanel: View {
                 }
                 .padding(.horizontal, 12)
             }
+            .scrollPosition($position)
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.x } action: { _, x in offset = x }
+            // Dragged with the mouse, as with a finger: a scroll view on the Mac moves only with the
+            // trackpad or the wheel. A click still picks its pill.
+            .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { drag in
+                if dragFrom == nil { dragFrom = offset }
+                position.scrollTo(x: max(0, (dragFrom ?? 0) - drag.translation.width))
+            }.onEnded { _ in dragFrom = nil })
         }
         .padding(.vertical, 12)
         .glassBehind(RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -102,7 +113,8 @@ struct MacAddCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 TextField(add.fields.first, text: $text, axis: add.fields.second == nil ? .vertical : .horizontal)
                     .textFieldStyle(.plain)
-                    .font(add == .note ? .body : .headline)
+                    // A task's words stand out; a note, an address, a label or a name are plain.
+                    .font(add == .task ? .headline : .body)
                     .lineLimit(1...6)
                     .focused($onFirst)
                     // Return goes on to the second field where there is one, else adds; ⇧↩ is a new line.
@@ -142,7 +154,6 @@ struct MacAddCard: View {
         }
         .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 12)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line))
         .onAppear { DispatchQueue.main.async { onFirst = true } }
     }
 }

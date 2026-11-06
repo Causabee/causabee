@@ -270,11 +270,9 @@ struct SourceLink: View {
 /// The bee in the matter's corner while the assistant is put away, as the iPhone's and the iPad's:
 /// always yellow, always the chat on a click — everything is added there, with Pro or without, and
 /// Pro is offered on top of the chat, not by the bee's colour. Right-clicked, as held there: Pro on
-/// or off, then what can be added, each opening its card in the chat.
+/// or off, and only that — what is added has one way, the chat.
 struct CornerBee: View {
     let open: () -> Void
-    /// The chat opened with that card over its field.
-    let add: (AssistantAdd) -> Void
     @AppStorage(AutoMode.key) private var auto = false
     @State private var asks = false
     private var pro: Bool { auto && Store.shared.plan == .pro }
@@ -295,19 +293,9 @@ struct CornerBee: View {
             } else {
                 Button("Turn on Pro", systemImage: "bolt") { turnOn() }
             }
-            Divider()
-            Button("Task", systemImage: "checklist") { add(.task) }
-            Button("Note", systemImage: "note.text") { add(.note) }
-            Button("Link", systemImage: "link") { add(.link) }
-            Button("Detail", systemImage: "info.circle") { add(.detail) }
-            Button("Contact", systemImage: "person.badge.plus") { add(.contact) }
-            Divider()
-            Button("Files or a Folder …", systemImage: "folder") {
-                NotificationCenter.default.post(name: .matterAction, object: MatterAction.addFile.rawValue)
-            }
         }
-        .help(pro ? "Opens the chat. Right-click to turn off Pro or to add to the matter"
-                  : "Opens the chat. Right-click to turn on Pro or to add to the matter")
+        .help(pro ? "Opens the chat. Right-click to turn off Pro"
+                  : "Opens the chat. Right-click to turn on Pro")
         .accessibilityLabel("Causabee")
         .accessibilityValue(pro ? "Pro on" : "Pro off")
         .accessibilityIdentifier("window.bee")
