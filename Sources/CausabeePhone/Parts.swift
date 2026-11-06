@@ -82,16 +82,13 @@ extension View {
 
 /// The round button in the corner, with the bee on it: always yellow, always the chat on a tap —
 /// everything is added there, with Pro or without, and Pro is offered on top of the chat, not by
-/// the bee's colour. Held: Pro on or off, then what the assistant's plus offers, without going
-/// through the assistant.
+/// the bee's colour. Held: Pro on or off, and only that — what is added has one way, the chat.
 struct AssistantButton: View {
     var matter: Matter? = nil
     let action: () -> Void
     @Environment(Navigation.self) private var navigation
     @Environment(\.modelContext) private var context
     @AppStorage(AutoMode.key) private var auto = false
-    @State private var picksPhoto = false
-    @State private var picksFile = false
     @State private var asks = false
 
     /// On, and Pro bought.
@@ -113,8 +110,6 @@ struct AssistantButton: View {
                 } else {
                     Button("Turn on Pro", systemImage: "bolt") { turnOn() }
                 }
-                Divider()
-                PlusItems(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
             }
             .menuSigns()
         } label: {
@@ -133,9 +128,8 @@ struct AssistantButton: View {
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
         .accessibilityLabel("Causabee")
         .accessibilityValue(pro ? "Pro on" : "Pro off")
-        .accessibilityHint(pro ? "Opens the chat. Hold to turn off Pro or to add to a matter" : "Opens the chat. Hold to turn on Pro or to add to a matter")
+        .accessibilityHint(pro ? "Opens the chat. Hold to turn off Pro" : "Opens the chat. Hold to turn on Pro")
         .accessibilityIdentifier("bee")
-        .bringsIn(matter: matter, picksPhoto: $picksPhoto, picksFile: $picksFile)
     }
 
     /// Causabee's own bee, black on its yellow as the app icon has it — not a speech bubble. It

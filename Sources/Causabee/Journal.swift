@@ -462,7 +462,9 @@ struct AtHandCard<SummaryFoot: View>: View {
     var body: some View {
         // Drawn again when Auto has written it.
         let _ = AutoUpdate.shared.done
-        let details = matter.sortedDetails, infos = matter.infos
+        // Good to know is Pro's: it fills it from the mail. Without Pro there is none to show —
+        // the demo shows what Pro would.
+        let details = matter.sortedDetails, infos = AutoMode.isOn || DemoData.isRequested ? matter.infos : []
         let written = !summaryLines.isEmpty || hasBrief
         let closedWithout = matter.isClosed && !written
         if !closedWithout || !details.isEmpty || !infos.isEmpty {
@@ -499,9 +501,10 @@ struct AtHandCard<SummaryFoot: View>: View {
                     if written || !closedWithout || !details.isEmpty { Divider() }
                     fold(.info, "Good to know", count: infos.count, line: infos.prefix(2).map(\.text).joined(separator: " · ")) {
                         VStack(alignment: .leading, spacing: 12) {
+                            let today = MatterStatus.day(Date())
                             ForEach(infos, id: \.persistentModelID) { todo in
-                                InfoLine(todo: todo, back: {
-                                    withAnimation { todo.isInfo = false }
+                                InfoLine(todo: todo, outdated: todo.mayBeOutdated(today: today), hide: {
+                                    withAnimation { matter.setHidden(.task(todo), true) }
                                     try? context.save()
                                 }, talk: { talk(todo) })
                                     .findable(.model(todo.persistentModelID), todo.text)
@@ -547,26 +550,43 @@ struct AtHandCard<SummaryFoot: View>: View {
     }
 }
 
-/// One thing worth knowing: where it came from, and the way back to the tasks.
+/// One thing worth knowing: where it came from, and Hide — at once in sight when its day has
+/// passed and it may no longer be true.
 struct InfoLine: View {
     let todo: Todo
-    let back: () -> Void
+    var outdated = false
+    let hide: () -> Void
     let talk: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(todo.text).fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(outdated ? .secondary : .primary)
             HStack(spacing: 10) {
-                SourceJump(sources: todo.sources, label: Sources.origin(todo.sources.first), matter: todo.matter)
-                Button("Back to tasks", action: back).buttonStyle(.gold).font(.footnote).tool()
-                    .help("A task after all: it goes back to the open tasks")
+                if outdated, let until = todo.holdsUntil {
+                    Text("Held until \(Dates.short(until)) · may be outdated").font(.footnote).foregroundStyle(Theme.warning)
+                } else {
+                    SourceJump(sources: todo.factSources, label: Sources.origin(todo.factSources.first), matter: todo.matter)
+                }
+                Button("Hide", action: hide).buttonStyle(.gold).font(.footnote)
+                    .modifier(ToolUnless(shown: outdated))
+                    .help("Not wanted here: it goes, and is not brought back")
+                    .accessibilityIdentifier("info.hide")
             }
         }
         .contentShape(Rectangle())
         .contextMenu {
             Button(Say.useInChat, systemImage: "bubble.left", action: talk)
-            Button("Back to tasks", action: back)
+            Button("Hide", systemImage: "eye.slash", action: hide)
         }
+    }
+}
+
+/// A small action put away while reading — but not when it is the one thing to do.
+private struct ToolUnless: ViewModifier {
+    let shown: Bool
+    func body(content: Content) -> some View {
+        if shown { content } else { content.tool() }
     }
 }
 

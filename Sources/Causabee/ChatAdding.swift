@@ -3,71 +3,80 @@ import MatterCore
 import SwiftData
 import SwiftUI
 
-/// What can be added to a matter over the assistant's field, as on the iPhone and the iPad: a click
-/// puts its card where the field was — "Task", "Note", "Link", "Detail", "Contact" — and what is typed
-/// in it is that. Folded, only the chevron is left; it stays as it was left.
-struct MacAddChips: View {
+/// Over the assistant's field in a matter, on glass, as on the iPhone and the iPad: what is brought
+/// in — read by Causabee, or only kept — as cards, and under them what can be added, a row of pills.
+/// It comes out of the plus and goes back into it.
+struct MacAddPanel: View {
+    /// A screenshot, a mail or a PDF, for Causabee to read.
+    let read: () -> Void
+    /// Files or a folder, kept with the matter unread.
+    let keep: () -> Void
     let pick: (AssistantAdd) -> Void
-    @AppStorage("addChipsOpen") private var open = true
 
-    private static let chips: [(title: String, symbol: String, add: AssistantAdd)] = [
+    private static let pills: [(title: String, symbol: String, add: AssistantAdd)] = [
         ("Task", "checklist", .task), ("Note", "note.text", .note), ("Link", "link", .link),
         ("Detail", "info.circle", .detail), ("Contact", "person.badge.plus", .contact),
     ]
+    @State private var position = ScrollPosition(edge: .leading)
+    @State private var offset: CGFloat = 0
+    @State private var dragFrom: CGFloat?
+    /// A drag just ended: the mouse let go over a pill is the end of the drag, not a click on it.
+    @State private var justDragged = false
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                // Over the chips, so that they go in under it.
-                toggle.zIndex(1)
-                if open {
-                    // Fanned out from the chevron one after another, and folded back the last first.
-                    ForEach(Array(Self.chips.enumerated()), id: \.offset) { index, item in
-                        chip(item.title, item.symbol, item.add).transition(fan(index))
-                    }
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                card("Screenshot, Mail or PDF", "doc.viewfinder", id: "read", help: "Causabee reads it, and offers its tasks and dates", action: read)
+                card("Files or a Folder", "folder", id: "files", help: "Kept with the matter, unread", action: keep)
             }
-            .padding(.horizontal, 2).padding(.vertical, 4)
+            .padding(.horizontal, 12)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Self.pills, id: \.title) { pill($0.title, $0.symbol, $0.add) }
+                }
+                .padding(.horizontal, 12)
+            }
+            .scrollPosition($position)
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.x } action: { _, x in offset = x }
+            // Dragged with the mouse, as with a finger: a scroll view on the Mac moves only with the
+            // trackpad or the wheel. A click still picks its pill.
+            .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { drag in
+                if dragFrom == nil { dragFrom = offset }
+                // Set while it moves, too: the pill's click may come before the drag's end.
+                justDragged = true
+                position.scrollTo(x: max(0, (dragFrom ?? 0) - drag.translation.width))
+            }.onEnded { _ in
+                dragFrom = nil
+                justDragged = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { justDragged = false }
+            })
         }
-        .scrollClipDisabled()
+        .padding(.vertical, 12)
+        .glassBehind(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 
-    /// Each chip comes from the left, small and faint, a moment after the one before it; going, it
-    /// only shrinks where it stands.
-    private func fan(_ index: Int) -> AnyTransition {
-        let step = 0.035, last = Self.chips.count - 1
-        let shrink = AnyTransition.scale(scale: 0.6, anchor: .leading).combined(with: .opacity)
-        return .asymmetric(
-            insertion: AnyTransition.offset(x: -18).combined(with: shrink)
-                .animation(.spring(response: 0.32, dampingFraction: 0.78).delay(Double(index) * step)),
-            removal: shrink.animation(.easeIn(duration: 0.16).delay(Double(last - index) * step * 0.6)))
-    }
-
-    /// A chevron, as a drawer has: › while the chips are in, ‹ while they are out.
-    private var toggle: some View {
-        Button { withAnimation(.snappy) { open.toggle() } } label: {
-            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
-                .rotationEffect(.degrees(open ? 180 : 0))
-                .frame(width: 26, height: 26)
-                .background(Theme.box, in: Circle())
-                .overlay(Circle().stroke(Theme.line, lineWidth: 0.5))
-                .contentShape(Circle())
+    /// The icon over its name, in a card of its own.
+    private func card(_ title: String, _ symbol: String, id: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 5) {
+                Image(systemName: symbol).font(.title3)
+                Text(title).font(.callout.weight(.medium)).multilineTextAlignment(.center)
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity, minHeight: 60)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
-        // Folded away, it stands back: half there, until it is wanted.
-        .opacity(open ? 1 : 0.5)
-        .foregroundStyle(.secondary)
-        .help(open ? "Fold away what can be added" : "Add a task, a note, a link, a detail or a contact")
-        .accessibilityLabel(open ? "Hide Add" : "Add")
-        .accessibilityIdentifier("add.toggle")
+        .help(help)
+        .accessibilityIdentifier("plus." + id)
     }
 
-    private func chip(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
-        Button { pick(add) } label: {
+    private func pill(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
+        Button { if !justDragged { pick(add) } } label: {
             Label(title, systemImage: symbol).font(.callout)
-                .padding(.vertical, 4).padding(.leading, 8).padding(.trailing, 10)
-                .background(Theme.box, in: Capsule())
-                .overlay(Capsule().stroke(Theme.line, lineWidth: 0.5))
+                .padding(.vertical, 5).padding(.leading, 9).padding(.trailing, 11)
+                .background(Color.primary.opacity(0.06), in: Capsule())
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -110,7 +119,8 @@ struct MacAddCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 TextField(add.fields.first, text: $text, axis: add.fields.second == nil ? .vertical : .horizontal)
                     .textFieldStyle(.plain)
-                    .font(add == .note ? .body : .headline)
+                    // A task's words stand out; a note, an address, a label or a name are plain.
+                    .font(add == .task ? .headline : .body)
                     .lineLimit(1...6)
                     .focused($onFirst)
                     // Return goes on to the second field where there is one, else adds; ⇧↩ is a new line.
@@ -150,7 +160,6 @@ struct MacAddCard: View {
         }
         .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 12)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line))
         .onAppear { DispatchQueue.main.async { onFirst = true } }
     }
 }

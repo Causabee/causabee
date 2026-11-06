@@ -119,7 +119,6 @@ enum Say {
     // A task, a date, a person, a link, a file
     static let edit = "Edit …"
     static let delete = "Delete …"
-    static let moveToInfo = "Good to Know"
     static let notNeeded = "Not Needed"
     static let waitsFor = "Waits For"
     static let waitsForChoose = "Waits For …"

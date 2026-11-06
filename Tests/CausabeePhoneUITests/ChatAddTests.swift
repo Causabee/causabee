@@ -19,8 +19,8 @@ final class ChatAddTests: XCTestCase {
 
     func testATaskTypedInItsCardWithoutPro() {
         XCTAssertTrue(app.buttons["pro.start"].waitForExistence(timeout: 10), "Without Pro, the chat does not offer Pro on top.")
-        let chip = app.buttons["add.task"]
-        XCTAssertTrue(chip.waitForExistence(timeout: 5), "Without Pro, there is no Task over the field.")
+        let chip = app.addPill("task")
+        XCTAssertTrue(chip.exists, "Without Pro, there is no Task over the field.")
         chip.tap()
         let words = "Call the movers \(stamp)"
         let field = app.textFields["add.text"].exists ? app.textFields["add.text"] : app.textViews["add.text"]
@@ -44,5 +44,18 @@ final class ChatAddTests: XCTestCase {
         plan.tap()
         let task = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", words)).firstMatch
         XCTAssertTrue(task.waitForExistence(timeout: 10), "The task is not on the matter's page.")
+    }
+}
+
+extension XCUIApplication {
+    /// A pill of the panel over the chat's field — Task, Note, Link, Detail, Contact — the panel
+    /// opened with the plus when it is not open already.
+    func addPill(_ item: String) -> XCUIElement {
+        let pill = buttons["add." + item]
+        if pill.waitForExistence(timeout: 2) { return pill }
+        let plus = buttons["assistant.plus"]
+        if plus.waitForExistence(timeout: 8) { plus.tap() }
+        _ = pill.waitForExistence(timeout: 5)
+        return pill
     }
 }

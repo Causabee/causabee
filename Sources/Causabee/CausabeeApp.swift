@@ -779,11 +779,6 @@ struct RootView: View {
             if !showsAssistant, case .matter = navigation.place {
                 CornerBee {
                     withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() }
-                } add: { add in
-                    // The chat, with that card over its field: what is typed in it is that.
-                    guard case .matter(let id) = navigation.place, let matter = matters.first(where: { $0.persistentModelID == id }) else { return }
-                    navigation.pinned = Navigation.Pinned(matter: id, matterName: matter.name, kind: add.rawValue, text: add.hint)
-                    withAnimation(.snappy(duration: 0.25)) { navigation.openAssistant() }
                 }
                     .padding(20)
                     .transition(.scale(scale: 0.6).combined(with: .opacity))

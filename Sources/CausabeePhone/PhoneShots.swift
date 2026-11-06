@@ -374,138 +374,18 @@ struct PhoneShotCard: View {
     }
 }
 
-/// What the plus offers: something to read — a photo or a screenshot, a file from Files — and
-/// everything that can be added to a matter. The same beside the assistant's field and held on the
-/// yellow button; with no matter open, which one it is for is asked after the pick.
-struct PlusItems: View {
-    let matter: Matter?
-    @Binding var picksPhoto: Bool
-    @Binding var picksFile: Bool
-    /// "Task" or "Note" was picked for the open matter: the field takes the cursor.
-    var picked: () -> Void = {}
-    @Environment(Navigation.self) private var navigation
-    @Query private var matters: [Matter]
-
-    // The one place things are added, in three parts, the same as the Mac's plus: to do, to keep
-    // at hand, and to bring in — what is read, and what is only kept.
-    var body: some View {
-        item("Task", "checklist", .task)
-        item("Note", "note.text", .note)
-        Divider()
-        item("Link", "link", .link)
-        item("Detail", "info.circle", .detail)
-        item("Contact", "person.badge.plus", .contact)
-        // What is brought in, under what becomes of it — said once, over the part, as the record
-        // shows a file read or only kept.
-        Section("Read and sorted in") {
-            // A screenshot copied a moment ago: in, without the photo library — as ⌘V on the Mac.
-            if UIPasteboard.general.hasImages {
-                Button("Paste screenshot", systemImage: "doc.on.clipboard") { pasteImage() }
-            }
-            Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
-            // A letter on the table: scanned with the camera, read, and kept among the matter's files.
-            item("Scan a document", "doc.viewfinder", .scan)
-            Button("File", systemImage: "doc") { picksFile = true }
-        }
-        Section("Kept only, not read") {
-            // Files, or every file of a folder, kept as they are — nothing sent.
-            item("Files or a folder", "folder", .files)
-        }
-    }
-
-    @Query private var profiles: [Profile]
-    @Environment(\.modelContext) private var context
-
-    private func pasteImage() {
-        guard let data = UIPasteboard.general.image?.pngData(),
-              let file = PhoneShots.shared.keep(data, named: BroughtFile.named("Screenshot", "png")) else { return }
-        PhoneShots.shared.bring(file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first)
-        navigation.showsAssistant = true
-    }
-
-    /// In a matter, it is for that matter. With none open, it opens onto the matters opened last —
-    /// one more tap, and no sheet to choose from — and onto every matter, for the rest.
-    @ViewBuilder
-    private func item(_ title: String, _ symbol: String, _ plus: Navigation.Plus, saying: String? = nil) -> some View {
-        if let matter {
-            Button {
-                navigation.add(plus, to: matter)
-            } label: {
-                Text(title)
-                if let saying { Text(saying) }
-                Image(systemName: symbol)
-            }
-            .accessibilityIdentifier("plus." + plus.rawValue)
-        } else {
-            let open = matters.filter { !$0.isClosed }
-            Menu {
-                ForEach(RecentMatters.list(in: open, fillingFrom: activeMatters(open)).prefix(5)) { recent in
-                    Button(recent.name) { navigation.chosen(recent, for: plus) }
-                }
-                Divider()
-                Button("Another matter …", systemImage: "magnifyingglass") { navigation.choose(for: plus) }
-            } label: {
-                Label(title, systemImage: symbol)
-            }
-            .accessibilityIdentifier("plus." + plus.rawValue)
-        }
-    }
-}
-
-extension View {
-    /// The pickers behind "Photo or screenshot" and "File": what is picked is kept and read, and
-    /// shows in the assistant.
-    func bringsIn(matter: Matter?, picksPhoto: Binding<Bool>, picksFile: Binding<Bool>) -> some View {
-        modifier(BringsIn(matter: matter, picksPhoto: picksPhoto, picksFile: picksFile))
-    }
-}
-
-private struct BringsIn: ViewModifier {
-    let matter: Matter?
-    @Binding var picksPhoto: Bool
-    @Binding var picksFile: Bool
-    @Environment(\.modelContext) private var context
-    @Environment(Navigation.self) private var navigation
-    @Query private var profiles: [Profile]
-    @State private var photo: PhotosPickerItem?
-
-    func body(content: Content) -> some View {
-        content
-            .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
-            .onChange(of: photo) {
-                guard let photo else { return }
-                self.photo = nil
-                Task {
-                    guard let data = try? await photo.loadTransferable(type: Data.self) else { return }
-                    let type = photo.supportedContentTypes.first { ["png", "jpeg", "heic"].contains($0.preferredFilenameExtension ?? "") }
-                    // As the iPhone names its own: "Screenshot 2026-09-30 at 23.37.01", in local time.
-                    let formatter = DateFormatter()
-                    formatter.locale = Locale(identifier: "en_US_POSIX")
-                    formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-                    let name = "Screenshot \(formatter.string(from: Date())).\(type?.preferredFilenameExtension ?? "png")"
-                    if let file = PhoneShots.shared.keep(data, named: name) { bring(file) }
-                }
-            }
-            .fileImporter(isPresented: $picksFile, allowedContentTypes: [.pdf, .image, UTType(filenameExtension: "eml") ?? .data]) { result in
-                guard case .success(let url) = result else { return }
-                let access = url.startAccessingSecurityScopedResource()
-                defer { if access { url.stopAccessingSecurityScopedResource() } }
-                if let data = try? Data(contentsOf: url), let file = PhoneShots.shared.keep(data, named: url.lastPathComponent) { bring(file) }
-            }
-    }
-
-    private func bring(_ file: URL) {
-        PhoneShots.shared.bring(file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first)
-        // Brought from the yellow button: the assistant opens, where it is read.
-        navigation.showsAssistant = true
-    }
-}
+/// What the panel over the field brings in: a photo or a screenshot, a scan, files or a folder.
+enum AttachKind: Hashable { case photo, scan, files }
 
 /// The plus beside the assistant's field: what is brought in — files or a folder, a scan, a photo
 /// or a screenshot. Picked, it asks what becomes of it: read and sorted in, or only imported, kept
 /// with the matter unread. A task, a note, a link, a detail and a contact are cards over the field.
+/// With a panel over the field, the plus opens it and is its × while it is open; the panel asks for
+/// what is brought in through `request`.
 struct AttachButton: View {
     let matter: Matter?
+    var panel: Binding<Bool>? = nil
+    var request: Binding<AttachKind?> = .constant(nil)
     /// "Task" or "Note" was picked: the field takes the cursor.
     var picked: () -> Void = {}
     @Environment(\.modelContext) private var context
@@ -526,25 +406,57 @@ struct AttachButton: View {
 
     private var pro: Bool { auto && Store.shared.plan == .pro }
 
-    var body: some View {
-        Menu {
-            Button("Files or a folder", systemImage: "folder") { picksFiles = true }
-                .accessibilityIdentifier("plus.files")
-            if VNDocumentCameraViewController.isSupported {
-                Button("Scan a document", systemImage: "doc.viewfinder") { scans = true }
-                    .accessibilityIdentifier("plus.scan")
+    /// How the panel comes out of the plus, and goes back into it.
+    static let panelMotion = Animation.spring(response: 0.36, dampingFraction: 0.86)
+
+    /// With a panel: a plain plus that opens it, turned into an × while it is open. Without: the menu.
+    @ViewBuilder private var opener: some View {
+        if let panel {
+            Button {
+                Haptics.tap()
+                withAnimation(Self.panelMotion) { panel.wrappedValue.toggle() }
+            } label: {
+                // A plus, as on the Mac (Figma "Composer"): quiet, so the send button is the one loud thing.
+                Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(panel.wrappedValue ? 45 : 0))
+                    .frame(width: 34, height: 34)
+                    .contentShape(Rectangle())
             }
-            Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
-                .accessibilityIdentifier("plus.photo")
-        } label: {
-            // A plus, as on the Mac (Figma "Composer"): quiet, so the send button is the one loud thing.
-            Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary)
-                .frame(width: 34, height: 34)
+            .buttonStyle(.plain)
+            .accessibilityLabel(panel.wrappedValue ? "Close" : "Add or bring in")
+        } else {
+            Menu {
+                Button("Files or a folder", systemImage: "folder") { picksFiles = true }
+                    .accessibilityIdentifier("plus.files")
+                if VNDocumentCameraViewController.isSupported {
+                    Button("Scan a document", systemImage: "doc.viewfinder") { scans = true }
+                        .accessibilityIdentifier("plus.scan")
+                }
+                Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
+                    .accessibilityIdentifier("plus.photo")
+            } label: {
+                Image(systemName: "plus").font(.system(size: 17)).foregroundStyle(.secondary)
+                    .frame(width: 34, height: 34)
+            }
+            // A menu's label takes the app's gold; the plus stays grey.
+            .tint(Color.secondary)
+            .accessibilityLabel("Bring in files, a scan or a photo")
         }
-        // A menu's label takes the app's gold; the plus stays grey.
-        .tint(Color.secondary)
-        .accessibilityLabel("Bring in files, a scan or a photo")
+    }
+
+    var body: some View {
+        opener
         .accessibilityIdentifier("assistant.plus")
+        // Asked for by the panel: the picker it names.
+        .onChange(of: request.wrappedValue) {
+            guard let kind = request.wrappedValue else { return }
+            request.wrappedValue = nil
+            switch kind {
+            case .photo: picksPhoto = true
+            case .scan: scans = true
+            case .files: picksFiles = true
+            }
+        }
         .fileImporter(isPresented: $picksFiles, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
             guard case .success(let urls) = result else { return }
             ask(about: kept(urls))
