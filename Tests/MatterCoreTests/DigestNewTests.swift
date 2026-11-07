@@ -126,6 +126,27 @@ struct OverviewHappenedTests {
         let summary = MatterSummary(matter, today: MatterStatus.day(Date()))
         #expect(summary.who == "Chat" && summary.what == "Reha Mama")
     }
+
+    @Test("A mail's card opens at the mail; a file's at the file, as the page shows it")
+    func opensAt() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "doc", name: "Doc")
+        context.insert(matter)
+        let source = Source(kind: .document, pointer: "file:///Boka.pdf")
+        let entry = Entry(title: "Boka tid för", from: "dokument", date: Date(), source: source)
+        context.insert(entry)
+        entry.matter = matter
+        let file = Document(name: "Boka.pdf", contentType: "application/pdf", byteCount: 10, source: source)
+        context.insert(file)
+        file.matter = matter
+        let summary = MatterSummary(matter, today: MatterStatus.day(Date()))
+        #expect(summary.who == "File" && summary.latest?.entry == file.persistentModelID)
+        let mail = Entry(title: "Termin", from: "Praxis <p@example.org>", date: Date().addingTimeInterval(60),
+                         source: Source(kind: .mail, pointer: "imap://x;UID=2", messageID: "<2@x>"))
+        context.insert(mail)
+        mail.matter = matter
+        #expect(MatterSummary(matter, today: MatterStatus.day(Date())).latest?.entry == mail.persistentModelID)
+    }
 }
 
 @Suite("What came, in a notification")

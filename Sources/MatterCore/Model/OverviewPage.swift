@@ -122,9 +122,14 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
             let onLast = MailDates.onLastDay(of: matter, entries: entries)
             let files = Date().timeIntervalSince(last) > 15 * 86_400 ? 0
                 : (matter.documents ?? []).filter { onLast.ids.contains($0.messageID) && !$0.isHidden && !$0.isSmallImage }.count
+            // A file, a scan, a chat stands on the page as its file, not as a mail: the card opens
+            // at the file (7 November: a file's card landed nowhere).
+            let file = newest.source.kind == .mail ? nil
+                : (matter.documents ?? []).first { !$0.isHidden && ($0.messageID == newest.messageID
+                    || (!newest.source.pointer.isEmpty && $0.source.pointer == newest.source.pointer)) }
             latest = Latest(title: newest.title, digest: newest.digest,
                             from: Email.displayName(in: newest.from) ?? Email.address(in: newest.from).nilIfEmpty,
-                            date: last, mails: onLast.mails, files: files, kind: newest.source.kind, entry: newest.persistentModelID)
+                            date: last, mails: onLast.mails, files: files, kind: newest.source.kind, entry: file?.persistentModelID ?? newest.persistentModelID)
         } else {
             latest = nil
         }
