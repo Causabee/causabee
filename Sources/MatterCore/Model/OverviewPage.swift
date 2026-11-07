@@ -165,7 +165,7 @@ extension MatterSummary {
     /// wrote it — a file, a chat, a note.
     public var who: String? {
         guard let latest else { return nil }
-        if let note = latest.note { return note == .owner ? "Your note" : "Kept from Causabee" }
+        if let note = latest.note { return note == .owner ? "Your note" : "Saved from chat" }
         switch latest.kind {
         case .mail: return latest.from
         case .document, .photo, .screenshot: return "File"
