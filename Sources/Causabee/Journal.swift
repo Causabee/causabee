@@ -1319,8 +1319,13 @@ private struct OverviewDayCard: View {
                         // Who it came from, small: the line under it says what.
                         if let who = summary.who {
                             // What it was, by its symbol: a mail, a file, a note.
+                            // Yellow says it came to the owner and is not seen yet; what the owner made is grey.
                             HStack(spacing: 5) {
-                                if let symbol = summary.symbol { Image(systemName: symbol).imageScale(.small).accessibilityHidden(true) }
+                                if summary.tellsNew { NewsDot() }
+                                if let symbol = summary.symbol {
+                                    Image(systemName: symbol).imageScale(.small).accessibilityHidden(true)
+                                        .foregroundStyle(summary.tellsNew ? AnyShapeStyle(Theme.gold) : AnyShapeStyle(.secondary))
+                                }
                                 Text(who).lineLimit(1)
                             }
                             .font(.footnote).foregroundStyle(.secondary)

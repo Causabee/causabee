@@ -68,6 +68,23 @@ The overview is the same idea across all matters: the Digest of everything.
   read, and the owner comes back without having to finish anything there.
 - **A tab is not a mode.** No action is hidden in one tab that the owner would expect on the Digest.
 
+### What appears where — one job per place (7 November 2026)
+
+Settled with the owner after days of back and forth. Each place has one job; the job alone decides
+what is shown there. "The owner knows it already" holds only where the job is about what came in.
+
+| Place | Its one job | What the owner did |
+|---|---|---|
+| **Latest updates** (overview) | A diary: the last thing that happened in each matter | Shown, like everything else |
+| **New** on the Digest | What came to the owner and is not seen yet | Never |
+| **Notifications** | Reminders for days that are set | Never |
+| **The bee's proposals** | Only what a mail says: new task, done, a date | Never |
+| **Plan** | Everything still to do, by day | Shown |
+
+**Yellow says where it came from.** A Latest update that came to the owner (mail, file) and is not
+seen yet carries the honey dot and a yellow symbol. What the owner made — a note, a task, a tick —
+is grey. Yellow still means one thing: something waits for the owner.
+
 ## Pressure test: the app on 6 November 2026
 
 What the code does today, against the four steps. ✅ holds · ⚠️ partly · ❌ breaks it.
