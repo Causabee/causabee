@@ -1310,21 +1310,31 @@ private struct OverviewDayCard: View {
                     Spacer(minLength: 0)
                 }
                 if let latest = summary.latest {
-                    // What happened, not what the matter is about: the owner knows that.
-                    Text(summary.happened ?? latest.title)
-                        #if os(macOS)
-                        .font(.callout)
-                        #else
-                        .font(.subheadline)
-                        #endif
-                        // What happened is the card's news: read in the text's own colour, not grey.
-                        .foregroundStyle(.primary).lineLimit(3).multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 2) {
+                        // Who it came from, small: the line under it says what.
+                        if let who = summary.who {
+                            Text(who).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        // What happened, not what the matter is about: the owner knows that.
+                        Text(summary.what ?? latest.title)
+                            #if os(macOS)
+                            .font(.callout)
+                            #else
+                            .font(.subheadline)
+                            #endif
+                            // What happened is the card's news: read in the text's own colour, not grey.
+                            .foregroundStyle(.primary).lineLimit(3).multilineTextAlignment(.leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("overview.what")
                     Divider().padding(.top, 4)
                     HStack(spacing: 8) {
-                        Text([Self.came(latest), summary.newCount > 0 ? "\(summary.newCount) new" : ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                        // What comes next says more than what came; without one, what came.
+                        Text(summary.ahead ?? [Self.came(latest), summary.newCount > 0 ? "\(summary.newCount) new" : ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                            .lineLimit(1)
                         Spacer(minLength: 8)
-                        if summary.openCount > 0 { Text("\(summary.openCount) \(summary.openCount == 1 ? "task" : "tasks") open") }
+                        if summary.openCount > 0 { Text("\(summary.openCount) open").fixedSize() }
                     }
                     .font(.footnote).foregroundStyle(.secondary).padding(.top, 2)
                 }

@@ -79,8 +79,8 @@ struct DigestNewTests {
     }
 }
 
-/// The overview's card says what happened — the news, what is new, or who wrote about what — not
-/// the newest mail's digest.
+/// The overview's card says who, small, and what happened under it: the news, what is new, or
+/// what the newest mail says.
 @Suite("What happened, on the overview")
 @MainActor
 struct OverviewHappenedTests {
@@ -95,16 +95,36 @@ struct OverviewHappenedTests {
         context.insert(entry)
         entry.matter = matter
         let today = MatterStatus.day(Date())
-        #expect(MatterSummary(matter, today: today).happened == "Carry & Co · Your move is confirmed")
+        // Who wrote it on a line of its own; what it says, from its summary's first sentence.
+        let plain = MatterSummary(matter, today: today)
+        #expect(plain.who == "Carry & Co" && plain.what == "Two movers and a van from 8 to 12.")
+        entry.digest = nil
+        #expect(MatterSummary(matter, today: today).what == "Your move is confirmed")
         let todo = Todo(text: "Book a parking permit", owner: .me, due: nil, source: mail, origin: "p")
         context.insert(todo)
         todo.matter = matter
         let fresh = MatterSummary(matter, today: today)
-        #expect(fresh.happened == "New task: Book a parking permit" && fresh.newCount == 1)
+        #expect(fresh.what == "New task: Book a parking permit" && fresh.newCount == 1)
         var brief = Brief()
         brief.news = Brief.News(lines: ["The move is confirmed."], mails: 1, since: Date())
         matter.shownBrief = brief
-        #expect(MatterSummary(matter, today: today).happened == "The move is confirmed.")
+        #expect(MatterSummary(matter, today: today).what == "The move is confirmed.")
+    }
+
+    @Test("A subject without AW:, Fwd: and Chat:; a chat or a file says what it was")
+    func plainWords() throws {
+        #expect(MatterSummary.subject("AW: WG: Ihre Buchung") == "Ihre Buchung")
+        #expect(MatterSummary.subject("Chat: Reha Mama") == "Reha Mama")
+        #expect(MatterSummary.subject("Chat:") == "Chat:")
+        #expect(MatterSummary.firstSentence("Two movers come. They bring a van.") == "Two movers come.")
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "mama", name: "Mama")
+        context.insert(matter)
+        let entry = Entry(title: "Chat: Reha Mama", from: "reha mama", date: Date(), source: Source(kind: .conversation, pointer: "c"))
+        context.insert(entry)
+        entry.matter = matter
+        let summary = MatterSummary(matter, today: MatterStatus.day(Date()))
+        #expect(summary.who == "Chat" && summary.what == "Reha Mama")
     }
 }
 

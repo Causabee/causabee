@@ -22,6 +22,8 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         public let mails: Int
         /// How many files came that day. Only for a matter recent enough to be in the journal.
         public let files: Int
+        /// What it was: a mail, a file, a chat.
+        public var kind: Source.Kind = .mail
     }
 
     /// Something with a day on it: an open task's due day, a deadline, an appointment.
@@ -120,7 +122,7 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
                 : (matter.documents ?? []).filter { onLast.ids.contains($0.messageID) && !$0.isHidden && !$0.isSmallImage }.count
             latest = Latest(title: newest.title, digest: newest.digest,
                             from: Email.displayName(in: newest.from) ?? Email.address(in: newest.from).nilIfEmpty,
-                            date: last, mails: onLast.mails, files: files)
+                            date: last, mails: onLast.mails, files: files, kind: newest.source.kind)
         } else {
             latest = nil
         }
@@ -138,13 +140,51 @@ extension MatterSummary {
         }
     }
 
-    /// What the overview's card says happened: the news, what is new, or who wrote about what —
-    /// not the newest mail's digest, which read as what the matter is about.
-    public var happened: String? {
+    /// The card's small line over what happened: who it came from, or what it was when no one
+    /// wrote it — a file, a chat, a note.
+    public var who: String? {
+        guard let latest else { return nil }
+        switch latest.kind {
+        case .mail: return latest.from
+        case .document, .photo, .screenshot: return "File"
+        case .conversation: return "Chat"
+        case .spokenNote: return "Note"
+        case .phoneCall: return "Call"
+        }
+    }
+
+    /// What happened, in plain words: the news, what is new, else what the newest mail says —
+    /// its summary's first sentence, or its subject without "AW:", "Fwd:" and "Chat:" (7 November:
+    /// "dokument · Boka tid för" said nothing).
+    public var what: String? {
         if let news { return news }
         if !fresh.isEmpty { return fresh.joined(separator: " · ") }
         guard let latest else { return nil }
-        return latest.from.map { "\($0) · \(latest.title)" } ?? latest.title
+        if let digest = latest.digest?.trimmingCharacters(in: .whitespacesAndNewlines), !digest.isEmpty {
+            return Self.firstSentence(digest)
+        }
+        return Self.subject(latest.title)
+    }
+
+    /// What comes next, for the card's foot: "Next: Nov 10 · Call the insurer".
+    public var ahead: String? {
+        next.map { "Next: \(MatterStatus.short($0.day)) · \($0.what)" }
+    }
+
+    static func firstSentence(_ text: String) -> String {
+        var end = text.endIndex
+        text.enumerateSubstrings(in: text.startIndex..., options: .bySentences) { _, range, _, stop in
+            end = range.upperBound
+            stop = true
+        }
+        return String(text[..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// A subject without the prefixes mail and chats put before it.
+    static func subject(_ title: String) -> String {
+        let cleaned = title.replacingOccurrences(of: #"^\s*((re|aw|wg|fw|fwd|sv|vs|tr|weiterleitung|chat)\s*:\s*)+"#,
+                                                 with: "", options: [.regularExpression, .caseInsensitive])
+        return cleaned.isEmpty ? title : cleaned
     }
 }
 
