@@ -199,6 +199,11 @@ public enum Journal {
         return ((month ? monthShort : weekdayShort).string(from: date).uppercased(), String(monday.component(.day, from: date)))
     }
 
+    /// The month under a day's number, "NOV": on a tile that stands alone, with no month over it.
+    public static func month(of day: String) -> String? {
+        MatterStatus.date(of: day).map { monthShort.string(from: $0).uppercased() }
+    }
+
     // MARK: Who has the ball
 
     /// What stands between a person and the owner: what they wait for from the owner, what the

@@ -205,6 +205,9 @@ final class DigestNewUITests: XCTestCase {
         let day = app.buttons["ahead.day"].firstMatch
         for _ in 0..<5 where !day.waitForExistence(timeout: 3) || !day.isHittable { app.swipeUp() }
         XCTAssertTrue(day.exists, "The Digest's days have no tappable day.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/day-tile.png"))
+        }
         day.tap()
         let calendar = app.datePickers["day.calendar"]
         XCTAssertTrue(calendar.waitForExistence(timeout: 5), "Tapped, the day did not open the calendar.")
