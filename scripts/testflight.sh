@@ -5,7 +5,9 @@
 #   scripts/testflight.sh 0.5 2      # version 0.5, build 2 — the build number must be new for that version
 #
 # Settings says which it is: "Beta 0.5 (2)". Once it is no beta: CAUSABEE_STAGE= scripts/testflight.sh …
-# Needs Xcode signed in to the Apple account of the team. Other place for the archive: CAUSABEE_RELEASE_DIR.
+# Signs in with an App Store Connect API key when there is one: ~/.appstoreconnect/private_keys/AuthKey_<id>.p8
+# and the issuer's id in ~/.appstoreconnect/issuer_id — it never runs out, and needs nobody signed in.
+# Without one, Xcode must be signed in to the Apple account of the team. Other place for the archive: CAUSABEE_RELEASE_DIR.
 set -e -u -o pipefail
 cd "$(dirname "$0")/.."
 
@@ -16,6 +18,18 @@ step() { print "→ $1" }
 VERSION=$1; BUILD=$2
 OUT=${CAUSABEE_RELEASE_DIR:-$HOME/Library/Caches/causabee-release}/testflight-$VERSION-$BUILD
 rm -rf "$OUT"; mkdir -p "$OUT"
+
+# The API key, when this Mac has one: the newest in the folder, or CAUSABEE_ASC_KEY.
+AUTH=()
+KEY=${CAUSABEE_ASC_KEY:-$(ls -t ~/.appstoreconnect/private_keys/AuthKey_*.p8 2>/dev/null | head -1)}
+if [[ -n $KEY ]]; then
+  [[ -r $KEY ]] || fail "The API key $KEY cannot be read."
+  ISSUER=${CAUSABEE_ASC_ISSUER:-$(cat ~/.appstoreconnect/issuer_id 2>/dev/null | tr -d '[:space:]')}
+  [[ -n $ISSUER ]] || fail "There is an API key, but no issuer id: put it in ~/.appstoreconnect/issuer_id."
+  KEY_ID=${${KEY:t:r}#AuthKey_}
+  AUTH=(-authenticationKeyPath "$KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER")
+  step "Signing in with the API key $KEY_ID"
+fi
 
 cat > "$OUT/export.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -51,14 +65,14 @@ swift test --filter CloudKitSchemaTests > "$OUT/schema.log" 2>&1 \
 
 step "Archiving Causabee $VERSION ($BUILD) for the iPhone"
 xcodebuild archive -project App/Causabee.xcodeproj -scheme CausabeePhone -configuration Release \
-  -destination 'generic/platform=iOS' -archivePath "$OUT/CausabeePhone.xcarchive" -allowProvisioningUpdates \
+  -destination 'generic/platform=iOS' -archivePath "$OUT/CausabeePhone.xcarchive" -allowProvisioningUpdates "${AUTH[@]}" \
   MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
   CAUSABEE_STAGE="${CAUSABEE_STAGE-Beta}" CAUSABEE_NUMBER="$BUILD" > "$OUT/archive.log" 2>&1 \
   || { tail -20 "$OUT/archive.log"; fail "The archive failed. The whole log: $OUT/archive.log" }
 
 step "Uploading to App Store Connect"
 xcodebuild -exportArchive -archivePath "$OUT/CausabeePhone.xcarchive" -exportOptionsPlist "$OUT/export.plist" \
-  -exportPath "$OUT/export" -allowProvisioningUpdates > "$OUT/export.log" 2>&1 \
+  -exportPath "$OUT/export" -allowProvisioningUpdates "${AUTH[@]}" > "$OUT/export.log" 2>&1 \
   || { tail -20 "$OUT/export.log"; fail "The upload failed. The whole log: $OUT/export.log" }
 
 print "✓ Causabee $VERSION ($BUILD) is uploaded. TestFlight shows it once Apple has processed it — usually 5 to 15 minutes."
