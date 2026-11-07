@@ -1093,16 +1093,15 @@ enum Adviser {
                 // Already on the list — taken on another device, or written there by hand.
                 if !todos.contains(where: { same($0.text, card.text) }) { worth.append(proposal) }
                 continue
-            case .markDone, .waitsFor, .changeOwner, .changeDate:
+            case .markDone, .changeDate:
                 guard let named, !named.isDone else { continue }
+                // Already so — taken on another device, or changed by hand: nothing to propose.
+                if card.kind == .changeDate, let due = card.due, named.due == due { continue }
                 subject = named
-            case .correctText:
-                guard let from = card.from, !from.isEmpty, !same(from, card.text) else { continue }
-                subject = todos.first { !$0.isDone && $0.text.contains(from) }
-                guard subject != nil || (matter.appointments ?? []).shown.contains(where: { $0.what.contains(from) })
-                        || (matter.deadlines ?? []).shown.contains(where: { $0.what.contains(from) }) else { continue }
             default:
-                subject = nil
+                // A tidy-up of the owner's list — linking, rewording, whose — written before
+                // the adviser stopped proposing them: not shown (7 November).
+                continue
             }
             if let subject, !touched.insert(subject.persistentModelID).inserted { continue }
             worth.append(proposal)

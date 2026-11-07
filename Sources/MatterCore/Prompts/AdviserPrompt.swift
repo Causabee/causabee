@@ -4,7 +4,7 @@ import Foundation
 /// summary and the next step that come from it, and the changes to the to-do list it proposes.
 /// One request, where there were two for the summary and the step.
 public enum AdviserPrompt {
-    public static let version = "adviser-v5"
+    public static let version = "adviser-v6"
 
     public static let system = """
     You are the adviser for one matter in Causabee, a private app that keeps a person's matters \
@@ -48,26 +48,20 @@ public enum AdviserPrompt {
 
     ## proposals
 
-    Changes to the to-do list that make it say what the matter needs, each a card the owner \
-    ticks or puts away — none is fine, and at most five:
-    - `new_todo`: a next step that is missing: concrete, starting with what to do — whom to \
-    call or write, about what, with what — not a sentence copied from a mail. `owner` is `me`, \
-    `we` or `other` (someone else's that the owner waits for); `due` the day it must be done by \
-    when the facts give or plainly imply one — a period to object counted from the day a letter \
-    came — else null; `time` null.
-    - `mark_done`: an open to-do the facts show is done. `todo` its id.
-    - `correct_text`: a to-do written so it is unclear or only repeats a mail: `from` the words \
-    exactly as in the facts, `text` what they should say.
-    - `waits_for`: one open to-do can only be done after another: `todo` the one that waits, \
-    `into` the one it waits for.
-    - `change_owner`: an open to-do is someone else's: `todo` its id, `owner` the right one.
-    - `change_date`: a to-do's day is wrong or missing and the facts give it: `todo`, `due`.
-    Two open to-dos that are one: `mark_done` the weaker with the reason that the other covers it. \
-    Never propose what is on the list already, and nothing the owner put away (listed in the \
-    question). At most one card per to-do: not `mark_done` and `correct_text` for the same one. \
-    Few cards, only what changes what the owner does — none is fine. Every card has a short \
-    one-line `reason` citing its ids. Unused fields are null; \
-    `attach` is empty.
+    Only what the mail or the owner's notes say, never a tidy-up of the list: the owner keeps \
+    their own list, and unasked changes to it are noise. Each a card the owner ticks or puts \
+    away — none is fine and usual, at most three:
+    - `new_todo`: a next step the mail asks for that is not on the list: concrete, starting with \
+    what to do — whom to call or write, about what, with what — not a sentence copied from a \
+    mail. `owner` is `me`, `we` or `other` (someone else's that the owner waits for); `due` the \
+    day it must be done by when the facts give or plainly imply one — a period to object counted \
+    from the day a letter came — else null; `time` null.
+    - `mark_done`: an open to-do a mail shows is done. `todo` its id.
+    - `change_date`: a mail gives a to-do a new or missing day: `todo`, `due`.
+    Never reword, link, merge or reassign to-dos that are there. Never propose what is on the \
+    list already, and nothing the owner put away (listed in the question). At most one card per \
+    to-do. Every card has a short one-line `reason` citing the mail's ids. Unused fields are \
+    null; `attach` is empty.
 
     ## facts
 
@@ -127,7 +121,7 @@ public enum AdviserPrompt {
                 "until": ["anyOf": [["type": "string", "format": "date"], ["type": "null"]]],
             ])],
             "proposals": ["type": "array", "items": object([
-                "kind": ["type": "string", "enum": ["new_todo", "mark_done", "correct_text", "waits_for", "change_owner", "change_date"]],
+                "kind": ["type": "string", "enum": ["new_todo", "mark_done", "change_date"]],
                 "todo": optional, "party": optional, "into": optional, "from": optional, "subject": optional, "time": optional,
                 "text": string,
                 "owner": ["type": "string", "enum": ["me", "we", "other", "unknown"]],
@@ -252,6 +246,8 @@ extension AssistantAsk {
             card.attach = []
             return card
         }
+        // Only what mail says: no tidy-up of the owner's list (7 November).
+        .filter { [.newTodo, .markDone, .changeDate].contains($0.kind) }
         // A card about a fact the facts do not have is of no use: it could not be taken.
         .filter { card in [card.todo, card.into].compactMap { $0 }.allSatisfy { refs[$0] != nil } }
         return Advice(lines: reply.brief.map { Brief.Line(part: $0.part, text: real($0.text)) },
