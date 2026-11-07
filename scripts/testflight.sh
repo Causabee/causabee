@@ -21,7 +21,8 @@ rm -rf "$OUT"; mkdir -p "$OUT"
 
 # The API key, when this Mac has one: the newest in the folder, or CAUSABEE_ASC_KEY.
 AUTH=()
-KEY=${CAUSABEE_ASC_KEY:-$(ls -t ~/.appstoreconnect/private_keys/AuthKey_*.p8 2>/dev/null | head -1)}
+KEYS=(~/.appstoreconnect/private_keys/AuthKey_*.p8(Nom))
+KEY=${CAUSABEE_ASC_KEY:-${KEYS[1]:-}}
 if [[ -n $KEY ]]; then
   [[ -r $KEY ]] || fail "The API key $KEY cannot be read."
   ISSUER=${CAUSABEE_ASC_ISSUER:-$(cat ~/.appstoreconnect/issuer_id 2>/dev/null | tr -d '[:space:]')}
