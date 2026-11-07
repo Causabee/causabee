@@ -47,16 +47,6 @@ struct PlanningTests {
         #expect(!Planning.isBack(mine, today: "2026-12-01"))
     }
 
-    @Test("The week in one sentence: calm when nothing slips, warning when something does")
-    func week() {
-        #expect(Planning.week(things: 3, waiting: 2, overdue: 0, unanswered: 0).map(\.text)
-                == ["This week: 3 things", "waiting on 2", "nothing slipping"])
-        let late = Planning.week(things: 1, waiting: 0, overdue: 2, unanswered: 1)
-        #expect(late.map(\.text) == ["This week: 1 thing", "2 overdue", "1 without an answer"])
-        #expect(late.map(\.warns) == [false, true, true])
-        #expect(Planning.week(things: 0, waiting: 0, overdue: 0, unanswered: 0).map(\.text) == ["Nothing this week", "nothing slipping"])
-    }
-
     @Test("Reminded the day before at nine: the owner's tasks and the deadlines still to come — not someone else's, not what is done")
     func reminders() throws {
         let context = ModelContext(try MatterSchema.container(at: nil))

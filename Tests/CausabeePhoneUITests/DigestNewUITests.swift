@@ -128,19 +128,6 @@ final class DigestNewUITests: XCTestCase {
         XCTAssertLessThan(chips.count, before, "Given a day, the task is still under “No day yet”.")
     }
 
-    /// The overview's week says in one sentence whether anything slips.
-    func testTheWeekSaysWhetherAnythingSlips() {
-        let app = XCUIApplication()
-        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO"]
-        app.launch()
-        let sentence = app.staticTexts["week.sentence"]
-        XCTAssertTrue(sentence.waitForExistence(timeout: 40), "The overview's week has no sentence.")
-        XCTAssertTrue(sentence.label.contains("this week") || sentence.label.contains("This week"), "The sentence does not say the week: \(sentence.label)")
-        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
-            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/week-sentence.png"))
-        }
-    }
-
     /// Three tasks added in the chat, then given a day one after the other under "No day yet":
     /// each keeps its day — also after Causabee is opened again.
     func testEachTaskKeepsTheDayItWasGiven() {

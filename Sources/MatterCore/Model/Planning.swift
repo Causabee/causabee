@@ -56,23 +56,6 @@ public enum Planning {
         todo.due = MatterStatus.day(monday.date(byAdding: .day, value: waitsFor, to: now) ?? now)
     }
 
-    /// How many days are left of this week, today and Sunday counted.
-    public static func daysLeftInWeek(today: String) -> Int {
-        guard let now = MatterStatus.date(of: today) else { return 7 }
-        return 7 - (monday.component(.weekday, from: now) + 5) % 7
-    }
-
-    /// The week in one sentence, in parts — "This week: 3 things", "waiting on 2", "nothing
-    /// slipping" — the parts that warn marked: what is overdue, what has no answer.
-    public static func week(things: Int, waiting: Int, overdue: Int, unanswered: Int) -> [(text: String, warns: Bool)] {
-        var parts: [(String, Bool)] = [(things == 0 ? "Nothing this week" : "This week: \(things) \(things == 1 ? "thing" : "things")", false)]
-        if waiting > 0 { parts.append(("waiting on \(waiting)", false)) }
-        if overdue > 0 { parts.append(("\(overdue) overdue", true)) }
-        if unanswered > 0 { parts.append(("\(unanswered) without an answer", true)) }
-        if overdue == 0, unanswered == 0 { parts.append(("nothing slipping", false)) }
-        return parts
-    }
-
     /// One reminder to be told the day before: the owner's task or a deadline, in its matter.
     public struct Reminder: Equatable, Sendable {
         /// The same for the same thing, so a reminder planned again replaces itself.

@@ -405,33 +405,6 @@ extension View {
     func shownToAuto(_ matter: Matter) -> some View { modifier(ShownToAuto(key: matter.key)) }
 }
 
-/// What is ahead, in one card, on the plan's grid: the next days, the first tasks with no day yet,
-/// and how much more there is. A task's box ticks it; a tap on a task or a date opens its own
-/// editor in place — the Digest is where it is corrected, not Plan; a day or the count opens the plan.
-/// The week in one sentence, over the week's days on the overview: "This week: 3 things · waiting
-/// on 2 · nothing slipping". The calm answer to "have I forgotten something?" — what is overdue and
-/// what has no answer said in orange, when there is any.
-struct WeekSentence: View {
-    let matters: [Matter]
-    let now: Date
-
-    var body: some View {
-        let today = MatterStatus.day(now)
-        let days = Week.days(from: now, count: Planning.daysLeftInWeek(today: today))
-        let things = days.reduce(0) { $0 + Week.asTheDayGoes(StoredChanges.shared.things(on: $1, in: matters), on: $1, now: now).ahead.count }
-        let theirs = matters.filter { !$0.isClosed }.flatMap(\.openTodos).filter { $0.owner == .other && !$0.isBlocked }
-        let unanswered = theirs.filter { Planning.isBack($0, today: today) }.count
-        let parts = Planning.week(things: things, waiting: theirs.count - unanswered,
-                                  overdue: StoredChanges.shared.overdue(in: matters).count, unanswered: unanswered)
-        parts.enumerated().reduce(Text("")) { line, part in
-            line + Text(part.offset == 0 ? "" : " · ") + Text(part.element.text).foregroundColor(part.element.warns ? Theme.warning : nil)
-        }
-        .font(.subheadline).foregroundStyle(.secondary)
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityIdentifier("week.sentence")
-    }
-}
-
 /// "When?" in one tap: this week, next week, later — each a day, so the task is a plan.
 struct WhenChips: View {
     let set: (Planning.When) -> Void
@@ -451,6 +424,9 @@ struct WhenChips: View {
     }
 }
 
+/// What is ahead, in one card, on the plan's grid: the next days, the first tasks with no day yet,
+/// and how much more there is. A task's box ticks it; a tap on a task or a date opens its own
+/// editor in place — the Digest is where it is corrected, not Plan; a day or the count opens the plan.
 struct AheadCard: View {
     let plan: Journal.Plan
     let tick: (Todo) -> Void

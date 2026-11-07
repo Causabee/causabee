@@ -243,7 +243,9 @@ What Causabee does with it (built 6 November 2026, no iCloud schema change):
    in: "No answer yet" on the Digest, with "Wait a week" or the tick. With Pro, a reply that shows
    it done ticks it off by itself (the extraction prompt's `done`).
 3. **The week in a sentence**, over the overview's week: "This week: 3 things · waiting on 2 ·
-   nothing slipping" — what is overdue or unanswered said in orange.
+   nothing slipping" — what is overdue or unanswered said in orange. **Taken out again (7 November):**
+   too short to say anything and too cryptic to act on; the week's days under it already show the
+   week, and each matter's Digest says what has no answer, by name.
 
 4. **Reminders the day before** (iPhone): at nine the day before a task's day or a deadline —
    "Kita · Tomorrow: pay the fee". Planned on the phone whenever the matters change, so it comes
