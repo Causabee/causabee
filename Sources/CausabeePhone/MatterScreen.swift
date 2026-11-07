@@ -479,9 +479,9 @@ struct MatterScreen: View {
             // What is folded away is unfolded for it: its month, and its conversation.
             if let month = Journal.fold(of: id, items: picked.items) { openMonths.insert(month) }
             let lines = journalLines(picked.items, status: MatterStatus(matter), party: nil)
-            if case .item(let item)? = Journal.line(of: id, in: lines, attached: picked.attached) {
-                line = item.id
-                if case .thread(let thread) = item { openThreads.insert(thread.id) }
+            if let found = Journal.line(of: id, in: lines, attached: picked.attached) {
+                line = found.id
+                if case .item(.thread(let thread)) = found { openThreads.insert(thread.id) }
             }
         }
         // A source of an answer can be anything on the page: what is folded away is unfolded for it.

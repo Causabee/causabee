@@ -398,6 +398,8 @@ public enum Journal {
     /// going to it goes to its line first.
     public static func line(of model: PersistentIdentifier, in lines: [Line], attached: [String: [Document]]) -> Line? {
         lines.first { line in
+            // A note stands as a line of its own.
+            if case .note(let note) = line { return note.persistentModelID == model }
             guard case .item(let item) = line else { return false }
             switch item {
             case .thread(let thread):

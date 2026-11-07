@@ -922,9 +922,9 @@ struct MatterStatusView: View {
             // What is folded away — an old month, the conversation — is unfolded for it.
             if let month = Journal.fold(of: todo, items: picked.items) { openMonths.insert(month) }
             let lines = journalLines(picked.items, status: MatterStatus(matter), party: nil)
-            if case .item(let item)? = Journal.line(of: todo, in: lines, attached: picked.attached) {
-                line = item.id
-                if case .thread(let thread) = item { openThreads.insert(thread.id) }
+            if let found = Journal.line(of: todo, in: lines, attached: picked.attached) {
+                line = found.id
+                if case .item(.thread(let thread)) = found { openThreads.insert(thread.id) }
             }
         }
         // What is folded away — done, past — is unfolded for it.

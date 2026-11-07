@@ -147,6 +147,26 @@ struct OverviewHappenedTests {
         mail.matter = matter
         #expect(MatterSummary(matter, today: MatterStatus.day(Date())).latest?.entry == mail.persistentModelID)
     }
+
+    @Test("A note written after the last mail is the latest: said as the owner's, and opened at")
+    func noteIsLatest() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "dev", name: "Dev")
+        context.insert(matter)
+        let mail = Entry(title: "Double files", from: "Me <me@example.org>", date: Date().addingTimeInterval(-86_400),
+                         source: Source(kind: .mail, pointer: "imap://x;UID=3", messageID: "<3@x>"))
+        context.insert(mail)
+        mail.matter = matter
+        let note = MatterNote(text: "Screenshots show the app, not the content.", createdAt: Date())
+        context.insert(note)
+        note.matter = matter
+        let summary = MatterSummary(matter, today: MatterStatus.day(Date()))
+        #expect(summary.who == "Your note" && summary.what == "Screenshots show the app, not the content.")
+        #expect(summary.latest?.entry == note.persistentModelID && !summary.tellsNew)
+        // The journal finds its line, to go to it.
+        let lines = Journal.lines(items: [], notes: [note])
+        #expect(Journal.line(of: note.persistentModelID, in: lines, attached: [:]) != nil)
+    }
 }
 
 @Suite("What came, in a notification")

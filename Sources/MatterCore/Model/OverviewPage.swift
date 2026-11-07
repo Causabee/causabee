@@ -26,6 +26,9 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         public var kind: Source.Kind = .mail
         /// The mail itself: what the card opens at when it says what the mail says.
         public var entry: PersistentIdentifier? = nil
+        /// A note, newer than any mail: the owner's own words, or an answer of Causabee's they kept.
+        public var note: Note? = nil
+        public enum Note: Equatable, Sendable { case owner, assistant }
     }
 
     /// Something with a day on it: an open task's due day, a deadline, an appointment.
@@ -118,6 +121,7 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         // Something to do or a day first; what is only good to know after them.
         let ordered = new.filter { if case .fact = $0 { false } else { true } } + new.filter { if case .fact = $0 { true } else { false } }
         fresh = ordered.prefix(2).map(Self.line)
+        var mail: Latest?
         if let last = dates.last, let newest = entries.first(where: { $0.date == last }) {
             let onLast = MailDates.onLastDay(of: matter, entries: entries)
             let files = Date().timeIntervalSince(last) > 15 * 86_400 ? 0
@@ -127,11 +131,21 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
             let file = newest.source.kind == .mail ? nil
                 : (matter.documents ?? []).first { !$0.isHidden && ($0.messageID == newest.messageID
                     || (!newest.source.pointer.isEmpty && $0.source.pointer == newest.source.pointer)) }
-            latest = Latest(title: newest.title, digest: newest.digest,
-                            from: Email.displayName(in: newest.from) ?? Email.address(in: newest.from).nilIfEmpty,
-                            date: last, mails: onLast.mails, files: files, kind: newest.source.kind, entry: file?.persistentModelID ?? newest.persistentModelID)
+            mail = Latest(title: newest.title, digest: newest.digest,
+                          from: Email.displayName(in: newest.from) ?? Email.address(in: newest.from).nilIfEmpty,
+                          date: last, mails: onLast.mails, files: files, kind: newest.source.kind, entry: file?.persistentModelID ?? newest.persistentModelID)
+        }
+        // What happened last is the latest, a note too (7 November: a note written today stood
+        // under yesterday's file, and the overview said only the file).
+        let note = (matter.noteBlocks ?? []).shown
+            .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .max { $0.createdAt < $1.createdAt }
+        if let note, note.createdAt > (mail?.date ?? .distantPast) {
+            latest = Latest(title: note.text.trimmingCharacters(in: .whitespacesAndNewlines), digest: nil, from: nil,
+                            date: note.createdAt, mails: 0, files: 0, kind: .spokenNote, entry: note.persistentModelID,
+                            note: note.fromAssistant ? .assistant : .owner)
         } else {
-            latest = nil
+            latest = mail
         }
     }
 }
@@ -151,6 +165,7 @@ extension MatterSummary {
     /// wrote it — a file, a chat, a note.
     public var who: String? {
         guard let latest else { return nil }
+        if let note = latest.note { return note == .owner ? "Your note" : "Kept from Causabee" }
         switch latest.kind {
         case .mail: return latest.from
         case .document, .photo, .screenshot: return "File"
@@ -164,6 +179,7 @@ extension MatterSummary {
     /// its summary's first sentence, or its subject without "AW:", "Fwd:" and "Chat:" (7 November:
     /// "dokument · Boka tid för" said nothing).
     public var what: String? {
+        if latest?.note != nil { return latest?.title }
         if let news { return news }
         if !fresh.isEmpty { return fresh.joined(separator: " · ") }
         guard let latest else { return nil }
@@ -175,7 +191,7 @@ extension MatterSummary {
 
     /// Whether the card says the news or what is new: then it opens there, at the top of the Digest;
     /// else at the mail it tells of.
-    public var tellsNew: Bool { news != nil || !fresh.isEmpty }
+    public var tellsNew: Bool { latest?.note == nil && (news != nil || !fresh.isEmpty) }
 
     /// What comes next, for the card's foot: "Next: Nov 10 · Call the insurer".
     public var ahead: String? {
