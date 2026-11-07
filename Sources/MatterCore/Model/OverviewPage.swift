@@ -26,9 +26,10 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         public var kind: Source.Kind = .mail
         /// The mail itself: what the card opens at when it says what the mail says.
         public var entry: PersistentIdentifier? = nil
-        /// A note, newer than any mail: the owner's own words, or an answer of Causabee's they kept.
-        public var note: Note? = nil
-        public enum Note: Equatable, Sendable { case owner, assistant }
+        /// Made in the matter, newer than any mail: a note, a task added, a task done — whoever
+        /// made it. Nil: the mail or the file itself.
+        public var made: Made? = nil
+        public enum Made: Equatable, Sendable { case note, savedAnswer, taskAdded, taskDone }
     }
 
     /// Something with a day on it: an open task's due day, a deadline, an appointment.
@@ -135,18 +136,24 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
                           from: Email.displayName(in: newest.from) ?? Email.address(in: newest.from).nilIfEmpty,
                           date: last, mails: onLast.mails, files: files, kind: newest.source.kind, entry: file?.persistentModelID ?? newest.persistentModelID)
         }
-        // What happened last is the latest, a note too (7 November: a note written today stood
-        // under yesterday's file, and the overview said only the file).
-        let note = (matter.noteBlocks ?? []).shown
-            .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            .max { $0.createdAt < $1.createdAt }
-        if let note, note.createdAt > (mail?.date ?? .distantPast) {
-            latest = Latest(title: note.text.trimmingCharacters(in: .whitespacesAndNewlines), digest: nil, from: nil,
-                            date: note.createdAt, mails: 0, files: 0, kind: .spokenNote, entry: note.persistentModelID,
-                            note: note.fromAssistant ? .assistant : .owner)
-        } else {
-            latest = mail
+        // What happened last is the latest, whoever did it: a mail, a file, a note, a task added or
+        // done (7 November: "it is not clear to me when what appears" — a note or a task of the
+        // owner's own stood under yesterday's mail). A task from a mail has the mail's date: the
+        // mail stays the latest for it.
+        var made: [Latest] = []
+        func add(_ text: String, _ date: Date?, _ id: PersistentIdentifier, _ kind: Latest.Made) {
+            let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let date, !text.isEmpty else { return }
+            made.append(Latest(title: text, digest: nil, from: nil, date: date, mails: 0, files: 0, kind: .conversation,
+                               entry: id, made: kind))
         }
+        for note in (matter.noteBlocks ?? []).shown { add(note.text, note.createdAt, note.persistentModelID, note.fromAssistant ? .savedAnswer : .note) }
+        for todo in (matter.todos ?? []).shown {
+            if todo.isDone { add(todo.text, todo.doneAt, todo.persistentModelID, .taskDone) }
+            else { add(todo.text, todo.createdAt, todo.persistentModelID, .taskAdded) }
+        }
+        let newestMade = made.max { $0.date < $1.date }
+        if let newestMade, newestMade.date > (mail?.date ?? .distantPast) { latest = newestMade } else { latest = mail }
     }
 }
 
@@ -165,7 +172,13 @@ extension MatterSummary {
     /// wrote it — a file, a chat, a note.
     public var who: String? {
         guard let latest else { return nil }
-        if let note = latest.note { return note == .owner ? "Your note" : "Saved from chat" }
+        switch latest.made {
+        case .note: return "Your note"
+        case .savedAnswer: return "Saved from chat"
+        case .taskAdded: return "Task added"
+        case .taskDone: return "Done"
+        case nil: break
+        }
         switch latest.kind {
         case .mail: return latest.from
         case .document, .photo, .screenshot: return "File"
@@ -178,7 +191,13 @@ extension MatterSummary {
     /// What it was, at a glance: the symbol before who (7 November: a mail was known only by its subject).
     public var symbol: String? {
         guard let latest else { return nil }
-        if let note = latest.note { return note == .owner ? "note.text" : "sparkles" }
+        switch latest.made {
+        case .note: return "note.text"
+        case .savedAnswer: return "sparkles"
+        case .taskAdded: return "plus.circle"
+        case .taskDone: return "checkmark.circle"
+        case nil: break
+        }
         switch latest.kind {
         case .mail: return "envelope"
         case .document: return "doc"
@@ -193,7 +212,7 @@ extension MatterSummary {
     /// its summary's first sentence, or its subject without "AW:", "Fwd:" and "Chat:" (7 November:
     /// "dokument · Boka tid för" said nothing).
     public var what: String? {
-        if latest?.note != nil { return latest?.title }
+        if latest?.made != nil { return latest?.title }
         if let news { return news }
         if !fresh.isEmpty { return fresh.joined(separator: " · ") }
         guard let latest else { return nil }
@@ -205,7 +224,7 @@ extension MatterSummary {
 
     /// Whether the card says the news or what is new: then it opens there, at the top of the Digest;
     /// else at the mail it tells of.
-    public var tellsNew: Bool { latest?.note == nil && (news != nil || !fresh.isEmpty) }
+    public var tellsNew: Bool { latest?.made == nil && (news != nil || !fresh.isEmpty) }
 
     /// What comes next, for the card's foot: "Next: Nov 10 · Call the insurer".
     public var ahead: String? {

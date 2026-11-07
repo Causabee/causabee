@@ -167,6 +167,32 @@ struct OverviewHappenedTests {
         let lines = Journal.lines(items: [], notes: [note])
         #expect(Journal.line(of: note.persistentModelID, in: lines, attached: [:]) != nil)
     }
+
+    @Test("A task added or done by hand is the latest as well: the newest thing, whoever made it")
+    func taskIsLatest() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "car", name: "Car")
+        context.insert(matter)
+        let mail = Source(kind: .mail, pointer: "imap://x;UID=4", messageID: "<4@x>", date: Date().addingTimeInterval(-3_600))
+        let entry = Entry(title: "Estimate", from: "Garage <g@example.org>", date: mail.date, source: mail)
+        context.insert(entry)
+        entry.matter = matter
+        // From the mail: the mail's date, so the mail stays the latest.
+        let fromMail = Todo(text: "Send the estimate", owner: .me, due: nil, source: mail, origin: "m")
+        context.insert(fromMail)
+        fromMail.matter = matter
+        #expect(MatterSummary(matter, today: MatterStatus.day(Date())).latest?.made == nil)
+        let mine = Todo(text: "Call the insurer", owner: .me, due: nil, source: Source(kind: .conversation, pointer: ""), origin: "h")
+        mine.createdAt = Date()
+        context.insert(mine)
+        mine.matter = matter
+        let added = MatterSummary(matter, today: MatterStatus.day(Date()))
+        #expect(added.who == "Task added" && added.what == "Call the insurer" && added.latest?.entry == mine.persistentModelID)
+        fromMail.isDone = true
+        fromMail.doneAt = Date().addingTimeInterval(5)
+        let done = MatterSummary(matter, today: MatterStatus.day(Date()))
+        #expect(done.who == "Done" && done.what == "Send the estimate")
+    }
 }
 
 @Suite("What came, in a notification")
