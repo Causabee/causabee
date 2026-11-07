@@ -1318,7 +1318,12 @@ private struct OverviewDayCard: View {
                     VStack(alignment: .leading, spacing: 2) {
                         // Who it came from, small: the line under it says what.
                         if let who = summary.who {
-                            Text(who).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                            // What it was, by its symbol: a mail, a file, a note.
+                            HStack(spacing: 5) {
+                                if let symbol = summary.symbol { Image(systemName: symbol).imageScale(.small).accessibilityHidden(true) }
+                                Text(who).lineLimit(1)
+                            }
+                            .font(.footnote).foregroundStyle(.secondary)
                         }
                         // What happened, not what the matter is about: the owner knows that.
                         Text(summary.what ?? latest.title)

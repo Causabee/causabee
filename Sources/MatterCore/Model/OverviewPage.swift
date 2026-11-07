@@ -175,6 +175,20 @@ extension MatterSummary {
         }
     }
 
+    /// What it was, at a glance: the symbol before who (7 November: a mail was known only by its subject).
+    public var symbol: String? {
+        guard let latest else { return nil }
+        if let note = latest.note { return note == .owner ? "note.text" : "sparkles" }
+        switch latest.kind {
+        case .mail: return "envelope"
+        case .document: return "doc"
+        case .photo, .screenshot: return "photo"
+        case .conversation: return "bubble.left"
+        case .spokenNote: return "waveform"
+        case .phoneCall: return "phone"
+        }
+    }
+
     /// What happened, in plain words: the news, what is new, else what the newest mail says —
     /// its summary's first sentence, or its subject without "AW:", "Fwd:" and "Chat:" (7 November:
     /// "dokument · Boka tid för" said nothing).
