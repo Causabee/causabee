@@ -62,6 +62,15 @@ final class DigestNewUITests: XCTestCase {
         if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/overview-latest.png"))
         }
+        // Tapped, it opens where its words are: what is new, at the top of the Digest.
+        card.tap()
+        let seen = app.buttons["brief.seen"].firstMatch
+        XCTAssertTrue(seen.waitForExistence(timeout: 10), "The card did not open at what is new.")
+        sleep(1)
+        XCTAssertTrue(seen.isHittable, "What is new is not on the screen.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/overview-opened.png"))
+        }
     }
 
     /// A pinned matter says how much is open and its next day on one line, as every other row does.

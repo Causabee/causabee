@@ -445,7 +445,8 @@ struct MatterScreen: View {
         // there first — else the tap landed on the plan's top and the news was nowhere.
         part = .all
         person = nil
-        guard matter.shownBrief?.news?.seen == false else { return }
+        // The news, or what is new without news: both stand in the card at "news".
+        guard matter.shownBrief?.news?.seen == false || !matter.newItems().isEmpty else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             withAnimation(.snappy) { scroller.scrollTo("news", anchor: UnitPoint(x: 0.5, y: 72 / max(pageHeight, 200))) }
             Haptics.landed()

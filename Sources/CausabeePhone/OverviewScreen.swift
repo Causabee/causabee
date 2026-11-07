@@ -267,7 +267,10 @@ struct OverviewScreen: View {
                 // Under what stands on both, right over what they change.
                 if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, selection: $part) }
                 if hasJournal, part == .all {
-                    OverviewJournal(matters: matters) { navigation.open($0) }
+                    OverviewJournal(matters: matters) { matter, mail in
+                        if mail == nil { navigation.showsNews = true }
+                        navigation.open(matter, showing: mail)
+                    }
                 } else {
                 let pinned = Pins.pinned(matters)
                 if !pinned.isEmpty {

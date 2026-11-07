@@ -1255,7 +1255,8 @@ enum OverviewPart: String, CaseIterable {
 /// The journal across all matters: a day at a time, each matter once, with what its newest mail says.
 struct OverviewJournal: View {
     let matters: [Matter]
-    let open: (Matter) -> Void
+    /// The matter, at the mail the card told of; nil: at what is new, on its Digest.
+    let open: (Matter, PersistentIdentifier?) -> Void
 
     private struct Day: Identifiable {
         let id: String
@@ -1281,7 +1282,11 @@ struct OverviewJournal: View {
             ForEach(days(recent)) { day in
                 JournalHeading(title: day.title)
                 ForEach(day.summaries) { summary in
-                    if let matter = byID[summary.id] { OverviewDayCard(summary: summary, matter: matter) { open(matter) } }
+                    if let matter = byID[summary.id] { OverviewDayCard(summary: summary, matter: matter) {
+                        // Where the card's words are: the news or what is new, else the mail (7 November:
+                        // a tap landed on the matter's top, and what the card said was nowhere).
+                        open(matter, summary.tellsNew ? nil : summary.latest?.entry)
+                    } }
                 }
             }
         }

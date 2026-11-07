@@ -24,6 +24,8 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         public let files: Int
         /// What it was: a mail, a file, a chat.
         public var kind: Source.Kind = .mail
+        /// The mail itself: what the card opens at when it says what the mail says.
+        public var entry: PersistentIdentifier? = nil
     }
 
     /// Something with a day on it: an open task's due day, a deadline, an appointment.
@@ -122,7 +124,7 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
                 : (matter.documents ?? []).filter { onLast.ids.contains($0.messageID) && !$0.isHidden && !$0.isSmallImage }.count
             latest = Latest(title: newest.title, digest: newest.digest,
                             from: Email.displayName(in: newest.from) ?? Email.address(in: newest.from).nilIfEmpty,
-                            date: last, mails: onLast.mails, files: files, kind: newest.source.kind)
+                            date: last, mails: onLast.mails, files: files, kind: newest.source.kind, entry: newest.persistentModelID)
         } else {
             latest = nil
         }
@@ -165,6 +167,10 @@ extension MatterSummary {
         }
         return Self.subject(latest.title)
     }
+
+    /// Whether the card says the news or what is new: then it opens there, at the top of the Digest;
+    /// else at the mail it tells of.
+    public var tellsNew: Bool { news != nil || !fresh.isEmpty }
 
     /// What comes next, for the card's foot: "Next: Nov 10 · Call the insurer".
     public var ahead: String? {
