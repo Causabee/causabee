@@ -229,6 +229,22 @@ public enum Journal {
         return ball
     }
 
+    /// Whom a task of someone else's is waited for from, when it is certain enough to say: a person
+    /// of the matter it names, else whoever wrote the mail it came from — or the mail its file came
+    /// with. Nil when neither says.
+    public static func whom(_ todo: Todo) -> String? {
+        guard todo.owner == .other, let matter = todo.matter else { return nil }
+        if let named = matter.shownParties.first(where: { !$0.name.isEmpty && todo.text.localizedCaseInsensitiveContains($0.name) }) {
+            return named.name
+        }
+        for source in todo.sources {
+            guard let id = source.messageID, !id.isEmpty, let mail = matter.entry(messageID: id), !mail.from.isEmpty else { continue }
+            if let party = matter.writer(mail.from) { return party.name }
+            return matter.writerName(mail.from)
+        }
+        return nil
+    }
+
     // MARK: The journal
 
     /// A stretch of old days, folded into one card.

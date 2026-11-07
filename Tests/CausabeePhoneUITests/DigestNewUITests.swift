@@ -224,5 +224,21 @@ final class DigestNewUITests: XCTestCase {
         XCTAssertTrue(calendar.waitForNonExistence(timeout: 5), "Set, the calendar stayed open.")
         XCTAssertFalse(app.buttons["part.Plan"].isSelected, "Tapped, the day went to Plan.")
     }
-}
 
+    func testWaitingForOthersSaysWhom() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Care for Mum (Helga) after her fall"]
+        app.launch()
+        let plan = app.buttons["part.Plan"]
+        XCTAssertTrue(plan.waitForExistence(timeout: 10))
+        plan.tap()
+        let heading = app.staticTexts["WAITING FOR OTHERS"]
+        for _ in 0..<8 where !heading.exists || !heading.isHittable { app.swipeUp() }
+        app.swipeUp()
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/waiting-whom.png"))
+        }
+        XCTAssertTrue(heading.exists, "The plan shows nobody's task to wait for.")
+    }
+}

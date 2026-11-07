@@ -1789,7 +1789,10 @@ struct TodoRow: View {
     /// Whose, when that is not the owner; by when, where it says so.
     private var line: String {
         var parts: [String] = []
-        if showsOwner, todo.owner != .me { parts.append(["we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
+        if todo.owner == .other, let whom = Journal.whom(todo) {
+            // Whom it waits for, by name; under its heading, the name is enough.
+            parts.append(showsOwner ? "Waiting for \(whom)" : whom)
+        } else if showsOwner, todo.owner != .me { parts.append(["we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
         if showsDue, let due = todo.due {
             parts.append("by " + Dates.short(due) + (todo.dueTime.map { " at \($0)" } ?? ""))
         } else if let time = todo.dueTime, todo.due != nil {

@@ -86,4 +86,35 @@ struct PlanningTests {
         // The same thing planned again has the same id: it replaces itself.
         #expect(Planning.reminders([matter], now: now).map(\.id) == reminders.map(\.id))
     }
+
+    @Test("Someone else's task says whom it waits for: a person it names, else whoever wrote its mail")
+    func whom() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "care", name: "Care")
+        context.insert(matter)
+        for name in ["Medizinischer Dienst", "Petra Lindner"] {
+            let party = Party(name: name)
+            context.insert(party)
+            let membership = Membership()
+            membership.party = party
+            membership.matter = matter
+            context.insert(membership)
+        }
+        let mail = Entry(title: "Termin", from: "Petra Lindner <p.lindner@example.org>", date: nil,
+                         source: Source(kind: .mail, pointer: "m", messageID: "<m1>"))
+        mail.messageID = "<m1>"
+        context.insert(mail)
+        mail.matter = matter
+        func task(_ text: String, owner: Todo.Owner = .other, messageID: String? = nil) -> Todo {
+            let todo = Todo(text: text, owner: owner, due: nil, source: Source(kind: .mail, pointer: "x", messageID: messageID), origin: text)
+            context.insert(todo)
+            todo.matter = matter
+            return todo
+        }
+        #expect(Journal.whom(task("Medizinischer Dienst sends a new date")) == "Medizinischer Dienst")
+        #expect(Journal.whom(task("Send a new date", messageID: "<m1>")) == "Petra Lindner")
+        #expect(Journal.whom(task("Send a new date")) == nil)
+        // The owner's own says nothing of whom.
+        #expect(Journal.whom(task("Medizinischer Dienst anrufen", owner: .me)) == nil)
+    }
 }

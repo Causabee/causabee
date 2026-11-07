@@ -570,7 +570,7 @@ struct AheadCard: View {
                         VStack(alignment: .leading, spacing: 6) {
                             task(todo)
                             HStack(spacing: 8) {
-                                Text("since \(Dates.short(MatterStatus.day(todo.createdAt)))").font(.footnote).foregroundStyle(.secondary)
+                                Text(([Journal.whom(todo)].compactMap { $0 } + ["since \(Dates.short(MatterStatus.day(todo.createdAt)))"]).joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary)
                                 Button("Wait a week") {
                                     Planning.waitAWeek(todo, today: MatterStatus.day(Date()))
                                     try? context.save()
