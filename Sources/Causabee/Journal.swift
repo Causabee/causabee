@@ -126,19 +126,14 @@ struct DayTile: View {
     var month = false
     /// Gone by with something still to do.
     var late = false
-    /// The month under the number too: for a tile with no month over it, as on the Digest.
-    var showsMonth = false
 
     var body: some View {
         let tile = Journal.tile(day, month: month)
         VStack(spacing: 0) {
             Text(tile.over).font(.caption2.weight(.semibold)).foregroundStyle(late ? Theme.warning : .secondary)
             Text(tile.number).font(.callout.weight(.medium)).monospacedDigit().foregroundStyle(late ? Theme.warning : .primary)
-            if showsMonth, !month, let name = Journal.month(of: day) {
-                Text(name).font(.caption2.weight(.semibold)).foregroundStyle(late ? Theme.warning : .secondary)
-            }
         }
-        .frame(width: Theme.dayTile, height: showsMonth && !month ? 58 : 46)
+        .frame(width: Theme.dayTile, height: 46)
         .background(Theme.box, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .accessibilityElement(children: .combine)
     }
@@ -528,7 +523,7 @@ struct AheadCard: View {
                 if let item = day.items.first {
                     HStack(alignment: .top, spacing: 6) {
                         // The day is the item's: a tap changes it, on the calendar.
-                        ChangesDay(item: item.newItem) { DayTile(day: day.day, showsMonth: true) }
+                        ChangesDay(item: item.newItem) { DayTile(day: day.day, month: true) }
                             .fixedSize()
                             .accessibilityIdentifier("ahead.day")
                         row(item)
