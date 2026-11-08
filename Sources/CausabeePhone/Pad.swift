@@ -66,50 +66,50 @@ struct PadSidebar: View {
         let pinned = Pins.pinned(sorted)
         let rest = sorted.filter { !$0.isClosed && !$0.isPinned }
         let closed = sorted.filter(\.isClosed)
-        VStack(spacing: 0) {
-            // The panel's own top row, on the line of the page's bar: the sidebar's button at its
-            // right, plain on the glass — the same button that stands at the window's corner while
-            // the sidebar is away.
-            // Measured on Journal (8 November): 42 high from the panel's top, so its centre is on
-            // the page bar's line, 54 down; the button's centre 30 in from the panel's edge.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 2) {
+                PadOverviewCard(matters: matters)
+                if !pinned.isEmpty { heading("Pinned"); rows(pinned, all: sorted) }
+                heading("Matters", adds: true)
+                rows(rest, all: sorted)
+                if !closed.isEmpty {
+                    Button { withAnimation(.snappy(duration: 0.2)) { showsClosed.toggle() } } label: {
+                        HStack(spacing: 6) {
+                            Text("Closed").font(.subheadline.weight(.semibold))
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                                .rotationEffect(.degrees(showsClosed ? 90 : 0))
+                            Spacer(minLength: 0)
+                            Text("\(closed.count)").font(.subheadline).monospacedDigit()
+                        }
+                        .foregroundStyle(.secondary)
+                        .frame(height: 28)
+                        .padding(.leading, 15).padding(.trailing, 4)
+                        .padding(.top, 18).padding(.bottom, 14)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("sidebar.closed")
+                    .accessibilityHint(showsClosed ? "Hides the closed matters" : "Shows the closed matters")
+                    if showsClosed { rows(closed, all: sorted) }
+                }
+            }
+            // Journal's cards: 16 in from the panel's edges, 54 below its top.
+            .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 24)
+        }
+        .scrollIndicators(.hidden)
+        // The panel's own top row, on the line of the page's bar: the sidebar's button at its right,
+        // plain on the glass. The list goes under it with the system's soft edge, not a hard bar.
+        // Measured on Journal (8 November): 42 high from the panel's top, so its centre is on the
+        // page bar's line, 54 down; the button's centre 30 in from the panel's edge.
+        .safeAreaBar(edge: .top, spacing: 0) {
             HStack {
                 Spacer()
                 PadSidebarButton()
             }
             .padding(.trailing, 11)
             .frame(height: 42)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
-                    PadOverviewCard(matters: matters)
-                    if !pinned.isEmpty { heading("Pinned"); rows(pinned, all: sorted) }
-                    heading("Matters", adds: true)
-                    rows(rest, all: sorted)
-                    if !closed.isEmpty {
-                        Button { withAnimation(.snappy(duration: 0.2)) { showsClosed.toggle() } } label: {
-                            HStack(spacing: 6) {
-                                Text("Closed").font(.subheadline.weight(.semibold))
-                                Image(systemName: "chevron.right").font(.caption.weight(.semibold))
-                                    .rotationEffect(.degrees(showsClosed ? 90 : 0))
-                                Spacer(minLength: 0)
-                                Text("\(closed.count)").font(.subheadline).monospacedDigit()
-                            }
-                            .foregroundStyle(.secondary)
-                            .frame(height: 28)
-                            .padding(.leading, 15).padding(.trailing, 4)
-                            .padding(.top, 18).padding(.bottom, 14)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("sidebar.closed")
-                        .accessibilityHint(showsClosed ? "Hides the closed matters" : "Shows the closed matters")
-                        if showsClosed { rows(closed, all: sorted) }
-                    }
-                }
-                // Journal's cards: 16 in from the panel's edges, 54 below its top.
-                .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 24)
-            }
-            .scrollIndicators(.hidden)
         }
+        .scrollEdgeEffectStyle(.soft, for: .top)
     }
 
     private func rows(_ list: [Matter], all: [Matter]) -> some View {

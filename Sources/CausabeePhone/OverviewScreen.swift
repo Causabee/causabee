@@ -70,6 +70,8 @@ struct RootView: View {
                 // a fine outline — not a grey column (8 November).
                 PadSidebar(matters: matters)
                     .frame(width: PadMetrics.sidebar)
+                    // What scrolls stays inside the panel's rounded corners.
+                    .clipShape(RoundedRectangle(cornerRadius: PadMetrics.panelRadius, style: .continuous))
                     .glassEffect(.regular, in: RoundedRectangle(cornerRadius: PadMetrics.panelRadius, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: PadMetrics.panelRadius, style: .continuous)
