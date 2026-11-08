@@ -38,9 +38,22 @@ struct PadSidebar: View {
     /// The closed matters, unfolded; folded away until asked for, and remembered.
     @AppStorage("pad.showsClosed") private var showsClosed = false
 
-    private func heading(_ title: String) -> some View {
-        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-            .padding(.horizontal, 12).padding(.top, 14).padding(.bottom, 2)
+    private func heading(_ title: String, adds: Bool = false) -> some View {
+        HStack {
+            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+            // As Journal's "Journals +": a new matter, from its heading.
+            if adds {
+                Button { NotificationCenter.default.post(name: .phoneNewMatter, object: nil) } label: {
+                    Image(systemName: "plus").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28).background(Color.primary.opacity(0.06), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("New Matter")
+            }
+        }
+        .padding(.leading, 16).padding(.trailing, 8)
+        .padding(.top, 24).padding(.bottom, 6)
     }
 
     var body: some View {
@@ -50,41 +63,44 @@ struct PadSidebar: View {
         let pinned = Pins.pinned(sorted)
         let rest = sorted.filter { !$0.isClosed && !$0.isPinned }
         let closed = sorted.filter(\.isClosed)
-        ScrollView {
-            VStack(alignment: .leading, spacing: 2) {
-                Button { navigation.go([]) } label: {
-                    PadSidebarLine(symbol: "square.grid.2x2", name: "Overview", marked: navigation.path.isEmpty) { PadMailSign() }
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("sidebar.overview")
-                if !pinned.isEmpty { heading("Pinned"); rows(pinned, all: sorted) }
-                if !rest.isEmpty { heading("Matters"); rows(rest, all: sorted) }
-                if !closed.isEmpty {
-                    Button { withAnimation(.snappy(duration: 0.2)) { showsClosed.toggle() } } label: {
-                        HStack(spacing: 6) {
-                            Text("Closed").font(.subheadline.weight(.semibold))
-                            Image(systemName: "chevron.right").font(.caption.weight(.semibold))
-                                .rotationEffect(.degrees(showsClosed ? 90 : 0))
-                            Spacer(minLength: 0)
-                        }
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 12).padding(.top, 14).padding(.bottom, 2)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("sidebar.closed")
-                    .accessibilityHint(showsClosed ? "Hides the closed matters" : "Shows the closed matters")
-                    if showsClosed { rows(closed, all: sorted) }
-                }
+        VStack(spacing: 0) {
+            // The panel's own top row, on the line of the page's bar: the sidebar's button at its
+            // right, plain on the glass — the same button that stands at the window's corner while
+            // the sidebar is away.
+            HStack {
+                Spacer()
+                PadSidebarButton()
             }
-            .padding(.horizontal, 10).padding(.top, 4).padding(.bottom, 20)
-        }
-        .scrollIndicators(.hidden)
-        .safeAreaBar(edge: .top, alignment: .leading, spacing: 0) {
-            // The sidebar's button inside the panel, at its top, as Journal's.
-            PadControls()
-                .padding(.leading, 10)
-                .frame(height: PadMetrics.bar + 8)
+            .padding(.horizontal, 8)
+            .frame(height: PadMetrics.bar)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    PadOverviewCard(matters: matters)
+                    if !pinned.isEmpty { heading("Pinned"); rows(pinned, all: sorted) }
+                    heading("Matters", adds: true)
+                    rows(rest, all: sorted)
+                    if !closed.isEmpty {
+                        Button { withAnimation(.snappy(duration: 0.2)) { showsClosed.toggle() } } label: {
+                            HStack(spacing: 6) {
+                                Text("Closed").font(.subheadline.weight(.semibold))
+                                Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                                    .rotationEffect(.degrees(showsClosed ? 90 : 0))
+                                Spacer(minLength: 0)
+                                Text("\(closed.count)").font(.subheadline).monospacedDigit()
+                            }
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 16).padding(.top, 24).padding(.bottom, 6)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("sidebar.closed")
+                        .accessibilityHint(showsClosed ? "Hides the closed matters" : "Shows the closed matters")
+                        if showsClosed { rows(closed, all: sorted) }
+                    }
+                }
+                .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 24)
+            }
+            .scrollIndicators(.hidden)
         }
     }
 
@@ -96,6 +112,61 @@ struct PadSidebar: View {
             .buttonStyle(.plain)
             .contextMenu { MatterMenuItems(matter: matter, all: all).menuSigns() }
         }
+    }
+}
+
+/// The sidebar's first card, as Journal's Insights: the overview, with what waits across every
+/// matter — new mails to sort in, what is overdue — said in two large numbers.
+struct PadOverviewCard: View {
+    let matters: [Matter]
+    @Environment(Navigation.self) private var navigation
+
+    private var newMails: Int {
+        switch PhoneMailCheck.shared.state {
+        case .newMail(let look, _), .ready(let look, _): look.pending
+        case .demoNew: DemoData.newMail.count
+        default: 0
+        }
+    }
+
+    private func figure(_ number: Int, _ words: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("\(number)").font(.system(.title, design: .rounded, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(number > 0 ? .primary : .tertiary)
+            Text(words).font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    var body: some View {
+        let open = navigation.path.isEmpty
+        let late = StoredChanges.shared.overview(matters).overdue.count
+        Button { navigation.go([]) } label: {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 8) {
+                    Image(systemName: "square.grid.2x2").font(.system(size: 15, weight: .medium))
+                    Text("Overview").font(.headline)
+                    Spacer(minLength: 0)
+                    if case .reading = PhoneMailCheck.shared.state { BeeLoader(size: 13).accessibilityLabel("Looking for mail") }
+                }
+                HStack(alignment: .top, spacing: 12) {
+                    figure(newMails, newMails == 1 ? "new mail" : "new mails")
+                    figure(late, "overdue")
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                // Open, it is marked as the rows are: a ring instead of a pill.
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(open ? 0.22 : 0.06), lineWidth: open ? 1.5 : 0.5)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("sidebar.overview")
+        .accessibilityLabel("Overview, \(newMails) new mails, \(late) overdue")
     }
 }
 
@@ -120,10 +191,11 @@ struct PadSidebarLine<Trailing: View>: View {
             trailing()
         }
         .font(.body.weight(marked ? .semibold : .regular))
-        .padding(.horizontal, 12).frame(minHeight: 44)
+        .padding(.horizontal, 16).frame(minHeight: 46)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            if marked { RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.07)) }
+            // A pill, as Journal marks the open journal.
+            if marked { Capsule().fill(Color.primary.opacity(0.07)) }
         }
         .contentShape(Rectangle())
     }

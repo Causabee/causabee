@@ -75,7 +75,9 @@ struct RootView: View {
                         RoundedRectangle(cornerRadius: PadMetrics.panelRadius, style: .continuous)
                             .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
                     }
-                    .padding(PadMetrics.inset)
+                    // Its top row on the line of the page's bar, as Journal's: 6 under the status bar,
+                    // 10 in from the window's side and bottom.
+                    .padding(.leading, PadMetrics.inset).padding(.bottom, PadMetrics.inset).padding(.top, 6)
                     // Over the page, so its soft shadow falls on it and is not cut off at its edge.
                     .zIndex(1)
                     .transition(.move(edge: .leading))
