@@ -7,7 +7,7 @@ import Foundation
 /// prompt that asks for something different from what the labels mean would measure the
 /// difference between two definitions, not how good the model is.
 public enum ExtractionPrompt {
-    public static let version = "extract-v15"
+    public static let version = "extract-v16"
 
     /// Added for a model that writes a to-do for everything a mail touches — Mistral wrote half
     /// again as many as Opus, most of them "confirm the appointment" and "prepare for it". Opus
@@ -174,8 +174,9 @@ public enum ExtractionPrompt {
     `digest` is two or three short sentences, in the same language as the email, on what this email itself says: what it \
     tells or asks, with the details someone would look up months later — amounts, numbers of \
     things, what was agreed, what an attachment is, what someone promised. Not the to-dos again \
-    in other words, and not who sent it or when: those are known. Null for an email with nothing \
-    worth keeping.
+    in other words, and not who sent it or when: those are known. The first sentence says what \
+    the email is about — never a greeting, thanks or "we look forward to working with you". Null \
+    for an email with nothing worth keeping.
 
     ## Dates and quotes
 

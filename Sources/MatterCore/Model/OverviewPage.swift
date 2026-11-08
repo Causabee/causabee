@@ -229,7 +229,7 @@ extension MatterSummary {
         if !fresh.isEmpty { return fresh.joined(separator: " · ") }
         guard let latest else { return nil }
         if let digest = latest.digest?.trimmingCharacters(in: .whitespacesAndNewlines), !digest.isEmpty {
-            return Self.firstSentence(digest)
+            if let sentence = Self.firstSentence(digest) { return sentence }
         }
         return Self.subject(latest.title)
     }
@@ -243,13 +243,27 @@ extension MatterSummary {
         next.map { "Next: \(MatterStatus.short($0.day)) · \($0.what)" }
     }
 
-    static func firstSentence(_ text: String) -> String {
-        var end = text.endIndex
-        text.enumerateSubstrings(in: text.startIndex..., options: .bySentences) { _, range, _, stop in
-            end = range.upperBound
-            stop = true
+    /// The first sentence that says something: a greeting, thanks or "we look forward" is passed
+    /// over (8 November: "Wir freuen uns sehr auf die zukünftige Zusammenarbeit" was all a card
+    /// said). A sentence with a number in it is kept — "Thank you for the €120" says something.
+    static func firstSentence(_ text: String) -> String? {
+        var sentences: [String] = []
+        text.enumerateSubstrings(in: text.startIndex..., options: .bySentences) { sentence, _, _, _ in
+            guard let sentence = sentence?.trimmingCharacters(in: .whitespacesAndNewlines), !sentence.isEmpty else { return }
+            // "ab 1. Januar": a German date is no sentence's end.
+            if let last = sentences.last, last.range(of: #"\b\d{1,2}\.$"#, options: .regularExpression) != nil {
+                sentences[sentences.count - 1] = last + " " + sentence
+            } else {
+                sentences.append(sentence)
+            }
         }
-        return String(text[..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return sentences.first { !isPleasantry($0) }
+    }
+
+    static func isPleasantry(_ sentence: String) -> Bool {
+        guard sentence.rangeOfCharacter(from: .decimalDigits) == nil else { return false }
+        let pattern = #"^(wir freuen uns|ich freue mich|freuen uns|vielen dank|herzlichen dank|danke|besten dank|herzlich willkommen|willkommen|schön, dass|mit freundlichen|beste grüße|viele grüße|liebe grüße|wir hoffen|ich hoffe|thank|thanks|many thanks|we look forward|looking forward|we are (delighted|pleased|happy)|welcome|kind regards|best regards|we hope|i hope)\b"#
+        return sentence.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
     }
 
     /// A subject without the prefixes mail and chats put before it.

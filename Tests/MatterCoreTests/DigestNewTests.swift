@@ -117,6 +117,11 @@ struct OverviewHappenedTests {
         #expect(MatterSummary.subject("Chat: Reha Mama") == "Reha Mama")
         #expect(MatterSummary.subject("Chat:") == "Chat:")
         #expect(MatterSummary.firstSentence("Two movers come. They bring a van.") == "Two movers come.")
+        // A pleasantry is passed over; one with a number says something and stays.
+        #expect(MatterSummary.firstSentence("Wir freuen uns sehr auf die zukünftige Zusammenarbeit mit Ihnen. Matera übernimmt die Verwaltung ab 1. Januar.")
+                == "Matera übernimmt die Verwaltung ab 1. Januar.")
+        #expect(MatterSummary.firstSentence("Vielen Dank für Ihre Zahlung von 120 €. Der Platz ist sicher.") == "Vielen Dank für Ihre Zahlung von 120 €.")
+        #expect(MatterSummary.firstSentence("We look forward to working with you.") == nil)
         let context = ModelContext(try MatterSchema.container(at: nil))
         let matter = Matter(key: "mama", name: "Mama")
         context.insert(matter)
