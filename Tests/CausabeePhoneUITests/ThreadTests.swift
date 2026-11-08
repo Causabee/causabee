@@ -131,8 +131,17 @@ final class ThreadTests: XCTestCase {
         let before = copies.count
         for _ in 0..<60 where copies.count <= before { Thread.sleep(forTimeInterval: 0.25) }
         let copy = copies.element(boundBy: copies.count - 1)
+        let iconAt = copy.frame.minX
         copy.tap()
-        XCTAssertTrue(app.buttons["Copied"].waitForExistence(timeout: 2), "Copy did not say Copied.")
+        let copied = app.buttons["Copied"]
+        XCTAssertTrue(copied.waitForExistence(timeout: 2), "Copy did not say Copied.")
+        // The tick stands where the icon stood: the word opens to its right.
+        let frame = copied.frame
+        XCTAssertEqual(frame.minX, iconAt, accuracy: 1, "The tick moved when the word came.")
+        XCTAssertGreaterThan(frame.width, 60, "No room opened for the word.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/copied.png"))
+        }
         let notes = app.buttons.matching(identifier: "Save as note")
         notes.element(boundBy: notes.count - 1).tap()
         XCTAssertTrue(app.buttons["Saved as note"].waitForExistence(timeout: 2), "Save as note did not say it was saved.")

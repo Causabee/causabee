@@ -645,18 +645,38 @@ struct TurnView: View {
     @State private var copied = false
     /// Kept as a note of its matter: the button says so, and does not keep it twice.
     @State private var savedNote = false
-    /// "Added to notes" beside the tick, for a moment after the click.
-    @State private var noteWord = false
+    /// The word beside a tick: first the space opens, then the word fades in — and back.
+    @State private var copyOpen = false
+    @State private var copyShown = false
+    @State private var noteOpen = false
+    @State private var noteShown = false
     @Environment(\.modelContext) private var context
 
-    /// A small action under an answer: its sign, and once it is done a gold tick with a word.
-    private func answerAction(_ symbol: String, done: Bool, word: String?) -> some View {
+    /// A small action under an answer: its sign where it always is, and once done a gold tick
+    /// with a word to its right — as on the iPhone.
+    private func answerAction(_ symbol: String, done: Bool, word: String, open: Bool, shown: Bool) -> some View {
         HStack(spacing: 4) {
             Image(systemName: symbol).fontWeight(done ? .semibold : .regular).frame(width: 16, height: 16)
-            if let word { Text(word).font(.caption).transition(.opacity) }
+            if open {
+                Text(word).font(.caption).fixedSize().opacity(shown ? 1 : 0).transition(.identity)
+            }
         }
         .foregroundStyle(done ? Theme.gold : Color.secondary)
         .contentShape(Rectangle())
+    }
+
+    /// Opens the space, fades the word in, holds it, fades it out, closes the space.
+    private func sayDone(_ open: Binding<Bool>, _ shown: Binding<Bool>, hold: Double, then: @escaping () -> Void = {}) {
+        guard !open.wrappedValue else { return }
+        Task { @MainActor in
+            withAnimation(.snappy(duration: 0.25)) { open.wrappedValue = true }
+            try? await Task.sleep(for: .seconds(0.2))
+            withAnimation(.easeOut(duration: 0.2)) { shown.wrappedValue = true }
+            try? await Task.sleep(for: .seconds(hold))
+            withAnimation(.easeIn(duration: 0.2)) { shown.wrappedValue = false }
+            try? await Task.sleep(for: .seconds(0.2))
+            withAnimation(.snappy(duration: 0.25)) { open.wrappedValue = false; then() }
+        }
     }
 
     /// The matter a draft's files come from: the turn's, else the one the card rests on.
@@ -746,11 +766,11 @@ struct TurnView: View {
                 Button {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(answer.plainText, forType: .string)
-                    withAnimation(.snappy) { copied = true }
-                    Task { try? await Task.sleep(for: .seconds(2)); withAnimation(.snappy) { copied = false } }
+                    copied = true
+                    sayDone($copyOpen, $copyShown, hold: 1.6) { copied = false }
                 } label: {
                     // Done says so, as on the iPhone: a gold tick and the word, for a moment.
-                    answerAction(copied ? "checkmark" : "doc.on.doc", done: copied, word: copied ? "Copied" : nil)
+                    answerAction(copied ? "checkmark" : "doc.on.doc", done: copied, word: "Copied", open: copyOpen, shown: copyShown)
                 }
                 .help(copied ? "Copied" : "Copy the answer")
                 .accessibilityLabel("Copy the answer")
@@ -758,10 +778,10 @@ struct TurnView: View {
                 if let kept = turn.matter.flatMap({ context.model(for: $0) as? Matter }) {
                     Button {
                         NotesPart.keep(answer.plainText, in: kept, context: context)
-                        withAnimation(.snappy) { savedNote = true; noteWord = true }
-                        Task { try? await Task.sleep(for: .seconds(2.5)); withAnimation(.snappy) { noteWord = false } }
+                        savedNote = true
+                        sayDone($noteOpen, $noteShown, hold: 2)
                     } label: {
-                        answerAction(savedNote ? "checkmark" : "note.text.badge.plus", done: savedNote, word: noteWord ? "Added to notes" : nil)
+                        answerAction(savedNote ? "checkmark" : "note.text.badge.plus", done: savedNote, word: "Added to notes", open: noteOpen, shown: noteShown)
                     }
                     .disabled(savedNote)
                     .help(savedNote ? "Saved in the notes of \(kept.name)" : "Save as a note in \(kept.name)")
