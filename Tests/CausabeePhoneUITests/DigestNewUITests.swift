@@ -73,8 +73,9 @@ final class DigestNewUITests: XCTestCase {
         }
     }
 
-    /// A task ticked off is the latest update; its card opens the plan at that task, done.
-    func testADoneTaskOpensAtTheTask() {
+    /// A task ticked off is the latest update, small; the card's line is what is next, and a tap
+    /// opens the Digest at it.
+    func testADoneTaskLeadsToTheNextStep() {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Moving to Birch Road 12"]
@@ -93,15 +94,18 @@ final class DigestNewUITests: XCTestCase {
         let updates = app.buttons["part.Latest updates"]
         XCTAssertTrue(updates.waitForExistence(timeout: 20), "The overview did not come back.")
         updates.tap()
-        let card = app.buttons.matching(NSPredicate(format: "identifier == 'overview.day' AND label CONTAINS 'Done'")).firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 10), "The task ticked off is not the latest update.")
+        let card = app.buttons.matching(NSPredicate(format: "identifier == 'overview.day' AND label CONTAINS 'Done · '")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "The task ticked off is not the small line over the next step.")
         for _ in 0..<3 where !card.isHittable { app.swipeUp() }
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/done-card.png"))
+        }
         card.tap()
         Thread.sleep(forTimeInterval: 1.5)
         if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/done-opened.png"))
         }
-        XCTAssertTrue(app.buttons["part.Plan"].isSelected, "The done task's card did not open the plan.")
+        XCTAssertFalse(app.buttons["part.Plan"].isSelected, "The card went to the plan, not to the next step.")
     }
 
     /// A pinned matter says how much is open and its next day on one line, as every other row does.

@@ -75,6 +75,10 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
     public let fresh: [String]
     public let newCount: Int
     public let latest: Latest?
+    /// What is next for the owner: Causabee's step while nothing has changed since it was written,
+    /// else the one worked out on the device — the card's main line (8 November: a task ticked off
+    /// three days before was all a card said, while a step waited).
+    public let step: String?
 
     public var isPinned: Bool { pinnedAt != nil }
     /// Something going on: an open task, or a day ahead.
@@ -124,6 +128,9 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         // Something to do or a day first; what is only good to know after them.
         let ordered = new.filter { if case .fact = $0 { false } else { true } } + new.filter { if case .fact = $0 { true } else { false } }
         fresh = ordered.prefix(2).map(Self.line)
+        let written = matter.nextStep != nil && matter.nextStepAt.map { (matter.lastChange ?? .distantPast) <= $0 } == true
+        step = written ? matter.nextStep
+            : quick ? nil : MatterStatus(matter, today: MatterStatus.date(of: today) ?? Date()).nextStep?.text
         var mail: Latest?
         // A file, a scan, a chat stands on the page as its file, not as a mail: the card opens
         // at the file (7 November: a file's card landed nowhere).
@@ -240,7 +247,15 @@ extension MatterSummary {
 
     /// What comes next, for the card's foot: "Next: Nov 10 · Call the insurer".
     public var ahead: String? {
-        next.map { "Next: \(MatterStatus.short($0.day)) · \($0.what)" }
+        // The step over it says the same thing: then only its day.
+        next.map { next in
+            let same = step.map { Self.plain($0) == Self.plain(next.what) } ?? false
+            return same ? "Due \(MatterStatus.short(next.day))" : "Next: \(MatterStatus.short(next.day)) · \(next.what)"
+        }
+    }
+
+    private static func plain(_ text: String) -> String {
+        text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
     }
 
     /// The first sentence that says something: a greeting, thanks or "we look forward" is passed

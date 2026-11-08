@@ -1283,9 +1283,10 @@ struct OverviewJournal: View {
                 JournalHeading(title: day.title)
                 ForEach(day.summaries) { summary in
                     if let matter = byID[summary.id] { OverviewDayCard(summary: summary, matter: matter) {
-                        // Where the card's words are: the news or what is new, else the mail (7 November:
-                        // a tap landed on the matter's top, and what the card said was nowhere).
-                        open(matter, summary.tellsNew ? nil : summary.latest?.entry)
+                        // Where the card's words are: the news or what is new, the next step at the
+                        // Digest's top, else what happened (7 November: a tap landed on the matter's
+                        // top, and what the card said was nowhere).
+                        open(matter, summary.tellsNew || summary.step != nil ? nil : summary.latest?.entry)
                     } }
                 }
             }
@@ -1299,6 +1300,10 @@ private struct OverviewDayCard: View {
     let summary: MatterSummary
     let matter: Matter
     let open: () -> Void
+
+    /// Nothing new waits, and there is a step: the step is the card's line, what happened the small
+    /// one over it (8 November: "a done task from three days before, while a next step waits").
+    private var leadsWithStep: Bool { !summary.tellsNew && summary.step != nil }
 
     /// "4 mails · 2 files": what is not there is not said.
     private static func came(_ latest: MatterSummary.Latest) -> String {
@@ -1320,24 +1325,26 @@ private struct OverviewDayCard: View {
                         if let who = summary.who {
                             // What it was, by its symbol: a mail, a file, a note.
                             // NEW says it came to the owner and is not seen yet; what the owner made is grey.
+                            // With a step to lead, what happened is this small line alone.
                             HStack(spacing: 5) {
                                 if summary.tellsNew { BeeChip(text: "NEW") }
                                 if let symbol = summary.symbol {
                                     Image(systemName: symbol).imageScale(.small).accessibilityHidden(true)
                                         .foregroundStyle(summary.tellsNew ? AnyShapeStyle(Theme.gold) : AnyShapeStyle(.secondary))
                                 }
-                                Text(who).lineLimit(1)
+                                Text(leadsWithStep ? [who, summary.what ?? latest.title].joined(separator: " · ") : who).lineLimit(1)
                             }
                             .font(.footnote).foregroundStyle(.secondary)
                         }
-                        // What happened, not what the matter is about: the owner knows that.
-                        Text(summary.what ?? latest.title)
+                        // What is next for the owner when nothing new waits; else what happened, not
+                        // what the matter is about: the owner knows that.
+                        Text(leadsWithStep ? summary.step ?? "" : summary.what ?? latest.title)
                             #if os(macOS)
                             .font(.callout)
                             #else
                             .font(.subheadline)
                             #endif
-                            // What happened is the card's news: read in the text's own colour, not grey.
+                            // The card's news: read in the text's own colour, not grey.
                             .foregroundStyle(.primary).lineLimit(3).multilineTextAlignment(.leading)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

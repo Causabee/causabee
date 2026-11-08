@@ -85,6 +85,11 @@ what is shown there. "The owner knows it already" holds only where the job is ab
 seen yet sits on pale honey with the yellow NEW chip, as on the Digest. What the owner made — a note, a task, a tick —
 is grey. Yellow still means one thing: something waits for the owner.
 
+**A card says what happened, then what is next** (8 November). What happened last is the small
+grey line; the big line is the next step, as the Digest has it, and a tap opens the Digest there.
+When something new came that is not seen yet, the NEW tile leads instead and a tap opens it. A
+done task alone, days old, is not worth the card's main line.
+
 **A mail counts from the day it was filed**, not the day it was written (8 November): an older
 mail filed today stands under today, or it feels lost.
 
