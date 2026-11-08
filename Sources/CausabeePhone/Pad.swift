@@ -23,80 +23,93 @@ enum PadMetrics {
     static let barInset: CGFloat = 10
 }
 
-/// The iPad's sidebar: its controls on top, the overview, and every matter that is going on — the
-/// iPhone's rows. A tap opens the matter beside it.
+/// The iPad's sidebar, as Mail's: the system's own sidebar list on Liquid Glass — a large title,
+/// a tinted sign and the name on each row, what asks for a look on the right, sections that fold,
+/// and the system's mark on the one that is open (8 November: white cards on the glass, and tiles).
 struct PadSidebar: View {
     let matters: [Matter]
     @Environment(Navigation.self) private var navigation
     /// The closed matters, unfolded; folded away until asked for, and remembered.
     @AppStorage("pad.showsClosed") private var showsClosed = false
 
-    private func heading(_ title: String) -> some View {
-        Text(title).font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-            .padding(.horizontal, 14).padding(.top, 10)
+    /// What a row of the sidebar stands for.
+    enum Place: Hashable { case overview, matter(PersistentIdentifier) }
+
+    private var chosen: Binding<Place?> {
+        Binding(
+            get: { navigation.path.last.map { .matter($0) } ?? .overview },
+            set: { place in
+                switch place {
+                case .matter(let id): if let matter = matters.first(where: { $0.persistentModelID == id }) { navigation.open(matter) }
+                case .overview, nil: navigation.go([])
+                }
+            })
     }
 
     var body: some View {
         // What came from another device shows at once: an arriving change redraws this.
         let _ = StoredChanges.shared.count
         let sorted = sidebarOrder(matters)
-        let open = sorted.filter { !$0.isClosed }
-        ScrollView {
-                VStack(alignment: .leading, spacing: 6) {
-                    Button { navigation.go([]) } label: {
-                        // With a tile of its own, as every matter under it has — and as on the Mac.
-                        // On the sidebar's grey the tile is white; on the mark's white, grey.
-                        HStack(spacing: 12) {
-                            Image(systemName: "square.grid.2x2")
-                                .font(.system(size: 18))
-                                .frame(width: 36, height: 36)
-                                .background(navigation.path.isEmpty ? Theme.box : Theme.card, in: RoundedRectangle(cornerRadius: 36 * 0.27))
-                                .accessibilityHidden(true)
-                            Text("Overview").font(.headline)
-                            Spacer(minLength: 8)
-                            PadMailSign()
-                        }
-                            .padding(.horizontal, 14).padding(.vertical, 10)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(navigation.path.isEmpty ? Theme.card : .clear, in: RoundedRectangle(cornerRadius: 12))
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("sidebar.overview")
-                    // The Mac's sections: what is pinned, the matters, and the closed ones folded away.
-                    let pinned = Pins.pinned(sorted)
-                    if !pinned.isEmpty {
-                        heading("Pinned")
-                        PhoneMatterRows(matters: pinned, all: sorted, chosen: navigation.path.last, inSidebar: true)
-                    }
-                    let rest = open.filter { !$0.isPinned }
-                    if !rest.isEmpty {
-                        heading("Matters")
-                        PhoneMatterRows(matters: rest, all: sorted, chosen: navigation.path.last, inSidebar: true)
-                    }
-                    let closed = sorted.filter(\.isClosed)
-                    if !closed.isEmpty {
-                        Button { withAnimation(.snappy(duration: 0.2)) { showsClosed.toggle() } } label: {
-                            HStack(spacing: 6) {
-                                Text("Closed · \(closed.count)").font(.footnote.weight(.semibold))
-                                Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
-                                    .rotationEffect(.degrees(showsClosed ? 90 : 0))
-                                Spacer(minLength: 0)
-                            }
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 2)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("sidebar.closed")
-                        .accessibilityHint(showsClosed ? "Hides the closed matters" : "Shows the closed matters")
-                        if showsClosed { PhoneMatterRows(matters: closed, all: sorted, chosen: navigation.path.last, inSidebar: true) }
-                    }
-                }
-                .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 24)
+        let pinned = Pins.pinned(sorted)
+        let rest = sorted.filter { !$0.isClosed && !$0.isPinned }
+        let closed = sorted.filter(\.isClosed)
+        List(selection: chosen) {
+            Label { HStack { Text("Overview"); Spacer(minLength: 8); PadMailSign() } } icon: {
+                Image(systemName: "square.grid.2x2")
+            }
+            .tag(Place.overview)
+            .accessibilityIdentifier("sidebar.overview")
+            if !pinned.isEmpty {
+                Section("Pinned") { rows(pinned, all: sorted) }
+            }
+            if !rest.isEmpty {
+                Section("Matters") { rows(rest, all: sorted) }
+            }
+            if !closed.isEmpty {
+                Section("Closed", isExpanded: $showsClosed) { rows(closed, all: sorted) }
+                    .accessibilityIdentifier("sidebar.closed")
+            }
         }
-        // No ground of its own: the split view's glass shows through, and its bar holds the
-        // system's button to put the sidebar away.
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .navigationTitle("Causabee")
+    }
+
+    private func rows(_ list: [Matter], all: [Matter]) -> some View {
+        ForEach(list, id: \.persistentModelID) { matter in
+            PadSidebarRow(matter: matter)
+                .tag(Place.matter(matter.persistentModelID))
+                .contextMenu { MatterMenuItems(matter: matter, all: all).menuSigns() }
+        }
+    }
+}
+
+/// A matter in the sidebar, as a mailbox in Mail's: its sign tinted, its name, and on the right
+/// only what asks for a look — what is overdue, new mail in a closed matter, news not seen yet.
+struct PadSidebarRow: View {
+    let matter: Matter
+
+    var body: some View {
+        let summary = StoredChanges.shared.summary(matter)
+        let new = matter.isClosed ? summary.newMailsSinceClosed : 0
+        let late = matter.isClosed ? 0 : summary.overdue.count
+        Label {
+            HStack(spacing: 6) {
+                Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
+                if summary.news != nil { NewsDot() }
+                Spacer(minLength: 8)
+                if late > 0 {
+                    Text("\(late)").monospacedDigit().foregroundStyle(.secondary)
+                        .accessibilityLabel("\(late) overdue")
+                } else if new > 0 {
+                    Text("\(new)").monospacedDigit().foregroundStyle(.secondary)
+                        .accessibilityLabel("\(new) new \(new == 1 ? "mail" : "mails")")
+                }
+            }
+        } icon: {
+            // Tinted by the list itself, which turns it white on the marked row, as Mail's signs.
+            Image(systemName: matter.shownIcon)
+        }
     }
 }
 

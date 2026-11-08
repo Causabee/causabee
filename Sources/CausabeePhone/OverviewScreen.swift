@@ -21,7 +21,11 @@ struct RootView: View {
         // The window itself is measured, by a ground that is as large as it is and no larger: the
         // row of columns, measured, kept the width its columns had on the iPad's side, and stood
         // too wide once the iPad was turned upright again.
-        Color.clear.overlay(alignment: .leading) { columns }
+        Group {
+            // The split view is the window itself on the iPad: inside another view its sidebar did
+            // not float.
+            if navigation.isPad { columns } else { Color.clear.overlay(alignment: .leading) { columns } }
+        }
         // For a picture of the iPad on its side, taken in a simulator held upright: there the
         // status bar is drawn over the page, which keeps no room for it.
         .padding(.top, PhoneShot.topRoom)
@@ -67,7 +71,7 @@ struct RootView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { navigation.detail = $0 }
             }
-            .navigationSplitViewStyle(.balanced)
+            .navigationSplitViewStyle(.automatic)
         } else {
             page
         }
