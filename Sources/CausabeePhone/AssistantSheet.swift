@@ -694,7 +694,7 @@ struct PhoneTurnView: View {
     private func answerAction(_ symbol: String, done: Bool, word: String?) -> some View {
         HStack(spacing: 4) {
             Image(systemName: symbol).font(.footnote.weight(done ? .semibold : .regular))
-            if let word { Text(word).font(.caption).transition(.opacity.combined(with: .move(edge: .leading))) }
+            if let word { Text(word).font(.caption).transition(.opacity) }
         }
         .foregroundStyle(done ? Theme.gold : Color.secondary)
         .frame(minWidth: 32, minHeight: 32).contentShape(Rectangle())
