@@ -168,7 +168,7 @@ final class PhoneMailCheck {
         // below, which the background's own look has just started (8 November: a labelled mail said
         // "Review" on opening, and had to be sorted in by hand). Labelling it was the yes.
         // Only what is labelled, or follows a labelled thread: mail found by its sender is offered, never read by Auto.
-        if !checking, !DemoData.isRequested, AutoMode.isOn, case .newMail(let look, let door) = state, look.withoutOffered.pending > 0 {
+        if !checking, !DemoData.isRequested, LabelledMail.sortsItself, case .newMail(let look, let door) = state, look.withoutOffered.pending > 0 {
             classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
             return
         }
@@ -195,7 +195,7 @@ final class PhoneMailCheck {
             // A failure said before is over: the mailbox answered.
             if case .failed = state { state = .idle }
             // Auto: read at once, and offered to be taken in — while Causabee is in front.
-            if look.withoutOffered.pending > 0, AutoMode.isOn, UIApplication.shared.applicationState == .active { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
+            if look.withoutOffered.pending > 0, LabelledMail.sortsItself, UIApplication.shared.applicationState == .active { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
             else if look.pending > 0 { state = .newMail(look, door); NewsNotice.ask() } else if case .newMail = state { state = .idle }
         }
     }
@@ -310,7 +310,7 @@ final class PhoneMailCheck {
                 // Which mail is still unread in the mailbox — asked, never changed there.
                 Task { await UnreadMail.refresh(account: door.account, password: password, in: context) }
                 if look.pending == 0 { state = .nothingNew(known: look.intake.alreadyKnown) }
-                else if AutoMode.isOn, look.withoutOffered.pending > 0 { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
+                else if LabelledMail.sortsItself, look.withoutOffered.pending > 0 { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
                 else { state = .ready(look, door) }
             } catch {
                 guard !Task.isCancelled else { return }

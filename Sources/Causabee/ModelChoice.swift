@@ -6,6 +6,17 @@ import SwiftUI
 /// Which model does which job, as the owner chose in the settings (⌘,, or Settings on the iPhone).
 /// Opus unless changed. Shared by both apps, and the choice is too: it travels with the owner's
 /// profile through iCloud, so a newly installed app starts with the model chosen elsewhere.
+/// Labelled mail sorts itself in: putting it under the label is the yes (decided 6 November,
+/// docs/digest-and-chat.md) — with Auto or without. With Pro it is read pseudonymised in the cloud;
+/// without, by Apple's model or by its threads, on the device. Mail found only by its sender is
+/// still offered. Only the demo without a key has no reader, and asks.
+enum LabelledMail {
+    static var sortsItself: Bool {
+        if case .none = ModelChoice.mailReader(for: ModelChoice.mail) { return false }
+        return true
+    }
+}
+
 enum ModelChoice {
     static let mailKey = "model.mail", assistantKey = "model.assistant", strictKey = "model.strict"
 

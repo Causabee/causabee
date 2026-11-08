@@ -80,7 +80,7 @@ final class MailCheck {
               gap == 0 || lastChecked.map({ Date().timeIntervalSince($0) > gap }) ?? true else { return }
         // Auto turned on while new mail waited: it is read now.
         // Only what is labelled, or follows a labelled thread: mail found by its sender is offered, never read by Auto.
-        if AutoMode.isOn, case .newMail(let look, let door) = state, look.withoutOffered.pending > 0 {
+        if LabelledMail.sortsItself, case .newMail(let look, let door) = state, look.withoutOffered.pending > 0 {
             classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
             return
         }
@@ -103,7 +103,7 @@ final class MailCheck {
             // Something else began meanwhile — a check by hand, a Sort in: that one decides.
             switch state {
             case .idle, .nothingNew, .done, .failed, .newMail:
-                if look.withoutOffered.pending > 0, AutoMode.isOn {
+                if look.withoutOffered.pending > 0, LabelledMail.sortsItself {
                     classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
                 } else if look.pending > 0 {
                     state = .newMail(look, door)
@@ -214,7 +214,7 @@ final class MailCheck {
                 Task { await UnreadMail.refresh(account: account, password: password, in: context) }
                 if look.pending == 0 { state = .nothingNew(known: look.intake.alreadyKnown) }
                 // Auto: no list to tick first — read at once, and offered to be taken in.
-                else if AutoMode.isOn, look.withoutOffered.pending > 0 { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
+                else if LabelledMail.sortsItself, look.withoutOffered.pending > 0 { classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context)) }
                 else { state = .ready(look, door) }
             } catch {
                 state = .failed(plainWords(error))
@@ -529,7 +529,7 @@ struct MailCheckView: View {
     private var checkedLine: some View {
         if let at = check.lastChecked {
             TimelineView(.periodic(from: .now, by: 60)) { _ in
-                Text("Checked \(MailReview.ago(at)) · " + (AutoMode.isOn ? "Pro is on" : "nothing is sent until Sort in")).font(.caption).foregroundStyle(.tertiary)
+                Text("Checked \(MailReview.ago(at)) · " + (LabelledMail.sortsItself ? "mail with the label sorts itself in" : "nothing is sent until Sort in")).font(.caption).foregroundStyle(.tertiary)
             }
         }
     }
@@ -541,7 +541,7 @@ struct MailCheckView: View {
         }
         // In the demo too: its round is made up, and the way back is Causabee → Leave the Demo.
         .help(DemoData.isRequested ? "Fetches the demo's three made-up mails. Nothing is read or sent."
-                                   : AutoMode.isOn ? "Pro is on: new mail with the label is read by the bigger AI at once. You decide what is taken in."
+                                   : LabelledMail.sortsItself ? "New mail with the label sorts itself in. Mail found only by its sender is offered to you."
                                    : "Reads only new mail with the label. Nothing is sent until you click “Sort in”.")
     }
 }
