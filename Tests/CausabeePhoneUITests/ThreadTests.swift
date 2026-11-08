@@ -121,6 +121,27 @@ final class ThreadTests: XCTestCase {
         XCTAssertLessThanOrEqual(to.frame.maxY, body.frame.minY, "Unfolded again, the To line lies on the mail's text.")
     }
 
+    /// Copy and Save as note under an answer say they were done: a word beside the tick.
+    func testCopyAndNoteSayTheyWereDone() {
+        ask("Who has the spare key?")
+        let asked = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "spare key")).firstMatch
+        XCTAssertTrue(asked.waitForExistence(timeout: 8), "The question is not in the thread.")
+        // The answer's own Copy: the last one in the thread, once the answer is in.
+        let copies = app.buttons.matching(identifier: "Copy the answer")
+        let before = copies.count
+        for _ in 0..<60 where copies.count <= before { Thread.sleep(forTimeInterval: 0.25) }
+        let copy = copies.element(boundBy: copies.count - 1)
+        copy.tap()
+        XCTAssertTrue(app.buttons["Copied"].waitForExistence(timeout: 2), "Copy did not say Copied.")
+        let notes = app.buttons.matching(identifier: "Save as note")
+        notes.element(boundBy: notes.count - 1).tap()
+        XCTAssertTrue(app.buttons["Saved as note"].waitForExistence(timeout: 2), "Save as note did not say it was saved.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/answer-actions.png"))
+        }
+        XCTAssertTrue(app.buttons["Saved as note"].exists, "The note's button does not say it is saved.")
+    }
+
     // The sheet has no name on top any more: its lower edge is the close button's.
     private var header: CGFloat { app.buttons["Close"].firstMatch.frame.maxY }
 

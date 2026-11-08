@@ -687,6 +687,18 @@ struct PhoneTurnView: View {
     @State private var copied = false
     /// Kept as a note of its matter: the button says so, and does not keep it twice.
     @State private var savedNote = false
+    /// "Added to notes" beside the tick, for a moment after the tap.
+    @State private var noteWord = false
+
+    /// A small action under an answer: its sign, and once it is done a gold tick with a word.
+    private func answerAction(_ symbol: String, done: Bool, word: String?) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: symbol).font(.footnote.weight(done ? .semibold : .regular))
+            if let word { Text(word).font(.caption).transition(.opacity.combined(with: .move(edge: .leading))) }
+        }
+        .foregroundStyle(done ? Theme.gold : Color.secondary)
+        .frame(minWidth: 32, minHeight: 32).contentShape(Rectangle())
+    }
     /// The answer's sources, unfolded: one list for the whole answer.
     @State private var showsSources = false
     @Environment(Navigation.self) private var navigation
@@ -786,11 +798,11 @@ struct PhoneTurnView: View {
                 Button {
                     UIPasteboard.general.string = answer.plainText
                     Haptics.tap()
-                    copied = true
-                    Task { try? await Task.sleep(for: .seconds(1.5)); copied = false }
+                    withAnimation(.snappy) { copied = true }
+                    Task { try? await Task.sleep(for: .seconds(2)); withAnimation(.snappy) { copied = false } }
                 } label: {
-                    Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.footnote).foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32).contentShape(Rectangle())
+                    // Done says so: a gold tick and the word, for a moment (8 November: a grey tick went unseen).
+                    answerAction(copied ? "checkmark" : "doc.on.doc", done: copied, word: copied ? "Copied" : nil)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(copied ? "Copied" : "Copy the answer")
@@ -799,10 +811,11 @@ struct PhoneTurnView: View {
                     Button {
                         NotesPart.keep(answer.plainText, in: matter, context: context)
                         Haptics.success()
-                        savedNote = true
+                        withAnimation(.snappy) { savedNote = true; noteWord = true }
+                        Task { try? await Task.sleep(for: .seconds(2.5)); withAnimation(.snappy) { noteWord = false } }
                     } label: {
-                        Image(systemName: savedNote ? "checkmark" : "note.text.badge.plus").font(.footnote).foregroundStyle(.secondary)
-                            .frame(width: 32, height: 32).contentShape(Rectangle())
+                        // Kept: the tick stays gold, the words for a moment.
+                        answerAction(savedNote ? "checkmark" : "note.text.badge.plus", done: savedNote, word: noteWord ? "Added to notes" : nil)
                     }
                     .buttonStyle(.plain)
                     .disabled(savedNote)
