@@ -87,6 +87,15 @@ extension Matter {
         shownBrief = brief
     }
 
+    /// Opened: what is new has been looked at — the dot goes, and next time the card says it
+    /// without "NEW". Whether there was anything, for the card to still say "NEW" this once.
+    @discardableResult
+    public func openedNew(at now: Date = Date()) -> Bool {
+        let unseen = shownBrief?.news?.seen == false || !newItems().isEmpty
+        if unseen { sawNew(at: now) }
+        return unseen
+    }
+
     /// "Seen": what is new now is not new any more, and the news with it.
     public func sawNew(at now: Date = Date()) {
         var brief = shownBrief ?? Brief()

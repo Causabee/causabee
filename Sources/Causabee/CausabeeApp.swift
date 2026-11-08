@@ -955,7 +955,7 @@ struct MatterRow: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 Text(matter.name).font(.body).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
-                if summary.news != nil { NewsDot() }
+                if summary.isNew { NewsDot() }
             }
             // Only what asks for a look stands under the name: what is overdue, new mail in a
             // closed matter. How many are open and the next day are on the matter's own page.

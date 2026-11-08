@@ -217,7 +217,7 @@ struct PadSidebarRow: View {
         let summary = StoredChanges.shared.summary(matter)
         let new = matter.isClosed ? summary.newMailsSinceClosed : 0
         let late = matter.isClosed ? 0 : summary.overdue.count
-        PadSidebarLine(symbol: matter.shownIcon, name: matter.name, marked: marked, quiet: matter.isClosed, dot: summary.news != nil) {
+        PadSidebarLine(symbol: matter.shownIcon, name: matter.name, marked: marked, quiet: matter.isClosed, dot: summary.isNew) {
             if late > 0 {
                 Text("\(late)").monospacedDigit().foregroundStyle(.secondary).accessibilityLabel("\(late) overdue")
             } else if new > 0 {

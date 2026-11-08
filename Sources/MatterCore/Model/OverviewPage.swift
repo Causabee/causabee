@@ -68,8 +68,12 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
     /// Its first mail's day: "since …" under its name.
     public let firstDate: Date?
     public let dated: [Dated]
-    /// What new mail changes, as the brief says, until the owner has seen it: its first line.
+    /// What new mail changes, as the brief says, until the owner has seen it: its first line. It
+    /// lights the dot and the card's "NEW".
     public let news: String?
+    /// The same first line, seen or not: once the matter was opened its words stay on the card,
+    /// only "NEW" goes (9 November).
+    public let newsLine: String?
     /// What is new on its Digest, the first two as lines — "New task: …", "Date Nov 26: …" — and
     /// how many there are: what the overview says happened, until it is seen.
     public let fresh: [String]
@@ -123,6 +127,7 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         newMailsSinceClosed = closed.map(after) ?? 0
         mailsToShowSinceClosed = closed.map { after(max($0, matter.ignoredMailUntil ?? $0)) } ?? 0
         news = matter.brief == nil ? nil : matter.shownBrief?.news.flatMap { $0.seen ? nil : $0.lines.first }
+        newsLine = matter.brief == nil ? nil : matter.shownBrief?.news?.lines.first
         let new = quick ? [] : matter.newItems()
         newCount = new.count
         // Something to do or a day first; what is only good to know after them.
@@ -191,6 +196,8 @@ extension MatterSummary {
     /// wrote it — a file, a chat, a note.
     public var who: String? {
         guard let latest else { return nil }
+        // Something new not yet seen is what the card says, under its "NEW": not the owner's own step.
+        if isNew, latest.made != nil { return nil }
         switch latest.made {
         case .note: return "Your note"
         case .savedAnswer: return "Saved from chat"
@@ -210,6 +217,7 @@ extension MatterSummary {
     /// What it was, at a glance: the symbol before who (7 November: a mail was known only by its subject).
     public var symbol: String? {
         guard let latest else { return nil }
+        if isNew, latest.made != nil { return nil }
         switch latest.made {
         case .note: return "note.text"
         case .savedAnswer: return "sparkles"
@@ -231,9 +239,11 @@ extension MatterSummary {
     /// its summary's first sentence, or its subject without "AW:", "Fwd:" and "Chat:" (7 November:
     /// "dokument · Boka tid för" said nothing).
     public var what: String? {
-        if latest?.made != nil { return latest?.title }
+        // What is new comes first while it is unseen: the card's "NEW" stands over it.
         if let news { return news }
         if !fresh.isEmpty { return fresh.joined(separator: " · ") }
+        if latest?.made != nil { return latest?.title }
+        if let newsLine { return newsLine }
         guard let latest else { return nil }
         if let digest = latest.digest?.trimmingCharacters(in: .whitespacesAndNewlines), !digest.isEmpty {
             if let sentence = Self.firstSentence(digest) { return sentence }
@@ -243,7 +253,11 @@ extension MatterSummary {
 
     /// Whether the card says the news or what is new: then it opens there, at the top of the Digest;
     /// else at the mail it tells of.
-    public var tellsNew: Bool { latest?.made == nil && (news != nil || !fresh.isEmpty) }
+    public var tellsNew: Bool { isNew }
+
+    /// Something new not yet seen: the yellow dot in the sidebar and the overview's rows, and
+    /// "NEW" on the cards — one signal, on together and off together. Opening the matter sees it.
+    public var isNew: Bool { news != nil || newCount > 0 }
 
     /// What comes next, for the card's foot: "Next: Nov 10 · Call the insurer".
     public var ahead: String? {

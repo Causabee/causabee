@@ -1191,15 +1191,55 @@ struct NewsCard: View {
     var editor: ((NewItem, @escaping () -> Void) -> AnyView)? = nil
     @Environment(\.modelContext) private var context
     @State private var showsAll = false
+    /// What was new when the matter was opened. Opening marks it seen — the yellow dot goes with
+    /// it — and the card still says "NEW" for this one visit; next time its words stand without it.
+    /// The dot and "NEW" are one signal: on together, off together (9 November).
+    @State private var held: Held?
+
+    /// What is new, as it was when the matter was opened.
+    struct Held: Equatable {
+        let news: Brief.News?
+        let items: [NewItem]
+        static func == (a: Held, b: Held) -> Bool { a.news?.lines == b.news?.lines && a.items.map(\.key) == b.items.map(\.key) }
+    }
+
+    /// What is new in the matter now, before it is marked seen; nil when nothing is.
+    static func held(_ matter: Matter) -> Held? {
+        let news = matter.shownBrief?.news.flatMap { $0.seen ? nil : $0 }
+        let items = matter.newItems()
+        return news != nil || !items.isEmpty ? Held(news: news, items: items) : nil
+    }
 
     /// The news in its own words, for what is said to it.
     static func about(_ news: Brief.News) -> String { "What is new: " + news.lines.joined(separator: " ") }
     static let most = 5
 
     var body: some View {
-        let news = matter.shownBrief?.news.flatMap { $0.seen ? nil : $0 }
-        let items = matter.newItems()
-        if news != nil || !items.isEmpty {
+        card
+            .task(id: matter.persistentModelID) {
+                held = Self.held(matter)
+                if held != nil { matter.openedNew(); try? context.save() }
+            }
+    }
+
+    @ViewBuilder
+    private var card: some View {
+        let news = held?.news ?? matter.shownBrief?.news.flatMap { $0.seen ? nil : $0 }
+        let items = held?.items ?? matter.newItems()
+        // Seen, its words stay where they were, without "NEW", until the next news takes their place.
+        let seen = news == nil && items.isEmpty ? matter.shownBrief?.news : nil
+        if let seen {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Since \(Dates.short(seen.since))").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                ForEach(Array(seen.lines.enumerated()), id: \.offset) { _, line in
+                    Text(line).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .journalCard(inset: Theme.tileInset)
+            .id("news")
+        } else if news != nil || !items.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
                 if let news {
                     VStack(alignment: .leading, spacing: 8) {
@@ -1231,7 +1271,7 @@ struct NewsCard: View {
                 HStack(spacing: 8) {
                     Text(Self.from(items, news: news)).font(.footnote).foregroundStyle(.secondary)
                     Spacer(minLength: 4)
-                    Button("Seen") { withAnimation { matter.sawNew(); try? context.save() } }
+                    Button("Seen") { withAnimation { matter.sawNew(); try? context.save(); held = nil } }
                         .quietButton()
                         .accessibilityIdentifier("brief.seen")
                 }

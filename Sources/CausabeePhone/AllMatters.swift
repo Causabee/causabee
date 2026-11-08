@@ -99,7 +99,7 @@ struct PhoneMatterRow: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 Text(matter.name).lineLimit(1).foregroundStyle(matter.isClosed ? .secondary : .primary)
-                if summary.news != nil { NewsDot() }
+                if summary.isNew { NewsDot() }
             }
             if brief {
                 let new = matter.isClosed ? summary.newMailsSinceClosed : 0

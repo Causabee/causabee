@@ -187,6 +187,8 @@ struct OverviewHappenedTests {
         context.insert(fromMail)
         fromMail.matter = matter
         #expect(MatterSummary(matter, today: MatterStatus.day(Date())).latest?.made == nil)
+        // The task from the mail is new until the matter is opened: then the owner's own step is told.
+        matter.sawNew(at: Date().addingTimeInterval(-1))
         let mine = Todo(text: "Call the insurer", owner: .me, due: nil, source: Source(kind: .conversation, pointer: ""), origin: "h")
         mine.createdAt = Date()
         context.insert(mine)
@@ -197,6 +199,30 @@ struct OverviewHappenedTests {
         fromMail.doneAt = Date().addingTimeInterval(5)
         let done = MatterSummary(matter, today: MatterStatus.day(Date()))
         #expect(done.who == "Done" && done.what == "Send the estimate")
+    }
+
+    @Test("Something new not yet seen is what the card says, under NEW, before the owner's own step; opened, it is not new")
+    func newBeforeOwnStep() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "car2", name: "Car")
+        context.insert(matter)
+        let mail = Source(kind: .mail, pointer: "imap://x;UID=5", messageID: "<5@x>", date: Date().addingTimeInterval(-3_600))
+        let entry = Entry(title: "Estimate", from: "Garage <g@example.org>", date: mail.date, source: mail)
+        context.insert(entry)
+        entry.matter = matter
+        let fromMail = Todo(text: "Send the estimate", owner: .me, due: nil, source: mail, origin: "m")
+        context.insert(fromMail)
+        fromMail.matter = matter
+        let mine = Todo(text: "Call the insurer", owner: .me, due: nil, source: Source(kind: .conversation, pointer: ""), origin: "h")
+        mine.createdAt = Date()
+        context.insert(mine)
+        mine.matter = matter
+        let unseen = MatterSummary(matter, today: MatterStatus.day(Date()))
+        #expect(unseen.isNew && unseen.tellsNew && unseen.who == nil && unseen.what?.contains("Send the estimate") == true)
+        #expect(matter.openedNew())
+        let seen = MatterSummary(matter, today: MatterStatus.day(Date()))
+        #expect(!seen.isNew && !seen.tellsNew && seen.who == "Task added" && seen.what == "Call the insurer")
+        #expect(!matter.openedNew())
     }
 
     @Test("A mail written last week and filed now is the latest, on the day it was filed")
