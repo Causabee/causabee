@@ -89,6 +89,10 @@ final class ThreadTests: XCTestCase {
     /// (8 November: the second line of the "To" lay on the mail's first line).
     func testADraftsLongLinesStayAboveItsText() {
         ask("Write a mail to Nina Voss, two-line subject")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            Thread.sleep(forTimeInterval: 2.5)
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/asking.png"))
+        }
         let to = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "To ")).firstMatch
         XCTAssertTrue(to.waitForExistence(timeout: 15), "The draft has no To line.")
         let body = app.descendants(matching: .any).matching(NSPredicate(format: "value BEGINSWITH %@", "Hello Sebastian")).firstMatch
