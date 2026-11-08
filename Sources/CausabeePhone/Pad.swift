@@ -124,18 +124,11 @@ struct PadSidebar: View {
 }
 
 /// The sidebar's first card, as Journal's Insights: the overview, with what waits across every
-/// matter — new mails to sort in, what is overdue — said in two large numbers.
+/// matter said in two large numbers — what is on today, and what is overdue. Not new mails:
+/// Causabee is about matters, not a mailbox (8 November).
 struct PadOverviewCard: View {
     let matters: [Matter]
     @Environment(Navigation.self) private var navigation
-
-    private var newMails: Int {
-        switch PhoneMailCheck.shared.state {
-        case .newMail(let look, _), .ready(let look, _): look.pending
-        case .demoNew: DemoData.newMail.count
-        default: 0
-        }
-    }
 
     private func figure(_ number: Int, _ words: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -148,7 +141,11 @@ struct PadOverviewCard: View {
 
     var body: some View {
         let open = navigation.path.isEmpty
-        let late = StoredChanges.shared.overview(matters).overdue.count
+        // The same numbers as the overview's week: today's things still ahead, and what is late.
+        let now = Date()
+        let day = Week.days(from: now)[0]
+        let today = Week.asTheDayGoes(StoredChanges.shared.things(on: day, in: matters), on: day, now: now).ahead.count
+        let late = StoredChanges.shared.overdue(in: matters).count
         Button { navigation.go([]) } label: {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 8) {
@@ -158,7 +155,7 @@ struct PadOverviewCard: View {
                     if case .reading = PhoneMailCheck.shared.state { BeeLoader(size: 13).accessibilityLabel("Looking for mail") }
                 }
                 HStack(alignment: .top, spacing: 12) {
-                    figure(newMails, newMails == 1 ? "new mail" : "new mails")
+                    figure(today, "today")
                     figure(late, "overdue")
                 }
             }
@@ -174,7 +171,7 @@ struct PadOverviewCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("sidebar.overview")
-        .accessibilityLabel("Overview, \(newMails) new mails, \(late) overdue")
+        .accessibilityLabel("Overview, \(today) today, \(late) overdue")
     }
 }
 
