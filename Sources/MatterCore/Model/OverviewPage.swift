@@ -82,7 +82,9 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
 
     /// `quick`: without reading every mail's date — for the first drawing after Causabee starts,
     /// while the worker reads them: the dates come with the page it prepares.
-    public init(_ matter: Matter, today: String, quick: Bool = false) {
+    /// `filed`: when each mail was sorted in, by Message-ID — a mail filed long after it was written
+    /// happened here the day it was filed.
+    public init(_ matter: Matter, today: String, quick: Bool = false, filed: [String: Date] = [:]) {
         id = matter.persistentModelID
         key = matter.key
         name = matter.name
@@ -123,18 +125,28 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         let ordered = new.filter { if case .fact = $0 { false } else { true } } + new.filter { if case .fact = $0 { true } else { false } }
         fresh = ordered.prefix(2).map(Self.line)
         var mail: Latest?
+        // A file, a scan, a chat stands on the page as its file, not as a mail: the card opens
+        // at the file (7 November: a file's card landed nowhere).
+        func shown(_ entry: Entry) -> PersistentIdentifier {
+            let file = entry.source.kind == .mail ? nil
+                : (matter.documents ?? []).first { !$0.isHidden && ($0.messageID == entry.messageID
+                    || (!entry.source.pointer.isEmpty && $0.source.pointer == entry.source.pointer)) }
+            return file?.persistentModelID ?? entry.persistentModelID
+        }
+        func from(_ entry: Entry) -> String? { Email.displayName(in: entry.from) ?? Email.address(in: entry.from).nilIfEmpty }
         if let last = dates.last, let newest = entries.first(where: { $0.date == last }) {
             let onLast = MailDates.onLastDay(of: matter, entries: entries)
             let files = Date().timeIntervalSince(last) > 15 * 86_400 ? 0
                 : (matter.documents ?? []).filter { onLast.ids.contains($0.messageID) && !$0.isHidden && !$0.isSmallImage }.count
-            // A file, a scan, a chat stands on the page as its file, not as a mail: the card opens
-            // at the file (7 November: a file's card landed nowhere).
-            let file = newest.source.kind == .mail ? nil
-                : (matter.documents ?? []).first { !$0.isHidden && ($0.messageID == newest.messageID
-                    || (!newest.source.pointer.isEmpty && $0.source.pointer == newest.source.pointer)) }
-            mail = Latest(title: newest.title, digest: newest.digest,
-                          from: Email.displayName(in: newest.from) ?? Email.address(in: newest.from).nilIfEmpty,
-                          date: last, mails: onLast.mails, files: files, kind: newest.source.kind, entry: file?.persistentModelID ?? newest.persistentModelID)
+            mail = Latest(title: newest.title, digest: newest.digest, from: from(newest),
+                          date: last, mails: onLast.mails, files: files, kind: newest.source.kind, entry: shown(newest))
+        }
+        // Filed later than it was written: the day it was filed is when it happened here (8 November:
+        // a mail written earlier, filed today, stood under yesterday's task).
+        if !quick, let (entry, at) = entries.compactMap({ entry in filed[entry.messageID].map { (entry, $0) } }).max(by: { $0.1 < $1.1 }),
+           at > (mail?.date ?? .distantPast) {
+            mail = Latest(title: entry.title, digest: entry.digest, from: from(entry),
+                          date: at, mails: 1, files: 0, kind: entry.source.kind, entry: shown(entry))
         }
         // What happened last is the latest, whoever did it: a mail, a file, a note, a task added or
         // done (7 November: "it is not clear to me when what appears" — a note or a task of the
@@ -269,7 +281,16 @@ public struct OverviewPage: Sendable {
     public init(_ matters: [Matter], today: Date = Date(), quick: Bool = false) {
         let day = MatterStatus.day(today)
         self.today = day
-        let summaries = matters.map { MatterSummary($0, today: day, quick: quick) }
+        // When each mail was filed: one look for all matters, its words left unread.
+        var filed: [String: Date] = [:]
+        if !quick, let context = matters.first?.modelContext {
+            var descriptor = FetchDescriptor<SortedMail>()
+            descriptor.propertiesToFetch = [\.messageID, \.sortedAt]
+            for record in (try? context.fetch(descriptor)) ?? [] where !record.messageID.isEmpty {
+                filed[record.messageID] = max(filed[record.messageID] ?? .distantPast, record.sortedAt)
+            }
+        }
+        let summaries = matters.map { MatterSummary($0, today: day, quick: quick, filed: filed) }
         self.summaries = summaries
         byID = Dictionary(summaries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let active = summaries.filter(\.isActive).sorted { a, b in

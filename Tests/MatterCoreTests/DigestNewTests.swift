@@ -193,6 +193,28 @@ struct OverviewHappenedTests {
         let done = MatterSummary(matter, today: MatterStatus.day(Date()))
         #expect(done.who == "Done" && done.what == "Send the estimate")
     }
+
+    @Test("A mail written last week and filed now is the latest, on the day it was filed")
+    func filedLate() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "hv", name: "HV")
+        context.insert(matter)
+        let mine = Todo(text: "Check the handover", owner: .me, due: nil, source: Source(kind: .conversation, pointer: ""), origin: "h")
+        mine.createdAt = Date().addingTimeInterval(-86_400)
+        context.insert(mine)
+        mine.matter = matter
+        let mail = Source(kind: .mail, pointer: "imap://x;UID=9", messageID: "<9@x>", date: Date().addingTimeInterval(-7 * 86_400))
+        let entry = Entry(title: "Minutes", from: "Conny <c@example.org>", date: mail.date, source: mail)
+        context.insert(entry)
+        entry.matter = matter
+        #expect(MatterSummary(matter, today: MatterStatus.day(Date())).who == "Task added")
+        context.insert(SortedMail(messageID: "<9@x>", device: "phone"))
+        try context.save()
+        let page = OverviewPage([matter])
+        let summary = try #require(page.recent.first)
+        #expect(summary.who == "Conny" && summary.latest?.entry == entry.persistentModelID)
+        #expect(Calendar.current.isDateInToday(summary.latest?.date ?? .distantPast))
+    }
 }
 
 @Suite("What came, in a notification")

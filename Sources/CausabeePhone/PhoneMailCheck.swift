@@ -164,17 +164,19 @@ final class PhoneMailCheck {
         // Only in front: started in the background — iOS draws the screens then too — the look of
         // its own runs (`checkInBackground`), and nothing is read by the AI.
         guard UIApplication.shared.applicationState == .active else { return }
+        // Mail found in the background waits: with Auto it is sorted in now — before the two minutes
+        // below, which the background's own look has just started (8 November: a labelled mail said
+        // "Review" on opening, and had to be sorted in by hand). Labelling it was the yes.
+        // Only what is labelled, or follows a labelled thread: mail found by its sender is offered, never read by Auto.
+        if !checking, !DemoData.isRequested, AutoMode.isOn, case .newMail(let look, let door) = state, look.withoutOffered.pending > 0 {
+            classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
+            return
+        }
         guard isQuiet, !checking, lastChecked.map({ Date().timeIntervalSince($0) > 120 }) ?? true else { return }
         if DemoData.isRequested {
             // The demo's three are always new: the quiet line, ready to be looked at.
             lastChecked = Date()
             if AutoMode.isOn { sortInDemo(context: context) } else { state = .demoNew }
-            return
-        }
-        // Auto turned on while new mail waited: it is read now.
-        // Only what is labelled, or follows a labelled thread: mail found by its sender is offered, never read by Auto.
-        if AutoMode.isOn, case .newMail(let look, let door) = state, look.withoutOffered.pending > 0 {
-            classify(look.withoutOffered, with: door, context: context, owner: AutoMode.owner(in: context))
             return
         }
         checking = true
