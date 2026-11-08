@@ -645,7 +645,19 @@ struct TurnView: View {
     @State private var copied = false
     /// Kept as a note of its matter: the button says so, and does not keep it twice.
     @State private var savedNote = false
+    /// "Added to notes" beside the tick, for a moment after the click.
+    @State private var noteWord = false
     @Environment(\.modelContext) private var context
+
+    /// A small action under an answer: its sign, and once it is done a gold tick with a word.
+    private func answerAction(_ symbol: String, done: Bool, word: String?) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: symbol).fontWeight(done ? .semibold : .regular).frame(width: 16, height: 16)
+            if let word { Text(word).font(.caption).transition(.opacity) }
+        }
+        .foregroundStyle(done ? Theme.gold : Color.secondary)
+        .contentShape(Rectangle())
+    }
 
     /// The matter a draft's files come from: the turn's, else the one the card rests on.
     private func draftScope(_ card: AssistantPrompt.Reply.Card) -> Matter? {
@@ -734,10 +746,11 @@ struct TurnView: View {
                 Button {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(answer.plainText, forType: .string)
-                    copied = true
-                    Task { try? await Task.sleep(for: .seconds(1.5)); copied = false }
+                    withAnimation(.snappy) { copied = true }
+                    Task { try? await Task.sleep(for: .seconds(2)); withAnimation(.snappy) { copied = false } }
                 } label: {
-                    Image(systemName: copied ? "checkmark" : "doc.on.doc").frame(width: 16, height: 16).contentShape(Rectangle())
+                    // Done says so, as on the iPhone: a gold tick and the word, for a moment.
+                    answerAction(copied ? "checkmark" : "doc.on.doc", done: copied, word: copied ? "Copied" : nil)
                 }
                 .help(copied ? "Copied" : "Copy the answer")
                 .accessibilityLabel("Copy the answer")
@@ -745,9 +758,10 @@ struct TurnView: View {
                 if let kept = turn.matter.flatMap({ context.model(for: $0) as? Matter }) {
                     Button {
                         NotesPart.keep(answer.plainText, in: kept, context: context)
-                        savedNote = true
+                        withAnimation(.snappy) { savedNote = true; noteWord = true }
+                        Task { try? await Task.sleep(for: .seconds(2.5)); withAnimation(.snappy) { noteWord = false } }
                     } label: {
-                        Image(systemName: savedNote ? "checkmark" : "note.text.badge.plus").frame(width: 16, height: 16).contentShape(Rectangle())
+                        answerAction(savedNote ? "checkmark" : "note.text.badge.plus", done: savedNote, word: noteWord ? "Added to notes" : nil)
                     }
                     .disabled(savedNote)
                     .help(savedNote ? "Saved in the notes of \(kept.name)" : "Save as a note in \(kept.name)")
