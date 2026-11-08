@@ -29,11 +29,8 @@ final class Navigation {
     /// what is on it get their new width in the same moment the assistant comes or goes — told a
     /// moment later, the page's content jumped behind its column.
     var pageWidth: CGFloat {
-        let beside = detail > 0 ? detail : whole - (showsSidebar ? PadMetrics.sidebar : 0)
-        return max(320, beside - (showsAssistant ? PadMetrics.assistant + 1 : 0))
+        max(320, whole - (showsSidebar ? PadMetrics.sidebar + 2 * PadMetrics.inset : 0) - (showsAssistant ? PadMetrics.assistant + 1 : 0))
     }
-    /// What the split view's sidebar leaves of the window on an iPad, measured.
-    var detail = CGFloat.zero
     /// The window's width has been looked at once.
     var measured = false
     var showsSidebar = true {

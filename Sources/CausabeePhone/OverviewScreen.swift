@@ -21,15 +21,23 @@ struct RootView: View {
         // The window itself is measured, by a ground that is as large as it is and no larger: the
         // row of columns, measured, kept the width its columns had on the iPad's side, and stood
         // too wide once the iPad was turned upright again.
-        Group {
-            // The split view is the window itself on the iPad: inside another view its sidebar did
-            // not float.
-            if navigation.isPad { columns } else { Color.clear.overlay(alignment: .leading) { columns } }
-        }
+        Color.clear.overlay(alignment: .leading) { columns }
         // For a picture of the iPad on its side, taken in a simulator held upright: there the
         // status bar is drawn over the page, which keeps no room for it.
         .padding(.top, PhoneShot.topRoom)
-        .background(Theme.canvas)
+        // The sidebar put away: its capsule stays where it was, over the page — the way back to the
+        // sidebar, and reading and Auto still at hand. Not in the page's bar: a bar whose things
+        // change with the sidebar is formed anew by the system, with a transition of its own.
+        .overlay(alignment: .topLeading) {
+            if navigation.isPad, !navigation.showsSidebar {
+                // In a window of its own the iPad sets its three buttons in this corner: the capsule
+                // stands clear of them, right of them, and where it was when there are none.
+                PadControls().padding(.leading, 16).containerCornerOffset(.leading, sizeToFit: true).frame(height: PadMetrics.bar)
+                    .transition(.identity)
+            }
+        }
+        // On the iPad the page's own ground all round, so the sidebar's glass stands out from it.
+        .background(navigation.isPad ? Theme.page : Theme.canvas)
         // A shake, or ⌘Z on an iPad's keyboard, finds what was deleted by hand.
         .background { KeepsUndoAtHand().frame(width: 0, height: 0).accessibilityHidden(true) }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { wide in
@@ -52,39 +60,30 @@ struct RootView: View {
         .environment(navigation)
     }
 
-    /// On the iPad the system's own split view: the sidebar floats on Liquid Glass beside the page,
-    /// with the system's button to put it away and bring it back (8 November: a sidebar of our own
-    /// was a grey column with a capsule over it). On the iPhone the page alone.
-    @ViewBuilder
+    /// One row on every device, so the page stays the same view when an iPad's window is made
+    /// narrow or wide: on the iPhone it is the page alone.
     private var columns: some View {
         @Bindable var navigation = navigation
-        if navigation.isPad {
-            NavigationSplitView(columnVisibility: Binding(
-                get: { navigation.showsSidebar ? .all : .detailOnly },
-                set: { navigation.showsSidebar = $0 != .detailOnly })) {
-                PadSidebar(matters: matters)
-                    .navigationSplitViewColumnWidth(PadMetrics.sidebar)
-            } detail: {
-                detail
-                    // The page's room is what the sidebar leaves of the window, as the system lays it
-                    // out: the column measured, not what stands in it.
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { navigation.detail = $0 }
-            }
-            .navigationSplitViewStyle(.automatic)
-        } else {
-            page
-        }
-    }
-
-    /// Beside the sidebar: the page, and the assistant in a column of its own.
-    private var detail: some View {
-        @Bindable var navigation = navigation
         return HStack(spacing: 0) {
-            // The page has what the assistant leaves, said in points: left to take what it likes, it
-            // kept the width it had before the assistant came.
-            page.frame(width: navigation.whole > 0 ? navigation.pageWidth : nil)
-            if navigation.showsAssistant {
+            if navigation.isPad, navigation.showsSidebar {
+                // As Journal's: a panel of glass that floats, a little in from the window's edges, with
+                // a fine outline — not a grey column (8 November).
+                PadSidebar(matters: matters)
+                    .frame(width: PadMetrics.sidebar)
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: PadMetrics.panelRadius, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: PadMetrics.panelRadius, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                    }
+                    .padding(PadMetrics.inset)
+                    // Over the page, so its soft shadow falls on it and is not cut off at its edge.
+                    .zIndex(1)
+                    .transition(.move(edge: .leading))
+            }
+            // The page has what the columns beside it leave, said in points: left to take what it
+            // likes, it kept the width it had before the assistant came, and slid under the sidebar.
+            page.frame(width: navigation.isPad && navigation.whole > 0 ? navigation.pageWidth : nil)
+            if navigation.isPad, navigation.showsAssistant {
                 Divider().ignoresSafeArea()
                 // In a stack of its own: what in it is as wide or as tall "as its container" — the
                 // thread's newest turn — then measures by this column, not by the whole window.
