@@ -235,7 +235,8 @@ struct PlanSettings: View {
         case .billingProblem: return "payment problem"
         case nil:
             if store.plan == .free { return "Free" }
-            return [store.bought.until, store.shared.until].compactMap { $0 }.max().map { "until " + Dates.long($0) } ?? ""
+            // A day gone by says nothing true: kept by another device's purchase, which renews there.
+            return [store.bought.until, store.shared.until].compactMap { $0 }.max().flatMap { $0 > Date() ? "until " + Dates.long($0) : nil } ?? ""
         }
     }
 
@@ -299,8 +300,8 @@ struct PlanSettings: View {
                             Text("Pro on")
                         }
                     }
-                    Text(pro.wrappedValue ? "GPT-6.1 Sol reads new mail as it comes, names disguised first. What goes where, you decide."
-                         : "Off: Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it.")
+                    Text(pro.wrappedValue ? "GPT-6.1 Sol reads new mail as it comes, names disguised first."
+                         : "Off: Apple's model on this device reads new mail. Nothing leaves it.")
                         .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }

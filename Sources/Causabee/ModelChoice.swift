@@ -80,7 +80,7 @@ enum ModelChoice {
     static var readerWords: String {
         if DemoData.isRequested { return "In the demo, the mail is made up and nothing is sent." }
         if proPicks { return "Pro: GPT-6.1 Sol reads new mail as it comes — names disguised first." }
-        if case .device = mailReader(for: mail) { return "Apple's model on this device reads new mail when you tap “Sort in”. Nothing leaves it." }
+        if case .device = mailReader(for: mail) { return "Apple's model on this device reads new mail. Nothing leaves it." }
         if case .rules = mailReader(for: mail) { return "New mail comes in by its threads, and you place the rest. Nothing leaves this device." }
         if client(for: mail) != nil {
             return String(format: "%@ reads new mail with your own key — names disguised first.", mail.label)

@@ -154,11 +154,11 @@ final class BeeServer {
         }
     }
 
-    /// Under the bar: "Starts anew on 1 November · top-ups add 33 %", from the server's "2026-11-01":
+    /// Under the bar: "Starts anew on 1 November · 33 % of it from top-ups", from the server's "2026-11-01":
     /// the month's share, which is not the subscription and has a day of its own.
     var meterLine: String? {
         let anew = renewsOn.flatMap(MatterStatus.date(of:)).map { "Starts anew on " + Dates.long($0) }
-        let top = extraShare > 0 ? "\(anew == nil ? "Top-ups" : "top-ups") add \(Int((extraShare * 100).rounded())) %" : nil
+        let top = extraShare > 0 ? "\(Int((extraShare * 100).rounded())) % of it from top-ups" : nil
         let parts = [anew, top].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
@@ -184,10 +184,11 @@ struct ProBar: View {
             meter("Your top-ups", left: min(1, server.extraShare), words: "of a Pro month left", line: nil,
                   note: server.extraShare <= 0 ? "Used. Apple's model on this device reads new mail — or buy another top-up." : nil)
         } else if BeeServer.isSetUp || PlanShot.current?.meters == true, let used = server.monthUsed {
-            let left = max(0, 1 - used)
-            meter("This month's Pro", left: left, words: "left this month", line: server.meterLine,
-                  note: left > 0 ? nil : server.extra ? "This month's share is used; your top-up carries on."
-                    : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.")
+            // What can still be used: the month's and the top-ups' together (8 November: after a
+            // top-up it said "0 % left", the top-up only in small print).
+            let left = max(0, 1 - used) + max(0, server.extraShare)
+            meter("This month's Pro", left: left, words: "left", line: server.meterLine,
+                  note: left > 0 ? nil : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.")
         }
     }
 
@@ -201,7 +202,7 @@ struct ProBar: View {
             GeometryReader { box in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Theme.line)
-                    Capsule().fill(low ? Theme.warning : Theme.bee).frame(width: max(6, box.size.width * left))
+                    Capsule().fill(low ? Theme.warning : Theme.bee).frame(width: max(6, box.size.width * min(1, left)))
                 }
             }
             .frame(height: 6)
