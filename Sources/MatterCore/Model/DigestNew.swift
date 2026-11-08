@@ -79,6 +79,20 @@ extension Matter {
         return items.filter { !kept.contains($0.key) }.sorted { $0.came > $1.came }
     }
 
+    /// The new things held from when the matter was opened that are still to show: not kept with
+    /// ✓, not put away, not done.
+    public func stillNew(_ items: [NewItem]) -> [NewItem] {
+        let kept = Set(shownBrief?.newKept ?? [])
+        return items.filter { item in
+            guard !kept.contains(item.key) else { return false }
+            switch item {
+            case .task(let todo), .fact(let todo): return !todo.isHidden && !todo.isDone
+            case .appointment(let date): return !date.isHidden
+            case .deadline(let date): return !date.isHidden
+            }
+        }
+    }
+
     /// ✓ on one new thing: kept as it is, and not new any more — the rest stays new.
     public func keepNew(_ item: NewItem) {
         var brief = shownBrief ?? Brief()

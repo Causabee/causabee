@@ -1225,7 +1225,8 @@ struct NewsCard: View {
     @ViewBuilder
     private var card: some View {
         let news = held?.news ?? matter.shownBrief?.news.flatMap { $0.seen ? nil : $0 }
-        let items = held?.items ?? matter.newItems()
+        // Held from the opening: what is put away or kept here still leaves the card.
+        let items = held.map { matter.stillNew($0.items) } ?? matter.newItems()
         // Seen, its words stay where they were, without "NEW", until the next news takes their place.
         let seen = news == nil && items.isEmpty ? matter.shownBrief?.news : nil
         if let seen {
