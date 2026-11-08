@@ -82,7 +82,7 @@ what is shown there. "The owner knows it already" holds only where the job is ab
 | **Plan** | Everything still to do, by day | Shown |
 
 **Yellow says where it came from.** A Latest update that came to the owner (mail, file) and is not
-seen yet carries the honey dot and a yellow symbol. What the owner made — a note, a task, a tick —
+seen yet sits on pale honey with the yellow NEW chip, as on the Digest. What the owner made — a note, a task, a tick —
 is grey. Yellow still means one thing: something waits for the owner.
 
 ## Pressure test: the app on 6 November 2026

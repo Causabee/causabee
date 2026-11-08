@@ -1319,9 +1319,9 @@ private struct OverviewDayCard: View {
                         // Who it came from, small: the line under it says what.
                         if let who = summary.who {
                             // What it was, by its symbol: a mail, a file, a note.
-                            // Yellow says it came to the owner and is not seen yet; what the owner made is grey.
+                            // NEW says it came to the owner and is not seen yet; what the owner made is grey.
                             HStack(spacing: 5) {
-                                if summary.tellsNew { NewsDot() }
+                                if summary.tellsNew { BeeChip(text: "NEW") }
                                 if let symbol = summary.symbol {
                                     Image(systemName: symbol).imageScale(.small).accessibilityHidden(true)
                                         .foregroundStyle(summary.tellsNew ? AnyShapeStyle(Theme.gold) : AnyShapeStyle(.secondary))
@@ -1341,6 +1341,10 @@ private struct OverviewDayCard: View {
                             .foregroundStyle(.primary).lineLimit(3).multilineTextAlignment(.leading)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    // What came to the owner, unseen: on the Digest's pale honey, as its NEW card is
+                    // (8 November: a small dot was lost among the owner's own grey cards).
+                    .padding(summary.tellsNew ? 12 : 0)
+                    .background(summary.tellsNew ? Theme.beeSoft : Color.clear, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("overview.what")
                     Divider().padding(.top, 4)
