@@ -59,7 +59,9 @@ struct BriefTests {
         let context = ModelContext(try MatterSchema.container(at: nil))
         let todo = Todo(text: "Unterlagen", owner: .me, due: nil, source: Source(kind: .mail, pointer: "x"), origin: "o")
         context.insert(todo)
-        let refs: [String: FactRef] = ["T1": .todo(todo.persistentModelID)]
+        let mail = Entry(title: "Unterlagen", from: "x@example.org", date: nil, source: Source(kind: .mail, pointer: "x"))
+        context.insert(mail)
+        let refs: [String: FactRef] = ["T1": .todo(todo.persistentModelID), "E1": .entry(mail.persistentModelID)]
         let advice = AssistantAsk.advice(from: reply, restorer: Replacer([("[Person A]", "Maria Kern")]), links: [:], refs: refs, cost: 0.01)
         #expect(advice.lines == [Brief.Line(part: .people, text: "Maria Kern ist die Anwältin")])
         #expect(advice.step == "Maria Kern anrufen")

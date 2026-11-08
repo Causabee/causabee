@@ -423,9 +423,15 @@ enum DemoData {
                     // inserted changes when it is saved.
                     keys["T1"] = "T\u{1F}" + todo.text
                 }
+                // Done or a new day cites the mail that says so, as the adviser's must.
+                var cites: [String] = []
+                if item.kind != "new_todo", let mail = (matter.entries ?? []).max(by: { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }) {
+                    refs["M1"] = .entry(mail.persistentModelID)
+                    cites = ["M1"]
+                }
                 let card = AssistantPrompt.Reply.Card(kind: AssistantPrompt.Reply.Card.Kind(rawValue: item.kind) ?? .newTodo,
                                                       todo: item.todo == nil ? nil : "T1", text: item.text, owner: item.owner,
-                                                      due: nil, reason: item.reason, cites: [])
+                                                      due: nil, reason: item.reason, cites: cites)
                 return Brief.Proposal(card: card, refs: refs, keys: keys)
             }
             brief.lookups = lookups.map { item in

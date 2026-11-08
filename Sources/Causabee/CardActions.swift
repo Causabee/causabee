@@ -1094,7 +1094,7 @@ enum Adviser {
                 if !todos.contains(where: { same($0.text, card.text) }) { worth.append(proposal) }
                 continue
             case .markDone, .changeDate:
-                guard let named, !named.isDone else { continue }
+                guard let named, !named.isDone, Brief.Proposal.backedByMail(card, refs: proposal.refs) else { continue }
                 // Already so — taken on another device, or changed by hand: nothing to propose.
                 if card.kind == .changeDate, let due = card.due, named.due == due { continue }
                 subject = named

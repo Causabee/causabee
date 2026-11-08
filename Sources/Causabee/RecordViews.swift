@@ -1396,7 +1396,7 @@ struct ForYouCard: View {
                     } else {
                         if !proposals.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("FOR THE LIST").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                Text(proposals.count == 1 ? "A MAIL SAYS" : "MAILS SAY").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                                 ForEach(proposals) { proposal in
                                     ProposalRow(proposal: proposal, matter: matter)
                                 }
@@ -1505,7 +1505,7 @@ private struct ProposalRow: View {
                 Text(what).fixedSize(horizontal: false, vertical: true)
                 // Why, in one line: the whole of it on a tap — the proposal itself is what to read.
                 if !card.reason.isEmpty {
-                    Text(card.reason).font(.caption).foregroundStyle(.secondary)
+                    Text(Brief.Proposal.readable(card.reason)).font(.caption).foregroundStyle(.secondary)
                         .lineLimit(why ? nil : 1).fixedSize(horizontal: false, vertical: true)
                         .contentShape(Rectangle())
                         .onTapGesture { withAnimation { why.toggle() } }

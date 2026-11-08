@@ -256,3 +256,21 @@ struct KeptNewTests {
         #expect(matter.newItems().isEmpty)
     }
 }
+
+@Suite("The bee's proposals")
+struct ProposalMailTests {
+    @Test("Done only when a mail says so; the ids it cites are not shown")
+    func backedByMail() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let entry = Entry(title: "Termin", from: "MD <md@example.org>", date: Date(), source: Source(kind: .mail, pointer: "m"))
+        let todo = Todo(text: "Termin vereinbaren lassen", owner: .other, due: nil, source: Source(kind: .mail, pointer: "m"), origin: "t")
+        context.insert(entry); context.insert(todo)
+        let refs: [String: FactRef] = ["T10": .todo(todo.persistentModelID), "M3": .entry(entry.persistentModelID)]
+        func card(_ cites: [String]) -> AssistantPrompt.Reply.Card {
+            AssistantPrompt.Reply.Card(kind: .markDone, todo: "T10", text: "", owner: "me", due: nil, reason: "T10 deckt es ab", cites: cites)
+        }
+        #expect(!Brief.Proposal.backedByMail(card(["T10"]), refs: refs))
+        #expect(Brief.Proposal.backedByMail(card(["M3"]), refs: refs))
+        #expect(Brief.Proposal.readable("T10 deckt die Terminvereinbarung ab (M3).") == "deckt die Terminvereinbarung ab.")
+    }
+}

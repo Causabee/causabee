@@ -40,6 +40,21 @@ public struct Brief: Codable, Equatable, Sendable {
         public init(card: AssistantPrompt.Reply.Card, refs: [String: FactRef], keys: [String: String] = [:]) {
             self.card = card; self.refs = refs; self.keys = keys
         }
+
+        /// "Done" or a new day only when a mail says so: one of its cites is a mail (8 November: the
+        /// bee proposed ticking off "have the MD set a date" because another task "covered it",
+        /// while the owner still waited for that date).
+        public static func backedByMail(_ card: AssistantPrompt.Reply.Card, refs: [String: FactRef]) -> Bool {
+            guard card.kind == .markDone || card.kind == .changeDate else { return true }
+            return card.cites.contains { if case .entry = refs[$0] { true } else { false } }
+        }
+
+        /// The reason as the owner reads it: the ids it cites — "T10", "(M3)" — left out.
+        public static func readable(_ reason: String) -> String {
+            reason.replacingOccurrences(of: #"\s*\(?\b[A-Z]{1,2}\d+\b\)?"#, with: "", options: .regularExpression)
+                .replacingOccurrences(of: #"^\s*[,;:]\s*"#, with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespaces)
+        }
     }
 
     public var lines: [Line] = []
