@@ -85,6 +85,9 @@ what is shown there. "The owner knows it already" holds only where the job is ab
 seen yet sits on pale honey with the yellow NEW chip, as on the Digest. What the owner made — a note, a task, a tick —
 is grey. Yellow still means one thing: something waits for the owner.
 
+**A mail counts from the day it was filed**, not the day it was written (8 November): an older
+mail filed today stands under today, or it feels lost.
+
 ## Pressure test: the app on 6 November 2026
 
 What the code does today, against the four steps. ✅ holds · ⚠️ partly · ❌ breaks it.
