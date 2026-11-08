@@ -25,17 +25,6 @@ struct RootView: View {
         // For a picture of the iPad on its side, taken in a simulator held upright: there the
         // status bar is drawn over the page, which keeps no room for it.
         .padding(.top, PhoneShot.topRoom)
-        // The sidebar put away: its capsule stays where it was, over the page — the way back to the
-        // sidebar, and reading and Auto still at hand. Not in the page's bar: a bar whose things
-        // change with the sidebar is formed anew by the system, with a transition of its own.
-        .overlay(alignment: .topLeading) {
-            if navigation.isPad, !navigation.showsSidebar {
-                // In a window of its own the iPad sets its three buttons in this corner: the capsule
-                // stands clear of them, right of them, and where it was when there are none.
-                PadControls().padding(.leading, 16).containerCornerOffset(.leading, sizeToFit: true).frame(height: PadMetrics.bar)
-                    .transition(.identity)
-            }
-        }
         .background(Theme.canvas)
         // A shake, or ⌘Z on an iPad's keyboard, finds what was deleted by hand.
         .background { KeepsUndoAtHand().frame(width: 0, height: 0).accessibilityHidden(true) }
@@ -59,19 +48,39 @@ struct RootView: View {
         .environment(navigation)
     }
 
-    /// One row on every device, so the page stays the same view when an iPad's window is made
-    /// narrow or wide: on the iPhone it is the page alone.
+    /// On the iPad the system's own split view: the sidebar floats on Liquid Glass beside the page,
+    /// with the system's button to put it away and bring it back (8 November: a sidebar of our own
+    /// was a grey column with a capsule over it). On the iPhone the page alone.
+    @ViewBuilder
     private var columns: some View {
         @Bindable var navigation = navigation
-        return HStack(spacing: 0) {
-            if navigation.isPad, navigation.showsSidebar {
-                PadSidebar(matters: matters).frame(width: PadMetrics.sidebar).transition(.move(edge: .leading))
-                Divider().ignoresSafeArea()
+        if navigation.isPad {
+            NavigationSplitView(columnVisibility: Binding(
+                get: { navigation.showsSidebar ? .all : .detailOnly },
+                set: { navigation.showsSidebar = $0 != .detailOnly })) {
+                PadSidebar(matters: matters)
+                    .navigationSplitViewColumnWidth(PadMetrics.sidebar)
+            } detail: {
+                detail
+                    // The page's room is what the sidebar leaves of the window, as the system lays it
+                    // out: the column measured, not what stands in it.
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { navigation.detail = $0 }
             }
-            // The page has what the columns beside it leave, said in points: left to take what it
-            // likes, it kept the width it had before the assistant came, and slid under the sidebar.
-            page.frame(width: navigation.isPad && navigation.whole > 0 ? navigation.pageWidth : nil)
-            if navigation.isPad, navigation.showsAssistant {
+            .navigationSplitViewStyle(.balanced)
+        } else {
+            page
+        }
+    }
+
+    /// Beside the sidebar: the page, and the assistant in a column of its own.
+    private var detail: some View {
+        @Bindable var navigation = navigation
+        return HStack(spacing: 0) {
+            // The page has what the assistant leaves, said in points: left to take what it likes, it
+            // kept the width it had before the assistant came.
+            page.frame(width: navigation.whole > 0 ? navigation.pageWidth : nil)
+            if navigation.showsAssistant {
                 Divider().ignoresSafeArea()
                 // In a stack of its own: what in it is as wide or as tall "as its container" — the
                 // thread's newest turn — then measures by this column, not by the whole window.

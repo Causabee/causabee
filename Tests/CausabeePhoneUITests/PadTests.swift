@@ -96,9 +96,13 @@ final class PadTests: XCTestCase {
     }
 
     private func picture(_ name: String) {
-        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        let screen = XCUIScreen.main.screenshot()
+        let shot = XCTAttachment(screenshot: screen)
         shot.name = name
         shot.lifetime = .keepAlways
         add(shot)
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? screen.pngRepresentation.write(to: URL(fileURLWithPath: shots + "/pad-\(name).png"))
+        }
     }
 }

@@ -17,10 +17,8 @@ enum PadMetrics {
     static let wide: CGFloat = 1000
     /// The line the sidebar's controls, the page's bar and the assistant's name stand on.
     static let bar: CGFloat = 44
-    /// The room the sidebar's capsule takes of the page's bar while the sidebar is put away: 16 in
-    /// from the edge, the capsule round the sidebar's button (38 and 3 around it), and 12 to the
-    /// matter's icon. It held three buttons once, and the name stood 100 points off to the right.
-    static let controls: CGFloat = 16 + 44 + 12
+    /// The system's sidebar button, before a page's first item while the sidebar is put away.
+    static let toggle: CGFloat = 92
     /// What the bar puts before its first item by itself.
     static let barInset: CGFloat = 10
 }
@@ -43,8 +41,6 @@ struct PadSidebar: View {
         let _ = StoredChanges.shared.count
         let sorted = sidebarOrder(matters)
         let open = sorted.filter { !$0.isClosed }
-        // The controls lie over the list, on nothing of their own: the list goes under them, as
-        // under the system's bars.
         ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
                     Button { navigation.go([]) } label: {
@@ -99,63 +95,8 @@ struct PadSidebar: View {
                 }
                 .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 24)
         }
-        .safeAreaBar(edge: .top, alignment: .leading, spacing: 0) {
-            // Clear of the window's own three buttons, where the iPad shows them in this corner.
-            PadControls()
-                .padding(.leading, 16)
-                .containerCornerOffset(.leading, sizeToFit: true)
-                .frame(height: PadMetrics.bar)
-        }
-        .background(Color(.secondarySystemBackground))
-    }
-}
-
-/// The sidebar's button on glass, as by the Mac's window buttons — a finger high. Reading mode is in
-/// the matter's ⋯ menu, and Pro is the bee's colour in the corner, as on the iPhone.
-struct PadControls: View {
-    @Environment(Navigation.self) private var navigation
-
-    var body: some View {
-        HStack(spacing: 10) {
-            PadSidebarButton()
-        }
-        // The yellow round of one that is on sits in the capsule's own curve.
-        // As high as the page's own find and ⋯, and as black: beside them a smaller, greyer
-        // capsule looked like something else.
-        // The yellow round of one that is on sits in the capsule's own curve: 3 from its end as
-        // from its top and bottom.
-        .padding(3)
-        .onGlass(Capsule())
-    }
-
-    private func round(_ symbol: String, on: Bool, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 20, weight: .medium))
-                .foregroundStyle(on ? Color.black : Color.primary)
-                .frame(width: 38, height: 38)
-                .background { if on { Circle().fill(Theme.bee) } }
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-    }
-}
-
-/// Shows the sidebar and puts it away.
-struct PadSidebarButton: View {
-    @Environment(Navigation.self) private var navigation
-
-    var body: some View {
-        Button {
-            withAnimation(.snappy(duration: 0.25)) { navigation.showsSidebar.toggle() }
-        } label: {
-            Image(systemName: "sidebar.left").font(.system(size: 20, weight: .medium))
-                .foregroundStyle(Color.primary)
-                .frame(width: 38, height: 38).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(navigation.showsSidebar ? "Hide Sidebar" : "Show Sidebar")
-        .accessibilityIdentifier("sidebar.toggle")
+        // No ground of its own: the split view's glass shows through, and its bar holds the
+        // system's button to put the sidebar away.
     }
 }
 
