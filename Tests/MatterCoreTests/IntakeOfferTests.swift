@@ -62,3 +62,14 @@ struct IntakeOfferTests {
         #expect(IntakeSummary.leaving(out: [], of: mail).todos.count == 2)
     }
 }
+
+@Suite("The line after a check of mail")
+struct IntakeLineTests {
+    @Test("Nought is not said; a failed mail says it is tried again")
+    func line() {
+        #expect(IntakeSummary.line(mails: 0, matters: [], tasks: 0, dates: 0, unplaced: 1, failed: 1)
+                == "1 without a matter, below · 1 could not be read, tried again next time")
+        #expect(IntakeSummary.line(mails: 2, matters: ["Kita"], tasks: 1, dates: 0) == "2 mails sorted into Kita · 1 new task")
+        #expect(IntakeSummary.line(mails: 0, matters: [], tasks: 0, dates: 0) == "Nothing new")
+    }
+}

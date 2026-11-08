@@ -113,14 +113,21 @@ public enum IntakeSummary {
         }.prefix(limit))
     }
 
-    /// "3 mails sorted into Lisbon · 1 new task" — or "into 3 matters" when there are several.
-    public static func line(mails: Int, matters: [String], tasks: Int, dates: Int, unplaced: Int = 0) -> String {
-        var text = "\(mails) \(mails == 1 ? "mail" : "mails") sorted"
-        if matters.count == 1 { text += " into \(matters[0])" } else if matters.count > 1 { text += " into \(matters.count) matters" }
-        if tasks > 0 { text += " · \(tasks) new \(tasks == 1 ? "task" : "tasks")" }
-        if dates > 0 { text += " · \(dates) \(dates == 1 ? "date" : "dates")" }
-        if unplaced > 0 { text += " · \(unplaced) without a matter, below" }
-        return text
+    /// "3 mails sorted into Lisbon · 1 new task" — or "into 3 matters" when there are several. What
+    /// is nought is not said (8 November: "0 mails sorted · … · 1 failed" said nothing useful), and
+    /// a mail that failed says it is tried again: it is, at the next check.
+    public static func line(mails: Int, matters: [String], tasks: Int, dates: Int, unplaced: Int = 0, failed: Int = 0) -> String {
+        var parts: [String] = []
+        if mails > 0 {
+            var sorted = "\(mails) \(mails == 1 ? "mail" : "mails") sorted"
+            if matters.count == 1 { sorted += " into \(matters[0])" } else if matters.count > 1 { sorted += " into \(matters.count) matters" }
+            parts.append(sorted)
+        }
+        if tasks > 0 { parts.append("\(tasks) new \(tasks == 1 ? "task" : "tasks")") }
+        if dates > 0 { parts.append("\(dates) \(dates == 1 ? "date" : "dates")") }
+        if unplaced > 0 { parts.append("\(unplaced) without a matter, below") }
+        if failed > 0 { parts.append("\(failed) could not be read, tried again next time") }
+        return parts.isEmpty ? "Nothing new" : parts.joined(separator: " · ")
     }
 
     /// The new tasks and dates, the first few.

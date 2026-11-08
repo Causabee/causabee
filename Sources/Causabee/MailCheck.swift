@@ -299,8 +299,7 @@ final class MailCheck {
             // Short: what came of it, and what it cost; what it brought, line by line, under it.
             let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
             var text = IntakeSummary.line(mails: imported.mails, matters: names, tasks: imported.todosNew,
-                                          dates: imported.appointments + imported.deadlines, unplaced: unplaced)
-            if answered.failed > 0 { text += " · \(answered.failed) failed" }
+                                          dates: imported.appointments + imported.deadlines, unplaced: unplaced, failed: answered.failed)
             if !held.isEmpty { text += " · \(held.count) \(held.count == 1 ? "waits" : "wait") for room for a new matter" }
             // Each mail with the matter it went into: a wrong one is moved from here.
             let mails = IntakeSummary.mails(judgements) { key in after.first { $0.answers(to: key) }?.name }
