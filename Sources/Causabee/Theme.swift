@@ -828,9 +828,16 @@ struct CardFace: View {
                     Text(label).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         .padding(.bottom, subject == nil && headline == nil && sub == nil ? 0 : 6)
                     if let subject {
-                        // As tall as its words, decided once: squeezed, it was cut under the writing area.
-                        TextField("Subject", text: subject, axis: .vertical).textFieldStyle(.plain).font(.headline)
+                        // As tall as its words, as the text below: the same words, unseen, take the room,
+                        // and the field lies on them (8 November: a subject on two lines was measured as
+                        // one, and the lines under it slid onto the writing area).
+                        let words = subject.wrappedValue
+                        Text(words.isEmpty ? "Subject" : words)
                             .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .hidden()
+                            .overlay(alignment: .topLeading) { TextField("Subject", text: subject, axis: .vertical).textFieldStyle(.plain) }
+                            .font(.headline)
                     }
                     if let headline { Text(headline).font(.headline).fixedSize(horizontal: false, vertical: true) }
                     if let sub { Text(sub).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
