@@ -516,7 +516,8 @@ enum DemoData {
         if question.lowercased().contains("message") || question.lowercased().contains("mail") {
             var draft = card("draft_message", text: "Hello Sebastian, did everything go well with posting the letters? Thank you!\nAlex",
                              reason: "Asks whether the letters were posted as planned.", cites: [])
-            draft["subject"] = "Letters"
+            // Asked for a two-line subject: one that takes two lines, to see the lines under it make room.
+            draft["subject"] = question.lowercased().contains("two-line subject") ? "AW: The letters for the insurer -- Sunrise Home Care GmbH" : "Letters"
             return answer(lines: [("Here is a short message.", [])] + (long ? more : []), cards: [draft])
         }
         return answer(lines: long ? short + more : short, cards: [])

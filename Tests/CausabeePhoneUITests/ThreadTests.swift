@@ -19,6 +19,8 @@ final class ThreadTests: XCTestCase {
         // The demo filled anew at every start: what an earlier run asked is not in the thread.
         // `--answers`: a question gets a made-up answer after a moment, with nothing sent.
         app.launchArguments = ["--demo", "--answers", "-demo.filled", "anew", "-mail.auto", "YES"]
+        // The draft's lines in a larger text size, as on the phone it was seen on: the "To" takes two lines.
+        if name.contains("LongLines") { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryXL"] }
         app.launch()
         // With Pro on, the demo sorts its new mail in a moment after it opens, and what it sorted
         // stands on top of the overview, pushing the matters down while the test looks for one.
@@ -81,6 +83,38 @@ final class ThreadTests: XCTestCase {
         field.tap()
         field.typeText(words)
         app.buttons["Send"].firstMatch.tap()
+    }
+
+    /// A draft whose subject and "To" line each take two lines: the writing area starts under both
+    /// (8 November: the second line of the "To" lay on the mail's first line).
+    func testADraftsLongLinesStayAboveItsText() {
+        ask("Write a mail to Nina Voss, two-line subject")
+        let to = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "To ")).firstMatch
+        XCTAssertTrue(to.waitForExistence(timeout: 15), "The draft has no To line.")
+        let body = app.descendants(matching: .any).matching(NSPredicate(format: "value BEGINSWITH %@", "Hello Sebastian")).firstMatch
+        XCTAssertTrue(body.waitForExistence(timeout: 5), "The draft has no text to change.")
+        let subject = app.descendants(matching: .any).matching(NSPredicate(format: "value BEGINSWITH %@", "AW: The letters")).firstMatch
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            Thread.sleep(forTimeInterval: 0.6)
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/draft-long.png"))
+        }
+        print("DRAFT subject \(subject.frame) to \(to.frame) '\(to.label)' body \(body.frame)")
+        XCTAssertLessThanOrEqual(subject.frame.maxY, to.frame.minY + 1, "The To line lies on the subject.")
+        XCTAssertLessThanOrEqual(to.frame.maxY, body.frame.minY, "The To line lies on the mail's text.")
+        // Opened in Mail, then unfolded again with Edit: the same lines, the same room.
+        app.buttons["Open in Mail"].firstMatch.tap()
+        Thread.sleep(forTimeInterval: 2)
+        app.activate()
+        let edit = app.buttons["Edit"].firstMatch
+        XCTAssertTrue(edit.waitForExistence(timeout: 8), "The opened draft has no Edit.")
+        edit.tap()
+        XCTAssertTrue(body.waitForExistence(timeout: 5), "Edit did not unfold the draft.")
+        Thread.sleep(forTimeInterval: 1)
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/draft-edit.png"))
+        }
+        print("DRAFT2 subject \(subject.frame) to \(to.frame) body \(body.frame)")
+        XCTAssertLessThanOrEqual(to.frame.maxY, body.frame.minY, "Unfolded again, the To line lies on the mail's text.")
     }
 
     // The sheet has no name on top any more: its lower edge is the close button's.
