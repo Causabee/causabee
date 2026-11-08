@@ -4,9 +4,9 @@ import SwiftUI
 
 /// The iPad's own numbers: the iPhone's parts in the Mac's three columns.
 enum PadMetrics {
-    static let sidebar: CGFloat = 300
+    static let sidebar: CGFloat = 318
     /// How far the sidebar's glass panel floats in from the window's edges, as Journal's.
-    static let inset: CGFloat = 10
+    static let inset: CGFloat = 11
     /// The panel's corners.
     static let panelRadius: CGFloat = 26
     static let assistant: CGFloat = 360
@@ -24,7 +24,7 @@ enum PadMetrics {
     /// The room the sidebar's capsule takes of the page's bar while the sidebar is put away: 16 in
     /// from the edge, the capsule round the sidebar's button (38 and 3 around it), and 12 to the
     /// matter's icon. It held three buttons once, and the name stood 100 points off to the right.
-    static let controls: CGFloat = 16 + 44 + 12
+    static let controls: CGFloat = 10 + 44 + 12
     /// What the bar puts before its first item by itself.
     static let barInset: CGFloat = 10
 }
@@ -52,8 +52,11 @@ struct PadSidebar: View {
                 .accessibilityLabel("New Matter")
             }
         }
-        .padding(.leading, 16).padding(.trailing, 8)
-        .padding(.top, 24).padding(.bottom, 6)
+        // Journal's heading: its text 31 in, its line centred 32 under the card and 28 over the
+        // first row's pill.
+        .frame(height: 28)
+        .padding(.leading, 15).padding(.trailing, 4)
+        .padding(.top, 18).padding(.bottom, 14)
     }
 
     var body: some View {
@@ -67,12 +70,14 @@ struct PadSidebar: View {
             // The panel's own top row, on the line of the page's bar: the sidebar's button at its
             // right, plain on the glass — the same button that stands at the window's corner while
             // the sidebar is away.
+            // Measured on Journal (8 November): 42 high from the panel's top, so its centre is on
+            // the page bar's line, 54 down; the button's centre 30 in from the panel's edge.
             HStack {
                 Spacer()
                 PadSidebarButton()
             }
-            .padding(.horizontal, 8)
-            .frame(height: PadMetrics.bar)
+            .padding(.trailing, 11)
+            .frame(height: 42)
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     PadOverviewCard(matters: matters)
@@ -89,7 +94,9 @@ struct PadSidebar: View {
                                 Text("\(closed.count)").font(.subheadline).monospacedDigit()
                             }
                             .foregroundStyle(.secondary)
-                            .padding(.horizontal, 16).padding(.top, 24).padding(.bottom, 6)
+                            .frame(height: 28)
+                            .padding(.leading, 15).padding(.trailing, 4)
+                            .padding(.top, 18).padding(.bottom, 14)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -98,7 +105,8 @@ struct PadSidebar: View {
                         if showsClosed { rows(closed, all: sorted) }
                     }
                 }
-                .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 24)
+                // Journal's cards: 16 in from the panel's edges, 54 below its top.
+                .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 24)
             }
             .scrollIndicators(.hidden)
         }
@@ -156,13 +164,13 @@ struct PadOverviewCard: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 // Open, it is marked as the rows are: a ring instead of a pill.
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .strokeBorder(Color.primary.opacity(open ? 0.22 : 0.06), lineWidth: open ? 1.5 : 0.5)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("sidebar.overview")
@@ -180,7 +188,8 @@ struct PadSidebarLine<Trailing: View>: View {
     @ViewBuilder var trailing: () -> Trailing
 
     var body: some View {
-        HStack(spacing: 12) {
+        // Journal's row: a 44 high pill; the sign centred 29 into it, the name 54 in.
+        HStack(spacing: 13) {
             Image(systemName: symbol).font(.system(size: 17))
                 .foregroundStyle(quiet ? .secondary : .primary)
                 .frame(width: 24)
@@ -191,7 +200,7 @@ struct PadSidebarLine<Trailing: View>: View {
             trailing()
         }
         .font(.body.weight(marked ? .semibold : .regular))
-        .padding(.horizontal, 16).frame(minHeight: 46)
+        .padding(.leading, 17).padding(.trailing, 16).frame(height: 44)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             // A pill, as Journal marks the open journal.

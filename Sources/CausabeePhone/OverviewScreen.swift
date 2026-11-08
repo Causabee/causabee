@@ -32,7 +32,7 @@ struct RootView: View {
             if navigation.isPad, !navigation.showsSidebar {
                 // In a window of its own the iPad sets its three buttons in this corner: the capsule
                 // stands clear of them, right of them, and where it was when there are none.
-                PadControls().padding(.leading, 16).containerCornerOffset(.leading, sizeToFit: true).frame(height: PadMetrics.bar)
+                PadControls().padding(.leading, 10).containerCornerOffset(.leading, sizeToFit: true).frame(height: PadMetrics.bar)
                     .transition(.identity)
             }
         }
@@ -77,7 +77,10 @@ struct RootView: View {
                     }
                     // Its top row on the line of the page's bar, as Journal's: 6 under the status bar,
                     // 10 in from the window's side and bottom.
-                    .padding(.leading, PadMetrics.inset).padding(.bottom, PadMetrics.inset).padding(.top, 6)
+                    // Measured on Journal: 11 from the window's side, 33 from its top, 12 from its
+                    // bottom — from the window's edges, not the status bar's.
+                    .padding(.leading, PadMetrics.inset).padding(.top, 33).padding(.bottom, 12)
+                    .ignoresSafeArea(.container, edges: .vertical)
                     // Over the page, so its soft shadow falls on it and is not cut off at its edge.
                     .zIndex(1)
                     .transition(.move(edge: .leading))
