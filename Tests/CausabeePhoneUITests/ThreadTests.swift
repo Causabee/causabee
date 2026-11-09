@@ -295,4 +295,26 @@ final class ThreadTests: XCTestCase {
         XCTAssertEqual(top(of: next), place, accuracy: 1.5, "The next question does not stand where the one before it stood.")
         XCTAssertLessThan(asked.frame.minY, place - 20, "The question before did not make room at the top.")
     }
+
+    /// A note from the chat stands in Notes — about a task too — and its receipt opens Notes at it,
+    /// not Plan (9 November: it went into the task, and the tap landed on Plan).
+    func testANoteFromTheChatLandsInNotes() {
+        addTask("Note \(stamp)")
+        let save = app.buttons["Save note"].firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout: 15), "The note's card did not come.")
+        save.tap()
+        let receipt = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Note added'")).firstMatch
+        XCTAssertTrue(receipt.waitForExistence(timeout: 5), "The note was not taken.")
+        receipt.tap()
+        let notes = app.buttons["part.Notes"]
+        XCTAssertTrue(notes.waitForExistence(timeout: 10), "The matter did not open.")
+        for _ in 0..<20 where !notes.isSelected { Thread.sleep(forTimeInterval: 0.2) }
+        XCTAssertTrue(notes.isSelected, "The receipt did not open Notes.")
+        XCTAssertFalse(app.buttons["part.Plan"].isSelected, "The receipt opened Plan.")
+        let note = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'keys back by noon'")).firstMatch
+        XCTAssertTrue(note.waitForExistence(timeout: 5), "The note is not in Notes.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/note-in-notes.png"))
+        }
+    }
 }

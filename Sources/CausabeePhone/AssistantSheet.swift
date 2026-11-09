@@ -1137,6 +1137,12 @@ struct PhoneActionCard: View {
     /// Into its matter, at the task it made or changed when there is one.
     private func openTaken() {
         guard let target = scope ?? matter else { return }
+        // A note opens in Notes, at the note.
+        if card.kind == .addNote, case .added(let note) = undo {
+            navigation.showsInItsPart = true
+            navigation.open(target, showing: note)
+            return
+        }
         var todo: PersistentIdentifier?
         if case .remove(let id) = undo { todo = id }
         if todo == nil, let ref = card.todo.flatMap({ turn.refs[$0] }), case .todo(let id) = ref { todo = id }

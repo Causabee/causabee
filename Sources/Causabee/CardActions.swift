@@ -520,17 +520,16 @@ enum CardActions {
             return .taken(.said(matter.persistentModelID, said.id))
         case .addNote:
             guard !text.isEmpty else { return .nothing }
-            // With no to-do it is one of the matter's own notes.
-            guard let todo = model(card.todo, as: Todo.self) else {
-                guard let matter = scope else { return .nothing }
-                let note = MatterNote(text: text)
-                context.insert(note)
-                note.matter = matter
-                try? context.save()
-                return .taken(.added(note.persistentModelID))
-            }
-            undo = .note(todo.persistentModelID, todo.note)
-            todo.note = [todo.note, text].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: "\n")
+            // A note stands in Notes, where notes are looked for — about a task, it is connected
+            // to it, not written into it: there it was nowhere to be found (9 November).
+            let todo = model(card.todo, as: Todo.self)
+            guard let matter = todo?.matter ?? scope else { return .nothing }
+            let note = MatterNote(text: text)
+            context.insert(note)
+            note.matter = matter
+            if let todo { matter.connect(.note(note), .task(todo), in: context) }
+            try? context.save()
+            return .taken(.added(note.persistentModelID))
         case .addLink:
             guard let standIn = card.from, let address = links?[standIn] ?? WebLink.address(in: standIn) else { return .nothing }
             let todo = model(card.todo, as: Todo.self)
@@ -623,7 +622,11 @@ enum CardActions {
             if let item = live(id, as: Appointment.self, in: context) { context.delete(item) }
             else if let item = live(id, as: Deadline.self, in: context) { context.delete(item) }
             else if let item = live(id, as: MatterDetail.self, in: context) { context.delete(item) }
-            else if let item = live(id, as: MatterNote.self, in: context) { context.delete(item) }
+            else if let item = live(id, as: MatterNote.self, in: context) {
+                // Its connections go with it: one end alone connects nothing.
+                for end in item.connectionEnds ?? [] { if let connection = end.connection { context.delete(connection) } }
+                context.delete(item)
+            }
         case .contact(let id, let matter, let joined, let address, let phone):
             guard let party = live(id, as: Party.self, in: context) else { return false }
             party.address = address

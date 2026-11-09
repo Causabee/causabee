@@ -512,6 +512,12 @@ enum DemoData {
                           cards: [card("look_up", text: "How long does a German long-term care insurer have to decide on an application for a care level?",
                                        reason: "The rule is not in your mails.", cites: [])])
         }
+        // Asked for a note: its card, about the first task the facts name — to see where it lands.
+        if question.lowercased().hasPrefix("note") {
+            var note = card("add_note", text: "The landlord wants the keys back by noon.", reason: "Said in the chat.", cites: [])
+            note["todo"] = "T1"
+            return answer(lines: [("Noted.", [])], cards: [note])
+        }
         // Asked to write a message: a draft, to see its card — nothing of it is real.
         if question.lowercased().contains("message") || question.lowercased().contains("mail") {
             var draft = card("draft_message", text: "Hello Sebastian, did everything go well with posting the letters? Thank you!\nAlex",
