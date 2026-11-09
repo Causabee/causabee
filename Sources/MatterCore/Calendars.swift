@@ -74,6 +74,27 @@ public final class Calendars {
         return (start, end, false)
     }
 
+    /// An appointment's time as the owner reads it: "14:30–15:30 · 1 h" — from when to when, and how
+    /// long, when that is known; "14:30" alone when nothing says how long. "No time yet" for one on a single day with no time of day; nil
+    /// for one over several days without a time (its days say it).
+    public nonisolated static func hoursLine(what: String, day: String, time: String?, endDay: String? = nil, endTime: String? = nil) -> String? {
+        guard clock(time) != nil, let span = span(what: what, day: day, time: time, endDay: endDay, endTime: endTime), !span.allDay else {
+            if let endDay, endDay > day { return nil }
+            return "No time yet"
+        }
+        let format = DateFormatter()
+        format.locale = Locale(identifier: "de_DE")
+        format.dateFormat = "HH:mm"
+        let minutes = Int(span.end.timeIntervalSince(span.start) / 60)
+        let length = minutes < 60 ? "\(minutes) min"
+            : minutes % 60 == 0 ? "\(minutes / 60) h" : "\(minutes / 60) h \(minutes % 60) min"
+        // How long only when it is known — given, or in its words; Calendar's hour is no knowing.
+        let known = clock(endTime) != nil || (endDay.map { $0 > day } ?? false) || end(in: what, from: span.start) != nil
+        // Over midnight or over days, the length alone says it; the days are said beside it.
+        guard known, minutes < 24 * 60 else { return format.string(from: span.start) }
+        return "\(format.string(from: span.start))–\(format.string(from: span.end)) · \(length)"
+    }
+
     /// When an appointment ends, read from its own words — "Portfolio review, 12:00–13:30",
     /// "Interview, 3:30–6:00 PM": an appointment keeps its beginning only, and without this every
     /// event was an hour long whatever it said. Nil when the words give no end after the beginning.

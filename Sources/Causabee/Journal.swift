@@ -41,6 +41,14 @@ extension View {
     /// A card of rows, which keep their own room.
     func journalRows() -> some View { journalCard(inset: 0) }
 
+    /// What others have to do: no card of the owner's — only a dashed line round it, so it never
+    /// reads as something to do now.
+    func waitingRows() -> some View {
+        frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])).foregroundStyle(.secondary.opacity(0.6)))
+    }
+
     /// A row of the plan. One line is as high as a day's tile, so that they stand side by side.
     func planRow() -> some View { padding(.leading, 6).padding(.trailing, 6).padding(.vertical, 10) }
 
@@ -1099,7 +1107,21 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
             }
             if !plan.waiting.isEmpty {
                 JournalHeading(title: "WAITING FOR OTHERS")
-                card(plan.waiting)
+                // Not the owner's to do: no card, no empty day column; a day only when one was given.
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(plan.waiting.enumerated()), id: \.element.persistentModelID) { index, todo in
+                        if index > 0 { Divider().padding(.horizontal, 12) }
+                        if let due = todo.due {
+                            onDay(due, month: true, only: .task(todo)) { task(todo, false) }
+                        } else {
+                            VStack(alignment: .leading, spacing: 2) { task(todo, false) }
+                                .padding(.horizontal, 12).padding(.vertical, 10)
+                        }
+                    }
+                }
+                .waitingRows()
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("plan.waiting")
             }
             if !plan.blocked.isEmpty {
                 JournalHeading(title: "ONLY AFTER")
@@ -1142,17 +1164,21 @@ struct PlanTick: View {
                 BeeJoy.shared.celebrate(big: (todo.matter?.todos ?? []).shown.allSatisfy(\.isDone), still: reduceMotion)
             }
         } label: {
-            Image(systemName: todo.isDone ? "checkmark.square.fill" : "square")
-                .font(.title3)
+            // Someone else's: an hourglass, not a box — nothing for the owner to do but wait. A tap
+            // still says it came.
+            Image(systemName: todo.isDone ? "checkmark.square.fill" : waiting ? "hourglass" : "square")
+                .font(waiting ? .body : .title3)
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(todo.isDone ? Theme.onInk : .secondary, todo.isDone ? Theme.ink : .secondary)
                 .frame(width: Theme.planMark, height: Theme.planMark)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(todo.isDone ? "Open again" : "Mark as done")
-        .help(todo.isDone ? "Open again" : "Mark as done")
+        .accessibilityLabel(todo.isDone ? "Open again" : waiting ? "It came — mark as done" : "Mark as done")
+        .help(todo.isDone ? "Open again" : waiting ? "It came — mark as done" : "Mark as done")
     }
+
+    private var waiting: Bool { todo.owner == .other && !todo.isDone }
 }
 
 /// Where a task's or a date's ⋯ stood: nothing now, on every device. A row's menu is its long

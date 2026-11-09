@@ -29,7 +29,7 @@ You never file. You only say which mail is hers (a label) — screenshots, photo
 | She… | So you don't have to… |
 |---|---|
 | **Brings in** what comes in and **sorts** it into its matter | file anything |
-| **Reads** it and pulls out tasks, dates, deadlines, people | copy anything out |
+| **Reads** it and pulls out tasks, dates, deadlines, people — a reply with what it answers: "Freitag passt" takes the time that was offered | copy anything out |
 | **Understands** each matter: what it is about, where it stands | remember it |
 | **Decides the next step** — one, yours, doable | think about what's next |
 | **Keeps what is good to know** — true, asks nothing of you | look it up again |
@@ -56,11 +56,13 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 11. **Private.** No message is ever sent in your name. Content leaves the device only with names disguised — by itself only with Auto on, otherwise at your tap.
 12. **Everywhere the same.** iPhone, iPad, Mac: one matter, one state.
 13. **She writes as you do.** A mail or a message she drafts sounds like you, to that person: the greeting, the sign-off, du or Sie, as you and they write to each other. Never more formal than they are. A reply in a running exchange is a reply, not a letter. Your words in the chat set its length — "Freitag passt" is two lines. Textbook form only for a first message to an office, when nothing else is known.
+14. **A date says when and how long.** "14:30–15:30 · 1 h" — how long only when it is known, never Calendar's guessed hour. One without a time says "No time yet" — never a bare day that hides it.
+15. **Waiting is not doing.** What someone else has to do never looks like yours: no box to tick, who you wait for first, greyed, a dashed line round it instead of a card.
 
 ## 5. The chat
 
 The chat is you talking to her about your matters.
-- She answers from what is in your matters, and says when it isn't there.
+- She answers from what is in your matters — the words themselves, not only her summaries — and says when it isn't there only after looking in them.
 - What she offers to do is a card: you take it, or not.
 - What you take lands where you'd look for it: a note in Notes, a task in Plan, a date in the calendar.
 - What she writes for you to send, she writes in your voice (principle 13).
@@ -76,6 +78,7 @@ Each job is tested against its promise:
 - **New** — replay days of things coming in, of every kind: what says NEW each morning, and only that.
 - **Screens** — automated tests on iPhone, iPad and Mac for every signal: dot, NEW, card, receipt.
 
+- **Offered, then settled** — a time offered in one message and settled in the reply reaches the date; the chat finds it in the words.
 - **Write** — sample exchanges (a casual dealer, a formal insurer, a first mail to an office, a chat screenshot): the greeting, sign-off and length each draft must have.
 
 If a change breaks a principle, it is wrong — however good it looks.
@@ -89,3 +92,5 @@ Listed so nobody pretends. Each one closes with a test.
 - **Section 3, Reads:** files attached to mail are read by themselves on iPhone and iPad after each mail check (logos and signatures skipped). The Mac does not do it on its own yet; a file dropped into a matter's folder is kept until you tap Read.
 - **Principle 12:** two devices rewriting at once can, rarely, bring back a NEW you already saw. Planned fix, no schema change: each device keeps its own last-seen time and never writes an older one back; the brief records which device wrote it.
 - **Principle 13:** she is given how the newest messages open and close, and the rules to write as you do. Whether every draft she writes keeps them is not yet checked automatically against her real answers — only by you, draft by draft.
+- **Section 3, Calendar both ways:** a task ticked off in Reminders comes back; a time or day changed on an event in Calendar does not yet.
+- **Chat, the words themselves:** she is given the words of the ten newest items of a matter; an older one only by its summary.

@@ -1246,11 +1246,19 @@ struct PhoneTodoRow: View {
         HStack(alignment: .top, spacing: 10) {
             PlanTick(todo: todo, toggle: toggle)
             VStack(alignment: .leading, spacing: 2) {
+                // Someone else's to do: who, first — the owner only waits.
+                if waiting {
+                    Text("Waiting for " + (Journal.whom(todo) ?? "someone else"))
+                        .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, Theme.planTop)
+                        .accessibilityIdentifier("task.waitingFor")
+                }
                 Text(todo.text)
-                    .foregroundStyle(todo.isDone || todo.isBlocked ? .secondary : .primary)
+                    .foregroundStyle(todo.isDone || todo.isBlocked || waiting ? .secondary : .primary)
                     .strikethrough(todo.isDone, color: .secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, Theme.planTop)
+                    .padding(.top, waiting ? 0 : Theme.planTop)
                 ConnectionChips(item: .task(todo))
                 if let reminders, remindable {
                     CalendarChip(kind: .reminder, linkedID: todo.reminderID, title: todo.text, day: todo.due, time: todo.dueTime,
@@ -1357,13 +1365,16 @@ struct PhoneTodoRow: View {
         try? context.save()
     }
 
+    /// Someone else's, still open: the owner waits for it.
+    private var waiting: Bool { todo.owner == .other && !todo.isDone }
+
     private var line: String {
         var parts: [String] = []
         // The owner's own need no saying: most of a list is.
-        if todo.owner == .other, let whom = Journal.whom(todo) {
-            // Whom it waits for, by name; under its heading, the name is enough.
-            parts.append(showsOwner ? "Waiting for \(whom)" : whom)
-        } else if showsOwner, todo.owner != .me { parts.append(["we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
+        if todo.owner == .other, Journal.whom(todo) != nil {
+            // Whom it waits for is said above it, when it is still open.
+            if todo.isDone, let whom = Journal.whom(todo) { parts.append(whom) }
+        } else if showsOwner, todo.owner != .me, !waiting { parts.append(["we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
         if showsDue, let due = todo.due {
             parts.append("by " + Dates.short(due) + (todo.dueTime.map { " at \($0)" } ?? ""))
         } else if let time = todo.dueTime, todo.due != nil {
@@ -1531,7 +1542,11 @@ struct PhoneDateRow: View {
         var endDay: String? { appointment?.endDay }
         var endTime: String? { appointment?.endTime }
         /// "10:00–11:30", or the start alone.
-        var hours: String? { time.map { start in endTime.map { "\(start)–\($0)" } ?? start } }
+        /// "14:30–15:30 · 1 h": when and how long; "No time yet" for an appointment without one.
+        var hours: String? {
+            guard appointment != nil else { return time }
+            return Calendars.hoursLine(what: what, day: day, time: time, endDay: endDay, endTime: endTime)
+        }
 
         var findID: PageFind.ID {
             if let id = appointment?.persistentModelID ?? deadline?.persistentModelID { return .model(id) }

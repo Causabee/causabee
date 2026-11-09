@@ -48,7 +48,7 @@ struct RegisterTests {
         #expect(Register.of(body) == nil)
     }
 
-    @Test("A draft is told how the newest mails are written; a screenshot gives its own words")
+    @Test("A draft is told how the newest mails are written")
     func reachesTheDraft() throws {
         let context = ModelContext(try MatterSchema.container(at: nil))
         let matter = Matter(key: "car", name: "Volvo or VW")
@@ -61,7 +61,7 @@ struct RegisterTests {
         let body = "Hallo Ralf,\n\nder Volvo ist Freitag fertig.\n\nGruß\nJens\n\nAutohaus Nord GmbH\nTel. 040 123456"
         let facts = FactSheet.facts(for: [matter], today: MatterStatus.day(Date()), keptText: { _ in body })
         #expect(facts.text.contains("written: opens \"Hallo Ralf,\", closes \"Gruß / Jens\""), "\(facts.text)")
-        #expect(!facts.text.contains("Tel. 040"), "The signature block went along.")
+        #expect(!facts.text.contains("closes \"Gruß / Jens / Autohaus"), "The signature block was taken for the sign-off.")
     }
 
     @Test("The rules for writing in the owner's voice are in what the bee is told")

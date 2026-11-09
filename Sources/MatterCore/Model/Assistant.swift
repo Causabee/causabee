@@ -182,9 +182,17 @@ public enum FactSheet {
                     if let digest = entry.digest, !digest.isEmpty { line += " — " + digest.replacingOccurrences(of: "\n", with: " ") }
                     if [.screenshot, .document].contains(entry.source.kind), let text = keptText?(entry), !text.isEmpty {
                         line += " — its words: \"" + String(text.prefix(1500)).replacingOccurrences(of: "\n", with: " / ") + "\""
-                    } else if entry.source.kind == .mail, n < 8, let text = keptText?(entry), let register = Register.of(text) {
-                        // How it is written — what a summary loses and a draft needs (principle 13).
-                        line += " — written: opens \"\(register.opens)\", closes \"\(register.closes)\""
+                    } else if entry.source.kind == .mail, n < 10, let text = keptText?(entry), !text.isEmpty {
+                        // Its own words, not only the summary: a time offered, a number, what exactly
+                        // was said — a summary of three sentences leaves such things out. The newest
+                        // part only: what it quotes is in the mails before it.
+                        let newest = Quotes.newest(of: text, subject: entry.title).newest
+                        let words = newest.prefix(1200).split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                        line += " — its words: \"" + words.joined(separator: " / ") + "\""
+                        // How it is written — what a draft needs (principle 13).
+                        if let register = Register.of(text) {
+                            line += " — written: opens \"\(register.opens)\", closes \"\(register.closes)\""
+                        }
                     }
                     lines.append(line)
                 }

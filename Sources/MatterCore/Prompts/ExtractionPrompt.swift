@@ -7,7 +7,7 @@ import Foundation
 /// prompt that asks for something different from what the labels mean would measure the
 /// difference between two definitions, not how good the model is.
 public enum ExtractionPrompt {
-    public static let version = "extract-v16"
+    public static let version = "extract-v17"
 
     /// Added for a model that writes a to-do for everything a mail touches — Mistral wrote half
     /// again as many as Opus, most of them "confirm the appointment" and "prepare for it". Opus
@@ -150,7 +150,10 @@ public enum ExtractionPrompt {
 
     Only an appointment that is settled: agreed, booked or invited to. Times that are only \
     proposed or offered to choose from — "would 11:00 or 14:00 suit you?", "we suggest Friday" — \
-    are no appointment yet; the reply that settles one is.
+    are no appointment yet; the reply that settles one is. A reply that settles one of them — \
+    "Freitag passt", "dann bis Freitag", "the first one works" — has the appointment with the \
+    day, time and place as they were offered: you may be given the start of the message it \
+    answers, for that. Its time is never left null when the offer gave one.
 
     You may be given the appointments a matter already has. When the email moves one of them, \
     settles it at another time, or says again what it is, set `replaces` to it exactly as it \

@@ -13,6 +13,9 @@ public enum Quotes {
         /// Characters left out. Zero when the whole body was kept.
         public var omitted: Int
         public var reason: String
+        /// What was left out: the messages quoted below, newest first — to complete a reply that
+        /// settles what they offered ("Freitag passt"). Empty when nothing was left out.
+        public var quoted: String = ""
     }
 
     /// Below this many letters, the newest part cannot stand on its own.
@@ -32,7 +35,8 @@ public enum Quotes {
         if newest.filter(\.isLetter).count < shortest {
             return Split(newest: body, omitted: 0, reason: "the new part is too short to stand alone")
         }
-        return Split(newest: newest, omitted: omitted, reason: "quoted history left out")
+        let quoted = lines[cut.line...].joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        return Split(newest: newest, omitted: omitted, reason: "quoted history left out", quoted: quoted)
     }
 
     static func isForward(_ subject: String) -> Bool {

@@ -256,7 +256,7 @@ public struct Extractor: Sendable {
                                    threads: &threads, summary: &summary, owner: owner, disguiser: disguiser, restorer: restorer)
                 continue
             }
-            let user = ExtractionPrompt.user(mail: Self.text(of: disguise, body: history.newest, omitted: history.omitted),
+            let user = ExtractionPrompt.user(mail: Self.text(of: disguise, body: history.newest, omitted: history.omitted, answered: history.quoted),
                                              sent: outcomes[index].email.date, owner: disguisedOwner, matters: matters,
                                              thread: thread, threadClosed: thread.map { closedMatters.contains(restorer.apply($0).text.lowercased()) } ?? false,
                                              open: book.open(for: thread, matters: matters.map(\.name)),
@@ -380,7 +380,7 @@ public struct Extractor: Sendable {
     /// The mail as the model reads it: the headers a person would look at, then the body, with
     /// every link reduced to `[link]`. A tracking link's long code can identify the person it was
     /// sent to as surely as a name, and it tells the model nothing a person reading would use.
-    public static func text(of disguise: Disguise, body: String? = nil, omitted: Int = 0) -> String {
+    public static func text(of disguise: Disguise, body: String? = nil, omitted: Int = 0, answered: String = "") -> String {
         // In the subject and the attachments' names too: a shared document's address is as
         // telling there as in the text.
         // A link whose address was disguised already — `https://[Domain A]/t?id=…`, or `[Domain A]/t?id=…`
@@ -392,6 +392,11 @@ public struct Extractor: Sendable {
         var body = unlinked(body ?? disguise.body)
         if omitted > 0 {
             body += "\n\n[Earlier messages quoted below this one were left out; they were read when they arrived.]"
+            // The message it answers, for what the reply settles: "Freitag passt" takes the time offered there.
+            let excerpt = unlinked(String(answered.prefix(1500))).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !excerpt.isEmpty {
+                body += "\n\n[The start of what it answers, for reference only — nothing in it is new; use it only to complete what this message settles or refers to:]\n" + excerpt
+            }
         }
         var lines = ["From: \(disguise.from)"]
         if !disguise.to.isEmpty { lines.append("To: \(disguise.to.joined(separator: ", "))") }

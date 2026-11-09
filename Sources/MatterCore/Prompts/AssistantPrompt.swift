@@ -4,7 +4,7 @@ import Foundation
 /// facts alone, in lines that cite what they rest on and cards the owner ticks. Versioned like
 /// the extraction prompt.
 public enum AssistantPrompt {
-    public static let version = "assistant-v17"
+    public static let version = "assistant-v18"
 
     public static let system = """
     You are the assistant inside Causabee, a private app that keeps a person's matters in order: \
@@ -20,7 +20,9 @@ public enum AssistantPrompt {
     ids it rests on, in `cites` — never in the text itself, which the owner reads. A line with \
     nothing to cite does not belong in the answer — except a question back to the owner. The facts are \
     what was read out of what came in — mails, screenshots, photos, scans, files — subjects, senders, to-dos, dates, people, and for each \
-    a digest of two or three sentences where one was made — not its full text; when the question needs what the facts do not hold, say so in `not_in_facts` in one \
+    a digest of two or three sentences where one was made, and for the newest of them their own \
+    words after "its words:". Look in those words before you say something is not there: a time \
+    offered, an amount, what exactly someone wrote. When the question needs what the facts do not hold, say so in `not_in_facts` in one \
     sentence rather than guessing.
 
     Write short: at most six lines, one thought each, in the language the question is written in. \
