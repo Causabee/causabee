@@ -471,6 +471,20 @@ public final class Document {
     /// the owner dropped in is never one.
     public var isSmallImage: Bool { !isOwnFile && contentType.hasPrefix("image/") && byteCount < 30_000 }
 
+    /// A picture in a mail that is only its dress — a logo, a signature, a banner, a social icon —
+    /// not something sent: never read, never sent, nothing paid for it (9 November).
+    public var isBranding: Bool {
+        guard !isOwnFile, contentType.hasPrefix("image/") else { return false }
+        if isSmallImage || contentType == "image/gif" { return true }
+        // A photo or a scan is big; a mail's dress is not. IMG_4512.jpeg is the iPhone's photo.
+        guard byteCount < 1_000_000 else { return false }
+        let name = name.lowercased()
+        // What mail programs call the pictures in a signature: image001.png, Outlook-1.png, ATT00001.png.
+        if name.range(of: #"^(image\d{3}|outlook-\w{1,8}|att\d{5})\.(png|jpe?g)$"#, options: .regularExpression) != nil { return true }
+        return ["logo", "signature", "signatur", "banner", "icon", "facebook", "linkedin", "twitter", "instagram",
+                "xing", "youtube", "badge", "footer", "header", "spacer", "pixel"].contains { name.contains($0) }
+    }
+
     /// The name the owner gave the file: one copied in beside the store is kept as
     /// `1A2B3C4D-Brief.pdf`, and is called `Brief.pdf` again here.
     public static func ownName(of file: URL) -> String {
@@ -484,7 +498,7 @@ public final class Document {
     /// A PDF or a picture can be read; a Word file or an invitation cannot, yet.
     public var isReadable: Bool {
         contentType == "application/pdf" || name.lowercased().hasSuffix(".pdf")
-            || (contentType.hasPrefix("image/") && !isSmallImage)
+            || (contentType.hasPrefix("image/") && !isBranding)
     }
 
     /// Whether Causabee has read a file, or only keeps it.

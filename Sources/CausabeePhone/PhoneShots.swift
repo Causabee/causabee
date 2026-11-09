@@ -38,6 +38,9 @@ final class PhoneShots {
         /// Undo and Move.
         var made: [String] = []
         var fileID: String?
+        /// Read by itself — a file that came attached to a mail: not said in the chat, what it
+        /// brings just comes in, marked NEW like everything else.
+        var quiet = false
         /// How far it is, as a number: the thread follows its card down as it grows.
         var step: Int {
             switch stage {
@@ -88,8 +91,9 @@ final class PhoneShots {
         return (try? data.write(to: file)) != nil ? file : nil
     }
 
-    func bring(_ file: URL, matter: PersistentIdentifier?, document: PersistentIdentifier? = nil, context: ModelContext, owner: String?) {
+    func bring(_ file: URL, matter: PersistentIdentifier?, document: PersistentIdentifier? = nil, context: ModelContext, owner: String?, quiet: Bool = false) {
         var shot = Shot(file: file, matter: matter, document: document)
+        shot.quiet = quiet
         // This iPhone's own list of names, started from the Mac's, with the other devices' names in it.
         if !DemoData.isRequested {
             do { try NameLists.adopt(into: PhoneNames.mapping, device: PhoneNames.device, in: context) } catch {
@@ -834,5 +838,36 @@ struct TakenLine: View {
         try? context.save()
         Haptics.success()
         if record == nil { gone() }
+    }
+}
+
+/// Files that came attached to mail — a PDF, a scan, a photo — read by themselves after a round of
+/// mail, as a screenshot shared is: what they say comes into their matter, marked NEW. A logo or a
+/// signature is not read (`Document.isBranding`). Each is tried once: a failure is not paid for again.
+@MainActor
+enum AttachmentReading {
+    private static let triedKey = "attachments.tried"
+    private static var running = false
+
+    static func readNew(context: ModelContext, owner: String?) {
+        guard AutoMode.isOn, !DemoData.isRequested, !running else { return }
+        var tried = Set(UserDefaults.standard.stringArray(forKey: triedKey) ?? [])
+        let since = Date().addingTimeInterval(-14 * 86_400)
+        let waiting = ((try? context.fetch(FetchDescriptor<MatterCore.Document>())) ?? []).filter { document in
+            document.source.kind == .mail && document.reading == .kept && !document.isHidden && document.matter != nil
+                && (document.source.date ?? .distantPast) > since && !tried.contains(document.messageID + "|" + document.name)
+        }
+        guard !waiting.isEmpty else { return }
+        running = true
+        Task {
+            defer { running = false }
+            for document in waiting.prefix(8) {
+                tried.insert(document.messageID + "|" + document.name)
+                UserDefaults.standard.set(Array(tried.suffix(2000)), forKey: triedKey)
+                guard let url = try? await MailFiles.open(document) else { continue }
+                PhoneShots.shared.bring(url, matter: document.matter?.persistentModelID, document: document.persistentModelID,
+                                        context: context, owner: owner, quiet: true)
+            }
+        }
     }
 }

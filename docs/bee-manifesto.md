@@ -80,5 +80,5 @@ If a change breaks a principle, it is wrong — however good it looks.
 
 Listed so nobody pretends. Each one closes with a test.
 
-- **Section 3, Reads:** files attached to mail, and files kept "only stored", are not read until you tap Read.
-- **Principle 12:** two devices rewriting at once can, rarely, bring back a NEW you already saw.
+- **Section 3, Reads:** files attached to mail are read by themselves on iPhone and iPad after each mail check (logos and signatures skipped). The Mac does not do it on its own yet; a file dropped into a matter's folder is kept until you tap Read.
+- **Principle 12:** two devices rewriting at once can, rarely, bring back a NEW you already saw. Planned fix, no schema change: each device keeps its own last-seen time and never writes an older one back; the brief records which device wrote it.

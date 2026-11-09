@@ -127,7 +127,7 @@ struct AssistantSheet: View {
     }
 
     private var shots: [PhoneShots.Shot] {
-        PhoneShots.shared.shots.filter { matter == nil || $0.matter == nil || $0.matter == matter?.persistentModelID }
+        PhoneShots.shared.shots.filter { !$0.quiet && (matter == nil || $0.matter == nil || $0.matter == matter?.persistentModelID) }
     }
 
     private var entries: [Entry] {

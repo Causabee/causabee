@@ -456,6 +456,8 @@ final class PhoneMailCheck {
             let mails = IntakeSummary.mails(judgements) { key in matters.first { $0.answers(to: key) }?.name }
             Haptics.success()
             state = .done(text, IntakeSummary.items(judgements), mails)
+            // What came attached — a PDF, a scan, a photo — read by itself, as a screenshot is.
+            AttachmentReading.readNew(context: context, owner: owner.first)
         } catch {
             Haptics.failure()
             state = .failed(plainWords(error))

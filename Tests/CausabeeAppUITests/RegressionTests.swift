@@ -173,6 +173,9 @@ final class RegressionTests: XCTestCase {
         let merge = app.menuItems["Merge With …"].firstMatch
         XCTAssertTrue(merge.waitForExistence(timeout: 5), "⋯ has no “Merge With …”.")
         merge.click()
+        // Found as the owner finds it among many: by its name in the search field.
+        let search = app.searchFields.firstMatch
+        if search.waitForExistence(timeout: 5) { search.click(); search.typeText("Tax") }
         let other = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Tax return 2025")).firstMatch
         XCTAssertTrue(other.waitForExistence(timeout: 5), "“Merge With …” does not list the other matters.")
         other.click()

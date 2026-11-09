@@ -179,13 +179,13 @@ final class ManifestoUITests: XCTestCase {
     }
 
     func testAPhotographedLetterGivesItsTask() {
-        launch(open: "Cancel Mum's gym membership")
+        launch(open: "mums-gym")
         tab("Plan")
         XCTAssertTrue(any("Send the cancellation to FitPark").waitForExistence(timeout: 20), "The photographed letter's task is not in Plan.")
     }
 
     func testAPhotographedLetterGivesItsDeadline() {
-        launch(open: "Cancel Mum's gym membership")
+        launch(open: "mums-gym")
         tab("Plan")
         XCTAssertTrue(any("Last day to cancel").waitForExistence(timeout: 20), "The letter's deadline is not in Plan.")
     }
@@ -228,7 +228,7 @@ final class ManifestoUITests: XCTestCase {
 
     func testEveryMatterOpensAtItsNextStep_ElmCourt() { opensAtItsNextStep("New property manager for Elm Court 51", "Send the signed power of attorney to Kessler") }
     func testEveryMatterOpensAtItsNextStep_Application() { opensAtItsNextStep("Application: Head of Design, Brightwave", "Prepare the 20-minute design-system case study") }
-    func testEveryMatterOpensAtItsNextStep_MumsGym() { opensAtItsNextStep("Cancel Mum's gym membership", "Have Mum sign the cancellation") }
+    func testEveryMatterOpensAtItsNextStep_MumsGym() { opensAtItsNextStep("mums-gym", "Have Mum sign the cancellation") }
     func testEveryMatterOpensAtItsNextStep_Mortgage() { opensAtItsNextStep("Mortgage refinancing 2027", "Ask Sparkasse whether a special repayment is possible") }
     func testEveryMatterOpensAtItsNextStep_GardenApp() { opensAtItsNextStep("Garden planner app (side project)", "Add the weather to the watering week") }
     func testEveryMatterOpensAtItsNextStep_Dinner() { opensAtItsNextStep("Christmas dinner with friends", "Ask Chiara if her sister comes") }
