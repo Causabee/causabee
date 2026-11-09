@@ -75,7 +75,7 @@ enum DemoData {
     /// Counts up whenever the demo's words or matters change: a demo store filled with an older
     /// version is emptied and filled again — with today's dates too. Two things are overdue in it, in
     /// the care matter and the trip: enough to show what overdue looks like, not a page of it. Only ever the demo's own store.
-    static let contentVersion = 10
+    static let contentVersion = 11
     private static let seededKey = "demo.filled"
 
     /// The demo's own talk, where it stands ahead of the clock, is put an hour behind it — in the
@@ -112,7 +112,16 @@ enum DemoData {
         var book: [String: Party] = [:]
         let cases = [scienceFair(context, &book), lisbon(context, &book), care(context, &book), flat(context, &book),
                      wedding(context, &book), moving(context, &book), tax(context, &book), accident(context, &book),
-                     renovation(context, &book)]
+                     renovation(context, &book), propertyManager(context, &book), application(context, &book),
+                     mumsGym(context, &book), mortgage(context, &book), gardenApp(context, &book), dinner(context, &book),
+                     nextCar(context, &book)]
+        // Looked at last night, as an owner does: what came before is on its cards, without "NEW";
+        // what came in since — today — has the dot. Not every matter new at once: that is noise.
+        for made in cases {
+            var brief = made.matter.shownBrief ?? Brief()
+            brief.newLookedAt = date(-1, hour: 21)
+            made.matter.shownBrief = brief
+        }
         try? context.save()
         for made in cases { made.talk() }
         try? context.save()
@@ -321,6 +330,7 @@ enum DemoData {
             if let packed = try? (Data(words.utf8) as NSData).compressed(using: .lzfse) as Data {
                 context.insert(KeptText(messageID: id, data: packed))
             }
+            arrive(id, offset)
             for (name, type, size) in files {
                 let document = Document(name: name, contentType: type, byteCount: size, source: source)
                 if read.contains(name) { document.readAt = DemoData.date(offset + 1) }
@@ -328,6 +338,49 @@ enum DemoData {
                 context.insert(document)
             }
             return source
+        }
+
+        /// Something that came in that is not a mail — a WhatsApp screenshot, a photo of a letter, a
+        /// scan, a file shared from another app: written `offset` days from today, and reaching the
+        /// bee `arrived` days from today (later than written, when it was shared later — a screenshot
+        /// of last week's chat, sent today). What it says is its digest, as the bee read it.
+        @discardableResult
+        func came(_ kind: Source.Kind, _ offset: Int, _ from: String, _ title: String, _ digest: String,
+                  arrived: Int? = nil, file: (String, String, Int)? = nil) -> Source {
+            mails += 1
+            let id = "demo-\(matter.key)-\(kind.rawValue)-\(mails)"
+            let name = file?.0 ?? (kind == .screenshot ? "Screenshot \(mails).png" : kind == .photo ? "Photo \(mails).jpg" : "Scan \(mails).pdf")
+            let source = Source(kind: kind, pointer: name, messageID: id, date: DemoData.date(offset, hour: 8 + mails % 9))
+            let entry = Entry(title: title, from: from, date: source.date, source: source)
+            entry.digest = digest
+            entry.matter = matter
+            context.insert(entry)
+            let document = Document(name: name, contentType: file?.1 ?? (kind == .photo ? "image/jpeg" : kind == .screenshot ? "image/png" : "application/pdf"),
+                                    byteCount: file?.2 ?? 240_000, source: source)
+            document.readAt = DemoData.date(arrived ?? offset)
+            document.matter = matter
+            context.insert(document)
+            arrive(id, arrived ?? offset)
+            return source
+        }
+
+        /// When it reached the bee: sorted in, on this device.
+        func arrive(_ id: String, _ offset: Int) {
+            let record = SortedMail(messageID: id, device: "demo")
+            record.sortedAt = min(DemoData.date(offset, hour: 8 + mails % 9), Date().addingTimeInterval(-600))
+            context.insert(record)
+        }
+
+        /// The owner's own note in the matter, typed or spoken.
+        func own(_ offset: Int, _ text: String) {
+            let note = MatterNote(text: text, createdAt: DemoData.date(offset, hour: 19))
+            note.matter = matter
+            context.insert(note)
+        }
+
+        /// What is good to know, as the bee wrote it, each resting on what came in.
+        func facts(_ facts: [(String, Source)]) {
+            matter.putFacts(facts.map { GoodToKnowFact(text: $0.0, sources: [$0.1]) }, in: context, at: DemoData.date(-1))
         }
 
         func todo(_ handle: String, _ text: String, _ owner: Todo.Owner, due: Int? = nil, time: String? = nil, from mail: Source,
@@ -460,7 +513,7 @@ enum DemoData {
         var seen: String {
             let open = matter.openTodos.count
             let dates = (matter.appointments ?? []).count + (matter.deadlines ?? []).count
-            return "\(matter.entries?.count ?? 0) mails, \(open) open tasks, \(dates) dates"
+            return "\(matter.entries?.count ?? 0) items, \(open) open tasks, \(dates) dates"
         }
 
         func note(_ offset: Int, _ text: String) {
@@ -547,6 +600,142 @@ enum DemoData {
     }
 
     // MARK: 1 · A school project
+
+    // MARK: Matters as people really have them — from every source, not only mail
+
+    /// An owners' association changing its property manager: mail from both managers, a scan of the
+    /// contract, the owners' WhatsApp group, a notice photographed in the stairwell.
+    private static func propertyManager(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
+        let c = Case(context, key: "elm-court-manager", name: "New property manager for Elm Court 51")
+        let offer = c.mail(-20, "Kessler Hausverwaltung <info@kessler-hv.example>", "Offer: management of Elm Court 51 from 1 January",
+                           "Kessler offers to manage the building from 1 January for 28 euros per unit and month. Needs a power of attorney from each owner.",
+                           files: [("Offer Kessler.pdf", "application/pdf", 310_000)], read: ["Offer Kessler.pdf"])
+        let contract = c.came(.document, -12, "Scan", "Management contract, draft", "Draft contract with Kessler: term 3 years, notice 6 months to year end, owners' meeting must approve.",
+                              file: ("Management contract draft.pdf", "application/pdf", 520_000))
+        let group = c.came(.screenshot, -6, "WhatsApp: Elm Court owners", "Owners' group: vote on Kessler",
+                           "Jonas: we vote on Kessler at the owners' meeting. Leila: can someone ask Hartmann for the 2025 statement first?", arrived: 0)
+        let notice = c.came(.photo, -2, "Photo", "Notice in the stairwell", "Einladung zur Eigentümerversammlung am Donnerstag, 19 Uhr, im Gemeinschaftsraum. Tagesordnung: Verwalterwechsel.")
+        let old = c.mail(-9, "Hartmann Immobilien <office@hartmann-immo.example>", "Handover of the building documents",
+                         "Hartmann will hand over the files on 31 December. The 2025 statement follows in February.")
+        c.todo("attorney", "Send the signed power of attorney to Kessler", .me, due: 5, from: offer, quote: "Needs a power of attorney from each owner")
+        c.todo("statement", "Ask Hartmann for the 2025 statement before the vote", .me, due: 8, from: group, quote: "ask Hartmann for the 2025 statement first")
+        c.todo("files", "Hand over the building files", .other, due: 52, from: old, quote: "hand over the files on 31 December")
+        c.todo("compare", "Compare Kessler's offer with the current fee", .me, from: offer, quote: "28 euros per unit and month", done: -15)
+        c.appointment("Owners' meeting: vote on the new manager", 10, "19:00", at: "Community room, Elm Court 51", from: notice, quote: "Eigentümerversammlung am Donnerstag, 19 Uhr")
+        c.deadline("Notice to Hartmann (6 months to year end)", 21, from: contract, quote: "notice 6 months to year end")
+        c.own(-3, "Boiler room keys are with Mr. Okafor, ground floor left.")
+        c.facts([("Kessler charges 28 euros per unit and month.", offer), ("The contract runs 3 years; notice is 6 months to the year's end.", contract)])
+        c.party("Kessler Hausverwaltung", "New property manager", mentions: 3, &book)
+        c.party("Hartmann Immobilien", "Current property manager", mentions: 2, &book)
+        c.summarise("Elm Court changes its property manager to Kessler from January. It hangs on the owners' vote and on Hartmann's 2025 statement.",
+                    next: "Send the signed power of attorney to Kessler", why: "Kessler needs it from each owner before the vote.", todo: "attorney")
+        return c
+    }
+
+    /// A job application: the recruiter's mails, a LinkedIn chat as a screenshot, the CV shared as a file.
+    private static func application(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
+        let c = Case(context, key: "brightwave-application", name: "Application: Head of Design, Brightwave")
+        let cv = c.came(.document, -18, "Files", "CV and portfolio", "CV, 2 pages, and the portfolio link as sent to Brightwave.", file: ("CV Mara Voss 2026.pdf", "application/pdf", 180_000))
+        let invite = c.mail(-7, "Priya Raman <priya@brightwave.example>", "Second interview at Brightwave",
+                            "Priya invites Mara to a second interview with the CPO on Thursday at 14:00, with a 20-minute case study on a design system.")
+        let chat = c.came(.screenshot, -1, "LinkedIn: Priya Raman", "LinkedIn chat with the recruiter",
+                          "Priya: the CPO cares most about how you'd scale the design system across three apps. Salary range is open.")
+        c.todo("portfolio", "Send the portfolio link to Priya", .me, from: cv, quote: "portfolio link as sent", done: -16)
+        c.todo("case", "Prepare the 20-minute design-system case study", .me, due: 2, from: invite, quote: "a 20-minute case study on a design system")
+        c.todo("salary", "Decide the salary expectation before Thursday", .me, due: 3, from: chat, quote: "Salary range is open")
+        c.appointment("Second interview with the CPO", 3, "14:00", at: "Video call", from: invite, quote: "second interview with the CPO on Thursday at 14:00")
+        c.own(-1, "Lead with the three-apps story. Keep the case to 15 minutes, leave room for questions.")
+        c.facts([("The CPO cares most about scaling one design system across three apps.", chat)])
+        c.party("Priya Raman", "Recruiter, Brightwave", mentions: 2, &book)
+        c.summarise("Second round at Brightwave on Thursday. What matters now is the case study and a salary number.",
+                    next: "Prepare the 20-minute design-system case study", why: "The interview is in three days.", todo: "case")
+        return c
+    }
+
+    /// Cancelling a parent's gym membership: a photographed letter, a scanned contract, no mail at all.
+    private static func mumsGym(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
+        let c = Case(context, key: "mums-gym", name: "Cancel Mum's gym membership")
+        let letter = c.came(.photo, -5, "Photo", "Letter from FitPark", "FitPark: Ihr Vertrag verlängert sich automatisch um 12 Monate, wenn er nicht bis zum 30. schriftlich gekündigt wird.")
+        let contract = c.came(.document, -30, "Scan", "Membership contract", "Membership no. 44871, started 2023, notice 1 month in writing.", arrived: -4)
+        c.todo("cancel", "Send the cancellation to FitPark by registered mail", .me, due: 4, from: letter, quote: "schriftlich gekündigt")
+        c.todo("sign", "Have Mum sign the cancellation", .we, due: 3, from: contract, quote: "notice 1 month in writing")
+        c.deadline("Last day to cancel, or it renews for 12 months", 9, from: letter, quote: "bis zum 30. schriftlich gekündigt")
+        c.own(-4, "Mum's member number is on the key fob too.")
+        c.facts([("It renews by itself for 12 months if not cancelled in writing.", letter)])
+        c.party("FitPark", "Gym", mentions: 1, &book)
+        c.summarise("Mum's gym renews for a year unless cancelled in writing by the 30th.",
+                    next: "Have Mum sign the cancellation", why: "It has to go by registered mail before the 30th.", todo: "sign")
+        return c
+    }
+
+    /// Refinancing a mortgage: bank offers as files, a rate comparison screenshot — no mail.
+    private static func mortgage(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
+        let c = Case(context, key: "mortgage-2027", name: "Mortgage refinancing 2027")
+        let bankA = c.came(.document, -14, "Files", "Offer Nordbank", "Nordbank: 3.4% fixed for 10 years, offer holds 4 weeks, special repayment 5% a year.",
+                           file: ("Nordbank offer.pdf", "application/pdf", 410_000))
+        let bankB = c.came(.document, -3, "Files", "Offer Sparkasse", "Sparkasse: 3.25% fixed for 10 years, no special repayment, valid until month end.",
+                           file: ("Sparkasse offer.pdf", "application/pdf", 380_000))
+        let rates = c.came(.screenshot, -2, "Screenshot", "Rate comparison", "Comparison site: 10-year fixed rates between 3.1% and 3.6% this week.")
+        c.todo("compare", "Compare Nordbank and Sparkasse side by side", .me, due: 6, from: bankB, quote: "3.25% fixed for 10 years")
+        c.todo("repay", "Ask Sparkasse whether a special repayment is possible", .me, due: 5, from: bankB, quote: "no special repayment")
+        c.todo("docs", "Send the salary statements to Nordbank", .me, from: bankA, quote: "offer holds 4 weeks", done: -10)
+        c.deadline("Nordbank offer expires", 14, from: bankA, quote: "offer holds 4 weeks")
+        c.own(-2, "Rather a bit more interest than no special repayment — we may sell in 6 years.")
+        c.facts([("Nordbank allows 5% special repayment a year.", bankA), ("This week's 10-year rates run from 3.1% to 3.6%.", rates)])
+        c.party("Nordbank", "Bank", mentions: 1, &book)
+        c.party("Sparkasse", "Bank", mentions: 1, &book)
+        c.summarise("Two offers for the refinancing; Sparkasse is cheaper but has no special repayment, which matters if you sell.",
+                    next: "Ask Sparkasse whether a special repayment is possible", why: "It decides between the two offers.", todo: "repay")
+        return c
+    }
+
+    /// The owner's own side project: screenshots and notes only.
+    private static func gardenApp(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
+        let c = Case(context, key: "garden-planner", name: "Garden planner app (side project)")
+        let sketch = c.came(.screenshot, -9, "Screenshot", "Watering screen, first sketch", "A week view with one row per bed and a drop icon for each watering.")
+        let feedback = c.came(.screenshot, -20, "WhatsApp: Tom", "Tom's feedback on the sketch", "Tom: show the weather next to the week, nobody waters when it rains.", arrived: 0)
+        c.todo("weather", "Add the weather to the watering week", .me, from: feedback, quote: "show the weather next to the week")
+        c.todo("sketch", "Sketch the watering screen", .me, from: sketch, quote: "A week view", done: -8)
+        c.own(-9, "Keep it to one screen for the first version.")
+        c.own(-1, "Ask Tom if he'd test it in spring.")
+        c.summarise("A small app to plan watering the garden; the first screen is sketched.",
+                    next: "Add the weather to the watering week", why: "Tom's feedback: nobody waters when it rains.", todo: "weather")
+        return c
+    }
+
+    /// A dinner with friends: arranged in WhatsApp, one mail from the restaurant.
+    private static func dinner(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
+        let c = Case(context, key: "christmas-dinner", name: "Christmas dinner with friends")
+        let group = c.came(.screenshot, -4, "WhatsApp: Dinner crew", "Who comes", "Anna, Ben, Chiara and Dev are in. Ben is vegetarian. Chiara might bring her sister.")
+        let booking = c.mail(-3, "Trattoria Lume <tavoli@lume.example>", "Your table on the 20th",
+                             "Table for 6 on the 20th at 19:30 is held until Friday; please confirm the number of guests.")
+        c.todo("confirm", "Confirm the number of guests to Trattoria Lume", .me, due: 2, from: booking, quote: "please confirm the number of guests")
+        c.todo("sister", "Ask Chiara if her sister comes", .me, due: 1, from: group, quote: "Chiara might bring her sister")
+        c.appointment("Christmas dinner", 11, "19:30", at: "Trattoria Lume", from: booking, quote: "the 20th at 19:30")
+        c.facts([("Ben is vegetarian.", group)])
+        c.party("Trattoria Lume", "Restaurant", mentions: 1, &book)
+        c.summarise("Dinner on the 20th is held for six; the restaurant needs the final number by Friday.",
+                    next: "Ask Chiara if her sister comes", why: "It decides the number the restaurant needs.", todo: "sister")
+        return c
+    }
+
+    /// Choosing a car: dealer screenshots, a brochure, one mail, and the owner's own thoughts.
+    private static func nextCar(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
+        let c = Case(context, key: "next-car", name: "Volvo or VW — next car")
+        let volvo = c.came(.screenshot, -8, "Screenshot", "Volvo EX30 offer", "Leasing 389 euros a month, 36 months, 10,000 km a year, delivery in 4 months.")
+        let vw = c.came(.document, -6, "Files", "VW ID.3 brochure", "ID.3: range up to 550 km, leasing from 349 euros, delivery in 8 weeks.", file: ("ID.3 brochure.pdf", "application/pdf", 2_400_000))
+        let dealer = c.mail(-2, "Autohaus Weber <verkauf@weber-auto.example>", "Test drive ID.3",
+                            "A test drive of the ID.3 is possible on Saturday at 10:00.")
+        c.todo("drive", "Confirm the ID.3 test drive for Saturday", .me, due: 1, from: dealer, quote: "Saturday at 10:00")
+        c.todo("km", "Work out how many km a year we really drive", .me, from: volvo, quote: "10,000 km a year")
+        c.appointment("Test drive VW ID.3", 5, "10:00", at: "Autohaus Weber", from: dealer, quote: "Saturday at 10:00")
+        c.own(-6, "Delivery time matters: the old car's lease ends in 3 months.")
+        c.facts([("Volvo delivers in 4 months, VW in 8 weeks.", vw)])
+        c.party("Autohaus Weber", "VW dealer", mentions: 1, &book)
+        c.summarise("Volvo or VW, decided mostly by delivery time: the current lease ends in three months.",
+                    next: "Confirm the ID.3 test drive for Saturday", why: "The dealer holds Saturday 10:00.", todo: "drive")
+        return c
+    }
 
     private static func scienceFair(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
         let c = Case(context, key: "science-fair-9b", name: "Science fair: rainwater filter (Noa, 9b)")
