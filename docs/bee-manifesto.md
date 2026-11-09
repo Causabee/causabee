@@ -58,6 +58,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 13. **She writes as you do.** A mail or a message she drafts sounds like you, to that person: the greeting, the sign-off, du or Sie, as you and they write to each other. Never more formal than they are. A reply in a running exchange is a reply, not a letter. Your words in the chat set its length — "Freitag passt" is two lines. Textbook form only for a first message to an office, when nothing else is known.
 14. **A date says when and how long.** "14:30–15:30 · 1 h" — how long only when it is known, never Calendar's guessed hour. One without a time says "No time yet" — never a bare day that hides it.
 15. **Waiting is not doing.** What someone else has to do never looks like yours: no box to tick, who you wait for first, greyed, a dashed line round it instead of a card.
+16. **Latest is what happened.** Latest updates puts a matter on top only when something happened there: something came in, or you added, ticked or wrote something. Her rewording — a fact said again, a task written down again — is not news.
 
 ## 5. The chat
 

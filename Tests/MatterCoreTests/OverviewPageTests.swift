@@ -217,3 +217,55 @@ extension OverviewPageTests {
         #expect(prepared < live)
     }
 }
+
+/// Latest updates says what happened: a fact said again, or a task written down again when the
+/// brief is reworded, is nothing new (9 November: "Bewerbung Shine" on top with nothing come in).
+@Suite("Latest updates: only what happened")
+@MainActor
+struct LatestHappenedTests {
+    func world() throws -> (ModelContext, Matter, Source) {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "shine", name: "Bewerbung Shine")
+        context.insert(matter)
+        let lastWeek = Date().addingTimeInterval(-7 * 86_400)
+        let source = Source(kind: .mail, pointer: "imap://x", messageID: "offer@shine", date: lastWeek)
+        let entry = Entry(title: "Ihr Angebot", from: "Pierrick <p@shine.example>", date: lastWeek, source: source)
+        entry.matter = matter
+        context.insert(entry)
+        let record = SortedMail(messageID: "offer@shine", device: "test")
+        record.sortedAt = lastWeek
+        context.insert(record)
+        try context.save()
+        return (context, matter, source)
+    }
+
+    @Test("A fact put again today does not make the matter the latest")
+    func factAgain() throws {
+        let (context, matter, source) = try world()
+        matter.putFacts([GoodToKnowFact(text: "Das Angebot enthält einen Essenszuschuss.", sources: [source])], in: context)
+        let latest = try #require(MatterSummary(matter, today: MatterStatus.day(Date())).latest)
+        #expect(latest.made == nil, "A fact said again stands as \(String(describing: latest.made))")
+        #expect(Calendar.current.isDateInToday(latest.date) == false)
+    }
+
+    @Test("A task from a mail of last week, written down today, happened last week")
+    func taskByArrival() throws {
+        let (context, matter, source) = try world()
+        let todo = Todo(text: "Bei Pierrick nachfragen", owner: .me, due: nil, source: source, origin: "offer#1")
+        context.insert(todo); todo.matter = matter
+        try context.save()
+        let latest = try #require(MatterSummary(matter, today: MatterStatus.day(Date())).latest)
+        #expect(Calendar.current.isDateInToday(latest.date) == false)
+    }
+
+    @Test("A task the owner adds today is today's")
+    func ownTaskToday() throws {
+        let (context, matter, _) = try world()
+        let own = Source(kind: .conversation, pointer: "", messageID: "chat-1", date: Date())
+        let todo = Todo(text: "Gehalt verhandeln", owner: .me, due: nil, source: own, origin: "chat#1")
+        context.insert(todo); todo.matter = matter
+        try context.save()
+        let latest = try #require(MatterSummary(matter, today: MatterStatus.day(Date())).latest)
+        #expect(latest.made == .taskAdded && Calendar.current.isDateInToday(latest.date))
+    }
+}

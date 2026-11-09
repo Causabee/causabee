@@ -172,9 +172,13 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
                                entry: id, made: kind))
         }
         for note in (matter.noteBlocks ?? []).shown { add(note.text, note.createdAt, note.persistentModelID, note.fromAssistant ? .savedAnswer : .note) }
-        for todo in (matter.todos ?? []).shown {
+        // Not what is good to know: written again when the brief is reworded, it is nothing that
+        // happened (9 November: a fact said again put a matter on top with "Task added"). A task
+        // from what came in happened when that came, not when it was written down again.
+        let arrivals = matter.arrivals()
+        for todo in (matter.todos ?? []).shown where !todo.isFact && !todo.isInfo {
             if todo.isDone { add(todo.text, todo.doneAt, todo.persistentModelID, .taskDone) }
-            else { add(todo.text, todo.createdAt, todo.persistentModelID, .taskAdded) }
+            else { add(todo.text, Matter.came(.task(todo), arrivals), todo.persistentModelID, .taskAdded) }
         }
         let newestMade = made.max { $0.date < $1.date }
         if let newestMade, newestMade.date > (mail?.date ?? .distantPast) { latest = newestMade } else { latest = mail }
