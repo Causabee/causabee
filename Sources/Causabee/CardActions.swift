@@ -98,6 +98,27 @@ enum CardActions {
 
     /// A fact by its id, if it is still there. A party merged away or a to-do deleted is gone,
     /// and `context.model(for:)` would hand back an object that crashes when read.
+    /// A date changed in the chat, as it stands now — not as it stood when the card was taken: what
+    /// the item says, and whether that is still what the owner asked for. "Date changed" that is no
+    /// longer true is never said (9 November: said three times, while the time was gone).
+    static func dateNow(_ card: AssistantPrompt.Reply.Card, refs: [String: FactRef], in context: ModelContext) -> (now: String, holds: Bool)? {
+        guard card.kind == .changeDate, let id = card.todo, let ref = refs[id] else { return nil }
+        if let item = live(ref, as: Appointment.self, in: context) {
+            let hours = Calendars.hoursLine(what: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime)
+            let holds = item.day == (card.due ?? item.day) && (card.time == nil || item.time == card.time)
+                && (card.endTime == nil || item.endTime == card.endTime)
+            return ([Dates.short(item.day), hours].compactMap { $0 }.joined(separator: ", "), holds)
+        }
+        if let item = live(ref, as: Todo.self, in: context) {
+            let now = item.due.map { Dates.short($0) + (item.dueTime.map { ", \($0)" } ?? "") } ?? "no day"
+            return (now, item.due == card.due && (card.time == nil || item.dueTime == card.time))
+        }
+        if let item = live(ref, as: Deadline.self, in: context) {
+            return (Dates.short(item.day), item.day == card.due)
+        }
+        return nil
+    }
+
     static func live<T: PersistentModel>(_ id: PersistentIdentifier, as type: T.Type, in context: ModelContext) -> T? {
         // The one the context holds already, without asking the store: the brief's proposals ask
         // for their tasks each time a page draws.

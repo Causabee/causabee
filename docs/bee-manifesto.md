@@ -68,7 +68,7 @@ The chat is you talking to her about your matters.
 - What she offers to do is a card: you take it, or not.
 - What you take lands where you'd look for it: a note in Notes, a task in Plan, a date in the calendar.
 - What she writes for you to send, she writes in your voice (principle 13).
-- What you tell her to change, changes as you said it — the day, the time, how long. "Date changed" means all of it.
+- What you tell her to change, changes as you said it — the day, the time, how long — and stays. Nothing she reads later moves it. "Date changed" shows the date as it is now; if anything ever changed it back, the receipt says so, with Set again — never a tick on what is not so.
 - What you tell her shapes her understanding at once and wins over what came in. It is your own word, so it is never shown back to you as NEW.
 
 ## 6. How we know she works

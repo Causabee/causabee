@@ -238,7 +238,7 @@ struct DaySheet: View {
         withAnimation {
             switch item {
             case .task(let todo), .fact(let todo): todo.due = text
-            case .appointment(let appointment): appointment.day = text
+            case .appointment(let appointment): appointment.day = text; appointment.claim()
             case .deadline(let deadline): deadline.day = text
             }
         }
