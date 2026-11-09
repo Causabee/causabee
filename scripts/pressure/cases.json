@@ -1,0 +1,214 @@
+[
+ {
+  "id": "01",
+  "profile": "Car buyer, casual dealer",
+  "matter": "Volvo or VW — next car",
+  "inHand": "Test drive ID.3",
+  "turns": [
+   "Antworte: Freitag passt"
+  ]
+ },
+ {
+  "id": "02",
+  "profile": "Car buyer, follow-up",
+  "matter": "Volvo or VW — next car",
+  "inHand": "Test drive ID.3",
+  "turns": [
+   "Schreib dem Autohaus, dass Freitag passt",
+   "kürzer bitte, und sag, ich bringe meine Frau mit"
+  ]
+ },
+ {
+  "id": "03",
+  "profile": "Car buyer, WhatsApp",
+  "matter": "Volvo or VW — next car",
+  "turns": [
+   "WhatsApp an meine Frau: Probefahrt Freitag, kommst du mit?"
+  ]
+ },
+ {
+  "id": "04",
+  "profile": "Busy parent, sister",
+  "matter": "Care for Mum (Helga) after her fall",
+  "inHand": "Who does what this week",
+  "turns": [
+   "Antworte Mara: ich übernehme Dienstag und Donnerstag, Freitag kann ich nicht"
+  ]
+ },
+ {
+  "id": "05",
+  "profile": "Busy parent, care fund (formal office)",
+  "matter": "Care for Mum (Helga) after her fall",
+  "inHand": "Application received",
+  "turns": [
+   "Write to the care fund: when will the assessor come? Mum is home from Monday."
+  ]
+ },
+ {
+  "id": "06",
+  "profile": "Busy parent, physio",
+  "matter": "Care for Mum (Helga) after her fall",
+  "inHand": "Physio appointments",
+  "turns": [
+   "Sag der Physio ab für Donnerstag, Mama hat einen Arzttermin"
+  ]
+ },
+ {
+  "id": "07",
+  "profile": "Busy parent, unknown recipient",
+  "matter": "Care for Mum (Helga) after her fall",
+  "turns": [
+   "Schreib eine Mail an die neue Pflegerin, dass sie den Schlüssel bei der Nachbarin holen kann"
+  ]
+ },
+ {
+  "id": "08",
+  "profile": "Homeowner, owners' group (many)",
+  "matter": "New property manager for Elm Court 51",
+  "turns": [
+   "Schreib an alle Eigentümer: Abstimmung über Kessler bis Sonntag, bitte im Chat antworten"
+  ]
+ },
+ {
+  "id": "09",
+  "profile": "Homeowner, old manager (formal)",
+  "matter": "New property manager for Elm Court 51",
+  "inHand": "Handover of the building documents",
+  "turns": [
+   "Antworte Hartmann: bitte alle Unterlagen bis 15.12. an Kessler übergeben, Liste kommt separat"
+  ]
+ },
+ {
+  "id": "10",
+  "profile": "Homeowner, attach the photo",
+  "matter": "New property manager for Elm Court 51",
+  "turns": [
+   "Mail an Kessler mit dem Foto vom Aushang im Treppenhaus, sie sollen das bitte aktualisieren"
+  ]
+ },
+ {
+  "id": "11",
+  "profile": "Job applicant, recruiter in English",
+  "matter": "Application: Head of Design, Brightwave",
+  "inHand": "Second interview at Brightwave",
+  "turns": [
+   "Reply: Tuesday at 10 works, looking forward"
+  ]
+ },
+ {
+  "id": "12",
+  "profile": "Job applicant, attach CV",
+  "matter": "Application: Head of Design, Brightwave",
+  "turns": [
+   "Send Priya my CV and portfolio again, she asked for the latest version"
+  ]
+ },
+ {
+  "id": "13",
+  "profile": "Job applicant, salary (tone)",
+  "matter": "Application: Head of Design, Brightwave",
+  "inHand": "Second interview at Brightwave",
+  "turns": [
+   "Antworte, dass ich vor dem Gespräch gern über das Gehaltsband sprechen würde"
+  ]
+ },
+ {
+  "id": "14",
+  "profile": "Traveler, host in Portugal (language)",
+  "matter": "Lisbon, 17–24 October (family trip)",
+  "inHand": "Arrival time",
+  "turns": [
+   "Sag Marta, wir kommen erst um 23 Uhr an, Flug wurde verschoben"
+  ]
+ },
+ {
+  "id": "15",
+  "profile": "Traveler, friend dinner",
+  "matter": "Lisbon, 17–24 October (family trip)",
+  "inHand": "Dinner at mine",
+  "turns": [
+   "Reply to Tomás: yes we come, can we bring the kids?",
+   "make it warmer, he is a close friend"
+  ]
+ },
+ {
+  "id": "16",
+  "profile": "Accident, insurer (formal, bank details)",
+  "matter": "Parking-lot accident, 14 September",
+  "inHand": "Please confirm your bank details",
+  "turns": [
+   "Antworte der Versicherung, die Bankverbindung stimmt, und frag nach dem Stand"
+  ]
+ },
+ {
+  "id": "17",
+  "profile": "Accident, other driver",
+  "matter": "Parking-lot accident, 14 September",
+  "inHand": "what happened",
+  "turns": [
+   "Schreib Tobias, dass der Gutachter am Montag kommt und ob er dabei sein will"
+  ]
+ },
+ {
+  "id": "18",
+  "profile": "Wedding, registry office (first contact)",
+  "matter": "Wedding, 12 June 2027 (Mara and Sam)",
+  "inHand": "Civil ceremony: documents",
+  "turns": [
+   "Frag das Standesamt, ob die Geburtsurkunde auch als Kopie reicht"
+  ]
+ },
+ {
+  "id": "19",
+  "profile": "Wedding, two vendors at once",
+  "matter": "Wedding, 12 June 2027 (Mara and Sam)",
+  "turns": [
+   "Schreib Ravi und Jule, dass wir uns bis Ende des Monats entscheiden"
+  ]
+ },
+ {
+  "id": "20",
+  "profile": "Renovation, contractor with quote attached",
+  "matter": "Bathroom renovation",
+  "turns": [
+   "Mail an Oskar: Angebot passt, Anzahlung kommt diese Woche. Häng das Angebot mit dran."
+  ]
+ },
+ {
+  "id": "21",
+  "profile": "Renovation, plumber short message",
+  "matter": "Bathroom renovation",
+  "turns": [
+   "SMS an Mia: kannst du Mittwoch statt Dienstag?"
+  ]
+ },
+ {
+  "id": "22",
+  "profile": "Science fair, other parent",
+  "matter": "Science fair: rainwater filter (Noa, 9b)",
+  "inHand": "Deniz has the flu",
+  "turns": [
+   "Antworte Elif: klar, Samstag ab 10 bei uns, Werkzeug ist da"
+  ]
+ },
+ {
+  "id": "23",
+  "profile": "Meticulous, rewrite",
+  "matter": "Moving to Birch Road 12",
+  "inHand": "Parking for the van",
+  "turns": [
+   "Antworte Frau Adler wegen dem Parkplatz: Samstag 8 bis 12 Uhr",
+   "mach Sie draus, nicht du",
+   "und unterschreib nur mit Mara"
+  ]
+ },
+ {
+  "id": "24",
+  "profile": "Christmas dinner, restaurant",
+  "matter": "Christmas dinner with friends",
+  "inHand": "Your table on the 20th",
+  "turns": [
+   "Bestätige den Tisch für 8, eine Person vegetarisch"
+  ]
+ }
+]

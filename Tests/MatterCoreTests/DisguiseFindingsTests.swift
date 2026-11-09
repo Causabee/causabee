@@ -38,3 +38,21 @@ struct DisguiseFindingsTests {
         #expect(p.restore(disguiser.apply(text).text) == text)
     }
 }
+
+@Suite("A name in part, from its tag")
+struct NamePartTests {
+    @Test("“Hi [Person A·first]!” is “Hi Tomás!”, “Ms [Person A·last]” is “Ms Ribeiro”")
+    func parts() {
+        var p = Pseudonymizer(mode: .placeholder, entries: [])
+        let tag = p.learn(.person, "Tomás Ribeiro") ?? ""
+        let core = tag.replacingOccurrences(of: "]", with: "")
+        let text = "Hi \(core)·first]! Dear Mr \(core)·last], and \(tag)."
+        #expect(p.restorer.apply(AssistantAsk.namePart(text, p.restorer)).text == "Hi Tomás! Dear Mr Ribeiro, and Tomás Ribeiro.")
+    }
+
+    @Test("An unknown tag stays as it was")
+    func unknown() {
+        let p = Pseudonymizer(mode: .placeholder, entries: [])
+        #expect(AssistantAsk.namePart("Hi [Person Q·first]!", p.restorer) == "Hi [Person Q·first]!")
+    }
+}

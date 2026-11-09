@@ -55,7 +55,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 10. **Clear words.** Short sentences. Few words. No jargon, no ids.
 11. **Private.** No message is ever sent in your name. Content leaves the device only with names disguised — by itself only with Auto on, otherwise at your tap.
 12. **Everywhere the same.** iPhone, iPad, Mac: one matter, one state.
-13. **She writes as you do.** A mail or a message she drafts sounds like you, to that person: the greeting, the sign-off, du or Sie, as you and they write to each other. Never more formal than they are. A reply in a running exchange is a reply, not a letter. Your words in the chat set its length — "Freitag passt" is two lines. Textbook form only for a first message to an office, when nothing else is known.
+13. **She writes as you do.** A mail or a message she drafts sounds like you, to that person: the greeting, the sign-off, du or Sie, as you and they write to each other. Never more formal than they are. A reply in a running exchange is a reply, not a letter. Your words in the chat set its length — "Freitag passt" is two lines. Textbook form only for a first message to an office, when nothing else is known. A person by first name, or by title and surname — never both; a firm without a name. The language of the exchange. Your shorthand made clear to the reader ("my mother, Helga Voss"). A change you ask of a draft — shorter, warmer, signed "Mara" — changes it.
 14. **A date says when and how long.** "14:30–15:30 · 1 h" — how long only when it is known, never Calendar's guessed hour. One without a time says "No time yet" — never a bare day that hides it. You set how long as a duration — "3 h" — not as an end.
 15. **Waiting is not doing.** What someone else has to do never looks like yours: no box to tick, who you wait for first, greyed, a dashed line round it instead of a card.
 16. **Latest is what happened.** Latest updates puts a matter on top only when something happened there: something came in, or you added, ticked or wrote something. Her rewording — a fact said again, a task written down again — is not news.
@@ -85,7 +85,7 @@ Each job is tested against its promise:
 - **Dates** — `DateMatrixTests`: every way a date is set (chat, sheet, day tile, Calendar) × everything after it (what comes in of every kind, the sync's passes, a server putting it back early or late, an invitation, a failed write, undo), and what the card and the receipt then say; times as people write them, in German and English.
 - **Chat control** — `ChatControlTests`: every element put away and shown again, each field changed and set back, each moved and back, every element seen by an id.
 - **Offered, then settled** — a time offered in one message and settled in the reply reaches the date; the chat finds it in the words.
-- **Write** — sample exchanges (a casual dealer, a formal insurer, a first mail to an office, a chat screenshot): the greeting, sign-off and length each draft must have.
+- **Write** — `matter-spike pressure`: 24 situations of nine kinds of people, sent as the chat sends them, recorded whole and drawn on the screen; the report is `docs/message-pressure-test.md`. Its disguise findings hold in `DisguiseFindingsTests`.
 
 If a change breaks a principle, it is wrong — however good it looks.
 
@@ -97,7 +97,7 @@ Listed so nobody pretends. Each one closes with a test.
 
 - **Section 3, Reads:** files attached to mail are read by themselves on iPhone and iPad after each mail check (logos and signatures skipped). The Mac does not do it on its own yet; a file dropped into a matter's folder is kept until you tap Read.
 - **Principle 12:** two devices rewriting at once can, rarely, bring back a NEW you already saw. Planned fix, no schema change: each device keeps its own last-seen time and never writes an older one back; the brief records which device wrote it.
-- **Principle 13:** she is given how the newest messages open and close, and the rules to write as you do. Whether every draft she writes keeps them is not yet checked automatically against her real answers — only by you, draft by draft.
+- **Principle 13:** she is given how the newest messages open and close, and the rules to write as you do; the pressure test shows she mostly keeps them, not always (a greeting now and then). Nothing checks each draft after it is written.
 - **Chat, the words themselves:** she is given the words of the ten newest items of a matter; an older one only by its summary.
 - **Dates across devices:** a device on an older build can still undo a date with its old rules, and iCloud carries that to the others. Every device on the same build.
 - **Dates restated:** when you moved a date and a later item still names the old one, that old date comes as a NEW date of its own — put it away with ×.

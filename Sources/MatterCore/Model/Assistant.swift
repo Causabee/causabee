@@ -488,6 +488,22 @@ public enum AssistantAsk {
         return card
     }
 
+    /// `[Person A·first]` and `[Person A·last]`: the first name or the surname of whoever the tag
+    /// is — so a draft greets "Hi Tomás!" or "Hallo Frau Adler", not the whole name, though the
+    /// model only ever saw the tag (9 November).
+    static func namePart(_ text: String, _ restorer: Replacer) -> String {
+        guard text.contains("·") else { return text }
+        var out = text
+        let pattern = /\[([^\]·]+)·(first|last)\]/
+        for match in text.matches(of: pattern).reversed() {
+            let whole = restorer.apply("[" + String(match.output.1) + "]").text
+            let words = whole.split(separator: " ").map(String.init).filter { !Pseudonymizer.honorifics.contains($0.lowercased()) }
+            guard !whole.hasPrefix("["), let first = words.first, let last = words.last else { continue }
+            out.replaceSubrange(match.range, with: match.output.2 == "first" ? first : last)
+        }
+        return out
+    }
+
     static func send(_ prepared: Prepared, claude: Claude, model: Claude.Model, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
         let (sent, pseudonymizer, newNames) = (prepared.sent, prepared.pseudonymizer, prepared.newNames)
         let body = Claude.body(model: model, system: AssistantPrompt.system, user: sent, schema: AssistantPrompt.schema, effort: "medium")
@@ -500,7 +516,8 @@ public enum AssistantAsk {
 
         let restorer = pseudonymizer.restorer
         func real(_ text: String) -> String {
-            restorer.apply(prepared.surnames.reduce(text) { $0.replacingOccurrences(of: $1.key, with: $1.value) }).text
+            let noted = prepared.surnames.reduce(text) { $0.replacingOccurrences(of: $1.key, with: $1.value) }
+            return restorer.apply(namePart(noted, restorer)).text
         }
         reply.lines = reply.lines.map { .init(text: prepared.links.reduce(real($0.text)) { $0.replacingOccurrences(of: $1.key, with: $1.value) }, cites: $0.cites) }
         reply.cards = reply.cards.map { card in
