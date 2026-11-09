@@ -823,27 +823,11 @@ struct CardFace: View {
         let disc: CGFloat = 24
         #endif
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(label).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, subject == nil && headline == nil && sub == nil ? 0 : 6)
-                    if let subject {
-                        // As tall as its words, as the text below: the same words, unseen, take the room,
-                        // and the field lies on them (8 November: a subject on two lines was measured as
-                        // one, and the lines under it slid onto the writing area).
-                        let words = subject.wrappedValue
-                        Text(words.isEmpty ? "Subject" : words)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .hidden()
-                            .overlay(alignment: .topLeading) { TextField("Subject", text: subject, axis: .vertical).textFieldStyle(.plain) }
-                            .font(.headline)
-                    }
-                    if let headline { Text(headline).font(.headline).fixedSize(horizontal: false, vertical: true) }
-                    if let sub { Text(sub).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
-                }
-                .padding(.leading, 4)
-                .frame(maxWidth: .infinity, minHeight: disc, alignment: .leading)
+            // Every line wraps and the card grows with it: one line under the other, nothing beside
+            // them but the × on the first. No measuring, no field laid on hidden words.
+            HStack(alignment: .center, spacing: 12) {
+                Text(label).font(.caption).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Button(action: close) {
                     Image(systemName: "xmark").font(.system(size: disc * 0.4, weight: .semibold)).foregroundStyle(.secondary)
                         .frame(width: disc, height: disc)
@@ -853,15 +837,25 @@ struct CardFace: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(closeLabel)
             }
+            .padding(.leading, 4)
+            VStack(alignment: .leading, spacing: 2) {
+                if let subject {
+                    TextField("Subject", text: subject, axis: .vertical).textFieldStyle(.plain).font(.headline)
+                }
+                if let headline { Text(headline).font(.headline) }
+                if let sub { Text(sub).font(.subheadline).foregroundStyle(.secondary) }
+            }
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 4)
+            .padding(.top, subject == nil && headline == nil && sub == nil ? 0 : 4)
             if let text {
-                let words = text.wrappedValue
-                // As tall as its words: the same words, unseen, take the room, and the field lies on them.
-                Text(words.isEmpty ? " " : words + (words.hasSuffix("\n") ? " " : ""))
+                TextField("", text: text, axis: .vertical).textFieldStyle(.plain)
+                    .font(serif ? Theme.rowTitleFont : .body)
+                    .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .hidden()
-                    .overlay(alignment: .topLeading) { TextField("", text: text, axis: .vertical).textFieldStyle(.plain) }
-                    .font(serif ? Theme.rowTitleFont : .body)
                     .padding(.horizontal, 16).padding(.vertical, 14)
                     .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
                     .padding(.top, 14)

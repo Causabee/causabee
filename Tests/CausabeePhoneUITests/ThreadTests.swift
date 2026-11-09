@@ -20,7 +20,11 @@ final class ThreadTests: XCTestCase {
         // `--answers`: a question gets a made-up answer after a moment, with nothing sent.
         app.launchArguments = ["--demo", "--answers", "-demo.filled", "anew", "-mail.auto", "YES"]
         // The draft's lines in a larger text size, as on the phone it was seen on: the "To" takes two lines.
-        if name.contains("LongLines") { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryXL"] }
+        if name.contains("LongLines") {
+            // A short subject in the largest text: the To line surely takes two lines.
+            let size = name.contains("ShortSubject") ? "UICTContentSizeCategoryAccessibilityL" : "UICTContentSizeCategoryXL"
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", size]
+        }
         app.launch()
         // With Pro on, the demo sorts its new mail in a moment after it opens, and what it sorted
         // stands on top of the overview, pushing the matters down while the test looks for one.
@@ -134,6 +138,7 @@ final class ThreadTests: XCTestCase {
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/draft-short.png"))
         }
         print("DRAFT3 to \(to.frame) body \(body.frame)")
+        XCTAssertGreaterThan(to.frame.height, 50, "The To line did not wrap: this test then proves nothing.")
         XCTAssertLessThanOrEqual(to.frame.maxY, body.frame.minY, "The To line lies on the mail's text.")
     }
 
