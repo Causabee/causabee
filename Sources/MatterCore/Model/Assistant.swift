@@ -254,9 +254,9 @@ public enum AssistantAsk {
             return asked + " With the matter's facts, \(all) went out disguised — names, places, companies, addresses, numbers."
         }
 
-        /// The name a person reads: "Mistral Large 3".
+        /// The name a person reads: "OpenAI GPT-6.1 Sol".
         public var modelLabel: String {
-            guard let servedBy else { return Claude.Model.opus.label }
+            guard let servedBy else { return Claude.Model.gptSol.label }
             if servedBy == DeviceTask.onDevice { return "On this device" }
             return Claude.Model.serving(servedBy)?.label ?? servedBy
         }
@@ -425,7 +425,7 @@ public enum AssistantAsk {
 
     public static func ask(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
                            facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
-                           model: Claude.Model = .opus, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
+                           model: Claude.Model = .gptSol, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
         step?(.disguising)
         let prepared = try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today, mapping: url)
         return try await send(prepared, claude: claude, model: model, step: step)
@@ -435,7 +435,7 @@ public enum AssistantAsk {
     /// nothing it learned for the question.
     public static func ask(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
                            facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
-                           claude: Claude, model: Claude.Model = .opus, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
+                           claude: Claude, model: Claude.Model = .gptSol, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
         step?(.disguising)
         let prepared = try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today,
                                    mapping: mapping, others: others, save: nil)
@@ -533,23 +533,23 @@ public struct LinkStandIns: Sendable {
 
 extension AssistantAsk {
     /// About what writing a summary costs: the facts in, a few lines out, with Opus 5.
-    public static func summaryEstimate(_ facts: Facts, model: Claude.Model = .opus) -> Double {
+    public static func summaryEstimate(_ facts: Facts, model: Claude.Model = .gptSol) -> Double {
         model.cost(input: Int(Double(facts.text.count) / 3.2) + 1_500, output: 600)
     }
 
     /// About what asking for the next step costs: the facts in, two sentences out.
-    public static func nextStepEstimate(_ facts: Facts, model: Claude.Model = .opus) -> Double {
+    public static func nextStepEstimate(_ facts: Facts, model: Claude.Model = .gptSol) -> Double {
         nextStepEstimate(length: facts.text.count, model: model)
     }
 
     /// The same from about how long the facts are, without making them.
-    public static func nextStepEstimate(length: Int, model: Claude.Model = .opus) -> Double {
+    public static func nextStepEstimate(length: Int, model: Claude.Model = .gptSol) -> Double {
         model.cost(input: Int(Double(length) / 3.2) + 1_200, output: 400)
     }
 
     /// The one next step and why, from the matter's facts, pseudonymised like every question.
     public static func nextStep(facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
-                                model: Claude.Model = .opus) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
+                                model: Claude.Model = .gptSol) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
         let prepared = try prepare(question: nextStepQuestion(facts), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
         return try await nextStep(prepared, facts: facts, claude: claude, model: model)
@@ -557,7 +557,7 @@ extension AssistantAsk {
 
     /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
     public static func nextStep(facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
-                                claude: Claude, model: Claude.Model = .opus) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
+                                claude: Claude, model: Claude.Model = .gptSol) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
         let prepared = try prepare(question: nextStepQuestion(facts), inHand: nil, earlier: [], facts: facts, owner: owner, today: today,
                                    mapping: mapping, others: others, save: nil)
         return try await nextStep(prepared, facts: facts, claude: claude, model: model)
@@ -595,7 +595,7 @@ extension AssistantAsk {
 
     /// Three or four lines on the matter, from its facts, pseudonymised like every question.
     public static func summarize(facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
-                                 model: Claude.Model = .opus) async throws -> (lines: [String], cost: Double) {
+                                 model: Claude.Model = .gptSol) async throws -> (lines: [String], cost: Double) {
         let prepared = try prepare(question: summaryQuestion(facts), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
         return try await summarize(prepared, facts: facts, claude: claude, model: model)
@@ -603,7 +603,7 @@ extension AssistantAsk {
 
     /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
     public static func summarize(facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
-                                 claude: Claude, model: Claude.Model = .opus) async throws -> (lines: [String], cost: Double) {
+                                 claude: Claude, model: Claude.Model = .gptSol) async throws -> (lines: [String], cost: Double) {
         let prepared = try prepare(question: summaryQuestion(facts), inHand: nil, earlier: [], facts: facts, owner: owner, today: today,
                                    mapping: mapping, others: others, save: nil)
         return try await summarize(prepared, facts: facts, claude: claude, model: model)

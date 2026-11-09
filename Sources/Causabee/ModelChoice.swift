@@ -20,14 +20,10 @@ enum LabelledMail {
 enum ModelChoice {
     static let mailKey = "model.mail", assistantKey = "model.assistant", strictKey = "model.strict"
 
-    private static func model(_ key: String) -> Claude.Model {
-        UserDefaults.standard.string(forKey: key).flatMap { id in Claude.Model.choices.first { $0.id == id } } ?? .opus
-    }
-
-    /// Sorting new mail, screenshots and files into matters.
-    static var mail: Claude.Model { proPicks ? .gptSol : model(mailKey) }
-    /// Answers, summaries, the next step.
-    static var assistant: Claude.Model { proPicks ? .gptSol : model(assistantKey) }
+    /// One model for everything — sorting what comes in, answers, briefs: GPT-6.1 Sol, through the
+    /// beeserver with Pro, or with the developer's own OpenAI key.
+    static var mail: Claude.Model { .gptSol }
+    static var assistant: Claude.Model { .gptSol }
     /// With Pro the plan picks, so the month goes furthest: GPT-6.1 Sol for everything — it sorts
     /// nearly as well as Opus at two fifths of the price.
     static var proPicks: Bool { BeeServer.isSetUp && AutoMode.isOn }
@@ -107,8 +103,6 @@ enum ModelChoice {
 #if os(macOS)
 /// ⌘, — which model sorts the mail and which answers. Both see only pseudonymised text.
 struct ModelSettingsView: View {
-    @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
-    @AppStorage(ModelChoice.assistantKey) private var assistant = Claude.Model.opus.id
     @AppStorage(ModelChoice.strictKey) private var strict = true
     @AppStorage(BeeJoy.key) private var celebrates = true
 
@@ -139,14 +133,10 @@ struct ModelSettingsView: View {
             Section { CloudSettings() } header: { Text("iCloud") }
             Section {
                 DisclosureGroup("Developer", isExpanded: $developer) {
-                    picker("Sort mail", selection: $mail)
-                    picker("Assistant", selection: $assistant)
-                    Text(ModelChoice.proPicks ? "Pro picks GPT-6.1 Sol while it is on; these are used with your own keys." : "Used with your own keys.")
+                    Text("Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with your own key.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
-                    KeyField(title: "Mistral", name: "MISTRAL_API_KEY")
                     KeyField(title: "OpenAI", name: "OPENAI_API_KEY")
-                    Text("Keys are kept in the Keychain like the mail password, never in a file. All of them get only pseudonymised text: Claude (Anthropic, USA), Mistral (Paris) or OpenAI (USA).")
+                    Text("The key is kept in the Keychain like the mail password, never in a file. It gets only pseudonymised text.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     BeeServerSettings()
                 }
@@ -158,13 +148,6 @@ struct ModelSettingsView: View {
         .padding(.vertical, 8)
     }
 
-    private func picker(_ title: String, selection: Binding<String>) -> some View {
-        Picker(title, selection: selection) {
-            ForEach(Claude.Model.choices, id: \.id) { model in
-                Text(model.label + (Claude.key(for: model) == nil ? " — no key" : "")).tag(model.id)
-            }
-        }
-    }
 
 }
 #endif
@@ -801,10 +784,9 @@ struct AutoQuestion: ViewModifier {
     @Binding var asks: Bool
     let turnOn: () -> Void
     @AppStorage(AutoMode.agreedKey) private var agreed = false
-    @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
 
     func body(content: Content) -> some View {
-        let model = Claude.Model.choices.first { $0.id == mail } ?? .opus
+        let model = ModelChoice.mail
         content.confirmationDialogWhenAsked("Turn on Pro?", isPresented: $asks, titleVisibility: .visible) {
             Button("Turn Pro On") { agreed = true; turnOn() }
             Button("Cancel", role: .cancel) { }

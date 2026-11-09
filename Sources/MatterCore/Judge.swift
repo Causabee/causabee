@@ -17,7 +17,7 @@ public struct Judge: Sendable {
     public var claude: Claude?
     public var cache: URL
 
-    public init(model: Claude.Model = .sonnet, claude: Claude?, cache: URL) {
+    public init(model: Claude.Model = .gptSol, claude: Claude?, cache: URL) {
         self.model = model
         self.claude = claude
         self.cache = cache

@@ -30,7 +30,7 @@ public struct DailyDoor: Sendable {
     /// Drafts opened from a matter: their mail, once sent, goes into that matter.
     public var sentDrafts: [LabelIntake.SentDraft] = []
 
-    public init(account: MailAccount, label: String = "Causabee", log: URL, mapping: URL, cache: URL, model: Claude.Model = .opus) {
+    public init(account: MailAccount, label: String = "Causabee", log: URL, mapping: URL, cache: URL, model: Claude.Model = .gptSol) {
         self.account = account
         self.label = label
         self.log = log

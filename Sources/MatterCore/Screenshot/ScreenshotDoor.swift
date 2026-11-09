@@ -13,7 +13,7 @@ public struct ScreenshotDoor: Sendable {
     public var model: Claude.Model
     public var strict = false
 
-    public init(besides store: URL, model: Claude.Model = .opus) {
+    public init(besides store: URL, model: Claude.Model = .gptSol) {
         let folder = store.deletingLastPathComponent()
         log = folder.appendingPathComponent("decisions-fetch.jsonl")
         mapping = folder.appendingPathComponent("mapping.json")

@@ -28,7 +28,7 @@ import Testing
 
         var report = try Spike(detector: EntityDetector(runsTagger: false))
             .run(folder: folder, log: nil, pseudonymizer: Pseudonymizer(mode: .placeholder))
-        var extractor = Extractor(model: .opus, claude: nil, cache: folder.appendingPathComponent("cache"))
+        var extractor = Extractor(model: .gptSol, claude: nil, cache: folder.appendingPathComponent("cache"))
         extractor.onDevice = true
         extractor.storeMatters = [("umzug-berlin", "Umzug nach Berlin: neue Wohnung, Mietvertrag, Übergabe")]
         let summary = try await extractor.run(&report.outcomes, pseudonymizer: try #require(report.pseudonymizer), owner: ["jan@example.net"])

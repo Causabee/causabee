@@ -151,7 +151,7 @@ struct AssistantTests {
             defer { said.finish() }
             return try await AssistantAsk.ask(question: "Was ist offen?", inHand: nil, earlier: [], facts: facts, owner: nil,
                                               today: "2026-09-28", mapping: Pseudonymizer.Mapping(), others: [],
-                                              claude: Claude(key: "no-key"), model: .opus) { said.yield($0) }
+                                              claude: Claude(key: "no-key"), model: .gptSol) { said.yield($0) }
         }
         asking.cancel()
         let result = await asking.result

@@ -170,7 +170,7 @@ struct Options {
     var show = 0
     var classify = false
     var dryRun: URL?
-    var model = Claude.Model.opus
+    var model = Claude.Model.gptSol
     var effort: String?
     var limit: Int?
     var me: [String] = []
@@ -788,7 +788,7 @@ func report() async throws {
     }
 
     var result = Report.measure(decisions: decisions, labels: reading.labels, emails: emails, judged: judged)
-    if judged != nil { result.judge = Judge.version + " · " + Claude.Model.sonnet.id; result.judgeCost = judgeCost }
+    if judged != nil { result.judge = Judge.version + " · " + Claude.Model.gptSol.id; result.judgeCost = judgeCost }
     let markdown = Report.text(result, title: "Step 8 · \(options.log.lastPathComponent)")
     try markdown.write(to: options.report, atomically: true, encoding: .utf8)
 

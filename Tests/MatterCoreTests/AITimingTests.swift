@@ -108,7 +108,7 @@ struct AITimingTests {
     @Test(.enabled(if: on && ProcessInfo.processInfo.environment["CAUSABEE_LIVE_KEY"] != nil))
     func liveRequests() async throws {
         let env = ProcessInfo.processInfo.environment
-        let model = Claude.Model.choices.first { $0.id == env["CAUSABEE_LIVE_MODEL"] } ?? .opus
+        let model = Claude.Model.choices.first { $0.id == env["CAUSABEE_LIVE_MODEL"] } ?? .gptSol
         let claude = Claude(key: env["CAUSABEE_LIVE_KEY"]!)
         let (_, matter, _, mapping) = try Self.store()
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("timing-mapping-live.json")

@@ -201,17 +201,17 @@ extension AssistantAsk {
     }
 
     /// About what it costs: the facts in, the brief, the summary and a few cards out.
-    public static func adviceEstimate(_ facts: Facts, model: Claude.Model = .opus) -> Double {
+    public static func adviceEstimate(_ facts: Facts, model: Claude.Model = .gptSol) -> Double {
         adviceEstimate(length: facts.text.count, model: model)
     }
 
     /// The same from about how long the facts are, without making them.
-    public static func adviceEstimate(length: Int, model: Claude.Model = .opus) -> Double {
+    public static func adviceEstimate(length: Int, model: Claude.Model = .gptSol) -> Double {
         model.cost(input: Int(Double(length) / 3.2) + 2_400, output: 1_600)
     }
 
     public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], hidden: [String] = [], owner: String?, today: String, mapping url: URL, claude: Claude,
-                              model: Claude.Model = .opus) async throws -> Advice {
+                              model: Claude.Model = .gptSol) async throws -> Advice {
         let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked, since: since, hidden: hidden), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: url)
         return try await advise(prepared, facts: facts, claude: claude, model: model)
@@ -219,7 +219,7 @@ extension AssistantAsk {
 
     /// The same with a list of names in hand — the iPhone's way: nothing it learned is kept.
     public static func advise(facts: Facts, dismissed: [String], asked: [String] = [], since: [String] = [], hidden: [String] = [], owner: String?, today: String, mapping: Pseudonymizer.Mapping,
-                              others: [Pseudonymizer.Entry], claude: Claude, model: Claude.Model = .opus) async throws -> Advice {
+                              others: [Pseudonymizer.Entry], claude: Claude, model: Claude.Model = .gptSol) async throws -> Advice {
         let prepared = try prepare(question: AdviserPrompt.question(facts, dismissed: dismissed, asked: asked, since: since, hidden: hidden), inHand: nil, earlier: [], facts: facts,
                                    owner: owner, today: today, mapping: mapping, others: others, save: nil)
         return try await advise(prepared, facts: facts, claude: claude, model: model)

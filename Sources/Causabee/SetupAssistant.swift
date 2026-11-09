@@ -19,7 +19,7 @@ enum SetupState {
     private static var keys: [String: String] = [:]
     private static var account: (MailAccount, String)?
     private static var calendarConnected = false
-    private static var model = Claude.Model.opus
+    private static var model = Claude.Model.gptSol
     /// The names typed in the test: the demo's store is not written to.
     static var names: [String] = []
 

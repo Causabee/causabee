@@ -10,7 +10,7 @@ struct AdviserLiveTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["CAUSABEE_LIVE_KEY"] != nil))
     func theAdviserAnswers() async throws {
         let env = ProcessInfo.processInfo.environment
-        let model = Claude.Model.choices.first { $0.id == env["CAUSABEE_LIVE_MODEL"] } ?? .opus
+        let model = Claude.Model.choices.first { $0.id == env["CAUSABEE_LIVE_MODEL"] } ?? .gptSol
         let context = ModelContext(try MatterSchema.container(at: nil))
         let matter = Matter(key: "pflege", name: "Pflege für Mama")
         context.insert(matter)
@@ -34,7 +34,7 @@ struct AdviserLiveTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["CAUSABEE_LIVE_KEY"] != nil))
     func theAssistantOffersALookUp() async throws {
         let env = ProcessInfo.processInfo.environment
-        let model = Claude.Model.choices.first { $0.id == env["CAUSABEE_LIVE_MODEL"] } ?? .opus
+        let model = Claude.Model.choices.first { $0.id == env["CAUSABEE_LIVE_MODEL"] } ?? .gptSol
         let context = ModelContext(try MatterSchema.container(at: nil))
         let matter = Matter(key: "pflege", name: "Pflege für Mama")
         context.insert(matter)

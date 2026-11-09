@@ -58,7 +58,7 @@ struct WebLookupTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["CAUSABEE_LIVE_KEY"] != nil))
     func aQuestionIsLookedUp() async throws {
         let env = ProcessInfo.processInfo.environment
-        let model = Claude.Model.choices.first { $0.id == env["CAUSABEE_LIVE_MODEL"] } ?? .opus
+        let model = Claude.Model.choices.first { $0.id == env["CAUSABEE_LIVE_MODEL"] } ?? .gptSol
         let found = try await WebLookup.ask("Wie lange hat die Pflegekasse in Deutschland Zeit, über einen Antrag auf einen Pflegegrad zu entscheiden?",
                                             language: "German", country: "DE", claude: Claude(key: env["CAUSABEE_LIVE_KEY"]!), model: model)
         print("LIVE LOOKUP \(found.answer) | \(found.sources.map(\.url)) | cost \(found.cost)")

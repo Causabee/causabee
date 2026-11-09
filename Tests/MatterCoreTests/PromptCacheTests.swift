@@ -15,17 +15,8 @@ struct PromptCacheTests {
         #expect(parts[1].contains("<question>") && parts[1].contains("<earlier>"))
     }
 
-    @Test func anthropicGetsTheFactsAsACachedBlock() throws {
-        let body = Claude.body(model: .opus, system: "rules", user: user, schema: [:], effort: nil)
-        let content = try #require((body["messages"] as? [[String: Any]])?.first?["content"] as? [[String: Any]])
-        #expect(content.count == 2)
-        #expect((content[0]["cache_control"] as? [String: String])?["type"] == "ephemeral")
-        #expect(content[1]["cache_control"] == nil)
-        #expect((content[1]["text"] as? String)?.contains("van come") == true)
-    }
-
-    @Test func openAIAndMistralGetOneTextWithoutTheMark() throws {
-        for model in [Claude.Model.gptSol, .mistralLarge] {
+    @Test func solGetsOneTextWithoutTheMark() throws {
+        for model in [Claude.Model.gptSol] {
             let body = Claude.body(model: model, system: "rules", user: user, schema: [:], effort: nil)
             let text = try #require((body["messages"] as? [[String: Any]])?.first?["content"] as? String)
             #expect(!text.contains("\u{1E}"))
@@ -36,7 +27,7 @@ struct PromptCacheTests {
     }
 
     @Test func aMailIsSentAsBefore() throws {
-        let body = Claude.body(model: .opus, system: "rules", user: "One mail, no facts", schema: [:], effort: nil)
+        let body = Claude.body(model: .gptSol, system: "rules", user: "One mail, no facts", schema: [:], effort: nil)
         #expect((body["messages"] as? [[String: Any]])?.first?["content"] as? String == "One mail, no facts")
     }
 }

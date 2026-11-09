@@ -2,15 +2,13 @@ import MatterCore
 import SwiftData
 import SwiftUI
 
-/// The Mac's Settings (⌘,), as far as the iPhone does the same: which model sorts the mail and
-/// which answers, iCloud, Calendar and Reminders, the API keys — the same three, the same field —
+/// The Mac's Settings (⌘,), as far as the iPhone does the same: iCloud, Calendar and Reminders,
+/// the OpenAI key for a developer —
 /// and what the iPhone needs of its own: the mail account, and the lists of names. The matter
 /// folders are the Mac's alone.
 struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(PhoneStore.self) private var store
-    @AppStorage(ModelChoice.assistantKey) private var assistant = Claude.Model.opus.id
-    @AppStorage(ModelChoice.mailKey) private var mail = Claude.Model.opus.id
     @AppStorage(ModelChoice.strictKey) private var strict = true
     @AppStorage(BeeJoy.key) private var celebrates = true
     @Query private var profiles: [Profile]
@@ -32,32 +30,13 @@ struct SettingsSheet: View {
         try? context.save()
     }
 
-    /// Your own models and keys, and Pro's token by hand: for testing, folded away.
+    /// Your own key, and Pro's token by hand: for testing, folded away.
     private var developer: some View {
         Form {
             Section {
-                Picker("Sort mail", selection: $mail) {
-                    ForEach(Claude.Model.choices, id: \.id) { model in
-                        Text(model.label + (Claude.key(for: model) == nil ? " — no key" : "")).tag(model.id)
-                    }
-                }
-                .id(tick)
-                Picker("Assistant", selection: $assistant) {
-                    ForEach(Claude.Model.choices, id: \.id) { model in
-                        Text(model.label + (Claude.key(for: model) == nil ? " — no key" : "")).tag(model.id)
-                    }
-                }
-                .id(tick)
-            } header: { Text("Your own models") } footer: {
-                Text(ModelChoice.proPicks ? "Pro picks GPT-6.1 Sol while it is on; these are used with your own keys."
-                     : "Used with your own keys. All of them get only pseudonymised text: Claude (Anthropic, USA), Mistral (Paris) or OpenAI (USA).")
-            }
-            Section {
-                KeyField(title: "Claude (Anthropic)", name: "ANTHROPIC_API_KEY")
-                KeyField(title: "Mistral", name: "MISTRAL_API_KEY")
                 KeyField(title: "OpenAI", name: "OPENAI_API_KEY")
-            } header: { Text("API keys") } footer: {
-                Text("Pasted here or on your Mac, kept in iCloud Keychain like the mail password, and shared by Causabee on all your devices. Never in a file.")
+            } header: { Text("Your own key") } footer: {
+                Text("Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with this key. It gets only pseudonymised text, and is kept in iCloud Keychain like the mail password. Never in a file.")
             }
             Section { BeeServerSettings() } header: { Text("Pro's server") }
         }

@@ -34,20 +34,10 @@ public struct Claude: Sendable {
         public var inputPerMillion: Double
         public var outputPerMillion: Double
 
-        public static let opus = Model(id: "claude-opus-5", inputPerMillion: 5, outputPerMillion: 25)
-        public static let sonnet = Model(id: "claude-sonnet-5", inputPerMillion: 2, outputPerMillion: 10)
-        public static let haiku = Model(id: "claude-haiku-4-5", inputPerMillion: 1, outputPerMillion: 5)
-        /// Mistral Large 3, from Mistral AI in Paris — to compare, sent the same disguised mail
-        /// with the same instructions. Prices from mistral.ai/pricing/api on 2026-09-28.
-        public static let mistralLarge = Model(id: "mistral-large-latest", inputPerMillion: 0.5, outputPerMillion: 1.5)
-        /// Mistral Medium 3.5, April 2026: newer than Large 3, and priced three times as high.
-        public static let mistralMedium = Model(id: "mistral-medium-latest", inputPerMillion: 1.5, outputPerMillion: 7.5)
-        /// OpenAI's, by the names and prices on developers.openai.com/api/docs/pricing, 2026-09-29.
-        public static let gptAstra = Model(id: "gpt-6-astra", inputPerMillion: 10, outputPerMillion: 50)
         public static let gptSol = Model(id: "gpt-6.1-sol", inputPerMillion: 2, outputPerMillion: 10)
-        public static let known = [opus, sonnet, haiku, mistralLarge, mistralMedium, gptAstra, gptSol]
-        /// What the owner can choose between in the app.
-        public static let choices = [opus, mistralLarge, mistralMedium, gptSol, gptAstra]
+        /// The one model Causabee uses, for everything — through the beeserver with Pro.
+        public static let known = [gptSol]
+        public static let choices = [gptSol]
 
         /// Sent to OpenAI's Responses API.
         public var isOpenAI: Bool { id.hasPrefix("gpt-") }
@@ -57,35 +47,19 @@ public struct Claude: Sendable {
         /// The name a person reads.
         public var label: String {
             switch id {
-            case Model.opus.id: "Claude Opus 5"
-            case Model.sonnet.id: "Claude Sonnet 5"
-            case Model.haiku.id: "Claude Haiku 4.5"
-            case Model.mistralLarge.id: "Mistral Large 3"
-            case Model.mistralMedium.id: "Mistral Medium 3.5"
-            case Model.gptAstra.id: "OpenAI GPT-6 Astra"
             case Model.gptSol.id: "OpenAI GPT-6.1 Sol"
             default: id
             }
         }
 
-        /// A mail: about 5,000 tokens in and 900 out, from the label's record. Opus reads its
-        /// instructions from the prompt cache; the others pay for them every time.
-        public var perMail: Double { id == Model.opus.id ? 0.035 : cost(input: 5_000, output: 900) * 1.1 }
+        /// A mail: about 5,000 tokens in and 900 out, from the label's record.
+        public var perMail: Double { cost(input: 5_000, output: 900) * 1.1 }
 
         /// Sent to Mistral's API rather than Anthropic's.
         public var isMistral: Bool { id.hasPrefix("mistral") }
 
         public static func named(_ name: String) -> Model? {
-            switch name.lowercased() {
-            case "opus": opus
-            case "sonnet": sonnet
-            case "haiku": haiku
-            case "mistral": mistralLarge
-            case "mistral-medium": mistralMedium
-            case "openai", "gpt": gptSol
-            case "gpt-astra": gptAstra
-            default: known.first { $0.id == name }
-            }
+            ["openai", "gpt", "sol"].contains(name.lowercased()) ? gptSol : known.first { $0.id == name }
         }
 
         /// Whether a response's `model` field is this model. The API may answer with a dated
@@ -111,9 +85,9 @@ public struct Claude: Sendable {
 
         /// Opus 5 thinks adaptively by default and has a safety classifier that can decline;
         /// Haiku 4.5 does neither. The request is shaped to match.
-        var thinksAdaptively: Bool { id != Model.haiku.id && !isMistral && !isOpenAI }
-        var takesFallbacks: Bool { id == Model.opus.id }
-        var takesEffort: Bool { id != Model.haiku.id && !isMistral && !isOpenAI }
+        var thinksAdaptively: Bool { !isMistral && !isOpenAI }
+        var takesFallbacks: Bool { id == Model.gptSol.id }
+        var takesEffort: Bool { !isMistral && !isOpenAI }
     }
 
     public struct Answer: Sendable {
@@ -129,7 +103,7 @@ public struct Claude: Sendable {
         public var cacheReadTokens = 0
 
         public var cost: Double {
-            (Model.serving(servedBy) ?? .opus).cost(input: inputTokens, output: outputTokens,
+            (Model.serving(servedBy) ?? .gptSol).cost(input: inputTokens, output: outputTokens,
                                                    cacheWrite: cacheWriteTokens, cacheRead: cacheReadTokens)
         }
     }

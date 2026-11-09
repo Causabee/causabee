@@ -854,7 +854,7 @@ enum DemoData {
 
         c.talking = {
             c.cite("T1", "summary"); c.cite("T2", "layout"); c.cite("T3", "print"); c.cite("T4", "safety")
-            c.note(-1, "📥 2 mails taken in · 2 new tasks · shown 0 done · sorted by Claude Opus\n• Feedback on the draft poster\n• Your order is ready for pickup")
+            c.note(-1, "📥 2 mails taken in · 2 new tasks · shown 0 done · sorted by GPT-6.1 Sol\n• Feedback on the draft poster\n• Your order is ready for pickup")
             c.ask(0, "What has to happen before the poster can be printed?",
                   lines: [("The poster can only go to print after Ms. Okafor has approved the new layout, and she has not answered yet.", ["T2", "T3"]),
                           ("The print is planned for 11 October at the latest, so there is time, but the summary to her is due first.", ["T1"]),
@@ -947,7 +947,7 @@ enum DemoData {
 
         c.talking = {
             c.cite("T1", "arrival"); c.cite("T2", "id"); c.cite("T3", "museum"); c.cite("T4", "train"); c.cite("T5", "day")
-            c.note(-1, "📥 3 mails taken in · 3 new tasks · 1 date · sorted by Claude Opus\n• Re: Arrival time?\n• Your reservation is held until 5 October\n• Your travel insurance offer")
+            c.note(-1, "📥 3 mails taken in · 3 new tasks · 1 date · sorted by GPT-6.1 Sol\n• Re: Arrival time?\n• Your reservation is held until 5 October\n• Your travel insurance offer")
             c.ask(0, "What can go wrong before we fly?",
                   lines: [("Lena's ID card is expired. The standard wait is four to six weeks, so it only works if you ask for express processing at the appointment on 9 October.", ["T2"]),
                           ("The Oceanário reservation is released if it is not paid by 5 October.", ["T3"]),
@@ -1068,7 +1068,7 @@ enum DemoData {
 
         c.talking = {
             c.cite("T1", "papers"); c.cite("T2", "physio"); c.cite("T3", "sign"); c.cite("T4", "bathseat")
-            c.note(-1, "📥 2 mails taken in · 2 new tasks · sorted by Claude Opus\n• Please have these documents ready for the visit\n• Prescription for the bath seat is ready")
+            c.note(-1, "📥 2 mails taken in · 2 new tasks · sorted by GPT-6.1 Sol\n• Please have these documents ready for the visit\n• Prescription for the bath seat is ready")
             c.ask(0, "What do I need to do before Tuesday's visit?",
                   lines: [("Put the medication list, the doctor's report and the hospital letter together; the insurer asked for them twice.", ["T1"]),
                           ("Move the physio that day to the afternoon: the visit starts at 10:00 and may run into the 11:00 slot.", ["T2"]),
@@ -1150,7 +1150,7 @@ enum DemoData {
                     why: "The commitment is ready once it arrives.", todo: "slip")
         c.talking = {
             c.cite("T1", "slip"); c.cite("T2", "bankDocs"); c.cite("T3", "read"); c.cite("T4", "questions")
-            c.note(-2, "📥 2 mails taken in · 2 new tasks · sorted by Claude Opus\n• Building insurance: offer for Linden Street 8\n• Draft of the purchase contract")
+            c.note(-2, "📥 2 mails taken in · 2 new tasks · sorted by GPT-6.1 Sol\n• Building insurance: offer for Linden Street 8\n• Draft of the purchase contract")
             c.ask(0, "Is anything holding up the financing?",
                   lines: [("The bank only waits for the last salary slip.", ["T1"]),
                           ("The tax notices from the last two years are also on their list, and that task is already late.", ["T2"]),
@@ -1221,7 +1221,7 @@ enum DemoData {
                     why: "Otherwise the date goes on 10 October.", todo: "date")
         c.talking = {
             c.cite("T1", "date"); c.cite("T2", "guests"); c.cite("T3", "save")
-            c.note(-3, "📥 1 mail taken in · 2 new tasks · sorted by Claude Opus\n• Guest list, first version")
+            c.note(-3, "📥 1 mail taken in · 2 new tasks · sorted by GPT-6.1 Sol\n• Guest list, first version")
             c.ask(0, "What do we have to decide first?",
                   lines: [("The deposit: the date goes back on the venue's calendar after 10 October.", ["T1"]),
                           ("The final guest list comes next, because the save-the-date cards wait for it.", ["T2", "T3"])],
@@ -1290,7 +1290,7 @@ enum DemoData {
                     why: "It needs four weeks; the move is in three.", todo: "internet")
         c.talking = {
             c.cite("T1", "internet"); c.cite("T2", "movers"); c.cite("T3", "paint")
-            c.note(-1, "📥 2 mails taken in · 1 new task · sorted by Claude Opus\n• Parking for the van?\n• Reading of the meter on moving day")
+            c.note(-1, "📥 2 mails taken in · 1 new task · sorted by GPT-6.1 Sol\n• Parking for the van?\n• Reading of the meter on moving day")
             c.ask(0, "What is urgent this week?",
                   lines: [("Ask FiberNest to move the line: the free move needed four weeks' notice, so call them and ask for an exception.", ["T1"]),
                           ("Book Carry & Co before 7 October, or the price may change.", ["T2"])],
@@ -1353,7 +1353,7 @@ enum DemoData {
                     why: "Without it, no deduction.", todo: "desk")
         c.talking = {
             c.cite("T1", "desk"); c.cite("T2", "days"); c.cite("T3", "bank")
-            c.note(-2, "📥 1 mail taken in · 2 new tasks · sorted by Claude Opus\n• Reminder: two things are missing")
+            c.note(-2, "📥 1 mail taken in · 2 new tasks · sorted by GPT-6.1 Sol\n• Reminder: two things are missing")
             c.ask(0, "What is Jana still waiting for?",
                   lines: [("The receipt for the new desk, which is late.", ["T1"]),
                           ("The home office days for 2025.", ["T2"]),
@@ -1416,7 +1416,7 @@ enum DemoData {
                     why: "The claim waits for it.", todo: "estimate")
         c.talking = {
             c.cite("T1", "estimate"); c.cite("T2", "appt"); c.cite("T3", "rental")
-            c.note(-1, "📥 1 mail taken in · 1 new task · sorted by Claude Opus\n• Please confirm your bank details")
+            c.note(-1, "📥 1 mail taken in · 1 new task · sorted by GPT-6.1 Sol\n• Please confirm your bank details")
             c.ask(0, "What happens before the car is repaired?",
                   lines: [("The assessor comes to the garage on Thursday at 14:00, so the car has to be there.", ["T2"]),
                           ("ClearRoad still needs the repair estimate from you.", ["T1"]),
@@ -1484,7 +1484,7 @@ enum DemoData {
                     why: "Five weeks' delivery: every day counts.", todo: "tiles")
         c.talking = {
             c.cite("T1", "tiles"); c.cite("T2", "deposit"); c.cite("T3", "permit")
-            c.note(-2, "📥 1 mail taken in · 1 new task · sorted by Claude Opus\n• Your request: still in review")
+            c.note(-2, "📥 1 mail taken in · 1 new task · sorted by GPT-6.1 Sol\n• Your request: still in review")
             c.ask(0, "Can the work start on 2 November?",
                   lines: [("Only if the permission comes by 14 October as expected.", ["T3"]),
                           ("The tiles take five weeks, so they arrive after the start unless they are ordered now.", ["T1"]),

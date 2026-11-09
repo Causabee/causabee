@@ -26,10 +26,4 @@ import Testing
         #expect(claude.request(.openai).value(forHTTPHeaderField: "authorization") == "Bearer sk-test")
     }
 
-    @Test func noMistralThroughTheBeeserver() async {
-        let claude = Claude(key: "bee_test", relay: URL(string: "https://beeserver.example")!)
-        await #expect(throws: (any Error).self) {
-            try await claude.send(["messages": []], model: .mistralLarge)
-        }
-    }
 }

@@ -6,16 +6,11 @@ import Testing
 /// the responses it is handed; the one test that runs the whole step does it as a dry run.
 @Suite("Asking Claude, and reading the answer")
 struct ExtractorTests {
-    @Test("Opus gets the refusal fallback and an effort; Haiku gets neither")
+    @Test("Sol gets the fallback and its schema")
     func bodyPerModel() throws {
-        let opus = Claude.body(model: .opus, system: "s", user: "u", schema: ExtractionPrompt.schema, effort: "medium")
-        #expect(opus["fallbacks"] as? String == "default")
-        #expect((opus["output_config"] as? [String: Any])?["effort"] as? String == "medium")
-
-        let haiku = Claude.body(model: .haiku, system: "s", user: "u", schema: ExtractionPrompt.schema, effort: "medium")
-        #expect(haiku["fallbacks"] == nil)
-        #expect((haiku["output_config"] as? [String: Any])?["effort"] == nil)
-        let format = try #require((haiku["output_config"] as? [String: Any])?["format"] as? [String: Any])
+        let sol = Claude.body(model: .gptSol, system: "s", user: "u", schema: ExtractionPrompt.schema, effort: "medium")
+        #expect(sol["fallbacks"] as? String == "default")
+        let format = try #require((sol["output_config"] as? [String: Any])?["format"] as? [String: Any])
         #expect(format["type"] as? String == "json_schema")
     }
 
@@ -50,13 +45,13 @@ struct ExtractorTests {
 
     @Test("A dated snapshot is the model that was asked, and is priced as it")
     func datedSnapshot() {
-        #expect(Claude.Model.haiku.isServing("claude-haiku-4-5-20251001"))
-        #expect(!Claude.Model.opus.isServing("claude-opus-4-8"))
-        #expect(Claude.Model.serving("claude-haiku-4-5-20251001") == .haiku)
-        let extractor = Extractor(model: .haiku, claude: nil, cache: URL(fileURLWithPath: "/tmp"))
-        let answer = Claude.Answer(json: Data(), servedBy: "claude-haiku-4-5-20251001",
+        #expect(Claude.Model.gptSol.isServing("gpt-6.1-sol-2026-09-01"))
+        #expect(!Claude.Model.gptSol.isServing("claude-opus-4-8"))
+        #expect(Claude.Model.serving("gpt-6.1-sol-2026-09-01") == .gptSol)
+        let extractor = Extractor(model: .gptSol, claude: nil, cache: URL(fileURLWithPath: "/tmp"))
+        let answer = Claude.Answer(json: Data(), servedBy: "gpt-6.1-sol-2026-09-01",
                                    inputTokens: 1_000_000, outputTokens: 100_000, seconds: 1)
-        #expect(abs(extractor.cost(of: answer) - 1.5) < 0.0001)
+        #expect(abs(extractor.cost(of: answer) - 3.0) < 0.0001)
     }
 
     @Test("A refusal and a cut-off answer are errors, not answers")
@@ -119,7 +114,7 @@ struct ExtractorTests {
             deadlines: [])
         var decision = Spike(detector: EntityDetector(runsTagger: false))
             .run(on: EMLParser.parse(source: "From: a@example.net\n\nx", url: URL(fileURLWithPath: "/tmp/x.eml"))).judgement
-        Extractor(model: .opus, claude: nil, cache: URL(fileURLWithPath: "/tmp")).apply(found, to: &decision, restorer: pseudonymizer.restorer)
+        Extractor(model: .gptSol, claude: nil, cache: URL(fileURLWithPath: "/tmp")).apply(found, to: &decision, restorer: pseudonymizer.restorer)
 
         #expect(decision.parties.first?.name == "Annegret Berger")
         #expect(decision.todos.first?.text == "Annegret Berger zurückrufen")
@@ -150,7 +145,7 @@ struct ExtractorTests {
         let owner = Extractor.owner(named: [], in: report.outcomes)
         #expect(owner.contains("jan@example.net"))
 
-        _ = try await Extractor(model: .opus, claude: nil, cache: folder.appendingPathComponent("cache"))
+        _ = try await Extractor(model: .gptSol, claude: nil, cache: folder.appendingPathComponent("cache"))
             .run(&report.outcomes, pseudonymizer: try #require(report.pseudonymizer), owner: owner, dryRun: requests)
 
         let lines = try String(contentsOf: requests, encoding: .utf8).split(separator: "\n")
@@ -185,7 +180,7 @@ struct ExtractorTests {
         failed.extraction?.error = "HTTP 529"
 
         let requests = folder.appendingPathComponent("requests.jsonl")
-        let summary = try await Extractor(model: .opus, claude: nil, cache: folder.appendingPathComponent("cache"))
+        let summary = try await Extractor(model: .gptSol, claude: nil, cache: folder.appendingPathComponent("cache"))
             .run(&report.outcomes, pseudonymizer: try #require(report.pseudonymizer), owner: [], dryRun: requests,
                  known: [first.emailID: first, failed.emailID: failed])
 
@@ -212,7 +207,7 @@ struct ExtractorTests {
         let earlier = try decoder.decode(Judgement.self, from: Data(json.utf8))
 
         let requests = folder.appendingPathComponent("requests.jsonl")
-        let summary = try await Extractor(model: .opus, claude: nil, cache: folder.appendingPathComponent("cache"))
+        let summary = try await Extractor(model: .gptSol, claude: nil, cache: folder.appendingPathComponent("cache"))
             .run(&report.outcomes, pseudonymizer: try #require(report.pseudonymizer), owner: [], dryRun: requests,
                  known: [earlier.emailID: earlier])
         #expect(summary.kept == 1)
@@ -237,12 +232,12 @@ struct ExtractorTests {
 
         let open = folder.appendingPathComponent("open.jsonl")
         var first = report.outcomes
-        _ = try await Extractor(model: .opus, claude: nil, cache: folder.appendingPathComponent("cache"))
+        _ = try await Extractor(model: .gptSol, claude: nil, cache: folder.appendingPathComponent("cache"))
             .run(&first, pseudonymizer: try #require(report.pseudonymizer), owner: [], dryRun: open, known: [earlier.emailID: earlier])
         #expect(try String(contentsOf: open, encoding: .utf8).contains("zaunbau"))
 
         let closed = folder.appendingPathComponent("closed.jsonl")
-        var extractor = Extractor(model: .opus, claude: nil, cache: folder.appendingPathComponent("cache"))
+        var extractor = Extractor(model: .gptSol, claude: nil, cache: folder.appendingPathComponent("cache"))
         extractor.closedMatters = ["zaunbau"]
         _ = try await extractor.run(&report.outcomes, pseudonymizer: try #require(report.pseudonymizer), owner: [], dryRun: closed,
                                     known: [earlier.emailID: earlier])
@@ -349,7 +344,7 @@ struct ExtractorTests {
 
     @Test("The instructions are marked for the prompt cache, and the mark does not change the answer cache's key")
     func promptCache() throws {
-        let body = Claude.body(model: .opus, system: "Anweisungen", user: "Mail", schema: ExtractionPrompt.schema, effort: nil)
+        let body = Claude.body(model: .gptSol, system: "Anweisungen", user: "Mail", schema: ExtractionPrompt.schema, effort: nil)
         let system = try #require(body["system"] as? [[String: Any]])
         #expect((system.first?["cache_control"] as? [String: String])?["type"] == "ephemeral")
         var old = body
@@ -359,8 +354,8 @@ struct ExtractorTests {
 
     @Test("Cached input costs a tenth to read and a quarter more to write")
     func cachePricing() {
-        let opus = Claude.Model.opus
-        #expect(abs(opus.cost(input: 0, output: 0, cacheRead: 1_000_000) - 0.5) < 0.0001)
-        #expect(abs(opus.cost(input: 0, output: 0, cacheWrite: 1_000_000) - 6.25) < 0.0001)
+        let sol = Claude.Model.gptSol
+        #expect(abs(sol.cost(input: 0, output: 0, cacheRead: 1_000_000) - 0.2) < 0.0001)
+        #expect(abs(sol.cost(input: 0, output: 0, cacheWrite: 1_000_000) - 2.5) < 0.0001)
     }
 }
