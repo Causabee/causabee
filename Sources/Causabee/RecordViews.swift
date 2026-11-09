@@ -1184,6 +1184,22 @@ struct BroughtFile: Transferable {
 /// What is new, on top of the Digest until it is seen: what the new mail changes, on yellow (Pro),
 /// and the tasks, dates and facts mail and files brought since the last "Seen" — each corrected in
 /// place or put away, where the owner looks every day. One "Seen" for all of it.
+/// A matter opened, whichever part it opens on — Digest, Plan, Notes: what is new has been looked
+/// at, and the dot goes (manifesto 3). The card still says "NEW" through this visit.
+@MainActor
+enum NewVisit {
+    private static var saidNew: Set<PersistentIdentifier> = []
+    static func opened(_ matter: Matter, context: ModelContext) {
+        if matter.openedNew() { saidNew.insert(matter.persistentModelID); try? context.save() }
+    }
+    static func left(_ matter: Matter) { saidNew.remove(matter.persistentModelID) }
+    /// Whether this visit began with something new: for "NEW" on the card.
+    static func saysNew(_ matter: Matter, context: ModelContext) -> Bool {
+        opened(matter, context: context)
+        return saidNew.contains(matter.persistentModelID)
+    }
+}
+
 struct NewsCard: View {
     let matter: Matter
     /// A task's or a date's own editor, shown over the card: each device has its own. Given the
@@ -1204,8 +1220,7 @@ struct NewsCard: View {
     var body: some View {
         card
             .task(id: matter.persistentModelID) {
-                saysNew = matter.openedNew()
-                if saysNew { try? context.save() }
+                saysNew = NewVisit.saysNew(matter, context: context)
             }
     }
 

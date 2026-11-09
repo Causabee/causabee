@@ -182,6 +182,8 @@ struct MatterScreen: View {
             }
             // Asked to show a task while the page is open already — from a card in the assistant.
             .onChange(of: navigation.showing) { if navigation.showing != nil { show(navigation.showing, with: scroller) } }
+            .task(id: matter.persistentModelID) { NewVisit.opened(matter, context: context) }
+            .onDisappear { NewVisit.left(matter) }
             .onChange(of: navigation.showsNews) { showNews(with: scroller) }
             .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
             .onPreferenceChange(PageFindMatches.self) { found in

@@ -936,7 +936,7 @@ struct RootView: View {
         .overlay {
             if matters.isEmpty {
                 ContentUnavailableView("No matters yet", systemImage: "tray",
-                                       description: Text("Choose Causabee → Set Up Causabee … to bring in your mail, or File → New Matter … to start one."))
+                                       description: Text("Choose Causabee → Set Up Causabee … to bring in your mail, drop in screenshots, photos or files, or File → New Matter … to start one."))
             }
         }
     }

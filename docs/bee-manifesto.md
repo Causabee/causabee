@@ -22,8 +22,7 @@ What comes in, from anywhere, is the same to her:
 ## 2. Matters, not messages.
 
 You think in matters: the roof, Mum's care, the move.
-She sorts everything that comes in into its matter.
-You never sort.
+You never file. You only say which mail is hers (a label) — screenshots, photos and files you hand her directly. She does the rest.
 
 ## 3. What she does for you
 
@@ -36,21 +35,25 @@ You never sort.
 | **Keeps what is good to know** — true, asks nothing of you | look it up again |
 | **Tells you what is new** — once, clearly | check everything again |
 | **Adds** what comes in, marked NEW; **proposes** changes to what is yours | worry she changed something behind your back |
+| **Keeps your Calendar and Reminders in step** with your matters, both ways | enter a date twice |
+| **Looks things up** on the web when you tap — a legal period, what an insurer pays | research |
 | **Answers** in the chat, from your matters only, and does what you ask | search |
+
+She works by herself while **Auto** is on. Off, she waits for your tap.
 
 ## 4. Principles — check every change against these
 
 1. **Every source counts the same.** Nothing is mail-only unless it truly is.
-2. **New is said once.** Something is new only when it came after you last looked. Reworded is not new. Re-read is not new.
-3. **One signal, one meaning.** The yellow dot and NEW say the same thing: something came you haven't looked at. Looking takes them away. Nothing else does.
+2. **New is said once.** New means it *reached the bee* after you last opened the matter — not the date written on it. A screenshot taken last week, shared today, is new today. Reworded is not new. Re-read is not new.
+3. **One signal, one meaning.** The yellow dot and NEW say the same thing: something came you haven't looked at. Opening the matter — on any tab — takes them away. Nothing else does.
 4. **Looked at is not handled.** Like a read mail: still there until you act — 👍, ×, done, Seen.
-5. **She adds, she never changes.** Tasks and dates from what comes in are added, marked NEW — you keep them (👍) or put them away (×). What is already yours — done, a new day, its words — changes only with your tap.
+5. **She adds, she never changes.** Tasks and dates from what comes in are added, marked NEW — you keep them (👍) or put them away (×). What is already yours — done, a new day, its words — changes only with your tap. An edit you make in Calendar or Reminders counts as your tap.
 6. **Your word wins.** What you said or wrote beats what came in.
 7. **One next step.** Yours, concrete, doable. Never something already done.
 8. **Good to know is stable.** True, asks nothing, the same fact never comes back as new.
 9. **Less, not more.** Every line must earn its place. When in doubt, leave it out. Noise is load.
 10. **Clear words.** Short sentences. Few words. No jargon, no ids.
-11. **Private.** Names are disguised before anything leaves the device. Nothing is sent for you.
+11. **Private.** No message is ever sent in your name. Content leaves the device only with names disguised — by itself only with Auto on, otherwise at your tap.
 12. **Everywhere the same.** iPhone, iPad, Mac: one matter, one state.
 
 ## 5. The chat
@@ -59,7 +62,7 @@ The chat is you talking to her about your matters.
 - She answers from what is in your matters, and says when it isn't there.
 - What she offers to do is a card: you take it, or not.
 - What you take lands where you'd look for it: a note in Notes, a task in Plan, a date in the calendar.
-- What you tell her counts as something that came in.
+- What you tell her shapes her understanding at once and wins over what came in. It is your own word, so it is never shown back to you as NEW.
 
 ## 6. How we know she works
 
@@ -68,7 +71,15 @@ Each job is tested against its promise:
 - **Sort** — every item ends up in exactly one matter, or in none. Sample set with known answers.
 - **Read** — a task only when someone must act; a date only when it is in the source. Sample set.
 - **Understand / next step / good to know** — sample matters with expected briefs.
-- **New** — replay a week of things coming in, day by day: what says NEW each morning, and only that.
+- **New** — replay days of things coming in, of every kind: what says NEW each morning, and only that.
 - **Screens** — automated tests on iPhone, iPad and Mac for every signal: dot, NEW, card, receipt.
 
 If a change breaks a principle, it is wrong — however good it looks.
+
+## 7. Known gaps — where the code does not yet keep a promise
+
+Listed so nobody pretends. Each one closes with a test.
+
+- **Principle 5:** reading what came in can tick off a task as done, or move a date — even one you corrected — without your tap.
+- **Section 3, Reads:** files attached to mail, and files kept "only stored", are not read until you tap Read.
+- **Principle 12:** two devices rewriting at once can, rarely, bring back a NEW you already saw.

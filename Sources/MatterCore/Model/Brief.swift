@@ -251,14 +251,16 @@ extension Matter {
     /// What came in since the brief was written — mails, screenshots, photos, scans: what its news is about.
     public var cameSinceBrief: [Entry] {
         guard let written = shownBrief?.writtenAt else { return [] }
-        return (entries ?? []).filter { ($0.date ?? .distantPast) > written }
+        let arrivals = arrivals()
+        return (entries ?? []).filter { (arrivals[$0.messageID] ?? $0.date ?? .distantPast) > written }
     }
 
     /// Files that came in by themselves since the brief was written — dropped in, shared, scanned —
     /// not with a mail: what came in counts whatever it came as.
     public var filesSinceBrief: [Document] {
         guard let written = shownBrief?.writtenAt else { return [] }
-        return (documents ?? []).filter { !$0.isHidden && $0.source.kind != .mail && ($0.source.date ?? .distantPast) > written }
+        let arrivals = arrivals()
+        return (documents ?? []).filter { !$0.isHidden && $0.source.kind != .mail && (arrivals[$0.messageID] ?? $0.source.date ?? .distantPast) > written }
     }
 
     /// A question to look up, kept with the others — the one already there when it was asked before.

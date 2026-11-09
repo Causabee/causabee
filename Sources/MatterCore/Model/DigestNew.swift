@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import Synchronization
 
 /// What is new on a matter's Digest: the tasks, dates and facts that mail, files and Pro brought
 /// since the owner last said "Seen" — checked there, where the owner looks every day, not in Plan.
@@ -32,24 +33,63 @@ public enum NewItem: Identifiable {
         case .deadline(let item): item.sources.first
         }
     }
+}
 
-    /// When it came: what it is ordered by, newest first.
-    var came: Date {
-        switch self {
-        case .task(let item), .fact(let item): item.came
-        case .appointment(let item): item.sources.first?.date ?? .distantPast
-        case .deadline(let item): item.sources.first?.date ?? .distantPast
+/// Every arrival in a store, read once and kept until another comes in: the overview asks for every
+/// matter, and one fetch per matter cost a frame.
+enum Arrivals {
+    /// The store it was read from — held weakly, so a new store at the same address is not taken
+    /// for it — how many there were, and when each came.
+    private final class Kept {
+        weak var context: ModelContext?
+        let count: Int
+        let map: [String: Date]
+        init(_ context: ModelContext, _ count: Int, _ map: [String: Date]) { self.context = context; self.count = count; self.map = map }
+    }
+    nonisolated(unsafe) private static var kept: [ObjectIdentifier: Kept] = [:]
+    private static let lock = NSLock()
+
+    static func all(in context: ModelContext) -> [String: Date] {
+        let key = ObjectIdentifier(context)
+        let count = (try? context.fetchCount(FetchDescriptor<SortedMail>())) ?? 0
+        if let hit = lock.withLock({ kept[key] }), hit.context === context, hit.count == count { return hit.map }
+        var map: [String: Date] = [:]
+        for record in (try? context.fetch(FetchDescriptor<SortedMail>())) ?? [] {
+            map[record.messageID] = min(map[record.messageID] ?? record.sortedAt, record.sortedAt)
         }
+        lock.withLock {
+            kept = kept.filter { $0.value.context != nil }
+            kept[key] = Kept(context, count, map)
+        }
+        return map
     }
 }
 
-extension Todo {
-    /// When what it rests on came in. A fact the bee writes again in other words is rebuilt
-    /// today, but rests on what came on its day: it is new only when that is (manifesto 2 and 8 —
-    /// 9 November: facts from 27 October came back as NEW every morning).
-    var came: Date {
-        guard isFact else { return createdAt }
-        return factSources.filter { $0.kind != .conversation }.compactMap(\.date).max() ?? createdAt
+extension Matter {
+    /// When each thing that came in reached the bee, by its id: the moment it was sorted in, on
+    /// whichever device — not the date written on it. A screenshot taken weeks ago, an old PDF, a
+    /// mail filed late arrive today, and are new today (manifesto 1 and 2).
+    public func arrivals() -> [String: Date] {
+        guard let context = modelContext else { return [:] }
+        return Arrivals.all(in: context)
+    }
+
+    /// When a source reached the bee: its arrival, else the date on it.
+    static func arrived(_ source: Source, _ arrivals: [String: Date]) -> Date? {
+        source.messageID.flatMap { arrivals[$0] } ?? source.date
+    }
+
+    /// When a new thing came: when what it rests on arrived. A fact the bee writes again in other
+    /// words is rebuilt today but rests on what came on its day — new only when that is
+    /// (9 November: facts from 27 October came back as NEW every morning).
+    static func came(_ item: NewItem, _ arrivals: [String: Date]) -> Date {
+        switch item {
+        case .task(let todo), .fact(let todo):
+            let dates = (todo.isFact ? todo.factSources : todo.sources).filter { $0.kind != .conversation }.compactMap { arrived($0, arrivals) }
+            return dates.max() ?? todo.createdAt
+        case .appointment(let date): return date.sources.first.flatMap { arrived($0, arrivals) } ?? .distantPast
+        case .deadline(let date): return date.sources.first.flatMap { arrived($0, arrivals) } ?? .distantPast
+        }
     }
 }
 
@@ -62,31 +102,35 @@ extension Matter {
         shownBrief?.newSeenAt ?? now.addingTimeInterval(-Self.firstLook)
     }
 
-    /// What is new, newest first: open tasks and facts made since, and dates whose mail came since —
-    /// from mail, a file or Pro, not what the owner added by hand. Hidden, done or past: not new.
-    public func newItems(now: Date = Date()) -> [NewItem] {
+    /// What is new, newest first: open tasks and facts, and dates, from what came in since —
+    /// mail, a screenshot, a photo, a scan, a file, Pro — not what the owner added by hand.
+    /// Hidden, done or past: not new.
+    public func newItems(now: Date = Date()) -> [NewItem] { dated(now: now).map(\.item) }
+
+    /// What is new, each with when it came.
+    func dated(now: Date = Date()) -> [(item: NewItem, came: Date)] {
         guard !isClosed else { return [] }
         let since = newSince(now: now)
         let today = MatterStatus.day(now)
         let kept = Set(shownBrief?.newKept ?? [])
+        let arrivals = arrivals()
         func brought(_ sources: [Source]) -> Bool { sources.contains { $0.kind != .conversation } }
         var items: [NewItem] = []
-        for todo in (todos ?? []) where !todo.isHidden && !todo.isDone && todo.came > since {
+        for todo in (todos ?? []) where !todo.isHidden && !todo.isDone {
             if todo.isInfo {
-                if todo.isFact || brought(todo.sources) { items.append(.fact(todo)) }
+                // A fact that rests only on the owner's own word — a note, what they said — is
+                // theirs: never shown back to them as new.
+                if brought(todo.isFact ? todo.factSources : todo.sources) { items.append(.fact(todo)) }
             } else if brought(todo.sources) {
                 items.append(.task(todo))
             }
         }
-        for item in (appointments ?? []) where !item.isHidden && item.day >= today && brought(item.sources)
-            && (item.sources.first?.date ?? .distantPast) > since {
-            items.append(.appointment(item))
-        }
-        for item in (deadlines ?? []) where !item.isHidden && item.day >= today && brought(item.sources)
-            && (item.sources.first?.date ?? .distantPast) > since {
-            items.append(.deadline(item))
-        }
-        return items.filter { !kept.contains($0.key) }.sorted { $0.came > $1.came }
+        for item in (appointments ?? []) where !item.isHidden && item.day >= today && brought(item.sources) { items.append(.appointment(item)) }
+        for item in (deadlines ?? []) where !item.isHidden && item.day >= today && brought(item.sources) { items.append(.deadline(item)) }
+        return items.filter { !kept.contains($0.key) }
+            .map { (item: $0, came: Self.came($0, arrivals)) }
+            .filter { $0.came > since }
+            .sorted { $0.came > $1.came }
     }
 
     /// ✓ on one new thing: kept as it is, and not new any more — the rest stays new.
@@ -102,7 +146,17 @@ extension Matter {
     /// until the owner handles it: 👍, ×, done, or "Seen".
     public func unopenedNew(now: Date = Date()) -> [NewItem] {
         let looked = shownBrief?.newLookedAt ?? .distantPast
-        return newItems(now: now).filter { $0.came > looked }
+        return dated(now: now).filter { $0.came > looked }.map(\.item)
+    }
+
+    /// Whether everything in these came before the owner last opened the matter: news about it
+    /// is not new, though written after.
+    public func lookedAtAll(_ entries: [Entry], _ files: [Document]) -> Bool {
+        guard let looked = [shownBrief?.newLookedAt, shownBrief?.newSeenAt].compactMap({ $0 }).max() else { return false }
+        let arrivals = arrivals()
+        let came = entries.map { arrivals[$0.messageID] ?? $0.date ?? .distantFuture }
+            + files.map { arrivals[$0.messageID] ?? $0.source.date ?? .distantFuture }
+        return !came.isEmpty && came.allSatisfy { $0 <= looked }
     }
 
     /// The news, while it is neither seen nor opened.

@@ -254,6 +254,8 @@ struct MatterStatusView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in loadCalendars() }
                 .onChange(of: navigation.showing) { show(navigation.showing, with: scroller) }
+                .task(id: matter.persistentModelID) { NewVisit.opened(matter, context: context) }
+                .onDisappear { NewVisit.left(matter) }
                 .onChange(of: navigation.showsNews) { showNews(with: scroller) }
                 .sheetWhenAsked(isPresented: $addingContact) { ContactEditor(matter: matter) }
                 .sheetWhenAsked(isPresented: $addingDetail) { DetailEditor(matter: matter) }
@@ -702,7 +704,7 @@ struct MatterStatusView: View {
                     }
                     .padding(.top, 6)
                 } label: {
-                    Text("From the mails · \(offered.count) \(offered.count == 1 ? "suggestion" : "suggestions")").font(.subheadline.weight(.semibold))
+                    Text("Found in what came in · \(offered.count) \(offered.count == 1 ? "suggestion" : "suggestions")").font(.subheadline.weight(.semibold))
                 }
                 .padding(.horizontal, 4)
             }

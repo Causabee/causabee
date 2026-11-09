@@ -315,7 +315,7 @@ struct LinksSection: View {
                     }
                     .journalRows().padding(.top, 6)
                 } label: {
-                    Text("From the mails · \(offered.count) \(offered.count == 1 ? "suggestion" : "suggestions")").font(.subheadline.weight(.semibold))
+                    Text("Found in what came in · \(offered.count) \(offered.count == 1 ? "suggestion" : "suggestions")").font(.subheadline.weight(.semibold))
                 }
                 .padding(.horizontal, 4)
             }

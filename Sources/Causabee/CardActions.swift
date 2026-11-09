@@ -975,6 +975,8 @@ enum Adviser {
             news: advice.news.isEmpty || (new.isEmpty && files.isEmpty) ? nil : {
                 var news = Brief.News.of(advice.news, came: new, since: before ?? Date())
                 news.files = (news.files ?? 0) + files.count
+                // About what the owner already looked at: written now, but not new (manifesto 2).
+                news.opened = matter.lookedAtAll(new, files) ? true : nil
                 return news
             }(), in: context)
         return advice.cost

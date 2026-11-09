@@ -1409,7 +1409,7 @@ struct ClosedMailRows: View {
                     Button { open(matter) } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "archivebox").foregroundStyle(.secondary)
-                            Text("\(new) new \(new == 1 ? "mail" : "mails") in the closed matter “\(matter.name)”")
+                            Text("\(new) new in the closed matter “\(matter.name)”")
                                 .multilineTextAlignment(.leading)
                             Spacer(minLength: 0)
                         }
