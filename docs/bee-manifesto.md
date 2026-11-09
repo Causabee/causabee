@@ -47,7 +47,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 2. **New is said once.** New means it *reached the bee* after you last opened the matter — not the date written on it. A screenshot taken last week, shared today, is new today. Reworded is not new. Re-read is not new.
 3. **One signal, one meaning.** The yellow dot and NEW say the same thing: something came you haven't looked at. Opening the matter — on any tab — takes them away. Nothing else does.
 4. **Looked at is not handled.** Like a read mail: still there until you act — 👍, ×, done, Seen.
-5. **She adds, she never changes.** Tasks and dates from what comes in are added, marked NEW — you keep them (👍) or put them away (×). What is already yours — done, a new day, its words — changes only with your tap. An edit you make in Calendar or Reminders counts as your tap. A date you set — in the chat or by hand — is yours from then on: what comes in later is only added to its sources. And the same day said again never takes its hour away.
+5. **She adds, she never changes.** Tasks and dates from what comes in are added, marked NEW — you keep them (👍) or put them away (×). What is already yours — done, a new day, its words — changes only with your tap. An edit you make in Calendar or Reminders counts as your tap. A date you set — in the chat, in its sheet, on its day — is yours from then on: what comes in later is only added to its sources, and when the other side moves it, their new date comes as a date of its own, marked NEW, for you to keep or put away. The same day said again never takes its hour away. Undo gives it back.
 6. **Your word wins.** What you said or wrote beats what came in.
 7. **One next step.** Yours, concrete, doable. Never something already done.
 8. **Good to know is stable.** True, asks nothing, the same fact never comes back as new.
@@ -56,10 +56,10 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 11. **Private.** No message is ever sent in your name. Content leaves the device only with names disguised — by itself only with Auto on, otherwise at your tap.
 12. **Everywhere the same.** iPhone, iPad, Mac: one matter, one state.
 13. **She writes as you do.** A mail or a message she drafts sounds like you, to that person: the greeting, the sign-off, du or Sie, as you and they write to each other. Never more formal than they are. A reply in a running exchange is a reply, not a letter. Your words in the chat set its length — "Freitag passt" is two lines. Textbook form only for a first message to an office, when nothing else is known.
-14. **A date says when and how long.** "14:30–15:30 · 1 h" — how long only when it is known, never Calendar's guessed hour. One without a time says "No time yet" — never a bare day that hides it.
+14. **A date says when and how long.** "14:30–15:30 · 1 h" — how long only when it is known, never Calendar's guessed hour. One without a time says "No time yet" — never a bare day that hides it. You set how long as a duration — "3 h" — not as an end.
 15. **Waiting is not doing.** What someone else has to do never looks like yours: no box to tick, who you wait for first, greyed, a dashed line round it instead of a card.
 16. **Latest is what happened.** Latest updates puts a matter on top only when something happened there: something came in, or you added, ticked or wrote something. Her rewording — a fact said again, a task written down again — is not news.
-17. **Linked means in step.** A date linked to a Calendar event shows what the event says; what it lacks — a time, an end, a place — is taken from the event. A time gone here is never sent there to take Calendar's away. What you change here goes there with its end. When Calendar will not take it — an invitation, a work calendar — your word stays here, and the card says what Calendar holds.
+17. **Linked means in step.** A date linked to a Calendar event shows what the event says; what it lacks — a time, an end, a place — is taken from the event. A time gone here is never sent there to take Calendar's away. What you change here goes there with its end. When Calendar will not take it — an invitation, a work calendar, a server that puts it back, even later — your word stays here, and the card says what Calendar holds. An invitation is never written to.
 
 ## 5. The chat
 
@@ -81,7 +81,7 @@ Each job is tested against its promise:
 - **New** — replay days of things coming in, of every kind: what says NEW each morning, and only that.
 - **Screens** — automated tests on iPhone, iPad and Mac for every signal: dot, NEW, card, receipt.
 
-- **Calendar** — linked to an event from 14:00 to 17:00, the date says so; a time set here goes there with its end; Calendar putting it back never undoes your word.
+- **Dates** — `DateMatrixTests`: every way a date is set (chat, sheet, day tile, Calendar) × everything after it (what comes in of every kind, the sync's passes, a server putting it back early or late, an invitation, a failed write, undo), and what the card and the receipt then say; times as people write them, in German and English.
 - **Offered, then settled** — a time offered in one message and settled in the reply reaches the date; the chat finds it in the words.
 - **Write** — sample exchanges (a casual dealer, a formal insurer, a first mail to an office, a chat screenshot): the greeting, sign-off and length each draft must have.
 
@@ -97,3 +97,6 @@ Listed so nobody pretends. Each one closes with a test.
 - **Principle 12:** two devices rewriting at once can, rarely, bring back a NEW you already saw. Planned fix, no schema change: each device keeps its own last-seen time and never writes an older one back; the brief records which device wrote it.
 - **Principle 13:** she is given how the newest messages open and close, and the rules to write as you do. Whether every draft she writes keeps them is not yet checked automatically against her real answers — only by you, draft by draft.
 - **Chat, the words themselves:** she is given the words of the ten newest items of a matter; an older one only by its summary.
+- **Dates across devices:** a device on an older build can still undo a date with its old rules, and iCloud carries that to the others. Every device on the same build.
+- **Dates restated:** when you moved a date and a later item still names the old one, that old date comes as a NEW date of its own — put it away with ×.
+- **Times in words:** "halb drei", "Viertel nach zwei" are not read yet; the bee's answer carries them.
