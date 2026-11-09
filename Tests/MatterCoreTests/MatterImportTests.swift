@@ -412,3 +412,59 @@ struct PartyTests {
     }
 }
 
+
+/// 9 November: the Probefahrt set to 14:30–17:30 in the chat lost its time again and again — each
+/// reply of the dealer's, "dann bis Freitag", moved it to Friday with no hour.
+@Suite("A time known is not lost to what comes in")
+@MainActor
+struct AppointmentTimeKeptTests {
+    let first = ["what": "Probefahrt mit dem VOLVO EX40", "date": "2026-11-13", "time": NSNull(), "place": NSNull(), "source_quote": "…"] as [String: Any]
+
+    func setUp() throws -> (ModelContext, Appointment) {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        try MatterImport.apply([try mail("a", "volvo", day: 1, appointments: [first])], to: context)
+        let appointment = try #require(try context.fetch(FetchDescriptor<Appointment>()).first)
+        return (context, appointment)
+    }
+
+    func again(_ id: String, day: Int, time: Any = NSNull(), replaces: String) throws -> Judgement {
+        var item = first
+        item["time"] = time
+        item["replaces"] = replaces
+        return try mail(id, "volvo", day: day, appointments: [item])
+    }
+
+    @Test("The same day said again without an hour: the hour stays")
+    func sameDayNoHour() throws {
+        let (context, appointment) = try setUp()
+        appointment.time = "14:30"; appointment.endTime = "17:30"
+        try MatterImport.apply([try again("b", day: 2, replaces: "2026-11-13 14:30")], to: context)
+        #expect(appointment.time == "14:30" && appointment.endTime == "17:30")
+    }
+
+    @Test("Set by the owner in the chat or by hand: what comes in does not move it")
+    func ownersStays() throws {
+        let (context, appointment) = try setUp()
+        appointment.time = "14:30"; appointment.endTime = "17:30"
+        appointment.claim()
+        try MatterImport.apply([try again("c", day: 3, time: "10:00", replaces: "2026-11-13 14:30")], to: context)
+        #expect(appointment.time == "14:30" && appointment.day == "2026-11-13")
+        #expect(appointment.sources.count == 3, "What came in is kept among its sources")
+    }
+
+    @Test("Not the owner's, moved to another hour by what came in: it moves")
+    func movedByMail() throws {
+        let (context, appointment) = try setUp()
+        appointment.time = "14:30"
+        try MatterImport.apply([try again("d", day: 4, time: "16:00", replaces: "2026-11-13 14:30")], to: context)
+        #expect(appointment.time == "16:00")
+    }
+
+    @Test("Claimed, it is still never shown back as new")
+    func claimedNotNew() throws {
+        let (_, appointment) = try setUp()
+        appointment.claim()
+        appointment.claim()
+        #expect(appointment.sources.filter { $0.kind == .conversation }.count == 1)
+    }
+}

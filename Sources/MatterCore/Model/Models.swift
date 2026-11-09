@@ -10,6 +10,15 @@ import SwiftData
 
 /// Where an entry came from. Every fact carries one, because that is what makes a history
 /// checkable: "the property manager wrote this on 9 June" rather than "the app thinks so".
+extension Appointment {
+    /// Set by the owner — in the chat, by hand: theirs from now on. What comes in later does not
+    /// move it (manifesto 5 and 6); it is added to its sources only.
+    public func claim() {
+        guard sources.first?.kind != .conversation else { return }
+        sources.insert(Source(kind: .conversation, pointer: "", date: Date()), at: 0)
+    }
+}
+
 public struct Source: Codable, Hashable, Sendable {
     public enum Kind: String, Codable, Sendable, CaseIterable {
         case mail, spokenNote = "spoken_note", photo, phoneCall = "phone_call", document, screenshot

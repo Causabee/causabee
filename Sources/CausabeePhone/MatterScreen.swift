@@ -1711,6 +1711,7 @@ struct PhoneDateEditor: View {
             appointment.what = text
             appointment.day = dayText
             appointment.time = hasTime ? Self.formatter("HH:mm").string(from: time) : nil
+            appointment.claim()
             let spot = place.trimmingCharacters(in: .whitespacesAndNewlines)
             appointment.place = spot.isEmpty ? nil : spot
         }

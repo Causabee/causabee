@@ -47,7 +47,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 2. **New is said once.** New means it *reached the bee* after you last opened the matter — not the date written on it. A screenshot taken last week, shared today, is new today. Reworded is not new. Re-read is not new.
 3. **One signal, one meaning.** The yellow dot and NEW say the same thing: something came you haven't looked at. Opening the matter — on any tab — takes them away. Nothing else does.
 4. **Looked at is not handled.** Like a read mail: still there until you act — 👍, ×, done, Seen.
-5. **She adds, she never changes.** Tasks and dates from what comes in are added, marked NEW — you keep them (👍) or put them away (×). What is already yours — done, a new day, its words — changes only with your tap. An edit you make in Calendar or Reminders counts as your tap.
+5. **She adds, she never changes.** Tasks and dates from what comes in are added, marked NEW — you keep them (👍) or put them away (×). What is already yours — done, a new day, its words — changes only with your tap. An edit you make in Calendar or Reminders counts as your tap. A date you set — in the chat or by hand — is yours from then on: what comes in later is only added to its sources. And the same day said again never takes its hour away.
 6. **Your word wins.** What you said or wrote beats what came in.
 7. **One next step.** Yours, concrete, doable. Never something already done.
 8. **Good to know is stable.** True, asks nothing, the same fact never comes back as new.

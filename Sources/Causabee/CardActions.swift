@@ -511,6 +511,7 @@ enum CardActions {
                 appointment.time = card.time ?? appointment.time
                 appointment.endTime = card.endTime ?? appointment.endTime
                 if let end = card.endDay { appointment.endDay = end > day ? end : nil }
+                appointment.claim()
             } else if let deadline = model(card.todo, as: Deadline.self) {
                 undo = .date(deadline.persistentModelID, day: deadline.day, time: nil)
                 deadline.day = day

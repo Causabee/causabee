@@ -189,8 +189,16 @@ public enum MatterImport {
                         same.sources.append(source.quoting(found.sourceQuote))
                         continue
                     }
+                    // The same day said again without its hour moves nothing: the time known stays
+                    // (9 November: each reply of the dealer's, "bis Freitag", took the 14:30 away).
+                    let moved = found.date != same.day || (found.time != nil && found.time != same.time)
+                    guard moved else {
+                        same.sources.append(source.quoting(found.sourceQuote))
+                        continue
+                    }
+                    if found.date != same.day || found.time != nil { same.endTime = found.endTime }
                     same.day = found.date
-                    same.time = found.time
+                    same.time = found.time ?? (found.date == same.day ? same.time : nil)
                     same.what = found.what
                     if let place = found.place { same.place = place }
                     // Moved by what came in: it comes first among its sources, so it says NEW with it.
