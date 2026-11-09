@@ -758,6 +758,7 @@ struct TurnView: View {
                                recipient: card.kind == .draftMessage ? recipient(card.party) : nil,
                                scope: card.kind == .draftMessage ? draftScope(card) : nil, question: turn.question,
                                preparing: card.kind == .draftMessage ? MailPreparing.shared.notes[MailPreparing.key(turn.id, index)] : nil,
+                               made: { if case .added(let id) = turn.undos[index] { id } else { nil } }(),
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
             }
@@ -872,6 +873,9 @@ struct ActionCard: View {
     var question = ""
     /// What its files wait for before the mail opens: fetched from iCloud, made smaller.
     var preparing: String? = nil
+    /// What taking it in made, when it is one thing of its own: a note opens at it, in Notes.
+    var made: PersistentIdentifier? = nil
+    @Environment(Navigation.self) private var navigation
     @State private var text: String
     @State private var subject: String
     /// The matter's files the owner picked for a draft, besides those it names.
@@ -905,11 +909,12 @@ struct ActionCard: View {
     init(card: AssistantPrompt.Reply.Card, done: Bool, refs: [String: FactRef], open: @escaping (FactRef) -> Void,
          label: @escaping (FactRef) -> String, apply: @escaping (String, String?, [MatterCore.Document], Set<PersistentIdentifier>) -> Void,
          undo: (() -> Void)?, recipient: (name: String, address: String?)? = nil, scope: Matter? = nil, question: String = "",
-         preparing: String? = nil, dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
+         preparing: String? = nil, made: PersistentIdentifier? = nil, dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
         (self.card, self.done, self.refs, self.open, self.label, self.apply, self.undo) = (card, done, refs, open, label, apply, undo)
         self.recipient = recipient
         (self.scope, self.question) = (scope, question)
         self.preparing = preparing
+        self.made = made
         (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
         _text = State(initialValue: card.text)
         _subject = State(initialValue: card.subject ?? "")
@@ -1058,6 +1063,12 @@ struct ActionCard: View {
 
     /// The matter it is about: the task it names, else what it rests on.
     private func openTaken() {
+        // A note opens in Notes, at the note — not at the task it is about (9 November).
+        if card.kind == .addNote, let made, let note = CardActions.live(made, as: MatterNote.self, in: context), let matter = note.matter {
+            navigation.showsInItsPart = true
+            navigation.open(matter, showing: made)
+            return
+        }
         if let ref = ([card.todo, card.party] + card.cites).compactMap({ $0.flatMap { refs[$0] } }).first { open(ref) }
     }
 
