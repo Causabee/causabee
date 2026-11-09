@@ -121,6 +121,22 @@ final class ThreadTests: XCTestCase {
         XCTAssertLessThanOrEqual(to.frame.maxY, body.frame.minY, "Unfolded again, the To line lies on the mail's text.")
     }
 
+    /// A draft whose subject takes one line and whose "To" takes two: the writing area starts under
+    /// the To (9 November: its second line lay on the mail's first line, on the owner's iPhone).
+    func testADraftsLongLinesWithAShortSubject() {
+        ask("Write a mail to Nina Voss")
+        let to = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "To ")).firstMatch
+        XCTAssertTrue(to.waitForExistence(timeout: 15), "The draft has no To line.")
+        let body = app.descendants(matching: .any).matching(NSPredicate(format: "value BEGINSWITH %@", "Hello Sebastian")).firstMatch
+        XCTAssertTrue(body.waitForExistence(timeout: 5), "The draft has no text to change.")
+        Thread.sleep(forTimeInterval: 1)
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/draft-short.png"))
+        }
+        print("DRAFT3 to \(to.frame) body \(body.frame)")
+        XCTAssertLessThanOrEqual(to.frame.maxY, body.frame.minY, "The To line lies on the mail's text.")
+    }
+
     /// Copy and Save as note under an answer say they were done: a word beside the tick.
     func testCopyAndNoteSayTheyWereDone() {
         ask("Who has the spare key?")
