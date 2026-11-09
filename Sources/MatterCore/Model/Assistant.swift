@@ -175,13 +175,16 @@ public enum FactSheet {
                     ? Array(status.entries.filter { fileMails.contains($0.messageID) || mentions($0.title) || mentions($0.from) }.prefix(15))
                     : Array(status.entries.prefix(mails))
                 if !entries.isEmpty { lines.append("Mails, newest first:") }
-                for entry in entries {
+                for (n, entry) in entries.enumerated() {
                     let from = Email.displayName(in: entry.from) ?? Email.address(in: entry.from)
                     var line = "\(id("E", .entry(entry.persistentModelID))) \(entry.date.map(MatterStatus.day) ?? "?") from \(from): \(entry.title)"
                     // What the mail said, so a question about its details has something to go on.
                     if let digest = entry.digest, !digest.isEmpty { line += " — " + digest.replacingOccurrences(of: "\n", with: " ") }
                     if [.screenshot, .document].contains(entry.source.kind), let text = keptText?(entry), !text.isEmpty {
                         line += " — its words: \"" + String(text.prefix(1500)).replacingOccurrences(of: "\n", with: " / ") + "\""
+                    } else if entry.source.kind == .mail, n < 8, let text = keptText?(entry), let register = Register.of(text) {
+                        // How it is written — what a summary loses and a draft needs (principle 13).
+                        line += " — written: opens \"\(register.opens)\", closes \"\(register.closes)\""
                     }
                     lines.append(line)
                 }

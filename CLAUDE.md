@@ -15,6 +15,7 @@ The owner has said this since the first day. Getting it wrong again is not accep
 ## The bee's manifesto
 
 **Read [docs/bee-manifesto.md](docs/bee-manifesto.md) before changing what the bee does or shows. Check every change against its principles.**
+**Every new rule found with the owner goes into the manifesto, with its test, in the same change as the fix.**
 
 ## Standing rules
 

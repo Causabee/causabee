@@ -84,6 +84,20 @@ struct AssistantTests {
         #expect(prepared.sent.contains("Vollmacht"))
     }
 
+    @Test("A mail's greeting and sign-off go to a draft with the names in them disguised")
+    func registerDisguised() throws {
+        let (_, matter) = try store()
+        let body = "Hallo Herr Süß,\n\ndie Vollmacht kommt morgen.\n\nViele Grüße\nSebastian Süß\nsruess@example.com"
+        let facts = FactSheet.facts(for: [matter], today: "2026-09-28", keptText: { _ in body })
+        #expect(facts.text.contains("written: opens"))
+        let prepared = try AssistantAsk.prepare(question: "Schreib ihm, dass Freitag passt", inHand: nil, earlier: [], facts: facts,
+                                                owner: nil, today: "2026-09-28", mapping: try mapping(), saves: false)
+        for word in ["Süß", "Sebastian", "sruess"] {
+            #expect(!prepared.sent.contains(word), "\(word) would be sent: \(prepared.sent)")
+        }
+        #expect(prepared.sent.contains("Viele Grüße"))
+    }
+
     @Test("The owner's notes on a matter are read by the assistant, and a name in them is disguised")
     func notes() throws {
         let (_, matter) = try store()

@@ -55,6 +55,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 10. **Clear words.** Short sentences. Few words. No jargon, no ids.
 11. **Private.** No message is ever sent in your name. Content leaves the device only with names disguised — by itself only with Auto on, otherwise at your tap.
 12. **Everywhere the same.** iPhone, iPad, Mac: one matter, one state.
+13. **She writes as you do.** A mail or a message she drafts sounds like you, to that person: the greeting, the sign-off, du or Sie, as you and they write to each other. Never more formal than they are. A reply in a running exchange is a reply, not a letter. Your words in the chat set its length — "Freitag passt" is two lines. Textbook form only for a first message to an office, when nothing else is known.
 
 ## 5. The chat
 
@@ -62,6 +63,7 @@ The chat is you talking to her about your matters.
 - She answers from what is in your matters, and says when it isn't there.
 - What she offers to do is a card: you take it, or not.
 - What you take lands where you'd look for it: a note in Notes, a task in Plan, a date in the calendar.
+- What she writes for you to send, she writes in your voice (principle 13).
 - What you tell her shapes her understanding at once and wins over what came in. It is your own word, so it is never shown back to you as NEW.
 
 ## 6. How we know she works
@@ -74,7 +76,11 @@ Each job is tested against its promise:
 - **New** — replay days of things coming in, of every kind: what says NEW each morning, and only that.
 - **Screens** — automated tests on iPhone, iPad and Mac for every signal: dot, NEW, card, receipt.
 
+- **Write** — sample exchanges (a casual dealer, a formal insurer, a first mail to an office, a chat screenshot): the greeting, sign-off and length each draft must have.
+
 If a change breaks a principle, it is wrong — however good it looks.
+
+Every rule found while using her goes in here, the day it is found.
 
 ## 7. Known gaps — where the code does not yet keep a promise
 
@@ -82,3 +88,4 @@ Listed so nobody pretends. Each one closes with a test.
 
 - **Section 3, Reads:** files attached to mail are read by themselves on iPhone and iPad after each mail check (logos and signatures skipped). The Mac does not do it on its own yet; a file dropped into a matter's folder is kept until you tap Read.
 - **Principle 12:** two devices rewriting at once can, rarely, bring back a NEW you already saw. Planned fix, no schema change: each device keeps its own last-seen time and never writes an older one back; the brief records which device wrote it.
+- **Principle 13:** she is given how the newest messages open and close, and the rules to write as you do. Whether every draft she writes keeps them is not yet checked automatically against her real answers — only by you, draft by draft.
