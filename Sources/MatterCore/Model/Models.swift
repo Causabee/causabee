@@ -22,17 +22,16 @@ extension Appointment {
     /// without an end keeps the length it had, as Calendar does when an event is moved. Theirs from
     /// then on.
     public func set(day newDay: String, time newTime: String?, endTime newEnd: String?, endDay newEndDay: String? = nil) {
-        if let newTime, Calendars.clock(newTime) != nil {
-            if let newEnd, Calendars.clock(newEnd) != nil {
+        let newTime = Calendars.normal(newTime), newEnd = Calendars.normal(newEnd)
+        if let newTime {
+            if let newEnd {
                 endTime = newEnd
-            } else if let start = Calendars.clock(time), let end = Calendars.clock(endTime), endDay == nil {
-                let length = (end.0 * 60 + end.1) - (start.0 * 60 + start.1)
-                let from = Calendars.clock(newTime)!
-                let to = from.0 * 60 + from.1 + length
-                endTime = length > 0 && to < 24 * 60 ? String(format: "%02d:%02d", to / 60, to % 60) : nil
+            } else if endDay == nil, case let length = Durations.minutes(from: time, to: endTime), length > 0 {
+                // Over midnight too: 22:00–01:00 moved to 21:00 is 21:00–00:00.
+                endTime = Durations.end(from: newTime, minutes: length)
             }
             time = newTime
-        } else if let newEnd, Calendars.clock(newEnd) != nil, time != nil {
+        } else if let newEnd, time != nil {
             endTime = newEnd
         }
         if let newEndDay { endDay = newEndDay > newDay ? newEndDay : nil }
@@ -56,8 +55,11 @@ extension Appointment {
     }
 
     /// Whether it says what the owner asked for: the day, and the time and end they gave.
+    /// An end asked for a date with no time cannot be kept, and is not asked of it.
     public func holds(day asked: String?, time askedTime: String?, endTime askedEnd: String?) -> Bool {
-        day == (asked ?? day) && (askedTime == nil || time == askedTime) && (askedEnd == nil || endTime == askedEnd)
+        let askedTime = Calendars.normal(askedTime), askedEnd = Calendars.normal(askedEnd)
+        return day == (asked ?? day) && (askedTime == nil || time == askedTime)
+            && (askedEnd == nil || endTime == askedEnd || (askedTime == nil && time == nil))
     }
 }
 

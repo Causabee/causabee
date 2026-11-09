@@ -2192,6 +2192,8 @@ struct DateEditor: View {
     @State private var time = Date()
     /// How long, in minutes: 0 is not set.
     @State private var duration = 0
+    /// As it was opened: an end the duration cannot say — a stay, a night — is kept when untouched.
+    @State private var opened: (time: String?, duration: Int)?
     @State private var place = ""
 
     private var isAppointment: Bool { item.appointment != nil }
@@ -2250,6 +2252,7 @@ struct DateEditor: View {
             time = parsed
         }
         duration = Durations.minutes(from: item.time, to: item.endTime)
+        opened = (item.time, duration)
     }
 
     private func saveChanges() {
@@ -2260,7 +2263,13 @@ struct DateEditor: View {
             // The day by the owner: a stay's last day moves with it; the time and length as set here.
             appointment.set(day: dayText, time: nil, endTime: nil)
             appointment.time = hasTime ? Self.formatter("HH:mm").string(from: time) : nil
-            appointment.endTime = hasTime ? Durations.end(from: appointment.time, minutes: duration) : nil
+            if !hasTime {
+                appointment.endTime = nil
+            } else if let opened, opened.duration == duration, opened.time == appointment.time {
+                // Untouched: the end stays as it was, whatever the duration can say of it.
+            } else {
+                appointment.endTime = Durations.end(from: appointment.time, minutes: duration)
+            }
             appointment.claim()
             let spot = place.trimmingCharacters(in: .whitespacesAndNewlines)
             appointment.place = spot.isEmpty ? nil : spot

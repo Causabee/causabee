@@ -274,8 +274,8 @@ public enum MatterImport {
         let onDay = appointments.filter { $0.day == day && (time == nil || $0.time == time) }
         guard onDay.count > 1 else { return onDay.first }
         let words = key(found.what)
+        // Several that day, and none its words: none is moved — it comes as a date of its own.
         return onDay.first { key($0.what) == words } ?? onDay.first { words.contains(key($0.what)) || key($0.what).contains(words) }
-            ?? onDay.sorted { ($0.time ?? "", $0.what) < ($1.time ?? "", $1.what) }.first
     }
 
     static func key(_ text: String) -> String {

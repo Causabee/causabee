@@ -446,6 +446,9 @@ public enum AssistantAsk {
     /// one after "bis", "to", "until" or a dash its end.
     static func withTimes(_ card: AssistantPrompt.Reply.Card, from question: String) -> AssistantPrompt.Reply.Card {
         var card = card
+        // As kept: "9:00" is "09:00", so what the receipt checks is what is stored.
+        card.time = Calendars.normal(card.time) ?? card.time
+        card.endTime = Calendars.normal(card.endTime) ?? card.endTime
         guard let said = TimeWords.span(in: question) else { return card }
         if card.time == nil || Calendars.clock(card.time) == nil, let start = said.start { card.time = start }
         if card.endTime == nil || Calendars.clock(card.endTime) == nil, let end = said.end { card.endTime = end }

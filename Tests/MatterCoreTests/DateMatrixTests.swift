@@ -33,6 +33,19 @@ struct DateMatrixTests {
         ("11-1 pm", "11:00", "13:00"),
         ("von 14:30 auf 16:00", "16:00", nil),
         ("verschieb sie auf 16 Uhr", "16:00", nil),
+        ("9 am to 5 pm", "09:00", "17:00"),
+        ("zwischen 14 und 17 Uhr", "14:00", "17:00"),
+        ("Meeting at 10 am tomorrow", "10:00", nil),
+        ("10 am Friday", "10:00", nil),
+        ("nicht um 14 Uhr, sondern um 16 Uhr", "16:00", nil),
+        ("statt 14 lieber 16 Uhr", "16:00", nil),
+        ("16:00 instead of 14:00", "16:00", nil),
+        ("um 14 Uhr 30", "14:30", nil),
+        ("um 14.30", "14:30", nil),
+        ("von 9.30 bis 10 Uhr", "09:30", "10:00"),
+        ("14h30 à 17h30", "14:30", "17:30"),
+        ("de 14h à 17h", "14:00", "17:00"),
+        ("à 14h", "14:00", nil),
     ])
     func words(_ text: String, start: String, end: String?) {
         let span = TimeWords.span(in: text)
@@ -41,7 +54,8 @@ struct DateMatrixTests {
     }
 
     @Test("No time in it: none made up", arguments: ["Verschieb sie auf den 14.11.", "move it to Friday", "13.11. bis 15.11.", "Zimmer 14", "", "2026-11-13",
-                                                     "mach sie 2 h lang", "um 1 h verschieben", "Zimmer 14 am Freitag", "von 2 bis 5 am Freitag", "13.11 - 15.11"])
+                                                     "mach sie 2 h lang", "um 1 h verschieben", "Zimmer 14 am Freitag", "von 2 bis 5 am Freitag", "13.11 - 15.11",
+                                                     "vom 13.11 bis 15.11, am Abend", "13.11 - 15.11 Uhr"])
     func noTime(_ text: String) {
         #expect(TimeWords.span(in: text) == nil, "\(text) gave a time")
     }
@@ -481,5 +495,121 @@ struct DateMatrixTests {
     func endBeforeStart() {
         #expect(Calendars.hoursLine(what: "Termin", day: "2026-11-13", time: "14:00", endTime: "13:00") == "14:00")
         #expect(Calendars.hoursLine(what: "Termin", day: "2026-11-13", time: "22:00", endTime: "01:00") == "22:00–01:00 · 3 h")
+    }
+
+    // MARK: Pass 3 — the fixes' own traps
+
+    @Test("Put back once by the server; a week later the owner moves it: the move goes to Calendar")
+    func revertThenNewEdit() async throws {
+        let (context, a, calendar, stamps) = try await linkedWorld(event("2026-11-13", "14:30", "17:30"))
+        a.set(day: "2026-11-13", time: "16:00", endTime: nil)
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        await calendar.put(event: "e", event("2026-11-13", "14:30", "17:30"))   // the server
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        #expect(a.time == "16:00")
+        a.set(day: "2026-11-20", time: "10:00", endTime: "11:00")
+        await calendar.forget()
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        #expect(await calendar.written.contains(.event(id: "e", fields: ["Probefahrt mit dem VOLVO EX40", "2026-11-20", "10:00", ""])))
+    }
+
+    @Test("Put back by the server once; later the owner drags it in Calendar: that comes here")
+    func revertThenOwnerInCalendar() async throws {
+        let (context, a, calendar, stamps) = try await linkedWorld(event("2026-11-13", "14:30", "17:30"))
+        a.set(day: "2026-11-13", time: "16:00", endTime: nil)
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        await calendar.put(event: "e", event("2026-11-13", "14:30", "17:30"))
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        await calendar.put(event: "e", event("2026-11-13", "15:00", "18:00"))
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        #expect(a.time == "15:00" && a.endTime == "18:00")
+    }
+
+    @Test("The last day of a stay changed here goes there and stays")
+    func lastDayHere() async throws {
+        let start = MatterStatus.date(of: "2026-11-13")!
+        let stay = CalendarWorker.Seen(fields: ["Probefahrt mit dem VOLVO EX40", "2026-11-13", "", ""], start: start,
+                                       end: start.addingTimeInterval(3 * 86_400), isAllDay: true)
+        let (context, a, calendar, stamps) = try await linkedWorld(stay)
+        #expect(a.endDay == "2026-11-15")
+        a.set(day: "2026-11-13", time: nil, endTime: nil, endDay: "2026-11-17")
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        #expect(a.endDay == "2026-11-17")
+        #expect(a.holds(day: "2026-11-13", time: nil, endTime: nil))
+    }
+
+    @Test("A timed stay: the end the owner sets in Calendar comes here")
+    func timedStayEndThere() async throws {
+        let start = Calendars.start(day: "2026-11-13", time: "10:00")!
+        let stay = CalendarWorker.Seen(fields: ["Probefahrt mit dem VOLVO EX40", "2026-11-13", "10:00", ""], start: start,
+                                       end: Calendars.start(day: "2026-11-14", time: "11:00"))
+        let (context, a, calendar, stamps) = try await linkedWorld(stay)
+        #expect(a.endDay == "2026-11-14" && a.endTime == "11:00")
+        await calendar.put(event: "e", CalendarWorker.Seen(fields: stay.fields, start: start, end: Calendars.start(day: "2026-11-14", time: "15:00")))
+        await calendar.forget()
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        #expect(a.endTime == "15:00")
+        #expect(await calendar.written.isEmpty)
+    }
+
+    @Test("An invitation the organiser moves: it comes here — unless the owner set the date")
+    func invitationMoved() async throws {
+        var invite = event("2026-11-13", "14:00", "17:00"); invite.editable = false
+        let (context, a, calendar, stamps) = try await linkedWorld(invite)
+        var moved = event("2026-11-14", "10:00", "11:00"); moved.editable = false
+        await calendar.put(event: "e", moved)
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        #expect(a.day == "2026-11-14" && a.time == "10:00" && a.endTime == "11:00")
+        a.set(day: "2026-11-14", time: "10:30", endTime: nil)
+        var again = event("2026-11-15", "09:00", "10:00"); again.editable = false
+        await calendar.put(event: "e", again)
+        _ = await synced(a, context, calendar: calendar, stamps: stamps)
+        #expect(a.day == "2026-11-14" && a.time == "10:30")
+        #expect(await calendar.written.isEmpty)
+    }
+
+    @Test("Moving the start keeps the length over midnight too")
+    func overnight() throws {
+        let (_, _, a) = try world()
+        a.set(day: "2026-11-13", time: "22:00", endTime: "01:00")
+        a.set(day: "2026-11-13", time: "21:00", endTime: nil)
+        #expect(a.endTime == "00:00")
+        a.set(day: "2026-11-13", time: "22:30", endTime: "23:30")
+        a.set(day: "2026-11-13", time: "23:15", endTime: nil)
+        #expect(a.endTime == "00:15")
+    }
+
+    @Test("A time written as \"9:00\" is kept as \"09:00\", and the receipt holds")
+    func normalised() throws {
+        let (_, _, a) = try world()
+        a.set(day: "2026-11-13", time: "9:00", endTime: "10:30")
+        #expect(a.time == "09:00")
+        #expect(a.holds(day: "2026-11-13", time: "9:00", endTime: "10:30"))
+    }
+
+    @Test("\"bis 17 Uhr\" on a date with no time: no false \"changed back\"")
+    func endOnNoTime() throws {
+        let (_, _, a) = try world()
+        a.set(day: "2026-11-13", time: nil, endTime: "17:00")
+        #expect(a.holds(day: "2026-11-13", time: nil, endTime: "17:00"))
+    }
+
+    @Test("`replaces` with the day only and other words: no other date is moved")
+    func dayOnlyOtherWords() throws {
+        let (context, matter, a) = try world()
+        a.time = "14:30"
+        let other = Appointment(what: "Reifenwechsel", day: "2026-11-13", time: "09:00", place: nil,
+                                source: Source(kind: .mail, pointer: "x", messageID: "tyres@garage", date: Date()))
+        context.insert(other); other.matter = matter
+        var item: [String: Any] = ["what": "Probefahrt EX40", "date": "2026-11-14", "time": "10:00", "place": NSNull(), "source_quote": "…"]
+        item["replaces"] = "2026-11-13"
+        let json: [String: Any] = ["email_id": "x1", "source": "imap://x", "date": "2026-11-09T18:00:00Z", "subject": "s", "from": "f",
+                                   "is_bulk": false, "matter": "car", "matter_confidence": 0.9, "matter_reason": "", "decided_by": "claude",
+                                   "parties": [], "todos": [], "deadlines": [], "appointments": [item], "done": []]
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        try MatterImport.apply([try decoder.decode(Judgement.self, from: JSONSerialization.data(withJSONObject: json))], to: context)
+        #expect(other.day == "2026-11-13" && other.time == "09:00")
     }
 }

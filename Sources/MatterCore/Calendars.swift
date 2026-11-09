@@ -41,6 +41,11 @@ public final class Calendars {
         return Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: date)
     }
 
+    /// A time of day as it is kept: "9:00" → "09:00"; nil for anything else.
+    public nonisolated static func normal(_ time: String?) -> String? {
+        clock(time).map { String(format: "%02d:%02d", $0.0, $0.1) }
+    }
+
     /// "09:30" or "9:30" as hour and minute; nil for anything that is no time of day.
     nonisolated static func clock(_ time: String?) -> (Int, Int)? {
         let parts = time?.split(separator: ":") ?? []
