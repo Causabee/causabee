@@ -139,3 +139,36 @@ struct DocumentCamera: UIViewControllerRepresentable {
         func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFailWithError error: Error) { cancel() }
     }
 }
+
+/// The camera, for a photo taken now — a letter on the table, a whiteboard, a receipt, a car's
+/// dashboard: brought in as a photo picked from the library is.
+struct PhotoCamera: UIViewControllerRepresentable {
+    let done: (UIImage) -> Void
+    let cancel: () -> Void
+
+    static var isAvailable: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.cameraCaptureMode = .photo
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ controller: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator(done: done, cancel: cancel) }
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let done: (UIImage) -> Void
+        let cancel: () -> Void
+        init(done: @escaping (UIImage) -> Void, cancel: @escaping () -> Void) { self.done = done; self.cancel = cancel }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage { done(image) } else { cancel() }
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { cancel() }
+    }
+}

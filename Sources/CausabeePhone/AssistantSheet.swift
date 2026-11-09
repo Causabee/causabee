@@ -1489,7 +1489,18 @@ private struct AddPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                card("Photo", "photo", .photo)
+                // Taken now, or from the library: one card, the choice under it.
+                if PhotoCamera.isAvailable {
+                    Menu {
+                        Button("Take Photo", systemImage: "camera") { Haptics.tap(); bring(.camera) }
+                            .accessibilityIdentifier("plus.camera")
+                        Button("Photo Library", systemImage: "photo.on.rectangle") { Haptics.tap(); bring(.photo) }
+                            .accessibilityIdentifier("plus.library")
+                    } label: { cardFace("Photo", "photo") }
+                    .accessibilityIdentifier("plus.photo")
+                } else {
+                    card("Photo", "photo", .photo)
+                }
                 if VNDocumentCameraViewController.isSupported { card("Scan", "doc.viewfinder", .scan) }
                 card("Files", "folder", .files)
             }
@@ -1512,18 +1523,20 @@ private struct AddPanel: View {
 
     /// The icon over its name, in a card of its own.
     private func card(_ title: String, _ symbol: String, _ kind: AttachKind) -> some View {
-        Button { Haptics.tap(); bring(kind) } label: {
-            VStack(spacing: 6) {
-                Image(systemName: symbol).font(.title3)
-                Text(title).font(.footnote.weight(.medium))
-            }
-            .foregroundStyle(.primary)
-            .frame(maxWidth: .infinity, minHeight: 68)
-            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        }
+        Button { Haptics.tap(); bring(kind) } label: { cardFace(title, symbol) }
         .buttonStyle(.plain)
         .accessibilityIdentifier("plus." + title.lowercased())
+    }
+
+    private func cardFace(_ title: String, _ symbol: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: symbol).font(.title3)
+            Text(title).font(.footnote.weight(.medium))
+        }
+        .foregroundStyle(.primary)
+        .frame(maxWidth: .infinity, minHeight: 68)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private func pill(_ title: String, _ symbol: String, _ kind: AssistantAdd) -> some View {

@@ -408,7 +408,7 @@ struct PhoneShotCard: View {
 }
 
 /// What the panel over the field brings in: a photo or a screenshot, a scan, files or a folder.
-enum AttachKind: Hashable { case photo, scan, files }
+enum AttachKind: Hashable { case photo, camera, scan, files }
 
 /// The plus beside the assistant's field: what is brought in — files or a folder, a scan, a photo
 /// or a screenshot. Picked, it asks what becomes of it: read and sorted in, or only imported, kept
@@ -428,6 +428,7 @@ struct AttachButton: View {
     @State private var picksFiles = false
     @State private var scans = false
     @State private var picksPhoto = false
+    @State private var takesPhoto = false
     @State private var photo: PhotosPickerItem?
     /// What was picked, waiting for the answer: read, or only import.
     @State private var waiting: [Picked] = []
@@ -465,6 +466,10 @@ struct AttachButton: View {
                     Button("Scan a document", systemImage: "doc.viewfinder") { scans = true }
                         .accessibilityIdentifier("plus.scan")
                 }
+                if PhotoCamera.isAvailable {
+                    Button("Take a photo", systemImage: "camera") { takesPhoto = true }
+                        .accessibilityIdentifier("plus.camera")
+                }
                 Button("Photo or screenshot", systemImage: "photo") { picksPhoto = true }
                     .accessibilityIdentifier("plus.photo")
             } label: {
@@ -486,6 +491,7 @@ struct AttachButton: View {
             request.wrappedValue = nil
             switch kind {
             case .photo: picksPhoto = true
+            case .camera: takesPhoto = true
             case .scan: scans = true
             case .files: picksFiles = true
             }
@@ -501,6 +507,14 @@ struct AttachButton: View {
             } cancel: { scans = false }
             .ignoresSafeArea()
         }
+        .fullScreenCover(isPresented: $takesPhoto) {
+            PhotoCamera { image in
+                takesPhoto = false
+                guard let data = image.jpegData(compressionQuality: 0.85) else { return }
+                ask(about: keep(data, named: "Photo \(Self.stamp()).jpg"))
+            } cancel: { takesPhoto = false }
+            .ignoresSafeArea()
+        }
         .photosPicker(isPresented: $picksPhoto, selection: $photo, matching: .images)
         .onChange(of: photo) {
             guard let photo else { return }
@@ -508,11 +522,10 @@ struct AttachButton: View {
             Task {
                 guard let data = try? await photo.loadTransferable(type: Data.self) else { return }
                 let type = photo.supportedContentTypes.first { ["png", "jpeg", "heic"].contains($0.preferredFilenameExtension ?? "") }
-                // As the iPhone names its own: "Screenshot 2026-09-30 at 23.37.01", in local time.
-                let formatter = DateFormatter()
-                formatter.locale = Locale(identifier: "en_US_POSIX")
-                formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-                ask(about: keep(data, named: "Screenshot \(formatter.string(from: Date())).\(type?.preferredFilenameExtension ?? "png")"))
+                // As the iPhone names its own: "Screenshot 2026-09-30 at 23.37.01", in local time — a
+                // picture from the camera roll is a photo, a PNG a screenshot.
+                let ext = type?.preferredFilenameExtension ?? "png"
+                ask(about: keep(data, named: "\(ext == "png" ? "Screenshot" : "Photo") \(Self.stamp()).\(ext)"))
             }
         }
         .confirmationDialog(question, isPresented: $asks, titleVisibility: .visible) {
@@ -526,6 +539,14 @@ struct AttachButton: View {
         .alert(said ?? "", isPresented: Binding(get: { said != nil }, set: { if !$0 { said = nil } })) {
             Button("OK", role: .cancel) { }
         }
+    }
+
+    /// "2026-09-30 at 23.37.01", in local time, as the iPhone names its own.
+    static func stamp() -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        return formatter.string(from: Date())
     }
 
     /// With Pro the choice; without it, only importing is offered, and asked as that.

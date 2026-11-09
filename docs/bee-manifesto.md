@@ -11,7 +11,7 @@ What comes in, from anywhere, is the same to her:
 
 - mail
 - screenshots — WhatsApp, Signal, any chat
-- photos — a letter on the table, a whiteboard, a receipt
+- photos — a letter on the table, a whiteboard, a receipt; from the library, or taken right then in the chat
 - files and scans — PDFs, contracts, invoices
 - your notes, typed or spoken
 - what you say in the chat
