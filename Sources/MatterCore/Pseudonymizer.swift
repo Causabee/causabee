@@ -48,7 +48,7 @@ public struct Pseudonymizer: Sendable {
         /// 2: in placeholder mode, people who share only a first or a last name no longer share a tag.
         /// 3: a role in front of a name — `Hausmeister Brenner` — is a title, not a first name.
         /// 4: an ordinary word the tagger took for a name, or for the start of one, is no entry.
-        public static let current = 5
+        public static let current = 6
 
         public init() {}
 
@@ -85,6 +85,17 @@ public struct Pseudonymizer: Sendable {
                 let before = placeholder.count
                 placeholder = Pseudonymizer.withoutWordsAtTheEnd(placeholder)
                 standin = Pseudonymizer.withoutWordsAtTheEnd(standin)
+                changed += before - placeholder.count
+            }
+            if version < 6 {
+                // A single common word read as a company — "For" at the start of a title — stood for
+                // a company in every text, and came back capitalised (9 November). Forgotten.
+                func common(_ entry: Entry) -> Bool {
+                    entry.kind == .organization && !entry.original.contains(" ") && Pseudonymizer.commonWords.contains(Pseudonymizer.key(entry.original))
+                }
+                let before = placeholder.count
+                placeholder.removeAll(where: common)
+                standin.removeAll(where: common)
                 changed += before - placeholder.count
             }
             version = Self.current
@@ -380,7 +391,10 @@ public struct Pseudonymizer: Sendable {
 
         switch kind {
         case .person: return person(original, partOf: partOf)
-        case .organization: return organization(original, partOf: partOf)
+        // A single common word is no company, whatever the tagger read: "For" at the start of a title (9 November).
+        case .organization:
+            if !original.contains(" "), Self.commonWords.contains(Self.key(original)) { return nil }
+            return organization(original, partOf: partOf)
         case .place: return record(.place, original, pickName(.place), partOf: partOf)
         case .email: return email(original, partOf: partOf)
         case .street: return street(original, partOf: partOf)
@@ -1034,7 +1048,9 @@ public struct Pseudonymizer: Sendable {
         "hallo", "danke", "gruß", "grüße", "beste", "tel", "fax", "mail", "email", "iban", "bic", "weg",
         "bescheid", "betreff", "anbei", "bitte", "termin", "montag", "dienstag", "mittwoch",
         "donnerstag", "freitag", "samstag", "sonntag", "hi", "hey", "thanks", "best", "regards",
-        "cheers", "dear", "the", "and", "with", "re", "aw", "fwd", "wg", "euch", "dein", "deine", "mein",
+        "cheers", "dear", "the", "and", "with", "re", "aw", "fwd", "wg",
+        // English words that are no one's name, read as one at the start of a title ("For", 9 November).
+        "for", "of", "to", "from", "your", "our", "my", "at", "by", "in", "is", "are", "this", "that", "it", "you", "please", "new", "about", "euch", "dein", "deine", "mein",
         "meine", "ihnen", "ihren", "ihrer", "uns", "das", "die", "der", "ein", "eine", "von", "bei",
         "on", "als", "am", "im", "um", "für", "bis", "nach", "zum", "zur", "vom", "ab", "seit", "info", "mobil", "handy", "telefon", "fon", "kurz", "kurze",
         "gute", "namen", "post", "sitz", "haus", "privat", "wenn", "ihre", "ihr", "antwort",
@@ -1096,6 +1112,7 @@ public struct Replacer: Sendable {
     /// Keys matched only where the text has a capital: `Kurz` the name, not "kurz" the word.
     var capitalOnly: Set<String> = []
 
+
     public init(_ pairs: [(String, String)]) {
         var table: [String: String] = [:]
         for (from, to) in pairs where !from.trimmed.isEmpty {
@@ -1146,6 +1163,36 @@ public struct Replacer: Sendable {
         let end = text.index(item.range.upperBound, offsetBy: number.count + 1)
         if end < text.endIndex, text[end].isLetter || text[end].isNumber { return item }
         return (item.range.lowerBound..<end, item.with)
+    }
+
+    /// Where a surname alone was disguised right after another first name — "Helga Voss", whose
+    /// "Voss" is known as part of "Mara Voss" and goes out under her tag: "Helga [Person B]" is
+    /// then Helga Voss, not "Helga Mara Voss" (9 November). Read from the text before it is
+    /// disguised, so the way back knows exactly what stood there. German nouns are capitalised
+    /// too — "Meine Mutter Greta Kramer" — so a capital alone could not tell.
+    public func surnameNotes(in text: String) -> [String: String] {
+        let text = text.precomposedStringWithCanonicalMapping
+        guard let expression else { return [:] }
+        // Each tag's name in full: the longest original it stands for.
+        var full: [String: String] = [:]
+        for (key, tag) in table where key.split(separator: " ").count > (full[tag]?.split(separator: " ").count ?? 0) { full[tag] = key }
+        var notes: [String: String] = [:]
+        for match in expression.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+            guard let range = Range(match.range, in: text) else { continue }
+            let written = String(text[range])
+            guard let tag = table[Pseudonymizer.key(written)], let name = full[tag], !written.contains(" "),
+                  case let words = name.split(separator: " ").map(String.init), words.count >= 2,
+                  words.last == Pseudonymizer.key(written) else { continue }
+            let before = text[..<range.lowerBound]
+            guard before.hasSuffix(" "), let word = before.dropLast().split(separator: " ").last.map(String.init),
+                  word.first?.isUppercase == true, word.allSatisfy({ $0.isLetter || $0 == "-" }) else { continue }
+            let plain = Pseudonymizer.key(word)
+            // Her own first name — or another word with a tag of its own — is not another person's.
+            guard plain != words.first, table[plain] == nil, !Pseudonymizer.honorifics.contains(plain),
+                  !Pseudonymizer.commonWords.contains(plain) else { continue }
+            notes[word + " " + tag] = word + " " + written
+        }
+        return notes
     }
 
     /// `Dr. Maria` is `Dr. ` and `Maria`.

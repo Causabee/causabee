@@ -75,7 +75,7 @@ enum DemoData {
     /// Counts up whenever the demo's words or matters change: a demo store filled with an older
     /// version is emptied and filled again — with today's dates too. Two things are overdue in it, in
     /// the care matter and the trip: enough to show what overdue looks like, not a page of it. Only ever the demo's own store.
-    static let contentVersion = 12
+    static let contentVersion = 13
     private static let seededKey = "demo.filled"
 
     /// The demo's own talk, where it stands ahead of the clock, is put an hour behind it — in the
@@ -366,7 +366,7 @@ enum DemoData {
             context.insert(entry)
             // Its own words, kept as a real mail's are, so "Show the whole mail" has them.
             let name = Email.displayName(in: from) ?? Email.address(in: from)
-            let words = "From: \(from)\nSubject: \(title)\n\nHello,\n\n\(digest)\n\nBest regards,\n\(name)"
+            let words = "From: \(from)\nSubject: \(title)\n\n" + DemoData.voice(of: from, name: name, saying: digest)
             if let packed = try? (Data(words.utf8) as NSData).compressed(using: .lzfse) as Data {
                 context.insert(KeptText(messageID: id, data: packed))
             }
@@ -588,7 +588,60 @@ enum DemoData {
     /// An answer made up for a question asked in the demo, with nothing sent: for the tests that
     /// measure where a thread stands while an answer comes. Long, when the question asks for it —
     /// longer than a screen shows.
+    /// How each made-up sender writes, as real people do: a friend or a neighbour on first names,
+    /// a firm politely, an office formally — so a draft's voice can be seen to follow the exchange
+    /// (principle 13). The demo mails used to all say "Hello, … Best regards".
+    nonisolated static func voice(of from: String, name: String, saying digest: String) -> String {
+        let address = (Email.address(in: from) ?? from).lowercased()
+        let first = name.split(separator: " ").first.map(String.init) ?? name
+        let isPerson = name.split(separator: " ").count >= 2 && !name.contains("Office") && !name.contains("GmbH")
+        // The owner's own, as she writes.
+        if address.hasPrefix("mara.voss") { return "Hi everyone,\n\n\(digest)\n\nMara" }
+        if address.hasSuffix("@mail.example") {
+            // Friends, family, neighbours.
+            let close = ["tomas", "elif", "mara", "deniz", "tom"].contains { address.hasPrefix($0) }
+            if close { return "Hi Mara!\n\n\(digest)\n\nSee you soon,\n\(first)" }
+            return "Hello Ms Voss,\n\n\(digest)\n\nKind regards,\n\(name)"
+        }
+        if ["kessel-city", "healthbridge", "clearroad", "notary", "st-elm", "registry"].contains(where: address.contains) {
+            return "Dear Ms Voss,\n\n\(digest)\n\nYours sincerely,\n\(name)"
+        }
+        return isPerson ? "Hello Ms Voss,\n\n\(digest)\n\nKind regards,\n\(name)" : "Hello Ms Voss,\n\n\(digest)\n\nKind regards,\nYour \(name) team"
+    }
+
     nonisolated static func standIn(for question: String) -> AssistantAsk.Answer {
+        if let recorded = recorded(question) { return recorded }
+        return cannedStandIn(for: question)
+    }
+
+    /// `-answers.recorded <path>`: the answers the bee really gave to these questions, recorded by
+    /// `matter-spike pressure` on this same demo — to see real drafts and cards on the screen.
+    /// Nothing is sent: they are read from the file.
+    nonisolated private static func recorded(_ question: String) -> AssistantAsk.Answer? {
+        guard let path = UserDefaults.standard.string(forKey: "answers.recorded"),
+              let data = FileManager.default.contents(atPath: path),
+              let cases = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return nil }
+        for item in cases {
+            for turn in (item["turns"] as? [[String: Any]]) ?? [] where (turn["question"] as? String) == question {
+                let lines: [(String, [String])] = ((turn["lines"] as? [String]) ?? []).map { line in
+                    guard let open = line.range(of: "  [", options: .backwards), line.hasSuffix("]") else { return (line, []) }
+                    let cites = line[open.upperBound..<line.index(before: line.endIndex)].split(separator: " ").map(String.init)
+                    return (String(line[..<open.lowerBound]), cites)
+                }
+                let cards: [[String: Any]] = ((turn["cards"] as? [[String: String]]) ?? []).map { row in
+                    var card: [String: Any] = ["kind": row["kind"] ?? "", "text": row["text"] ?? "", "owner": row["owner"] ?? "me",
+                                               "reason": row["reason"] ?? "", "cites": (row["cites"] ?? "").split(separator: " ").map(String.init)]
+                    for name in ["todo", "party", "into", "from", "subject", "due", "time", "end_time", "end_date"] { if let value = row[name] { card[name] = value } }
+                    if let attach = row["attach"] { card["attach"] = attach.components(separatedBy: " | ") }
+                    return card
+                }
+                return answer(lines: lines, cards: cards)
+            }
+        }
+        return nil
+    }
+
+    nonisolated private static func cannedStandIn(for question: String) -> AssistantAsk.Answer {
         let short = [("The stand-in answers: the key is kept at number 4.", [String]()),
                      ("The assessor comes at 10:00; the physio would overlap, so it is best moved to the afternoon.", [])]
         let more = (1...14).map { ("Point \($0): something more that has to be read, said in a full sentence so that it takes its line and a half.", [String]()) }

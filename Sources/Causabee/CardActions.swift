@@ -142,7 +142,9 @@ enum CardActions {
         let lines = reply.lines.map(\.text).joined(separator: " ")
         let cards = reply.cards.enumerated().map { index, card in
             let parts: [String?] = [card.kind.rawValue, card.todo, card.party, card.due, card.time.map { "at " + $0 }, card.endTime.map { "to " + $0 },
-                                    card.subject, card.text.isEmpty ? nil : "\"" + String(card.text.prefix(80)) + "\"",
+                                    card.subject,
+                                    // A draft whole: "kürzer", "unterschreib nur mit Mara" change that very text.
+                                    card.text.isEmpty ? nil : "\"" + ([.draftMessage, .shortMessage].contains(card.kind) ? card.text : String(card.text.prefix(80))) + "\"",
                                     applied.contains(index) ? "taken" : "not taken"]
             return "\(index + 1)) " + parts.compactMap { $0 }.joined(separator: " ")
         }

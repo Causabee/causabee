@@ -328,6 +328,9 @@ public enum AssistantAsk {
         public var owner: String?
         /// The question as the owner typed it: a time said in it is the card's, if the answer left it out.
         public var question = ""
+        /// "Helga [Person B]" → "Helga Voss": a surname disguised after another first name, read off
+        /// before disguising, so the way back writes it as it stood.
+        public var surnames: [String: String] = [:]
 
         /// Originals from the mapping that are still in what would be sent. Should be none.
         public func leaks(_ entries: [Pseudonymizer.Entry]) -> [String] {
@@ -416,9 +419,10 @@ public enum AssistantAsk {
 
         let disguiser = pseudonymizer.disguiser
         let whole = disguiser.apply(user)
+        let surnames = disguiser.surnameNotes(in: user)
         return Prepared(sent: whole.text, pseudonymizer: pseudonymizer, newNames: newNames, links: links.byStandIn,
                         disguisedInQuestion: disguiser.apply(question).count, disguised: whole.count,
-                        forChat: namesChat(question), owner: owner, question: question)
+                        forChat: namesChat(question), owner: owner, question: question, surnames: surnames)
     }
 
     /// The question names a chat to send in: WhatsApp, Signal, iMessage, SMS, Telegram, Threema, Slack.
@@ -495,12 +499,16 @@ public enum AssistantAsk {
         var reply = try JSONDecoder().decode(AssistantPrompt.Reply.self, from: answer.json)
 
         let restorer = pseudonymizer.restorer
-        func real(_ text: String) -> String { restorer.apply(text).text }
+        func real(_ text: String) -> String {
+            restorer.apply(prepared.surnames.reduce(text) { $0.replacingOccurrences(of: $1.key, with: $1.value) }).text
+        }
         reply.lines = reply.lines.map { .init(text: prepared.links.reduce(real($0.text)) { $0.replacingOccurrences(of: $1.key, with: $1.value) }, cites: $0.cites) }
         reply.cards = reply.cards.map { card in
             var card = card
             card.text = real(card.text)
             card.from = card.from.map(real)
+            // Who it goes to, when written as a name, not an id: never a stand-in shown ("To: [Person B]").
+            card.party = card.party.map(real)
             card.subject = card.subject.map(real)
             // A phone number in a contact card; a time of day has nothing to restore.
             card.time = card.time.map(real)

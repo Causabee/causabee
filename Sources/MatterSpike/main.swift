@@ -158,7 +158,7 @@ mapping.json holds the originals. It is gitignored and never leaves this machine
 """
 
 struct Options {
-    enum Command: String { case run, labels, check, review, report, login, fetch, `import`, matters, merge, rename, parties, same, notsame, rules, ask, owner, close, reopen, party, screenshot, digest }
+    enum Command: String { case run, labels, check, review, report, login, fetch, `import`, matters, merge, rename, parties, same, notsame, rules, ask, owner, close, reopen, party, screenshot, digest, pressure }
     var command = Command.run
     var folder = URL(fileURLWithPath: "Samples/mail")
     var log = URL(fileURLWithPath: "decisions.jsonl")
@@ -350,6 +350,7 @@ case .same: try same()
 case .notsame: try notSame()
 case .rules: try rules()
 case .ask: try await ask()
+case .pressure: try await pressure()
 case .owner: try setOwner()
 case .close: try close()
 case .digest: try await digest()
@@ -1373,4 +1374,119 @@ func readScreenshot() throws {
     print(look.earlier == nil ? String(format: "Classifying it would cost about $%.2f. Nothing was sent.", look.estimate)
                               : "Answered before: classifying it again costs nothing. Nothing was sent.")
     print("")
+}
+
+
+// MARK: pressure — the chat, asked as the app asks it, case after case, everything kept
+
+/// `matter-spike pressure <cases.json> <out.json> --store <demo store> --mapping <mapping.json>`:
+/// each case a turn or a few — the matter, what is in hand, the questions — sent as the app sends
+/// them: the facts with the words of what came in, disguised, to GPT-6.1 Sol; the answer restored.
+/// What was shown, what was sent, what came back, written to `out.json`. Only for the demo's
+/// invented matters.
+struct PressureCase: Codable {
+    var id: String
+    var profile: String
+    var matter: String
+    /// A mail, screenshot or file in hand, by words of its title: "reply to this".
+    var inHand: String?
+    var turns: [String]
+}
+
+struct PressureTurn: Codable {
+    var question: String
+    var factsShown: String
+    var sent: String
+    var lines: [String]
+    var notInFacts: String?
+    var cards: [[String: String]]
+    var seconds: Double
+    var cost: Double
+}
+
+struct PressureResult: Codable {
+    var id: String
+    var profile: String
+    var matter: String
+    var inHand: String?
+    var model: String
+    var turns: [PressureTurn]
+    var error: String?
+}
+
+@MainActor
+func pressure() async throws {
+    guard options.words.count == 2 else { fail("matter-spike pressure <cases.json> <out.json> --store <store> --mapping <mapping.json>") }
+    let cases = try JSONDecoder().decode([PressureCase].self, from: Data(contentsOf: URL(fileURLWithPath: options.words[0])))
+    let context = try openStore()
+    let model = Claude.Model.gptSol
+    guard let key = Claude.key(for: model) else { fail("no OPENAI_API_KEY in .env") }
+    let claude = Claude(key: key)
+    let owner = try context.fetch(FetchDescriptor<Profile>()).first?.names.first
+    let besides = options.store
+    let today = MatterStatus.day(Date())
+    var results: [PressureResult] = []
+    for item in cases {
+        var result = PressureResult(id: item.id, profile: item.profile, matter: item.matter, inHand: item.inHand, model: model.label, turns: [])
+        do {
+            let matter = try findMatter(item.matter, in: context)
+            var inHand: (kind: String, text: String)?
+            if let words = item.inHand {
+                guard let entry = (matter.entries ?? []).first(where: { $0.title.localizedCaseInsensitiveContains(words) }) else {
+                    throw NSError(domain: "pressure", code: 1, userInfo: [NSLocalizedDescriptionKey: "nothing in hand titled \(words)"])
+                }
+                let body = { () -> String in
+                    if let record = ((try? context.fetch(FetchDescriptor<KeptText>())) ?? []).first(where: { $0.messageID == entry.messageID }),
+                       let raw = try? (record.data as NSData).decompressed(using: .lzfse) as Data {
+                        let text = String(decoding: raw, as: UTF8.self)
+                        return text.range(of: "\n\n").map { String(text[$0.upperBound...]) } ?? text
+                    }
+                    return MailText.load(entry.messageID, besides: besides)?.body ?? entry.digest ?? ""
+                }()
+                inHand = ("Mail", "From: \(entry.from)\nSubject: \(entry.title)\n\n\(body)")
+            }
+            var earlier: [(question: String, answer: String)] = []
+            for question in item.turns {
+                // The words as the store keeps them — the copies beside it may be older.
+                let kept = Dictionary(((try? context.fetch(FetchDescriptor<KeptText>())) ?? []).map { ($0.messageID, $0.data) }, uniquingKeysWith: { a, _ in a })
+                func words(_ id: String) -> String? {
+                    guard let data = kept[id], let raw = try? (data as NSData).decompressed(using: .lzfse) as Data else { return MailText.load(id, besides: besides)?.body }
+                    let text = String(decoding: raw, as: UTF8.self)
+                    return text.range(of: "\n\n").map { String(text[$0.upperBound...]) } ?? text
+                }
+                let facts = FactSheet.facts(for: [matter], today: today, keptText: { words($0.messageID) })
+                let prepared = try AssistantAsk.prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner,
+                                                        today: today, mapping: options.mapping, saves: false)
+                let answer = try await AssistantAsk.ask(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner,
+                                                        today: today, mapping: options.mapping, claude: claude, model: model)
+                let cards: [[String: String]] = answer.reply.cards.map { card in
+                    var row: [String: String] = ["kind": card.kind.rawValue, "text": card.text, "reason": card.reason, "owner": card.owner]
+                    for (name, value) in [("todo", card.todo), ("party", card.party), ("into", card.into), ("from", card.from),
+                                          ("subject", card.subject), ("due", card.due), ("time", card.time), ("end_time", card.endTime),
+                                          ("end_date", card.endDay)] { if let value { row[name] = value } }
+                    if let attach = card.attach, !attach.isEmpty { row["attach"] = attach.joined(separator: " | ") }
+                    if !card.cites.isEmpty { row["cites"] = card.cites.joined(separator: " ") }
+                    return row
+                }
+                result.turns.append(PressureTurn(question: question, factsShown: facts.text, sent: prepared.sent,
+                                                 lines: answer.reply.lines.map { $0.text + ($0.cites.isEmpty ? "" : "  [" + $0.cites.joined(separator: " ") + "]") },
+                                                 notInFacts: answer.reply.notInFacts, cards: cards, seconds: answer.seconds, cost: answer.cost))
+                // As the app sends it: the lines, and what was offered (here: not taken).
+                let offered = answer.reply.cards.enumerated().map { index, card in
+                    "\(index + 1)) " + ([card.kind.rawValue, card.todo, card.due, card.time.map { "at " + $0 }, card.subject,
+                                         card.text.isEmpty ? nil : "\"" + ([.draftMessage, .shortMessage].contains(card.kind) ? card.text : String(card.text.prefix(80))) + "\"", "not taken"] as [String?]).compactMap { $0 }.joined(separator: " ")
+                }
+                let lines = answer.reply.lines.map(\.text).joined(separator: " ")
+                earlier.append((question, offered.isEmpty ? lines : lines + " [offered: " + offered.joined(separator: "; ") + "]"))
+                print("✓ \(item.id) · \(question.prefix(60))")
+            }
+        } catch {
+            result.error = "\(error)"
+            print("✗ \(item.id): \(error)")
+        }
+        results.append(result)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        try encoder.encode(results).write(to: URL(fileURLWithPath: options.words[1]))
+    }
 }
