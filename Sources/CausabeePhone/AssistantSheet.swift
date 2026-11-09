@@ -524,7 +524,10 @@ extension AssistantSheet {
             sentAt = nil
             let matter = self.matter
             ask = Task {
-                try? await Task.sleep(for: .seconds(5))
+                // `-answers.after 10`: later, for a test that scrolls away first — on a busy machine five
+                // seconds were not always enough to be gone before it came.
+                let after = UserDefaults.standard.double(forKey: "answers.after")
+                try? await Task.sleep(for: .seconds(after > 0 ? after : 5))
                 guard !Task.isCancelled else { return }
                 var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",
                                            inHand: nil, seen: facts.seen, refs: facts.refs, matter: matter?.persistentModelID)

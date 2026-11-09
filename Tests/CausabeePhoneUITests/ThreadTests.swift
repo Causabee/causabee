@@ -252,7 +252,9 @@ final class ThreadTests: XCTestCase {
         // Far enough that the question is out of sight: moved only a little, the answer is seen
         // coming and nothing has to say so — and the iPad's column is a good deal taller than the
         // iPhone's sheet.
-        let far: CGFloat = app.windows.firstMatch.frame.height > 1000 ? 700 : 260
+        // By the screen's height, not a number of points: 260 left the question in sight on the
+        // Pro Max, where the answer is seen coming and the button rightly says nothing.
+        let far: CGFloat = app.windows.firstMatch.frame.height * 0.6
         finger.press(forDuration: 0.05, thenDragTo: finger.withOffset(CGVector(dx: 0, dy: far)))
         XCTAssertTrue(before.waitForExistence(timeout: 5), "The thread did not scroll back.")
         let read = top(of: before)

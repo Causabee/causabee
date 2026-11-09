@@ -30,7 +30,7 @@ final class DigestNewUITests: XCTestCase {
     func testLookedAtStaysUntilHandled() {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Moving to Birch Road 12"]
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "New property manager for Elm Court 51"]
         app.launch()
         let away = app.buttons.matching(identifier: "new.putAway")
         XCTAssertTrue(away.firstMatch.waitForExistence(timeout: 40), "The Digest shows nothing new.")
@@ -44,7 +44,7 @@ final class DigestNewUITests: XCTestCase {
         } else {
             app.navigationBars.buttons.firstMatch.tap()
         }
-        let matter = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Birch Road'")).firstMatch
+        let matter = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Elm Court 51'")).firstMatch
         XCTAssertTrue(matter.waitForExistence(timeout: 20), "The matter is not on the overview.")
         for _ in 0..<4 where !matter.isHittable { app.swipeUp() }
         matter.tap()
