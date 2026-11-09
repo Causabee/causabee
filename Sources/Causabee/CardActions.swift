@@ -7,6 +7,15 @@ import UserNotifications
 import UIKit
 #endif
 
+/// A card that could not be done says why, under it — never nothing at all.
+@MainActor
+@Observable
+final class CardFailures {
+    static let shared = CardFailures()
+    var said: [String: String] = [:]
+    nonisolated static func key(_ turn: UUID, _ index: Int) -> String { "\(turn)-\(index)" }
+}
+
 /// What a card the owner ticks does to the store, and how to take it back — the same on the Mac and
 /// the iPhone: both apps take this file in. What each app does around it — keeping the turn, opening
 /// Mail, showing a matter — stays with that app.
@@ -36,6 +45,35 @@ enum CardActions {
         /// A merge folds one party into another and the first is gone; its rule can be switched
         /// off, but the two are not split again here.
         case merged(rule: PersistentIdentifier)
+        /// Put away from the chat: shown again, and wanted again.
+        case hidden(FactRef, matter: PersistentIdentifier?, unwanted: String?)
+        /// Opened again from the chat: done again, as it was.
+        case redone(PersistentIdentifier, at: Date?, source: Source?)
+        /// One field changed from the chat, as it was.
+        case field(FactRef, field: String, before: ChatControl.Before)
+        case closedMatter(PersistentIdentifier)
+        case reopenedMatter(PersistentIdentifier, at: Date)
+        /// Moved into another matter: back into the one it was in.
+        case moved(FactRef, from: PersistentIdentifier?)
+        /// A decision put away: made anew, as it was.
+        case decision(matter: PersistentIdentifier, what: String, why: String, at: Date, sources: [Source])
+    }
+
+    /// The thing a ref names, whatever kind it is.
+    static func model(_ ref: FactRef, in context: ModelContext) -> (any PersistentModel)? {
+        switch ref {
+        case .matter: live(ref, as: Matter.self, in: context)
+        case .entry: live(ref, as: Entry.self, in: context)
+        case .todo: live(ref, as: Todo.self, in: context)
+        case .appointment: live(ref, as: Appointment.self, in: context)
+        case .deadline: live(ref, as: Deadline.self, in: context)
+        case .party: live(ref, as: Party.self, in: context)
+        case .note: live(ref, as: MatterNote.self, in: context)
+        case .detail: live(ref, as: MatterDetail.self, in: context)
+        case .link: live(ref, as: WebLink.self, in: context)
+        case .document: live(ref, as: MatterCore.Document.self, in: context)
+        case .decision: live(ref, as: Decision.self, in: context)
+        }
     }
 
     /// What taking a card in came to.
@@ -98,6 +136,61 @@ enum CardActions {
 
     /// A fact by its id, if it is still there. A party merged away or a to-do deleted is gone,
     /// and `context.model(for:)` would hand back an object that crashes when read.
+    /// An earlier turn as the next question is sent with it: its lines, and what it offered — taken
+    /// or not — so "no, the second one" or "make it 15:00" has something to go on.
+    static func earlierWords(_ reply: AssistantPrompt.Reply, applied: Set<Int>) -> String {
+        let lines = reply.lines.map(\.text).joined(separator: " ")
+        let cards = reply.cards.enumerated().map { index, card in
+            let parts: [String?] = [card.kind.rawValue, card.todo, card.party, card.due, card.time.map { "at " + $0 }, card.endTime.map { "to " + $0 },
+                                    card.subject, card.text.isEmpty ? nil : "\"" + String(card.text.prefix(80)) + "\"",
+                                    applied.contains(index) ? "taken" : "not taken"]
+            return "\(index + 1)) " + parts.compactMap { $0 }.joined(separator: " ")
+        }
+        return cards.isEmpty ? lines : lines + " [offered: " + cards.joined(separator: "; ") + "]"
+    }
+
+    /// Why a card did nothing, in a line.
+    static func whyNot(_ card: AssistantPrompt.Reply.Card) -> String {
+        switch card.kind {
+        case .markDone: "Not done: it is done already, or not a task."
+        case .correctText: "Nothing changed: those words are not in the tasks or dates."
+        case .putAway: "Nothing put away: it is not there any more, or put away already."
+        case .reopen: "Nothing opened: it is open already."
+        case .changeField: "Not changed: that cannot be set this way, or the value is missing."
+        case .closeMatter: "Not closed: it is closed already."
+        case .moveTo: "Not moved: the other matter was not found, or it is there already."
+        case .changeDate: "Not changed: no day was given, or the date is not there any more."
+        default: "Could not be done: what it names is not there any more, or something it needs was not given."
+        }
+    }
+
+    /// The words of the cards that control what a matter holds — the same on every device.
+    struct ControlWords { var title: String; var verb: String; var what: String?; var taken: String }
+
+    static func controlWords(_ card: AssistantPrompt.Reply.Card, name: (String?) -> String) -> ControlWords? {
+        let field = card.subject.map(fieldName) ?? "it"
+        switch card.kind {
+        case .putAway: return ControlWords(title: "Put away?", verb: "Put away", what: name(card.todo), taken: "Put away")
+        case .reopen: return ControlWords(title: "Open again?", verb: "Open again", what: name(card.todo), taken: "Open again")
+        case .changeField:
+            let value = card.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return ControlWords(title: "Change the \(field)?", verb: value.isEmpty ? "Clear" : "Change",
+                                what: name(card.todo) + " · " + field + ":", taken: field.prefix(1).uppercased() + field.dropFirst() + (value.isEmpty ? " cleared" : " changed"))
+        case .closeMatter: return ControlWords(title: "Close the matter?", verb: "Close", what: name(card.todo), taken: "Matter closed")
+        case .moveTo:
+            let target = card.into.map { name($0) } ?? card.text
+            return ControlWords(title: "Move?", verb: "Move", what: "\(name(card.todo))  →  \(target)", taken: "Moved to " + target)
+        case .addDecision: return ControlWords(title: "Decision?", verb: "Save decision", what: card.subject.map { "Why: " + $0 }, taken: "Decision saved")
+        default: return nil
+        }
+    }
+
+    /// A field as the owner reads it.
+    static func fieldName(_ field: String) -> String {
+        ["text": "words", "note": "note", "kind": "kind", "place": "place", "label": "label", "value": "value",
+         "title": "name", "name": "name", "phone": "phone number", "mail": "mail address", "why": "reason"][field.lowercased()] ?? field
+    }
+
     /// A date changed in the chat, as it stands now — not as it stood when the card was taken: what
     /// the item says, and whether that is still what the owner asked for. "Date changed" that is no
     /// longer true is never said (9 November: said three times, while the time was gone).
@@ -129,7 +222,8 @@ enum CardActions {
 
     static func live<T: PersistentModel>(_ ref: FactRef, as type: T.Type, in context: ModelContext) -> T? {
         switch ref {
-        case .matter(let id), .entry(let id), .todo(let id), .appointment(let id), .deadline(let id), .party(let id):
+        case .matter(let id), .entry(let id), .todo(let id), .appointment(let id), .deadline(let id), .party(let id),
+             .note(let id), .detail(let id), .link(let id), .document(let id), .decision(let id):
             return live(id, as: type, in: context)
         }
     }
@@ -142,6 +236,11 @@ enum CardActions {
         case .appointment: return live(ref, as: Appointment.self, in: context)?.matter
         case .deadline: return live(ref, as: Deadline.self, in: context)?.matter
         case .party: return live(ref, as: Party.self, in: context)?.matters.first
+        case .note: return live(ref, as: MatterNote.self, in: context)?.matter
+        case .detail: return live(ref, as: MatterDetail.self, in: context)?.matter
+        case .link: return live(ref, as: WebLink.self, in: context)?.matter
+        case .document: return live(ref, as: MatterCore.Document.self, in: context)?.matter
+        case .decision: return live(ref, as: Decision.self, in: context)?.matter
         }
     }
 
@@ -154,7 +253,19 @@ enum CardActions {
     private static func labelNow(_ ref: FactRef, in context: ModelContext) -> String {
         switch ref {
         case .matter: return live(ref, as: Matter.self, in: context)?.name ?? "Matter (no longer there)"
-        case .entry: return "Mail " + (live(ref, as: Entry.self, in: context)?.date.map(Dates.short) ?? "")
+        case .entry:
+            // What it came as — not every source is a mail.
+            guard let entry = live(ref, as: Entry.self, in: context) else { return "Gone" }
+            let kind = switch entry.source.kind {
+            case .mail: "Mail"
+            case .screenshot: "Screenshot"
+            case .photo: "Photo"
+            case .document: "File"
+            case .spokenNote: "Spoken note"
+            case .phoneCall: "Call"
+            case .conversation: "Chat"
+            }
+            return kind + (entry.date.map { " " + Dates.short($0) } ?? "")
         case .todo:
             guard let todo = live(ref, as: Todo.self, in: context) else { return "Task (no longer there)" }
             let words = todo.text.split(separator: " ").prefix(4).joined(separator: " ")
@@ -162,6 +273,11 @@ enum CardActions {
         case .appointment: return "Appointment " + (live(ref, as: Appointment.self, in: context).map { Dates.short($0.day) } ?? "")
         case .deadline: return "Deadline " + (live(ref, as: Deadline.self, in: context).map { Dates.short($0.day) } ?? "")
         case .party: return live(ref, as: Party.self, in: context)?.name ?? "merged"
+        case .note: return "Note " + (live(ref, as: MatterNote.self, in: context).map { Dates.short($0.createdAt) } ?? "")
+        case .detail: return live(ref, as: MatterDetail.self, in: context)?.label ?? "Detail"
+        case .link: return live(ref, as: WebLink.self, in: context)?.shownName ?? "Link"
+        case .document: return live(ref, as: MatterCore.Document.self, in: context)?.shownName ?? "File"
+        case .decision: return "Decision " + (live(ref, as: Decision.self, in: context).map { Dates.short($0.decidedAt) } ?? "")
         }
     }
 
@@ -185,7 +301,7 @@ enum CardActions {
             guard let matter = live(ref, as: Matter.self, in: context) else { return gone("folder", "A matter", "not found on this \(device)") }
             return SourceLine(symbol: "folder", title: matter.name, detail: "Matter")
         case .entry:
-            guard let entry = live(ref, as: Entry.self, in: context) else { return gone("envelope", "A mail of the matter", "not found on this \(device)") }
+            guard let entry = live(ref, as: Entry.self, in: context) else { return gone("tray", "Something that came in", "not found on this \(device)") }
             let symbol = switch entry.source.kind {
             case .mail: "envelope"
             case .screenshot, .photo: "photo"
@@ -210,6 +326,21 @@ enum CardActions {
         case .party:
             guard let party = live(ref, as: Party.self, in: context) else { return gone("person", "A person of the matter", "not found on this \(device)") }
             return SourceLine(symbol: "person", title: party.name, detail: "Person")
+        case .note:
+            guard let note = live(ref, as: MatterNote.self, in: context) else { return gone("note.text", "A note of the matter", "not found on this \(device)") }
+            return SourceLine(symbol: "note.text", title: note.text, detail: "Note " + Dates.short(note.createdAt))
+        case .detail:
+            guard let detail = live(ref, as: MatterDetail.self, in: context) else { return gone("info.circle", "A detail of the matter", "not found on this \(device)") }
+            return SourceLine(symbol: "info.circle", title: detail.label, detail: "Detail")
+        case .link:
+            guard let link = live(ref, as: WebLink.self, in: context) else { return gone("link", "A link of the matter", "not found on this \(device)") }
+            return SourceLine(symbol: "link", title: link.shownName, detail: "Link")
+        case .document:
+            guard let file = live(ref, as: MatterCore.Document.self, in: context) else { return gone("doc", "A file of the matter", "not found on this \(device)") }
+            return SourceLine(symbol: "doc", title: file.shownName, detail: "File")
+        case .decision:
+            guard let decision = live(ref, as: Decision.self, in: context) else { return gone("checkmark.seal", "A decision of the matter", "not found on this \(device)") }
+            return SourceLine(symbol: "checkmark.seal", title: decision.what, detail: "Decision " + Dates.short(decision.decidedAt))
         }
     }
 
@@ -217,7 +348,13 @@ enum CardActions {
     /// facts: what kind it is, by the letter of its id.
     static func source(named cite: String) -> SourceLine {
         switch cite.first {
-        case "E", "M": gone("envelope", "A mail of the matter")
+        case "E": gone("tray", "Something that came in")
+        case "M": gone("folder", "A matter")
+        case "N": gone("note.text", "A note of the matter")
+        case "X": gone("info.circle", "A detail of the matter")
+        case "L": gone("link", "A link of the matter")
+        case "F": gone("doc", "A file of the matter")
+        case "C": gone("checkmark.seal", "A decision of the matter")
         case "T": gone("circle", "A task of the matter")
         case "A": gone("calendar", "An appointment of the matter")
         case "D": gone("calendar.badge.clock", "A deadline of the matter")
@@ -255,6 +392,11 @@ enum CardActions {
         case .appointment: return live(ref, as: Appointment.self, in: context).map { "A" + s + $0.day + s + $0.what }
         case .deadline: return live(ref, as: Deadline.self, in: context).map { "D" + s + $0.day + s + $0.what }
         case .party: return live(ref, as: Party.self, in: context).map { "P" + s + $0.name }
+        case .note: return live(ref, as: MatterNote.self, in: context).map { "N" + s + $0.text }
+        case .detail: return live(ref, as: MatterDetail.self, in: context).map { "X" + s + $0.label }
+        case .link: return live(ref, as: WebLink.self, in: context).map { "L" + s + $0.address }
+        case .document: return live(ref, as: MatterCore.Document.self, in: context).map { "F" + s + $0.name }
+        case .decision: return live(ref, as: Decision.self, in: context).map { "C" + s + $0.what }
         }
     }
 
@@ -299,6 +441,16 @@ enum CardActions {
                 if let found = (matter.deadlines ?? []).shown.first(where: { $0.day == parts[1] && $0.what == parts[2] }) { return .deadline(found.persistentModelID) }
             case "P":
                 if let found = matter.parties.first(where: { $0.name == parts[1] }) { return .party(found.persistentModelID) }
+            case "N":
+                if let found = (matter.noteBlocks ?? []).first(where: { $0.text == parts[1] }) { return .note(found.persistentModelID) }
+            case "X":
+                if let found = (matter.details ?? []).first(where: { $0.label == parts[1] }) { return .detail(found.persistentModelID) }
+            case "L":
+                if let found = (matter.links ?? []).first(where: { $0.address == parts[1] }) { return .link(found.persistentModelID) }
+            case "F":
+                if let found = (matter.documents ?? []).first(where: { $0.name == parts[1] }) { return .document(found.persistentModelID) }
+            case "C":
+                if let found = (matter.decisions ?? []).first(where: { $0.what == parts[1] }) { return .decision(found.persistentModelID) }
             default: return nil
             }
         }
@@ -309,7 +461,8 @@ enum CardActions {
     static func row(of ref: FactRef) -> PersistentIdentifier? {
         switch ref {
         case .matter: nil
-        case .entry(let id), .todo(let id), .appointment(let id), .deadline(let id), .party(let id): id
+        case .entry(let id), .todo(let id), .appointment(let id), .deadline(let id), .party(let id),
+             .note(let id), .detail(let id), .link(let id), .document(let id), .decision(let id): id
         }
     }
 
@@ -449,7 +602,8 @@ enum CardActions {
         let undo: Undo
         switch card.kind {
         case .markDone:
-            guard let todo = model(card.todo, as: Todo.self), !todo.isDone else { return .nothing }
+            // What is good to know is not done: it is put away, or changed.
+            guard let todo = model(card.todo, as: Todo.self), !todo.isDone, !todo.isInfo else { return .nothing }
             todo.isDone = true
             todo.doneAt = Date()
             todo.doneSource = source
@@ -490,18 +644,21 @@ enum CardActions {
         case .correctText:
             guard let matter = scope, let from = card.from, !from.isEmpty, !text.isEmpty else { return .nothing }
             var before: [(PersistentIdentifier, String)] = []
-            for todo in matter.todos ?? [] where todo.text.contains(from) {
+            // Only what the owner sees: not what is done long ago or put away.
+            for todo in (matter.todos ?? []).shown where todo.text.contains(from) {
                 before.append((todo.persistentModelID, todo.text))
                 todo.text = todo.text.replacingOccurrences(of: from, with: text)
             }
-            for item in matter.appointments ?? [] where item.what.contains(from) {
+            for item in (matter.appointments ?? []).shown where item.what.contains(from) {
                 before.append((item.persistentModelID, item.what))
                 item.what = item.what.replacingOccurrences(of: from, with: text)
             }
-            for item in matter.deadlines ?? [] where item.what.contains(from) {
+            for item in (matter.deadlines ?? []).shown where item.what.contains(from) {
                 before.append((item.persistentModelID, item.what))
                 item.what = item.what.replacingOccurrences(of: from, with: text)
             }
+            // Nothing had those words: nothing was corrected, and it is not said that it was.
+            guard !before.isEmpty else { return .nothing }
             undo = .texts(before)
         case .shortMessage:
             // Copied by its card, into a chat by the owner's own hand: nothing changes in a matter.
@@ -536,6 +693,48 @@ enum CardActions {
         case .lookUp:
             // Looked up by its own card, on a tap, away from here: it changes nothing in the store.
             return .nothing
+        case .putAway:
+            guard let id = card.todo, let ref = refs[id], let thing = Self.model(ref, in: context) else { return .nothing }
+            let matter = Self.matter(of: ref, in: context) ?? scope
+            if let decision = thing as? Decision, let home = decision.matter {
+                undo = .decision(matter: home.persistentModelID, what: decision.what, why: decision.why, at: decision.decidedAt, sources: decision.sources)
+                context.delete(decision)
+            } else {
+                let result = ChatControl.putAway(thing, from: matter)
+                guard result.done else { return .nothing }
+                undo = .hidden(ref, matter: matter?.persistentModelID, unwanted: result.unwanted)
+            }
+        case .reopen:
+            guard let id = card.todo, let ref = refs[id] else { return .nothing }
+            if let matter = live(ref, as: Matter.self, in: context) {
+                guard let closed = matter.closedAt else { return .nothing }
+                matter.reopen()
+                undo = .reopenedMatter(matter.persistentModelID, at: closed)
+            } else if let todo = live(ref, as: Todo.self, in: context), todo.isDone {
+                undo = .redone(todo.persistentModelID, at: todo.doneAt, source: todo.doneSource)
+                todo.isDone = false; todo.doneAt = nil; todo.doneSource = nil
+            } else { return .nothing }
+        case .changeField:
+            guard let id = card.todo, let ref = refs[id], let thing = Self.model(ref, in: context), let field = card.subject,
+                  let before = ChatControl.change(thing, field: field, to: text) else { return .nothing }
+            undo = .field(ref, field: field, before: before)
+        case .closeMatter:
+            guard let id = card.todo, let ref = refs[id], let matter = live(ref, as: Matter.self, in: context) ?? scope, !matter.isClosed else { return .nothing }
+            matter.close(markingOpenDone: false)
+            undo = .closedMatter(matter.persistentModelID)
+        case .moveTo:
+            guard let id = card.todo, let ref = refs[id], let thing = Self.model(ref, in: context),
+                  let target = card.into.flatMap({ refs[$0] }).flatMap({ live($0, as: Matter.self, in: context) })
+                    ?? ChatControl.matter(named: card.text, in: context),
+                  case .some(let from) = ChatControl.move(thing, into: target) else { return .nothing }
+            undo = .moved(ref, from: from?.persistentModelID)
+        case .addDecision:
+            guard let matter = scope ?? card.cites.lazy.compactMap({ refs[$0] }).compactMap({ Self.matter(of: $0, in: context) }).first,
+                  !text.isEmpty else { return .nothing }
+            let decision = Decision(what: text, why: card.subject ?? "", sources: [source])
+            context.insert(decision)
+            decision.matter = matter
+            undo = .added(decision.persistentModelID)
         case .correctBrief:
             guard !text.isEmpty, let matter = scope else { return .nothing }
             matter.say(text)
@@ -585,10 +784,19 @@ enum CardActions {
             try? context.save()
             undo = .added(item.persistentModelID)
         case .addDetail:
-            guard let matter = scope, let label = card.subject,
-                  let detail = matter.addDetail(label: label, value: text, of: model(card.party, as: Party.self), in: context) else { return .nothing }
+            guard let matter = scope, let label = card.subject else { return .nothing }
+            let party = model(card.party, as: Party.self)
+            // The same label again — "nein, 82k": the value is corrected, not a second one kept.
+            if let same = (matter.details ?? []).shown.first(where: {
+                $0.label.caseInsensitiveCompare(label.trimmingCharacters(in: .whitespaces)) == .orderedSame && $0.party === party
+            }) {
+                guard let before = ChatControl.change(same, field: "value", to: text) else { return .nothing }
+                undo = .field(.detail(same.persistentModelID), field: "value", before: before)
+            } else {
+                guard let detail = matter.addDetail(label: label, value: text, of: party, in: context) else { return .nothing }
+                undo = .added(detail.persistentModelID)
+            }
             try? context.save()
-            undo = .added(detail.persistentModelID)
         case .addContact:
             guard let matter = scope, !text.isEmpty else { return .nothing }
             // A party the facts know is completed as it is; anyone else is added, by the name given.
@@ -647,8 +855,32 @@ enum CardActions {
             if let link = live(id, as: WebLink.self, in: context) { context.delete(link) }
         case .said(let id, let said):
             live(id, as: Matter.self, in: context)?.unsay(said)
+        case .hidden(let ref, let matterID, let unwanted):
+            guard let thing = model(ref, in: context) else { return false }
+            ChatControl.showAgain(thing, in: matterID.flatMap { live($0, as: Matter.self, in: context) }, unwanted: unwanted)
+        case .redone(let id, let at, let source):
+            guard let todo = live(id, as: Todo.self, in: context) else { return false }
+            todo.isDone = true; todo.doneAt = at ?? Date(); todo.doneSource = source
+        case .field(let ref, let field, let before):
+            guard let thing = model(ref, in: context) else { return false }
+            ChatControl.restore(thing, field: field, to: before)
+        case .closedMatter(let id):
+            guard let matter = live(id, as: Matter.self, in: context) else { return false }
+            matter.reopen()
+        case .reopenedMatter(let id, let at):
+            guard let matter = live(id, as: Matter.self, in: context) else { return false }
+            matter.close(markingOpenDone: false, at: at)
+        case .moved(let ref, let from):
+            guard let thing = model(ref, in: context), let from, let home = live(from, as: Matter.self, in: context) else { return false }
+            _ = ChatControl.move(thing, into: home)
+        case .decision(let matterID, let what, let why, let at, let sources):
+            guard let matter = live(matterID, as: Matter.self, in: context) else { return false }
+            let decision = Decision(what: what, why: why, decidedAt: at, sources: sources)
+            context.insert(decision)
+            decision.matter = matter
         case .added(let id):
-            if let item = live(id, as: Appointment.self, in: context) { context.delete(item) }
+            if let item = live(id, as: Decision.self, in: context) { context.delete(item) }
+            else if let item = live(id, as: Appointment.self, in: context) { context.delete(item) }
             else if let item = live(id, as: Deadline.self, in: context) { context.delete(item) }
             else if let item = live(id, as: MatterDetail.self, in: context) { context.delete(item) }
             else if let item = live(id, as: MatterNote.self, in: context) {

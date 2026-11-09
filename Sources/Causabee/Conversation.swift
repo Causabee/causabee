@@ -101,7 +101,7 @@ struct Conversation {
         // is not needed here, and would go out with this question.
         let earlier: [(question: String, answer: String)] = navigation.turns[..<position].compactMap { before in
             guard before.matter == turn.matter, case .answered(let answer) = before.state else { return nil }
-            return (before.question, answer.reply.lines.map(\.text).joined(separator: " "))
+            return (before.question, CardActions.earlierWords(answer.reply, applied: before.applied))
         }
         navigation.turns[position].seen = facts.seen
         navigation.turns[position].refs = facts.refs
@@ -418,6 +418,7 @@ struct Conversation {
                                  question: turn.question, mail: turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil },
                                  inHand: turn.inHand.map { ($0.kind, $0.text) }, chosen: chosen, leftOut: leftOut, in: context) {
         case .nothing:
+            CardFailures.shared.said[CardFailures.key(turn.id, index)] = CardActions.whyNot(card)
             return
         case .openMail(let url, let draft):
             // Every draft goes to the mail program as a whole, files or not — as on the iPhone and

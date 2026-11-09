@@ -43,7 +43,7 @@ struct LinkTests {
         try context.save()
 
         let facts = FactSheet.facts(for: [matter], today: "2026-09-28")
-        #expect(facts.text.contains("Liste an Georg schicken") && facts.text.contains("linked: Liste Sperrmüll (Google Sheet)"))
+        #expect(facts.text.contains("Liste an Georg schicken") && facts.text.contains("Liste Sperrmüll (Google Sheet)") && facts.text.contains("linked: L1 "))
         #expect(!facts.text.contains("SECRET") && !facts.text.contains("docs.google.com"))
         #expect(facts.ownerText.contains("Liste Sperrmüll"))
         #expect(todo.isMessage)
@@ -51,7 +51,7 @@ struct LinkTests {
         matter.absorb(other, in: context)
         try context.save()
         let merged = FactSheet.facts(for: [matter], today: "2026-09-28")
-        #expect(merged.text.contains("- a Google Doc, not named"))
+        #expect(merged.text.contains(" a Google Doc, not named"))
         #expect(!merged.text.contains("SECRET"))
     }
 

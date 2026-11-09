@@ -66,6 +66,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 The chat is you talking to her about your matters.
 - She answers from what is in your matters — the words themselves, not only her summaries — and says when it isn't there only after looking in them.
 - What she offers to do is a card: you take it, or not.
+- **You control everything from the chat.** Every element of a matter — what came in, tasks, what is good to know, dates, people, notes, details, links, files, decisions, the matter itself — she sees, can answer about, and can change for you: add it, put it away, open it again, change one thing of it (a place, a phone number, a name, a value), move it to another matter, close the matter. Each card can be undone. A card that cannot be done says why; it never claims what did not happen.
 - What you take lands where you'd look for it: a note in Notes, a task in Plan, a date in the calendar.
 - What she writes for you to send, she writes in your voice (principle 13).
 - What you tell her to change, changes as you said it — the day, the time, how long — and stays. Nothing she reads later moves it. "Date changed" shows the date as it is now; if anything ever changed it back, the receipt says so, with Set again — never a tick on what is not so.
@@ -82,6 +83,7 @@ Each job is tested against its promise:
 - **Screens** — automated tests on iPhone, iPad and Mac for every signal: dot, NEW, card, receipt.
 
 - **Dates** — `DateMatrixTests`: every way a date is set (chat, sheet, day tile, Calendar) × everything after it (what comes in of every kind, the sync's passes, a server putting it back early or late, an invitation, a failed write, undo), and what the card and the receipt then say; times as people write them, in German and English.
+- **Chat control** — `ChatControlTests`: every element put away and shown again, each field changed and set back, each moved and back, every element seen by an id.
 - **Offered, then settled** — a time offered in one message and settled in the reply reaches the date; the chat finds it in the words.
 - **Write** — sample exchanges (a casual dealer, a formal insurer, a first mail to an office, a chat screenshot): the greeting, sign-off and length each draft must have.
 
@@ -100,3 +102,4 @@ Listed so nobody pretends. Each one closes with a test.
 - **Dates across devices:** a device on an older build can still undo a date with its old rules, and iCloud carries that to the others. Every device on the same build.
 - **Dates restated:** when you moved a date and a later item still names the old one, that old date comes as a NEW date of its own — put it away with ×.
 - **Times in words:** "halb drei", "Viertel nach zwei" are not read yet; the bee's answer carries them.
+- **Chat control:** a detail's value is kept from the bee on purpose — she knows a detail is there, not what it says. Undo of a card lasts while the app is open. Moving something to a matter the chat does not show works by that matter's name.

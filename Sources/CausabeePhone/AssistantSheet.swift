@@ -458,7 +458,7 @@ extension AssistantSheet {
         // Only this matter's talk: what was said about another matter would go out with it.
         let earlier: [(question: String, answer: String)] = shown.compactMap { item in
             guard let answer = item.turn.answer, item.turn.note == nil else { return nil }
-            return (item.turn.question, answer.reply.lines.map(\.text).joined(separator: " "))
+            return (item.turn.question, CardActions.earlierWords(answer.reply, applied: item.turn.applied))
         }
         // The model chosen in Settings, as on the Mac, with the key its service takes.
         let model = ModelChoice.assistant
@@ -986,7 +986,7 @@ struct PhoneActionCard: View {
     private var done: Bool { turn.applied.contains(index) }
     private var dismissed: Bool { turn.dismissedCards.contains(index) }
     private var undo: CardActions.Undo? { navigation.undos[turn.id]?[index] }
-    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .correctBrief, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
+    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .correctBrief, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail, .changeField, .addDecision].contains(card.kind) }
     private var mailInHand: String? { turn.inHand.flatMap { $0.kind == "Mail" ? $0.text : nil } }
     /// Once per change: the draft's card asked for it three times each time it drew.
     private var recipient: (name: String, address: String?)? {
@@ -1043,6 +1043,7 @@ struct PhoneActionCard: View {
         }
         var notes: [(text: String, symbol: String?)] = card.reason.isEmpty ? [] : [(card.reason, nil)]
         if card.kind == .sameParty { notes.append(("Later you can only turn merging off for new mail; you cannot split it again.", nil)) }
+        if let failed = CardFailures.shared.said[CardFailures.key(turn.id, index)] { notes.insert((failed, "exclamationmark.circle"), at: 0) }
         return notes
     }
 
@@ -1140,6 +1141,8 @@ struct PhoneActionCard: View {
         case .newDeadline: return "Deadline added"
         case .addDetail: return "Detail saved"
         case .correctText: return "Text corrected"
+        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision:
+            return CardActions.controlWords(card, name: { name($0) })?.taken ?? ""
         case .changeOwner: return "Now " + whose.lowercased()
         case .draftMessage: return "Opened in Mail"
         case .shortMessage: return "Copied"
@@ -1215,6 +1218,8 @@ struct PhoneActionCard: View {
                                  question: turn.question, mail: mailInHand,
                                  inHand: turn.inHand.map { ($0.kind, $0.text) }, chosen: chosenFiles, leftOut: leftOut, in: context) {
         case .nothing:
+            Haptics.tap()
+            CardFailures.shared.said[CardFailures.key(turn.id, index)] = CardActions.whyNot(card)
             return
         case .openMail(let url, let draft):
             Haptics.tap()
@@ -1269,6 +1274,7 @@ struct PhoneActionCard: View {
         case .newAppointment, .newDeadline: "Add"
         case .addDetail: "Save detail"
         case .renameParty, .changeRole, .correctText, .changeOwner: "Change"
+        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: CardActions.controlWords(card, name: { name($0) })?.verb ?? "Do"
         }
     }
 
@@ -1294,6 +1300,7 @@ struct PhoneActionCard: View {
         case .addDetail: return "Detail? · " + (card.subject ?? "")
         case .correctText: return "Replace in the text?"
         case .changeOwner: return "Whose task? → " + whose
+        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: return CardActions.controlWords(card, name: { name($0) })?.title ?? ""
         }
     }
 
@@ -1313,6 +1320,7 @@ struct PhoneActionCard: View {
             guard let recipient else { return "To: (fill in in Mail)" }
             return "To: \(recipient.name)" + (recipient.address.map { " <\($0)>" } ?? " — address not known, fill it in in Mail")
         case .correctText: return "“\(card.from ?? "")”  becomes:"
+        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: return CardActions.controlWords(card, name: { name($0) })?.what
         case .newMatter: return nil
         case .waitsFor: return "\(name(card.todo))  →  only after: \(name(card.into))"
         case .addLink: return card.todo == nil ? "to the matter" : "to: \(name(card.todo))"

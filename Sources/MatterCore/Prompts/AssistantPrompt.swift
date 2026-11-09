@@ -4,7 +4,7 @@ import Foundation
 /// facts alone, in lines that cite what they rest on and cards the owner ticks. Versioned like
 /// the extraction prompt.
 public enum AssistantPrompt {
-    public static let version = "assistant-v20"
+    public static let version = "assistant-v21"
 
     public static let system = """
     You are the assistant inside Causabee, a private app that keeps a person's matters in order: \
@@ -24,6 +24,10 @@ public enum AssistantPrompt {
     words after "its words:". Look in those words before you say something is not there: a time \
     offered, an amount, what exactly someone wrote. When the question needs what the facts do not hold, say so in `not_in_facts` in one \
     sentence rather than guessing.
+
+    Earlier questions come with what you offered then, and whether the owner took it ("[offered: \
+    1) change_date A1 2026-11-13 at 14:30 taken]"): "no, the second one", "make it 15:00" refer to \
+    those. A date "set by the owner" is theirs: what came in later does not change it.
 
     Write short: at most six lines, one thought each, in the language the question is written in. \
     Write dates the way people do in that language — "3. Oktober", not "2026-10-03". \
@@ -45,8 +49,30 @@ public enum AssistantPrompt {
     exactly as the owner gave it — the name only, never a role or a title in it.
     - `change_role`: what a party is in this matter is wrong — "Beirätin", not "Mitverfasserin". \
     `party` is its id, `text` the role.
-    - `correct_text`: words in the matter's to-dos and dates are wrong. `from` is the wrong words \
-    exactly as they appear in the facts, `text` what they should be.
+    - `correct_text`: the same wrong words stand in several to-dos and dates — a misspelt name. \
+    `from` is the wrong words exactly as they appear in the facts, `text` what they should be. \
+    For one item's words, `change_field` with its id.
+    - `put_away`: the owner wants something gone — "lösch die Aufgabe", "der Termin fällt weg", \
+    "die Notiz kann weg", "das stimmt nicht, raus damit", "Herr Z. hat damit nichts zu tun". \
+    `todo` is its id: a to-do or what is good to know (T), an appointment (A), a deadline (D), a \
+    note (N), a detail (X), a link (L), a file (F), a decision (C), or a person (P), who then is \
+    no longer in this matter. It can be shown again.
+    - `reopen`: a to-do marked done is not done after all — or a closed matter is open again. \
+    `todo` is its id (T or M).
+    - `change_field`: one thing of one item is to be different. `todo` is the item's id, \
+    `subject` which thing, `text` its new value — empty to clear it. Which things: for a to-do \
+    (T) `text`, `note`, or `kind` ("info" makes it worth knowing, not to do; "task" a to-do \
+    again); for an appointment (A) `text` or `place`; for a deadline (D) `text`; for a note (N) \
+    `text`; for a detail (X) `label` or `value`; for a link (L) `title`; for a file (F) `name`; \
+    for a person (P) `phone` or `mail`; for the matter (M) `name`; for a decision (C) `text` or \
+    `why`. The owner's words, exactly; a value the owner gives is never shortened or guessed.
+    - `close_matter`: the matter is finished — "die Sache ist erledigt", "close this". `todo` is \
+    its id (M). Its open to-dos stay as they are.
+    - `move_to`: an item belongs to another matter — "das gehört zu Mamas Sache". `todo` is its \
+    id (T, A, D, N, L, F, X or E), `into` the other matter's id when the facts show it, else \
+    `text` that matter's name as the owner said it.
+    - `add_decision`: the owner decided something — "wir nehmen den VW", "Beschluss: …". `text` \
+    is what was decided, `subject` why, in the owner's words, or null.
     - `change_owner`: a to-do is someone else's than the list says. `todo` is its id, `owner` the \
     right one.
     - `add_note`: the owner wants something written down — a list, what was agreed, something to \
@@ -190,7 +216,7 @@ public enum AssistantPrompt {
         return object([
             "lines": ["type": "array", "items": object(["text": string, "cites": ["type": "array", "items": string]])],
             "cards": ["type": "array", "items": object([
-                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "short_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact", "new_appointment", "new_deadline", "add_detail", "correct_brief", "look_up"]],
+                "kind": ["type": "string", "enum": ["mark_done", "new_todo", "same_party", "rename_party", "change_role", "correct_text", "change_owner", "add_note", "draft_message", "short_message", "change_date", "new_matter", "waits_for", "add_link", "add_contact", "new_appointment", "new_deadline", "add_detail", "correct_brief", "look_up", "put_away", "reopen", "change_field", "close_matter", "move_to", "add_decision"]],
                 "todo": optional,
                 "party": optional,
                 "into": optional,
@@ -229,6 +255,9 @@ public enum AssistantPrompt {
                 case correctBrief = "correct_brief"
                 /// A general question to look up on the web — sent alone, only when the owner taps.
                 case lookUp = "look_up"
+                /// Full control from the chat: put away, open again, change one thing, close, move, decide.
+                case putAway = "put_away", reopen, changeField = "change_field", closeMatter = "close_matter"
+                case moveTo = "move_to", addDecision = "add_decision"
             }
             public var kind: Kind
             public var todo: String?

@@ -11,6 +11,13 @@ public enum FactRef: Hashable, Sendable, Codable {
     case appointment(PersistentIdentifier)
     case deadline(PersistentIdentifier)
     case party(PersistentIdentifier)
+    /// A note of the owner's, a detail, a link, a file, a decision: each to be pointed at too —
+    /// changed, put away, moved — from the chat.
+    case note(PersistentIdentifier)
+    case detail(PersistentIdentifier)
+    case link(PersistentIdentifier)
+    case document(PersistentIdentifier)
+    case decision(PersistentIdentifier)
 }
 
 /// What the assistant is shown about the matters in scope, in real names, and what each id is.
@@ -63,8 +70,16 @@ public enum FactSheet {
             var lines: [String] = []
             let names = ([matter.key] + matter.aliases).filter { $0 != matter.name }
             lines.append("<matter id=\"\(id("M", .matter(matter.persistentModelID)))\" name=\"\(matter.name)\"\(names.isEmpty ? "" : " also=\"\(names.joined(separator: ", "))\"")>")
+            if matter.isClosed, let closed = matter.closedAt { lines.append("Closed since \(MatterStatus.day(closed)).") }
             if let notes = matter.notesText {
-                lines.append("The owner's notes on this matter:\n\(notes)")
+                // Each with its id: to be changed, put away or moved from the chat.
+                var noteLines: [String] = []
+                if let earlier = matter.earlierNote { noteLines.append(earlier) }
+                for note in matter.sortedNotes.reversed() where !note.text.isEmpty {
+                    noteLines.append("\(id("N", .note(note.persistentModelID))) \(MatterStatus.day(note.createdAt))"
+                                     + "\(note.fromAssistant ? " (an answer of yours the owner kept)" : ""): \(note.text)")
+                }
+                lines.append("The owner's notes on this matter:\n" + noteLines.joined(separator: "\n"))
                 ownerText.append(notes)
             }
             // What is understood of it, and what the owner said: the owner's words read like the notes.
@@ -74,8 +89,16 @@ public enum FactSheet {
             }
             ownerText += (matter.todos ?? []).shown.compactMap(\.note)
             // Of the details only that they are kept, by their label: never a value.
-            let labels = matter.sortedDetails.map { $0.label + ($0.party.map { " (\($0.name))" } ?? "") }
-            if !labels.isEmpty { lines.append("Details the owner keeps here, values not shown: " + labels.joined(separator: "; ")) }
+            let labels = matter.sortedDetails.map { id("X", .detail($0.persistentModelID)) + " " + $0.label + ($0.party.map { " (\($0.name))" } ?? "") }
+            if !labels.isEmpty { lines.append("Details the owner keeps here, values not shown (the owner sees them under Details): " + labels.joined(separator: "; ")) }
+            let decisions = (matter.decisions ?? []).sorted { $0.decidedAt > $1.decidedAt }
+            if !decisions.isEmpty {
+                lines.append("Decisions:")
+                for decision in decisions.prefix(20) {
+                    lines.append("\(id("C", .decision(decision.persistentModelID))) \(MatterStatus.day(decision.decidedAt)): \(decision.what)"
+                                 + (decision.why.isEmpty ? "" : " — why: \(decision.why)"))
+                }
+            }
             ownerText += (matter.links ?? []).shown.filter(\.isKept).map(\.title).filter { !$0.isEmpty }
             let open = [Todo.Owner.me, .we, .other, .unknown].flatMap(status.open)
             lines.append(open.isEmpty ? "No open to-dos." : "Open to-dos:")
@@ -91,7 +114,7 @@ public enum FactSheet {
                 if todo.sources.count > 1 { line += " — asked \(todo.sources.count)×" }
                 if let note = todo.note, !note.isEmpty { line += " — owner's note: \(note.replacingOccurrences(of: "\n", with: "; "))" }
                 // The name of a link only: its address may open a shared doc.
-                for link in (todo.links ?? []).shown { line += " — linked: \(link.forFacts)" }
+                for link in (todo.links ?? []).shown { line += " — linked: \(id("L", .link(link.persistentModelID))) \(link.forFacts)" }
                 if detailed, !focused || mentions(todo.text), let quote = todo.sources.first?.quote { line += " — \"\(quote.prefix(160))\"" }
                 if let day = todo.sources.first?.date { line += " — since \(MatterStatus.day(day))" }
                 lines.append(line)
@@ -100,7 +123,7 @@ public enum FactSheet {
             let links = (matter.links ?? []).shown.filter { $0.todo == nil && $0.isKept }.sorted { $0.createdAt < $1.createdAt }
             if detailed, !links.isEmpty {
                 lines.append("The owner's links (names only; the owner opens them):")
-                for link in links { lines.append("- \(link.forFacts)") }
+                for link in links { lines.append("\(id("L", .link(link.persistentModelID))) \(link.forFacts)") }
             }
             if detailed, !matter.infos.isEmpty {
                 // Worth knowing, and not to do: the owner said so.
@@ -120,7 +143,11 @@ public enum FactSheet {
             let appointments = detailed ? upcoming + status.pastAppointments.prefix(10) : upcoming
             if !appointments.isEmpty { lines.append("Appointments:") }
             for item in appointments {
-                lines.append("\(id("A", .appointment(item.persistentModelID))) \(item.day)\(item.time.map { " \($0)" } ?? "") \(item.what)\(item.place.map { " at \($0)" } ?? "")")
+                // When and how long, as the card shows it (principle 14): "14:30–17:30 · 3 h", until its last day.
+                let hours = Calendars.hoursLine(what: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime)
+                let when = [hours == "No time yet" ? nil : hours, item.endDay.map { "until \($0)" }].compactMap { $0 }.joined(separator: " ")
+                lines.append("\(id("A", .appointment(item.persistentModelID))) \(item.day)\(when.isEmpty ? "" : " \(when)") \(item.what)\(item.place.map { " at \($0)" } ?? "")"
+                             + (item.isOwners ? " — set by the owner" : ""))
             }
             let deadlines = detailed ? status.deadlines : status.deadlines.filter { $0.day >= status.today }
             if !deadlines.isEmpty { lines.append("Deadlines:") }
@@ -135,7 +162,7 @@ public enum FactSheet {
                     guard let party = membership.party else { continue }
                     // How to reach them — disguised on the way out like every address and number,
                     // and back as written: so a draft can go to them.
-                    var line = "\(id("P", .party(party.persistentModelID))) \(party.name)\(membership.role.map { " — \($0)" } ?? "") (in \(membership.mentions) mails)"
+                    var line = "\(id("P", .party(party.persistentModelID))) \(party.name)\(membership.role.map { " — \($0)" } ?? "") (in \(membership.mentions) items)"
                     if let mail = matter.reachAddress(of: party) { line += " — mail: \(mail)" }
                     if let phone = party.phone?.trimmingCharacters(in: .whitespacesAndNewlines), !phone.isEmpty { line += " — phone: \(phone)" }
                     lines.append(line)
@@ -166,7 +193,7 @@ public enum FactSheet {
                         case .kept: "kept, not read — the owner can have it read with \"Read\" on its card"
                         case .unreadable: "kept, a kind of file Causabee cannot read yet"
                         }
-                        lines.append("- \(file.shownName) — \(state)")
+                        lines.append("\(id("F", .document(file.persistentModelID))) \(file.shownName) — \(state)")
                     }
                 }
                 keptCount += named.filter { $0.reading != .read }.count
@@ -174,13 +201,13 @@ public enum FactSheet {
                 let entries = focused
                     ? Array(status.entries.filter { fileMails.contains($0.messageID) || mentions($0.title) || mentions($0.from) }.prefix(15))
                     : Array(status.entries.prefix(mails))
-                if !entries.isEmpty { lines.append("Mails, newest first:") }
+                if !entries.isEmpty { lines.append("What came in — mail, screenshots, photos, files, notes — newest first:") }
                 for (n, entry) in entries.enumerated() {
                     let from = Email.displayName(in: entry.from) ?? Email.address(in: entry.from)
                     var line = "\(id("E", .entry(entry.persistentModelID))) \(entry.date.map(MatterStatus.day) ?? "?") from \(from): \(entry.title)"
                     // What the mail said, so a question about its details has something to go on.
                     if let digest = entry.digest, !digest.isEmpty { line += " — " + digest.replacingOccurrences(of: "\n", with: " ") }
-                    if [.screenshot, .document].contains(entry.source.kind), let text = keptText?(entry), !text.isEmpty {
+                    if [.screenshot, .photo, .document, .spokenNote].contains(entry.source.kind), let text = keptText?(entry), !text.isEmpty {
                         line += " — its words: \"" + String(text.prefix(1500)).replacingOccurrences(of: "\n", with: " / ") + "\""
                     } else if entry.source.kind == .mail, n < 10, let text = keptText?(entry), !text.isEmpty {
                         // Its own words, not only the summary: a time offered, a number, what exactly
@@ -198,13 +225,13 @@ public enum FactSheet {
                 }
                 mailCount += entries.count
             } else if let last = status.lastDate {
-                lines.append("Last mail: \(MatterStatus.day(last)), \(matter.entries?.count ?? 0) mails in all.")
+                lines.append("Last came in: \(MatterStatus.day(last)), \(matter.entries?.count ?? 0) items in all.")
             }
             lines.append("</matter>")
             blocks.append(lines.joined(separator: "\n"))
         }
         var seen: [String] = []
-        if detailed { seen.append("\(mailCount) \(mailCount == 1 ? "mail" : "mails")") } else { seen.append("\(matters.count) \(matters.count == 1 ? "matter" : "matters")") }
+        if detailed { seen.append("\(mailCount) \(mailCount == 1 ? "item" : "items") that came in") } else { seen.append("\(matters.count) \(matters.count == 1 ? "matter" : "matters")") }
         seen.append("\(todos) open \(todos == 1 ? "task" : "tasks")")
         if dates > 0 { seen.append("\(dates) appointments and deadlines") }
         if keptCount > 0 { seen.append("the names of \(keptCount) kept-only \(keptCount == 1 ? "file" : "files")") }

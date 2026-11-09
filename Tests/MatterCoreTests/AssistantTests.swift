@@ -66,7 +66,7 @@ struct AssistantTests {
         #expect(facts.text.contains("T1 [me] Herrn Süß die Vollmacht schicken (due 2026-10-02)"))
         #expect(facts.text.contains("E1 "))
         #expect(facts.refs["T1"] == .todo(matter.todos!.first!.persistentModelID))
-        #expect(facts.seen == "1 mail, 1 open task")
+        #expect(facts.seen == "1 item that came in, 1 open task")
     }
 
     @Test("A known name in any spelling, and a new name typed in the question, are disguised")
@@ -243,7 +243,7 @@ struct AssistantTests {
         #expect(facts.text.contains("The file in hand: Wartungsprotokoll-2026.pdf — came with the mail of"))
         #expect(facts.text.contains("from Hausmeister: Heizung"))
         #expect(facts.text.contains("kept, not read yet"))
-        #expect(facts.text.contains("Mails, newest first:"))
+        #expect(facts.text.contains("What came in — mail, screenshots, photos, files, notes — newest first:"))
         #expect(!FactSheet.facts(for: [matter], today: "2026-09-28", focus: "Sebastian Süß").text.contains("file in hand"))
     }
 
@@ -266,10 +266,10 @@ struct AssistantTests {
         #expect(matter.keptFiles.map(\.reading) == [.unreadable, .kept] || matter.keptFiles.map(\.reading) == [.kept, .unreadable])
         let facts = FactSheet.facts(for: [matter], today: "2026-09-28", focus: "Vertrag")
         #expect(facts.text.contains("Files of this matter"))
-        #expect(facts.text.contains("- Pflegevertrag_Entwurf.docx — kept, a kind of file Causabee cannot read yet"))
-        #expect(facts.text.contains("- Preisliste.pdf — kept, not read"))
+        #expect(facts.text.contains(" Pflegevertrag_Entwurf.docx — kept, a kind of file Causabee cannot read yet"))
+        #expect(facts.text.contains(" Preisliste.pdf — kept, not read"))
         // A read one is named too — so a draft can take it along — and said to be read.
-        #expect(facts.text.contains("- Bescheid.pdf — read"))
+        #expect(facts.text.contains(" Bescheid.pdf — read"))
         #expect(!facts.text.contains("logo.png"))
         #expect(facts.seen.contains("the names of 2 kept-only files"))
     }
@@ -312,7 +312,7 @@ struct AssistantTests {
         membership.matter = matter
         context.insert(membership)
         try context.save()
-        #expect(FactSheet.facts(for: [matter], today: "2026-10-20", focus: "Kratzer").text.contains("Rentscape (in 0 mails) — mail: support@rentscape.example"))
+        #expect(FactSheet.facts(for: [matter], today: "2026-10-20", focus: "Kratzer").text.contains("Rentscape (in 0 items) — mail: support@rentscape.example"))
         party.address = "claims@rentscape.example"
         party.phone = "+33 1 23 45 67 89"
         #expect(FactSheet.facts(for: [matter], today: "2026-10-20", focus: "Kratzer").text.contains("— mail: claims@rentscape.example — phone: +33 1 23 45 67 89"))

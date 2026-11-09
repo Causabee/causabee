@@ -759,6 +759,7 @@ struct TurnView: View {
                                scope: card.kind == .draftMessage ? draftScope(card) : nil, question: turn.question,
                                preparing: card.kind == .draftMessage ? MailPreparing.shared.notes[MailPreparing.key(turn.id, index)] : nil,
                                made: { if case .added(let id) = turn.undos[index] { id } else { nil } }(),
+                               failureKey: CardFailures.key(turn.id, index),
                                dismissed: turn.dismissedCards.contains(index), setDismissed: { dismiss(index, $0) })
                 }
             }
@@ -875,6 +876,8 @@ struct ActionCard: View {
     var preparing: String? = nil
     /// What taking it in made, when it is one thing of its own: a note opens at it, in Notes.
     var made: PersistentIdentifier? = nil
+    /// Where it says why it could not be done.
+    var failureKey: String? = nil
     @Environment(Navigation.self) private var navigation
     @State private var text: String
     @State private var subject: String
@@ -909,12 +912,14 @@ struct ActionCard: View {
     init(card: AssistantPrompt.Reply.Card, done: Bool, refs: [String: FactRef], open: @escaping (FactRef) -> Void,
          label: @escaping (FactRef) -> String, apply: @escaping (String, String?, [MatterCore.Document], Set<PersistentIdentifier>) -> Void,
          undo: (() -> Void)?, recipient: (name: String, address: String?)? = nil, scope: Matter? = nil, question: String = "",
-         preparing: String? = nil, made: PersistentIdentifier? = nil, dismissed: Bool = false, setDismissed: @escaping (Bool) -> Void = { _ in }) {
+         preparing: String? = nil, made: PersistentIdentifier? = nil, failureKey: String? = nil, dismissed: Bool = false,
+         setDismissed: @escaping (Bool) -> Void = { _ in }) {
         (self.card, self.done, self.refs, self.open, self.label, self.apply, self.undo) = (card, done, refs, open, label, apply, undo)
         self.recipient = recipient
         (self.scope, self.question) = (scope, question)
         self.preparing = preparing
         self.made = made
+        self.failureKey = failureKey
         (self.dismissed, self.setDismissed) = (dismissed, setDismissed)
         _text = State(initialValue: card.text)
         _subject = State(initialValue: card.subject ?? "")
@@ -922,7 +927,7 @@ struct ActionCard: View {
         _quiet = State(initialValue: done)
     }
 
-    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .correctBrief, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail].contains(card.kind) }
+    private var editable: Bool { [.newTodo, .renameParty, .changeRole, .correctText, .addNote, .correctBrief, .newMatter, .addLink, .addContact, .newAppointment, .newDeadline, .addDetail, .changeField, .addDecision].contains(card.kind) }
 
     var body: some View {
         Group {
@@ -1000,6 +1005,7 @@ struct ActionCard: View {
         }
         var notes: [(text: String, symbol: String?)] = card.reason.isEmpty ? [] : [(card.reason, nil)]
         if card.kind == .sameParty { notes.append(("Later you can only turn merging off for new mail; you cannot split it again.", nil)) }
+        if let failureKey, let failed = CardFailures.shared.said[failureKey] { notes.insert((failed, "exclamationmark.circle"), at: 0) }
         return notes
     }
 
@@ -1064,6 +1070,8 @@ struct ActionCard: View {
         case .newDeadline: return "Deadline added"
         case .addDetail: return "Detail saved"
         case .correctText: return "Text corrected"
+        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision:
+            return CardActions.controlWords(card, name: { name($0) })?.taken ?? ""
         case .changeOwner: return "Now " + whose.lowercased()
         case .draftMessage: return "Opened in Mail"
         case .shortMessage: return "Copied"
@@ -1135,6 +1143,7 @@ struct ActionCard: View {
         case .newAppointment, .newDeadline: "Add"
         case .addDetail: "Save detail"
         case .renameParty, .changeRole, .correctText, .changeOwner: "Change"
+        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: CardActions.controlWords(card, name: { name($0) })?.verb ?? "Do"
         }
     }
 
@@ -1161,6 +1170,7 @@ struct ActionCard: View {
         case .addDetail: return "Detail? · " + (card.subject ?? "")
         case .correctText: return "Replace in the text?"
         case .changeOwner: return "Whose task? → " + whose
+        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: return CardActions.controlWords(card, name: { name($0) })?.title ?? ""
         }
     }
 
@@ -1180,6 +1190,7 @@ struct ActionCard: View {
             guard let recipient else { return "To: (fill in in Mail)" }
             return "To: \(recipient.name)" + (recipient.address.map { " <\($0)>" } ?? " — address not known, fill it in in Mail")
         case .correctText: return "“\(card.from ?? "")”  becomes:"
+        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: return CardActions.controlWords(card, name: { name($0) })?.what
         case .newMatter: return nil
         case .waitsFor: return "\(name(card.todo))  →  only after: \(name(card.into))"
         case .addLink: return card.todo == nil ? "to the matter" : "to: \(name(card.todo))"
