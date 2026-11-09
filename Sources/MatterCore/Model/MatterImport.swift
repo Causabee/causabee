@@ -170,7 +170,9 @@ public enum MatterImport {
             context.insert(entry)
 
             for done in judgement.done {
-                guard let todo = byRunID[done.todo], !todo.isDone else { continue }
+                // Someone else's, shown done by what came in, is ticked off. The owner's own — theirs,
+                // shared — changes only with their tap: the brief proposes it (manifesto 5).
+                guard let todo = byRunID[done.todo], !todo.isDone, todo.owner == .other else { continue }
                 todo.isDone = true
                 todo.doneAt = judgement.date
                 todo.doneSource = source.quoting(done.sourceQuote)
@@ -182,11 +184,17 @@ public enum MatterImport {
                 if let old = found.replaces, let same = (matter.appointments ?? []).first(where: {
                     Extractor.line(day: $0.day, time: $0.time, what: "").hasPrefix(old.trimmingCharacters(in: .whitespaces))
                 }) {
+                    // One the owner made is theirs: what came in does not move it (manifesto 5 and 6).
+                    if same.sources.first?.kind == .conversation {
+                        same.sources.append(source.quoting(found.sourceQuote))
+                        continue
+                    }
                     same.day = found.date
                     same.time = found.time
                     same.what = found.what
                     if let place = found.place { same.place = place }
-                    same.sources.append(source.quoting(found.sourceQuote))
+                    // Moved by what came in: it comes first among its sources, so it says NEW with it.
+                    same.sources.insert(source.quoting(found.sourceQuote), at: 0)
                     continue
                 }
                 // The same visit is mentioned in three mails, worded three ways; the day and the

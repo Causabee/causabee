@@ -80,6 +80,5 @@ If a change breaks a principle, it is wrong — however good it looks.
 
 Listed so nobody pretends. Each one closes with a test.
 
-- **Principle 5:** reading what came in can tick off a task as done, or move a date — even one you corrected — without your tap.
 - **Section 3, Reads:** files attached to mail, and files kept "only stored", are not read until you tap Read.
 - **Principle 12:** two devices rewriting at once can, rarely, bring back a NEW you already saw.

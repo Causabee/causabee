@@ -27,10 +27,10 @@ private func todo(_ text: String, id: String, sameAs: String? = nil, owner: Stri
 struct MatterImportTests {
     func log() throws -> [Judgement] {
         [
-            try mail("a", "hausverwaltung", day: 1, todos: [todo("Angebot schicken", id: "T1")],
+            try mail("a", "hausverwaltung", day: 1, todos: [todo("Angebot schicken", id: "T1", owner: "other")],
                      appointments: [["what": "Begehung", "date": "2026-10-09", "time": "10:00", "place": NSNull(), "source_quote": "…"]],
                      parties: [["name": "Sebastian Süß", "role": "unklar", "is_new": true]]),
-            try mail("b", "hausverwaltung", day: 2, todos: [todo("Angebot und Vertrag schicken", id: "T1", sameAs: "T1")],
+            try mail("b", "hausverwaltung", day: 2, todos: [todo("Angebot und Vertrag schicken", id: "T1", sameAs: "T1", owner: "other")],
                      appointments: [["what": "Termin vor Ort", "date": "2026-10-09", "time": "10:00", "place": "Honigtauer", "source_quote": "…"]],
                      parties: [["name": "Sebastian Süß", "role": "Beirat", "is_new": false]]),
             try mail("c", "hausverwaltung", day: 3, done: [["todo": "T1", "source_quote": "Angebot anbei"]]),
@@ -62,6 +62,18 @@ struct MatterImportTests {
         #expect(house.appointments?.first?.place == "Honigtauer")
         let party = try #require(house.parties.first)
         #expect(house.membership(of: party)?.role == "Beirat")
+    }
+
+    @Test("The owner's own task is not ticked off by what came in: the brief proposes it, the owner taps")
+    func ownTaskStaysOpen() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let log = [
+            try mail("a", "hausverwaltung", day: 1, todos: [todo("Vollmacht schicken", id: "T1")]),
+            try mail("b", "hausverwaltung", day: 2, done: [["todo": "T1", "source_quote": "Vollmacht erhalten"]]),
+        ]
+        let summary = try MatterImport.apply(log, to: context)
+        #expect(summary.todosDone == 0)
+        #expect(try context.fetch(FetchDescriptor<Todo>()).allSatisfy { !$0.isDone })
     }
 
     @Test("Importing the same log again adds nothing, and leaves a reopened to-do open")
