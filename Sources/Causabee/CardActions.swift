@@ -953,7 +953,9 @@ enum Adviser {
         let asked = (matter.shownBrief?.lookups ?? []).map(\.question)
         // What came in since the brief before — mails, screenshots, photos, scans — as the facts list it: what its news is to be about.
         let new = matter.cameSinceBrief
+        let files = matter.filesSinceBrief
         let since = new.map { "\($0.date.map(MatterStatus.day) ?? "") \($0.from) — \($0.title)" }
+            + files.map { "\($0.source.date.map(MatterStatus.day) ?? "") file — \($0.shownName)" }
         #if os(iOS)
         // Switched away or locked meanwhile, the answer still comes: iOS gives the app time to finish
         // it — without, the request was cut off, and the brief said "Stopped."
@@ -970,7 +972,11 @@ enum Adviser {
         }
         let before = matter.shownBrief?.writtenAt
         put(advice, facts: facts, into: matter, owner: owner,
-            news: advice.news.isEmpty || new.isEmpty ? nil : Brief.News.of(advice.news, came: new, since: before ?? Date()), in: context)
+            news: advice.news.isEmpty || (new.isEmpty && files.isEmpty) ? nil : {
+                var news = Brief.News.of(advice.news, came: new, since: before ?? Date())
+                news.files = (news.files ?? 0) + files.count
+                return news
+            }(), in: context)
         return advice.cost
     }
 

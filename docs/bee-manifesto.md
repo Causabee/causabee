@@ -35,7 +35,7 @@ You never sort.
 | **Decides the next step** — one, yours, doable | think about what's next |
 | **Keeps what is good to know** — true, asks nothing of you | look it up again |
 | **Tells you what is new** — once, clearly | check everything again |
-| **Proposes**, never decides — you take it or put it away | worry she changed something |
+| **Adds** what comes in, marked NEW; **proposes** changes to what is yours | worry she changed something behind your back |
 | **Answers** in the chat, from your matters only, and does what you ask | search |
 
 ## 4. Principles — check every change against these
@@ -44,7 +44,7 @@ You never sort.
 2. **New is said once.** Something is new only when it came after you last looked. Reworded is not new. Re-read is not new.
 3. **One signal, one meaning.** The yellow dot and NEW say the same thing: something came you haven't looked at. Looking takes them away. Nothing else does.
 4. **Looked at is not handled.** Like a read mail: still there until you act — 👍, ×, done, Seen.
-5. **She proposes, you decide.** Nothing on your list changes without your tap.
+5. **She adds, she never changes.** Tasks and dates from what comes in are added, marked NEW — you keep them (👍) or put them away (×). What is already yours — done, a new day, its words — changes only with your tap.
 6. **Your word wins.** What you said or wrote beats what came in.
 7. **One next step.** Yours, concrete, doable. Never something already done.
 8. **Good to know is stable.** True, asks nothing, the same fact never comes back as new.

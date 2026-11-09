@@ -336,4 +336,18 @@ struct ProposalMailTests {
         matter.putFacts([GoodToKnowFact(text: "The insurer pays up to 3,000 euros.", sources: [today])], in: context)
         #expect(matter.newItems().count == 1 && matter.saysNew())
     }
+
+    @Test("A file that came in by itself counts for the brief's news, like a mail")
+    func fileCountsAsCameIn() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "d", name: "D")
+        context.insert(matter)
+        var brief = Brief()
+        brief.writtenAt = Date().addingTimeInterval(-3600)
+        matter.shownBrief = brief
+        let file = Document(name: "Offer.pdf", contentType: "application/pdf", byteCount: 1, source: Source(kind: .document, pointer: "Offer.pdf", date: Date()))
+        context.insert(file)
+        file.matter = matter
+        #expect(matter.filesSinceBrief.count == 1)
+    }
 }

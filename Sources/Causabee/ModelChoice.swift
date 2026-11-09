@@ -709,7 +709,8 @@ final class AutoUpdate {
         defer { Self.known = known }
         for matter in matters where !matter.isClosed && !working.contains(matter.key) {
             let key = matter.key, stamp = stamps[matter.key] ?? matter.recordStamp
-            let mails = matter.entries?.count ?? 0
+            // What came in, of every kind — mail, screenshots, photos, scans, files: each counts the same.
+            let mails = (matter.entries?.count ?? 0) + (matter.documents ?? []).filter { !$0.isHidden }.count
             guard let before = known[key] else { known[key] = Known(stamp: stamp, mails: mails); continue }
             guard before.stamp != stamp else {
                 lastSeen[key] = nil; changedAt[key] = nil; asked.remove(key)
@@ -762,7 +763,7 @@ final class AutoUpdate {
                     if matter.summary != nil { matter.summaryAt = now }
                     try? context.save()
                     var all = Self.known
-                    all[key] = Known(stamp: matter.recordStamp, mails: matter.entries?.count, stepAt: matter.nextStepAt == now ? now : nil, summaryAt: matter.summaryAt == now ? now : nil)
+                    all[key] = Known(stamp: matter.recordStamp, mails: (matter.entries?.count ?? 0) + (matter.documents ?? []).filter { !$0.isHidden }.count, stepAt: matter.nextStepAt == now ? now : nil, summaryAt: matter.summaryAt == now ? now : nil)
                     Self.known = all
                 }
                 continue
@@ -785,7 +786,7 @@ final class AutoUpdate {
                     Self.add(cost)
                     Self.shareSpending(in: context)
                     var all = Self.known
-                    all[key] = Known(stamp: matter.recordStamp, mails: matter.entries?.count, stepAt: now, summaryAt: matter.summaryAt)
+                    all[key] = Known(stamp: matter.recordStamp, mails: (matter.entries?.count ?? 0) + (matter.documents ?? []).filter { !$0.isHidden }.count, stepAt: now, summaryAt: matter.summaryAt)
                     Self.known = all
                 } catch {}
             }
