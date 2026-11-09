@@ -671,7 +671,7 @@ struct AtHandCard<SummaryFoot: View>: View {
                 } else if !closedWithout {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Summary").font(Theme.rowTitleFont)
-                        Text("A brief helps Causabee follow this matter as more mail comes.")
+                        Text("A brief helps Causabee follow this matter as more comes in.")
                             .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         summaryFoot.padding(.top, 4)
                     }
@@ -1439,7 +1439,7 @@ struct ClosedMailRows: View {
                 Button("Cancel", role: .cancel) {}
                 Button("Start", action: start)
             } message: {
-                Text("The new mail goes, with what only it brought. The closed matter stays closed.")
+                Text("What came in goes, with what only it brought. The closed matter stays closed.")
             }
         }
     }

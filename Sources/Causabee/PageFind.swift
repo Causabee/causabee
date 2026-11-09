@@ -393,7 +393,7 @@ struct ContactEditor: View {
                         .accessibilityIdentifier("contact.mail")
                     TextField("Phone", text: $phone).keyboardType(.phonePad)
                 } footer: {
-                    Text("A contact you add stays in this matter. If mail from the same address comes in later, it is the same contact.")
+                    Text("A contact you add stays in this matter. If something from them comes in later, it is the same contact.")
                 }
             }
             .navigationTitle("New contact")
@@ -411,7 +411,7 @@ struct ContactEditor: View {
             TextField("Role — insurer, doctor, office", text: $role).textFieldStyle(.roundedBorder)
             TextField("Mail", text: $address).textFieldStyle(.roundedBorder).accessibilityIdentifier("contact.mail")
             TextField("Phone", text: $phone).textFieldStyle(.roundedBorder)
-            Text("A contact you add stays in this matter. If mail from the same address comes in later, it is the same contact.")
+            Text("A contact you add stays in this matter. If something from them comes in later, it is the same contact.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()

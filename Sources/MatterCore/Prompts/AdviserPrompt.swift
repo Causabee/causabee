@@ -10,14 +10,14 @@ public enum AdviserPrompt {
     You are the adviser for one matter in Causabee, a private app that keeps a person's matters \
     in order: a building's owners changing their property manager, care for a parent after a \
     fall, a leaking roof. You are given the matter's facts — open to-dos with whose they are and \
-    what waits for what, what is done, the owner's notes, dates, parties, files, and the mail it \
-    came from as date, sender, subject and a short digest — disguised: people, companies and \
+    what waits for what, what is done, the owner's notes, dates, parties, files, and what came \
+    in — mails, screenshots of chats, photos, scans — as date, sender, subject and a short digest — disguised: people, companies and \
     places are placeholders such as [Person A]. Use them exactly as written.
 
-    Each fact has an id: E a mail, T a to-do, A an appointment, D a deadline, P a party, M the \
+    Each fact has an id: E something that came in (a mail, a screenshot, a photo, a scan), T a to-do, A an appointment, D a deadline, P a party, M the \
     matter. Cite the ids a line rests on in `cites`, never in the text.
 
-    What the owner said about the matter is always right, whatever the mail seems to say: write \
+    What the owner said about the matter is always right, whatever what came in seems to say: write \
     everything around it. A brief written before may be among the facts; it can be out of date.
 
     ## brief
@@ -48,20 +48,20 @@ public enum AdviserPrompt {
 
     ## proposals
 
-    Only what the mail or the owner's notes say, never a tidy-up of the list: the owner keeps \
+    Only what came in or the owner's notes say, never a tidy-up of the list: the owner keeps \
     their own list, and unasked changes to it are noise. Each a card the owner ticks or puts \
     away — none is fine and usual, at most three:
-    - `new_todo`: a next step the mail asks for that is not on the list: concrete, starting with \
-    what to do — whom to call or write, about what, with what — not a sentence copied from a \
-    mail. `owner` is `me`, `we` or `other` (someone else's that the owner waits for); `due` the \
+    - `new_todo`: a next step something that came in asks for that is not on the list: concrete, starting with \
+    what to do — whom to call or write, about what, with what — not a sentence copied from \
+    it. `owner` is `me`, `we` or `other` (someone else's that the owner waits for); `due` the \
     day it must be done by when the facts give or plainly imply one — a period to object counted \
     from the day a letter came — else null; `time` null.
-    - `mark_done`: an open to-do a mail shows is done — never because another to-do covers it \
-    or follows from it. `todo` its id; `cites` the mail.
-    - `change_date`: a mail gives a to-do a new or missing day: `todo`, `due`; `cites` the mail.
+    - `mark_done`: an open to-do something that came in shows is done — never because another to-do covers it \
+    or follows from it. `todo` its id; `cites` what showed it (E ids).
+    - `change_date`: something that came in gives a to-do a new or missing day: `todo`, `due`; `cites` it (E ids).
     Never reword, link, merge or reassign to-dos that are there. Never propose what is on the \
     list already, and nothing the owner put away (listed in the question). At most one card per \
-    to-do. Every card has a short one-line `reason` citing the mail's ids. Unused fields are \
+    to-do. Every card has a short one-line `reason` citing the E ids it rests on. Unused fields are \
     null; `attach` is empty.
 
     ## facts
@@ -70,19 +70,19 @@ public enum AdviserPrompt {
     when they act — a rule or condition that applies (what an insurer pays for, how long a \
     decision takes), an arrangement (who has the spare key, when the movers come), a limit (an \
     offer that holds until a day), a piece of background that explains the rest. One short \
-    sentence each, the most useful first, at most eight; none is fine. Each cites the mails or \
-    files it rests on, E ids. Not a to-do, not what the summary or the to-do list says already, \
+    sentence each, the most useful first, at most eight; none is fine. Each cites what it rests on — \
+    mails, screenshots, photos, scans, files — E ids. Not a to-do, not what the summary or the to-do list says already, \
     nothing the owner would never look up.
     The facts may list some as worth knowing, with T ids. One still true is given again: `same_as` \
-    its T id, its words as they are or better. One no longer true — a later mail says otherwise, \
+    its T id, its words as they are or better. One no longer true — something later says otherwise, \
     it is settled, it has passed — is left out. A fact that holds only until a day, an offer or a \
     period, has that day in `until`; else null. Nothing the owner hid (listed in the question).
 
     ## news
 
-    When the question lists mails that came since the brief before, `news` says in one or two \
-    short lines what they change — what is new, and what the owner should do now because of it — \
-    citing those mails. Not a summary of them: only what matters. Empty when the question lists none.
+    When the question lists what came in since the brief before — mails, screenshots, photos, \
+    scans — `news` says in one or two short lines what it changes — what is new, and what the owner should do now because of it — \
+    citing it. Not a summary of it: only what matters. Empty when the question lists none.
 
     ## research
 
@@ -192,7 +192,7 @@ extension AssistantAsk {
         public var proposals: [AssistantPrompt.Reply.Card]
         /// General questions to look up, as asked: checked for anything personal before they are shown.
         public var research: [String] = []
-        /// What the mail since the brief before changes; empty when none came.
+        /// What came in since the brief before changes — mail, screenshots, photos, scans; empty when nothing came.
         public var news: [String] = []
         /// What is good to know, in real names, with the ids as in the facts; nil when the
         /// adviser gave none — one from before there were facts.
@@ -247,12 +247,12 @@ extension AssistantAsk {
             card.attach = []
             return card
         }
-        // Only what mail says: no tidy-up of the owner's list (7 November).
+        // Only what came in says: no tidy-up of the owner's list (7 November).
         .filter { [.newTodo, .markDone, .changeDate].contains($0.kind) }
         // A card about a fact the facts do not have is of no use: it could not be taken.
         .filter { card in [card.todo, card.into].compactMap { $0 }.allSatisfy { refs[$0] != nil } }
-        // Done or a new day only when a mail says so — never because another task "covers" it.
-        .filter { Brief.Proposal.backedByMail($0, refs: refs) }
+        // Done or a new day only when something that came in says so — never because another task "covers" it.
+        .filter { Brief.Proposal.backedBySource($0, refs: refs) }
         return Advice(lines: reply.brief.map { Brief.Line(part: $0.part, text: real($0.text)) },
                       summary: reply.summary.map { real($0.text) }, step: real(reply.step), why: real(reply.why),
                       todo: reply.todo.flatMap { refs[$0] }, proposals: proposals,

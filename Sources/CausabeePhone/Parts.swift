@@ -166,7 +166,7 @@ struct ProOffer: View {
             Image(systemName: "bolt.fill").font(.system(size: 15, weight: .semibold))
             VStack(alignment: .leading, spacing: 2) {
                 Text("Causabee Pro").font(.subheadline.weight(.semibold))
-                Text("Reads your mail, fills the cards from it, answers.")
+                Text("Reads what comes in — mail, screenshots, photos, files, your notes — fills the cards, answers.")
                     .font(.footnote).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

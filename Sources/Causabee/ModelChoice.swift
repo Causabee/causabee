@@ -809,7 +809,7 @@ struct AutoQuestion: ViewModifier {
             Button("Cancel", role: .cancel) { }
         } message: {
             // Short, and by name: which model reads, that names are disguised, who decides.
-            Text("Pro reads new mail and files for you as they arrive, with \(model.label) — names disguised. " +
+            Text("Pro reads what comes in — mail, screenshots, photos, files — as it arrives, with \(model.label) — names disguised. " +
                  "You still decide what goes into a matter. " +
                  "Without Pro, nothing is read by the AI until you tap.")
         }

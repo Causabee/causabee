@@ -244,7 +244,7 @@ struct MacProOffer: View {
             Image(systemName: "bolt.fill").font(.system(size: 13, weight: .semibold))
             VStack(alignment: .leading, spacing: 1) {
                 Text("Causabee Pro").font(.callout.weight(.semibold))
-                Text("Reads your mail, fills the cards from it, answers.")
+                Text("Reads what comes in — mail, screenshots, photos, files, your notes — fills the cards, answers.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

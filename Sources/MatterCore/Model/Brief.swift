@@ -41,10 +41,10 @@ public struct Brief: Codable, Equatable, Sendable {
             self.card = card; self.refs = refs; self.keys = keys
         }
 
-        /// "Done" or a new day only when a mail says so: one of its cites is a mail (8 November: the
+        /// "Done" or a new day only when something that came in says so — a mail, a screenshot, a photo, a scan: one of its cites is one (8 November: the
         /// bee proposed ticking off "have the MD set a date" because another task "covered it",
         /// while the owner still waited for that date).
-        public static func backedByMail(_ card: AssistantPrompt.Reply.Card, refs: [String: FactRef]) -> Bool {
+        public static func backedBySource(_ card: AssistantPrompt.Reply.Card, refs: [String: FactRef]) -> Bool {
             guard card.kind == .markDone || card.kind == .changeDate else { return true }
             return card.cites.contains { if case .entry = refs[$0] { true } else { false } }
         }
@@ -248,8 +248,8 @@ extension Matter {
         shownBrief = brief
     }
 
-    /// The mails taken in since the brief was written: what its news is about.
-    public var mailsSinceBrief: [Entry] {
+    /// What came in since the brief was written — mails, screenshots, photos, scans: what its news is about.
+    public var cameSinceBrief: [Entry] {
         guard let written = shownBrief?.writtenAt else { return [] }
         return (entries ?? []).filter { ($0.date ?? .distantPast) > written }
     }

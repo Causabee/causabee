@@ -951,8 +951,8 @@ enum Adviser {
         let facts = FactSheet.facts(for: [matter], today: today, mails: 40)
         let dismissed = self.dismissed(in: matter)
         let asked = (matter.shownBrief?.lookups ?? []).map(\.question)
-        // The mails since the brief before, as the facts list them: what its news is to be about.
-        let new = matter.mailsSinceBrief
+        // What came in since the brief before — mails, screenshots, photos, scans — as the facts list it: what its news is to be about.
+        let new = matter.cameSinceBrief
         let since = new.map { "\($0.date.map(MatterStatus.day) ?? "") \($0.from) — \($0.title)" }
         #if os(iOS)
         // Switched away or locked meanwhile, the answer still comes: iOS gives the app time to finish
@@ -1097,7 +1097,7 @@ enum Adviser {
                 if !todos.contains(where: { same($0.text, card.text) }) { worth.append(proposal) }
                 continue
             case .markDone, .changeDate:
-                guard let named, !named.isDone, Brief.Proposal.backedByMail(card, refs: proposal.refs) else { continue }
+                guard let named, !named.isDone, Brief.Proposal.backedBySource(card, refs: proposal.refs) else { continue }
                 // Already so — taken on another device, or changed by hand: nothing to propose.
                 if card.kind == .changeDate, let due = card.due, named.due == due { continue }
                 subject = named

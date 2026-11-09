@@ -901,7 +901,7 @@ struct RootView: View {
             }
             Button("Cancel", role: .cancel) { navigation.merging = nil }
         } message: {
-            Text("All mails, tasks, appointments and people come along. The old name stays as an alias, so new mail still arrives. You cannot split it again later.")
+            Text("Everything comes along: mail, screenshots, files, notes, tasks, dates and people. The old name stays as an alias, so what comes in later still finds it. You cannot split it again later.")
         }
         .alert("New matter", isPresented: $startsMatter) {
             TextField("Name", text: $newMatterName)
@@ -911,7 +911,7 @@ struct RootView: View {
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("Mail, files and tasks can be put into it afterwards.")
+            Text("Mail, screenshots, photos, files, notes and tasks can be put into it afterwards.")
         }
         .onChange(of: navigation.renaming) { newName = navigation.renaming?.name ?? "" }
         .alert("Rename matter", isPresented: Binding(get: { navigation.renaming != nil }, set: { if !$0 { navigation.renaming = nil } })) {
@@ -923,7 +923,7 @@ struct RootView: View {
             }
             Button("Cancel", role: .cancel) { navigation.renaming = nil }
         } message: {
-            Text("The old name stays as an alias, so new mail still finds the matter.")
+            Text("The old name stays as an alias, so what comes in later still finds the matter.")
         }
         .onAppear {
             // `--open <matter>` starts in that matter's status.

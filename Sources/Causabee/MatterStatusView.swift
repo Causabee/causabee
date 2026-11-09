@@ -292,7 +292,7 @@ struct MatterStatusView: View {
             }
             Button("Cancel", role: .cancel) { merging = nil }
         } message: {
-            Text("This also counts for the next mail. You can undo it in the rules.")
+            Text("This also counts for what comes in next. You can undo it in the rules.")
         }
         .alert("The matter could not be exported", isPresented: Binding(get: { exportFailure != nil }, set: { if !$0 { exportFailure = nil } })) {
             Button("OK") { exportFailure = nil }
@@ -989,7 +989,7 @@ struct MatterStatusView: View {
                             newMatterName = Matter.suggestedName(for: status.mailsSinceClosed)
                             splitting = true
                         }
-                        .help("The new mails, with what they brought, become a matter of their own; this one stays closed")
+                        .help("What came in, with what it brought, becomes a matter of its own; this one stays closed")
                         .popoverWhenAsked(isPresented: $splitting, arrowEdge: .bottom) { splitForm(status) }
                     }
                     Button(Say.openAgain) { matter.reopen(); try? context.save() }
@@ -1129,7 +1129,7 @@ struct MatterStatusView: View {
                         .accessibilityIdentifier("matter.title")
                         .onTapGesture(perform: startRenaming)
                         .pointerStyle(.horizontalText)
-                        .help("Click to rename. The old name stays as an alias, so new mail still finds the matter.")
+                        .help("Click to rename. The old name stays as an alias, so what comes in later still finds the matter.")
                     Spacer()
                 }
                 // The bar's tools stand at the page's right edge: here only their room, so a long name
@@ -1326,7 +1326,7 @@ struct MatterStatusView: View {
                                     withAnimation { membership.removeByHand(in: context, origin: origin, undo: undoManager) }
                                     try? context.save()
                                 }
-                                .help("Takes them out of this matter only. A later mail naming them will not put them back.")
+                                .help("Takes them out of this matter only. Nothing that comes in later will put them back.")
                             }
                             .dropDestination(for: String.self) { names, _ in
                                 guard let name = names.first, let dropped = matter.shownParties.first(where: { $0.name == name }),
@@ -2321,12 +2321,12 @@ struct PartyRow: View {
                         TextField("Role in \(matter.name)", text: $role).textFieldStyle(.roundedBorder).frame(width: 300)
                         TextField("Mail", text: $address).textFieldStyle(.roundedBorder).frame(width: 300)
                         TextField("Phone", text: $phone).textFieldStyle(.roundedBorder).frame(width: 300)
-                        Text("The old name stays as a spelling, so new mail still finds the person.")
+                        Text("The old name stays as a spelling, so what comes in later still finds the person.")
                             .font(.caption).foregroundStyle(.secondary).frame(width: 300, alignment: .leading)
                         HStack {
                             if let remove {
                                 Button(Say.removeFromMatter, role: .destructive) { editing = false; remove() }
-                                    .help("Only from this matter. A later mail naming them will not put them back.")
+                                    .help("Only from this matter. Nothing that comes in later will put them back.")
                             }
                             Spacer()
                             Button("Cancel") { editing = false }.keyboardShortcut(.cancelAction)

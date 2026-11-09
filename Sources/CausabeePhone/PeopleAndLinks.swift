@@ -67,7 +67,7 @@ struct PeopleSection: View {
                 Button("Merge") { if let (party, other) = merging { confirmSame(party, as: other) } }
                 Button("Cancel", role: .cancel) { merging = nil }
             } message: {
-                Text("This also counts for the next mail. You can undo it in the rules.")
+                Text("This also counts for what comes in next. You can undo it in the rules.")
             }
         }
     }
@@ -204,7 +204,7 @@ struct PartyEditor: View {
                     TextField("Name", text: $name)
                     TextField("Role in \(matter.name)", text: $role)
                 } footer: {
-                    Text("The old name stays as a spelling, so new mail still finds the person.")
+                    Text("The old name stays as a spelling, so what comes in later still finds the person.")
                 }
                 Section {
                     TextField("Mail", text: $address).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -213,7 +213,7 @@ struct PartyEditor: View {
                 Section {
                     Button(Say.removeFromMatter, role: .destructive) { dismiss(); remove() }
                 } footer: {
-                    Text("Only from this matter. A later mail naming them will not put them back.")
+                    Text("Only from this matter. Nothing that comes in later will put them back.")
                 }
             }
             .navigationTitle("Change person")

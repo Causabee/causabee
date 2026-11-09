@@ -610,7 +610,7 @@ struct MatterScreen: View {
                 .foregroundStyle(new == 0 ? Color.secondary : Theme.warning)
             HStack(spacing: 10) {
                 if new > 0 {
-                    // The new mails, with what they brought, become a matter of their own; this one stays closed.
+                    // What came in, with what it brought, becomes a matter of its own; this one stays closed.
                     Button("Start a new matter") {
                         newMatterName = Matter.suggestedName(for: status.mailsSinceClosed)
                         splitting = true
