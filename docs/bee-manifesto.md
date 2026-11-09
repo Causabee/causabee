@@ -59,6 +59,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 14. **A date says when and how long.** "14:30–15:30 · 1 h" — how long only when it is known, never Calendar's guessed hour. One without a time says "No time yet" — never a bare day that hides it.
 15. **Waiting is not doing.** What someone else has to do never looks like yours: no box to tick, who you wait for first, greyed, a dashed line round it instead of a card.
 16. **Latest is what happened.** Latest updates puts a matter on top only when something happened there: something came in, or you added, ticked or wrote something. Her rewording — a fact said again, a task written down again — is not news.
+17. **Linked means in step.** A date linked to a Calendar event shows what the event says; what it lacks — a time, an end, a place — is taken from the event. What you change here goes there with its end. When Calendar will not take it — an invitation, a work calendar — your word stays here, and the card says what Calendar holds.
 
 ## 5. The chat
 
@@ -80,6 +81,7 @@ Each job is tested against its promise:
 - **New** — replay days of things coming in, of every kind: what says NEW each morning, and only that.
 - **Screens** — automated tests on iPhone, iPad and Mac for every signal: dot, NEW, card, receipt.
 
+- **Calendar** — linked to an event from 14:00 to 17:00, the date says so; a time set here goes there with its end; Calendar putting it back never undoes your word.
 - **Offered, then settled** — a time offered in one message and settled in the reply reaches the date; the chat finds it in the words.
 - **Write** — sample exchanges (a casual dealer, a formal insurer, a first mail to an office, a chat screenshot): the greeting, sign-off and length each draft must have.
 
@@ -94,5 +96,4 @@ Listed so nobody pretends. Each one closes with a test.
 - **Section 3, Reads:** files attached to mail are read by themselves on iPhone and iPad after each mail check (logos and signatures skipped). The Mac does not do it on its own yet; a file dropped into a matter's folder is kept until you tap Read.
 - **Principle 12:** two devices rewriting at once can, rarely, bring back a NEW you already saw. Planned fix, no schema change: each device keeps its own last-seen time and never writes an older one back; the brief records which device wrote it.
 - **Principle 13:** she is given how the newest messages open and close, and the rules to write as you do. Whether every draft she writes keeps them is not yet checked automatically against her real answers — only by you, draft by draft.
-- **Section 3, Calendar both ways:** a task ticked off in Reminders comes back; a time or day changed on an event in Calendar does not yet.
 - **Chat, the words themselves:** she is given the words of the ten newest items of a matter; an older one only by its summary.

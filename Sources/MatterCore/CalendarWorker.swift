@@ -137,7 +137,18 @@ public actor CalendarWorker: CalendarAsking {
     public func chip(event isEvent: Bool, linkedID: String?, day: String?, time: String?, title: String,
                      reminders: [Calendars.Reminder]) -> ChipAnswer {
         if let id = linkedID {
-            if isEvent { return event(id).map { .linked($0.calendar?.title ?? "") } ?? .gone }
+            if isEvent {
+                guard let found = event(id) else { return .gone }
+                var said = found.calendar?.title ?? ""
+                // Calendar holding another time than the matter — an invitation it would not change:
+                // said, so the owner sees both and is never misled.
+                let theirs = found.isAllDay ? nil : Mirror.time(of: found.startDate)
+                if let day, MatterStatus.day(found.startDate) != day || theirs != time {
+                    let when = found.isAllDay ? "all day" : "\(Mirror.time(of: found.startDate))–\(Mirror.time(of: found.endDate))"
+                    said += " · there " + (MatterStatus.day(found.startDate) == day ? when : found.startDate.formatted(.dateTime.day().month(.abbreviated)) + ", " + when)
+                }
+                return .linked(said)
+            }
             if let known = reminders.first(where: { $0.id == id }) { return .linked(known.list + (known.isDone ? " · done" : "")) }
             return reminder(id).map { .linked($0.calendar?.title ?? "") } ?? .gone
         }

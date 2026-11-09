@@ -225,20 +225,52 @@ public enum Mirror {
                 send(.end(id: id, at: span.end))
                 end = span.end
             }
-            let merge = Self.merge(local: fields(of: appointment), remote: theirs.fields, stamp: stamps[key])
+            // Calendar put back what it held before Causabee last wrote to it — a work calendar's
+            // server, an invitation that is not the owner's: no edit of the owner's. What the owner
+            // said here stays, and is not sent again and again (9 November: a time set three times
+            // in the chat was gone each time). From here on, a real change there comes here as before.
+            let sentKey = "sent:" + key
+            // What the appointment does not know and its event does — a time, a place — is taken from
+            // it, on the same day: connected with an event from 14:00 to 17:00, it said "No time yet"
+            // (9 November). Never over what it knows.
+            // Not one the owner cleared here: that goes to Calendar as a whole day.
+            let lastHere = stamps[key]?.components(separatedBy: sideSeparator).first?.components(separatedBy: fieldSeparator)
+            if theirs.fields[1] == appointment.day, stamps[sentKey] == nil, (lastHere?.count ?? 0) < 4 || lastHere?[2] == "" {
+                if appointment.time == nil, !theirs.fields[2].isEmpty, !theirs.isAllDay { appointment.time = theirs.fields[2] }
+                if appointment.place == nil, !theirs.fields[3].isEmpty { appointment.place = theirs.fields[3] }
+            }
+            let local = fields(of: appointment)
+            if let before = stamps[sentKey], before == theirs.fields.joined(separator: fieldSeparator), local != theirs.fields {
+                stamps[key] = Self.merge(local: local, remote: theirs.fields, stamp: nil).stamp
+                stamps[sentKey] = nil
+                continue
+            }
+            let merge = Self.merge(local: local, remote: theirs.fields, stamp: stamps[key])
             if merge.pulled {
                 let l = merge.local
                 appointment.what = l[0]; appointment.day = l[1]
                 appointment.time = l[2].isEmpty ? nil : l[2]; appointment.place = l[3].isEmpty ? nil : l[3]
                 result.pulled += 1
             }
-            // The end is Calendar's to say: what the owner set there is kept here.
-            if let start = theirs.start, let end {
-                let last = Self.end(start: start, end: end, allDay: theirs.isAllDay)
-                if appointment.endDay != last.day { appointment.endDay = last.day }
-                if appointment.endTime != last.time { appointment.endTime = last.time }
+            let span = Calendars.span(what: appointment.what, day: appointment.day, time: appointment.time,
+                                      endDay: appointment.endDay, endTime: appointment.endTime)
+            if merge.pushed {
+                send(.event(id: id, fields: merge.remote), then: (key, merge.stamp))
+                // With its end, when the appointment knows one: written, the event would be an hour long.
+                if let span, !span.allDay, appointment.endTime != nil || appointment.endDay != nil { send(.end(id: id, at: span.end)) }
+                stamps[sentKey] = theirs.fields.joined(separator: fieldSeparator)
+            } else {
+                stamps[key] = merge.stamp
+                stamps[sentKey] = nil
+                // The end is Calendar's to say — what the owner set there is kept here — when the event
+                // stands where the appointment does: not a whole-day event's end for a time set here.
+                if let start = theirs.start, let end, let span, theirs.isAllDay == span.allDay,
+                   abs(start.timeIntervalSince(span.start)) < 1 {
+                    let last = Self.end(start: start, end: end, allDay: theirs.isAllDay)
+                    if appointment.endDay != last.day { appointment.endDay = last.day }
+                    if appointment.endTime != last.time { appointment.endTime = last.time }
+                }
             }
-            if merge.pushed { send(.event(id: id, fields: merge.remote), then: (key, merge.stamp)) } else { stamps[key] = merge.stamp }
         }
         for deadline in deadlines where keptEvents.contains(ObjectIdentifier(deadline)) {
             guard let id = deadline.calendarID, let theirs = seen.events[id], still(deadline, fields(of: deadline)) else { continue }

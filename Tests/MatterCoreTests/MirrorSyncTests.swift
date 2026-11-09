@@ -15,6 +15,7 @@ actor PretendCalendar: CalendarAsking {
     var meanwhile: (@MainActor @Sendable () -> Void)?
 
     func set(event id: String, _ fields: [String]) { events[id] = CalendarWorker.Seen(fields: fields) }
+    func put(event id: String, _ seen: CalendarWorker.Seen) { events[id] = seen }
     func set(reminder id: String, _ fields: [String], completedAt: Date? = nil) { reminders[id] = CalendarWorker.Seen(fields: fields, completedAt: completedAt) }
     func refuse(_ refusing: Bool) { self.refusing = refusing }
     func whileAsked(_ work: (@MainActor @Sendable () -> Void)?) { meanwhile = work }
@@ -33,7 +34,16 @@ actor PretendCalendar: CalendarAsking {
             switch write {
             case .reminder(let id, let fields): reminders[id]?.fields = fields
             case .completed(let id): reminders[id]?.fields[3] = "done"
-            case .event(let id, let fields): events[id]?.fields = fields
+            case .event(let id, let fields):
+                // As Mirror.write does: a time makes it a timed event, an hour long when it was a whole day.
+                let was = events[id]
+                events[id]?.fields = fields
+                if was?.start != nil, let start = Calendars.start(day: fields[1], time: fields[2].isEmpty ? nil : fields[2]) {
+                    let length = (was?.isAllDay ?? true) ? 3_600 : max((was?.end ?? start).timeIntervalSince(was?.start ?? start), 900)
+                    events[id]?.isAllDay = fields[2].isEmpty
+                    events[id]?.start = start
+                    events[id]?.end = fields[2].isEmpty ? start.addingTimeInterval(86_400) : start.addingTimeInterval(length)
+                }
             case .deadline(let id, let what, let day): events[id]?.fields[0] = what; events[id]?.fields[1] = day
             case .end(let id, let at): events[id]?.end = at
             }
@@ -205,5 +215,126 @@ struct MirrorSyncTests {
 extension PretendCalendar {
     func setHourLong(event id: String, _ fields: [String], start: Date) {
         events[id] = CalendarWorker.Seen(fields: fields, start: start, end: start.addingTimeInterval(3_600), madeByCausabee: true)
+    }
+}
+
+/// 9 November: "Die Probefahrt wird auf 14:30 bis 17:30 gesetzt" — said three times, the time never
+/// stayed. The appointment was connected with an all-day event in a work calendar.
+@Suite("A time set here stays, whatever Calendar does with it")
+@MainActor
+struct MirrorTimeTests {
+    let container: ModelContainer
+    let context: ModelContext
+    let calendar = PretendCalendar()
+    let stamps = Mirror.Stamps(defaults: nil)
+    let day = "2026-11-13"
+
+    init() throws {
+        container = try MatterSchema.container(at: nil)
+        context = ModelContext(container)
+    }
+
+    func sync() async -> Mirror.Result {
+        await Mirror.reconcile(context, worker: calendar, calendars: Calendars(), reads: (true, true), stamps: stamps)
+    }
+
+    func allDay() -> CalendarWorker.Seen {
+        let start = MatterStatus.date(of: day)!
+        return CalendarWorker.Seen(fields: ["Probefahrt mit dem VOLVO EX40", day, "", ""], start: start,
+                                   end: start.addingTimeInterval(86_400), isAllDay: true)
+    }
+
+    func timed(_ from: String, _ to: String) -> CalendarWorker.Seen {
+        let start = Calendars.start(day: day, time: from)!, end = Calendars.start(day: day, time: to)!
+        return CalendarWorker.Seen(fields: ["Probefahrt mit dem VOLVO EX40", day, from, ""], start: start, end: end)
+    }
+
+    func connected() async throws -> Appointment {
+        let source = Source(kind: .mail, pointer: "x", date: Date())
+        let appointment = Appointment(what: "Probefahrt mit dem VOLVO EX40", day: day, time: nil, place: nil, source: source)
+        appointment.calendarID = "e1"
+        context.insert(appointment)
+        try context.save()
+        await calendar.put(event: "e1", allDay())
+        _ = await sync()
+        return appointment
+    }
+
+    @Test("Set here, it goes to Calendar with its end, and stays")
+    func setHere() async throws {
+        let appointment = try await connected()
+        appointment.time = "14:30"
+        appointment.endTime = "17:30"
+        _ = await sync()
+        #expect(appointment.time == "14:30")
+        #expect(appointment.endTime == "17:30", "The end was taken from the all-day event: \(appointment.endTime ?? "nil")")
+        let written = await calendar.written
+        #expect(written.contains(.event(id: "e1", fields: ["Probefahrt mit dem VOLVO EX40", day, "14:30", ""])))
+        #expect(written.contains { if case .end = $0 { true } else { false } }, "Calendar was not told the end")
+        // Calendar has it now, from 14:30 to 17:30: in step, nothing comes back.
+        await calendar.put(event: "e1", timed("14:30", "17:30"))
+        _ = await sync()
+        #expect(appointment.time == "14:30" && appointment.endTime == "17:30")
+    }
+
+    @Test("Calendar puts it back as it was — a work calendar, an invitation: the owner's time stays here")
+    func calendarPutsItBack() async throws {
+        let appointment = try await connected()
+        appointment.time = "14:30"
+        appointment.endTime = "17:30"
+        _ = await sync()
+        // The calendar's server took the change back.
+        await calendar.put(event: "e1", allDay())
+        _ = await sync()
+        #expect(appointment.time == "14:30", "Calendar's undoing was taken for the owner's edit")
+        #expect(appointment.endTime == "17:30")
+        // And it does not try again and again.
+        await calendar.forget()
+        _ = await sync()
+        #expect(await calendar.written.isEmpty)
+    }
+
+    @Test("A real change the owner makes in Calendar still comes here")
+    func ownerInCalendar() async throws {
+        let appointment = try await connected()
+        appointment.time = "14:30"
+        appointment.endTime = "17:30"
+        _ = await sync()
+        await calendar.put(event: "e1", timed("15:00", "18:00"))
+        _ = await sync()
+        #expect(appointment.time == "15:00" && appointment.endTime == "18:00")
+    }
+
+    @Test("Connected with an event from 14:00 to 17:00, the appointment says 14:00–17:00, not \"No time yet\"")
+    func takesTheEventsTime() async throws {
+        let source = Source(kind: .mail, pointer: "x", date: Date())
+        let appointment = Appointment(what: "Probefahrt mit dem VOLVO EX40", day: day, time: nil, place: nil, source: source)
+        appointment.calendarID = "e2"
+        context.insert(appointment)
+        try context.save()
+        await calendar.put(event: "e2", timed("14:00", "17:00"))
+        _ = await sync()
+        #expect(appointment.time == "14:00" && appointment.endTime == "17:00")
+        #expect(Calendars.hoursLine(what: appointment.what, day: day, time: appointment.time, endTime: appointment.endTime) == "14:00–17:00 · 3 h")
+        #expect(await calendar.written.isEmpty, "Nothing to send: it is what Calendar says")
+        // Cleared here by the owner: not filled again — Calendar gets the whole day.
+        appointment.time = nil; appointment.endTime = nil
+        _ = await sync()
+        #expect(appointment.time == nil)
+        #expect(await calendar.written.contains(.event(id: "e2", fields: ["Probefahrt mit dem VOLVO EX40", day, "", ""])))
+    }
+
+    @Test("Connected before this fix, the gap remembered in step: filled from the event all the same")
+    func gapRememberedBefore() async throws {
+        let source = Source(kind: .mail, pointer: "x", date: Date())
+        let appointment = Appointment(what: "Probefahrt mit dem VOLVO EX40", day: day, time: nil, place: nil, source: source)
+        appointment.calendarID = "e3"
+        context.insert(appointment)
+        try context.save()
+        let theirs = ["Probefahrt mit dem VOLVO EX40", day, "14:00", ""]
+        stamps["event:e3"] = Mirror.merge(local: Mirror.fields(of: appointment), remote: theirs, stamp: nil).stamp
+        await calendar.put(event: "e3", timed("14:00", "17:00"))
+        _ = await sync()
+        #expect(appointment.time == "14:00" && appointment.endTime == "17:00")
     }
 }
