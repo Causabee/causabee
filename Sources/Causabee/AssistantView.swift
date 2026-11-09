@@ -1064,7 +1064,8 @@ struct ActionCard: View {
     /// The matter it is about: the task it names, else what it rests on.
     private func openTaken() {
         // A note opens in Notes, at the note — not at the task it is about (9 November).
-        if card.kind == .addNote, let made, let note = CardActions.live(made, as: MatterNote.self, in: context), let matter = note.matter {
+        // What it added — a note, a date, a detail — opens where it is: Notes, Plan, the Digest.
+        if let made, let matter = CardActions.matter(ofAdded: made, in: context) {
             navigation.showsInItsPart = true
             navigation.open(matter, showing: made)
             return

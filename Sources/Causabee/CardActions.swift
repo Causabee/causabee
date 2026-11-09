@@ -90,6 +90,12 @@ enum CardActions {
         return (files, missing)
     }
 
+    /// The matter of something a card added — a note, a date, a detail: for its receipt to open it there.
+    static func matter(ofAdded id: PersistentIdentifier, in context: ModelContext) -> Matter? {
+        live(id, as: MatterNote.self, in: context)?.matter ?? live(id, as: Appointment.self, in: context)?.matter
+            ?? live(id, as: Deadline.self, in: context)?.matter ?? live(id, as: MatterDetail.self, in: context)?.matter
+    }
+
     /// A fact by its id, if it is still there. A party merged away or a to-do deleted is gone,
     /// and `context.model(for:)` would hand back an object that crashes when read.
     static func live<T: PersistentModel>(_ id: PersistentIdentifier, as type: T.Type, in context: ModelContext) -> T? {
