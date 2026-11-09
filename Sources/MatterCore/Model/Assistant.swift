@@ -446,17 +446,11 @@ public enum AssistantAsk {
     /// one after "bis", "to", "until" or a dash its end.
     static func withTimes(_ card: AssistantPrompt.Reply.Card, from question: String) -> AssistantPrompt.Reply.Card {
         var card = card
-        let times = question.matches(of: /\b([01]?\d|2[0-3]):([0-5]\d)\b/).map { match in
-            (text: String(format: "%02d:%@", Int(match.output.1) ?? 0, String(match.output.2)), at: match.range)
-        }
-        guard let first = times.first else { return card }
-        if card.time == nil || Calendars.clock(card.time) == nil { card.time = first.text }
-        if card.endTime == nil, times.count > 1 {
-            let between = " " + question[first.at.upperBound..<times[1].at.lowerBound].lowercased() + " "
-            if [" bis ", " to ", " until ", "–", "-"].contains(where: between.contains) {
-                card.endTime = times[1].text
-            }
-        }
+        guard let said = TimeWords.span(in: question) else { return card }
+        if card.time == nil || Calendars.clock(card.time) == nil, let start = said.start { card.time = start }
+        if card.endTime == nil || Calendars.clock(card.endTime) == nil, let end = said.end { card.endTime = end }
+        // "bis 17 Uhr": only the end was said — the answer's start equal to it is no start.
+        if said.start == nil, card.time == said.end { card.time = nil }
         return card
     }
 
@@ -482,7 +476,7 @@ public enum AssistantAsk {
             card.time = card.time.map(real)
             card.reason = real(card.reason)
             // A time the owner said is not lost: "auf 14:30 bis 17:30 setzen" changes the time.
-            if card.kind == .changeDate { card = withTimes(card, from: prepared.question) }
+            if card.kind == .changeDate || card.kind == .newAppointment { card = withTimes(card, from: prepared.question) }
             // Asked for in a chat and drafted as a mail all the same: it is the chat message.
             return prepared.forChat ? asChatMessage(card, owner: prepared.owner) : card
         }

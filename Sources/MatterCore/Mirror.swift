@@ -165,10 +165,13 @@ public enum Mirror {
         // What goes out, and the stamp each is in step with once it is there: remembered over a
         // failed write, the old state there would count as the owner's newer one next time.
         var writes: [CalendarWorker.Write] = []
-        var inStep: [(key: String, stamp: String)?] = []
+        var inStep: [[(key: String, stamp: String)]] = []
         func send(_ write: CalendarWorker.Write, then stamp: (key: String, stamp: String)? = nil) {
+            send(write, then: stamp.map { [$0] } ?? [])
+        }
+        func send(_ write: CalendarWorker.Write, then stamps: [(key: String, stamp: String)]) {
             writes.append(write)
-            inStep.append(stamp)
+            inStep.append(stamps)
         }
 
         let keptTodos = oneEach(todos.compactMap { todo in todo.reminderID.map { (key: ObjectIdentifier(todo), id: $0, local: asked[ObjectIdentifier(todo)] ?? []) } },
@@ -212,64 +215,68 @@ public enum Mirror {
                                  stamp: { stamps["event:" + $0] }, remote: { seen.events[$0]?.fields })
         for appointment in appointments where keptEvents.contains(ObjectIdentifier(appointment)) {
             guard let id = appointment.calendarID, let theirs = seen.events[id], still(appointment, fields(of: appointment)) else { continue }
-            let key = "event:" + id
-            var end = theirs.end
-            // An event Causabee made an hour long, as every one was, while the appointment knows
-            // when it ends: given that end, before Calendar's end is taken as the owner's. One
-            // whose length the owner has set is theirs.
-            if theirs.madeByCausabee, !theirs.isAllDay, let start = theirs.start, let was = theirs.end,
-               abs(was.timeIntervalSince(start) - 3_600) < 1,
-               let span = Calendars.span(what: appointment.what, day: appointment.day, time: appointment.time,
-                                         endDay: appointment.endDay, endTime: appointment.endTime),
-               !span.allDay, abs(span.start.timeIntervalSince(start)) < 1, abs(span.end.timeIntervalSince(was)) > 1 {
-                send(.end(id: id, at: span.end))
-                end = span.end
+            let key = "event:" + id, sentKey = "sent:" + key
+            // Compared: what, day, time, place — and how long, in minutes. How long Calendar has it
+            // only when that is known: an hour Causabee gave an event that had none is no length.
+            var length = ""
+            if !theirs.isAllDay, let start = theirs.start, let stop = theirs.end {
+                let minutes = Int(stop.timeIntervalSince(start) / 60)
+                let guessed = theirs.madeByCausabee && minutes == 60 && appointment.endTime == nil
+                if minutes > 0, minutes <= 12 * 60, !guessed { length = String(minutes) }
             }
-            // Calendar put back what it held before Causabee last wrote to it — a work calendar's
-            // server, an invitation that is not the owner's: no edit of the owner's. What the owner
-            // said here stays, and is not sent again and again (9 November: a time set three times
-            // in the chat was gone each time). From here on, a real change there comes here as before.
-            let sentKey = "sent:" + key
-            // What the appointment does not know and its event does — a time, a place — is taken from
-            // it, on the same day: connected with an event from 14:00 to 17:00, it said "No time yet"
-            // (9 November). Never over what it knows.
-            // Always, also when it had one before: a time gone here is never sent to Calendar to take
-            // its time away there (9 November: what came in had wiped the hour here, and the sync
-            // would have made the owner's 14:30–17:30 a whole day in Calendar).
-            if theirs.fields[1] == appointment.day, stamps[sentKey] == nil {
-                if appointment.time == nil, !theirs.fields[2].isEmpty, !theirs.isAllDay { appointment.time = theirs.fields[2] }
-                if appointment.place == nil, !theirs.fields[3].isEmpty { appointment.place = theirs.fields[3] }
+            let remote = Array(theirs.fields.prefix(4)) + [length]
+
+            // What the appointment lacks and its event knows — a time, a place, how long — is taken
+            // from it, on the same day (9 November: linked with an event from 14:00 to 17:00, it said
+            // "No time yet"). Not over what the owner set here, and not from an invitation's guess.
+            if remote[1] == appointment.day, !appointment.isOwners {
+                if appointment.time == nil, !remote[2].isEmpty { appointment.time = remote[2] }
+                if appointment.place == nil, !remote[3].isEmpty { appointment.place = remote[3] }
+                if appointment.endTime == nil, appointment.time == remote[2], let minutes = Int(length) {
+                    appointment.endTime = Durations.end(from: appointment.time, minutes: minutes)
+                }
             }
             let local = fields(of: appointment)
-            if let before = stamps[sentKey], before == theirs.fields.joined(separator: fieldSeparator), local != theirs.fields {
-                stamps[key] = Self.merge(local: local, remote: theirs.fields, stamp: nil).stamp
-                stamps[sentKey] = nil
+
+            // An invitation, or a calendar that takes no changes: nothing is written to it, nothing of
+            // it taken over what is here — the card says what it holds.
+            guard theirs.editable else { continue }
+
+            // Calendar back at what it held before Causabee last wrote to it, at any later pass — a
+            // work calendar's server, by itself: not the owner's word. What the owner said here
+            // stays (9 November: the time set three times in the chat was gone each time).
+            if let before = stamps[sentKey], before == remote.joined(separator: fieldSeparator), local != remote {
+                stamps[key] = Self.merge(local: local, remote: remote, stamp: nil).stamp
                 continue
             }
-            let merge = Self.merge(local: local, remote: theirs.fields, stamp: stamps[key])
+            let merge = Self.merge(local: local, remote: remote, stamp: stamps[key])
             if merge.pulled {
                 let l = merge.local
                 appointment.what = l[0]; appointment.day = l[1]
                 appointment.time = l[2].isEmpty ? nil : l[2]; appointment.place = l[3].isEmpty ? nil : l[3]
+                appointment.endTime = Durations.end(from: appointment.time, minutes: Int(l[4]) ?? 0)
+                // Changed there by the owner: what Causabee wrote before is no longer the question.
+                stamps[sentKey] = nil
                 result.pulled += 1
             }
             let span = Calendars.span(what: appointment.what, day: appointment.day, time: appointment.time,
                                       endDay: appointment.endDay, endTime: appointment.endTime)
             if merge.pushed {
-                send(.event(id: id, fields: merge.remote), then: (key, merge.stamp))
-                // With its end, when the appointment knows one: written, the event would be an hour long.
-                if let span, !span.allDay, appointment.endTime != nil || appointment.endDay != nil { send(.end(id: id, at: span.end)) }
-                stamps[sentKey] = theirs.fields.joined(separator: fieldSeparator)
+                // Remembered once written: a write that failed is no revert.
+                send(.event(id: id, fields: Array(merge.remote.prefix(4))), then: [(key, merge.stamp), (sentKey, remote.joined(separator: fieldSeparator))])
+                if let span, !span.allDay, !local[4].isEmpty || appointment.endDay != nil { send(.end(id: id, at: span.end)) }
             } else {
                 stamps[key] = merge.stamp
-                stamps[sentKey] = nil
-                // The end is Calendar's to say — what the owner set there is kept here — when the event
-                // stands where the appointment does: not a whole-day event's end for a time set here.
-                if let start = theirs.start, let end, let span, theirs.isAllDay == span.allDay,
+                // How long it is, known here and not there — Calendar's hour, a first look: given.
+                if !local[4].isEmpty, remote[4] != local[4], remote[2] == local[2], !theirs.isAllDay, theirs.start != nil, theirs.end != nil,
+                   let span, !span.allDay, abs((theirs.end ?? span.end).timeIntervalSince(span.end)) > 1 {
+                    send(.end(id: id, at: span.end))
+                }
+                // A stay over several days: its last day as Calendar has it, when it stands where this one does.
+                if let start = theirs.start, let stop = theirs.end, let span, theirs.isAllDay == span.allDay,
                    abs(start.timeIntervalSince(span.start)) < 1 {
-                    let last = Self.end(start: start, end: end, allDay: theirs.isAllDay)
+                    let last = Self.end(start: start, end: stop, allDay: theirs.isAllDay)
                     if appointment.endDay != last.day { appointment.endDay = last.day }
-                    if appointment.endTime != last.time { appointment.endTime = last.time }
                 }
             }
         }
@@ -290,7 +297,7 @@ public enum Mirror {
         // are this device's, not the store's.
         for (index, written) in await worker.write(writes).enumerated() where written {
             result.pushed += 1
-            if let stamp = inStep[index] { stamps[stamp.key] = stamp.stamp }
+            for stamp in inStep[index] { stamps[stamp.key] = stamp.stamp }
         }
         return result
     }
@@ -299,8 +306,10 @@ public enum Mirror {
         [event.title ?? "", MatterStatus.day(event.startDate), event.isAllDay ? "" : time(of: event.startDate), event.location ?? ""]
     }
 
+    /// What, day, time, place — and how long, in minutes, when known.
     static func fields(of appointment: Appointment) -> [String] {
-        [appointment.what, appointment.day, appointment.time ?? "", appointment.place ?? ""]
+        let minutes = Durations.minutes(from: appointment.time, to: appointment.endTime)
+        return [appointment.what, appointment.day, appointment.time ?? "", appointment.place ?? "", minutes > 0 ? String(minutes) : ""]
     }
 
     static func fields(of todo: Todo) -> [String] {

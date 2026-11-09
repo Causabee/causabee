@@ -2190,6 +2190,8 @@ struct DateEditor: View {
     @State private var day = Date()
     @State private var hasTime = false
     @State private var time = Date()
+    /// How long, in minutes: 0 is not set.
+    @State private var duration = 0
     @State private var place = ""
 
     private var isAppointment: Bool { item.appointment != nil }
@@ -2205,7 +2207,14 @@ struct DateEditor: View {
                 DatePicker("Day", selection: $day, displayedComponents: .date).labelsHidden()
                 if isAppointment {
                     Toggle("Time", isOn: $hasTime)
-                    if hasTime { DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute).labelsHidden() }
+                    if hasTime {
+                        DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute).labelsHidden()
+                        Picker("Duration", selection: $duration) {
+                            ForEach(Durations.choices(with: duration), id: \.self) { Text(Durations.label($0)).tag($0) }
+                        }
+                        .fixedSize()
+                        .accessibilityIdentifier("date.duration")
+                    }
                 }
             }
             if isAppointment {
@@ -2221,7 +2230,7 @@ struct DateEditor: View {
         }
         .padding(16)
         .environment(\.locale, Locale(identifier: "en_US"))
-        .keepsWhatWasTyped([what, day, hasTime, time, place], cancel: cancel)
+        .keepsWhatWasTyped([what, day, hasTime, time, duration, place], cancel: cancel)
         .onAppear(perform: load)
     }
 
@@ -2240,6 +2249,7 @@ struct DateEditor: View {
             hasTime = true
             time = parsed
         }
+        duration = Durations.minutes(from: item.time, to: item.endTime)
     }
 
     private func saveChanges() {
@@ -2247,8 +2257,10 @@ struct DateEditor: View {
         let dayText = Self.formatter("yyyy-MM-dd").string(from: day)
         if let appointment = item.appointment {
             appointment.what = text
-            appointment.day = dayText
+            // The day by the owner: a stay's last day moves with it; the time and length as set here.
+            appointment.set(day: dayText, time: nil, endTime: nil)
             appointment.time = hasTime ? Self.formatter("HH:mm").string(from: time) : nil
+            appointment.endTime = hasTime ? Durations.end(from: appointment.time, minutes: duration) : nil
             appointment.claim()
             let spot = place.trimmingCharacters(in: .whitespacesAndNewlines)
             appointment.place = spot.isEmpty ? nil : spot

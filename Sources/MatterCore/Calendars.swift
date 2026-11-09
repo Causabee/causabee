@@ -66,6 +66,8 @@ public final class Calendars {
             end = Self.start(day: endDay ?? day, time: endTime)
             // "22:00–01:00" with no day of its own: it ends the next morning.
             if endDay == nil, let found = end, found <= start { end = calendar.date(byAdding: .day, value: 1, to: found) }
+            // An end before its start that would make it over half a day long — "14:00–13:00" — is no end.
+            if endDay == nil, let found = end, found.timeIntervalSince(start) > 12 * 3_600 { end = nil }
         } else if let endDay, endDay > day {
             end = Self.start(day: endDay, time: time)
         }
@@ -89,7 +91,7 @@ public final class Calendars {
         let length = minutes < 60 ? "\(minutes) min"
             : minutes % 60 == 0 ? "\(minutes / 60) h" : "\(minutes / 60) h \(minutes % 60) min"
         // How long only when it is known — given, or in its words; Calendar's hour is no knowing.
-        let known = clock(endTime) != nil || (endDay.map { $0 > day } ?? false) || end(in: what, from: span.start) != nil
+        let known = Durations.minutes(from: time, to: endTime) > 0 || (endDay.map { $0 > day } ?? false) || end(in: what, from: span.start) != nil
         // Over midnight or over days, the length alone says it; the days are said beside it.
         guard known, minutes < 24 * 60 else { return format.string(from: span.start) }
         return "\(format.string(from: span.start))–\(format.string(from: span.end)) · \(length)"

@@ -449,7 +449,9 @@ struct AppointmentTimeKeptTests {
         appointment.claim()
         try MatterImport.apply([try again("c", day: 3, time: "10:00", replaces: "2026-11-13 14:30")], to: context)
         #expect(appointment.time == "14:30" && appointment.day == "2026-11-13")
-        #expect(appointment.sources.count == 3, "What came in is kept among its sources")
+        // Moved by the other side: a date of its own, for the owner to keep or put away.
+        let all = try context.fetch(FetchDescriptor<Appointment>())
+        #expect(all.count == 2 && all.contains { $0.time == "10:00" })
     }
 
     @Test("Not the owner's, moved to another hour by what came in: it moves")

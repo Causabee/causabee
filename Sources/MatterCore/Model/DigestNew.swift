@@ -87,8 +87,13 @@ extension Matter {
         case .task(let todo), .fact(let todo):
             let dates = (todo.isFact ? todo.factSources : todo.sources).filter { $0.kind != .conversation }.compactMap { arrived($0, arrivals) }
             return dates.max() ?? todo.createdAt
-        case .appointment(let date): return date.sources.first.flatMap { arrived($0, arrivals) } ?? .distantPast
-        case .deadline(let date): return date.sources.first.flatMap { arrived($0, arrivals) } ?? .distantPast
+        // A date the owner set — their word first among its sources — never comes back as new.
+        case .appointment(let date):
+            guard let first = date.sources.first, first.kind != .conversation else { return .distantPast }
+            return arrived(first, arrivals) ?? .distantPast
+        case .deadline(let date):
+            guard let first = date.sources.first, first.kind != .conversation else { return .distantPast }
+            return arrived(first, arrivals) ?? .distantPast
         }
     }
 }

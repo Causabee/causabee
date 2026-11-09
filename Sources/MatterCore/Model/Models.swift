@@ -17,6 +17,48 @@ extension Appointment {
         guard sources.first?.kind != .conversation else { return }
         sources.insert(Source(kind: .conversation, pointer: "", date: Date()), at: 0)
     }
+
+    /// What the owner said, set: the day, and the time and end when they gave them. A new start
+    /// without an end keeps the length it had, as Calendar does when an event is moved. Theirs from
+    /// then on.
+    public func set(day newDay: String, time newTime: String?, endTime newEnd: String?, endDay newEndDay: String? = nil) {
+        if let newTime, Calendars.clock(newTime) != nil {
+            if let newEnd, Calendars.clock(newEnd) != nil {
+                endTime = newEnd
+            } else if let start = Calendars.clock(time), let end = Calendars.clock(endTime), endDay == nil {
+                let length = (end.0 * 60 + end.1) - (start.0 * 60 + start.1)
+                let from = Calendars.clock(newTime)!
+                let to = from.0 * 60 + from.1 + length
+                endTime = length > 0 && to < 24 * 60 ? String(format: "%02d:%02d", to / 60, to % 60) : nil
+            }
+            time = newTime
+        } else if let newEnd, Calendars.clock(newEnd) != nil, time != nil {
+            endTime = newEnd
+        }
+        if let newEndDay { endDay = newEndDay > newDay ? newEndDay : nil }
+        else if let last = endDay, let from = MatterStatus.date(of: day), let to = MatterStatus.date(of: newDay),
+                let lastDate = MatterStatus.date(of: last) {
+            // A stay over several days moved: its last day moves with it.
+            let shift = Calendar.current.dateComponents([.day], from: from, to: to).day ?? 0
+            endDay = Calendar.current.date(byAdding: .day, value: shift, to: lastDate).map(MatterStatus.day)
+        }
+        day = newDay
+        claim()
+    }
+
+    /// Whether the owner's word is first among its sources: set by them.
+    public var isOwners: Bool { sources.first?.kind == .conversation }
+
+    /// Undone: what the owner set is given back — what comes in may move it again.
+    public func unclaim() {
+        guard sources.first?.kind == .conversation, sources.count > 1 else { return }
+        sources.removeFirst()
+    }
+
+    /// Whether it says what the owner asked for: the day, and the time and end they gave.
+    public func holds(day asked: String?, time askedTime: String?, endTime askedEnd: String?) -> Bool {
+        day == (asked ?? day) && (askedTime == nil || time == askedTime) && (askedEnd == nil || endTime == askedEnd)
+    }
 }
 
 public struct Source: Codable, Hashable, Sendable {

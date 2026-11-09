@@ -181,14 +181,14 @@ public enum MatterImport {
 
             for found in judgement.appointments {
                 // Moved or settled at another time: the one on file changes, no second one comes.
-                if let old = found.replaces, let same = (matter.appointments ?? []).first(where: {
-                    Extractor.line(day: $0.day, time: $0.time, what: "").hasPrefix(old.trimmingCharacters(in: .whitespaces))
-                }) {
-                    // One the owner made is theirs: what came in does not move it (manifesto 5 and 6).
-                    if same.sources.first?.kind == .conversation {
-                        same.sources.append(source.quoting(found.sourceQuote))
-                        continue
-                    }
+                if let old = found.replaces, let same = Self.replaced(old, by: found, among: matter.appointments ?? []) {
+                    // One the owner set is theirs: what came in does not move it (manifesto 5 and 6). Said
+                    // again, it is among its sources; moved by the other side, the new date comes as one
+                    // of its own, marked NEW, for the owner to keep or put away — never lost.
+                    if same.isOwners {
+                        let moved = found.date != same.day || (found.time != nil && found.time != same.time)
+                        if !moved { same.sources.append(source.quoting(found.sourceQuote)); continue }
+                    } else {
                     // The same day said again without its hour moves nothing: the time known stays
                     // (9 November: each reply of the dealer's, "bis Freitag", took the 14:30 away).
                     let moved = found.date != same.day || (found.time != nil && found.time != same.time)
@@ -196,14 +196,17 @@ public enum MatterImport {
                         same.sources.append(source.quoting(found.sourceQuote))
                         continue
                     }
-                    if found.date != same.day || found.time != nil { same.endTime = found.endTime }
+                    // Another day without an hour: the old hour is not carried over — "No time yet" says so.
+                    let sameDay = found.date == same.day
+                    if !sameDay || found.time != nil { same.endTime = found.endTime }
+                    same.time = found.time ?? (sameDay ? same.time : nil)
                     same.day = found.date
-                    same.time = found.time ?? (found.date == same.day ? same.time : nil)
                     same.what = found.what
                     if let place = found.place { same.place = place }
                     // Moved by what came in: it comes first among its sources, so it says NEW with it.
                     same.sources.insert(source.quoting(found.sourceQuote), at: 0)
                     continue
+                    }
                 }
                 // The same visit is mentioned in three mails, worded three ways; the day and the
                 // hour are what make it the same.
@@ -212,6 +215,8 @@ public enum MatterImport {
                         && ($0.time != nil || Self.key($0.what) == Self.key(found.what))
                 }) {
                     same.sources.append(source.quoting(found.sourceQuote))
+                    // The owner's own is not filled in by what came in either: theirs as they set it.
+                    if same.isOwners { continue }
                     if same.time == nil { same.time = found.time }
                     if same.endTime == nil { same.endTime = found.endTime ?? Calendars.endClock(in: found.what, after: found.time) }
                     if same.endDay == nil { same.endDay = found.endDate }
@@ -259,6 +264,18 @@ public enum MatterImport {
         try context.save()
         summary.parties = try context.fetchCount(FetchDescriptor<Party>()) - partiesBefore
         return summary
+    }
+
+    /// The appointment a `replaces` names: as listed — "2026-11-13 14:30", or with its words after
+    /// it — by its day and hour, not its words; of several on that day, the one its words match.
+    static func replaced(_ listed: String, by found: Judgement.Appointment, among appointments: [Appointment]) -> Appointment? {
+        guard let match = listed.firstMatch(of: /^\s*(\d{4}-\d{2}-\d{2})(?:\s+(\d{1,2}:\d{2}))?/) else { return nil }
+        let day = String(match.output.1), time = match.output.2.map { String($0) }
+        let onDay = appointments.filter { $0.day == day && (time == nil || $0.time == time) }
+        guard onDay.count > 1 else { return onDay.first }
+        let words = key(found.what)
+        return onDay.first { key($0.what) == words } ?? onDay.first { words.contains(key($0.what)) || key($0.what).contains(words) }
+            ?? onDay.sorted { ($0.time ?? "", $0.what) < ($1.time ?? "", $1.what) }.first
     }
 
     static func key(_ text: String) -> String {

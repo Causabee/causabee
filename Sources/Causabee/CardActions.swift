@@ -21,7 +21,7 @@ enum CardActions {
         case texts([(PersistentIdentifier, String)])
         case roles(PersistentIdentifier, [String])
         case note(PersistentIdentifier, String?)
-        case date(PersistentIdentifier, day: String?, time: String?)
+        case date(PersistentIdentifier, day: String?, time: String?, endTime: String?, endDay: String?, owned: Bool = true)
         case madeMatter(PersistentIdentifier)
         /// A link a card kept, to take out again.
         case removeLink(PersistentIdentifier)
@@ -105,8 +105,7 @@ enum CardActions {
         guard card.kind == .changeDate, let id = card.todo, let ref = refs[id] else { return nil }
         if let item = live(ref, as: Appointment.self, in: context) {
             let hours = Calendars.hoursLine(what: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime)
-            let holds = item.day == (card.due ?? item.day) && (card.time == nil || item.time == card.time)
-                && (card.endTime == nil || item.endTime == card.endTime)
+            let holds = item.holds(day: card.due, time: card.time, endTime: card.endTime)
             return ([Dates.short(item.day), hours].compactMap { $0 }.joined(separator: ", "), holds)
         }
         if let item = live(ref, as: Todo.self, in: context) {
@@ -523,18 +522,15 @@ enum CardActions {
         case .changeDate:
             guard let day = card.due else { return .nothing }
             if let todo = model(card.todo, as: Todo.self) {
-                undo = .date(todo.persistentModelID, day: todo.due, time: todo.dueTime)
+                undo = .date(todo.persistentModelID, day: todo.due, time: todo.dueTime, endTime: nil, endDay: nil)
                 todo.due = day
                 todo.dueTime = card.time ?? todo.dueTime
             } else if let appointment = model(card.todo, as: Appointment.self) {
-                undo = .date(appointment.persistentModelID, day: appointment.day, time: appointment.time)
-                appointment.day = day
-                appointment.time = card.time ?? appointment.time
-                appointment.endTime = card.endTime ?? appointment.endTime
-                if let end = card.endDay { appointment.endDay = end > day ? end : nil }
-                appointment.claim()
+                undo = .date(appointment.persistentModelID, day: appointment.day, time: appointment.time,
+                             endTime: appointment.endTime, endDay: appointment.endDay, owned: appointment.isOwners)
+                appointment.set(day: day, time: card.time, endTime: card.endTime, endDay: card.endDay)
             } else if let deadline = model(card.todo, as: Deadline.self) {
-                undo = .date(deadline.persistentModelID, day: deadline.day, time: nil)
+                undo = .date(deadline.persistentModelID, day: deadline.day, time: nil, endTime: nil, endDay: nil)
                 deadline.day = day
             } else { return .nothing }
         case .lookUp:
@@ -574,6 +570,8 @@ enum CardActions {
             item.endTime = card.endTime ?? Calendars.endClock(in: text, after: card.time)
             item.endDay = card.endDay.flatMap { $0 > day ? $0 : nil }
             item.sources = used(card, inHand: inHand, refs: refs, in: matter, context: context) + item.sources
+            // Made in the chat: the owner's from the start — what comes in later does not move it.
+            item.claim()
             context.insert(item)
             item.matter = matter
             try? context.save()
@@ -636,9 +634,12 @@ enum CardActions {
         case .madeMatter(let id):
             guard let matter = live(id, as: Matter.self, in: context), (matter.entries ?? []).isEmpty, (matter.todos ?? []).isEmpty else { return false }
             context.delete(matter)
-        case .date(let id, let day, let time):
+        case .date(let id, let day, let time, let endTime, let endDay, let owned):
             if let todo = live(id, as: Todo.self, in: context) { todo.due = day; todo.dueTime = time }
-            else if let item = live(id, as: Appointment.self, in: context), let day { item.day = day; item.time = time }
+            else if let item = live(id, as: Appointment.self, in: context), let day {
+                item.day = day; item.time = time; item.endTime = endTime; item.endDay = endDay
+                if !owned { item.unclaim() }
+            }
             else if let item = live(id, as: Deadline.self, in: context), let day { item.day = day }
         case .note(let id, let note):
             live(id, as: Todo.self, in: context)?.note = note

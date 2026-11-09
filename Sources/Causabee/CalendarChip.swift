@@ -39,7 +39,7 @@ struct CalendarChip: View {
     @Environment(\.reading) private var reading
 
     private var ask: ChipAnswers.Ask {
-        ChipAnswers.Ask(event: kind == .event, linkedID: linkedID, day: day, time: time, title: title, reminders: reminders.count)
+        ChipAnswers.Ask(event: kind == .event, linkedID: linkedID, day: day, time: time, endTime: endTime, title: title, reminders: reminders.count)
     }
 
     var body: some View {
@@ -229,6 +229,7 @@ enum ChipAnswers {
         var linkedID: String?
         var day: String?
         var time: String?
+        var endTime: String? = nil
         var title: String
         /// How many reminders the page has read: a reminder is found among them.
         var reminders: Int
@@ -249,7 +250,7 @@ enum ChipAnswers {
         if Calendars.shared.isSealed { return ask.linkedID == nil ? .none : .gone }
         let now = generation
         if answeredAt[ask] == now, let known = last[ask] { return known }
-        let answer = await CalendarWorker.shared.chip(event: ask.event, linkedID: ask.linkedID, day: ask.day, time: ask.time,
+        let answer = await CalendarWorker.shared.chip(event: ask.event, linkedID: ask.linkedID, day: ask.day, time: ask.time, endTime: ask.endTime,
                                                       title: ask.title, reminders: reminders)
         if last.count > 2000 { last.removeAll(); answeredAt.removeAll() }
         last[ask] = answer

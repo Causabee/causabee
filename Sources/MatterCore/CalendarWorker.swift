@@ -42,6 +42,9 @@ public actor CalendarWorker: CalendarAsking {
         public var isAllDay = false
         /// Made by Causabee — its notes say so: its length was Causabee's, not the owner's.
         public var madeByCausabee = false
+        /// The owner can change it there: not an invitation of someone else's, not a calendar
+        /// that takes no changes.
+        public var editable = true
     }
 
     /// The events and reminders these ids stand for; one that is gone is not in the answer.
@@ -49,8 +52,10 @@ public actor CalendarWorker: CalendarAsking {
         var foundEvents: [String: Seen] = [:], foundReminders: [String: Seen] = [:]
         for id in Set(events) {
             guard let event = event(id) else { continue }
+            let invited = event.hasAttendees && event.organizer.map { !$0.isCurrentUser } == true
             foundEvents[id] = Seen(fields: Mirror.fields(of: event), start: event.startDate, end: event.endDate,
-                                   isAllDay: event.isAllDay, madeByCausabee: event.notes?.hasPrefix("Causabee · ") == true)
+                                   isAllDay: event.isAllDay, madeByCausabee: event.notes?.hasPrefix("Causabee · ") == true,
+                                   editable: event.calendar?.allowsContentModifications != false && !invited)
         }
         for id in Set(reminders) {
             guard let reminder = reminder(id) else { continue }
@@ -134,7 +139,7 @@ public actor CalendarWorker: CalendarAsking {
 
     /// The chip beside an appointment, a deadline or a task. The reminders are the ones the page
     /// read already: a reminder is found among them, not asked for again.
-    public func chip(event isEvent: Bool, linkedID: String?, day: String?, time: String?, title: String,
+    public func chip(event isEvent: Bool, linkedID: String?, day: String?, time: String?, endTime: String? = nil, title: String,
                      reminders: [Calendars.Reminder]) -> ChipAnswer {
         if let id = linkedID {
             if isEvent {
@@ -143,7 +148,10 @@ public actor CalendarWorker: CalendarAsking {
                 // Calendar holding another time than the matter — an invitation it would not change:
                 // said, so the owner sees both and is never misled.
                 let theirs = found.isAllDay ? nil : Mirror.time(of: found.startDate)
-                if let day, MatterStatus.day(found.startDate) != day || theirs != time {
+                let theirEnd = found.isAllDay ? nil : Mirror.time(of: found.endDate)
+                // The end too, when this one knows it: a different length there is said as well.
+                let endDiffers = endTime != nil && theirEnd != endTime
+                if let day, MatterStatus.day(found.startDate) != day || theirs != time || endDiffers {
                     let when = found.isAllDay ? "all day" : "\(Mirror.time(of: found.startDate))–\(Mirror.time(of: found.endDate))"
                     said += " · there " + (MatterStatus.day(found.startDate) == day ? when : found.startDate.formatted(.dateTime.day().month(.abbreviated)) + ", " + when)
                 }

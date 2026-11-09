@@ -1006,14 +1006,21 @@ struct ActionCard: View {
     /// A card taken in, small and quiet: what was done, what kind, and Undo while the app is open.
     /// The reason and the sources stay with what it made; a click opens its matter.
     private var taken: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Image(systemName: "checkmark").font(.caption.weight(.semibold)).foregroundStyle(Theme.done)
+        // A date change no longer true says so, and offers to set it again: never a tick on what is not so.
+        let undone = CardActions.dateNow(card, refs: refs, in: context).map { !$0.holds } ?? false
+        return HStack(alignment: .center, spacing: 8) {
+            Image(systemName: undone ? "exclamationmark.circle" : "checkmark").font(.caption.weight(.semibold))
+                .foregroundStyle(undone ? Theme.warning : Theme.done)
             VStack(alignment: .leading, spacing: 1) {
                 Text(takenWhat).fontWeight(.medium).lineLimit(2)
-                Text(takenKind).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(takenKind).font(.caption).foregroundStyle(undone ? Theme.warning : .secondary).lineLimit(2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            if let undo {
+            if undone {
+                Button("Set again") { apply(text, subject.isEmpty ? nil : subject, [], []) }
+                    .buttonStyle(.gold).font(.caption)
+                    .help("Sets the date as it was asked for, once more")
+            } else if let undo {
                 Button("Undo") { undo() }
                     .buttonStyle(.gold).font(.caption)
                     .help(card.kind == .sameParty ? "Turns the rule off: the next mail is not merged any more" : "Puts it back the way it was")
@@ -1046,7 +1053,9 @@ struct ActionCard: View {
         case .addNote: return card.todo == nil ? "Note added" : "Note added · " + name(card.todo)
         case .correctBrief: return "Brief corrected"
         case .lookUp: return "Looked up"
-        case .changeDate: return "Date changed"
+        case .changeDate:
+            guard let date = CardActions.dateNow(card, refs: refs, in: context) else { return "Date changed" }
+            return date.holds ? "Date changed · " + date.now : "Changed back since · now " + date.now
         case .newMatter: return "Matter started"
         case .waitsFor: return "Now waits for " + name(card.into)
         case .addLink: return "Link saved"
