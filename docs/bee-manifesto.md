@@ -59,7 +59,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 14. **A date says when and how long.** "14:30–15:30 · 1 h" — how long only when it is known, never Calendar's guessed hour. One without a time says "No time yet" — never a bare day that hides it.
 15. **Waiting is not doing.** What someone else has to do never looks like yours: no box to tick, who you wait for first, greyed, a dashed line round it instead of a card.
 16. **Latest is what happened.** Latest updates puts a matter on top only when something happened there: something came in, or you added, ticked or wrote something. Her rewording — a fact said again, a task written down again — is not news.
-17. **Linked means in step.** A date linked to a Calendar event shows what the event says; what it lacks — a time, an end, a place — is taken from the event. What you change here goes there with its end. When Calendar will not take it — an invitation, a work calendar — your word stays here, and the card says what Calendar holds.
+17. **Linked means in step.** A date linked to a Calendar event shows what the event says; what it lacks — a time, an end, a place — is taken from the event. A time gone here is never sent there to take Calendar's away. What you change here goes there with its end. When Calendar will not take it — an invitation, a work calendar — your word stays here, and the card says what Calendar holds.
 
 ## 5. The chat
 

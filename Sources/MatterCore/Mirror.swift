@@ -233,9 +233,10 @@ public enum Mirror {
             // What the appointment does not know and its event does — a time, a place — is taken from
             // it, on the same day: connected with an event from 14:00 to 17:00, it said "No time yet"
             // (9 November). Never over what it knows.
-            // Not one the owner cleared here: that goes to Calendar as a whole day.
-            let lastHere = stamps[key]?.components(separatedBy: sideSeparator).first?.components(separatedBy: fieldSeparator)
-            if theirs.fields[1] == appointment.day, stamps[sentKey] == nil, (lastHere?.count ?? 0) < 4 || lastHere?[2] == "" {
+            // Always, also when it had one before: a time gone here is never sent to Calendar to take
+            // its time away there (9 November: what came in had wiped the hour here, and the sync
+            // would have made the owner's 14:30–17:30 a whole day in Calendar).
+            if theirs.fields[1] == appointment.day, stamps[sentKey] == nil {
                 if appointment.time == nil, !theirs.fields[2].isEmpty, !theirs.isAllDay { appointment.time = theirs.fields[2] }
                 if appointment.place == nil, !theirs.fields[3].isEmpty { appointment.place = theirs.fields[3] }
             }

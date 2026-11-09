@@ -317,11 +317,13 @@ struct MirrorTimeTests {
         #expect(appointment.time == "14:00" && appointment.endTime == "17:00")
         #expect(Calendars.hoursLine(what: appointment.what, day: day, time: appointment.time, endTime: appointment.endTime) == "14:00–17:00 · 3 h")
         #expect(await calendar.written.isEmpty, "Nothing to send: it is what Calendar says")
-        // Cleared here by the owner: not filled again — Calendar gets the whole day.
+        // Gone here — wiped by what came in, before that was fixed: taken from Calendar again, and
+        // Calendar's time is never taken away.
         appointment.time = nil; appointment.endTime = nil
+        await calendar.forget()
         _ = await sync()
-        #expect(appointment.time == nil)
-        #expect(await calendar.written.contains(.event(id: "e2", fields: ["Probefahrt mit dem VOLVO EX40", day, "", ""])))
+        #expect(appointment.time == "14:00" && appointment.endTime == "17:00")
+        #expect(await calendar.written.isEmpty, "The time was taken away in Calendar")
     }
 
     @Test("Connected before this fix, the gap remembered in step: filled from the event all the same")
@@ -336,5 +338,20 @@ struct MirrorTimeTests {
         await calendar.put(event: "e3", timed("14:00", "17:00"))
         _ = await sync()
         #expect(appointment.time == "14:00" && appointment.endTime == "17:00")
+    }
+
+    @Test("Set in the chat, in Calendar from 14:30 to 17:30, then wiped here by what came in: back from Calendar, and Calendar untouched")
+    func wipedHereAfterward() async throws {
+        let appointment = try await connected()
+        appointment.time = "14:30"; appointment.endTime = "17:30"
+        _ = await sync()
+        await calendar.put(event: "e1", timed("14:30", "17:30"))
+        _ = await sync()
+        // A reply of the dealer's, read before the fix: "bis Freitag", no hour.
+        appointment.time = nil; appointment.endTime = nil
+        await calendar.forget()
+        _ = await sync()
+        #expect(appointment.time == "14:30" && appointment.endTime == "17:30")
+        #expect(await calendar.written.isEmpty, "Calendar's 14:30–17:30 was overwritten")
     }
 }
