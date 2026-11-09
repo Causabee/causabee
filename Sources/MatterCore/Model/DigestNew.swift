@@ -36,10 +36,20 @@ public enum NewItem: Identifiable {
     /// When it came: what it is ordered by, newest first.
     var came: Date {
         switch self {
-        case .task(let item), .fact(let item): item.createdAt
+        case .task(let item), .fact(let item): item.came
         case .appointment(let item): item.sources.first?.date ?? .distantPast
         case .deadline(let item): item.sources.first?.date ?? .distantPast
         }
+    }
+}
+
+extension Todo {
+    /// When what it rests on came in. A fact the bee writes again in other words is rebuilt
+    /// today, but rests on what came on its day: it is new only when that is (manifesto 2 and 8 —
+    /// 9 November: facts from 27 October came back as NEW every morning).
+    var came: Date {
+        guard isFact else { return createdAt }
+        return factSources.filter { $0.kind != .conversation }.compactMap(\.date).max() ?? createdAt
     }
 }
 
@@ -61,7 +71,7 @@ extension Matter {
         let kept = Set(shownBrief?.newKept ?? [])
         func brought(_ sources: [Source]) -> Bool { sources.contains { $0.kind != .conversation } }
         var items: [NewItem] = []
-        for todo in (todos ?? []) where !todo.isHidden && !todo.isDone && todo.createdAt > since {
+        for todo in (todos ?? []) where !todo.isHidden && !todo.isDone && todo.came > since {
             if todo.isInfo {
                 if todo.isFact || brought(todo.sources) { items.append(.fact(todo)) }
             } else if brought(todo.sources) {

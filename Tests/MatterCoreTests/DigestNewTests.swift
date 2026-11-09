@@ -319,4 +319,21 @@ struct ProposalMailTests {
         #expect(Brief.Proposal.backedBySource(card(["M3"]), refs: refs))
         #expect(Brief.Proposal.readable("T10 deckt die Terminvereinbarung ab (M3).") == "deckt die Terminvereinbarung ab.")
     }
+
+    @Test("A fact the bee writes again in other words is not new: it rests on what came on its day")
+    func rewordedFactIsNotNew() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "f", name: "F")
+        context.insert(matter)
+        let old = Source(kind: .screenshot, pointer: "shot-1", date: Date().addingTimeInterval(-13 * 86_400))
+        matter.putFacts([GoodToKnowFact(text: "The spare key is with Mrs. Adler.", sources: [old])], in: context)
+        matter.sawNew()
+        // Next morning the bee says it in other words: rebuilt, but not new.
+        matter.putFacts([GoodToKnowFact(text: "Mrs. Adler next door has the spare key.", sources: [old])], in: context)
+        #expect(matter.newItems().isEmpty && !matter.saysNew())
+        // A fact from something that came today is new — whatever it came as.
+        let today = Source(kind: .photo, pointer: "photo-2", date: Date())
+        matter.putFacts([GoodToKnowFact(text: "The insurer pays up to 3,000 euros.", sources: [today])], in: context)
+        #expect(matter.newItems().count == 1 && matter.saysNew())
+    }
 }
