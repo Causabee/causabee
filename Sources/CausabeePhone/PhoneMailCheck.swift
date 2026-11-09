@@ -537,6 +537,8 @@ struct PhoneMailCheckView: View {
     /// The mail of "No matter found" that is to start a matter of its own, and that matter's name.
     @State private var starting: Judgement?
     @State private var newName = ""
+    /// The item of "No matter found" opened, to look at before deciding.
+    @State private var looking: Judgement?
     /// Mail set aside with "Not needed" — on this device, as on the Mac.
     @AppStorage("unplaced.setAside") private var setAsideJSON = "[]"
 
@@ -675,6 +677,22 @@ struct PhoneMailCheckView: View {
     }
 
     /// Mail that was read but found no matter: to put into one, or to set aside.
+    private struct Looked: Identifiable { let judgement: Judgement; var id: String { judgement.emailID } }
+
+    private func place(_ mail: Judgement, in matter: Matter) {
+        try? Unplaced.place(mail, in: matter, context: context, owner: profiles.first?.names ?? [])
+        PhoneFolderSaver.save([matter])
+        refresh()
+    }
+
+    private func putAside(_ mail: Judgement) {
+        var ids = setAside
+        ids.insert(mail.emailID)
+        setAsideJSON = String(decoding: (try? JSONEncoder().encode(Array(ids))) ?? Data("[]".utf8), as: UTF8.self)
+        SortedMails.setAside([mail.emailID], device: PhoneNames.device, in: context)
+        refresh()
+    }
+
     @ViewBuilder
     private var unplacedList: some View {
         if !unplaced.isEmpty {
@@ -682,42 +700,60 @@ struct PhoneMailCheckView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(unplaced, id: \.emailID) { mail in
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(mail.subject.isEmpty ? "(no subject)" : mail.subject).font(.subheadline.weight(.medium)).lineLimit(2)
-                            if let digest = mail.digest, !digest.isEmpty {
-                                Text(digest).font(.footnote).foregroundStyle(.secondary).lineLimit(2)
+                            // A tap shows what the bee read in it, to decide where it goes.
+                            Button { looking = mail } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    let look = UnplacedLook(mail)
+                                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                        Text(look.title).font(.subheadline.weight(.medium)).lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                        Spacer(minLength: 4)
+                                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                                    }
+                                    Text([look.from, look.date?.formatted(date: .abbreviated, time: .omitted)].compactMap { $0 }.joined(separator: " · "))
+                                        .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                    if let about = look.about {
+                                        Text(about).font(.footnote).foregroundStyle(.secondary).lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Shows what is in it")
+                            .accessibilityIdentifier("unplaced.row")
                             HStack(spacing: 16) {
                                 Menu("Add to …") {
                                     Button("A new matter", systemImage: "plus.circle") { newName = Matter.cleanSubject(mail.subject); starting = mail }
                                     Divider()
                                     ForEach(matters.filter { !$0.isClosed }.sorted { $0.name < $1.name }) { matter in
-                                        Button(matter.name) {
-                                            try? Unplaced.place(mail, in: matter, context: context, owner: profiles.first?.names ?? [])
-                                            PhoneFolderSaver.save([matter])
-                                            refresh()
-                                        }
+                                        Button(matter.name) { place(mail, in: matter) }
                                     }
                                 }
                                 .tint(Theme.gold)
-                                Button("Not needed") {
-                                    var ids = setAside
-                                    ids.insert(mail.emailID)
-                                    setAsideJSON = String(decoding: (try? JSONEncoder().encode(Array(ids))) ?? Data("[]".utf8), as: UTF8.self)
-                                    SortedMails.setAside([mail.emailID], device: PhoneNames.device, in: context)
-                                    refresh()
-                                }
+                                Button("Not needed") { putAside(mail) }
                                 .buttonStyle(.gold)
                             }
                             .font(.footnote)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 6)
             } label: {
                 Text("No matter found · \(unplaced.count)").font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
             }
             .tint(.secondary)
             .phoneBox()
+            .sheet(item: Binding(get: { looking.map(Looked.init) }, set: { looking = $0?.judgement })) { opened in
+                let mail = opened.judgement
+                UnplacedSheet(judgement: mail, matters: matters,
+                              place: { place(mail, in: $0) },
+                              startNew: { newName = Matter.cleanSubject(mail.subject); starting = mail },
+                              setAside: { putAside(mail) })
+            }
             .alertWhenAsked("A new matter", isPresented: Binding(get: { starting != nil }, set: { if !$0 { starting = nil } })) {
                 TextField("Name", text: $newName)
                 Button("Cancel", role: .cancel) {}

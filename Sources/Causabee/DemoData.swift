@@ -75,7 +75,7 @@ enum DemoData {
     /// Counts up whenever the demo's words or matters change: a demo store filled with an older
     /// version is emptied and filled again — with today's dates too. Two things are overdue in it, in
     /// the care matter and the trip: enough to show what overdue looks like, not a page of it. Only ever the demo's own store.
-    static let contentVersion = 11
+    static let contentVersion = 12
     private static let seededKey = "demo.filled"
 
     /// The demo's own talk, where it stands ahead of the clock, is put an hour behind it — in the
@@ -106,6 +106,12 @@ enum DemoData {
             for model in MatterSchema.models { empty(model) }
             try? context.save()
             UserDefaults.standard.set(stamp, forKey: seededKey)
+            // The demo's own items set aside with "Not needed" come back with it; the owner's stay aside.
+            if let json = UserDefaults.standard.string(forKey: "unplaced.setAside"),
+               let ids = try? JSONDecoder().decode([String].self, from: Data(json.utf8)) {
+                let kept = ids.filter { !$0.hasSuffix("@demo.example") }
+                UserDefaults.standard.set(String(decoding: (try? JSONEncoder().encode(kept)) ?? Data("[]".utf8), as: UTF8.self), forKey: "unplaced.setAside")
+            }
         }
         guard ((try? context.fetchCount(FetchDescriptor<Matter>())) ?? 0) == 0 else { return }
         context.insert(Profile(names: ["Mara Voss", "mara.voss@mail.example"]))
@@ -125,7 +131,41 @@ enum DemoData {
         try? context.save()
         for made in cases { made.talk() }
         try? context.save()
+        noMatter(context)
         if CommandLine.arguments.contains("--big") { big(context) }
+    }
+
+    /// Two items the bee read and found no matter for: one with a task, a date and a person in it,
+    /// one with only what it says — to look at before deciding where each goes.
+    private static func noMatter(_ context: ModelContext) {
+        let iso = ISO8601DateFormatter()
+        func day(_ offset: Int) -> String { MatterStatus.day(Date().addingTimeInterval(Double(offset) * 86_400)) }
+        let extraction: [String: Any] = ["model": "demo", "mode": "demo", "prompt": "demo", "served_by": "demo",
+                                         "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0, "seconds": 0.0, "cached": false]
+        let items: [[String: Any]] = [
+            ["email_id": "bike-service@demo.example", "source": "imap://demo/INBOX;UIDVALIDITY=1/;UID=901",
+             "date": iso.string(from: Date().addingTimeInterval(-5 * 3600)), "subject": "Your bike is due for its service",
+             "from": "Velo Nord Workshop <service@velonord.example>", "is_bulk": false, "matter": NSNull(), "matter_confidence": 0.2,
+             "matter_reason": "About a bike; none of the open matters is about one.", "decided_by": "claude",
+             "digest": "The workshop says the yearly service is due. Slots are free next week; the brakes were noted last time.",
+             "parties": [["name": "Velo Nord Workshop", "role": "bike workshop", "is_new": true]],
+             "todos": [["text": "Book a service slot", "owner": "me", "due": day(7), "source_quote": "…", "same_as": NSNull(), "id": NSNull()]],
+             "deadlines": [], "appointments": [["what": "Free slot at the workshop", "date": day(5), "time": "09:30", "place": "Velo Nord", "source_quote": "…"]],
+             "done": [], "attachments": [], "stages": [], "entities": [], "extraction": extraction],
+            ["email_id": "saturday-photos@demo.example", "source": "imap://demo/INBOX;UIDVALIDITY=1/;UID=902",
+             "date": iso.string(from: Date().addingTimeInterval(-26 * 3600)), "subject": "Photos from Saturday",
+             "from": "Jonas Feld <jonas@feld.example>", "is_bulk": false, "matter": NSNull(), "matter_confidence": 0.1,
+             "matter_reason": "Photos from a day out; nothing to do.", "decided_by": "claude",
+             "digest": "Jonas sends twelve photos from the lake on Saturday and says thanks for the day.",
+             "parties": [], "todos": [], "deadlines": [], "appointments": [],
+             "done": [], "attachments": [], "stages": [], "entities": [], "extraction": extraction],
+        ]
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let judgements = items.compactMap { item in
+            (try? JSONSerialization.data(withJSONObject: item)).flatMap { try? decoder.decode(Judgement.self, from: $0) }
+        }
+        _ = try? SortedMails.record(judgements, device: "demo", in: context)
     }
 
     /// `--demo --big`: forty more matters with a hundred mails each, tasks, dates and people, and

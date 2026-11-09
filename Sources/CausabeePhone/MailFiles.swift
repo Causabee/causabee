@@ -31,6 +31,16 @@ enum MailFiles {
         return saved.first { $0.host == host } ?? (host == nil ? saved.first : nil)
     }
 
+    /// The whole text of an item from the mailbox, read again — read-only, only this one.
+    static func text(of judgement: Judgement) async throws -> String {
+        guard judgement.source.hasPrefix("imap://") else { throw Failure.notInMail }
+        let host = judgement.source.firstMatch(of: /^imap:\/\/([^\/]+)\//).map { String($0.output.1) }
+        let saved = Keychain.accounts().filter { !$0.usesGoogle }
+        guard let account = saved.first(where: { $0.host == host }) ?? (host == nil ? saved.first : nil) else { throw Failure.noAccount }
+        guard let password = try Keychain.password(for: account.user) else { throw Failure.noPassword(account.user) }
+        return try await MailFetch.text(pointer: judgement.source, messageID: judgement.emailID, account: account, password: password)
+    }
+
     static func open(_ document: MatterCore.Document) async throws -> URL {
         guard !document.isOwnFile, document.source.pointer.hasPrefix("imap://") else { throw Failure.notInMail }
         guard let account = account(for: document) else { throw Failure.noAccount }

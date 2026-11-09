@@ -36,6 +36,15 @@ public enum MailFetch {
         throw Failure.gone(messageID)
     }
 
+    /// The mail's own words, read again from the mailbox, to look at before deciding where it goes.
+    public static func text(pointer: String, messageID: String, account: MailAccount, password: String) async throws -> String {
+        let client = try await IMAPClient.connect(to: account, password: password)
+        let data: Data
+        do { data = try await message(pointer: pointer, messageID: messageID, from: client) } catch { await client.logout(); throw error }
+        await client.logout()
+        return EMLParser.parse(data: data, url: URL(fileURLWithPath: "/")).body
+    }
+
     /// The file itself, from the mail it is attached to, kept in the cache so a second look is
     /// instant. The cache can be emptied at any time; the file lives in the mail.
     public static func file(_ name: String, pointer: String, messageID: String, account: MailAccount, password: String,

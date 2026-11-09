@@ -355,6 +355,8 @@ struct MailCheckView: View {
     /// The mail of "No matter found" that is to start a matter of its own, and that matter's name.
     @State private var starting: Judgement?
     @State private var newName = ""
+    /// The item of "No matter found" opened, to look at before deciding.
+    @State private var looking: String?
     @AppStorage("unplaced.setAside") private var setAsideJSON = "[]"
 
     private var setAside: Set<String> { Set((try? JSONDecoder().decode([String].self, from: Data(setAsideJSON.utf8))) ?? []) }
@@ -365,6 +367,20 @@ struct MailCheckView: View {
         Task { unplaced = await StoreWorker.for(context.container).unplaced(log: log, setAsideHere: here) }
     }
 
+    private func place(_ mail: Judgement, in matter: Matter) {
+        try? Unplaced.place(mail, in: matter, context: context, owner: profiles.first?.names ?? [])
+        FolderSaver.shared.save([matter])
+        refresh()
+    }
+
+    private func putAside(_ mail: Judgement) {
+        var ids = setAside
+        ids.insert(mail.emailID)
+        setAsideJSON = String(decoding: (try? JSONEncoder().encode(Array(ids))) ?? Data("[]".utf8), as: UTF8.self)
+        SortedMails.setAside([mail.emailID], device: NameListPublisher.device, in: context)
+        refresh()
+    }
+
     @ViewBuilder
     private var unplacedList: some View {
         if !unplaced.isEmpty {
@@ -372,36 +388,50 @@ struct MailCheckView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(unplaced, id: \.emailID) { mail in
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(mail.subject.isEmpty ? "(no subject)" : mail.subject).font(.caption.weight(.medium)).lineLimit(2)
-                            if let digest = mail.digest, !digest.isEmpty {
-                                Text(digest).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
+                            // A click shows what the bee read in it, to decide where it goes.
+                            Button { looking = mail.emailID } label: {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    let look = UnplacedLook(mail)
+                                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                        Text(look.title).font(.caption.weight(.medium)).lineLimit(2).multilineTextAlignment(.leading)
+                                        Spacer(minLength: 2)
+                                        Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
+                                    }
+                                    Text([look.from, look.date?.formatted(date: .abbreviated, time: .omitted)].compactMap { $0 }.joined(separator: " · "))
+                                        .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                                    if let about = look.about {
+                                        Text(about).font(.caption2).foregroundStyle(.secondary).lineLimit(2).multilineTextAlignment(.leading)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .help("Shows what is in it")
+                            .accessibilityIdentifier("unplaced.row")
+                            .popover(isPresented: Binding(get: { looking == mail.emailID }, set: { if !$0 { looking = nil } }), arrowEdge: .trailing) {
+                                UnplacedLookView(judgement: mail, matters: matters,
+                                                 place: { place(mail, in: $0) },
+                                                 startNew: { newName = Matter.cleanSubject(mail.subject); starting = mail },
+                                                 setAside: { putAside(mail) })
                             }
                             HStack(spacing: 10) {
                                 Menu("Add to …") {
                                     Button("New Matter …") { newName = Matter.cleanSubject(mail.subject); starting = mail }
                                     Divider()
                                     ForEach(matters.filter { !$0.isClosed }.sorted { $0.name < $1.name }) { matter in
-                                        Button(matter.name) {
-                                            try? Unplaced.place(mail, in: matter, context: context, owner: profiles.first?.names ?? [])
-                                            FolderSaver.shared.save([matter])
-                                            refresh()
-                                        }
+                                        Button(matter.name) { place(mail, in: matter) }
                                     }
                                 }
                                 .menuStyle(.borderlessButton).fixedSize().font(.caption)
                                 .help("Into that matter, with its tasks and dates. Nothing is sent: it was read already.")
-                                Button("Not needed") {
-                                    var ids = setAside
-                                    ids.insert(mail.emailID)
-                                    setAsideJSON = String(decoding: (try? JSONEncoder().encode(Array(ids))) ?? Data("[]".utf8), as: UTF8.self)
-                                    SortedMails.setAside([mail.emailID], device: NameListPublisher.device, in: context)
-                                    refresh()
-                                }
+                                Button("Not needed") { putAside(mail) }
                                 .buttonStyle(.gold).font(.caption)
                             }
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 4)
             } label: {
                 Text("No matter found · \(unplaced.count)").font(.caption.weight(.semibold))

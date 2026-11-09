@@ -63,3 +63,46 @@ struct UnplacedTests {
         #expect(Unplaced.closed(in: context) == ["alt", "alte sache", "frueher"])
     }
 }
+
+@Suite("What an item with no matter shows, to decide where it goes")
+@MainActor
+struct UnplacedLookTests {
+    func judgement(_ extra: [String: Any]) throws -> Judgement {
+        var json: [String: Any] = [
+            "email_id": "a", "source": "imap://x;UID=1", "date": "2026-11-08T09:00:00Z", "subject": "Ihre Buchung", "from": "\"Anna Berg\" <anna@example.org>",
+            "is_bulk": false, "matter": NSNull(), "matter_confidence": 0.3, "matter_reason": "Fits none of the open matters", "decided_by": "claude",
+            "parties": [["name": "Anna Berg", "role": "agent", "is_new": true]],
+            "todos": [["text": "Pay the deposit", "owner": "me", "due": "2026-11-20", "source_quote": "…", "same_as": NSNull(), "id": NSNull()]],
+            "deadlines": [["what": "Cancel for free", "date": "2026-11-15", "source_quote": "…"]],
+            "appointments": [["what": "Pick up the car", "date": "2026-12-01", "time": "10:00", "place": "Airport", "source_quote": "…"]],
+            "done": [], "digest": "A car booked for 1 December.",
+            "extraction": ["model": "m", "mode": "x", "prompt": "p", "served_by": "m", "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0, "seconds": 0.0, "cached": false],
+        ]
+        json.merge(extra) { _, new in new }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(Judgement.self, from: JSONSerialization.data(withJSONObject: json))
+    }
+
+    @Test("Sender, what it says, what was found in it — tasks, dates, deadlines, people — and why")
+    func everything() throws {
+        let look = UnplacedLook(try judgement([:]))
+        #expect(look.title == "Ihre Buchung")
+        #expect(look.from == "Anna Berg")
+        #expect(look.about == "A car booked for 1 December.")
+        #expect(look.found.map(\.kind) == [.task, .appointment, .deadline, .person])
+        #expect(look.found[0].text.hasPrefix("Pay the deposit · by "))
+        #expect(look.found[1].text.contains("10:00") && look.found[1].text.hasSuffix("Airport"))
+        #expect(look.found[3].text == "Anna Berg · agent")
+        #expect(look.why == "Fits none of the open matters")
+    }
+
+    @Test("Nothing found, no summary, an address only, the bee's working notes: nothing made up", arguments: ["", "Yours to place", "Read on this device", "not sent: too long"])
+    func bare(reason: String) throws {
+        let look = UnplacedLook(try judgement(["subject": "", "from": "<x@example.org>", "digest": "  ", "matter_reason": reason,
+                                               "parties": [], "todos": [], "deadlines": [], "appointments": []]))
+        #expect(look.title == "(no subject)")
+        #expect(look.from == "x@example.org")
+        #expect(look.about == nil && look.found.isEmpty && look.why == nil)
+    }
+}
