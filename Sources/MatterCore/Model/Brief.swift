@@ -73,6 +73,9 @@ public struct Brief: Codable, Equatable, Sendable {
     /// What the owner kept one by one from what is new — ✓ on its line: off the New card, in the
     /// matter. By key, so every device knows it; emptied by "Seen", after which none of it is new.
     public var newKept: [String] = []
+    /// When the owner last opened the matter: what came before is no longer "NEW" — the dot goes —
+    /// but stays on the card until it is handled, as a read mail stays in the inbox (9 November).
+    public var newLookedAt: Date?
 
     public struct News: Codable, Equatable, Sendable {
         public var lines: [String]
@@ -80,6 +83,8 @@ public struct Brief: Codable, Equatable, Sendable {
         public var mails: Int
         public var since: Date
         public var seen = false
+        /// Opened: not "NEW" any more, and still on the card until "Seen". Nil in news from before.
+        public var opened: Bool?
         /// Of what came, how many were screenshots and how many files: not mails, and not said as
         /// mails — a WhatsApp screenshot was "1 new mail". Nil in news from before they were counted.
         public var screenshots: Int?
@@ -108,7 +113,7 @@ public struct Brief: Codable, Equatable, Sendable {
         self.lines = lines; self.said = said; self.proposals = proposals; self.lookups = lookups; self.writtenAt = writtenAt
     }
 
-    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, unwanted, writtenAt, newSeenAt, newKept }
+    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, unwanted, writtenAt, newSeenAt, newKept, newLookedAt }
 
     /// A brief kept before there were lookups reads as one without any.
     public init(from decoder: any Decoder) throws {
@@ -122,6 +127,7 @@ public struct Brief: Codable, Equatable, Sendable {
         writtenAt = try c.decodeIfPresent(Date.self, forKey: .writtenAt)
         newSeenAt = try c.decodeIfPresent(Date.self, forKey: .newSeenAt)
         newKept = try c.decodeIfPresent([String].self, forKey: .newKept) ?? []
+        newLookedAt = try c.decodeIfPresent(Date.self, forKey: .newLookedAt)
     }
 
     public func lines(_ part: Part) -> [String] { lines.filter { $0.part == part }.map(\.text) }
@@ -147,6 +153,7 @@ public struct Brief: Codable, Equatable, Sendable {
         brief.unwanted = unwanted
         brief.newSeenAt = newSeenAt
         brief.newKept = newKept
+        brief.newLookedAt = newLookedAt
         return brief
     }
 

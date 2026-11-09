@@ -223,6 +223,26 @@ struct OverviewHappenedTests {
         let seen = MatterSummary(matter, today: MatterStatus.day(Date()))
         #expect(!seen.isNew && !seen.tellsNew && seen.who == "Task added" && seen.what == "Call the insurer")
         #expect(!matter.openedNew())
+        // Looked at, not handled: still on the card, as a read mail stays in the inbox.
+        #expect(matter.newItems().count == 1 && matter.unopenedNew().isEmpty)
+    }
+
+    @Test("Opened news loses NEW and stays until Seen; news written after is NEW again")
+    func openedNewsStays() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "n", name: "N")
+        context.insert(matter)
+        var brief = Brief()
+        brief.news = Brief.News(lines: ["The landlord agreed."], mails: 1, since: Date())
+        matter.shownBrief = brief
+        #expect(matter.saysNew() && matter.openedNew())
+        #expect(!matter.saysNew() && matter.shownBrief?.news?.seen == false)
+        #expect(MatterSummary(matter, today: MatterStatus.day(Date())).isNew == false)
+        let fresh = matter.shownBrief!.rewritten(lines: [], proposals: [], news: Brief.News(lines: ["He wants the keys."], mails: 1, since: Date()))
+        matter.shownBrief = fresh
+        #expect(matter.saysNew())
+        matter.sawNew()
+        #expect(!matter.saysNew() && matter.shownBrief?.news?.seen == true && matter.newItems().isEmpty)
     }
 
     @Test("A mail written last week and filed now is the latest, on the day it was filed")

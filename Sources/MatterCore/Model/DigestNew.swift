@@ -79,20 +79,6 @@ extension Matter {
         return items.filter { !kept.contains($0.key) }.sorted { $0.came > $1.came }
     }
 
-    /// The new things held from when the matter was opened that are still to show: not kept with
-    /// ✓, not put away, not done.
-    public func stillNew(_ items: [NewItem]) -> [NewItem] {
-        let kept = Set(shownBrief?.newKept ?? [])
-        return items.filter { item in
-            guard !kept.contains(item.key) else { return false }
-            switch item {
-            case .task(let todo), .fact(let todo): return !todo.isHidden && !todo.isDone
-            case .appointment(let date): return !date.isHidden
-            case .deadline(let date): return !date.isHidden
-            }
-        }
-    }
-
     /// ✓ on one new thing: kept as it is, and not new any more — the rest stays new.
     public func keepNew(_ item: NewItem) {
         var brief = shownBrief ?? Brief()
@@ -101,13 +87,34 @@ extension Matter {
         shownBrief = brief
     }
 
-    /// Opened: what is new has been looked at — the dot goes, and next time the card says it
-    /// without "NEW". Whether there was anything, for the card to still say "NEW" this once.
+    /// What is new and not looked at yet: what came after the matter was last opened. It is what
+    /// the yellow dot and "NEW" say — one signal. What was looked at stays on the card, unlabelled,
+    /// until the owner handles it: 👍, ×, done, or "Seen".
+    public func unopenedNew(now: Date = Date()) -> [NewItem] {
+        let looked = shownBrief?.newLookedAt ?? .distantPast
+        return newItems(now: now).filter { $0.came > looked }
+    }
+
+    /// The news, while it is neither seen nor opened.
+    public var unopenedNews: Brief.News? {
+        shownBrief?.news.flatMap { $0.seen || $0.opened == true ? nil : $0 }
+    }
+
+    /// Whether something is new that was not looked at: the dot, and "NEW".
+    public func saysNew(now: Date = Date()) -> Bool {
+        unopenedNews != nil || !unopenedNew(now: now).isEmpty
+    }
+
+    /// Opened: what is new has been looked at — the dot and "NEW" go; the card and its lines stay
+    /// until handled. Whether there was anything, for the card to still say "NEW" this once.
     @discardableResult
     public func openedNew(at now: Date = Date()) -> Bool {
-        let unseen = shownBrief?.news?.seen == false || !newItems().isEmpty
-        if unseen { sawNew(at: now) }
-        return unseen
+        guard saysNew(now: now) else { return false }
+        var brief = shownBrief ?? Brief()
+        brief.newLookedAt = now
+        if brief.news?.seen == false { brief.news?.opened = true }
+        shownBrief = brief
+        return true
     }
 
     /// "Seen": what is new now is not new any more, and the news with it.
@@ -115,6 +122,7 @@ extension Matter {
         var brief = shownBrief ?? Brief()
         brief.newSeenAt = now
         brief.newKept = []
+        brief.newLookedAt = now
         brief.news?.seen = true
         shownBrief = brief
     }

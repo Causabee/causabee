@@ -1191,24 +1191,11 @@ struct NewsCard: View {
     var editor: ((NewItem, @escaping () -> Void) -> AnyView)? = nil
     @Environment(\.modelContext) private var context
     @State private var showsAll = false
-    /// What was new when the matter was opened. Opening marks it seen — the yellow dot goes with
-    /// it — and the card still says "NEW" for this one visit; next time its words stand without it.
-    /// The dot and "NEW" are one signal: on together, off together (9 November).
-    @State private var held: Held?
-
-    /// What is new, as it was when the matter was opened.
-    struct Held: Equatable {
-        let news: Brief.News?
-        let items: [NewItem]
-        static func == (a: Held, b: Held) -> Bool { a.news?.lines == b.news?.lines && a.items.map(\.key) == b.items.map(\.key) }
-    }
-
-    /// What is new in the matter now, before it is marked seen; nil when nothing is.
-    static func held(_ matter: Matter) -> Held? {
-        let news = matter.shownBrief?.news.flatMap { $0.seen ? nil : $0 }
-        let items = matter.newItems()
-        return news != nil || !items.isEmpty ? Held(news: news, items: items) : nil
-    }
+    /// Whether something was new when the matter was opened. Opening looks at it — the yellow dot
+    /// goes — and the card says "NEW" for this one visit; next time it stands without the label,
+    /// lines and all, until the owner handles them: 👍, ×, or "Seen". As a read mail stays in the
+    /// inbox (9 November).
+    @State private var saysNew = false
 
     /// The news in its own words, for what is said to it.
     static func about(_ news: Brief.News) -> String { "What is new: " + news.lines.joined(separator: " ") }
@@ -1217,16 +1204,15 @@ struct NewsCard: View {
     var body: some View {
         card
             .task(id: matter.persistentModelID) {
-                held = Self.held(matter)
-                if held != nil { matter.openedNew(); try? context.save() }
+                saysNew = matter.openedNew()
+                if saysNew { try? context.save() }
             }
     }
 
     @ViewBuilder
     private var card: some View {
-        let news = held?.news ?? matter.shownBrief?.news.flatMap { $0.seen ? nil : $0 }
-        // Held from the opening: what is put away or kept here still leaves the card.
-        let items = held.map { matter.stillNew($0.items) } ?? matter.newItems()
+        let news = matter.shownBrief?.news.flatMap { $0.seen ? nil : $0 }
+        let items = matter.newItems()
         // Seen, its words stay where they were, without "NEW", until the next news takes their place.
         let seen = news == nil && items.isEmpty ? matter.shownBrief?.news : nil
         if let seen {
@@ -1244,14 +1230,18 @@ struct NewsCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 if let news {
                     VStack(alignment: .leading, spacing: 8) {
-                        BeeChip(text: "NEW · SINCE \(Dates.short(news.since).uppercased())")
+                        if saysNew {
+                            BeeChip(text: "NEW · SINCE \(Dates.short(news.since).uppercased())")
+                        } else {
+                            Text("Since \(Dates.short(news.since))").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        }
                         ForEach(Array(news.lines.enumerated()), id: \.offset) { _, line in
                             Text(line).fixedSize(horizontal: false, vertical: true)
                         }
                         TileComments(matter: matter, about: Self.about(news))
                     }
-                    .waitingTile()
-                } else {
+                    .waitingTile(saysNew)
+                } else if saysNew {
                     BeeChip(text: "NEW")
                         .padding(.horizontal, 16).padding(.top, 14)
                 }
@@ -1272,7 +1262,7 @@ struct NewsCard: View {
                 HStack(spacing: 8) {
                     Text(Self.from(items, news: news)).font(.footnote).foregroundStyle(.secondary)
                     Spacer(minLength: 4)
-                    Button("Seen") { withAnimation { matter.sawNew(); try? context.save(); held = nil } }
+                    Button("Seen") { withAnimation { matter.sawNew(); try? context.save(); saysNew = false } }
                         .quietButton()
                         .accessibilityIdentifier("brief.seen")
                 }

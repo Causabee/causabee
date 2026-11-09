@@ -25,6 +25,37 @@ final class DigestNewUITests: XCTestCase {
         XCTAssertFalse(app.buttons["brief.seen"].exists, "Nothing new left, the card is still there.")
     }
 
+    /// Opened, what is new says "NEW" once; back again, it stands without the label — lines, 👍 and
+    /// × and "Seen" still there, until handled. As a read mail stays in the inbox.
+    func testLookedAtStaysUntilHandled() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Moving to Birch Road 12"]
+        app.launch()
+        let away = app.buttons.matching(identifier: "new.putAway")
+        XCTAssertTrue(away.firstMatch.waitForExistence(timeout: 40), "The Digest shows nothing new.")
+        let label = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'NEW'")).firstMatch
+        XCTAssertTrue(label.exists, "The first visit does not say NEW.")
+        let lines = away.count
+        let sidebar = app.buttons["sidebar.toggle"]
+        if sidebar.exists {
+            if !app.buttons["sidebar.overview"].exists { sidebar.tap() }
+            app.buttons["sidebar.overview"].tap()
+        } else {
+            app.navigationBars.buttons.firstMatch.tap()
+        }
+        let matter = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Birch Road'")).firstMatch
+        XCTAssertTrue(matter.waitForExistence(timeout: 20), "The matter is not on the overview.")
+        for _ in 0..<4 where !matter.isHittable { app.swipeUp() }
+        matter.tap()
+        XCTAssertTrue(app.buttons["brief.seen"].firstMatch.waitForExistence(timeout: 10), "Back again, the card is gone.")
+        XCTAssertEqual(away.count, lines, "Back again, lines left the card without being handled.")
+        XCTAssertFalse(label.exists, "Back again, it still says NEW.")
+        if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
+            try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/digest-looked-at.png"))
+        }
+    }
+
     /// Tasks with no day stand on the Digest too, the newest first; a tap opens the task's own
     /// editor there — not Plan.
     func testATaskWithNoDayOpensInPlace() {

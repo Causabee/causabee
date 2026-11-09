@@ -126,9 +126,9 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
         let after = { (day: Date) in dates.count - (dates.firstIndex { $0 > day } ?? dates.count) }
         newMailsSinceClosed = closed.map(after) ?? 0
         mailsToShowSinceClosed = closed.map { after(max($0, matter.ignoredMailUntil ?? $0)) } ?? 0
-        news = matter.brief == nil ? nil : matter.shownBrief?.news.flatMap { $0.seen ? nil : $0.lines.first }
+        news = matter.brief == nil ? nil : matter.unopenedNews?.lines.first
         newsLine = matter.brief == nil ? nil : matter.shownBrief?.news?.lines.first
-        let new = quick ? [] : matter.newItems()
+        let new = quick ? [] : matter.unopenedNew()
         newCount = new.count
         // Something to do or a day first; what is only good to know after them.
         let ordered = new.filter { if case .fact = $0 { false } else { true } } + new.filter { if case .fact = $0 { true } else { false } }
