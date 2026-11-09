@@ -82,3 +82,38 @@ struct OfferedTimeTests {
         #expect(Calendars.hoursLine(what: "Urlaub", day: "2026-11-13", time: nil, endDay: "2026-11-15") == nil)
     }
 }
+
+/// "Die Probefahrt auf 14:30 bis 17:30 setzen": the time said reaches the appointment.
+@Suite("A time said in the chat changes the date's time")
+@MainActor
+struct ChangeTimeTests {
+    func card(time: String? = nil, end: String? = nil) throws -> AssistantPrompt.Reply.Card {
+        var json: [String: Any] = ["kind": "change_date", "text": "", "owner": "me", "todo": "A1", "due": "2026-11-13", "reason": "", "cites": []]
+        if let time { json["time"] = time }
+        if let end { json["end_time"] = end }
+        return try JSONDecoder().decode(AssistantPrompt.Reply.Card.self, from: JSONSerialization.data(withJSONObject: json))
+    }
+
+    @Test("Left out by the answer, taken from the question", arguments: [
+        ("Die Probefahrt am 13. November wird auf 14:30 bis 17:30 Uhr gesetzt.", "14:30", "17:30" as String?),
+        ("Probefahrt am 13.11 um 9:00", "09:00", nil),
+        ("move it to 14:30–15:15", "14:30", "15:15"),
+        ("14:30, then 16:00 the next one", "14:30", nil),
+    ])
+    func fromQuestion(question: String, time: String, end: String?) throws {
+        let filled = AssistantAsk.withTimes(try card(), from: question)
+        #expect(filled.time == time)
+        #expect(filled.endTime == end)
+    }
+
+    @Test("What the answer gave stays")
+    func answerWins() throws {
+        let filled = AssistantAsk.withTimes(try card(time: "15:00", end: "16:00"), from: "auf 14:30 bis 17:30")
+        #expect(filled.time == "15:00" && filled.endTime == "16:00")
+    }
+
+    @Test("The bee is told a time said goes on the card")
+    func rule() {
+        #expect(AssistantPrompt.system.contains("A time said is never left out of the card"))
+    }
+}

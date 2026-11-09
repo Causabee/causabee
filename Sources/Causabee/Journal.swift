@@ -477,7 +477,11 @@ struct AheadCard: View {
         switch item {
         case .task(let todo):
             task(todo)
-        case .appointment(let appointment): date(.appointment(appointment), appointment.what, isDeadline: false, hours: appointment.time, place: appointment.place)
+        case .appointment(let appointment):
+            date(.appointment(appointment), appointment.what, isDeadline: false,
+                 hours: Calendars.hoursLine(what: appointment.what, day: appointment.day, time: appointment.time,
+                                            endDay: appointment.endDay, endTime: appointment.endTime),
+                 place: appointment.place)
         case .deadline(let deadline): date(.deadline(deadline), deadline.what, isDeadline: true)
         }
     }

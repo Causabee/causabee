@@ -299,6 +299,8 @@ public enum AssistantAsk {
         public var forChat = false
         /// The owner's name, as a mail is signed with it: a chat message is not.
         public var owner: String?
+        /// The question as the owner typed it: a time said in it is the card's, if the answer left it out.
+        public var question = ""
 
         /// Originals from the mapping that are still in what would be sent. Should be none.
         public func leaks(_ entries: [Pseudonymizer.Entry]) -> [String] {
@@ -389,7 +391,7 @@ public enum AssistantAsk {
         let whole = disguiser.apply(user)
         return Prepared(sent: whole.text, pseudonymizer: pseudonymizer, newNames: newNames, links: links.byStandIn,
                         disguisedInQuestion: disguiser.apply(question).count, disguised: whole.count,
-                        forChat: namesChat(question), owner: owner)
+                        forChat: namesChat(question), owner: owner, question: question)
     }
 
     /// The question names a chat to send in: WhatsApp, Signal, iMessage, SMS, Telegram, Threema, Slack.
@@ -440,6 +442,24 @@ public enum AssistantAsk {
         return try await send(prepared, claude: claude, model: model, step: step)
     }
 
+    /// The times the owner said, for a date change that left them out: the first is its start,
+    /// one after "bis", "to", "until" or a dash its end.
+    static func withTimes(_ card: AssistantPrompt.Reply.Card, from question: String) -> AssistantPrompt.Reply.Card {
+        var card = card
+        let times = question.matches(of: /\b([01]?\d|2[0-3]):([0-5]\d)\b/).map { match in
+            (text: String(format: "%02d:%@", Int(match.output.1) ?? 0, String(match.output.2)), at: match.range)
+        }
+        guard let first = times.first else { return card }
+        if card.time == nil || Calendars.clock(card.time) == nil { card.time = first.text }
+        if card.endTime == nil, times.count > 1 {
+            let between = " " + question[first.at.upperBound..<times[1].at.lowerBound].lowercased() + " "
+            if [" bis ", " to ", " until ", "–", "-"].contains(where: between.contains) {
+                card.endTime = times[1].text
+            }
+        }
+        return card
+    }
+
     static func send(_ prepared: Prepared, claude: Claude, model: Claude.Model, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
         let (sent, pseudonymizer, newNames) = (prepared.sent, prepared.pseudonymizer, prepared.newNames)
         let body = Claude.body(model: model, system: AssistantPrompt.system, user: sent, schema: AssistantPrompt.schema, effort: "medium")
@@ -461,6 +481,8 @@ public enum AssistantAsk {
             // A phone number in a contact card; a time of day has nothing to restore.
             card.time = card.time.map(real)
             card.reason = real(card.reason)
+            // A time the owner said is not lost: "auf 14:30 bis 17:30 setzen" changes the time.
+            if card.kind == .changeDate { card = withTimes(card, from: prepared.question) }
             // Asked for in a chat and drafted as a mail all the same: it is the chat message.
             return prepared.forChat ? asChatMessage(card, owner: prepared.owner) : card
         }
