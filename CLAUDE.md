@@ -17,6 +17,19 @@ The owner has said this since the first day. Getting it wrong again is not accep
 **Read [docs/bee-manifesto.md](docs/bee-manifesto.md) before changing what the bee does or shows. Check every change against its principles.**
 **Every new rule found with the owner goes into the manifesto, with its test, in the same change as the fix.**
 
+## How a feature is built
+
+**Read [docs/pipeline.md](docs/pipeline.md) before changing what the product does or shows.** Trial and error left loose ends; from 10 November 2026 every change takes a lane:
+
+- **Feature** — new or changed behaviour: six stages in `docs/features/NNN-name/` (Why, What, How, Looks, Build, Proof). No code before the acceptance criteria are approved. One feature in flight.
+- **Fix** — the product breaks an approved criterion, the manifesto or a test: a failing test first, then the fix. No new behaviour.
+- **Polish** — words, gaps, icons: parked in `docs/backlog.md`, built as a batch, at most one a week.
+
+- The owner opens each gate with a word in the chat. Never advance a stage without it.
+- A finished feature is closed. A change to it is a new feature, never a tweak.
+- Something noticed in the middle of work — by the owner too — is parked (`scripts/feature.py park "…"`), not built. Say so, and go on.
+- `/feature` runs the stages; `scripts/feature.py status` says where things stand.
+
 ## Standing rules
 
 - Causabee takes the mental load: short, precise sentences, few words.
