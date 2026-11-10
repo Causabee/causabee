@@ -40,6 +40,12 @@ final class ManifestoMacTests: XCTestCase {
     private func open(_ name: String) {
         let row = app.staticTexts[name].firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 20), "\(name) is not in the sidebar.")
+        // Below the list's edge in a small window: scrolled to first.
+        // The list's edge is where "No matter found" begins (10 November: what has no matter yet
+        // took the sidebar's foot, and three matters were below it, clicked unseen).
+        let top = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
+        let edge = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'No matter found' OR value BEGINSWITH 'No matter found'")).firstMatch
+        for _ in 0..<12 where edge.exists && row.frame.maxY > edge.frame.minY - 4 { top.scroll(byDeltaX: 0, deltaY: -80) }
         row.click()
         if !element("matter.more").waitForExistence(timeout: 10) { row.click() }
         XCTAssertTrue(element("matter.more").waitForExistence(timeout: 20), "\(name) did not open.")
