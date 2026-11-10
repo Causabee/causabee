@@ -12,6 +12,7 @@ Seen while building something else. Not built now: each becomes a feature, joins
 Next features, in the owner's order (10 November): **F002** the film anew from today's app · **F003** the website's screenshots and content from today's app · **F004** the right model for each job (evidence: `docs/ai-cost-2026-11.md`).
 
 
+- The demo's care matter shows a different next step on each device: the Mac 'Read and sign the Sunrise contract', the iPhone 'Get the bath seat prescription', the iPad 'Out of date' — principle 12, one matter, one state. Seen taking F002's pictures (2026-11-10)
 - Fix lane: the beeserver's ledger writes a request paid from top-ups as two rows, both with its tokens (src/index.ts:199–209); token and request sums over both kinds count it twice. The dollars are right. Found measuring costs, docs/ai-cost-2026-11.md (2026-11-10)
 - Delete site/film/walkthrough/walkthrough-720-cc.mp4: the captions test of 14 October, not served by the website (2026-11-10)
 ## Before the App Store
