@@ -129,4 +129,74 @@ struct WebsiteLookTests {
         let expected = changing ? day.string(from: Date()) : last.out.trimmingCharacters(in: .whitespacesAndNewlines)
         #expect(day.string(from: effective) == expected, "The page says \(said); it last changed on \(expected)")
     }
+
+    // MARK: F003 · The website's pictures and content from today's app
+
+    static let site = root.appendingPathComponent("site")
+    static func index() throws -> String { try String(contentsOf: site.appendingPathComponent("index.html"), encoding: .utf8) }
+
+    // F003 AC-1
+    @Test("F003 AC-1 · The website's pictures are today's app")
+    func websitePicturesAreToday() throws {
+        let page = try Self.index()
+        let folder = Self.site.appendingPathComponent("assets/img")
+        let pictures = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil).filter { $0.pathExtension == "webp" }
+        #expect(pictures.count >= 10, "The pictures were not found")
+        for picture in pictures {
+            let name = picture.lastPathComponent
+            #expect(page.contains("assets/img/\(name)"), "\(name) is on the website but the page does not use it")
+            // Taken anew: not the file the website had before F003.
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+            process.arguments = ["-C", Self.root.path, "show", "97d5a60:site/assets/img/\(name)"]
+            let pipe = Pipe(); process.standardOutput = pipe; process.standardError = Pipe()
+            try process.run()
+            let old = pipe.fileHandleForReading.readDataToEndOfFile(); process.waitUntilExit()
+            let new = try Data(contentsOf: picture)
+            #expect(process.terminationStatus != 0 || old != new, "\(name) is still the picture of before F003")
+            guard let source = CGImageSourceCreateWithURL(picture as CFURL, nil), let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+                Issue.record("\(name) cannot be read"); continue
+            }
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = false
+            try VNImageRequestHandler(cgImage: image).perform([request])
+            let words = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ")
+            for gone in ["Claude", "Opus", "Haiku", "Mistral", "Anthropic", "Auto mode"] {
+                #expect(!words.localizedCaseInsensitiveContains(gone), "\(name) shows “\(gone)”")
+            }
+            #expect(words.firstMatch(of: /\$\s?\d/) == nil, "\(name) shows a cost")
+        }
+    }
+
+    // F003 AC-2
+    @Test("F003 AC-2 · Every sentence on the website is true for the app")
+    func websiteSentencesAreTrue() throws {
+        let page = try Self.index()
+        // Everything the page holds in words, hidden parts too.
+        let text = page.replacing(/<style>[\s\S]*?<\/style>|<!--[\s\S]*?-->/, with: " ").replacing(/<[^>]+>/, with: " ")
+            .replacing("’", with: "'").replacing("&nbsp;", with: " ")
+        for gone in ["$0.", "Oct 12", "journal of cards", "Auto mode", "What can go wrong before we fly",
+                     "Apple's model on your Mac sorts what comes in", "set right by Apple Intelligence", "speech on your device."] {
+            #expect(!text.contains(gone), "The website still says “\(gone)”")
+        }
+        // What the Mac needs is said with what works on it.
+        for p in page.matches(of: /<p[^>]*>(?<p>[\s\S]*?)<\/p>/) where p.output.p.contains("Sequoia 15") {
+            #expect(p.output.p.contains("macOS 26"), "“…Sequoia 15…” without what needs macOS 26: \(p.output.p.prefix(120))")
+        }
+    }
+
+    // F003 AC-3
+    @Test("F003 AC-3 · Every picture of the app says in words what it shows")
+    func websitePicturesHaveWords() throws {
+        let page = try Self.index()
+        let images = page.matches(of: /<img[^>]*src="assets\/img\/[^"]+"[^>]*>/)
+        #expect(images.count >= 10, "The page's pictures were not found")
+        for img in images {
+            let tag = String(img.output)
+            let alt = tag.firstMatch(of: /alt="(?<a>[^"]*)"/)?.output.a ?? ""
+            #expect(alt.count > 20, "A picture with no words: \(tag.prefix(80))")
+            for gone in ["Auto mode", "$0.", "journal"] { #expect(!alt.contains(gone), "An alt text says “\(gone)”: \(alt)") }
+        }
+    }
 }
