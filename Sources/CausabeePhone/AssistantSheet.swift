@@ -701,7 +701,7 @@ struct PhoneTurnView: View {
     private func answerAction(_ symbol: String, done: Bool, word: String, open: Bool, shown: Bool) -> some View {
         HStack(spacing: -4) {
             Image(systemName: symbol).font(.footnote.weight(done ? .semibold : .regular))
-                .frame(width: 32, height: 32)
+                .frame(width: 30, height: 32)
             if open {
                 Text(word).font(.caption).fixedSize().opacity(shown ? 1 : 0).padding(.trailing, 4)
                     .transition(.identity)
@@ -818,8 +818,10 @@ struct PhoneTurnView: View {
                     PhoneActionCard(record: record, turn: turn, index: index, card: card, matter: matter)
                 }
             }
-            // One line under the answer: copy it, what it rests on — and what it cost.
-            HStack(spacing: 6) {
+            // One line under the answer: copy it, what it rests on — and what it cost. The same
+            // space seen between each of them: an icon's tap area is wider than the icon, so
+            // "Sources" gets that much before it (10 November: it sat closer than the icons).
+            HStack(spacing: 0) {
                 Button {
                     UIPasteboard.general.string = answer.plainText
                     Haptics.tap()
@@ -850,7 +852,7 @@ struct PhoneTurnView: View {
                 if let again, turn.applied.isEmpty {
                     Button(action: again) {
                         Image(systemName: "arrow.clockwise").font(.footnote).foregroundStyle(.secondary)
-                            .frame(width: 32, height: 32).contentShape(Rectangle())
+                            .frame(width: 30, height: 32).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Try again")
@@ -862,6 +864,7 @@ struct PhoneTurnView: View {
                             Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).rotationEffect(.degrees(showsSources ? 90 : 0))
                         }
                         .font(.footnote).foregroundStyle(.secondary)
+                        .padding(.leading, 10)
                         .frame(minHeight: 32).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
