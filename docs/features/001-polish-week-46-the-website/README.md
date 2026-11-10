@@ -1,6 +1,6 @@
 # F001 · Polish, week 46: the website
 
-- Stage: 3
+- Stage: 4
 - Lane: polish
 - Started: 2026-11-10
 - Branch: feature/001-polish-week-46-the-website
@@ -11,6 +11,7 @@
 |---|---|---|
 | 1 · Why | 2026-11-10 | go |
 | 2 · What | 2026-11-10 | approved |
+| 3 · How | 2026-11-10 | approved |
 
 ## Changes after a gate
 
