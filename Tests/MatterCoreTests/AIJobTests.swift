@@ -143,6 +143,50 @@ struct AIJobTests {
         }
     }
 
+    @Test("F004 AC-3 · A job is on a cheaper model only with its test kept")
+    func movedOnlyAfterItsTest() throws {
+        let tests = Self.root.appendingPathComponent("docs/features/004-the-right-model-for-each-job/tests")
+        let results = try String(contentsOf: tests.appendingPathComponent("results.md"), encoding: .utf8)
+        struct Summary: Decodable {
+            struct Digest: Decodable { var numbersNotInSol: Int?; var errors: Int? }
+            var digest: [String: Digest]
+        }
+        let summary = try JSONDecoder().decode(Summary.self, from: Data(contentsOf: tests.appendingPathComponent("summary.json")))
+        // Reading and the chat: no cheaper model met the bar, so they are Sol's.
+        #expect(AIJob.read.model == .gptSol && AIJob.chat.model == .gptSol)
+        #expect(results.contains("## Reading what comes in — stays on Sol"))
+        // Digests: the model they moved to wrote no number or date that Sol's digest does not have.
+        if AIJob.digest.model != .gptSol {
+            let measured = try #require(summary.digest[AIJob.digest.model.id], "no digest test kept for \(AIJob.digest.model.id)")
+            #expect(measured.numbersNotInSol == 0 && measured.errors == 0)
+            #expect(results.contains("**Digests move to \(AIJob.digest.model.shortLabel.replacingOccurrences(of: "GPT-6.1 ", with: ""))**"))
+        }
+        // The brief: judged blind by the owner, the pairs and their key kept.
+        if AIJob.brief.model != .gptSol {
+            #expect(results.contains("**the brief moves to \(AIJob.brief.model.shortLabel.replacingOccurrences(of: "GPT-6.1 ", with: ""))**"))
+            #expect(results.contains("The owner, 10 November"))
+            let key = try JSONSerialization.jsonObject(with: Data(contentsOf: tests.appendingPathComponent("briefs-key.json"))) as? [String: [String: String]]
+            #expect(key?.isEmpty == false && key?.values.allSatisfy { Set($0.values) == [Claude.Model.gptSol.id, AIJob.brief.model.id] } == true)
+        }
+        // Every answer the tests compared is kept, the demo's invented matters only.
+        for file in ["read.json", "digest.json", "brief.json", "read-sol-low-effort.json"] {
+            #expect(FileManager.default.fileExists(atPath: tests.appendingPathComponent("answers/" + file).path), "\(file) is not kept")
+        }
+    }
+
+    @Test("F004 AC-4 · What may wait is marked for Flex in the table, and only the server asks for it")
+    func flexInTheTable() throws {
+        let server = try Self.serverTable()
+        for job in AIJob.allCases { #expect(server.jobs[job.rawValue]?.flex == (job != .chat), "\(job)") }
+        #expect([AIJob.read, .digest, .brief].allSatisfy(\.flex) && !AIJob.chat.flex)
+        // The app sends no tier of its own: with an own key a request goes at the normal tier, and
+        // through the beeserver the server adds Flex and asks again without it when Flex is busy.
+        let body = Claude.openAIBody(Claude.body(model: .gptSol, system: "rules", user: "item", schema: ["type": "object"], effort: AIJob.read.effort), model: AIJob.read.asked)
+        #expect(body["service_tier"] == nil)
+        let relay = try String(contentsOf: Self.root.appendingPathComponent("server/beeserver/src/jobs.ts"), encoding: .utf8)
+        #expect(relay.contains("service_tier: \"flex\"") && relay.contains("response.status !== 429"))
+    }
+
     @Test("F004 · Each model's price, as OpenAI charges it")
     func prices() {
         // A million cached tokens read: Terra $0.05, Luna $0.01; Sol as before.
