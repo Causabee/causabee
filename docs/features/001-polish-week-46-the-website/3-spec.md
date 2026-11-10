@@ -12,6 +12,8 @@ Only website files change. No model, no store, no setting.
 - `site/privacy.html:33`: "Effective 10 November 2026".
 - `site/index.html`: the `?v=` numbers of the changed films and pictures go up, so browsers fetch them anew.
 
+- `site/film/walkthrough/img/`: the film's own copies of the pictures it is drawn on, as they were before this batch: `care-2880`, `ipad-matter`, `iphone-assistant`, `iphone-care`, `iphone-overview` and `overview-2880`. The film's page points to them, so a new picture on the website never moves what the film lays over it. The film is rendered once more from that page.
+
 `walkthrough-720-cc.mp4` is not served by the website: it was the captions test of 14 October. It stays as it is. Removing it is parked.
 
 Schema change: none

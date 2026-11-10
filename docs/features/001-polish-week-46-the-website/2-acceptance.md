@@ -21,7 +21,7 @@
 - Given every picture causabee.app shows: `site/assets/img/*` and the film's poster
 - When its words are read
 - Then none names Claude, Opus, Haiku, Mistral or Anthropic, and any AI named is GPT-6.1 Sol
-- Holds for: every picture, at every size the page serves (`-1440` and `-2880`)
+- Holds for: every picture, at every size the page serves (`-1440` and `-2880`). Not the film's own pictures: the film keeps the pictures it was drawn on, as copies in `site/film/walkthrough/img/`, so its ticks and cards stay on the right rows. Their "Claude Opus 5" is parked, to be renewed with the film's scenes (the owner, 10 November: "Own copies, park it").
 
 ### AC-4 · The privacy page's date is the day it last changed
 
@@ -32,7 +32,7 @@
 
 ## Must not change
 
-- **The film:** its words, voice, captions (`walkthrough.vtt`, `.srt`), its scenes, and its length, within a tenth of a second.
+- **The film:** what it shows — every scene, tick and card exactly where it was. Its words, voice, captions (`walkthrough.vtt`, `.srt`), its scenes, and its length, within a tenth of a second.
 - **The website's text:** nothing but the privacy page's date. `SaidAsItIsTests` keeps passing.
 - **The other pictures:** a picture that names no AI is not touched.
 - **The app:** nothing.
