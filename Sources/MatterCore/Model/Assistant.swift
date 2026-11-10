@@ -506,7 +506,7 @@ public enum AssistantAsk {
 
     static func send(_ prepared: Prepared, claude: Claude, model: Claude.Model, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
         let (sent, pseudonymizer, newNames) = (prepared.sent, prepared.pseudonymizer, prepared.newNames)
-        let body = Claude.body(model: model, system: AssistantPrompt.system, user: sent, schema: AssistantPrompt.schema, effort: "medium")
+        let body = Claude.body(model: model, system: AssistantPrompt.system, user: sent, schema: AssistantPrompt.schema, effort: AIJob.chat.effort)
         // Stopped while the names were being disguised: nothing goes out.
         try Task.checkCancellation()
         step?(.waiting)
@@ -638,7 +638,7 @@ extension AssistantAsk {
     }
 
     static func nextStep(_ prepared: Prepared, facts: Facts, claude: Claude, model: Claude.Model) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
-        let body = Claude.body(model: model, system: NextStepPrompt.system(writingIn: facts.language), user: prepared.sent, schema: NextStepPrompt.schema, effort: "low")
+        let body = Claude.body(model: model, system: NextStepPrompt.system(writingIn: facts.language), user: prepared.sent, schema: NextStepPrompt.schema, effort: AIJob.brief.effort)
         let answer = try await claude.send(body, model: model, job: .brief)
         let reply = try JSONDecoder().decode(NextStepPrompt.Reply.self, from: answer.json)
         let restorer = prepared.pseudonymizer.restorer
@@ -662,7 +662,7 @@ extension AssistantAsk {
     }
 
     static func summarize(_ prepared: Prepared, facts: Facts, claude: Claude, model: Claude.Model) async throws -> (lines: [String], cost: Double) {
-        let body = Claude.body(model: model, system: SummaryPrompt.system(writingIn: facts.language), user: prepared.sent, schema: SummaryPrompt.schema, effort: "low")
+        let body = Claude.body(model: model, system: SummaryPrompt.system(writingIn: facts.language), user: prepared.sent, schema: SummaryPrompt.schema, effort: AIJob.brief.effort)
         let answer = try await claude.send(body, model: model, job: .brief)
         let reply = try JSONDecoder().decode(SummaryPrompt.Reply.self, from: answer.json)
         let restorer = prepared.pseudonymizer.restorer

@@ -264,7 +264,7 @@ public struct Extractor: Sendable {
                                              onFile: Self.shown(files, for: thread, from: outcomes[index].email.date),
                                              language: AssistantAsk.language(of: [history.newest]))
             let body = Claude.body(model: model, system: system, user: user,
-                                   schema: ExtractionPrompt.schema, effort: effort)
+                                   schema: ExtractionPrompt.schema, effort: effort ?? AIJob.read.effort)
 
             if dryRun != nil {
                 requests.append(try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys, .withoutEscapingSlashes]))

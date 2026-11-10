@@ -1582,7 +1582,8 @@ func jobs() async throws {
                     .run(emails: [email(entry)], pseudonymizer: Pseudonymizer(mode: .placeholder, entries: mapping.placeholder))
                 guard let pseudonymizer = report.pseudonymizer else { throw Claude.Failure.unreadable("nothing to send") }
                 var outcomes = report.outcomes
-                var extractor = Extractor(model: model, claude: client(model), cache: out.appendingPathComponent(".cache"), newestOnly: entry.source.kind == .mail, quietAfter: 0)
+                // `JOBS_EFFORT=low`: how hard the model thinks when reading; unset, as the app sends it.
+                var extractor = Extractor(model: model, effort: ProcessInfo.processInfo.environment["JOBS_EFFORT"], claude: client(model), cache: out.appendingPathComponent(".cache"), newestOnly: entry.source.kind == .mail, quietAfter: 0)
                 extractor.strict = true
                 extractor.storeMatters = known
                 extractor.onFile = onFile

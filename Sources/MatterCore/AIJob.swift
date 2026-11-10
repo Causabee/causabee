@@ -25,6 +25,10 @@ public enum AIJob: String, CaseIterable, Sendable {
         }
     }
 
+    /// How hard the model thinks. Reading on "low" since 10 November: as good as Sol left to itself
+    /// on the demo's matters, a little cheaper and nearly twice as fast (tests/results.md).
+    public var effort: String { self == .chat ? "medium" : "low" }
+
     /// Whether it may wait for Flex, at half the price. The beeserver decides; the chat never waits.
     public var flex: Bool { self != .chat }
 

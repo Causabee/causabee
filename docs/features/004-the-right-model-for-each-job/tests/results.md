@@ -1,6 +1,6 @@
 # F004 · The tests of each job — 10 November 2026
 
-`matter-spike jobs` on the demo's invented matters only: 93 items (78 mails, 7 screenshots, 6 files, 2 photos), 16 matters. Each job with the prompts, the disguise and the job header the app sends; Sol twice, to see how far it differs from itself. Cost: $3.56 in all, with a first trial, Luna again and Haiku.
+`matter-spike jobs` on the demo's invented matters only: 93 items (78 mails, 7 screenshots, 6 files, 2 photos), 16 matters. Each job with the prompts, the disguise and the job header the app sends; Sol twice, to see how far it differs from itself. Cost: $4.17 in all, with a first trial, Luna again, Haiku, and Sol at low effort.
 
 ## Reading what comes in — stays on Sol
 
@@ -33,6 +33,17 @@ The line fixes Luna's language and does not change Sol beyond its own spread. Lu
 | Haiku 5.5 | 7 | 69.3% | $0.07 |
 
 Haiku keeps the language (no German task for an English item) and finds things Sol does not — the €2,000 deposit for the wedding venue, the decision on the moving quote — but leaves clear items without a matter (the dinner invitation, the building insurance, the rate comparison) and misses tasks Sol finds (help with showering after the hospital stay, the address and door code for the dinner). Below the bar. `read-haiku.md`.
+
+**Sol thinking less** (the owner's go, 10 November): reading on Sol with `reasoning.effort` "low", against Sol as the app sends it today (no effort set), same prompt, same 93 items.
+
+| | Another matter than Sol's | Sol's tasks and dates found | Cost of 93 items | Seconds an item |
+|---|---|---|---|---|
+| Sol, as today | — | — | $0.69 | 9.1 |
+| Sol, effort low | 1 | 93.2% by the script; 95.5% read by hand | $0.61 | 5.0 |
+
+Two of the six the script counts as missed are Sol's task in other words ("Vote on approval of the draft management contract" for "Approve the management contract"; "Send the meter reading and new address" for "Send the new address"). Left: one task of two on one item (physiotherapy after the hospital stay), a reply in a group chat, a key code the landlord sends, one expected date. Sol run twice differs from itself by as much (3 items, 95.4%). `read-sol-low-effort.md`.
+
+The owner, 10 November: yes — **reading runs on Sol with effort "low"**, kept in the table beside the model (`jobs.json`, `AIJob.effort`).
 
 ## Digests — the same facts
 

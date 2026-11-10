@@ -7,6 +7,8 @@ import table from "./jobs.json";
 export interface JobRow {
   name: string;
   model: string;
+  /// How hard the model thinks, as the app sends it in the request; the server passes it on.
+  effort: string;
   flex: boolean;
   testing: string[];
 }

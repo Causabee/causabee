@@ -1,9 +1,10 @@
 {
-  "about": "Each job the bee does, its model, and whether it may wait for Flex. A job's model changes here only, after its test on the demo's matters (F004 AC-3). The app has the same table as AIJob (Sources/MatterCore/AIJob.swift); a unit test compares them.",
+  "about": "Each job the bee does, its model, how hard the model thinks (the app sends it), and whether it may wait for Flex. A job's model changes here only, after its test on the demo's matters (F004 AC-3). The app has the same table as AIJob (Sources/MatterCore/AIJob.swift); a unit test compares them.",
   "jobs": {
     "read": {
       "name": "Reading what comes in",
       "model": "gpt-6.1-sol",
+      "effort": "low",
       "flex": true,
       "testing": [
         "gpt-6-luna"
@@ -12,18 +13,21 @@
     "digest": {
       "name": "A digest of one item",
       "model": "gpt-6.1-terra",
+      "effort": "low",
       "flex": true,
       "testing": []
     },
     "brief": {
       "name": "The brief, summary and next step",
       "model": "gpt-6.1-terra",
+      "effort": "low",
       "flex": true,
       "testing": []
     },
     "chat": {
       "name": "The chat",
       "model": "gpt-6.1-sol",
+      "effort": "medium",
       "flex": false,
       "testing": []
     }

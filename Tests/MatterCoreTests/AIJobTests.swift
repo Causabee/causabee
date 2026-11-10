@@ -9,7 +9,7 @@ struct AIJobTests {
     static let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
     struct Table: Decodable {
-        struct Row: Decodable { var model: String; var flex: Bool; var testing: [String] }
+        struct Row: Decodable { var model: String; var effort: String; var flex: Bool; var testing: [String] }
         var jobs: [String: Row]
     }
 
@@ -26,6 +26,7 @@ struct AIJobTests {
             let row = try #require(server.jobs[job.rawValue])
             #expect(row.model == job.model.id, "\(job): the app asks \(job.model.id), the server sets \(row.model)")
             #expect(row.flex == job.flex, "\(job): Flex differs")
+            #expect(row.effort == job.effort, "\(job): the effort differs")
             // Every model a job uses or is tested on is one the app knows, prices and names.
             for id in [row.model] + row.testing {
                 let model = try #require(Claude.Model.known.first { $0.id == id }, "\(id) is not known to the app")
@@ -33,6 +34,10 @@ struct AIJobTests {
             }
         }
         #expect(AIJob.chat.flex == false, "the chat never waits for Flex")
+        // Reading thinks on "low", and says so in what it sends — unless a test run sets another.
+        #expect(AIJob.read.effort == "low" && AIJob.chat.effort == "medium")
+        let extractor = try String(contentsOf: Self.root.appendingPathComponent("Sources/MatterCore/Extractor.swift"), encoding: .utf8)
+        #expect(extractor.contains("effort: effort ?? AIJob.read.effort"))
     }
 
     @Test("F004 AC-1 · Every caller says its job")
