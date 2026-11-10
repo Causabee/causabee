@@ -1,4 +1,4 @@
-# F001 · The film's serif as on the website — Proof
+# F001 · Polish, week 46: the website — Proof
 
 ## Each criterion
 

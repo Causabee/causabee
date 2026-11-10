@@ -4,4 +4,4 @@ Every feature built through the pipeline ([how](../pipeline.md)). Written by `sc
 
 | | Feature | Lane | Stage |
 |---|---|---|---|
-| [F001](001-the-film-s-serif-as-on-the-website/README.md) | The film's serif as on the website | polish | 1 · Why |
+| [F001](001-polish-week-46-the-website/README.md) | Polish, week 46: the website | polish | 1 · Why |

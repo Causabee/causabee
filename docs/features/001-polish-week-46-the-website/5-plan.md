@@ -1,4 +1,4 @@
-# F001 · The film's serif as on the website — Build
+# F001 · Polish, week 46: the website — Build
 
 ## Steps
 

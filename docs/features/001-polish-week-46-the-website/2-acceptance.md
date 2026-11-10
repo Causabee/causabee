@@ -1,4 +1,4 @@
-# F001 · The film's serif as on the website — What must be true
+# F001 · Polish, week 46: the website — What must be true
 
 <!-- One block per criterion. Each can be answered yes or no by looking.
      "Holds for" names the sources (mail, screenshots, photos, files and scans, notes, the chat, by hand),

@@ -1,4 +1,4 @@
-# F001 · The film's serif as on the website — Looks
+# F001 · Polish, week 46: the website — Looks
 
 <!-- No screen changes? Write "Not needed:" and the reason under each heading. -->
 

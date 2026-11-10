@@ -9,8 +9,6 @@ purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`.
 
 Seen while building something else. Not built now: each becomes a feature, joins a polish batch, or is dropped.
 
-- The privacy page still says "Effective 28 October 2026" after the changes of 10 November (2026-11-10)
-- The website's main screenshot (site/assets/img/matter-1440.webp) still shows "Claude Opus 5" under an answer (2026-11-10)
 
 ## Before the App Store
 
