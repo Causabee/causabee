@@ -138,9 +138,12 @@ for w, p in zip(['7.4', '7.9'], [-0.3, 0.3]):
 add(sfx, swoosh(0.5, 150, 800, shape=0.6), A('8>+0.3'), 0.04)                        # back to the Mac
 add(sfx, pop(hz('A5'), 0.12), A('9.9'), 0.16)                                       # what is new
 add(sfx, pop(hz('D6'), 0.12), A('9.13'), 0.16)                                      # what it brings
-add(sfx, pop(hz('F#6'), 0.12), A('10.5'), 0.18)                                     # the new task
+add(sfx, tick('F#6'), A('10.8'), 0.25, pan=0.3)                                    # the thumb takes the suggestion
+add(sfx, swoosh(0.6, 500, 2200, shape=1.4), A('10.8+0.45'), 0.04)                    # it flies to the plan
+add(sfx, pop(hz('A6'), 0.1), A('10.12'), 0.16)                                      # the Plan
 add(sfx, swoosh(0.5, 300, 1600), A('11-0.4'), 0.03)                                  # to the next step
-for w, f in [('11.5', 'F#6'), ('11.9', 'A6'), ('12.1', 'B6'), ('12.6', 'D6'), ('12.10', 'E6'), ('12.14', 'F#6')]:
+add(sfx, tick(), A('12.1'), 0.22)                                                    # the Plan, clicked
+for w, f in [('11.5', 'F#6'), ('11.9', 'A6'), ('12.8', 'D6'), ('12.10', 'E6')]:
     add(sfx, pop(hz(f), 0.1), A(w), 0.14)                                            # what lights up
 add(sfx, swoosh(0.7, 200, 1400, shape=0.7), A('13-0.2'), 0.04)                       # the iPad rises
 for w in ('13.10', '13.12'):

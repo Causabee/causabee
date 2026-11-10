@@ -3,103 +3,103 @@
 This is Causabee.
 
 2
-00:00:02,560 --> 00:00:09,744
+00:00:02,823 --> 00:00:09,733
 Mail, screenshots, photos, letters, notes —
 it turns all the pieces into clear matters.
 
 3
-00:00:10,400 --> 00:00:18,267
+00:00:10,560 --> 00:00:19,040
 Let’s follow one of them — Mum’s care, after her fall —
 through one day, on the Mac, the iPad, and the iPhone.
 
 4
-00:00:19,240 --> 00:00:21,680
+00:00:19,107 --> 00:00:21,360
 In the morning, you open your Mac.
 
 5
-00:00:21,820 --> 00:00:26,320
+00:00:21,500 --> 00:00:25,920
 What came in overnight is already read,
 and waits on top of its matter.
 
 6
-00:00:26,670 --> 00:00:32,480
+00:00:26,000 --> 00:00:32,000
 Before anything went to the AI,
 names and numbers were swapped for placeholders, right on your Mac.
 
 7
-00:00:32,560 --> 00:00:37,360
+00:00:32,080 --> 00:00:36,960
 Dr. Brandt became Person A,
 and Helga became Person B.
 
 8
-00:00:37,440 --> 00:00:40,560
+00:00:37,030 --> 00:00:40,240
 The AI only ever sees the disguise.
 
 9
-00:00:40,693 --> 00:00:45,360
+00:00:40,373 --> 00:00:44,800
 All that’s left for you is a look:
 what is new, and what it brings.
 
 10
-00:00:45,710 --> 00:00:49,040
-Here, a new task:
-gather the papers for the visit.
+00:00:44,880 --> 00:00:48,800
+Gather the papers for the visit? One tap,
+and it’s in your plan.
 
 11
-00:00:49,307 --> 00:00:53,280
+00:00:48,880 --> 00:00:53,040
 Every matter has one next step,
 and the reason it can’t wait.
 
 12
-00:00:53,360 --> 00:00:59,200
-Below it are the tasks: whose each one is,
-when it’s due, and where it came from.
+00:00:53,120 --> 00:00:57,280
+And the plan: when each thing is due,
+and where it came from.
 
 13
-00:00:59,267 --> 00:01:04,160
+00:00:57,347 --> 00:01:02,080
 In the afternoon, you’re at Mum’s,
 with the iPad. Tick off what’s done.
 
 14
-00:01:04,240 --> 00:01:08,813
+00:01:02,213 --> 00:01:06,640
 Through your own iCloud,
 it’s ticked off on your iPhone and your Mac as well.
 
 15
-00:01:08,880 --> 00:01:14,880
+00:01:06,707 --> 00:01:12,560
 There’s paper, too. A letter from Mum’s health insurer:
 her own share of the hospital stay.
 
 16
-00:01:15,160 --> 00:01:25,040
+00:01:12,640 --> 00:01:22,400
 Scan it with your iPhone. The bee reads it, and one tap sorts it in:
 the letter into Mum’s matter, and a task — pay her share by the end of the month.
 
 17
-00:01:25,107 --> 00:01:32,333
+00:01:22,480 --> 00:01:29,600
 On the way home, pull down on your iPhone. The bee flies in,
 and what came in since is sorted into its matters.
 
 18
-00:01:32,400 --> 00:01:36,240
+00:01:29,680 --> 00:01:33,440
 Then just ask:
 what do I need to do before Tuesday’s visit?
 
 19
-00:01:36,320 --> 00:01:42,320
+00:01:33,520 --> 00:01:39,360
 The answer comes with its sources.
 And a good suggestion becomes a task, with one tap.
 
 20
-00:01:42,387 --> 00:01:49,373
+00:01:39,440 --> 00:01:46,583
 In the evening, back at the Mac, it’s all there:
 what you ticked off on the iPad, and what you added on the iPhone.
 
 21
-00:01:49,440 --> 00:01:55,120
+00:01:46,697 --> 00:01:52,240
 What comes in stays on your devices,
 and goes with you through your own iCloud.
 
 22
-00:01:55,280 --> 00:01:58,880
+00:01:52,320 --> 00:01:55,840
 Causabee. Be organized. Be private.
