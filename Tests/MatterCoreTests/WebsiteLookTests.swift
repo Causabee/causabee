@@ -59,7 +59,9 @@ struct WebsiteLookTests {
     func filmIsRenderedFromThePage(name: String) async throws {
         let asset = AVURLAsset(url: Self.film.appendingPathComponent(name))
         let seconds = try await asset.load(.duration).seconds
-        #expect(abs(seconds - 129.6) <= 0.1, "\(name) lasts \(seconds) s, not 129.6: the voice would drift")
+        // Its length is its timing's (F002: the voice and the picture are timed in one place).
+        let total = try FilmAnewTests.timing().total
+        #expect(abs(seconds - total) <= 0.1, "\(name) lasts \(seconds) s, not \(total): the voice would drift")
         #expect(try await asset.loadTracks(withMediaType: .audio).count == 1, "\(name) has no sound track")
         // The page the frames were drawn from, by its fingerprint: written by scripts/film/walkthrough.sh.
         let digest = SHA256.hash(data: try Data(contentsOf: Self.page)).map { String(format: "%02x", $0) }.joined()

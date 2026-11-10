@@ -4,8 +4,8 @@
 
 On the branch `feature/002-the-film-anew-from-today-s-app`.
 
-1. **The voice, tested on one line.** "This is Causabee." through the ElevenLabs connector, in "Jenny - Upbeat corporate", put beside the same line of 14 October. The owner says "same", or names the voice from the ElevenLabs history. Nothing more is spent before that.
-2. **The tests, failing.** `WebsiteLookTests`, tagged `F002 AC-1` … `AC-6`, as in the table below. F001 AC-2's fixed 129.6 s moves to `timing.json`. F001 AC-3's exception for the film's own pictures ends.
+1. **The voice, tested on one line.** Done, 10 November. "Jenny - Upbeat corporate" was not October's voice (137 credits). The owner gave its id, `4rgssJ1pg3E9c0U78Iid`; its test line, read with `eleven_multilingual_v2` (39 credits), the owner heard beside October's and said "same".
+2. **The tests, failing.** `WebsiteLookTests`, tagged `F002 AC-1` … `AC-6`, as in the table below. F001 AC-2's fixed 129.6 s moves to `timing.json`. F001 AC-3's exception for the film's own pictures ends. AC-2 and AC-5 read the page's new way of writing a moment, so they are written at the start of step 7, before the page changes.
 3. **The words.** `voiceover.txt` as approved in stage 4. AC-3's test passes on it.
 4. **The reading.** The cost estimated first, then the whole text in two takes. The connector writes down what each says; the closer take is kept, as `voice.mp3`. A misread line is read again on its own.
 5. **One timing.** `time-voice.py` reads its lines from `voiceover.txt` and writes `timing.json`. `captions.py` writes the captions from it. AC-4's test passes.
