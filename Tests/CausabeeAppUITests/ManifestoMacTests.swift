@@ -43,9 +43,14 @@ final class ManifestoMacTests: XCTestCase {
         // Below the list's edge in a small window: scrolled to first.
         // The list's edge is where "No matter found" begins (10 November: what has no matter yet
         // took the sidebar's foot, and three matters were below it, clicked unseen).
-        let top = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
+        // Scrolled at a spot just above that edge, in the list: an item scrolled on leaves the view itself.
         let edge = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'No matter found' OR value BEGINSWITH 'No matter found'")).firstMatch
-        for _ in 0..<12 where edge.exists && row.frame.maxY > edge.frame.minY - 4 { top.scroll(byDeltaX: 0, deltaY: -80) }
+        if edge.exists, row.frame.maxY > edge.frame.minY - 4 {
+            let window = app.windows.firstMatch.frame
+            let spot = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
+                .withOffset(CGVector(dx: edge.frame.midX - window.minX, dy: edge.frame.minY - 60 - window.minY))
+            for _ in 0..<12 where row.frame.maxY > edge.frame.minY - 4 { spot.scroll(byDeltaX: 0, deltaY: -80) }
+        }
         row.click()
         if !element("matter.more").waitForExistence(timeout: 10) { row.click() }
         XCTAssertTrue(element("matter.more").waitForExistence(timeout: 20), "\(name) did not open.")
