@@ -1,89 +1,46 @@
 #!/usr/bin/env python3
-"""Cuts an ElevenLabs reading of concept/film-voiceover.txt into its 18 lines and places each at its beat.
+"""The film's timing, from its reading: each line of voiceover.txt where the voice says it.
 
-    python3 scripts/film/time-voice.py <voice.mp3> <name>
+    python3 scripts/film/time-voice.py <reading.mp3> <reading-words.json>
 
-Finds the pauses, matches the phrases to the script's 29 parts (the [short pause] marks split a
-line in two or three), and writes concept/film/<name>-timed.mp3, concept/film/timing.json and
-concept/film-timing.md. A beat lasts its planned length, or the line plus some air, whichever is longer.
+The reading is the whole text in one take, as ElevenLabs read it (concept/film/walkthrough-voiceover-tags.txt;
+the voice and model are in timing.json). It is never cut, stitched, sped up or shifted: the film is
+timed to it, not it to the film. The words file is the connector's transcript of the reading, with
+each word's time. Writes site/film/walkthrough/voice.mp3 (the reading, unchanged) and timing.json:
+each line's start and end, and the film's length — the reading and the end card's last seconds.
+Refuses a reading that does not say the lines as written.
 """
-import json, pathlib, re, subprocess, sys
+import json, pathlib, re, shutil, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-src, name = sys.argv[1], sys.argv[2]
-WORDS = [4, 14, 6, 5, 22, 12, 2, 12, 6, 6, 8, 10, 5, 6, 9, 13, 13, 5]   # the script's 18 lines
-PLANNED = [3, 5, 3, 3, 7, 5, 2, 4, 3, 3, 3, 4, 4, 4, 5, 5, 4, 4]   # 8–12 tightened: short lines, one object each
-LEAD, TAIL, PAD_IN, PAD_OUT = 0.5, 1.0, 0.2, 0.7
+FILM = ROOT / "site/film/walkthrough"
+VOICE, MODEL = "4rgssJ1pg3E9c0U78Iid", "eleven_v4"   # Carolyn - Warm Grounded Narrator (the owner, 10 November)
+END_CARD = 2.5   # after "Be private.": the steel pan and the end card, as in October
 
-def phrases(noise="-35dB", gap=0.25):
-    log = subprocess.run(["ffmpeg", "-v", "info", "-i", src, "-af", f"silencedetect=noise={noise}:d={gap}", "-f", "null", "-"],
-                         capture_output=True, text=True).stderr
-    starts = [float(m) for m in re.findall(r"silence_start: ([0-9.]+)", log)]
-    ends = [float(m) for m in re.findall(r"silence_end: ([0-9.]+)", log)]
-    segs, cur = [], 0.0
-    for s, e in zip(starts, ends + [None]):
-        if s - cur > 0.3: segs.append((round(cur, 2), round(s, 2)))
-        cur = e if e is not None else cur
-    return segs
 
-# Phrases to lines: a reading pauses inside lines too, so the phrases are grouped, in order, so that
-# each line's span fits its length in words best (least squared error of the seconds-per-word rate).
-segs = phrases()
-n, m = len(segs), len(WORDS)
-if n < m: sys.exit(f"Only {n} phrases found for {m} lines.")
-spoken_total = sum(b - a for a, b in segs); rate = spoken_total / sum(WORDS)
-INF = float("inf")
-best = [[INF] * (n + 1) for _ in range(m + 1)]; cut = [[0] * (n + 1) for _ in range(m + 1)]
-best[0][0] = 0.0
-for i in range(1, m + 1):
-    for j in range(i, n + 1):
-        for k in range(i - 1, j):
-            if best[i - 1][k] == INF: continue
-            span = segs[j - 1][1] - segs[k][0]
-            err = ((span - WORDS[i - 1] * rate) / (WORDS[i - 1] * rate)) ** 2
-            if best[i - 1][k] + err < best[i][j]: best[i][j], cut[i][j] = best[i - 1][k] + err, k
-lines, j = [], n
-for i in range(m, 0, -1):
-    k = cut[i][j]; lines.append((segs[k][0], segs[j - 1][1])); j = k
-lines.reverse()
-print(f"{n} phrases → 18 lines; words per second {1 / rate:.2f}")
-beats, t = [], 0.0
-for k, ((a, b), p) in enumerate(zip(lines, PLANNED)):
-    spoken = b - a
-    dur = max(p, round(spoken + LEAD + TAIL, 1))
-    if k == len(lines) - 1: dur = spoken + LEAD + 2.5
-    beats.append({"beat": k + 1, "start": round(t, 2), "dur": round(dur, 2), "voice_in": round(a, 2), "voice_out": round(b, 2), "spoken": round(spoken, 2)})
-    t += dur
-total = round(t, 1)
-out = ROOT / f"concept/film/{name}-timed.mp3"
-fc, mix = [], []
-length = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", src], capture_output=True, text=True).stdout)
-for idx, bt in enumerate(beats):
-    # Room before and after each line, so soft starts and tails are kept — but never into the neighbours.
-    a = max(0, bt["voice_in"] - PAD_IN)
-    if idx > 0: a = max(a, beats[idx - 1]["voice_out"] + 0.05)
-    b = length if idx == len(beats) - 1 else min(bt["voice_out"] + PAD_OUT, beats[idx + 1]["voice_in"] - 0.05)
-    ms = int((bt["start"] + LEAD) * 1000)
-    fc.append(f"[0:a]atrim=start={a}:end={b},asetpts=PTS-STARTPTS,adelay={ms}|{ms}[l{bt['beat']}]"); mix.append(f"[l{bt['beat']}]")
-fc.append("".join(mix) + f"amix=inputs={len(beats)}:normalize=0,apad=whole_dur={total}[out]")
-# Mixed to WAV first: ffmpeg 9's MP3 encoder refuses the mix's frames when fed directly.
-wav = out.with_suffix(".wav")
-subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-filter_complex", ";".join(fc), "-map", "[out]", str(wav)], check=True)
-subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(wav), "-c:a", "libmp3lame", "-q:a", "2", str(out)], check=True)
-wav.unlink()
-(ROOT / "concept/film/timing.json").write_text(json.dumps({"voice": name, "total": total, "beats": beats}, indent=1))
-rows = "\n".join(f"| {b['beat']} | {b['start']:.1f} | {b['dur']:.1f} | {b['spoken']:.1f} | {b['voice_in']:.1f}–{b['voice_out']:.1f} |" for b in beats)
-(ROOT / "concept/film-timing.md").write_text(f"""# The film's timing, from the voice
+def plain(text):
+    return re.findall(r"[a-z0-9']+", text.lower().replace("’", "'"))
 
-Voice: {name}, {length:.1f} s as generated. The lines are cut apart and placed again: each line
-starts {LEAD} s into its beat, and a beat lasts its planned length or the line plus {LEAD + TAIL:.1f} s
-of air, whichever is longer. The re-timed track is concept/film/{name}-timed.mp3 ({total} s); the
-numbers are in concept/film/timing.json. Made by scripts/film/time-voice.py.
 
-| Beat | Starts at (s) | Lasts (s) | Spoken (s) | In the original voice (s) |
-| --- | --- | --- | --- | --- |
-{rows}
+reading, words_file = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+lines = [l.strip() for l in (FILM / "voiceover.txt").read_text().splitlines() if l.strip()]
+spoken = [w for w in json.loads(words_file.read_text())["words"]
+          if w["type"] == "word" and plain(w["text"]) and not w["text"].startswith("[") and not w["text"].endswith("]")]
 
-Total: {total} s.
-""")
-print("total", total, "→", out)
+timed, at = [], 0
+for k, line in enumerate(lines):
+    want = plain(line)
+    got = [" ".join(plain(w["text"])) for w in spoken[at: at + len(want)]]
+    if got != want:
+        sys.exit(f"Line {k + 1} is not read as written:\n  written: {' '.join(want)}\n  read:    {' '.join(got)}")
+    timed.append({"text": line, "start": round(spoken[at]["start"], 3), "end": round(spoken[at + len(want) - 1]["end"], 3)})
+    at += len(want)
+if at != len(spoken):
+    sys.exit(f"The reading says {len(spoken) - at} words more than voiceover.txt")
+
+length = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(reading)],
+                              capture_output=True, text=True, check=True).stdout)
+total = round(max(length, timed[-1]["end"]) + END_CARD, 1)
+shutil.copyfile(reading, FILM / "voice.mp3")
+(FILM / "timing.json").write_text(json.dumps({"voice": VOICE, "model": MODEL, "total": total, "lines": timed}, indent=1) + "\n")
+print(f"{len(timed)} lines, read as written; the film lasts {total} s → site/film/walkthrough/timing.json, voice.mp3")
