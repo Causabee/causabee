@@ -37,4 +37,4 @@ No AI involved.
 
 - **10 November, before publishing:** the owner saw the comparisons — title, closing lines, letter, the matter on the Mac, the iPhone's chat — and opened gate 5 with "built, show me".
 - **On causabee.app, 10 November:** "the ticked off lines are off" and "the bee stays always lower right". The ticks are corrected, above. The bee is how the app looked in October, also in the film before F001: it goes to F002.
-- **After the correction:** to be written with the owner's words.
+- **After the correction, 10 November:** the owner saw the corrected film and the ticks side by side, and said "done".
