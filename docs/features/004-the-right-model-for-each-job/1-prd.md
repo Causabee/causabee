@@ -16,8 +16,9 @@ From `docs/ai-cost-2026-11.md`, the ledger of 27 October to 10 November, the own
 
 - $12.39 in all, $12.00 of it on Sol. **$0.87 a full day**, about **$26 a month**. 567 requests, about 2.2 cents each: about 6,400 tokens in and 840 out.
 - About 60% of the cost is what is sent, 40% what comes back.
-- Prices, from published pages, not confirmed with OpenAI: Sol $2 in, $10 out per million tokens; **Terra $1 and $5**; batch about half of either.
-- Estimates, not measurements: all on Terra about $13 a month; Terra and batch where waiting is fine, perhaps $8–10.
+- Prices, from OpenAI's own pricing page (10 November): Sol $2 in, $10 out per million tokens; **Terra $1 and $5**; **Luna $0.10 and $0.50**, a twentieth of Sol; **Flex** half of any of them, in the same request, only slower. The research before this feature: `docs/ai-model-mixing-2026-11.md`.
+- Estimates, not measurements: all on Terra about $13 a month; reading and digests on Luna with Flex, the brief on Terra with Flex, the chat on Sol, perhaps about $7 — if the jobs split as guessed.
+- Research: a learned router or a cascade pays only with a sure signal of when a cheap answer is not good enough; our jobs are known in the code, so **a fixed model per job**, tested once per job, needs no router. A cache write now costs 1.25× and a cached read 0.05× of the input price, so the order of what a prompt sends matters.
 - **The ledger cannot say which job a request was for.** No request carries its job. So the cheapest model cannot be chosen per job, nor the saving measured per job.
 - **Its second rows count tokens twice** (parked for the fix lane): the dollars are right, token sums are not.
 
@@ -28,13 +29,14 @@ From the code:
 
 ## The goal
 
-Each job the bee does uses the cheapest model that keeps its quality, and the ledger shows what each job costs.
+Each job the bee does uses the cheapest model that keeps its quality — on Flex where it may wait, its prompt ordered for the cache — and the ledger shows what each job costs.
 
 ## Not in this feature
 
 - The price of Pro, its allowance, or the top-ups.
-- Batch or delayed processing — a later feature, if this one does not save enough.
-- Shorter prompts or smaller contexts sent per job — a later feature, measured with what this one adds.
+- Batch, with answers a day later — a later feature, if this one does not save enough. (Flex, the same request at half the price, is in.)
+- Shorter prompts or smaller contexts per job — a later feature, measured with what this one adds. (Putting what stays the same first, so the cache can read it, is in.)
+- A learned router or a cascade between models for the same job.
 - Another provider than OpenAI.
 - A choice for the user: there stays one AI with Pro, and the app names the model each answer came from.
 - The ledger's doubled token rows: the fix lane, parked.
