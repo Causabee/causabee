@@ -5,7 +5,7 @@
 causabee.app shows and says an app that is no longer quite the one people get.
 
 - **Old pictures.** Nine of the website's pictures are from 1 November or before: the overview, the tasks, the calendar, the files, the sources, the iPhone's matter, overview and phone picture, and the iPad's. The app has changed since: the matter opens on its Digest with what is new on top, a suggestion is taken with the thumb, the one bee in the corner says Pro, the Plan is a page of days.
-- **Drawn parts that are not true any more.** The page's own animations show "2 mails sorted … · $0.012" — a cost the app no longer shows; a task "by Oct 12" in October; "2 new mails" as the first thing a visitor sees, mail before every other source.
+- **Drawn parts that are not true any more — hidden, but still in the page.** The page's animations are switched off (`live--still`) and not shown. Their words are still in its code: "2 mails sorted … · $0.012", a cost the app no longer shows; a task "by Oct 12"; "2 new mails" first of all. (Corrected at stage 2: written first as if a visitor saw them.)
 - **Words that promise more than the app does.** "Requires macOS Sequoia 15 or later" beside "Without Pro, Apple's model on your Mac sorts what comes in" — but Apple's model needs macOS 26 (`Sources/MatterCore/DeviceReader.swift:34`). On macOS 15 without Pro, nothing reads what comes in but threads and senders. Other lines describe a matter page that is now told differently ("the story so far as a journal of cards").
 
 ## Who has it
