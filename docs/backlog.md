@@ -12,6 +12,7 @@ Seen while building something else. Not built now: each becomes a feature, joins
 Next feature, in the owner's order (10 November): **F004** the right model for each job (evidence: `docs/ai-cost-2026-11.md`).
 
 
+- Reading on Claude Haiku 5.5 ($0.10 in / $0.50 out, Luna's price) through the beeserver's Anthropic route: test with matter-spike jobs on the demo, as Luna was. A new feature — F004 keeps to OpenAI (2026-11-10)
 - A third party's health or private reason ("in stationärer Behandlung bis 24.11.") is not repeated as a fact or in a task; only what it means for the owner: "Abrechnung 2025 erst nach dem 24. November". Seen by the owner on 10 November (iPhone, Hausverwaltung). New manifesto rule with its test (2026-11-10)
 - Sol's cached read is counted at 0.1× of the input in the ledger and the app; OpenAI charges 0.05× — the fix lane, a failing test first (2026-11-10)
 - The demo's care matter shows a different next step on each device: the Mac 'Read and sign the Sunrise contract', the iPhone 'Get the bath seat prescription', the iPad 'Out of date' — principle 12, one matter, one state. Seen taking F002's pictures (2026-11-10)

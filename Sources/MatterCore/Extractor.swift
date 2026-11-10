@@ -256,11 +256,13 @@ public struct Extractor: Sendable {
                                    threads: &threads, summary: &summary, owner: owner, disguiser: disguiser, restorer: restorer)
                 continue
             }
-            let user = ExtractionPrompt.user(mail: Self.text(of: disguise, body: history.newest, omitted: history.omitted, answered: history.quoted),
+            let words = Self.text(of: disguise, body: history.newest, omitted: history.omitted, answered: history.quoted)
+            let user = ExtractionPrompt.user(mail: words,
                                              sent: outcomes[index].email.date, owner: disguisedOwner, matters: matters,
                                              thread: thread, threadClosed: thread.map { closedMatters.contains(restorer.apply($0).text.lowercased()) } ?? false,
                                              open: book.open(for: thread, matters: matters.map(\.name)),
-                                             onFile: Self.shown(files, for: thread, from: outcomes[index].email.date))
+                                             onFile: Self.shown(files, for: thread, from: outcomes[index].email.date),
+                                             language: AssistantAsk.language(of: [history.newest]))
             let body = Claude.body(model: model, system: system, user: user,
                                    schema: ExtractionPrompt.schema, effort: effort)
 

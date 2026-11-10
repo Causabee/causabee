@@ -1533,7 +1533,13 @@ func jobs() async throws {
     // The demo's own owner, or nothing goes: this command is for the invented matters only.
     guard owner.contains("Mara Voss") else { fail("not the demo's store: its owner is not Mara Voss") }
     guard let key = Claude.key(for: .gptSol) else { fail("no OPENAI_API_KEY in .env") }
-    let claude = Claude(key: key)
+    let openAI = Claude(key: key)
+    // Another provider's model, tried on a job: its own key from .env, straight to it.
+    func client(_ model: Claude.Model) -> Claude {
+        guard !model.isOpenAI else { return openAI }
+        guard let key = Claude.key(for: model) else { fail("no \(model.keyName) in .env") }
+        return Claude(key: key)
+    }
     let store = options.store
     var mapping = Pseudonymizer.Mapping()
     if let data = try? Data(contentsOf: options.mapping) { mapping = try JSONDecoder().decode(Pseudonymizer.Mapping.self, from: data) }
@@ -1544,7 +1550,7 @@ func jobs() async throws {
     // `JOBS_ONLY=gpt-6.1-sol`: one model alone — Sol against itself, to see how far it differs from its own answers.
     let only = ProcessInfo.processInfo.environment["JOBS_ONLY"]
     func models(_ job: AIJob) -> [Claude.Model] {
-        if let only { return Claude.Model.known.filter { $0.id == only } }
+        if let only { return (Claude.Model.known + Claude.Model.testing).filter { only.split(separator: ",").contains(Substring($0.id)) } }
         return [job.model] + Claude.Model.known.filter { $0 != job.model && ["gpt-6-luna", "gpt-6.1-terra"].contains($0.id) && (job != .brief || $0.id == "gpt-6.1-terra") }
     }
 
@@ -1561,9 +1567,13 @@ func jobs() async throws {
     }
     let known = Unplaced.matters(in: context), onFile = Unplaced.onFile(in: context)
 
+    // `JOBS=read`: only those jobs.
+    let wanted = ProcessInfo.processInfo.environment["JOBS"].map { Set($0.split(separator: ",").map(String.init)) }
+    func runs(_ job: AIJob) -> Bool { wanted?.contains(job.rawValue) ?? true }
+
     // Reading what comes in: each item alone, as if it came in today, every matter known.
     var read: [JobAnswer] = []
-    for model in models(.read) {
+    for model in models(.read) where runs(.read) {
         AIJob.trying[.read] = model
         for (matter, entry) in chosen {
             var answer = JobAnswer(item: entry.messageID, title: entry.title, kind: entry.source.kind.rawValue, placed: matter.key, model: model.id)
@@ -1572,7 +1582,7 @@ func jobs() async throws {
                     .run(emails: [email(entry)], pseudonymizer: Pseudonymizer(mode: .placeholder, entries: mapping.placeholder))
                 guard let pseudonymizer = report.pseudonymizer else { throw Claude.Failure.unreadable("nothing to send") }
                 var outcomes = report.outcomes
-                var extractor = Extractor(model: model, claude: claude, cache: out.appendingPathComponent(".cache"), newestOnly: entry.source.kind == .mail, quietAfter: 0)
+                var extractor = Extractor(model: model, claude: client(model), cache: out.appendingPathComponent(".cache"), newestOnly: entry.source.kind == .mail, quietAfter: 0)
                 extractor.strict = true
                 extractor.storeMatters = known
                 extractor.onFile = onFile
@@ -1597,14 +1607,14 @@ func jobs() async throws {
     // A digest of each mail kept, disguised as the app sends it.
     struct DigestReply: Decodable { var digest: String? }
     var digests: [JobAnswer] = []
-    for model in models(.digest) {
+    for model in models(.digest) where runs(.digest) {
         AIJob.trying[.digest] = model
         for (matter, entry) in chosen where MailText.has(entry.messageID, besides: store) {
             var answer = JobAnswer(item: entry.messageID, title: entry.title, kind: entry.source.kind.rawValue, placed: matter.key, model: model.id)
             do {
                 guard let text = DigestBackfill.preview(entry, store: store, mapping: options.mapping) else { throw Claude.Failure.unreadable("no text") }
                 let body = Claude.body(model: model, system: DigestPrompt.system, user: text, schema: DigestPrompt.schema, effort: "low")
-                let sent = try await claude.send(body, model: model, job: .digest)
+                let sent = try await client(model).send(body, model: model, job: .digest)
                 answer.servedBy = sent.servedBy
                 answer.digest = try JSONDecoder().decode(DigestReply.self, from: sent.json).digest
                 answer.cost = sent.cost
@@ -1624,14 +1634,14 @@ func jobs() async throws {
         return text.range(of: "\n\n").map { String(text[$0.upperBound...]) } ?? text
     }
     var briefs: [JobAnswer] = []
-    for model in models(.brief) {
+    for model in models(.brief) where runs(.brief) {
         AIJob.trying[.brief] = model
         for matter in matters where !matter.isClosed {
             var answer = JobAnswer(item: matter.key, title: matter.name, kind: "matter", placed: matter.key, model: model.id)
             do {
                 let facts = FactSheet.facts(for: [matter], today: today, keptText: { words($0.messageID) })
                 let advice = try await AssistantAsk.advise(facts: facts, dismissed: [], owner: owner.first, today: today, mapping: mapping,
-                                                            others: [], claude: claude, model: model)
+                                                            others: [], claude: client(model), model: model)
                 answer.brief = advice.lines.map { "\($0.part.rawValue): \($0.text)" }
                 answer.summary = advice.summary
                 answer.step = advice.step

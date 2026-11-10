@@ -1,0 +1,2235 @@
+[
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00091081,
+    "dates" : [
+
+    ],
+    "item" : "demo-wedding-june-1@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "wedding-june",
+    "seconds" : 7.085001111030579,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Gut Birkenhof: your visit and the date",
+    "todos" : [
+      "Pay the 2,000-euro deposit to Gut Birkenhof to hold 12 June 2027"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0008062099999999999,
+    "dates" : [
+      "2026-10-21 10:00 · Key handover, Birch Road 12"
+    ],
+    "item" : "demo-move-birch-road-1@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "move-birch-road",
+    "seconds" : 5.322757005691528,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Lease for Birch Road 12 signed",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0007999099999999999,
+    "dates" : [
+      "2026-10-31 12:00 · Handover of the old flat"
+    ],
+    "item" : "demo-move-birch-road-2@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "move-birch-road",
+    "seconds" : 5.601428031921387,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your notice: confirmation",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0007159099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-1@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-Linden Street-Linden Street",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "flat-linden-street",
+    "seconds" : 5.440058946609497,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Viewing: 3-room flat, Linden Street 8",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00069761,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-1@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 5.5275479555130005,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "After your mother's hospital stay: what she needs",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0008252099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-2@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 6.844138026237488,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Who does what this week?",
+    "todos" : [
+      "Reply to Nina Voss on the care split and whether you cover the start of the week"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00062751,
+    "dates" : [
+
+    ],
+    "item" : "demo-wedding-june-3@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "wedding-june",
+    "seconds" : 4.766706943511963,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Menu proposal for 90 guests",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00095541,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-12@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 7.947561979293823,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Re: Who does what this week?",
+    "todos" : [
+      "Mara asks Uncle Karl about covering Thursday"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00100281,
+    "dates" : [
+      "2026-10-07 · Written summary (one page) for the science fair due",
+      "2026-10-16 · Science fair, class 9b"
+    ],
+    "item" : "demo-science-fair-9b-1@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 7.124545931816101,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Science fair 2026: project briefing for class 9b",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00083181,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-3@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 5.751672983169556,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Discharge and how to apply for a care level",
+    "todos" : [
+      "Apply for a care level at the health insurer now, with the hospital letter enclosed"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006757099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-1@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "bathroom-renovation",
+    "seconds" : 5.218100905418396,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Quote: bathroom renovation, 6 square metres",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0011519100000000001,
+    "dates" : [
+      "2026-10-17 07:10 · Flight Frankfurt → Lisbon (three seats)",
+      "2026-10-24 18:45 · Flight Lisbon → Frankfurt (three seats)"
+    ],
+    "item" : "demo-lisbon-october-1@mail.example",
+    "kind" : "mail",
+    "matter" : "Lisbon-october",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "lisbon-october",
+    "seconds" : 9.301797986030579,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your booking: Frankfurt to Lisbon, 17 and 24 October",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00075081,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-2@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 5.115653038024902,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Topic approval form: parents please sign",
+    "todos" : [
+      "Sign the topic approval form for Noa's science fair topic and have Noa hand it in"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006172099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-2@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "bathroom-renovation",
+    "seconds" : 4.634728908538818,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Our quote for the bathroom",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006737099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-2@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "flat-linden-street",
+    "seconds" : 5.2988539934158325,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your offer was accepted",
+    "todos" : [
+      "Get the written financing commitment from the bank for the sellers"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00080311,
+    "dates" : [
+      "2026-10-31 · Tax return 2025 deadline with the tax office"
+    ],
+    "item" : "demo-tax-return-2025-1@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "tax-return-2025",
+    "seconds" : 6.032550930976868,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Tax return 2025: what I need from you",
+    "todos" : [
+      "Send Jana Falk the employer's tax certificate, bank and interest statements, donation receipts and home office costs"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00030601000000000006,
+    "dates" : [
+
+    ],
+    "item" : "demo-mums-gym-document-2",
+    "kind" : "document",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "mums-gym",
+    "seconds" : 1.5694369077682495,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Membership contract",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00112151,
+    "dates" : [
+      "2026-10-10 · Free cancellation of the Casa do Largo booking ends",
+      "2026-10-17 15:00 · Check-in at Casa do Largo, seven nights, two bedrooms"
+    ],
+    "item" : "demo-lisbon-october-2@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "lisbon-october",
+    "seconds" : 8.430912971496582,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Casa do Largo: booking confirmed",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0007019099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-3@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 4.861676931381226,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Group chat: who brings what?",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00061051,
+    "dates" : [
+
+    ],
+    "item" : "demo-wedding-june-4@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "wedding-june",
+    "seconds" : 4.551274061203003,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Photography: packages and availability",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006902099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-4@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 4.769271016120911,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Application received: care level for Helga Voss",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0007701100000000001,
+    "dates" : [
+      "2026-10-07 · Moving quote from Carry & Co (two people and a van, four hours, €620) holds until this date"
+    ],
+    "item" : "demo-move-birch-road-3@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "move-birch-road",
+    "seconds" : 5.102113962173462,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Quote: moving on 21 October",
+    "todos" : [
+      "Decide on Carry & Co's moving quote before it expires (due 2026-10-07)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00071551,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-3@mail.example",
+    "kind" : "mail",
+    "matter" : "mortgage-2027",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "flat-linden-street",
+    "seconds" : 4.533380031585693,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Mortgage: documents we need",
+    "todos" : [
+      "Send Northbank three salary slips each, the tax notices of the last two years and the sales exposé"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006749099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-3@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "bathroom-renovation",
+    "seconds" : 5.220311999320984,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Permission for structural changes",
+    "todos" : [
+      "Send drawings and plumber's plan to Housing Association North for the shower move permission"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00084341,
+    "dates" : [
+      "2026-10-20 · Family dinner at Tomás Ribeiro's"
+    ],
+    "item" : "demo-lisbon-october-3@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "lisbon-october",
+    "seconds" : 5.799584984779358,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "You are coming!! Dinner at mine?",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0008472099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-4@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 5.806688070297241,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Topic approved: rainwater filter",
+    "todos" : [
+      "Test the rainwater filter with muddy water",
+      "Bring the safety form for the cleaning-agent test"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00089111,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-5@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 5.938435077667236,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Offer: Sunrise Home Care visits for Helga",
+    "todos" : [
+      "Decide with Nina Voss whether to accept the Sunrise Home Care visits"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00072811,
+    "dates" : [
+      "2026-11-30 · Decide between live band and DJ for the wedding"
+    ],
+    "item" : "demo-wedding-june-5@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "wedding-june",
+    "seconds" : 4.950136065483093,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Live band or DJ?",
+    "todos" : [
+      "Decide between the live band (1,800 euros) and the DJ (900 euros) for the wedding (due 2026-11-30)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0005773099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-2@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "tax-return-2025",
+    "seconds" : 4.128570914268494,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your tax certificate for 2025",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00093301,
+    "dates" : [
+
+    ],
+    "item" : "demo-elm-court-manager-1@mail.example",
+    "kind" : "mail",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "elm-court-manager",
+    "seconds" : 6.570828080177307,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Offer: management of Elm Court 51 from 1 January",
+    "todos" : [
+      "Sign the power of attorney for Kessler as an owner"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00056251,
+    "dates" : [
+
+    ],
+    "item" : "demo-garden-planner-screenshot-2",
+    "kind" : "screenshot",
+    "matter" : "garden-planner",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "garden-planner",
+    "seconds" : 4.551700949668884,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Tom's feedback on the sketch",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00045171,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-4@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "flat-linden-street",
+    "seconds" : 3.1321300268173218,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Building: minutes and reserve fund",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00065001,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-4@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "bathroom-renovation",
+    "seconds" : 4.791691064834595,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your sample tiles are ready",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0008616100000000001,
+    "dates" : [
+      "2026-10-09 10:20 · Citizens' office: Lena's ID card"
+    ],
+    "item" : "demo-lisbon-october-4@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "lisbon-october",
+    "seconds" : 5.714715003967285,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your appointment: ID card for Lena",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0005583099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-brightwave-application-document-1",
+    "kind" : "document",
+    "matter" : "brightwave-application",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "brightwave-application",
+    "seconds" : 3.633661985397339,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "CV and portfolio",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006957099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-5@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 4.557939052581787,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Materials list and costs",
+    "todos" : [
+      "Buy filter sand and tubing for the rainwater filter"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00086791,
+    "dates" : [
+      "2026-10-02 11:00 · Physiotherapy for Helga Voss (recurring Tuesdays and Fridays)"
+    ],
+    "item" : "demo-care-for-helga-6@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 6.126842021942139,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Physio appointments for Helga",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00081351,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-1@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "parking-accident",
+    "seconds" : 5.764845013618469,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Claim received: your report of 14 September",
+    "todos" : [
+      "Send photos and the other driver's details to Sabine Ott for claim CR-40917",
+      "Send the repair estimate for claim CR-40917 to Sabine Ott"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00076141,
+    "dates" : [
+
+    ],
+    "item" : "demo-move-birch-road-4@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "move-birch-road",
+    "seconds" : 6.288246989250183,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Moving your internet connection",
+    "todos" : [
+      "Ask the provider to move the internet line to Birch Road 12, at least four weeks before the move"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00063901,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-2@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "parking-accident",
+    "seconds" : 4.190490007400513,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Re: what happened",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00055271,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-5@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "flat-linden-street",
+    "seconds" : 3.380813956260681,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Survey of the flat: short report",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00067191,
+    "dates" : [
+
+    ],
+    "item" : "demo-mortgage-2027-document-1",
+    "kind" : "document",
+    "matter" : "mortgage-2027",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "mortgage-2027",
+    "seconds" : 5.036375045776367,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Offer Nordbank",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00083111,
+    "dates" : [
+      "2026-10-10 · Deposit for the wedding date must be paid, or the date goes back to the calendar"
+    ],
+    "item" : "demo-wedding-june-2@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "wedding-june",
+    "seconds" : 6.577468991279602,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Deposit reminder",
+    "todos" : [
+      "Pay the deposit to keep the date held (due 2026-10-10)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0005962099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-3@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "tax-return-2025",
+    "seconds" : 3.9982320070266724,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Annual statement 2025",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0010711100000000001,
+    "dates" : [
+      "2026-10-06 10:00 · Assessment visit (medical service)"
+    ],
+    "item" : "demo-care-for-helga-7@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 8.153993010520935,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Visit by the medical service on 6 October",
+    "todos" : [
+      "Make sure a family member is at Mum's flat for the medical service visit (due 2026-10-06)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00037051000000000006,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-5@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "bathroom-renovation",
+    "seconds" : 2.507037043571472,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Plumbing plan for the new shower",
+    "todos" : [
+      "Check the plumbing drawing for the new shower with the floor drain moved 40 cm"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00062701,
+    "dates" : [
+
+    ],
+    "item" : "demo-elm-court-manager-document-2",
+    "kind" : "document",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "elm-court-manager",
+    "seconds" : 3.9067070484161377,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Management contract, draft",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00098461,
+    "dates" : [
+      "2026-10-03 · Free rebooking of the outbound flight to Lisbon, if the new time does not suit",
+      "2026-10-17 09:05 · Flight Frankfurt → Lisbon"
+    ],
+    "item" : "demo-lisbon-october-5@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "lisbon-october",
+    "seconds" : 6.861621022224426,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Schedule change: your outbound flight on 17 October",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00096791,
+    "dates" : [
+      "2026-10-15 15:30 · Fair setup, class 9b"
+    ],
+    "item" : "demo-science-fair-9b-6@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 8.294363975524902,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Fair: table booking and setup times",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00073901,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-3@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "parking-accident",
+    "seconds" : 5.213039040565491,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Repair estimate for your car",
+    "todos" : [
+      "Send the repair estimate to ClearRoad"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006397099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-4@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "tax-return-2025",
+    "seconds" : 5.030026078224182,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your contributions in 2025",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00094551,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-8@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 6.912820935249329,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Re: Who does what?",
+    "todos" : [
+      "Take over Mum's care on Monday, Tuesday and Thursday"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00044431,
+    "dates" : [
+
+    ],
+    "item" : "demo-garden-planner-screenshot-1",
+    "kind" : "screenshot",
+    "matter" : "garden-planner",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "garden-planner",
+    "seconds" : 2.9758460521698,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Watering screen, first sketch",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00075191,
+    "dates" : [
+
+    ],
+    "item" : "demo-elm-court-manager-5@mail.example",
+    "kind" : "mail",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "elm-court-manager",
+    "seconds" : 5.165180921554565,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Handover of the building documents",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0008077099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-move-birch-road-5@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "move-birch-road",
+    "seconds" : 6.125122904777527,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Handover of the flat: what to prepare",
+    "todos" : [
+      "Repaint the walls white before the flat handover",
+      "Bring all keys, including the cellar key, to the flat handover"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00089161,
+    "dates" : [
+
+    ],
+    "item" : "demo-wedding-june-6@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "wedding-june",
+    "seconds" : 6.408532977104187,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Civil ceremony: documents",
+    "todos" : [
+      "Bring ID, birth certificates and proof of residence to the preparatory appointment"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00046781,
+    "dates" : [
+
+    ],
+    "item" : "demo-lisbon-october-6@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "lisbon-october",
+    "seconds" : 2.656485915184021,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your travel insurance offer",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00060281,
+    "dates" : [
+
+    ],
+    "item" : "demo-next-car-screenshot-1",
+    "kind" : "screenshot",
+    "matter" : "next-car",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "next-car",
+    "seconds" : 4.841995000839233,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Volvo EX30 offer",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00050241,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-4@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "parking-accident",
+    "seconds" : 3.0230239629745483,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "An assessor will look at the car",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00076001,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-6@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "flat-linden-street",
+    "seconds" : 5.399536967277527,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Financing commitment is ready",
+    "todos" : [
+      "Send the last salary slip to Jonas Reiter"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00080731,
+    "dates" : [
+      "2026-10-02 · Signed visit contract due back"
+    ],
+    "item" : "demo-care-for-helga-9@mail.example",
+    "kind" : "mail",
+    "matter" : "besuchsvertrag",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 6.913084030151367,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Contract draft: please sign and return by 2 October",
+    "todos" : [
+      "Unterschriebenen Besuchsvertrag an Yusuf Kaya zurückschicken (due 2026-10-02)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00097791,
+    "dates" : [
+      "2026-11-12 14:00 · Second interview with the CPO, Brightwave"
+    ],
+    "item" : "demo-brightwave-application-2@mail.example",
+    "kind" : "mail",
+    "matter" : "brightwave-application",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "brightwave-application",
+    "seconds" : 8.01341199874878,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Second interview at Brightwave",
+    "todos" : [
+      "Prepare the 20-minute case study on a design system for the second interview at Brightwave"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00109751,
+    "dates" : [
+      "2026-10-09 · Pay the 30 percent deposit for the bathroom renovation",
+      "2026-11-02 · Start of the bathroom renovation work"
+    ],
+    "item" : "demo-bathroom-renovation-6@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "bathroom-renovation",
+    "seconds" : 8.056615948677063,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Confirmation and deposit",
+    "todos" : [
+      "Pay the 30 percent deposit to Oskar Lenz Bau (due 2026-10-09)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0011218100000000002,
+    "dates" : [
+      "2026-10-07 · Written summary due to Ms. Okafor for the science fair"
+    ],
+    "item" : "demo-science-fair-9b-7@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 8.8748140335083,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Reminder: written summary due 7 October",
+    "todos" : [
+      "Send the written summary to Ms. Okafor a few days before 7 October (due 2026-10-07)",
+      "Print the poster once Ms. Okafor has approved the layout"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0005679099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-next-car-document-2",
+    "kind" : "document",
+    "matter" : "next-car",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "next-car",
+    "seconds" : 3.4817559719085693,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "VW ID.3 brochure",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00099721,
+    "dates" : [
+
+    ],
+    "item" : "demo-elm-court-manager-screenshot-3",
+    "kind" : "screenshot",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "elm-court-manager",
+    "seconds" : 7.065876007080078,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Owners' group: vote on Kessler",
+    "todos" : [
+      "Ask Hartmann for the 2025 statement before the owners' vote"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006179099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-5@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "parking-accident",
+    "seconds" : 4.987239956855774,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Rental car: your quote",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00041381,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-5@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "tax-return-2025",
+    "seconds" : 2.146726965904236,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Donation receipt",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00078711,
+    "dates" : [
+
+    ],
+    "item" : "demo-lisbon-october-7@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "lisbon-october",
+    "seconds" : 6.565216064453125,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Arrival time? Key box and tram tips",
+    "todos" : [
+      "Send Marta Sousa the family's arrival time in Lisbon"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00069831,
+    "dates" : [
+
+    ],
+    "item" : "demo-mums-gym-photo-1",
+    "kind" : "photo",
+    "matter" : "mums-gym",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "mums-gym",
+    "seconds" : 5.0011210441589355,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Letter from FitPark",
+    "todos" : [
+      "Kündigung des FitPark-Vertrags schriftlich schicken"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00100881,
+    "dates" : [
+      "2026-10-12 · Signing of the purchase contract at the notary"
+    ],
+    "item" : "demo-flat-linden-street-7@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "flat-linden-street",
+    "seconds" : 7.9948049783706665,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Draft of the purchase contract",
+    "todos" : [
+      "Send questions on the purchase contract draft to Dr. Wendt's office"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006728099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-christmas-dinner-screenshot-1",
+    "kind" : "screenshot",
+    "matter" : "christmas-dinner",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "christmas-dinner",
+    "seconds" : 4.88061797618866,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Who comes",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00078371,
+    "dates" : [
+      "2026-10-31 · Send the meter reading to Northlight Energy"
+    ],
+    "item" : "demo-move-birch-road-6@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "move-birch-road",
+    "seconds" : 5.220288991928101,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Reading of the meter on moving day",
+    "todos" : [
+      "Send the meter reading and new address to Northlight Energy (due 2026-10-31)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0007997099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-8@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 6.154006004333496,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Deniz has the flu: can we build at yours on Saturday?",
+    "todos" : [
+      "Answer Elif Demir whether the group can build at your place on Saturday"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00077461,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-10@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 5.401793003082275,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Prescription for the bath seat is ready",
+    "todos" : [
+      "Collect the bath seat prescription from the practice and pass it to the medical supply store"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0006712099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-mortgage-2027-document-2",
+    "kind" : "document",
+    "matter" : "mortgage-2027",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "mortgage-2027",
+    "seconds" : 4.353049993515015,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Offer Sparkasse",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00075851,
+    "dates" : [
+
+    ],
+    "item" : "demo-christmas-dinner-2@mail.example",
+    "kind" : "mail",
+    "matter" : "christmas-dinner",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "christmas-dinner",
+    "seconds" : 5.414030909538269,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your table on the 20th",
+    "todos" : [
+      "Confirm the final number of guests to Trattoria Lume at the restaurant"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00087111,
+    "dates" : [
+      "2026-10-01 14:00 · Assessor inspection of the car"
+    ],
+    "item" : "demo-parking-accident-6@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "parking-accident",
+    "seconds" : 5.945548057556152,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Inspection appointment",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00064051,
+    "dates" : [
+
+    ],
+    "item" : "demo-wedding-june-7@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "wedding-june",
+    "seconds" : 5.286412954330444,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Guest list, first version",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00095831,
+    "dates" : [
+      "2026-10-05 · Pay for the held reservation for three on Thursday 22 October"
+    ],
+    "item" : "demo-lisbon-october-8@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "lisbon-october",
+    "seconds" : 6.75976300239563,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your reservation is held until 5 October",
+    "todos" : [
+      "Pay the held reservation for three on Thursday 22 October (due 2026-10-05)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00052381,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-9@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 4.282865047454834,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your order is ready for pickup",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00049891,
+    "dates" : [
+
+    ],
+    "item" : "demo-mortgage-2027-screenshot-3",
+    "kind" : "screenshot",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "mortgage-2027",
+    "seconds" : 3.4216010570526123,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Rate comparison",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00082601,
+    "dates" : [
+
+    ],
+    "item" : "demo-next-car-3@mail.example",
+    "kind" : "mail",
+    "matter" : "next-car",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "next-car",
+    "seconds" : 7.195509076118469,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Test drive ID.3",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00093031,
+    "dates" : [
+      "2026-11-19 19:00 · Eigentümerversammlung: Verwalterwechsel"
+    ],
+    "item" : "demo-elm-court-manager-photo-4",
+    "kind" : "photo",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "elm-court-manager",
+    "seconds" : 6.788506031036377,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Notice in the stairwell",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0007357099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-6@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "tax-return-2025",
+    "seconds" : 5.285562038421631,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Reminder: two things are missing",
+    "todos" : [
+      "Send the home office days and the desk receipt to Jana Falk"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00063051,
+    "dates" : [
+      "2026-10-14 · Decision on the shower move expected"
+    ],
+    "item" : "demo-bathroom-renovation-7@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "bathroom-renovation",
+    "seconds" : 4.322471976280212,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Your request: still in review",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00054241,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-8@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "flat-linden-street",
+    "seconds" : 4.060086011886597,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Building insurance: offer for Linden Street 8",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00083151,
+    "dates" : [
+
+    ],
+    "item" : "demo-lisbon-october-9@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "lisbon-october",
+    "seconds" : 6.161372900009155,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Re: Arrival time?",
+    "todos" : [
+      "Send Marta Sousa our arrival time for Lisbon"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00077701,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-10@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "science-fair-9b",
+    "seconds" : 5.121520042419434,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Feedback on the draft poster",
+    "todos" : [
+      "Shorten the poster text to three short sentences under each picture",
+      "Send the new poster layout to Ms. Okafor for approval before printing"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0008638099999999999,
+    "dates" : [
+      "2026-10-06 · Visit by Healthbridge Care Fund"
+    ],
+    "item" : "demo-care-for-helga-11@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "care-for-helga",
+    "seconds" : 6.5913790464401245,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Please have these documents ready for the visit",
+    "todos" : [
+      "Have the medication list, doctor's report and hospital letter ready for the visit (due 2026-10-06)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00069721,
+    "dates" : [
+
+    ],
+    "item" : "demo-brightwave-application-screenshot-3",
+    "kind" : "screenshot",
+    "matter" : "brightwave-application",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "brightwave-application",
+    "seconds" : 5.293118000030518,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "LinkedIn chat with the recruiter",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.00055661,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-7@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "claude-haiku-5-5",
+    "placed" : "parking-accident",
+    "seconds" : 3.7194790840148926,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Please confirm your bank details",
+    "todos" : [
+      "Confirm account holder and IBAN to Sabine Ott (check the payment first)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0007004099999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-move-birch-road-7@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "claude-haiku-5-5",
+    "placed" : "move-birch-road",
+    "seconds" : 5.216184973716736,
+    "servedBy" : "claude-haiku-5-5",
+    "summary" : [
+
+    ],
+    "title" : "Parking for the van?",
+    "todos" : [
+      "Ask Ms. Adler in time whether the van can use her drive on Wednesday morning"
+    ]
+  }
+]

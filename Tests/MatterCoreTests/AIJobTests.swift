@@ -95,6 +95,11 @@ struct AIJobTests {
         #expect(shared.contains("The move to Linden Street"))
         #expect(!a.prefix(shared.count + 1).contains("sent on"), "the day comes after what stays the same")
         #expect(a.hasSuffix("</email>"))
+        // The item's language is said with the item, after what stays the same.
+        let english = ExtractionPrompt.user(mail: "The van is booked.", sent: nil, owner: ["Person A"], matters: matters, language: "English")
+        #expect(english.contains("The email is written in English. Write its to-dos"))
+        #expect(english.range(of: "written in English")!.lowerBound > english.range(of: "The move to Linden Street")!.upperBound)
+        #expect(AssistantAsk.language(of: ["Bitte schicken Sie uns die Unterlagen bis Freitag zurück, damit wir den Vertrag vorbereiten können."]) == "German")
 
         // The instructions and the schema go first, the same for every request of a job.
         for (system, schema) in [(ExtractionPrompt.system, ExtractionPrompt.schema), (DigestPrompt.system, DigestPrompt.schema),

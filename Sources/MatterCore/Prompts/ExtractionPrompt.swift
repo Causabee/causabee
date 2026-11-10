@@ -199,7 +199,8 @@ public enum ExtractionPrompt {
 
     public static func user(mail: String, sent: Date?, owner: [String], matters: [(name: String, summary: String)],
                             thread: String? = nil, threadClosed: Bool = false, open: [(matter: String, todos: [OpenTodo])] = [],
-                            onFile: [(matter: String, appointments: [String], unwanted: [String])] = []) -> String {
+                            onFile: [(matter: String, appointments: [String], unwanted: [String])] = [],
+                            language: String? = nil) -> String {
         var parts: [String] = []
         if owner.isEmpty {
             parts.append("The mailbox owner is not known.")
@@ -240,6 +241,10 @@ public enum ExtractionPrompt {
             format.locale = Locale(identifier: "en_US_POSIX")
             format.dateFormat = "yyyy-MM-dd (EEEE)"
             parts.append("The email was sent on \(format.string(from: sent)).")
+        }
+        // Said for each item: a smaller model kept to the instructions' language otherwise (F004).
+        if let language {
+            parts.append("The email is written in \(language). Write its to-dos, deadlines, appointments, roles, title, summary and reason in \(language).")
         }
         parts.append("<email>\n\(mail)\n</email>")
         return parts.joined(separator: "\n\n")

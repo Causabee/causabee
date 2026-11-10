@@ -40,6 +40,9 @@ public struct Claude: Sendable {
         /// The models a job may use (`AIJob`), through the beeserver with Pro or with an own key.
         public static let known = [gptSol, gptTerra, gptLuna]
         public static let choices = [gptSol]
+        /// Tried on a job by `matter-spike jobs` only, never in the app: no job uses it.
+        public static let claudeHaiku = Model(id: "claude-haiku-5-5", inputPerMillion: 0.1, outputPerMillion: 0.5)
+        public static let testing = [claudeHaiku]
 
         /// A cached read, where OpenAI prices it apart; nil: a tenth of the input.
         public var cachedPerMillion: Double? = nil
@@ -55,6 +58,7 @@ public struct Claude: Sendable {
             case Model.gptSol.id: "OpenAI GPT-6.1 Sol"
             case Model.gptTerra.id: "OpenAI GPT-6.1 Terra"
             case Model.gptLuna.id: "OpenAI GPT-6 Luna"
+            case Model.claudeHaiku.id: "Claude Haiku 5.5"
             default: id
             }
         }
@@ -85,7 +89,7 @@ public struct Claude: Sendable {
         }
 
         public static func serving(_ served: String) -> Model? {
-            known.first { $0.isServing(served) }
+            (known + testing).first { $0.isServing(served) }
         }
 
         /// Cached input is priced apart: writing it costs a quarter more than ordinary input, reading
