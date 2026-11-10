@@ -57,5 +57,9 @@ Checked against what people have today: the film on causabee.app, and the app in
 
 ## Open questions
 
-1. **The new reading.** New words need a new reading, and it is yours to make on ElevenLabs. Will you make it, with the voice of 14 October? The words come to you first, in stage 4, before you record.
-2. **The bee on the iPhone.** Today's app shows its round bee button in the lower right of every screen (`Sources/CausabeePhone/Parts.swift:83`). That is the "always lower right" you saw. The film shows the app as it is, so the button stays where the app puts it. AC-5 makes it the film's one bee: it flies from the button when it works, and back. Is that what you want? Moving the button in the app would be a feature of its own, not this one.
+None.
+
+**Decided by the owner, 10 November ("yea both"):**
+
+1. **The new reading** is made on the owner's ElevenLabs account, with the voice of 14 October. Claude makes it through the ElevenLabs connector, if it can; otherwise the owner does. The words come to the owner first, in stage 4, before anything is read.
+2. **The bee on the iPhone** stays where the app puts its button, lower right, and is the film's one bee: it flies from the button when it works, and back (AC-5). Moving the button in the app is not this feature.
