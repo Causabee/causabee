@@ -140,7 +140,11 @@ struct WebsiteLookTests {
     func websitePicturesAreToday() throws {
         let page = try Self.index()
         let folder = Self.site.appendingPathComponent("assets/img")
+        // The teasers' own pictures (site/film/teaser) are outside F003: they stay as they are.
+        let teasers = try FileManager.default.contentsOfDirectory(at: Self.site.appendingPathComponent("film/teaser"), includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "html" }.map { try String(contentsOf: $0, encoding: .utf8) }.joined()
         let pictures = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil).filter { $0.pathExtension == "webp" }
+            .filter { page.contains("assets/img/\($0.lastPathComponent)") || !teasers.contains($0.lastPathComponent) }
         #expect(pictures.count >= 10, "The pictures were not found")
         for picture in pictures {
             let name = picture.lastPathComponent

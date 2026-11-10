@@ -34,14 +34,17 @@ IMG = OUT / "img"
 # The matter's column is the window's second, from 542 to 1986 of 2880; the assistant's the third.
 CROPS = {
     "matter-phone": ("intro-2", (568, 0, 1960, 1547)),
-    "tasks": ("intro-3", (544, 690, 1984, 1530)),
-    "calendar": ("intro-3", (544, 240, 1984, 1080)),
-    "files": ("intro-4", (544, 190, 1984, 1030)),
+    # Each crop starts and ends in an empty row between two cards, so nothing is cut in half
+    # (measured on the shots of 10 November, F003).
+    "tasks": ("intro-3", (544, 920, 1984, 1760)),
+    "calendar": ("intro-3", (544, 390, 1984, 1230)),
+    # Taller than a tile: set on the page's own grey, the sides widened, then made 1440 × 840.
+    "files": ("intro-4", (544, 255, 1984, 1318)),
     "sources": ("site-mail", (544, 490, 1984, 1330)),
     # From under the day and the ×, which a crop cut through, to under the answer's own line of tools.
     "assistant": ("intro-5", (1990, 100, 2878, 1070)),
 }
-FULL = {"overview": "intro-1", "matter": "intro-2", "care": "intro-5"}
+FULL = {"overview": "intro-1", "matter": "intro-2"}  # care-* went with F003: the page does not use it
 # A crop that starts right under the matter's pinned bar still catches its lower edge — a grey strip
 # with the tabs' bottoms. Those rows are painted in the page's own colour, taken from just below them;
 # the crop itself stays, because the animation over the picture is measured from its top.
@@ -69,6 +72,12 @@ def screenshots():
     for name, (source, box) in CROPS.items():
         shot = Image.open(SHOTS / f"{source}.png").convert("RGB")
         image = shot.crop(box)
+        w, h = image.size
+        if name != "assistant" and name != "matter-phone" and h * 1440 > w * 840:
+            # Too tall for a tile: widen it with the page's grey to the tile's shape, then fit it.
+            wide = Image.new("RGB", (round(h * 1440 / 840), h), shot.getpixel((box[0] + 4, box[1] + 4)))
+            wide.paste(image, ((wide.width - w) // 2, 0))
+            image = wide.resize((1440, 840), Image.LANCZOS)
         # A crop that runs past the picture's lower edge is the page's white there, not black.
         if box[3] > shot.height:
             over = box[3] - shot.height

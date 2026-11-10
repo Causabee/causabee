@@ -11,7 +11,7 @@ The page keeps its sections, order and layout. Each picture is the same screen a
 | `calendar` | "Calendar and Reminders, in step." | The same Plan where its dates stand: a day, a time, a place, a deadline |
 | `files` | "Files, links and people." | A matter's Files |
 | `sources` | "Every fact has a source." | A matter's Mail: who wrote, what it says, its day |
-| `matter-1440`, `-2880`, `matter-phone` | "One page. Everything it takes." | Mum's matter on its Digest: what is new on top, the suggestion with its thumb, the next step, the questions, the days ahead; the chat beside it |
+| `matter-1440`, `-2880`, `matter-phone` | "One page. Everything it takes." | The Lisbon trip on its Digest, as the page has it: what is new on top, each suggestion with its thumb, the next step, the days ahead; the chat beside it, asked "What can go wrong before we fly?" (corrected at stage 5: written first as Mum's matter) |
 | `assistant` | "Ask about a matter." | The chat beside the matter: "What do I need to do before Tuesday's visit?", the answer, its sources, a suggestion with Add |
 | `iphone-overview` | "The overview" | The iPhone's overview after a pull: "3 mails sorted into 3 matters · 1 new task · 2 dates", then No matter found, the week |
 | `iphone-matter` | "A matter" | Mum's matter on the iPhone: the Digest, what is new on top, the next step; the bee in its corner |

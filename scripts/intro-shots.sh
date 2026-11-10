@@ -8,10 +8,13 @@
 #
 #   scripts/intro-shots.sh          # then: python3 scripts/site-assets.py, for the website's pictures
 #   scripts/intro-shots.sh --reuse  # with the Release app built last time, if it is there
+#   scripts/intro-shots.sh --site-only [--reuse]   # for the website alone: App/Resources/Intro is left as it is
 #
 # The window must be on a Retina screen (2x); the first run may ask to allow screen recording.
 set -e -u -o pipefail
 cd "$(dirname "$0")/.."
+SITE_ONLY=0
+if [[ ${1:-} == --site-only ]]; then SITE_ONLY=1; shift; fi
 
 APP="$PWD/.build-app/shots/Build/Products/Release/Causabee.app"
 if [[ ${1:-} != --reuse || ! -d $APP ]]; then
@@ -53,12 +56,12 @@ for i in {1..6}; do
   screencapture -x -o -l "$id" "$TMP/$shot.png"
   kill $pid; while kill -0 $pid 2>/dev/null; do sleep 0.2; done
   size=$(sips -g pixelWidth -g pixelHeight "$TMP/$shot.png" | awk '/pixel/ {print $2}' | paste -sd x -)
-  [[ $size == 2880x1800 ]] || print "  (the window came out $size, not 2880x1800 — scaled anyway)"
+  [[ $size == 2880x1800 ]] || { (( SITE_ONLY )) && { print -u2 "✗ The window came out $size, not 2880x1800: not on a Retina screen. Nothing is written."; exit 1 }; print "  (the window came out $size, not 2880x1800 — scaled anyway)" }
   if (( i == 6 )); then
     sips -z 1800 2880 "$TMP/$shot.png" --out scripts/shots/site-mail.png > /dev/null
     continue
   fi
   sips -z 1800 2880 "$TMP/$shot.png" --out "scripts/shots/intro-$i.png" > /dev/null
-  sips -z 1125 1800 "$TMP/$shot.png" --out "App/Resources/Intro/intro-$i.png" > /dev/null
+  (( SITE_ONLY )) || sips -z 1125 1800 "$TMP/$shot.png" --out "App/Resources/Intro/intro-$i.png" > /dev/null
 done
 print "✓ App/Resources/Intro/intro-1…5.png and scripts/shots/intro-1…5.png — now python3 scripts/site-assets.py for the website"
