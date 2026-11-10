@@ -1,11 +1,14 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>One day with Causabee</title>
-<!-- A 130-second walkthrough, spoken: one day of Mum's care on the Mac, the iPad and the iPhone, in sync,
-     with Auto on. The picture follows the voice — voice.mp3, a reading of voiceover.txt — word by word:
-     each time below is when its words are said (the phrases' times are in walkthrough.srt). Plays live
-     in a browser, silent; ../teaser/render.mjs (or render.py, without Node) seeks it frame by frame (?render) to make walkthrough.mp4,
-     and python3 soundtrack.py out.wav voice.wav mixes the voice over the music and the sounds.
-     Every overlay sits on the real screenshot at that screenshot's own pixels (--x --y --w --h). -->
+<!-- One day with Causabee: a spoken walkthrough of Mum's care on the Mac, the iPad and the iPhone, in
+     sync, with Pro on. The picture follows the voice — voice.mp3, Carolyn reading voiceover.txt in one
+     take — word by word: every moment below is a word of the voice, written {line.word} with an offset
+     ({9.3+0.2}s is 0.2 s after the third word of line 9 is said; {9}s the line's start, {9>}s its end).
+     The script turns them into seconds from the timing that scripts/film/time-voice.py writes into
+     this page (<script id="timing">). Plays live in a browser, silent; scripts/film/walkthrough.sh
+     seeks it frame by frame (?render) to make walkthrough.mp4, and soundtrack.py mixes the voice over
+     the music and the sounds. Every overlay sits on today's screenshot at its own pixels (--x --y --w
+     --h): the pictures in img/ are taken from today's demo. -->
 <style>
 @font-face { font-family: "Source Serif 4"; src: url("../../assets/fonts/SourceSerif4.woff2") format("woff2"); font-weight: 200 900; }
 :root {
@@ -89,6 +92,7 @@ html, body { margin: 0; background: #fff; overflow: hidden; }
 .loupe { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: #fff; display: grid; place-items: center;
   box-shadow: 0 0 0 8px #fff, 0 0 0 9px rgba(0,0,0,.08), 0 40px 80px -20px rgba(0,0,0,.4); }
 .loupe .send { width: 190px; height: 190px; }
+.loupe .glad { opacity: 1; }
 
 /* The iPhone's overview, pulled down: the page in cuts, the mail's place, the bee drawn each frame. */
 .cut { overflow: hidden; } .cut img { position: absolute; left: 0; width: calc(804 * var(--u) * 1px); height: auto; }
@@ -135,9 +139,9 @@ svg.drawn { overflow: visible; fill: #000; }
 .letter .foot u { display: block; height: 7px; border-radius: 4px; background: #ebe8e1; }
 /* "her own share of the hospital stay": the line is marked on the paper as she says it (77 s). */
 .letter .sum span { position: relative; }
-.letter:not(.mini) .sum span::before { content: ""; position: absolute; inset: -4px -10px; border-radius: 6px; background: rgba(255,219,13,.6); z-index: -1; transform-origin: left; animation: strike .5s var(--out) 77s both; }
+.letter:not(.mini) .sum span::before { content: ""; position: absolute; inset: -4px -10px; border-radius: 6px; background: rgba(255,219,13,.6); z-index: -1; transform-origin: left; animation: strike .5s var(--out) var(--mark, 0s) both; }
 .letter .sum { position: relative; z-index: 0; }
-.cam { background: #0b0b0c; }
+.camera { background: #0b0b0c; }
 .camtop { color: #fff; text-align: center; font: 600 calc(30 * var(--u) * 1px) var(--sans); }
 .camlabel { color: #fff; font: 400 calc(34 * var(--u) * 1px) var(--sans); }
 .found { position: absolute; inset: 0; background: rgba(10,132,255,.22); box-shadow: inset 0 0 0 calc(6 * var(--u) * 1px) #0a84ff; }
@@ -167,6 +171,40 @@ svg.drawn { overflow: visible; fill: #000; }
 .morerows span { flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; }
 .morerows small { color: rgba(0,0,0,.45); font-size: calc(25 * var(--u) * 1px); }
 
+/* The pieces a matter is made of, as the voice names them: mail, a screenshot, a photo, a letter, a note. */
+.pphoto { width: 250px; height: 180px; border-radius: 14px; border: 10px solid #fff; background: linear-gradient(#a9cfe8 0 55%, #7fae6b 55%); box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 30px 60px -20px rgba(0,0,0,.25); position: relative; }
+.pphoto::after { content: ""; position: absolute; left: 40px; top: 26px; width: 44px; height: 44px; border-radius: 50%; background: #ffe58a; }
+.pnote { width: 250px; padding: 22px 24px; background: #fff3a6; border-radius: 6px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.25); font: 400 24px/1.3 var(--sans); white-space: normal; }
+.pshot { background: #fff; }
+.pshot u.me { width: 55%; margin-left: auto; background: #34c759; } .pshot u.you { width: 70%; background: #e9e9eb; }
+/* The iPhone's "Add a document", and the chat's card for what is brought in, as the app draws them. */
+.sheetv.form { background: #f2f2f7; }
+.formbar { display: flex; align-items: center; justify-content: space-between; }
+.formbar b { font-size: calc(51 * var(--u) * 1px); font-weight: 600; }
+.glass { width: calc(132 * var(--u) * 1px); height: calc(132 * var(--u) * 1px); border-radius: 50%; display: grid; place-items: center; background: #fff; box-shadow: 0 calc(6 * var(--u) * 1px) calc(24 * var(--u) * 1px) rgba(0,0,0,.12); font-size: calc(54 * var(--u) * 1px); }
+.glass.go { background: var(--honey); }
+.glass svg { width: 46%; height: 46%; }
+.fhead { color: rgba(60,60,67,.6); font-size: calc(39 * var(--u) * 1px); text-transform: uppercase; letter-spacing: .02em; }
+.frow { background: #fff; border-radius: calc(39 * var(--u) * 1px); padding: 0 calc(48 * var(--u) * 1px); display: flex; align-items: center; gap: calc(28 * var(--u) * 1px); font-size: calc(51 * var(--u) * 1px); }
+.frow + .frow { border-top: calc(2 * var(--u) * 1px) solid #e5e5ea; border-radius: 0; }
+.frow.blue { color: #0a7aff; }
+.fhead, .ffoot, .camtop, .camlabel { margin: 0; }
+.ffoot { color: rgba(60,60,67,.6); font-size: calc(39 * var(--u) * 1px); line-height: 1.35; }
+.chatcard { background: #f4f4f3; border-radius: calc(48 * var(--u) * 1px); padding: calc(48 * var(--u) * 1px); display: flex; flex-direction: column; gap: calc(24 * var(--u) * 1px); font-size: calc(51 * var(--u) * 1px); }
+.chatcard .cap2 { color: rgba(0,0,0,.45); font-size: calc(36 * var(--u) * 1px); }
+.chatcard .work { display: flex; align-items: center; gap: calc(24 * var(--u) * 1px); color: rgba(0,0,0,.5); font-size: calc(45 * var(--u) * 1px); }
+.chatcard .work svg { width: calc(66 * var(--u) * 1px); fill: var(--ink); overflow: visible; }
+.chatcard .work .bar { transform-box: fill-box; transform-origin: 50% 50%; animation: work 2.4s ease-out infinite; animation-delay: calc(var(--i) * .16s); }
+.takenline { display: flex; gap: calc(30 * var(--u) * 1px); align-items: flex-start; }
+.takenline > i { flex: none; width: calc(60 * var(--u) * 1px); height: calc(60 * var(--u) * 1px); border-radius: 50%; background: #3a3a37; display: grid; place-items: center; margin-top: calc(6 * var(--u) * 1px); }
+.takenline > div { display: flex; flex-direction: column; gap: calc(10 * var(--u) * 1px); }
+.takenline b { font-weight: 600; font-size: calc(48 * var(--u) * 1px); } .takenline small { color: rgba(0,0,0,.5); font-size: calc(42 * var(--u) * 1px); } .takenline .file { color: rgba(0,0,0,.3); font-size: calc(33 * var(--u) * 1px); }
+.takenline .acts { color: var(--gold); font-size: calc(42 * var(--u) * 1px); font-weight: 500; display: flex; gap: calc(48 * var(--u) * 1px); margin-top: calc(6 * var(--u) * 1px); }
+.mark { border-radius: calc(10 * var(--u) * 1px); background: rgba(255,219,13,.5); }
+@keyframes markon { 0% { opacity: 0; } 20%, 75% { opacity: 1; } 100% { opacity: 0; } }
+/* While the bee is out of its button, the button is honey alone: one bee. */
+.empty { border-radius: 50%; background: #fcd90c; }
+
 /* The disguise. */
 .night { position: absolute; inset: 0; background: var(--night); color: #fff; }
 .night .small { position: absolute; left: 0; right: 0; text-align: center; font: 600 24px var(--sans); letter-spacing: .1em; color: #a3a29b; }
@@ -175,8 +213,8 @@ svg.drawn { overflow: visible; fill: #000; }
 .line em::after { content: attr(data-as); position: absolute; top: -6px; bottom: -6px; left: 50%; translate: -50% 0; min-width: calc(100% + 24px); padding: 0 12px; white-space: nowrap; border-radius: 12px; background: var(--honey); color: var(--ink); font: 700 36px/1 var(--sans); display: grid; place-items: center; transform-origin: center; animation: strike .4s var(--out) var(--d) both; }
 
 /* The sync: a honey dot flies from the iPad to the iPhone. */
-.fly { width: 26px; height: 26px; border-radius: 50%; background: var(--honey); box-shadow: 0 0 0 6px rgba(255,219,13,.35), 0 0 30px rgba(255,219,13,.9); animation: fly .9s cubic-bezier(.5,0,.3,1) 68.76s both; }
-@keyframes fly { 0% { opacity: 0; translate: 0 0; } 10% { opacity: 1; } 50% { translate: 496px -160px; } 90% { opacity: 1; } 100% { opacity: 0; translate: 993px 284px; } }
+.fly { width: 26px; height: 26px; border-radius: 50%; background: var(--honey); box-shadow: 0 0 0 6px rgba(255,219,13,.35), 0 0 30px rgba(255,219,13,.9); }
+@keyframes fly { 0% { opacity: 0; translate: 0 0; } 10% { opacity: 1; } 50% { translate: calc(var(--tx) / 2) calc(var(--ty) / 2 - 160px); } 90% { opacity: 1; } 100% { opacity: 0; translate: var(--tx) var(--ty); } }
 
 /* End card: the app icon animates as on the website's hero. */
 .icon { position: absolute; overflow: visible; filter: drop-shadow(0 28px 50px rgba(127, 94, 0, 0.32)); }
@@ -197,6 +235,7 @@ svg.drawn { overflow: visible; fill: #000; }
 @keyframes wipe { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes iris { from { clip-path: circle(0 at 50% 50%); } to { clip-path: circle(1200px at 50% 50%); } }
 /* Camera moves, one per scene. */
+@keyframes camPan { to { translate: 0 167px; } }
 @keyframes camB { from { scale: 1; } to { scale: 1.8; } }
 @keyframes camD { 0%, 2% { transform: none; } 10%, 44% { transform: translate(-442px, 0) scale(1.6); } 54%, 100% { transform: translate(-442px, -618px) scale(1.6); } }
 @keyframes open { from { opacity: 0; scale: .96; } }
@@ -211,230 +250,246 @@ svg.drawn { overflow: visible; fill: #000; }
 <body>
 <div class="stage" id="stage">
 
-<!-- A · 0–8.6 s: "This is Causabee. Mail, letters, documents, screenshots — it turns all the pieces into clear matters." -->
-<div class="scene" style="animation: fade .4s 8.3s both reverse">
+<!-- A · lines 1–2: "This is Causabee. Mail, screenshots, photos, letters, notes — it turns all the pieces into clear matters."
+     Each piece lands on its word, and they gather into the bee on "pieces". -->
+<div class="scene" style="animation: fade .4s {3-0.3}s both reverse">
   <h1 class="title" style="top: 90px; animation: rise .7s var(--out) .2s both">One day with Causabee.</h1>
-  <div class="piece" style="left:520px;top:470px; animation: gather .55s var(--in) 6s both"><div class="pmail" style="--r:-6deg; animation: drop .75s var(--spring) 1.75s both"><b>Dr. Brandt</b><span>Prescription for the bath seat is ready</span></div></div>
-  <div class="piece" style="left:1400px;top:440px; animation: gather .55s var(--in) 6s both"><div class="pdoc" style="--r:5deg; animation: drop .75s var(--spring) 2.45s both"><i>PDF</i>Care_insurance_letter.pdf</div></div>
-  <div class="piece" style="left:980px;top:640px; animation: gather .55s var(--in) 6s both"><div class="pmail" style="--r:2deg; animation: drop .75s var(--spring) 3.1s both"><b>Care service Sonnenhof</b><span>Contract for the visits, to sign</span></div></div>
-  <div class="piece" style="left:1330px;top:780px; animation: gather .55s var(--in) 6s both"><div class="pshot" style="--r:-5deg; animation: drop .75s var(--spring) 3.85s both"><u></u><u></u><u style="width:80%"></u><u style="width:50%"></u></div></div>
-  <div class="piece" style="left:640px;top:790px; animation: gather .55s var(--in) 6s both"><div class="pchat" style="--r:4deg; animation: drop .75s var(--spring) 4.3s both">Nina: Who does what this week?</div></div>
-  <svg class="icon" style="left: 880px; top: 490px; width: 160px; height: 160px; --t0: 6.6s; animation: pop .6s var(--spring) 6.5s both" viewBox="0 0 1024 1024"></svg>
+  <div class="piece" style="left:520px;top:470px; animation: gather .55s var(--in) {2.10-0.3}s both"><div class="pmail" style="--r:-6deg; animation: drop .75s var(--spring) {2.1-0.1}s both"><b>Dr. Brandt</b><span>Prescription for the bath seat is ready</span></div></div>
+  <div class="piece" style="left:1380px;top:430px; animation: gather .55s var(--in) {2.10-0.3}s both"><div class="pshot" style="--r:5deg; animation: drop .75s var(--spring) {2.2-0.1}s both"><u></u><u class="you"></u><u class="me"></u><u class="you" style="width:50%"></u></div></div>
+  <div class="piece" style="left:1010px;top:650px; animation: gather .55s var(--in) {2.10-0.3}s both"><div class="pphoto" style="--r:-3deg; animation: drop .75s var(--spring) {2.3-0.1}s both"></div></div>
+  <div class="piece" style="left:1360px;top:790px; animation: gather .55s var(--in) {2.10-0.3}s both"><div class="pdoc" style="--r:4deg; animation: drop .75s var(--spring) {2.4-0.1}s both"><i>PDF</i>Letter from the insurer.pdf</div></div>
+  <div class="piece" style="left:640px;top:800px; animation: gather .55s var(--in) {2.10-0.3}s both"><div class="pnote" style="--r:-4deg; animation: drop .75s var(--spring) {2.5-0.1}s both">Spare key: Mrs. Adler next door.</div></div>
+  <svg class="icon" style="left: 880px; top: 490px; width: 160px; height: 160px; --t0: {2.10+0.2}s; animation: pop .6s var(--spring) {2.10+0.1}s both" viewBox="0 0 1024 1024"></svg>
 </div>
 
-<!-- A2 · 8.6–17 s: "Let's follow one of them … on the Mac, the iPad, and the iPhone." Each nods as it is named. -->
-<div class="scene" style="animation: fade .4s 8.5s both, fade .4s 16.8s both reverse">
-  <div class="mac" style="left: 470px; top: 150px; width: 980px; animation: rise-far 1s var(--out) 8.8s both, nod .6s var(--out) 13.65s"><div class="scr" style="--W:2880;--H:1800;--u:.3403"><img src="img/care-2880.webp" alt=""></div></div>
-  <div class="pad" style="left: 190px; top: 360px; animation: rise-far 1s var(--out) 9.1s both, nod .6s var(--out) 14.52s"><div class="scr" style="--W:2000;--H:1500;--u:.29"><img src="img/ipad-matter.webp" alt=""></div></div>
-  <div class="phone" style="left: 1450px; top: 290px; animation: slide .9s var(--spring) 9.4s both, nod .6s var(--out) 15.49s"><div class="scr" style="--W:804;--H:1748;--u:.31"><img src="img/iphone-care.webp" alt=""></div></div>
+<!-- A2 · line 3: "Let's follow one of them … on the Mac, the iPad, and the iPhone." Each nods as it is named. -->
+<div class="scene" style="animation: fade .4s {3-0.3}s both, fade .4s {4-0.4}s both reverse">
+  <div class="mac" style="left: 470px; top: 150px; width: 980px; animation: rise-far 1s var(--out) {3+0.2}s both, nod .6s var(--out) {3.16}s"><div class="scr" style="--W:2880;--H:1800;--u:.3403"><img src="img/care-2880.webp" alt=""></div></div>
+  <div class="pad" style="left: 170px; top: 380px; animation: rise-far 1s var(--out) {3+0.5}s both, nod .6s var(--out) {3.18}s"><div class="scr" style="--W:2360;--H:1640;--u:.2458"><img src="img/ipad-matter.webp" alt=""></div></div>
+  <div class="phone" style="left: 1450px; top: 290px; animation: slide .9s var(--spring) {3+0.8}s both, nod .6s var(--out) {3.21}s"><div class="scr" style="--W:1206;--H:2622;--u:.2067"><img src="img/iphone-care.webp" alt=""></div></div>
 </div>
 
-<!-- B · 17–45.9 s: "In the morning, you open your Mac. With Auto on, Causabee has already fetched the new mail, and read it."
-     (the disguise, C, comes over it) "All that's left for you is the last step: take it in." -->
-<div class="scene" style="animation: fade .5s 16.9s both, fade .4s 48.06s both reverse">
-  <div class="cam" style="transform-origin: 416px 917px; animation: camB 1s var(--out) 22.3s both">
-    <div class="mac" style="left: 290px; top: 80px; animation: open .7s var(--out) 17.9s both"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
-      <img src="img/overview-2880.webp" alt="">
-      <div class="o ring" style="--x:322;--y:22;--w:60;--h:60;--rr:30;--d:19.5s"></div>
-      <div class="o panel" style="--x:0;--y:1190;--w:540;--h:610; justify-content: flex-end; animation: rise .45s var(--out) 21s both, fade .25s 42.71s both reverse">
-        <b>2 mails read</b>
-        <div class="offer"><i><svg viewBox="0 0 14 14" width="70%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i><div>
-          <span>Prescription for the bath seat is ready</span>
-          <span class="to"><span>→ Care for Mum (Helga) after her fall</span><em>Change</em></span>
-          <span class="item"><b><svg viewBox="0 0 14 14" width="80%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b>Get the bath seat prescription</span>
-        </div></div>
-        <div class="offer"><i><svg viewBox="0 0 14 14" width="70%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i><div>
-          <span>Re: Who does what this week?</span>
-          <span class="to"><span>→ Care for Mum (Helga) after her fall</span><em>Change</em></span>
-        </div></div>
-        <small>Read for $0.012. Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside.</small>
-        <div class="btns"><span class="ink">Take in</span></div>
-      </div>
-      <div class="o tap" style="--x:452;--y:1745;--r:30;--d:42.06s"></div>
-      <div class="o panel" style="--x:0;--y:1530;--w:540;--h:270; justify-content: center; animation: rise .4s var(--out) 42.96s both">
-        <div class="done"><svg viewBox="0 0 14 14" width="28" style="flex:none;margin-top:3px"><circle cx="7" cy="7" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m4.4 7.2 1.8 1.8 3.5-3.9" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>2 mails taken into Care for Mum (Helga) after her fall · 1 new task</span></div>
-      </div>
-      <div class="o ring" style="--x:590;--y:893;--w:2240;--h:290;--rr:26;--d:46.26s"></div>
+<!-- B · lines 4–5 and 9–10: "In the morning, you open your Mac. What came in overnight is already read, and waits on top of
+     its matter." (the disguise, C, comes over it) "All that's left for you is a look: what is new, and what it brings.
+     Here, a new task: gather the papers for the visit." Mum's matter opens on its Digest, what is new on top. -->
+<div class="scene" style="animation: fade .5s {4-0.4}s both, fade .4s {11-0.4}s both reverse">
+  <div class="cam" style="transform-origin: 878px 359px; animation: camB 1s var(--out) {5.4}s both">
+    <div class="mac" style="left: 290px; top: 80px; animation: open .7s var(--out) {4+0.2}s both"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
+      <img src="img/care-2880.webp" alt="">
+      <div class="o ring" style="--x:598;--y:398;--w:1334;--h:296;--rr:30;--d:{5.11}s"></div>
+      <div class="o mark" style="--x:620;--y:476;--w:1300;--h:196; animation: markon 1.8s ease-out {9.9}s both"></div>
+      <div class="o ring" style="--x:600;--y:700;--w:1330;--h:108;--rr:20;--d:{9.13}s"></div>
+      <div class="o mark" style="--x:682;--y:716;--w:466;--h:50; animation: markon 2.2s ease-out {10.5}s both"></div>
     </div></div>
   </div>
 </div>
 
-<!-- C · 24.7–39.3 s: "Before anything went to the AI, names and numbers were swapped … Dr. Brandt became Person A, and Helga became Person B." -->
-<div class="scene night" style="animation: wipe .5s var(--out) 24.7s both, fade .35s 38.96s both reverse">
-  <p class="small" style="top: 330px; animation: fade .4s 29.9s both">ON YOUR MAC</p>
-  <p class="line" style="top: 400px; animation: rise .5s var(--out) 26.9s both"><em data-as="Person A" style="--d:32.5s">Dr. Brandt</em> has the bath seat prescription for <em data-as="Person B" style="--d:34.75s">Helga</em>.</p>
-  <p class="small" style="top: 550px; color: var(--honey); animation: fade .4s 36s both">WHAT THE AI SEES</p>
+<!-- C · lines 6–8: "Before anything went to the AI, names and numbers were swapped … Dr. Brandt became Person A, and Helga
+     became Person B. The AI only ever sees the disguise." -->
+<div class="scene night" style="animation: wipe .5s var(--out) {6-0.3}s both, fade .35s {8>+0.3}s both reverse">
+  <p class="small" style="top: 330px; animation: fade .4s {6.14}s both">ON YOUR MAC</p>
+  <p class="line" style="top: 400px; animation: rise .5s var(--out) {6+0.3}s both"><em data-as="Person A" style="--d:{7.4}s">Dr. Brandt</em> has the bath seat prescription for <em data-as="Person B" style="--d:{7.9}s">Helga</em>.</p>
+  <p class="small" style="top: 550px; color: var(--honey); animation: fade .4s {8.2}s both">WHAT THE AI SEES</p>
 </div>
 
-<!-- D · 46–57.4 s: "Every matter has one next step … which mail it came from." -->
-<div class="scene" style="animation: fade .5s 48.16s both, fade .4s 59.56s both reverse">
-  <div class="cam" style="animation: camD 11.4s var(--out) 48.36s both">
+<!-- D · lines 11–12: "Every matter has one next step, and the reason it can't wait. Below it are the tasks: whose each one
+     is, when it's due, and where it came from." The step, then its task's row: yours, by Nov 15, from the mail of Nov 9. -->
+<div class="scene" style="animation: fade .5s {11-0.4}s both, fade .4s {13-0.4}s both reverse">
+  <div class="cam" style="transform-origin: 878px 601px; animation: camB 1s var(--out) {11+0.2}s both">
+   <div class="cam" style="animation: camPan 1.2s var(--out) {12}s both">
     <div class="mac" style="left: 290px; top: 80px"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
       <img src="img/care-2880.webp" alt="">
-      <div class="o ring" style="--x:592;--y:310;--w:1344;--h:362;--rr:30;--d:49.86s"></div>
-      <div class="o ring" style="--x:592;--y:1196;--w:1344;--h:170;--rr:20;--d:55.46s"></div>
-      <div class="o ring" style="--x:868;--y:1314;--w:274;--h:34;--rr:10;--d:58.06s"></div>
+      <div class="o ring" style="--x:598;--y:946;--w:1334;--h:222;--rr:30;--d:{11.5}s"></div>
+      <div class="o mark" style="--x:618;--y:1094;--w:428;--h:56; animation: markon 1.8s ease-out {11.9}s both"></div>
+      <div class="o ring" style="--x:600;--y:700;--w:1330;--h:108;--rr:20;--d:{12.1}s"></div>
+      <div class="o mark" style="--x:768;--y:756;--w:68;--h:46; animation: markon 1.4s ease-out {12.6}s both"></div>
+      <div class="o mark" style="--x:858;--y:756;--w:116;--h:46; animation: markon 1.4s ease-out {12.10}s both"></div>
+      <div class="o mark" style="--x:994;--y:756;--w:254;--h:46; animation: markon 1.6s ease-out {12.14}s both"></div>
     </div></div>
+   </div>
   </div>
 </div>
 
-<!-- E · 57.4–70 s: "Tick off what's done." — and the bee is glad, unsaid. Then "… on your iPhone and your Mac as well." -->
-<div class="scene" style="animation: fade .4s 59.66s both, fade .4s 72.16s both reverse">
-  <div class="pad" style="left: 120px; top: 110px; animation: rise-far .9s var(--out) 59.86s both"><div class="scr" style="--W:2000;--H:1500;--u:.482">
-    <img src="img/ipad-matter.webp" alt="">
-    <div class="o patch" style="--x:1488;--y:1350;--w:500;--h:94"></div>
-    <div class="o field" style="--x:1498;--y:1362;--w:477;--h:70;--fs:26"><span class="plus">+</span><span>Ask about this matter</span><svg class="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span class="send"><svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg><svg class="glad" data-at="64.06 65.36" viewBox="-500 -500 5201 3509"></svg></span></div>
-    <div class="o tap" style="--x:507;--y:884;--r:46;--d:63.46s"></div>
-    <div class="o check" style="--x:494;--y:871;--w:27;--h:27;--d:63.86s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-    <div class="o dim" style="--x:540;--y:855;--w:420;--h:60;--d:63.96s"></div>
-    <div class="o strike" style="--x:543;--y:880;--w:330;--d:63.96s"></div>
-    <div class="o tap" style="--x:507;--y:1154;--r:46;--d:64.76s"></div>
-    <div class="o check" style="--x:494;--y:1141;--w:27;--h:27;--d:65.16s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-    <div class="o dim" style="--x:540;--y:1130;--w:420;--h:56;--d:65.26s"></div>
-    <div class="o strike" style="--x:543;--y:1150;--w:329;--d:65.26s"></div>
+<!-- E · lines 13–14: "In the afternoon, you're at Mum's, with the iPad. Tick off what's done." — and the app's bee is glad, in
+     a loupe over its button. Then "Through your own iCloud, it's ticked off on your iPhone and your Mac as well." -->
+<div class="scene" style="animation: fade .4s {13-0.4}s both, fade .4s {15-0.4}s both reverse">
+  <div class="pad" style="left: 120px; top: 110px; animation: rise-far .9s var(--out) {13-0.2}s both"><div class="scr" id="padE" data-bee="2203,1523" data-pic="img/ipad-plan.webp" style="--W:2360;--H:1640;--u:.4085">
+    <img src="img/ipad-plan.webp" alt="">
+    <div class="o tap" style="--x:991;--y:648;--r:46;--d:{13.10}s"></div>
+    <div class="o check" style="--x:975;--y:632;--w:33;--h:33;--d:{13.10+0.4}s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="o dim" style="--x:1012;--y:616;--w:500;--h:64;--d:{13.10+0.5}s"></div>
+    <div class="o strike" style="--x:1022;--y:650;--w:471;--d:{13.10+0.5}s"></div>
+    <div class="o tap" style="--x:991;--y:1098;--r:46;--d:{13.12}s"></div>
+    <div class="o check" style="--x:975;--y:1082;--w:33;--h:33;--d:{13.12+0.4}s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="o dim" style="--x:1012;--y:1066;--w:500;--h:64;--d:{13.12+0.5}s"></div>
+    <div class="o strike" style="--x:1019;--y:1102;--w:467;--d:{13.12+0.5}s"></div>
   </div></div>
-  <div class="loupe" style="left: 925px; top: 596px; animation: pop .35s var(--spring) 63.96s both, fade .3s 66.56s both reverse"><span class="send"><svg class="glad" data-at="64.06" data-len="2.4" viewBox="-500 -500 5201 3509"></svg></span></div>
-  <div class="phone" style="left: 1330px; top: 120px; animation: slide .8s var(--spring) 60.36s both"><div class="scr" style="--W:804;--H:1748;--u:.4209">
-    <img src="img/iphone-care.webp" alt="">
-    <div class="o check" style="--x:64;--y:1631;--w:35;--h:35;--d:69.61s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-    <div class="o dim" style="--x:120;--y:1610;--w:520;--h:70;--d:69.71s"></div>
-    <div class="o strike" style="--x:133;--y:1643;--w:452;--d:69.71s"></div>
-    <div class="o ring" style="--x:30;--y:1598;--w:744;--h:150;--rr:26;--d:69.66s"></div>
+  <div class="loupe" style="left: 905px; top: 600px; animation: pop .35s var(--spring) {13.10+0.2}s both, fade .3s {14+0.4}s both reverse"><span class="send"><svg class="glad filmbee" data-from="padE" data-at="{13.12+0.4}" data-len="2.4" viewBox="-500 -500 5201 3509"></svg></span></div>
+  <div class="phone" style="left: 1330px; top: 110px; animation: slide .8s var(--spring) {14-0.2}s both"><div class="scr" style="--W:1206;--H:2622;--u:.32">
+    <img src="img/iphone-plan.webp" alt="">
+    <div class="o check" style="--x:267;--y:562;--w:47;--h:47;--d:{14.6}s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="o dim" style="--x:345;--y:545;--w:700;--h:80;--d:{14.6+0.1}s"></div>
+    <div class="o strike" style="--x:357;--y:589;--w:682;--d:{14.6+0.1}s"></div>
+    <div class="o check" style="--x:267;--y:1238;--w:47;--h:47;--d:{14.6+0.3}s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="o dim" style="--x:345;--y:1222;--w:700;--h:80;--d:{14.6+0.4}s"></div>
+    <div class="o strike" style="--x:357;--y:1262;--w:667;--d:{14.6+0.4}s"></div>
+    <div class="o ring" style="--x:30;--y:520;--w:1146;--h:850;--rr:40;--d:{14.10}s"></div>
   </div></div>
-  <div class="abs fly" style="left: 369px; top: 541px"></div>
+  <div class="abs fly" style="left: 543px; top: 381px; --tx: 899px; --ty: -85px; animation: fly .9s cubic-bezier(.5,0,.3,1) {14.4}s both"></div>
 </div>
 
-<!-- P · 72.2–89.4 s: "There's paper, too. A letter from Mum's health insurer: her own share of the hospital stay.
-     Scan it with your iPhone. Causabee reads it, files the letter in Mum's matter, and turns it into a task …"
-     The document camera finds the page; the scan is read on the iPhone and, with Auto on, waits only for Take in. -->
-<div class="scene table" style="animation: fade .4s 72.2s both, fade .4s 89s both reverse">
-  <div class="letter" style="left: 210px; top: 100px; animation: rise-far .9s var(--out) 72.6s both"></div>
-  <div class="phone" style="left: 1230px; top: 110px; animation: slide .8s var(--spring) 79.2s both"><div class="scr" style="--W:804;--H:1748;--u:.48">
-    <div class="layer cam" style="animation: fade .3s 81.3s both reverse">
-      <p class="o camtop" style="--x:0;--y:40;--w:804;--h:60">09:41</p>
-      <div class="o" style="--x:96;--y:300;--w:612;--h:866; rotate: -3deg"><div class="letter mini"></div>
-        <div class="found" style="animation: fade .35s 79.9s both"></div></div>
-      <p class="o camlabel" style="--x:40;--y:1560;--w:200;--h:60">Cancel</p>
-      <div class="o shutter" style="--x:337;--y:1520;--w:130;--h:130"></div>
-      <div class="o tap" style="--x:402;--y:1585;--r:60;--d:80.55s"></div>
-      <div class="layer flash" style="animation: flash .45s 80.95s both"></div>
+<!-- P · lines 15–16: "There's paper, too. A letter from Mum's health insurer: her own share of the hospital stay. Scan it with
+     your iPhone. The bee reads it, and one tap sorts it in: the letter into Mum's matter, and a task — pay her share by the
+     end of the month." The document camera finds the page; "Add a document" has it, and "Sort in" is the one tap; the
+     chat's card reads it on the iPhone and says where it went, as the app does. -->
+<div class="scene table" style="animation: fade .4s {15-0.4}s both, fade .4s {17-0.4}s both reverse">
+  <div class="letter" style="left: 210px; top: 100px; --mark: {15.10}s; animation: rise-far .9s var(--out) {15+0.2}s both"></div>
+  <div class="phone" style="left: 1230px; top: 110px; animation: slide .8s var(--spring) {16-0.4}s both"><div class="scr" style="--W:1206;--H:2622;--u:.32">
+    <div class="layer camera" style="animation: fade .3s {16.6}s both reverse">
+      <p class="o camtop" style="--x:0;--y:60;--w:1206;--h:90;--fs:45">09:41</p>
+      <div class="o" style="--x:144;--y:450;--w:918;--h:1299; rotate: -3deg"><div class="letter mini"></div>
+        <div class="found" style="animation: fade .35s {16.3}s both"></div></div>
+      <p class="o camlabel" style="--x:60;--y:2340;--w:300;--h:90;--fs:51">Cancel</p>
+      <div class="o shutter" style="--x:505;--y:2280;--w:195;--h:195"></div>
+      <div class="o tap" style="--x:603;--y:2378;--r:90;--d:{16.5-0.3}s"></div>
+      <div class="layer flash" style="animation: flash .45s {16.5}s both"></div>
     </div>
-    <div class="layer sheetv" style="animation: sheet .5s var(--out) 81.3s both">
-      <div class="o grab" style="--x:362;--y:30;--w:80;--h:10"></div>
-      <p class="o sheethead" style="--x:0;--y:70;--w:804;--h:50;--fs:28">Care for Mum (Helga) after her fall</p>
-      <div class="o working" style="--x:60;--y:180;--w:700;--h:60;--fs:30; animation: fade .3s 81.45s both, fade .25s 82.4s both reverse"><svg class="bee" viewBox="-80 -300 4361 2900"></svg>Reading the letter on this iPhone …</div>
-      <div class="o offercard" style="--x:40;--y:160;--w:724;--h:800;--fs:32; animation: rise .4s var(--out) 82.45s both, fade .25s 87s both reverse">
-        <b>1 document read</b>
-        <div class="offer"><i><svg viewBox="0 0 14 14" width="70%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i><div>
-          <span>Your share of the hospital stay</span>
-          <span class="to">Healthbridge Care Fund · letter of Oct 8</span>
-          <span class="to hl" style="animation: hilite 1.6s ease-out 82.95s both"><span>→ Care for Mum (Helga) after her fall</span><em>Change</em></span>
-          <span class="item"><svg viewBox="0 0 24 24" width="1.1em" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>Hospital stay co-payment.pdf</span>
-          <span class="item hl" style="animation: hilite 1.6s ease-out 84.65s both"><b><svg viewBox="0 0 14 14" width="80%"><path d="m3.6 7.2 2.2 2.2 4.4-4.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b>Pay Mum’s hospital co-payment, €140 · by Oct 30</span>
+    <div class="layer sheetv form" style="animation: sheet .5s var(--out) {16.6}s both, fade .3s {16.12+0.3}s both reverse">
+      <div class="o formbar" style="--x:44;--y:150;--w:1118;--h:140">
+        <span class="glass">✕</span><b>Add a document</b>
+        <span class="glass go"><svg viewBox="0 0 14 14"><path d="m3 7.3 2.8 2.8 5.2-5.8" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+      <p class="o fhead" style="--x:96;--y:350;--w:1000;--h:50">The document</p>
+      <div class="o" style="--x:48;--y:410;--w:1110;--h:400">
+        <div class="frow" style="height: calc(132 * var(--u) * 1px)">📄&nbsp;Scan Nov 10.pdf · 212 KB</div>
+        <div class="frow blue" style="height: calc(132 * var(--u) * 1px)">Scan again</div>
+        <div class="frow blue" style="height: calc(132 * var(--u) * 1px)">Choose another file</div>
+      </div>
+      <p class="o fhead" style="--x:96;--y:880;--w:1000;--h:50">What is it?</p>
+      <div class="o frow" style="--x:48;--y:940;--w:1110;--h:132">Your share of the hospital stay</div>
+      <p class="o ffoot" style="--x:96;--y:1100;--w:1030;--h:420">Saved on this iPhone, in Files › On My iPhone › Causabee, under this name. Then scanned here and sorted into “Care for Mum (Helga) after her fall” when you tap “Sort in”.</p>
+      <div class="o tap" style="--x:1096;--y:220;--r:80;--d:{16.12}s"></div>
+    </div>
+    <div class="layer" style="animation: sheet .5s var(--out) {16.12+0.4}s both">
+      <img src="img/iphone-chat.webp" alt="">
+      <div class="o patch" style="--x:30;--y:405;--w:1146;--h:340"></div>
+      <div class="o chatcard" style="--x:48;--y:426;--w:1110;--h:300; animation: fade .25s {16.16}s both reverse">
+        <span class="cap2">🖼&nbsp;Scan Nov 10.pdf</span>
+        <span class="cap2">Saved on this iPhone, in Files › On My iPhone › Causabee.</span>
+        <span class="work"><svg class="bee" viewBox="-80 -300 4361 2900"></svg><span>Scanning it on this iPhone …</span></span>
+      </div>
+      <div class="o chatcard" style="--x:48;--y:426;--w:1110;--h:420; animation: rise .4s var(--out) {16.16}s both">
+        <div class="takenline"><i><svg viewBox="0 0 14 14" width="62%"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i><div>
+          <b><span class="hl" style="animation: hilite 1.8s ease-out {16.19}s both">Care for Mum (Helga) after her fall</span> · Pay her share of the hospital stay</b>
+          <small class="hl" style="animation: hilite 2.2s ease-out {16.24}s both">by Nov 30 · Pay her share of the hospital stay</small>
+          <span class="file">Your share of the hospital stay.pdf</span>
+          <span class="acts"><span>Change</span><span>Undo</span></span>
         </div></div>
-        <small>Read on this iPhone for $0.004. Nothing is in a matter yet: tick what you want of it. The rest is put aside.</small>
-        <span class="takein">Take in</span>
-      </div>
-      <div class="o tap" style="--x:620;--y:888;--r:50;--d:86.55s"></div>
-      <div class="o taken" style="--x:40;--y:160;--w:724;--h:230;--fs:30; animation: rise .4s var(--out) 87.05s both">
-        <i><svg viewBox="0 0 14 14" width="62%"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-        <div><span>Taken into Care for Mum (Helga) after her fall · 1 new task</span><small>Hospital stay co-payment.pdf is in its files</small></div>
       </div>
     </div>
   </div></div>
 </div>
 
-<!-- F0 · 70–78.4 s: "On the way home, pull down on your iPhone. The bee flies in, fetches your mail, and sorts each one
-     into its matter." The pull as PullsForMail and BeeLoader draw it; the page is cut from the screenshot so the
-     new card can open between its parts. The whole iPhone stays in sight. -->
-<div class="scene" style="animation: fade .4s 89.17s both, fade .4s 97.47s both reverse">
-  <div class="phone" style="left: 756px; top: 110px"><div class="scr" id="pullscr" style="--W:804;--H:1748;--u:.48">
-    <div class="layer" id="page">
-      <div class="o cut" style="--x:0;--y:230;--w:804;--h:186"><img src="img/iphone-overview.webp" alt="" style="top: calc(-230 * var(--u) * 1px)"></div>
-      <div class="o cut" id="cardcut" style="--x:0;--y:416;--w:804;--h:620; opacity: 0"><img src="img/iphone-overview.webp" alt="" style="top: calc(-416 * var(--u) * 1px)"></div>
-      <div class="o fbox" id="fbox" style="--x:32;--y:416;--w:740;--h:110;--fs:30; opacity: 0"><svg class="drawn" id="boxbee" viewBox="-450 -300 5101 2900"></svg><span id="fboxtext">Fetching mail …</span></div>
-      <div class="o cut" id="restcut" style="--x:0;--y:1036;--w:804;--h:712"><img src="img/iphone-overview.webp" alt="" style="top: calc(-1036 * var(--u) * 1px)"></div>
-      <div class="o morerows" id="morerows" style="--x:32;--y:1686;--w:740;--h:700;--fs:34">
-        <div><i><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 15.5v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0v4.9l-8 5v2l8-2.5v5.4l-2 1.5v1.6l3.5-1 3.5 1v-1.6l-2-1.5V13z"/></svg></i><span>Lisbon, 17–24 October (family trip)<small>8 open · next Oct 18 · <em>1 overdue</em></small></span></div>
-        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 11 12 4l8 7v9H4z"/><path d="M10 20v-5h4v5"/></svg></i><span>Buying the flat at Linden Street 8<small>6 open · next Oct 14</small></span></div>
-        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 15l2-6h12l2 6v4H4z"/><circle cx="8" cy="16" r="1.3"/><circle cx="16" cy="16" r="1.3"/></svg></i><span>Parking-lot accident, 14 September<small>5 open · next Oct 14</small></span></div>
-        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/></svg></i><span>Science fair: rainwater filter<small>8 open · next Oct 14</small></span></div>
-        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 12h18v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 12V6a2 2 0 0 1 4 0"/></svg></i><span>Bathroom renovation<small>6 open · next Oct 15</small></span></div>
-        <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6"/></svg></i><span>Tax return 2025<small>7 open · next Oct 15</small></span></div>
-      </div>
+<!-- F0 · line 17: "On the way home, pull down on your iPhone. The bee flies in, and what came in since is sorted into its
+     matters." The bee leaves its button for the pull, as PullsForMail and BeeLoader draw it, and goes back when it is done. -->
+<div class="scene" style="animation: fade .4s {17-0.4}s both, fade .4s {18-0.4}s both reverse">
+  <div class="phone" style="left: 756px; top: 110px"><div class="scr" id="pullscr" data-bee="1004,2404" data-pic="img/iphone-overview.webp" style="--W:1206;--H:2622;--u:.32">
+    <div class="layer" id="page" style="background: #f5f5f5">
+      <div class="o cut" style="--x:0;--y:170;--w:1206;--h:2452"><img src="img/iphone-overview.webp" alt="" style="width: 100%; top: calc(-170 * var(--u) * 1px)"></div>
+      <div class="o empty" style="--x:972;--y:2309;--w:190;--h:190; background: #f5f5f5"></div>
+      <div class="o patch" id="restpatch" style="--x:0;--y:600;--w:1206;--h:110;--bg:#f5f5f5"></div>
+      <div class="o fbox" id="fbox" style="--x:40;--y:600;--w:1126;--h:110;--fs:42; opacity: 0"><svg class="drawn" id="boxbee" viewBox="-450 -300 5101 2900"></svg><span id="fboxtext">Fetching mail …</span></div>
     </div>
-    <div class="o cut" style="--x:0;--y:0;--w:804;--h:230; background: #fff"><img src="img/iphone-overview.webp" alt="" style="top: 0"></div>
-    <svg class="o drawn" id="pullbee" viewBox="-450 -300 5101 2900" style="--x:0;--y:0;--w:105;--h:60; opacity: 0"></svg>
-    <div class="o finger" id="finger" style="--x:0;--y:0;--w:90;--h:90; opacity: 0"></div>
+    <div class="layer" id="sorted" style="opacity: 0"><img src="img/iphone-overview-sorted.webp" alt=""></div>
+    <div class="o cut" style="--x:0;--y:0;--w:1206;--h:170; background: #f5f5f5"><img src="img/iphone-overview.webp" alt="" style="width: 100%"></div>
+    <div class="o cut" style="--x:972;--y:2309;--w:190;--h:190; border-radius: 50%"><img src="img/iphone-overview.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-972 * var(--u) * 1px); top: calc(-2309 * var(--u) * 1px)"></div>
+    <div class="o empty" id="pullempty" style="--x:1012;--y:2349;--w:110;--h:110; opacity: 0"></div>
+    <svg class="o drawn filmbee" data-from="pullscr" id="pullbee" viewBox="-450 -300 5101 2900" style="--x:0;--y:0;--w:158;--h:90; opacity: 0"></svg>
+    <div class="o finger" id="finger" style="--x:0;--y:0;--w:135;--h:135; opacity: 0"></div>
   </div></div>
 </div>
 
-<!-- F · 78.4–89.4 s: "Then just ask … The answer comes with its sources. And a good suggestion becomes a task, with one tap." -->
-<div class="scene" style="animation: fade .4s 97.57s both, fade .4s 108.57s both reverse">
-  <div class="phone" style="left: 756px; top: 110px"><div class="scr" style="--W:804;--H:1748;--u:.48">
+<!-- F · lines 18–19: "Then just ask: what do I need to do before Tuesday's visit? The answer comes with its sources. And a good
+     suggestion becomes a task, with one tap." The tap is on the bee, the one in the corner. -->
+<div class="scene" style="animation: fade .4s {18-0.4}s both, fade .4s {20-0.4}s both reverse">
+  <div class="phone" style="left: 756px; top: 110px"><div class="scr" style="--W:1206;--H:2622;--u:.32">
     <img src="img/iphone-care.webp" alt="">
-    <div class="o check" style="--x:64;--y:1631;--w:35;--h:35;--d:0s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-    <div class="o dim" style="--x:120;--y:1610;--w:520;--h:70;--d:0s"></div>
-    <div class="o strike" style="--x:133;--y:1643;--w:452;--d:0s"></div>
-    <div class="o tap" style="--x:710;--y:1600;--r:60;--d:98.17s"></div>
-    <div class="layer" style="animation: sheet .6s var(--out) 98.67s both">
+    <div class="o tap" style="--x:1067;--y:2404;--r:90;--d:{18.1}s"></div>
+    <div class="layer" style="animation: sheet .6s var(--out) {18.1+0.5}s both">
       <img src="img/iphone-assistant.webp" alt="">
-      <div class="o patch" style="--x:250;--y:340;--w:540;--h:150; animation: fade .3s 99.42s both reverse"></div>
-      <div class="o patch" style="--x:10;--y:495;--w:784;--h:138; animation: fade .35s 102.67s both reverse"></div>
-      <div class="o patch" style="--x:10;--y:633;--w:784;--h:140; animation: fade .35s 103.22s both reverse"></div>
-      <div class="o patch" style="--x:10;--y:773;--w:784;--h:135; animation: fade .35s 103.77s both reverse"></div>
-      <div class="o patch" style="--x:10;--y:908;--w:784;--h:530; animation: fade .35s 104.87s both reverse"></div>
-      <div class="o tap" style="--x:401;--y:1337;--r:50;--d:106.87s"></div>
-      <div class="o patch" style="--x:15;--y:915;--w:775;--h:520; animation: fade .2s 107.37s both"></div>
-      <div class="o taken" style="--x:31;--y:925;--w:742;--h:200;--fs:34; animation: rise .4s var(--out) 107.42s both">
+      <div class="o patch" style="--x:440;--y:540;--w:740;--h:150; animation: fade .3s {18.4}s both reverse"></div>
+      <div class="o patch" style="--x:20;--y:750;--w:1170;--h:215; animation: fade .35s {19.1}s both reverse"></div>
+      <div class="o patch" style="--x:20;--y:985;--w:1170;--h:215; animation: fade .35s {19.3}s both reverse"></div>
+      <div class="o patch" style="--x:20;--y:1215;--w:1170;--h:150; animation: fade .35s {19.5}s both reverse"></div>
+      <div class="o patch" style="--x:20;--y:1385;--w:1170;--h:850; animation: fade .35s {19.6+0.3}s both reverse"></div>
+      <div class="o ring" style="--x:296;--y:2150;--w:300;--h:90;--rr:20;--d:{19.6+0.4}s"></div>
+      <div class="o tap" style="--x:604;--y:2012;--r:70;--d:{19.15}s"></div>
+      <div class="o patch" style="--x:30;--y:1400;--w:1150;--h:720; animation: fade .2s {19.16}s both"></div>
+      <div class="o taken" style="--x:48;--y:1420;--w:1110;--h:300;--fs:51; animation: rise .4s var(--out) {19.16}s both">
         <i><svg viewBox="0 0 14 14" width="62%"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-        <div><small>Task added · Waiting for · by Oct 16</small><span>Ask a neighbour to be at Mum’s flat by 09:45 on 6 October</span></div>
+        <div><small>Task added · Waiting for · by Nov 14</small><span>Ask a neighbour to be at Mum's flat by 09:45 on 6 October</span></div>
       </div>
-      <div class="o ring" style="--x:31;--y:925;--w:742;--h:200;--rr:26;--d:107.72s"></div>
+      <div class="o ring" style="--x:48;--y:1420;--w:1110;--h:300;--rr:39;--d:{19.16+0.3}s"></div>
     </div>
   </div></div>
 </div>
 
-<!-- G · 89.5–97.4 s: "In the evening, back at the Mac, it's all there …" -->
-<div class="scene" style="animation: fade .5s 108.67s both, fade .4s 116.47s both reverse">
-  <div class="cam" style="animation: camG 2s var(--out) 109.67s both">
+<!-- G · line 20: "In the evening, back at the Mac, it's all there: what you ticked off on the iPad, and what you added on the
+     iPhone." The two ticks on the Plan, and the task taken from the chat. -->
+<div class="scene" style="animation: fade .5s {20-0.4}s both, fade .4s {21-0.4}s both reverse">
+  <div class="cam" style="animation: camG 2s var(--out) {20.4}s both">
     <div class="mac" style="left: 290px; top: 80px"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
-      <img src="img/care-2880.webp" alt="">
-      <div class="o check" style="--x:622;--y:1270;--w:34;--h:34;--d:0s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <div class="o dim" style="--x:670;--y:1262;--w:470;--h:46;--d:0s"></div>
-      <div class="o strike" style="--x:683;--y:1285;--w:435;--d:0s"></div>
-      <div class="o check" style="--x:622;--y:1625;--w:34;--h:34;--d:0s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <div class="o dim" style="--x:670;--y:1618;--w:470;--h:46;--d:0s"></div>
-      <div class="o strike" style="--x:683;--y:1641;--w:432;--d:0s"></div>
-      <div class="o ring" style="--x:592;--y:1244;--w:1344;--h:122;--rr:20;--d:112.67s"></div>
-      <div class="o ring" style="--x:592;--y:1600;--w:1344;--h:110;--rr:20;--d:113.27s"></div>
-      <div class="o patch" style="--x:2010;--y:575;--w:850;--h:440"></div>
-      <div class="o taken" style="--x:2020;--y:585;--w:825;--h:150;--fs:28">
+      <img src="img/care-plan-2880.webp" alt="">
+      <div class="o check" style="--x:736;--y:654;--w:34;--h:34;--d:0s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="o dim" style="--x:792;--y:648;--w:450;--h:50;--d:0s"></div>
+      <div class="o strike" style="--x:800;--y:675;--w:435;--d:0s"></div>
+      <div class="o check" style="--x:736;--y:1104;--w:34;--h:34;--d:0s"><svg viewBox="0 0 14 14"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="o dim" style="--x:790;--y:1098;--w:440;--h:50;--d:0s"></div>
+      <div class="o strike" style="--x:798;--y:1122;--w:422;--d:0s"></div>
+      <div class="o ring" style="--x:600;--y:606;--w:1330;--h:170;--rr:20;--d:{20.13}s"></div>
+      <div class="o ring" style="--x:720;--y:1090;--w:1200;--h:90;--rr:20;--d:{20.13+0.6}s"></div>
+      <div class="o patch" style="--x:2018;--y:582;--w:830;--h:410"></div>
+      <div class="o taken" style="--x:2028;--y:592;--w:810;--h:150;--fs:28">
         <i><svg viewBox="0 0 14 14" width="62%"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i>
-        <div><small>Task added · Waiting for · by Oct 17</small><span>Ask a neighbour to be at Mum’s flat by 09:45 on 6 October</span></div>
+        <div><small>Task added · Waiting for · by Nov 14</small><span>Ask a neighbour to be at Mum's flat by 09:45 on 6 October</span></div>
       </div>
-      <div class="o ring" style="--x:2020;--y:585;--w:825;--h:150;--rr:26;--d:114.57s"></div>
+      <div class="o ring" style="--x:2028;--y:592;--w:810;--h:150;--rr:26;--d:{20.21}s"></div>
     </div></div>
   </div>
 </div>
 
-<!-- H · 116.4–123.1 s: "Your mail stays in your mail account. Your documents and your matters go with you, through your own iCloud." -->
-<div class="scene" style="animation: fade .4s 116.3s both">
-  <div class="mac" style="left: 470px; top: 160px; width: 980px; animation: rise-far 1s var(--out) 116.5s both"><div class="scr" style="--W:2880;--H:1800;--u:.3403"><img src="img/care-2880.webp" alt=""></div></div>
-  <div class="pad" style="left: 190px; top: 380px; animation: rise-far 1s var(--out) 119s both"><div class="scr" style="--W:2000;--H:1500;--u:.29"><img src="img/ipad-matter.webp" alt=""></div></div>
-  <div class="phone" style="left: 1450px; top: 310px; animation: slide .9s var(--spring) 119.3s both"><div class="scr" style="--W:804;--H:1748;--u:.31"><img src="img/iphone-care.webp" alt=""></div></div>
+<!-- H · line 21: "What comes in stays on your devices, and goes with you through your own iCloud." -->
+<div class="scene" style="animation: fade .4s {21-0.4}s both, fade .3s {22-0.5}s both reverse">
+  <div class="mac" style="left: 470px; top: 160px; width: 980px; animation: rise-far 1s var(--out) {21+0.2}s both"><div class="scr" style="--W:2880;--H:1800;--u:.3403"><img src="img/care-2880.webp" alt=""></div></div>
+  <div class="pad" style="left: 170px; top: 400px; animation: rise-far 1s var(--out) {21.9}s both"><div class="scr" style="--W:2360;--H:1640;--u:.2458"><img src="img/ipad-matter.webp" alt=""></div></div>
+  <div class="phone" style="left: 1450px; top: 310px; animation: slide .9s var(--spring) {21.9+0.3}s both"><div class="scr" style="--W:1206;--H:2622;--u:.2067"><img src="img/iphone-care.webp" alt=""></div></div>
 </div>
 
-<!-- I · 123.1–129.6 s: "Causabee. Be organized. Be private." -->
-<div class="scene" style="background: #fff; animation: iris .7s var(--out) 123.11s both">
-  <svg class="icon" style="left: 820px; top: 150px; width: 280px; height: 280px; --t0: 123.61s; animation: pop .6s var(--spring) 123.31s both" viewBox="0 0 1024 1024"></svg>
-  <h1 class="title" style="top: 480px; font-size: 130px; animation: rise .6s var(--out) 123.56s both">Causabee</h1>
-  <h1 class="title" style="top: 650px; font-size: 60px; animation: rise .6s var(--out) 124.71s both">Be organized. Be private.</h1>
-  <p class="abs" style="top: 790px; left: 0; right: 0; text-align: center; font: 500 32px var(--sans); color: var(--grey); margin: 0; animation: rise .6s var(--out) 126.31s both">For Mac · iPad and iPhone in beta · causabee.app</p>
+<!-- I · line 22: "Causabee. Be organized. Be private." -->
+<div class="scene" style="background: #fff; animation: iris .7s var(--out) {22-0.3}s both">
+  <svg class="icon" style="left: 820px; top: 150px; width: 280px; height: 280px; --t0: {22+0.3}s; animation: pop .6s var(--spring) {22}s both" viewBox="0 0 1024 1024"></svg>
+  <h1 class="title" style="top: 480px; font-size: 130px; animation: rise .6s var(--out) {22+0.25}s both">Causabee</h1>
+  <h1 class="title" style="top: 650px; font-size: 60px; animation: rise .6s var(--out) {22.2}s both">Be organized. Be private.</h1>
+  <p class="abs" style="top: 790px; left: 0; right: 0; text-align: center; font: 500 32px var(--sans); color: var(--grey); margin: 0; animation: rise .6s var(--out) {22.5}s both">For Mac · iPad and iPhone in beta · causabee.app</p>
 </div>
 
 </div>
+<script id="timing" type="application/json">{"voice":"4rgssJ1pg3E9c0U78Iid","model":"eleven_v4","total":121.4,"lines":[{"text":"This is Causabee.","start":0.0,"end":1.6,"words":[[0.0,0.48],[0.6,0.72],[0.76,1.6]]},{"text":"Mail, screenshots, photos, letters, notes \u2014 it turns all the pieces into clear matters.","start":2.56,"end":9.744,"words":[[2.56,3.12],[3.2,4.16],[4.48,4.96],[5.24,5.76],[6.0,6.24],[7.022,7.04],[7.16,7.44],[7.52,7.6],[7.68,7.84],[8.08,8.32],[8.4,8.64],[8.72,8.96],[9.04,9.744]]},{"text":"Let's follow one of them \u2014 Mum's care, after her fall \u2014 through one day, on the Mac, the iPad, and the iPhone.","start":10.4,"end":18.267,"words":[[10.4,10.56],[10.64,10.88],[10.96,11.04],[11.12,11.2],[11.28,11.36],[12.08,12.4],[12.56,12.96],[13.08,13.2],[13.32,13.44],[13.6,13.76],[14.613,14.64],[14.72,14.88],[14.96,15.52],[15.6,15.68],[15.72,15.76],[15.84,16.4],[16.48,16.56],[16.64,17.44],[17.52,17.6],[17.64,17.68],[17.76,18.267]]},{"text":"In the morning, you open your Mac.","start":19.24,"end":21.68,"words":[[19.24,19.28],[19.36,19.4],[19.44,20.0],[20.08,20.16],[20.24,20.48],[20.56,20.64],[20.8,21.68]]},{"text":"What came in overnight is already read, and waits on top of its matter.","start":21.82,"end":26.32,"words":[[21.82,21.84],[21.92,22.08],[22.16,22.24],[22.4,22.88],[22.96,23.04],[23.12,23.52],[23.6,24.133],[24.187,24.24],[24.28,24.56],[24.64,24.72],[24.84,24.96],[25.0,25.04],[25.16,25.28],[25.44,26.32]]},{"text":"Before anything went to the AI, names and numbers were swapped for placeholders, right on your Mac.","start":26.67,"end":32.48,"words":[[26.67,26.72],[26.8,27.2],[27.28,27.36],[27.4,27.44],[27.52,27.6],[27.68,28.48],[28.64,28.8],[28.88,28.96],[29.04,29.36],[29.48,29.6],[29.68,30.0],[30.08,30.16],[30.52,31.12],[31.2,31.28],[31.36,31.44],[31.52,31.6],[31.76,32.48]]},{"text":"Dr. Brandt became Person A, and Helga became Person B.","start":32.56,"end":37.36,"words":[[32.56,32.8],[32.88,33.28],[33.36,33.76],[33.84,34.16],[34.32,34.96],[35.04,35.12],[35.2,35.6],[35.76,36.08],[36.16,36.48],[36.56,37.36]]},{"text":"The AI only ever sees the disguise.","start":37.44,"end":40.56,"words":[[37.44,37.52],[37.6,38.08],[38.16,38.4],[38.48,38.64],[38.8,39.04],[39.12,39.16],[39.2,40.56]]},{"text":"All that's left for you is a look: what is new, and what it brings.","start":40.693,"end":45.36,"words":[[40.693,40.72],[40.8,40.96],[41.04,41.12],[41.2,41.36],[41.44,41.84],[41.92,42.0],[42.04,42.08],[42.16,42.96],[43.03,43.04],[43.12,43.28],[43.36,43.893],[43.947,44.0],[44.08,44.16],[44.24,44.32],[44.36,45.36]]},{"text":"Here, a new task: gather the papers for the visit.","start":45.71,"end":49.04,"words":[[45.71,45.8],[45.84,45.88],[45.92,46.08],[46.28,46.88],[47.0,47.12],[47.2,47.28],[47.36,47.68],[47.76,47.84],[47.88,47.92],[48.0,49.04]]},{"text":"Every matter has one next step, and the reason it can't wait.","start":49.307,"end":53.28,"words":[[49.307,49.36],[49.44,49.76],[49.84,50.08],[50.16,50.32],[50.4,50.64],[50.8,51.28],[51.36,51.52],[51.56,51.6],[51.68,52.0],[52.08,52.16],[52.24,52.4],[52.48,53.28]]},{"text":"Below it are the tasks: whose each one is, when it's due, and where it came from.","start":53.36,"end":59.2,"words":[[53.36,53.6],[53.68,53.84],[53.92,54.0],[54.04,54.08],[54.16,55.04],[55.16,55.28],[55.36,55.52],[55.6,55.76],[55.84,56.4],[56.48,56.56],[56.64,56.8],[56.92,57.36],[57.44,57.52],[57.6,57.68],[57.72,57.76],[57.84,58.08],[58.2,59.2]]},{"text":"In the afternoon, you're at Mum's, with the iPad. Tick off what's done.","start":59.267,"end":64.16,"words":[[59.267,59.28],[59.36,59.44],[59.52,60.267],[60.293,60.36],[60.4,60.56],[60.6,61.227],[61.253,61.28],[61.36,61.44],[61.52,62.48],[62.69,62.72],[62.8,62.96],[63.04,63.2],[63.28,64.16]]},{"text":"Through your own iCloud, it's ticked off on your iPhone and your Mac as well.","start":64.24,"end":68.813,"words":[[64.24,64.4],[64.48,64.56],[64.64,64.8],[64.88,65.56],[65.6,65.76],[65.84,66.0],[66.08,66.24],[66.32,66.4],[66.48,66.56],[66.64,67.12],[67.2,67.36],[67.44,67.52],[67.68,67.84],[67.92,68.0],[68.08,68.813]]},{"text":"There's paper, too. A letter from Mum's health insurer: her own share of the hospital stay.","start":68.88,"end":74.88,"words":[[68.88,69.04],[69.12,69.48],[69.52,70.33],[70.4,70.44],[70.48,70.8],[70.88,70.96],[71.0,71.28],[71.4,71.52],[71.6,72.4],[72.52,72.64],[72.76,72.88],[72.96,73.2],[73.24,73.28],[73.36,73.44],[73.68,73.92],[74.08,74.88]]},{"text":"Scan it with your iPhone. The bee reads it, and one tap sorts it in: the letter into Mum's matter, and a task \u2014 pay her share by the end of the month.","start":75.16,"end":85.04,"words":[[75.16,75.2],[75.24,75.28],[75.36,75.44],[75.52,75.6],[75.68,76.64],[76.78,76.8],[76.92,77.04],[77.2,77.36],[77.52,77.76],[77.84,77.92],[78.0,78.16],[78.24,78.56],[78.68,78.853],[78.907,78.96],[79.04,79.56],[79.6,79.68],[79.84,80.0],[80.12,80.24],[80.32,80.56],[80.64,81.227],[81.253,81.28],[81.36,81.44],[81.52,81.92],[82.4,82.56],[82.64,82.8],[82.88,83.12],[83.2,83.28],[83.36,83.44],[83.52,83.6],[83.64,83.68],[83.72,83.76],[83.84,85.04]]},{"text":"On the way home, pull down on your iPhone. The bee flies in, and what came in since is sorted into its matters.","start":85.107,"end":92.333,"words":[[85.107,85.12],[85.2,85.24],[85.28,85.44],[85.52,86.0],[86.12,86.24],[86.36,86.48],[86.56,86.64],[86.72,86.8],[86.88,87.84],[87.92,88.0],[88.12,88.24],[88.32,88.72],[88.8,89.253],[89.307,89.36],[89.44,89.52],[89.6,89.76],[89.84,90.0],[90.08,90.4],[90.48,90.64],[90.8,90.96],[91.04,91.2],[91.32,91.44],[91.48,92.333]]},{"text":"Then just ask: what do I need to do before Tuesday's visit?","start":92.4,"end":96.24,"words":[[92.4,92.56],[92.64,92.8],[92.96,93.68],[93.82,93.84],[93.88,93.92],[94.0,94.08],[94.16,94.24],[94.32,94.4],[94.48,94.56],[94.64,94.96],[95.12,95.44],[95.6,96.24]]},{"text":"The answer comes with its sources. And a good suggestion becomes a task, with one tap.","start":96.32,"end":102.32,"words":[[96.32,96.4],[96.48,96.8],[96.88,97.12],[97.16,97.2],[97.28,97.36],[97.44,98.33],[98.4,98.48],[98.64,98.693],[98.747,98.8],[98.88,99.52],[99.6,99.84],[100.0,100.213],[100.427,100.72],[100.8,100.88],[100.96,101.12],[101.2,102.32]]},{"text":"In the evening, back at the Mac, it's all there: what you ticked off on the iPad, and what you added on the iPhone.","start":102.387,"end":109.373,"words":[[102.387,102.4],[102.48,102.56],[102.64,103.24],[103.28,103.36],[103.44,103.52],[103.56,103.6],[103.68,104.28],[104.32,104.48],[104.56,104.72],[104.8,105.45],[105.52,105.68],[105.76,105.84],[105.92,106.08],[106.16,106.24],[106.32,106.4],[106.48,106.56],[106.64,107.333],[107.387,107.44],[107.52,107.6],[107.68,107.76],[107.84,108.08],[108.12,108.16],[108.24,108.32],[108.4,109.373]]},{"text":"What comes in stays on your devices, and goes with you through your own iCloud.","start":109.44,"end":115.12,"words":[[109.44,109.6],[109.68,109.92],[110.0,110.32],[110.4,110.72],[110.8,110.88],[110.92,110.96],[111.04,111.973],[112.027,112.08],[112.12,112.4],[112.48,112.56],[112.64,112.8],[112.88,112.96],[113.04,113.2],[113.32,113.44],[113.52,115.12]]},{"text":"Causabee. Be organized. Be private.","start":115.28,"end":118.88,"words":[[115.28,116.5],[116.64,116.8],[116.88,118.0],[118.08,118.16],[118.4,118.88]]}]}</script>
 <script>
+// Every moment of the page is a word of the voice: {line.word±s}, {line±s}, {line>±s} (its end) —
+// made seconds here, from the timing time-voice.py wrote into the page, before anything plays.
+const TIMING = JSON.parse(document.getElementById('timing').textContent);
+function at(m) {
+  const [, l, w, end, off] = String(m).match(/^(\d+)(?:\.(\d+))?(>)?([+-][\d.]+)?$/) || [];
+  const line = TIMING.lines?.[l - 1];
+  if (!line) throw new Error(`{${m}} is no line of the voice`);
+  const t = w ? line.words[w - 1][end ? 1 : 0] : end ? line.end : line.start;
+  return t + (+off || 0);
+}
+const resolve = s => s.replace(/\{([^}]+)\}/g, (_, m) => at(m).toFixed(3));
+for (const el of document.querySelectorAll('[style*="{"]')) el.setAttribute('style', resolve(el.getAttribute('style')));
+for (const el of document.querySelectorAll('[data-at*="{"]')) el.dataset.at = resolve(el.dataset.at);
+
 // The bee, once: the website icon's wings and six bars.
 const WL = 'M840.879 830.165C919.099 742.266 1064.5 797.594 1064.5 915.257V1953.13C1064.83 1960.84 1065 1968.59 1065 1976.37C1065 1984.16 1064.83 1991.9 1064.5 1999.61V2052.87L1059.83 2050.87C1023.6 2309.69 801.309 2508.87 532.5 2508.87C238.408 2508.87 0 2270.46 0 1976.37C0 1829.33 59.598 1696.21 155.956 1599.85L840.879 830.165Z';
 const WR = 'M3360.12 830.165C3281.9 742.267 3136.5 797.594 3136.5 915.257V1953.13C3136.17 1960.84 3136 1968.59 3136 1976.37C3136 1984.16 3136.17 1991.9 3136.5 1999.61V2052.87L3141.17 2050.87C3177.4 2309.69 3399.69 2508.87 3668.5 2508.87C3962.59 2508.87 4201 2270.46 4201 1976.37C4201 1829.33 4141.4 1696.21 4045.04 1599.85L3360.12 830.165Z';
@@ -457,6 +512,7 @@ const LETTER = `<div class="logo"><i>H</i>Healthbridge Care Fund</div>
   <p>Kind regards,<br>Your Healthbridge team</p>
   <div class="foot"><u></u><u style="width:70%"></u><u style="width:85%"></u></div>`;
 for (const l of document.querySelectorAll('.letter')) l.innerHTML = LETTER;
+for (const i of document.images) i.decode?.().catch(() => {});
 
 // The pieces fly to the middle of the stage when they gather.
 for (const p of document.querySelectorAll('.piece')) {
@@ -466,7 +522,7 @@ for (const p of document.querySelectorAll('.piece')) {
 
 const fit = () => { const s = Math.min(innerWidth / 1920, innerHeight / 1080); stage.style.transform = `scale(${s})`; };
 if (location.search.includes('render')) document.documentElement.classList.add('render');
-else { fit(); addEventListener('resize', fit); setInterval(() => location.reload(), 131000); } // plays without sound; walkthrough.mp4 has it
+else { fit(); addEventListener('resize', fit); setInterval(() => location.reload(), TIMING.total * 1000 + 1000); } // plays without sound; walkthrough.mp4 has it
 // The glad bee, as BeeJoyView draws it (Sources/Causabee/BeeLoader.swift): up out of its yellow in
 // the first 22 % of 1.05 s, held with a bob and a rock (three beats), down again after 80 %; its
 // wings beat 4.5 times a second, out to 25 degrees, by how far it is up. The send button's arrow
@@ -541,42 +597,51 @@ function drawBee(svg, time, pull = null) {
     r.setAttribute('y', BAR_Y[i] - 160 * (1 - mine) + drop);
   });
 }
-{ // F0: the pull. Times in seconds of the film; lengths in the screenshot's pixels (2 to a point).
-  const scr = document.getElementById('pullscr'), u = .48;
-  const page = document.getElementById('page'), rest = document.getElementById('restcut'), card = document.getElementById('cardcut');
-  const more = document.getElementById('morerows'), box = document.getElementById('fbox'), boxText = document.getElementById('fboxtext'), boxBee = document.getElementById('boxbee');
-  const bee = document.getElementById('pullbee'), finger = document.getElementById('finger');
-  const P0 = 90.67, R = 92.52, SORT = 94.97, DONE = 96.27, TOP = 230, MAX = 120;
+{ // F0: the pull. Times are words of the voice; lengths in the screenshot's pixels (3 to a point).
+  const scr = document.getElementById('pullscr'), u = .32, W = 1206;
+  const page = document.getElementById('page'), sorted = document.getElementById('sorted'), patch = document.getElementById('restpatch');
+  const box = document.getElementById('fbox'), boxText = document.getElementById('fboxtext'), boxBee = document.getElementById('boxbee');
+  const bee = document.getElementById('pullbee'), empty = document.getElementById('pullempty'), finger = document.getElementById('finger');
+  // "pull" … "iPhone." the pull; "and" sorting; "sorted" done, and the bee goes home to its button.
+  const P0 = at('17.5'), R = at('17.9>'), SORT = at('17.14'), DONE = at('17.20'), OUT = P0 - .7, HOME = DONE + .3;
+  const TOP = 210, MAX = 120, BUTTON = [1067, 2404];
   const pulledAt = t => t < P0 ? 0 : t < R ? MAX * smooth((t - P0) / (R - P0)) : MAX * (1 - easeOut3(clamp((t - R) / .35)));
   const px = n => `${n * u}px`;
+  const boxCentre = () => {
+    const b = boxBee.getBoundingClientRect(), r = scr.getBoundingClientRect(), k = W / r.width;
+    return [(b.left + b.width / 2 - r.left) * k, (b.top + b.height / 2 - r.top) * k];
+  };
   painters.push(t => {
     const pulled = pulledAt(t);
-    page.style.transform = `translateY(${px(pulled * 2)})`;
-    rest.style.transform = `translateY(${px(t < R ? -620 : t < DONE ? -620 + 134 * easeOut3(clamp((t - R) / .3)) : -486 + 486 * easeOut3(clamp((t - DONE) / .45)))})`;
-    more.style.transform = rest.style.transform;
-    box.style.opacity = t < R ? 0 : t < DONE ? clamp((t - R) / .2) : 1 - clamp((t - DONE) / .25);
-    card.style.opacity = t < DONE ? 0 : clamp((t - DONE - .1) / .35);
-    boxText.textContent = t < SORT ? 'Fetching mail …' : 'Sorting in 3 mails …';
-    // The bee over the page: with the pull, whole from 90 points on; let go, it flies down to the
-    // mail's place, half as big, and goes as the one there comes.
-    const whole = t >= P0 + (R - P0) * .62;
-    const pull = whole ? 1 : pulled / 90;
+    page.style.transform = `translateY(${px(pulled * 3)})`;
+    patch.style.opacity = t < SORT ? 1 : 0;
+    box.style.opacity = t < R ? 0 : t < SORT ? clamp((t - R) / .2) : 0;
+    sorted.style.opacity = clamp((t - DONE) / .35);
+    boxText.textContent = t < SORT ? 'Fetching mail …' : 'Sorting 3 mails …';
+    // The bee leaves its button for the pull and hovers in the room it opens, whole from 90 points on;
+    // let go, it flies down beside "Fetching mail …", half as big, and works there; when all is
+    // sorted it flies home to its button. While it is out, the button is honey alone: one bee.
     const above = Math.max(10, pulled / 2 - 15);
-    let x = 402, y = TOP + (above + 15) * 2, s = 1;
-    const fly = clamp((t - R - .04) / .34);
-    if (t >= R) {
-      const b = boxBee.getBoundingClientRect(), r = scr.getBoundingClientRect(), k = 804 / r.width;
-      const tx = (b.left + b.width / 2 - r.left) * k, ty = (b.top + b.height / 2 - r.top) * k;
-      const e = smooth(fly); x += (tx - x) * e; y += (ty - y) * e; s = 1 - .5 * e;
+    const hover = [W / 2, TOP + (above + 15) * 3];
+    let [x, y] = BUTTON, s = .7, visible = t >= OUT && t < HOME + .6, pull = null;
+    if (t < P0) { const e = smooth(clamp((t - OUT) / .6)); x += (hover[0] - x) * e; y += (hover[1] - y) * e; s = .7 + .3 * e; }
+    else if (t < R) { [x, y] = hover; s = 1; pull = t >= P0 + (R - P0) * .62 ? 1 : Math.max(.2, pulled / 90); }
+    else if (t < HOME) {
+      const [bx, by] = boxCentre(), e = smooth(clamp((t - R - .04) / .34));
+      x = hover[0] + (bx - hover[0]) * e; y = hover[1] + (by - hover[1]) * e; s = 1 - .5 * e;
+    } else {
+      const [bx, by] = [380, 655], e = smooth(clamp((t - HOME) / .6));
+      x = bx + (BUTTON[0] - bx) * e; y = by + (BUTTON[1] - by) * e; s = .5 + .2 * e;
     }
-    const arriving = clamp((t - R - .26) / .12);
-    bee.style.opacity = t < P0 || t > R + .5 ? 0 : (t >= R ? 1 - arriving : whole ? 1 : clamp(pulled / 40));
-    bee.style.left = px(x - 52.5); bee.style.top = px(y - 30); bee.style.transform = `scale(${s})`;
+    const working = t >= R + .3 && t < SORT;   // the one beside the words is the bee, while it works; from "and" the app's own line has it
+    bee.style.opacity = visible && !working && !(t >= SORT && t < HOME) ? 1 : 0;
+    boxBee.style.opacity = working ? 1 : 0;
+    empty.style.opacity = t >= OUT && t < HOME + .6 ? 1 : 0;
+    bee.style.left = px(x - 79); bee.style.top = px(y - 45); bee.style.transform = `scale(${s})`;
     if (bee.style.opacity > 0) drawBee(bee, t, pull);
-    boxBee.style.opacity = t < R + .26 ? 0 : 1;
     drawBee(boxBee, t);
     finger.style.opacity = t < P0 - .25 || t > R + .2 ? 0 : t < P0 ? (t - P0 + .25) / .25 : t > R ? 1 - (t - R) / .2 : 1;
-    finger.style.left = px(357); finger.style.top = px(600 + pulled * 2);
+    finger.style.left = px(603 - 67); finger.style.top = px(900 + pulled * 3);
   });
 }
 const tick0 = performance.now();

@@ -65,8 +65,17 @@ func picture(at t: Double, name: String, then next: @escaping () -> Void) {
             shot.rect = web.bounds
             shot.snapshotWidth = NSNumber(value: size[0])
             web.takeSnapshot(with: shot) { image, error in
-                guard let image, let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
-                      let png = rep.representation(using: .png, properties: [:]) else { print("snapshot failed at \(t): \(String(describing: error))"); exit(1) }
+                // At exactly the size asked for: on a Retina screen the snapshot has twice the pixels.
+                guard let image, let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size[0]), pixelsHigh: Int(size[1]),
+                                                             bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                                             colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { print("snapshot failed at \(t): \(String(describing: error))"); exit(1) }
+                rep.size = NSSize(width: size[0], height: size[1])
+                NSGraphicsContext.saveGraphicsState()
+                NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+                NSGraphicsContext.current?.imageInterpolation = .high
+                image.draw(in: NSRect(x: 0, y: 0, width: size[0], height: size[1]))
+                NSGraphicsContext.restoreGraphicsState()
+                guard let png = rep.representation(using: .png, properties: [:]) else { print("snapshot failed at \(t)"); exit(1) }
                 do { try png.write(to: folder.appendingPathComponent(name)) } catch { print("cannot write \(name): \(error)"); exit(1) }
                 next()
             }

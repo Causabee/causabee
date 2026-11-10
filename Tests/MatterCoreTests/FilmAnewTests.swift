@@ -170,9 +170,11 @@ struct FilmAnewTests {
         let inPage = try #require(page.firstMatch(of: /<script id="timing" type="application\/json">(?<json>[\s\S]*?)<\/script>/), "The page has no timing")
         let pageTiming = try JSONDecoder().decode(Timing.self, from: Data(inPage.output.json.utf8))
         #expect(pageTiming.total == timing.total && pageTiming.lines.map(\.start) == timing.lines.map(\.start), "The page's timing is not timing.json")
-        let body = try #require(page.firstMatch(of: /<div class="stage" id="stage">(?<body>[\s\S]*?)<script>/)).output.body
+        let body = try #require(page.firstMatch(of: /<div class="stage" id="stage">(?<body>[\s\S]*?)<script id="timing"/)).output.body
         let scenes = body.split(separator: "<div class=\"scene").dropFirst()
-        #expect(scenes.count == 13, "\(scenes.count) scenes, not 13")
+        // The 13 scenes of the story, as October's page has them: 12 on the page, the morning's end
+        // ("All that's left for you …") is told in the morning's own scene, under the disguise.
+        #expect(scenes.count == 12, "\(scenes.count) scenes on the page, not 12")
         for (k, scene) in scenes.enumerated() {
             let style = scene.firstMatch(of: /style="(?<s>[^"]*)"/)?.output.s ?? ""
             func times(_ s: Substring) -> [Double] { s.matches(of: /\{(?<m>[^}]+)\}/).compactMap { Self.moment($0.output.m, timing, words: words) } }
