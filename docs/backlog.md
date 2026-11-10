@@ -5,6 +5,13 @@ Small things noticed while using the app, to pick up later. Newest first.
 What is open from the review against Apple's Human Interface Guidelines, and the three findings of the
 purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`. (2026-10-10)
 
+## Parked
+
+Seen while building something else. Not built now: each becomes a feature, joins a polish batch, or is dropped.
+
+- The privacy page still says "Effective 28 October 2026" after the changes of 10 November (2026-11-10)
+- The website's main screenshot (site/assets/img/matter-1440.webp) still shows "Claude Opus 5" under an answer (2026-11-10)
+
 ## Before the App Store
 
 - **The assistant as a proper chat, second round** (AssistantView.swift, Conversation.swift,
