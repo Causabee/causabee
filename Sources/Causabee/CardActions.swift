@@ -215,11 +215,8 @@ enum CardActions {
 
     static func live<T: PersistentModel>(_ id: PersistentIdentifier, as type: T.Type, in context: ModelContext) -> T? {
         // The one the context holds already, without asking the store: the brief's proposals ask
-        // for their tasks each time a page draws.
-        if let known: T = context.registeredModel(for: id), !known.isDeleted, known.modelContext != nil { return known }
-        var descriptor = FetchDescriptor<T>(predicate: #Predicate { $0.persistentModelID == id })
-        descriptor.fetchLimit = 1
-        return (try? context.fetch(descriptor))?.first
+        // for their tasks each time a page draws. Of another kind: none — never another item.
+        context.stored(id, as: type)
     }
 
     static func live<T: PersistentModel>(_ ref: FactRef, as type: T.Type, in context: ModelContext) -> T? {

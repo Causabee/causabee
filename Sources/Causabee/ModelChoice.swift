@@ -377,7 +377,7 @@ final class StoredChanges {
     }
 
     private func todo(_ id: PersistentIdentifier, in matters: [Matter], matter: PersistentIdentifier) -> Todo? {
-        if let known: Todo = context?.registeredModel(for: id), !known.isDeleted { return known }
+        if let known = context?.known(id, as: Todo.self) { return known }
         return matters.first { $0.persistentModelID == matter }?.todos?.first { $0.persistentModelID == id }
     }
 

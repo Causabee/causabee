@@ -79,9 +79,7 @@ private enum Kept: @unchecked Sendable {
     /// since is not put back on.
     private static func live<T: PersistentModel>(_ id: PersistentIdentifier?, as type: T.Type, in context: ModelContext) -> T? {
         guard let id else { return nil }
-        var descriptor = FetchDescriptor<T>(predicate: #Predicate { $0.persistentModelID == id })
-        descriptor.fetchLimit = 1
-        return (try? context.fetch(descriptor))?.first
+        return context.stored(id, as: type)
     }
 
     /// A stand-in where the first mail is asked for and there was none.

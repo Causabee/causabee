@@ -492,7 +492,7 @@ final class Navigation {
             record.payload = data
             // Fetched, not taken by id: a matter merged away since is gone, and must not be touched.
             record.matter = turn.matter.flatMap { id in
-                try? context.fetch(FetchDescriptor<Matter>(predicate: #Predicate { $0.persistentModelID == id })).first
+                context.stored(id, as: Matter.self)
             }
             written[turn.id] = data
             changed = true

@@ -278,9 +278,7 @@ extension Membership {
         undo?.registerUndo(withTarget: context) { context in
             MainActor.assumeIsolated {
                 func live<T: PersistentModel>(_ id: PersistentIdentifier, _ type: T.Type) -> T? {
-                    var descriptor = FetchDescriptor<T>(predicate: #Predicate { $0.persistentModelID == id })
-                    descriptor.fetchLimit = 1
-                    return (try? context.fetch(descriptor))?.first
+                    context.stored(id, as: type)
                 }
                 // Gone meanwhile — the person merged away, the matter merged — there is nothing to put back.
                 guard let party = live(who, Party.self), let matter = live(where_, Matter.self) else { return }

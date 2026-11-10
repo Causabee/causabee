@@ -172,4 +172,29 @@ struct ChatControlTests {
         #expect(AssistantPrompt.system.contains("`put_away`") && AssistantPrompt.system.contains("`change_field`"))
         #expect(AssistantPrompt.system.contains("`move_to`") && AssistantPrompt.system.contains("`reopen`"))
     }
+
+    @Test("An id asked for as another kind is none — the app does not stop (10 November: Set again closed it)")
+    func anotherKindIsNone() throws {
+        let w = try World()
+        let id = w.appointment.persistentModelID
+        #expect(w.context.known(id, as: Todo.self) == nil)
+        #expect(w.context.known(id, as: Deadline.self) == nil)
+        #expect(w.context.known(id, as: Appointment.self) === w.appointment)
+        #expect(w.context.known(w.todo.persistentModelID, as: Todo.self) === w.todo)
+    }
+
+    @Test("Fetched by another kind's id: none — never another item with the same row number (10 November: Change date changed a task)")
+    func anotherKindFetchedIsNone() throws {
+        let w = try World()
+        let fresh = ModelContext(w.context.container)
+        let id = w.appointment.persistentModelID
+        // What SwiftData does by itself: the task with the same row number.
+        var descriptor = FetchDescriptor<Todo>(predicate: #Predicate { $0.persistentModelID == id })
+        descriptor.fetchLimit = 1
+        #expect(!((try? fresh.fetch(descriptor)) ?? []).isEmpty, "SwiftData no longer answers with another kind — this guard may go")
+        #expect(fresh.stored(id, as: Todo.self) == nil)
+        #expect(fresh.stored(id, as: Deadline.self) == nil)
+        #expect(fresh.stored(id, as: Appointment.self)?.what == "Probefahrt")
+        #expect(fresh.stored(w.todo.persistentModelID, as: Todo.self)?.text == "Versicherung anfragen")
+    }
 }
