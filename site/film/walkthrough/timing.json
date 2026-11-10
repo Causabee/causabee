@@ -1,7 +1,7 @@
 {
  "voice": "4rgssJ1pg3E9c0U78Iid",
  "model": "eleven_v4",
- "total": 120.3,
+ "total": 121.4,
  "lines": [
   {
    "text": "This is Causabee.",
@@ -10,108 +10,108 @@
   },
   {
    "text": "Mail, screenshots, photos, letters, notes \u2014 it turns all the pieces into clear matters.",
-   "start": 2.823,
-   "end": 9.84
+   "start": 2.56,
+   "end": 9.744
   },
   {
    "text": "Let's follow one of them \u2014 Mum's care, after her fall \u2014 through one day, on the Mac, the iPad, and the iPhone.",
-   "start": 10.288,
-   "end": 18.72
+   "start": 10.4,
+   "end": 18.267
   },
   {
    "text": "In the morning, you open your Mac.",
-   "start": 18.787,
-   "end": 21.2
+   "start": 19.24,
+   "end": 21.68
   },
   {
    "text": "What came in overnight is already read, and waits on top of its matter.",
-   "start": 21.28,
-   "end": 25.76
+   "start": 21.82,
+   "end": 26.32
   },
   {
    "text": "Before anything went to the AI, names and numbers were swapped for placeholders, right on your Mac.",
-   "start": 26.11,
-   "end": 31.92
+   "start": 26.67,
+   "end": 32.48
   },
   {
    "text": "Dr. Brandt became Person A, and Helga became Person B.",
-   "start": 32.2,
-   "end": 36.88
+   "start": 32.56,
+   "end": 37.36
   },
   {
    "text": "The AI only ever sees the disguise.",
-   "start": 37.02,
-   "end": 40.0
+   "start": 37.44,
+   "end": 40.56
   },
   {
    "text": "All that's left for you is a look: what is new, and what it brings.",
-   "start": 40.133,
-   "end": 44.8
+   "start": 40.693,
+   "end": 45.36
   },
   {
-   "text": "Here, a new task: get the bath seat prescription.",
-   "start": 45.08,
-   "end": 48.48
+   "text": "Here, a new task: gather the papers for the visit.",
+   "start": 45.71,
+   "end": 49.04
   },
   {
    "text": "Every matter has one next step, and the reason it can't wait.",
-   "start": 48.747,
-   "end": 52.8
+   "start": 49.307,
+   "end": 53.28
   },
   {
    "text": "Below it are the tasks: whose each one is, when it's due, and where it came from.",
-   "start": 53.08,
-   "end": 58.56
+   "start": 53.36,
+   "end": 59.2
   },
   {
    "text": "In the afternoon, you're at Mum's, with the iPad. Tick off what's done.",
-   "start": 58.64,
-   "end": 63.36
+   "start": 59.267,
+   "end": 64.16
   },
   {
    "text": "Through your own iCloud, it's ticked off on your iPhone and your Mac as well.",
-   "start": 63.56,
-   "end": 68.0
+   "start": 64.24,
+   "end": 68.813
   },
   {
    "text": "There's paper, too. A letter from Mum's health insurer: her own share of the hospital stay.",
-   "start": 68.133,
-   "end": 73.92
+   "start": 68.88,
+   "end": 74.88
   },
   {
    "text": "Scan it with your iPhone. The bee reads it, and one tap sorts it in: the letter into Mum's matter, and a task \u2014 pay her share by the end of the month.",
-   "start": 74.0,
-   "end": 84.0
+   "start": 75.16,
+   "end": 85.04
   },
   {
    "text": "On the way home, pull down on your iPhone. The bee flies in, and what came in since is sorted into its matters.",
-   "start": 84.08,
-   "end": 91.28
+   "start": 85.107,
+   "end": 92.333
   },
   {
    "text": "Then just ask: what do I need to do before Tuesday's visit?",
-   "start": 91.36,
-   "end": 95.12
+   "start": 92.4,
+   "end": 96.24
   },
   {
    "text": "The answer comes with its sources. And a good suggestion becomes a task, with one tap.",
-   "start": 95.26,
-   "end": 100.88
+   "start": 96.32,
+   "end": 102.32
   },
   {
    "text": "In the evening, back at the Mac, it's all there: what you ticked off on the iPad, and what you added on the iPhone.",
-   "start": 100.947,
-   "end": 108.034
+   "start": 102.387,
+   "end": 109.373
   },
   {
    "text": "What comes in stays on your devices, and goes with you through your own iCloud.",
-   "start": 108.206,
-   "end": 114.24
+   "start": 109.44,
+   "end": 115.12
   },
   {
    "text": "Causabee. Be organized. Be private.",
-   "start": 114.31,
-   "end": 117.84
+   "start": 115.28,
+   "end": 118.88
   }
  ]
 }
