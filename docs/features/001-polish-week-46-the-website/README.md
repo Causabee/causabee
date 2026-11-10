@@ -20,4 +20,4 @@
 
 - 2026-11-10 · 3-spec.md: Pillow is needed besides ffmpeg, for WebP; found while building (ffmpeg from Homebrew has no WebP encoder); and the poster is the frame at 5.0 s, and four more pictures name another AI. Approved by the owner: "approved".
 - 2026-11-10 · Found while building: the film is drawn over the website's own pictures (care-2880, iphone-assistant and others), its ticks and cards placed on their pixels. On the new care picture they land on the wrong rows. And the film itself shows "Claude Opus 5" in its chat, about 25 s of 130, from those pictures. Stopped; the criteria go back to the owner.
-- 2026-11-10 · The owner chose "Own copies, park it": the film keeps its pictures as its own copies (2-acceptance.md AC-3, 3-spec.md "Data"); renewing them is parked. Waiting for the owner's approval of the changed criteria.
+- 2026-11-10 · The owner chose "Own copies, park it": the film keeps its pictures as its own copies (2-acceptance.md AC-3, 3-spec.md "Data"); renewing them is parked. Approved by the owner: "approved".
