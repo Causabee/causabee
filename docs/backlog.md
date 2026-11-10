@@ -9,9 +9,11 @@ purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`.
 
 Seen while building something else. Not built now: each becomes a feature, joins a polish batch, or is dropped.
 
+Next features, in the owner's order (10 November): **F002** the film anew from today's app · **F003** the website's screenshots and content from today's app · **F004** the right model for each job (evidence: `docs/ai-cost-2026-11.md`).
+
 
 - Fix lane: the beeserver's ledger writes a request paid from top-ups as two rows, both with its tokens (src/index.ts:199–209); token and request sums over both kinds count it twice. The dollars are right. Found measuring costs, docs/ai-cost-2026-11.md (2026-11-10)
-- The film anew from today's app: its own pictures (site/film/walkthrough/img/) still show "Claude Opus 5" in the chat for about 25 s, and the care matter on its old Plan page; retake them as each scene needs, realign every tick and card, render again. The teaser pages (site/film/teaser) point to site/assets/img too. (2026-11-10)
+- The film anew from today's app: its own pictures (site/film/walkthrough/img/) still show "Claude Opus 5" in the chat for about 25 s, and the care matter on its old Plan page; retake them as each scene needs, realign every tick and card, render again. The teaser pages (site/film/teaser) point to site/assets/img too. And the bee: on the iPhone it stays low on the right through every scene, over the list and the bolt (the owner, 10 November) — as the app looked in October. (2026-11-10)
 - Delete site/film/walkthrough/walkthrough-720-cc.mp4: the captions test of 14 October, not served by the website (2026-11-10)
 ## Before the App Store
 
