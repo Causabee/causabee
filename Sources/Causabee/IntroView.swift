@@ -17,15 +17,15 @@ struct IntroView: View {
     }
 
     static let pages = [
-        Page(image: "intro-1", title: "Mail, files, screenshots: sorted into matters",
-             text: "Give Causabee whatever you have: a mail, a PDF, a screenshot. It sorts everything into matters, like a trip, a move or care for a parent, and the overview shows what comes next and what is late.",
-             privacy: "Private by design: your mail and files stay on your Mac. Before anything goes to the AI, names, addresses and numbers are replaced."),
+        Page(image: "intro-1", title: "Everything that comes in, sorted into matters",
+             text: "Give Causabee whatever you have: a mail, a PDF, a screenshot, a photo, a note. It sorts everything into matters, like a trip, a move or care for a parent, and the overview shows what comes next and what is late.",
+             privacy: "Private by design: what comes in stays on your devices and in your own iCloud. Before anything goes to the AI, names, addresses and numbers are replaced."),
         Page(image: "intro-2", title: "One page for each matter",
              text: "The next step, a short summary, your own notes and every task, all in one place. On the right is the assistant for this matter."),
         Page(image: "intro-3", title: "Who does what, and by when",
              text: "Tasks are yours, shared, or someone else's you wait for, and some can only start after another. Dates and tasks go to Calendar and Reminders with one click."),
         Page(image: "intro-4", title: "Files, links and people",
-             text: "Attachments, shared documents and everyone involved, each with their role. Every fact links back to the mail it came from."),
+             text: "Attachments, shared documents and everyone involved, each with their role. Every fact links back to where it came from."),
         Page(image: "intro-5", title: "Ask about a matter",
              text: "Ask a question and get an answer with its sources. A suggestion becomes a task with one click. Your question goes out disguised, like everything else."),
     ]

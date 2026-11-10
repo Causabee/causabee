@@ -75,8 +75,8 @@ final class BeeServer {
                 UserDefaults.standard.set(false, forKey: AutoMode.key)
                 if why == "allowance_used" { BeeServer.shared.monthUsed = 1 }
                 BeeServer.shared.problem = why == "subscription_ended"
-                    ? "Causabee Pro has ended, so Pro is off. Apple's model on this device reads new mail."
-                    : "This month's Pro is used up, so Pro is off until it starts anew — or until a top-up. Apple's model on this device reads new mail meanwhile."
+                    ? "Causabee Pro has ended, so Pro is off. Apple's model on this device reads what comes in."
+                    : "This month's Pro is used up, so Pro is off until it starts anew — or until a top-up. Apple's model on this device reads what comes in meanwhile."
             }
         }
     }
@@ -182,7 +182,7 @@ struct ProBar: View {
         if BeeServer.isSetUp, server.kind == "credit" {
             // Top-ups without Pro: what is left of them, in Pro months.
             meter("Your top-ups", left: min(1, server.extraShare), words: "of a Pro month left", line: nil,
-                  note: server.extraShare <= 0 ? "Used. Apple's model on this device reads new mail — or buy another top-up." : nil)
+                  note: server.extraShare <= 0 ? "Used. Apple's model on this device reads what comes in — or buy another top-up." : nil)
         } else if BeeServer.isSetUp || PlanShot.current?.meters == true, let used = server.monthUsed {
             // What can still be used: the month's and the top-ups' together (8 November: after a
             // top-up it said "0 % left", the top-up only in small print).

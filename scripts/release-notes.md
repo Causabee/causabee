@@ -35,7 +35,7 @@ What comes in stays on your devices; a matter's files stay on your devices or in
 
 ## iCloud
 
-In **Settings › iCloud**, choose **On** and start Causabee again: your matters — tasks, dates, people, a short summary of what came in and the chat's history — sync through your own private iCloud to your iPhone, iPad and other Macs. Full mail texts and files stay on the device they came to. **Off** keeps everything on this Mac.
+In **Settings › iCloud**, choose **On** and start Causabee again: your matters — tasks, dates, people, a short summary of what came in and the chat's history — sync through your own private iCloud to your iPhone, iPad and other Macs. The full texts of mail and scans go too, end-to-end encrypted; files stay in each matter’s folder. **Off** keeps everything on this Mac.
 
 ## Not in this beta yet
 

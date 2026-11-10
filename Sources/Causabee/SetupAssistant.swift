@@ -241,7 +241,7 @@ struct SetupAssistant: View {
             Hint(number: 1, text: "Put the label “Causabee” on the mails you want sorted. Start with a few from one matter.")
             Hint(number: 2, text: "Click “Get new mail”. Causabee fetches them; nothing is read by an AI yet.")
             Hint(number: 3, text: "Click “Sort in”. Each mail is sorted once — by Apple's model on this Mac, or with Pro by the bigger AI — into a matter with its tasks, dates and people.")
-            Hint(number: 4, text: "Drop a screenshot or a PDF onto the window any time. It is sorted the same way.")
+            Hint(number: 4, text: "Drop a screenshot, a photo, a PDF or a note onto the window any time. It is sorted the same way.")
         }
     }
 }

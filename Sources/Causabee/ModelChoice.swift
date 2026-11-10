@@ -75,13 +75,13 @@ enum ModelChoice {
     /// Who reads new mail now, in one sentence for Settings.
     static var readerWords: String {
         if DemoData.isRequested { return "In the demo, the mail is made up and nothing is sent." }
-        if proPicks { return "Pro: GPT-6.1 Sol reads new mail as it comes — names disguised first." }
-        if case .device = mailReader(for: mail) { return "Apple's model on this device reads new mail. Nothing leaves it." }
+        if proPicks { return "Pro: GPT-6.1 Sol reads what comes in, as it comes — names disguised first." }
+        if case .device = mailReader(for: mail) { return "Apple's model on this device reads what comes in. Nothing leaves it." }
         if case .rules = mailReader(for: mail) { return "New mail comes in by its threads, and you place the rest. Nothing leaves this device." }
         if client(for: mail) != nil {
-            return String(format: "%@ reads new mail with your own key — names disguised first.", mail.label)
+            return String(format: "%@ reads what comes in with your own key — names disguised first.", mail.label)
         }
-        return "In the demo, nothing reads new mail."
+        return "In the demo, nothing reads what comes in."
     }
 
     /// Under the mails ticked to be sorted in: who reads them.

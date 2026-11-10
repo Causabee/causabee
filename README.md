@@ -3,7 +3,7 @@
 <h1 align="center">Causabee</h1>
 
 <p align="center"><strong>Every matter. In its place.</strong><br>
-A Mac app that turns scattered mail, documents and screenshots into clear matters:<br>
+For Mac, iPhone and iPad. It turns what comes in — mail, screenshots, photos, files, notes — into clear matters:<br>
 what comes next, who does what, and by when.</p>
 
 <p align="center">
@@ -22,27 +22,29 @@ screenshot you meant to keep. Causabee puts the pieces together.
 - **One page for each matter.** The next step, a short summary, your notes and every task.
 - **Who does what, and by when.** Tasks are yours, shared, or someone else's you're waiting for.
   Dates and tasks go to Calendar and Reminders with one click, and stay in step both ways.
-- **Every fact has a source.** Each task and date links back to the mail it came from.
+- **Every fact has a source.** Each task and date links back to where it came from.
 - **Ask about a matter.** Answers come with their sources, and a suggestion becomes a task in one click.
-- **Mail, files and screenshots.** Put a label on a mail in Gmail or iCloud, or drag in a PDF or a
-  screenshot. A matter keeps the language its mail was written in.
+- **Everything comes in.** Put a label on a mail in Gmail or iCloud, drag in a PDF, a photo or a
+  screenshot, write a note, or say it in the chat. A matter keeps the language it was written in.
+- **Change anything by saying it.** A time, a place, where something belongs: said in the chat,
+  it changes, with Undo.
 
 ## Private by design
 
-- Your mail stays on your Mac. A matter's files stay on your devices and, when you choose a folder, in your own iCloud Drive.
-- Before any text goes to an AI, names, addresses and numbers are replaced on the Mac — and only
-  when you click. If the disguise can't be built, nothing is sent.
-- You pick Claude, OpenAI or Mistral for each job, with your own API key in the Keychain. Every
-  answer shows what it cost.
-- No server, no account, no analytics. The whole policy is on the
-  [website](https://causabee.app/privacy.html).
+- What comes in stays on your devices and, with iCloud sync on, in your own private iCloud, the full
+  texts end-to-end encrypted. A matter's files stay on your devices or in a folder of your own iCloud Drive.
+- Before any text goes to an AI, names, addresses and numbers are replaced on the device. If the
+  disguise can't be built, nothing is sent.
+- One AI: OpenAI GPT-6.1 Sol, with Causabee Pro, through Causabee's server, which keeps none of the
+  text. Without Pro, Apple's model on the device sorts what comes in, and nothing leaves it.
+- No analytics. The whole policy is on the [website](https://causabee.app/privacy.html).
 
 ## Try it
 
 [Download the beta](https://github.com/causabee/causabee/releases) (macOS Sequoia 15 or later),
 open it, and click **Try the demo** at the end of the introduction: nine made-up matters, with
-nothing to set up. For your own mail you need an IMAP account — Gmail needs an app password — and
-an API key from Anthropic, OpenAI or Mistral.
+nothing to set up. For your own mail you need an IMAP account — Gmail needs an app password.
+Causabee Pro adds the summary, the chat and an AI that reads what comes in.
 
 Causabee is in beta. Your matters sync between your Mac, iPhone and iPad through your own iCloud.
 Not in the beta yet: Sign in with Google ([docs/google-sign-in.md](docs/google-sign-in.md)).
@@ -126,12 +128,12 @@ Useful flags:
 - `--mode standin` — realistic stand-ins instead of `[Person A]`; question 3 compares the two
 - `--show 1` — print the first decision as formatted JSON
 
-### Asking Claude
+### Asking the AI
 
 ```sh
 swift run matter-spike run Samples/private/mail --dry-run          # write requests.jsonl, send nothing
 swift run matter-spike run Samples/private/mail --classify --limit 10
-swift run matter-spike run Samples/private/mail --classify --model haiku --mode standin
+swift run matter-spike run Samples/private/mail --classify --mode standin
 swift run matter-spike review                                       # review.html, beside your labels
 ```
 
@@ -243,7 +245,7 @@ open .build-app/Build/Products/Debug/Causabee.app
 
 Its data lives in `~/Library/Application Support/Causabee` — store, name list, record, mail
 texts, files — and `matter-spike` uses the same folder once a store is there (`--data` names
-another). The API keys are pasted in its settings (⌘,) and kept in the Keychain.
+another). A developer's own OpenAI key, if any, is pasted in its settings (⌘,) and kept in the Keychain.
 
 **iCloud.** In the settings: *Off*, *Test* (made-up data, its own store in
 `Application Support/Causabee-Test` and the container `iCloud.de.chille.causabee.test`) or
@@ -273,7 +275,7 @@ for names like a typed question, as a to-do's own note is.
 worked out on the Mac, for nothing: your own late to-dos first, then an appointment or a deadline
 in the next three days, then asking again for what is late from others, then your own soonest
 to-do, then waiting. A step that is a message — nachfassen, schicken — has "Nachricht schreiben".
-"Besser vorschlagen" asks Claude instead (about 3 cents, pseudonymised, your
+"Besser vorschlagen" asks the AI instead (about 3 cents, pseudonymised, your
 notes included); its step is shown until a to-do comes in or is ticked off.
 
 **What waits for what.** Right-click a to-do → "Wartet auf …", or "Erst nach" in its editor, or
@@ -295,7 +297,7 @@ social media, privacy and legal pages, pictures, bare homepages. The rest is off
 "Aus den Mails": "Behalten", or "Nicht wichtig", and it is not offered again. The mail text the
 model reads is not touched by this, so nothing is sent again.
 
-**Asking the assistant.** A question goes to Claude with the facts of the pinned matter, or of
+**Asking the assistant.** A question goes to the AI with the facts of the pinned matter, or of
 every matter, disguised with `mapping.json` exactly as the mail was. Only what you typed is
 searched for new names — every name in the facts came back from the mail's disguise already —
 and a known name is disguised in every spelling (`Süß`, `Süss`, `Suess`). The answer is short
@@ -334,9 +336,10 @@ as a card, with the first to-dos beside it.
 never sends; that button is the owner's. A name typed a letter off ("Geor") is read as the one
 person it almost is, on the device, and the thread says so.
 
-Not yet: speaking instead of typing, Reminders and Calendar, PDFs and photos of letters.
 
 ## Other models, tested
+
+History, from 28 September: the product now uses one model, GPT-6.1 Sol, for everything.
 
 `matter-bench` scores a model against the store — which holds the owner's corrections — on the
 same text Opus was sent. Result on 186 labelled mails (2026-09-28): Apple's on-device model and

@@ -36,7 +36,7 @@
     <h2 id="short">The short version</h2>
     <ul>
       <li>Your mail, files and matters are kept <strong>on your devices</strong>. If you turn on iCloud sync, they also go to <strong>your own private iCloud</strong>.</li>
-      <li>Without Causabee Pro, <strong>Apple’s model on your device</strong> reads your mail. <strong>Nothing leaves it.</strong></li>
+      <li>Without Causabee Pro, <strong>Apple’s model on your device</strong> reads what comes in. <strong>Nothing leaves it.</strong></li>
       <li>With Causabee Pro, or a top-up, text goes to a bigger AI — but first <strong>names, addresses and numbers are replaced</strong>. If that can’t be done, nothing is sent. It passes through <strong>Causabee’s server in the EU</strong>, which keeps none of it: only how much each request used.</li>
       <li>Causabee has <strong>no analytics, no ads and no accounts with your name</strong>. Purchases go through Apple; the developer never sees who you are or how you pay.</li>
       <li>Causabee is <strong>open source</strong>, so anyone can check that this page is true.</li>
@@ -49,7 +49,7 @@
 
   <h2>What Causabee reads</h2>
   <h3>Mail</h3>
-  <p>You connect a mail account in the app: Gmail, iCloud, or another provider over IMAP. You sign in with an app password, or with “Sign in with Google”. Causabee then reads <strong>only new mail with the label you use for it</strong> (for example “Causabee”). It does not read the rest of your mailbox, and it does not even mark the mail it reads as read.</p>
+  <p>You connect a mail account in the app: Gmail, iCloud, or another provider over IMAP. You sign in with an app password; “Sign in with Google” is not offered yet. Causabee then reads <strong>only new mail with the label you use for it</strong> (for example “Causabee”). It does not read the rest of your mailbox, and it does not even mark the mail it reads as read.</p>
   <p>Causabee <strong>never writes to your mailbox</strong>. It cannot send mail, and it cannot delete or move mail. A message Causabee drafts for you opens in your mail app, and you send it. A document you scan on the iPhone is kept on your iPhone, in the Files app under “On My iPhone › Causabee”.</p>
   <h3>Files and screenshots</h3>
   <p>Files, PDFs and screenshots are read only when you drop them into Causabee.</p>
@@ -58,20 +58,20 @@
 
   <h2>Where your data is kept</h2>
   <ul>
-    <li><strong>On your Mac</strong>, in <code>~/Library/Application Support/Causabee</code>. The full text of your mail stays here and is never synced.</li>
+    <li><strong>On your Mac</strong>, in <code>~/Library/Application Support/Causabee</code>. Without iCloud sync, nothing of it leaves this Mac.</li>
     <li><strong>In your private iCloud</strong>, only if you turn on iCloud sync in the settings (it is off at first). Your matters, tasks, dates, notes, the assistant’s answers, a short digest of each mail, and the full text of each mail and scanned file Causabee read are kept in the private iCloud database of your Apple Account, so every one of your devices has them. The full texts are end-to-end encrypted. Only you can read it. The developer has no access.</li>
     <li><strong>In a folder for each matter</strong>, in iCloud Drive or in a folder you choose, for the files that belong to it.</li>
-    <li><strong>In your Keychain</strong>, shared through iCloud Keychain, for your mail app password or Google sign-in token, the key that lets your devices use Causabee Pro, and any AI provider keys of your own.</li>
+    <li><strong>In your Keychain</strong>, shared through iCloud Keychain, for your mail app password, the key that lets your devices use Causabee Pro, and any AI provider keys of your own.</li>
   </ul>
 
-  <h2>Who reads your mail</h2>
-  <p>Causabee uses an AI model to sort mail into matters, find tasks and dates, write summaries and answer your questions.</p>
+  <h2>Who reads what comes in</h2>
+  <p>Causabee uses an AI model to sort what comes in — mail, screenshots, photos, scans, files — into matters, find tasks and dates, write summaries and answer your questions.</p>
   <ul>
     <li><strong>Mail that is clearly not about a matter</strong>, such as newsletters, is left out by simple rules on your device, without any AI.</li>
     <li><strong>Without Causabee Pro</strong>, Apple’s model on your device reads new mail when you tap “Sort in”, and the screenshots and scans you add. Nothing is sent anywhere.</li>
     <li><strong>On a device without Apple Intelligence</strong>, and without Pro, new mail comes in by its conversation and by who sent it, with no AI at all; you place the rest.</li>
     <li><strong>Without Pro, nothing is written about a matter.</strong> The next step is chosen by rules on your device, from your own tasks and dates. The summary and the assistant are part of Pro.</li>
-    <li><strong>With Causabee Pro</strong>, while Pro is on, a bigger AI reads new mail as it comes and answers your questions. With Pro off, Apple’s model on your device reads it again.</li>
+    <li><strong>With Causabee Pro</strong>, while Pro is on, a bigger AI reads what comes in, as it comes, and answers your questions. With Pro off, Apple’s model on your device reads it again.</li>
   </ul>
 
   <h2>What is sent to a bigger AI</h2>
@@ -97,7 +97,7 @@
   <p>Causabee Plus, Causabee Pro and top-ups are bought through the App Store. Apple handles the payment; the developer receives only what Apple tells every developer: which product was bought, when, until when, and whether it was refunded — never your name or how you paid. Apple’s <a href="https://www.apple.com/legal/privacy/">privacy policy</a> applies to the purchase itself.</p>
 
   <h2>Google user data</h2>
-  <p>If you use “Sign in with Google”, Causabee asks Google for these permissions:</p>
+  <p>Once “Sign in with Google” is offered, Causabee will ask Google for these permissions:</p>
   <ul>
     <li><code>https://mail.google.com/</code> – Gmail’s IMAP access. Causabee uses it only to read new mail with your label.</li>
     <li><code>email</code> – your address, to show which account is connected.</li>

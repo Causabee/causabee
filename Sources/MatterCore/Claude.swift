@@ -429,11 +429,11 @@ public extension Claude.Failure {
             switch status {
             case 401, 403: return "The AI service did not accept the API key. Check it in Settings."
             case 402 where body.contains("subscription_ended"):
-                return "Causabee Pro has ended. Apple's model on this device reads new mail; Pro comes back with the subscription."
+                return "Causabee Pro has ended. Apple's model on this device reads what comes in; Pro comes back with the subscription."
             case 402 where body.contains("allowance_used"):
-                return "This month's Pro is used up. Apple's model on this device reads new mail until it starts anew."
+                return "This month's Pro is used up. Apple's model on this device reads what comes in until it starts anew."
             case 429 where body.contains("daily_limit"):
-                return "Today's share of Pro is used. It goes on tomorrow; Apple's model on this device reads new mail meanwhile."
+                return "Today's share of Pro is used. It goes on tomorrow; Apple's model on this device reads what comes in meanwhile."
             case 402: return "The AI service says the account has no credit left. Top it up with the provider, then try again."
             case 404: return "The AI service does not know this model. Choose another in Settings."
             case 408, 504: return "The AI service took too long to answer. Try again."

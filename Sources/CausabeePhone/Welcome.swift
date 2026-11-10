@@ -19,13 +19,13 @@ struct WelcomeSheet: View {
 
     /// The Mac's pages, said for a touch screen; its files-and-people page goes into the third.
     static let pages = [
-        Page(image: "phone-intro-1.jpg", title: "Mail, files, screenshots: sorted into matters",
-             text: "Give Causabee whatever you have: a mail, a PDF, a screenshot. It sorts everything into matters — a trip, a move, care for a parent — and the overview shows what comes next and what is late.",
-             privacy: "Your mail and files stay with you. Before anything goes to the AI, names, addresses and numbers are replaced."),
+        Page(image: "phone-intro-1.jpg", title: "Everything that comes in, sorted into matters",
+             text: "Give Causabee whatever you have: a mail, a PDF, a screenshot, a photo, a note. It sorts everything into matters — a trip, a move, care for a parent — and the overview shows what comes next and what is late.",
+             privacy: "What comes in stays with you. Before anything goes to the AI, names, addresses and numbers are replaced."),
         Page(image: "phone-intro-2.jpg", title: "One page for each matter",
              text: "The next step, a short summary, your own notes and every task, all in one place. The bee opens the assistant for this matter."),
         Page(image: "phone-intro-3.jpg", title: "Who does what, and by when",
-             text: "Tasks are yours, shared, or someone else’s you wait for. Dates and tasks go to Calendar and Reminders with a tap, and every fact leads back to the mail it came from."),
+             text: "Tasks are yours, shared, or someone else’s you wait for. Dates and tasks go to Calendar and Reminders with a tap, and every fact leads back to where it came from."),
         Page(image: "phone-intro-4.jpg", title: "Ask about a matter",
              text: "Ask, or speak, and get an answer with its sources. A suggestion becomes a task with one tap. Your question goes out disguised, like everything else."),
     ]

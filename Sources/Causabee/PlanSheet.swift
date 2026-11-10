@@ -24,7 +24,7 @@ struct PlanSheet: View {
     private var lead: String {
         switch reason {
         case .matters: "Causabee holds \(Plan.freeMatters) open matters for free. Close one — or make room for all of them. Nothing you have is ever locked."
-        case .pro: "The bigger AI reads new mail as it comes, writes each matter's brief and answers about everything — names always disguised."
+        case .pro: "The bigger AI reads what comes in, as it comes, writes each matter's brief and answers about everything — names always disguised."
         case .choose: "Free stays on your device. Plus for every matter, Pro for the bigger AI."
         }
     }
@@ -218,8 +218,8 @@ struct PlanSettings: View {
 
     private var holds: String {
         switch store.plan {
-        case .free: "\(Plan.freeMatters) open matters. Apple's model on this device reads new mail — nothing leaves it."
-        case .matters: "Every matter you need. Apple's model on this device reads new mail — nothing leaves it."
+        case .free: "\(Plan.freeMatters) open matters. Apple's model on this device reads what comes in — nothing leaves it."
+        case .matters: "Every matter you need. Apple's model on this device reads what comes in — nothing leaves it."
         case .pro: "Every matter, and the bigger AI up to a monthly limit."
         }
     }
@@ -300,8 +300,8 @@ struct PlanSettings: View {
                             Text("Pro on")
                         }
                     }
-                    Text(pro.wrappedValue ? "GPT-6.1 Sol reads new mail as it comes, names disguised first."
-                         : "Off: Apple's model on this device reads new mail. Nothing leaves it.")
+                    Text(pro.wrappedValue ? "GPT-6.1 Sol reads what comes in, as it comes, names disguised first."
+                         : "Off: Apple's model on this device reads what comes in. Nothing leaves it.")
                         .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
