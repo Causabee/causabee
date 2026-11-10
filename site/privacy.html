@@ -78,10 +78,10 @@
   <ul>
     <li><strong>Before anything is sent</strong>, Causabee finds names, addresses and numbers on your device and replaces them, for example with <code>[Person A]</code>. Links are replaced with <code>[link]</code>. If the disguise can’t be built, nothing is sent.</li>
     <li><strong>With Causabee Pro</strong>, the disguised text goes to Causabee’s server (below), which passes it on to OpenAI (GPT, USA) and sends the answer back. The server stores none of the text.</li>
-    <li><strong>With an AI provider key of your own</strong> — a setting for developers — the disguised text goes straight from your device to Anthropic (Claude), OpenAI or Mistral, and not through Causabee’s server.</li>
+    <li><strong>With an AI provider key of your own</strong> — a setting for developers — the disguised text goes straight from your device to OpenAI, and not through Causabee’s server.</li>
     <li><strong>The answer comes back to your device</strong>, where Causabee puts the real names back in and stores the result.</li>
   </ul>
-  <p>What the provider does with a request is set by its own terms: <a href="https://www.anthropic.com/legal/privacy">Anthropic</a>, <a href="https://openai.com/policies/privacy-policy/">OpenAI</a>, <a href="https://mistral.ai/terms#privacy-policy">Mistral</a>. Requests through Causabee’s server are made with Causabee’s own business account; OpenAI does not use API requests to train its models.</p>
+  <p>What OpenAI does with a request is set by <a href="https://openai.com/policies/privacy-policy/">its own terms</a>. Requests through Causabee’s server are made with Causabee’s own business account; OpenAI does not use API requests to train its models.</p>
 
   <h2>Causabee Pro and its server</h2>
   <p>Causabee Pro runs on a small server of Causabee’s, on Cloudflare Workers; its database is kept in Western Europe. It exists for one thing: to pass Pro’s disguised requests on to the AI provider and count what they used, so the month’s limit can be kept.</p>
