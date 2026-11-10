@@ -1,6 +1,6 @@
 # F004 · The right model for each job
 
-- Stage: 1
+- Stage: 2
 - Lane: feature
 - Started: 2026-11-10
 - Branch: feature/004-the-right-model-for-each-job
@@ -9,6 +9,7 @@
 
 | Stage | Opened | The owner's word |
 |---|---|---|
+| 1 · Why | 2026-11-10 | go |
 
 ## Changes after a gate
 
