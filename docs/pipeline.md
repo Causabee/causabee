@@ -85,6 +85,8 @@ The plan is followed. If it cannot be, see "When something comes up".
 
 A table: criterion, test, result. The screen tests' devices. For the AI: the pressure test's report. Then the owner tries it on their own device, on a TestFlight or Mac build made for that, and says what they saw.
 
+"Must not change" is checked against what people have today — the live website, the released build — never against an earlier build of this feature. (F001, 10 November: the film was compared with its own first render, and its ticks were off for everyone; the owner found it.)
+
 Done when every criterion is "pass" and the owner says "done".
 
 ## When something comes up
