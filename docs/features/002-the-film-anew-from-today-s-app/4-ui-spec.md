@@ -37,7 +37,7 @@ The voice. Each line is also its caption, word for word. Changed lines are in bo
 | C | Dr. Brandt became Person A, and Helga became Person B. | Dr. Brandt became Person A, and Helga became Person B. |
 | C | The AI only ever sees the disguise. | The AI only ever sees the disguise. |
 | B | All that's left for you is the last step: take it in. | **All that's left for you is a look: what is new, and what it brings.** |
-| B | The two mails land in Mum's matter, and they bring a new task with them. | **Here, a new task: get the bath seat prescription.** |
+| B | The two mails land in Mum's matter, and they bring a new task with them. | **Here, a new task: gather the papers for the visit.** |
 | D | Every matter has one next step, and the reason it can't wait. | Every matter has one next step, and the reason it can't wait. |
 | D | Below it are the tasks: whose each one is, when it's due, and which mail it came from. | **Below it are the tasks: whose each one is, when it's due, and where it came from.** |
 | E | In the afternoon, you're at Mum's, with the iPad. Tick off what's done. | In the afternoon, you're at Mum's, with the iPad. Tick off what's done. |
