@@ -22,10 +22,10 @@ html, body { margin: 0; background: #fff; overflow: hidden; }
 
 /* Words on the film: a caption at the bottom. */
 .cap { position: absolute; left: 0; right: 0; bottom: 46px; margin: auto; width: fit-content; max-width: 1640px; text-align: center;
-  font: 500 44px/1.2 var(--serif); padding: 18px 40px 22px; border-radius: 999px; background: #fff; color: var(--ink);
+  font: 400 44px/1.2 var(--serif); padding: 18px 40px 22px; border-radius: 999px; background: #fff; color: var(--ink);
   box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 24px 50px -18px rgba(0,0,0,.3); }
 .cap.dark { background: #2a2924; color: #fff; box-shadow: none; }
-.title { position: absolute; left: 0; right: 0; text-align: center; font: 600 84px/1.05 var(--serif); letter-spacing: -0.02em; margin: 0; }
+.title { position: absolute; left: 0; right: 0; text-align: center; font: 400 84px/1.05 var(--serif); letter-spacing: -0.02em; margin: 0; }
 
 /* Devices. A screen (.scr) shows a screenshot at --u screen pixels per screenshot pixel; everything
    in it (.o) is placed in the screenshot's own pixels. */
@@ -121,7 +121,7 @@ svg.drawn { overflow: visible; fill: #000; }
 
 /* The paper letter on the table, and the iPhone's document camera finding it. */
 .table { background: #efece6; }
-.letter { position: absolute; width: 620px; height: 877px; background: #fffefb; box-shadow: 0 2px 4px rgba(0,0,0,.06), 0 40px 80px -30px rgba(0,0,0,.35); rotate: -2deg; padding: 56px 58px; font: 400 17px/1.45 Georgia, var(--serif); color: #2b2a26; }
+.letter { position: absolute; width: 620px; height: 877px; background: #fffefb; box-shadow: 0 2px 4px rgba(0,0,0,.06), 0 40px 80px -30px rgba(0,0,0,.35); rotate: -2deg; padding: 56px 58px; font: 400 17px/1.45 var(--serif); color: #2b2a26; }
 .letter.mini { position: relative; left: 0; top: 0; rotate: none; transform: scale(.4737); transform-origin: 0 0; box-shadow: none; }
 .letter .logo { display: flex; justify-content: flex-end; align-items: center; gap: 10px; font: 700 20px var(--sans); color: #1f6f5c; }
 .letter .logo i { width: 34px; height: 34px; border-radius: 50%; background: #1f6f5c; color: #fff; display: grid; place-items: center; font: 700 18px var(--sans); font-style: normal; }
@@ -204,6 +204,9 @@ svg.drawn { overflow: visible; fill: #000; }
 @keyframes camP { 0% { scale: 1; } 10%, 90% { scale: 1.7; } 100% { scale: 1; } }
 @keyframes camF { from { scale: 1; } to { scale: 1.3; } }
 @keyframes camG { from { transform: none; } to { transform: translate(-337px, -154px) scale(1.2); } }
+/* Every serif line in Source Serif 4 Regular and its text shape, as the website draws it (site/styles.css):
+   not the narrower headline shape a browser picks for big type by itself. Last: `font` above resets it. */
+.cap, .title, .letter { font-optical-sizing: none; }
 </style></head>
 <body>
 <div class="stage" id="stage">
@@ -426,7 +429,7 @@ svg.drawn { overflow: visible; fill: #000; }
 <div class="scene" style="background: #fff; animation: iris .7s var(--out) 123.11s both">
   <svg class="icon" style="left: 820px; top: 150px; width: 280px; height: 280px; --t0: 123.61s; animation: pop .6s var(--spring) 123.31s both" viewBox="0 0 1024 1024"></svg>
   <h1 class="title" style="top: 480px; font-size: 130px; animation: rise .6s var(--out) 123.56s both">Causabee</h1>
-  <h1 class="title" style="top: 650px; font-size: 60px; font-weight: 500; animation: rise .6s var(--out) 124.71s both">Be organized. Be private.</h1>
+  <h1 class="title" style="top: 650px; font-size: 60px; animation: rise .6s var(--out) 124.71s both">Be organized. Be private.</h1>
   <p class="abs" style="top: 790px; left: 0; right: 0; text-align: center; font: 500 32px var(--sans); color: var(--grey); margin: 0; animation: rise .6s var(--out) 126.31s both">For Mac · iPad and iPhone in beta · causabee.app</p>
 </div>
 
