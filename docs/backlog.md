@@ -10,6 +10,7 @@ purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`.
 Seen while building something else. Not built now: each becomes a feature, joins a polish batch, or is dropped.
 
 
+- Delete site/film/walkthrough/walkthrough-720-cc.mp4: the captions test of 14 October, not served by the website (2026-11-10)
 ## Before the App Store
 
 - **The assistant as a proper chat, second round** (AssistantView.swift, Conversation.swift,
