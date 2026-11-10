@@ -5,10 +5,12 @@
 #   scripts/film/walkthrough.sh            # renders the frames, makes both films and the poster
 #   scripts/film/walkthrough.sh --reuse    # with the frames rendered last time
 #
-# The sound is taken unchanged from the film that is there, so voice and music cannot drift: the new
-# picture must last exactly as long (129.6 s). Each film carries the page's SHA-256 in its comment, so
-# WebsiteLookTests can tell it was drawn from today's page. Needs ffmpeg (brew install ffmpeg), and Pillow for the
-# WebP poster — Homebrew's ffmpeg cannot write WebP — in the same small environment site-shots.sh uses.
+# The voice (voice.mp3, Carolyn's reading, never changed) and the page share one timing, timing.json,
+# written by scripts/film/time-voice.py: the film lasts what it says, and never more than 129.6 s.
+# The sound is mixed anew from the voice by soundtrack.py, each effect on its word. Each film carries
+# the page's SHA-256 in its comment, so the tests can tell it was drawn from today's page. Needs ffmpeg
+# (brew install ffmpeg), and Pillow, NumPy and SciPy — for the WebP poster and the sound — in the
+# small environment site-shots.sh uses.
 # Nothing in site/ is replaced until every step has worked.
 set -e -u -o pipefail
 cd "$(dirname "$0")/../.."
@@ -18,7 +20,8 @@ step() { print "→ $1" }
 
 FILM=site/film/walkthrough
 PAGE=$FILM/index.html
-SECONDS_LONG=129.6
+SECONDS_LONG=$(python3 -c "import json; print(json.load(open('$FILM/timing.json'))['total'])")
+LONGEST=129.6
 POSTER_AT=5.0
 WORK=${CAUSABEE_FILM_DIR:-$HOME/Library/Caches/causabee-film}/walkthrough
 FRAMES=$WORK/frames
@@ -26,23 +29,26 @@ command -v ffmpeg >/dev/null || fail "No ffmpeg: brew install ffmpeg."
 ENV=.build-app/site-env
 if [[ ! -x $ENV/bin/python ]]; then
   step "A Python with Pillow, in $ENV"
-  python3 -m venv $ENV && $ENV/bin/pip -q install pillow
+  python3 -m venv $ENV
 fi
+$ENV/bin/python -c "import PIL, numpy, scipy" 2>/dev/null || $ENV/bin/pip -q install pillow numpy scipy
 mkdir -p $WORK
 
-# The sound, once: kept from the film as it was before any of this, so a second run takes the same.
-if [[ ! -f $WORK/sound.m4a ]]; then
-  step "Keeping the film's sound"
-  ffmpeg -v error -y -i $FILM/walkthrough.mp4 -vn -c:a copy $WORK/sound.m4a
-fi
+awk -v d=$SECONDS_LONG -v most=$LONGEST 'BEGIN { exit !(d <= most) }' || fail "The timing makes the film $SECONDS_LONG s, longer than $LONGEST: nothing is replaced."
+FRAMES_WANTED=$(python3 -c "print(round($SECONDS_LONG * 30))")
+
+step "Mixing the sound: the voice, the music and the effects, $SECONDS_LONG s"
+ffmpeg -v error -y -i $FILM/voice.mp3 -ar 48000 -ac 1 $WORK/voice.wav
+$ENV/bin/python $FILM/soundtrack.py $WORK/sound.wav $WORK/voice.wav
+ffmpeg -v error -y -i $WORK/sound.wav -c:a aac -b:a 192k $WORK/sound.m4a
 
 if [[ ${1:-} != --reuse ]]; then
-  step "Drawing $(( ${SECONDS_LONG%.*} * 30 + 18 )) frames of $PAGE (Safari's engine, 1920 × 1080)"
+  step "Drawing $FRAMES_WANTED frames of $PAGE (Safari's engine, 1920 × 1080)"
   rm -rf $FRAMES
   swift scripts/film/render.swift $PAGE $FRAMES $SECONDS_LONG 30 --size 1920x1080 --ms --root site --query render 2>&1 | grep -E "^frame|^rendered|failed|cannot" || true
 fi
 COUNT=$(ls $FRAMES | grep -c '^f.*\.png$' || true)
-(( COUNT == 3888 )) || fail "$COUNT frames, not 3888: nothing is replaced."
+(( COUNT == FRAMES_WANTED )) || fail "$COUNT frames, not $FRAMES_WANTED: nothing is replaced."
 
 SHA=$(shasum -a 256 $PAGE | cut -d' ' -f1)
 step "Making the 1080p film"

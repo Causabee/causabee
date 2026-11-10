@@ -5,19 +5,33 @@ picture is timed to it. Under it, the music from ../lofi.py, kept small — the 
 melody, low, and lower still while she speaks — and the sounds of what is clicked and tapped. The
 steel pan plays once, after "Be private", to bring the film home.
 
-Every effect time below is when its thing happens in index.html; change one, change the other.
+Every effect is a word of the voice, as every moment of index.html is: when('16.12') is when the
+twelfth word of line 16 is said, from timing.json. The page and the sound read the same timing.
 """
 import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from lofi import *  # noqa: E402,F401,F403
 
-LEN = 129.6
+import json  # noqa: E402
+TIMING = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'timing.json')))
+
+
+def when(m):
+    """When a word of the voice is said: '16.12' its 12th word of line 16, '16' the line, '16>' its end, ±s after."""
+    import re
+    l, w, end, off = re.fullmatch(r'(\d+)(?:\.(\d+))?(>)?([+-][\d.]+)?', m).groups()
+    line = TIMING['lines'][int(l) - 1]
+    t = line['words'][int(w) - 1][1 if end else 0] if w else (line['end'] if end else line['start'])
+    return t + float(off or 0)
+
+
+LEN = TIMING['total']
 N = int(SR * LEN)
 music = np.zeros((N, 2))
 sfx = np.zeros((N, 2))
 kicks = []
-END = 821  # the sixteenth the end card opens on (123.15 s)
+END = round(when('22-0.3') / STEP)  # the sixteenth the end card opens on
 
 
 def play(x, at, gain=1.0, pan=0.0):
@@ -57,7 +71,7 @@ for h in range(END // 8 + 1):
             play(organ(triad, t0 + s * STEP), t0 + s * STEP, 0.03, pan=0.5)
 
 # The steel pan, once: home, after "Be private".
-HOME = 846  # after "Be private" (126.9 s)
+HOME = round(when('22>') / STEP) + 1  # after "Be private"
 for s, n in [(0, 'D6'), (2, 'A5'), (3, 'F#5'), (4, 'A5'), (6, 'D6')]:
     at = (HOME + s) * STEP
     play(pan_note(hz(n), at, 2.4), at, 0.3, pan=-0.2)
@@ -65,23 +79,24 @@ for s, n in [(0, 'D6'), (2, 'A5'), (3, 'F#5'), (4, 'A5'), (6, 'D6')]:
 
 # Drums: shaker and clave all through; the kick and clap from the Mac on, not while the iPhone is asked.
 clave = {0, 3, 6, 10, 12}
+at_s = lambda s: s * STEP
 for s in range(END + 1):
     at = s * STEP
     play(shaker(s % 4 == 2), at, 0.08, pan=0.3)
     if s % 16 in clave:
         play(rim(), at, 0.1, pan=-0.3)
-    asking = 481 <= s < 596 or 651 <= s < 725  # the letter scanned; the iPhone asked
-    if s >= 120 and s % 8 == 0 and not asking:
+    asking = when('16-0.4') <= at_s(s) < when('17-0.4') or when('18-0.4') <= at_s(s) < when('20-0.4')  # the letter scanned; the iPhone asked
+    if at_s(s) >= when('4-0.4') and s % 8 == 0 and not asking:
         play(kick(), at, 0.45)
         kicks.append(at)
-    if s >= 120 and s % 16 in (4, 12) and s < END and not asking:
+    if at_s(s) >= when('4-0.4') and s % 16 in (4, 12) and s < END and not asking:
         play(clap(), at, 0.06)
 add(music, organ(['D4', 'F#4', 'A4', 'E5'], END * STEP, 3.0), END * STEP, 0.05)  # the end chord holds
 add(music, guitar(['D4', 'F#4', 'A4', 'E5'], 3.0), END * STEP, 0.55, pan=0.2)
 
 sec = np.arange(N) / SR
 # The disguise sounds muffled, as if behind glass.
-m = np.clip((sec - 24.65) / 0.25, 0, 1) * np.clip((39.25 - sec) / 0.15, 0, 1)
+m = np.clip((sec - when('6-0.35')) / 0.25, 0, 1) * np.clip((when('8>+0.6') - sec) / 0.15, 0, 1)
 music = music * (1 - m[:, None]) + lp(music, 650, 4) * 1.15 * m[:, None]
 # And the music steps back while she speaks.
 music *= (1 - 0.55 * speaking)[:, None]
@@ -105,79 +120,80 @@ def glad(at):
         add(sfx, pan_note(hz(f), at + 0.12 + i * 0.07, 0.35), at + 0.12 + i * 0.07, 0.09, pan=-0.1)
 
 
-for i, (at, f) in enumerate([(1.75, 'D5'), (2.45, 'F#5'), (3.1, 'A5'), (3.85, 'B5'), (4.3, 'D6')]):
-    add(sfx, pop(hz(f)), at + 0.22, 0.22, pan=[-0.5, 0.5, 0.05, 0.4, -0.35][i])  # each piece lands
-add(sfx, swoosh(0.6, 300, 1600, shape=1.6), 5.9, 0.05)       # the pieces gather
-add(sfx, pop(hz('D5'), 0.2), 6.5, 0.32)                     # into the bee
-for at in (8.8, 9.1):
-    add(sfx, swoosh(0.7, 200, 1400, shape=0.7), at, 0.03)    # the Mac and the iPad rise
-add(sfx, pop(hz('F#5'), 0.18), 9.55, 0.2, pan=0.5)          # the iPhone slides in
-for at, f, p in [(13.67, 'D5', 0), (14.54, 'F#5', -0.5), (15.51, 'A5', 0.5)]:
-    add(sfx, pop(hz(f), 0.12), at, 0.14, pan=p)              # each nods as it is named
-add(sfx, swoosh(0.5, 300, 1600), 17.9, 0.03)                # the Mac opens
-add(sfx, pop(hz('A5'), 0.12), 19.55, 0.2, pan=-0.6)         # Auto is on
-add(sfx, pop(hz('D6'), 0.12), 21.05, 0.26, pan=-0.4)        # 2 mails read
-add(sfx, swoosh(0.5, 150, 800, shape=0.6), 24.6, 0.06)       # night wipes up
-for at, p in zip([32.5, 34.75], [-0.3, 0.3]):
-    add(sfx, stamp(), at, 0.3, pan=p)                        # names disguised
-add(sfx, swoosh(0.5, 150, 800, shape=0.6), 38.96, 0.04)       # back to the Mac
-add(sfx, tick('F#6'), 42.46, 0.25, pan=-0.3)                  # Take in
-add(sfx, pop(hz('A5'), 0.15), 43.01, 0.28, pan=-0.4)        # taken in
-add(sfx, pop(hz('D6'), 0.12), 46.31, 0.16)                  # the matter lights up
-add(sfx, swoosh(0.5, 300, 1600), 48.16, 0.03)                # to the matter
-for at, f in [(49.91, 'F#6'), (55.51, 'A6'), (58.11, 'B6')]:
-    add(sfx, pop(hz(f), 0.1), at, 0.14)                      # what lights up
-add(sfx, swoosh(0.7, 200, 1400, shape=0.7), 59.86, 0.04)      # the iPad rises
-add(sfx, pop(hz('F#5'), 0.18), 60.46, 0.28, pan=0.5)         # the iPhone slides in
-add(sfx, pop(hz("D5"), 0.15), 64.01, 0.18)                  # the loupe
-add(sfx, tick(), 63.86, 0.25, pan=-0.5)                       # first tick on the iPad
-check(63.91, -0.5)
-glad(64.06)
-add(sfx, tick(), 65.16, 0.25, pan=-0.5)                       # second tick
-check(65.21, -0.5)
-glad(65.36)
-for i, f in enumerate(['D6', 'F#6', 'A6', 'D7']):             # the tick flies over
-    add(sfx, pan_note(hz(f), 68.86 + i * 0.2, 0.5), 68.86 + i * 0.2, 0.07, pan=-0.5 + i * 0.33)
-check(69.61, 0.5)
-add(sfx, buzz(1.85, base=200), 90.67, 0.045)                  # the bee comes with the pull
-add(sfx, swoosh(0.4, 400, 1800), 92.52, 0.03)               # let go: it flies down
-add(sfx, pop(hz('F#5'), 0.12), 92.9, 0.2)                  # into the mail's place
-add(sfx, buzz(3.35, base=180), 92.92, 0.03)                  # at work
-add(sfx, pop(hz('A5'), 0.15), 96.32, 0.28)                  # the card opens
-add(sfx, pop(hz('D6'), 0.12), 96.57, 0.14)
-add(sfx, tick(), 98.57, 0.25)                                 # the bee button
-add(sfx, swoosh(0.5, 300, 1600), 98.72, 0.04)               # the assistant comes up
-add(sfx, pop(hz('E6'), 0.12), 99.42, 0.24)                  # the question
-for at, f in [(102.67, 'B5'), (103.22, 'D6'), (103.77, 'F#6')]:
-    add(sfx, pan_note(hz(f), at, 0.4), at, 0.06)              # the answers
-add(sfx, pop(hz('A5'), 0.12), 104.92, 0.16)                  # the suggestion
-add(sfx, tick(), 107.27, 0.25)                                 # Add
-add(sfx, pop(hz('A5'), 0.15), 107.42, 0.3)                   # taken in
-add(sfx, swoosh(0.5, 300, 1600), 108.67, 0.03)                # back to the Mac
-for at, f in [(112.72, 'F#6'), (113.32, 'G6'), (114.62, 'A6')]:
-    add(sfx, pop(hz(f), 0.12), at, 0.18)                     # it's there, and there, and there
-add(sfx, swoosh(0.7, 200, 1400, shape=0.7), 116.5, 0.03)    # the Mac again
-add(sfx, swoosh(0.7, 200, 1400, shape=0.7), 119.0, 0.03)    # the iPad and the iPhone
-add(sfx, pop(hz('F#5'), 0.18), 119.7, 0.22, pan=0.5)
-add(sfx, chime(), 123.11, 0.18)                               # end card opens
-add(sfx, pop(hz('A4'), 0.22), 123.31, 0.32)                  # icon pops
-for i, f in enumerate(['D6', 'E6', 'F#6', 'A6', 'B6', 'D7']):
-    add(sfx, pan_note(hz(f), 123.91 + i * 0.08, 0.4), 123.91 + i * 0.08, 0.08, pan=-0.3 + i * 0.12)  # bars land
-add(sfx, buzz(1.25, base=240), 123.71, 0.08)                  # wings flap twice
-
-# The paper letter, scanned on the iPhone (72.2–89.4 s).
-add(sfx, swoosh(0.7, 200, 1400, shape=0.7), 72.6, 0.04)      # the letter is laid down
-add(sfx, pop(hz('D6'), 0.12), 77.0, 0.16)                   # her own share lights up
-add(sfx, pop(hz('F#5'), 0.18), 79.3, 0.26, pan=0.5)         # the iPhone comes
-add(sfx, pop(hz('A5'), 0.1), 79.95, 0.14, pan=0.5)          # the page is found
+A = when  # the effects below, each on the word the page has it on
+for i, (w, f) in enumerate([('2.1', 'D5'), ('2.2', 'F#5'), ('2.3', 'A5'), ('2.4', 'B5'), ('2.5', 'D6')]):
+    add(sfx, pop(hz(f)), A(w) + 0.12, 0.22, pan=[-0.5, 0.5, 0.05, 0.4, -0.35][i])   # each piece lands
+add(sfx, swoosh(0.6, 300, 1600, shape=1.6), A('2.10-0.3'), 0.05)                    # the pieces gather
+add(sfx, pop(hz('D5'), 0.2), A('2.10+0.1'), 0.32)                                   # into the bee
+for w in ('3+0.2', '3+0.5'):
+    add(sfx, swoosh(0.7, 200, 1400, shape=0.7), A(w), 0.03)                          # the Mac and the iPad rise
+add(sfx, pop(hz('F#5'), 0.18), A('3+0.95'), 0.2, pan=0.5)                           # the iPhone slides in
+for w, f, p in [('3.16', 'D5', 0), ('3.18', 'F#5', -0.5), ('3.21', 'A5', 0.5)]:
+    add(sfx, pop(hz(f), 0.12), A(w), 0.14, pan=p)                                    # each nods as it is named
+add(sfx, swoosh(0.5, 300, 1600), A('4+0.2'), 0.03)                                  # the Mac opens
+add(sfx, pop(hz('D6'), 0.12), A('5.11'), 0.26, pan=-0.4)                            # what is new, on top
+add(sfx, swoosh(0.5, 150, 800, shape=0.6), A('6-0.3'), 0.06)                         # night wipes up
+for w, p in zip(['7.4', '7.9'], [-0.3, 0.3]):
+    add(sfx, stamp(), A(w), 0.3, pan=p)                                              # names disguised
+add(sfx, swoosh(0.5, 150, 800, shape=0.6), A('8>+0.3'), 0.04)                        # back to the Mac
+add(sfx, pop(hz('A5'), 0.12), A('9.9'), 0.16)                                       # what is new
+add(sfx, pop(hz('D6'), 0.12), A('9.13'), 0.16)                                      # what it brings
+add(sfx, pop(hz('F#6'), 0.12), A('10.5'), 0.18)                                     # the new task
+add(sfx, swoosh(0.5, 300, 1600), A('11-0.4'), 0.03)                                  # to the next step
+for w, f in [('11.5', 'F#6'), ('11.9', 'A6'), ('12.1', 'B6'), ('12.6', 'D6'), ('12.10', 'E6'), ('12.14', 'F#6')]:
+    add(sfx, pop(hz(f), 0.1), A(w), 0.14)                                            # what lights up
+add(sfx, swoosh(0.7, 200, 1400, shape=0.7), A('13-0.2'), 0.04)                       # the iPad rises
+for w in ('13.10', '13.12'):
+    add(sfx, tick(), A(w), 0.25, pan=-0.5)                                           # a tick on the iPad
+    check(A(w) + 0.4, -0.5)
+add(sfx, pop(hz('D5'), 0.15), A('13.10+0.2'), 0.18)                                 # the loupe
+glad(A('13.12+0.4'))
+add(sfx, pop(hz('F#5'), 0.18), A('14-0.1'), 0.28, pan=0.5)                          # the iPhone slides in
+for i, f in enumerate(['D6', 'F#6', 'A6', 'D7']):                                  # the tick flies over
+    add(sfx, pan_note(hz(f), A('14.4') + i * 0.2, 0.5), A('14.4') + i * 0.2, 0.07, pan=-0.5 + i * 0.33)
+check(A('14.6'), 0.5)
+check(A('14.6+0.3'), 0.5)
+# The paper letter, scanned on the iPhone.
+add(sfx, swoosh(0.7, 200, 1400, shape=0.7), A('15+0.2'), 0.04)                       # the letter is laid down
+add(sfx, pop(hz('D6'), 0.12), A('15.10+0.3'), 0.16)                                 # her own share lights up
+add(sfx, pop(hz('F#5'), 0.18), A('16-0.3'), 0.26, pan=0.5)                          # the iPhone comes
+add(sfx, pop(hz('A5'), 0.1), A('16.3'), 0.14, pan=0.5)                              # the page is found
 t = t_(0.12)
-add(sfx, hp(rng.standard_normal(len(t)), 1500) * np.exp(-t * 60), 80.95, 0.18, pan=0.5)  # the shutter
-add(sfx, buzz(1.0, base=200), 81.45, 0.04, pan=0.5)          # read on the iPhone
-add(sfx, pop(hz('D6'), 0.12), 82.5, 0.22, pan=0.5)          # 1 document read
-add(sfx, pop(hz('F#6'), 0.1), 83.0, 0.14, pan=0.5)          # into Mum's matter
-add(sfx, pop(hz('A6'), 0.1), 84.7, 0.14, pan=0.5)           # a task
-add(sfx, tick(), 86.95, 0.25, pan=0.5)                       # Take in
-add(sfx, pop(hz('A5'), 0.15), 87.05, 0.3, pan=0.5)          # taken in
+add(sfx, hp(rng.standard_normal(len(t)), 1500) * np.exp(-t * 60), A('16.5'), 0.18, pan=0.5)  # the shutter
+add(sfx, swoosh(0.5, 300, 1600), A('16.6'), 0.03)                                    # "Add a document"
+add(sfx, tick(), A('16.12'), 0.25, pan=0.5)                                          # Sort in
+add(sfx, buzz(1.0, base=200), A('16.12+0.5'), 0.04, pan=0.5)                        # read on the iPhone
+add(sfx, pop(hz('A5'), 0.15), A('16.16'), 0.28, pan=0.5)                            # sorted in
+add(sfx, pop(hz('F#6'), 0.1), A('16.19'), 0.14, pan=0.5)                            # into Mum's matter
+add(sfx, pop(hz('A6'), 0.1), A('16.24'), 0.14, pan=0.5)                             # a task
+# The pull: the bee leaves its button, comes with the pull, works, and goes home.
+add(sfx, buzz(0.6, base=220), A('17.5-0.7'), 0.04)                                   # out of its button
+add(sfx, buzz(1.7, base=200), A('17.5'), 0.045)                                      # with the pull
+add(sfx, swoosh(0.4, 400, 1800), A('17.9>'), 0.03)                                   # let go: it flies down
+add(sfx, pop(hz('F#5'), 0.12), A('17.9>+0.35'), 0.2)                                 # into the mail's place
+add(sfx, buzz(2.6, base=180), A('17.9>+0.4'), 0.03)                                  # at work
+add(sfx, pop(hz('A5'), 0.15), A('17.20'), 0.28)                                     # sorted
+add(sfx, pop(hz('D6'), 0.12), A('17.20+0.25'), 0.14)
+add(sfx, buzz(0.6, base=240), A('17.20+0.3'), 0.04)                                  # home to its button
+add(sfx, tick(), A('18.1'), 0.25)                                                    # the bee button
+add(sfx, swoosh(0.5, 300, 1600), A('18.1+0.5'), 0.04)                                # the chat comes up
+add(sfx, pop(hz('E6'), 0.12), A('18.4'), 0.24)                                      # the question
+for w, f in [('19.1', 'B5'), ('19.3', 'D6'), ('19.5', 'F#6')]:
+    add(sfx, pan_note(hz(f), A(w), 0.4), A(w), 0.06)                                 # the answers
+add(sfx, pop(hz('A5'), 0.12), A('19.6+0.3'), 0.16)                                  # the suggestion
+add(sfx, tick(), A('19.15'), 0.25)                                                   # Add
+add(sfx, pop(hz('A5'), 0.15), A('19.16'), 0.3)                                      # taken in
+add(sfx, swoosh(0.5, 300, 1600), A('20-0.4'), 0.03)                                  # back to the Mac
+for w, f in [('20.13', 'F#6'), ('20.13+0.6', 'G6'), ('20.21', 'A6')]:
+    add(sfx, pop(hz(f), 0.12), A(w), 0.18)                                           # it's there, and there, and there
+add(sfx, swoosh(0.7, 200, 1400, shape=0.7), A('21+0.2'), 0.03)                       # the Mac again
+add(sfx, swoosh(0.7, 200, 1400, shape=0.7), A('21.9'), 0.03)                         # the iPad and the iPhone
+add(sfx, pop(hz('F#5'), 0.18), A('21.9+0.4'), 0.22, pan=0.5)
+add(sfx, chime(), A('22-0.3'), 0.18)                                                 # end card opens
+add(sfx, pop(hz('A4'), 0.22), A('22'), 0.32)                                        # icon pops
+for i, f in enumerate(['D6', 'E6', 'F#6', 'A6', 'B6', 'D7']):
+    add(sfx, pan_note(hz(f), A('22+0.6') + i * 0.08, 0.4), A('22+0.6') + i * 0.08, 0.08, pan=-0.3 + i * 0.12)  # bars land
+add(sfx, buzz(1.25, base=240), A('22+0.4'), 0.08)                                    # wings flap twice
 # --- the mix: the bed small, the voice on top ----------------------------------------
 bed = master(music, sfx, kicks, LEN)
 out = 0.3 * bed + voice[:, None]
