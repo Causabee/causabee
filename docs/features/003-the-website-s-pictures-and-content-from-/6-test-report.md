@@ -26,5 +26,5 @@ No AI involved.
 
 ## The owner's own try
 
-- **10 November:** the owner saw the sheet of the pictures before and today, and said "built, show me".
+- **10 November:** the owner saw the sheet of the pictures before and today, and said "built, show me"; then read the whole page, photographed at Mac and iPhone width, and said "done".
 - The page photographed whole at Mac and iPhone width, for the owner's read beside the app.
