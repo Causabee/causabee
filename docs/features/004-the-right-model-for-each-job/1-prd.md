@@ -46,5 +46,5 @@ Over a week of the owner's own daily use after the release, the cost per full da
 ## Principles it touches
 
 - **11, said as it is:** the app and the website name the model that answered, as it is; where a job moves to another model, what is said moves with it.
-- **6, how we know she works:** a job moves to a cheaper model only after its pressure test shows the same quality.
+- **Section 6, how we know she works:** a job moves to a cheaper model only after its pressure test shows the same quality.
 - **12, everywhere the same:** the same job uses the same model on the Mac, the iPad and the iPhone.
