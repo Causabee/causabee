@@ -1,6 +1,6 @@
 # F004 · The right model for each job
 
-- Stage: 5
+- Stage: 6
 - Lane: feature
 - Started: 2026-11-10
 - Branch: feature/004-the-right-model-for-each-job
@@ -13,6 +13,7 @@
 | 2 · What | 2026-11-10 | approved |
 | 3 · How | 2026-11-10 | approved |
 | 4 · Looks | 2026-11-10 | approved |
+| 5 · Build | 2026-11-10 | built, show me |
 
 ## Changes after a gate
 
