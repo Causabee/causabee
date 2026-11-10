@@ -5,8 +5,8 @@ import Testing
 import Vision
 
 /// F002 · The film anew from today's app (docs/features/002-the-film-anew-from-today-s-app).
-/// The film shows Causabee as it is today, in words that are true. AC-2 and AC-5 read the page's
-/// moments, and are added with the page's new way of writing them (5-plan.md, step 7).
+/// The film shows Causabee as it is today, in words that are true. Every moment of the picture is a
+/// word of the voice: `{9.3+0.2}` in the page is 0.2 s after the third word of line 9 is said.
 @Suite("The film anew: today's pictures, true words, one timing")
 struct FilmAnewTests {
     static let root = WebsiteLookTests.root
@@ -141,6 +141,81 @@ struct FilmAnewTests {
         // What the reading says, written down by ElevenLabs from voice.mp3 (5-plan.md, step 4).
         let heard = try String(contentsOf: Self.feature.appendingPathComponent("voice-transcript.txt"), encoding: .utf8)
         #expect(Self.words(heard) == lines.flatMap(Self.words), "The reading does not say the words of voiceover.txt")
+    }
+
+    /// When a moment of the page is: `{L}` line L begins, `{L>}` it ends, `{L.W}` its W-th word
+    /// begins, `{L.W>}` that word ends, each with an offset in seconds if any (`{L.W+0.4}`).
+    static func moment(_ text: Substring, _ timing: Timing, words: [[[Double]]]) -> Double? {
+        guard let m = text.wholeMatch(of: /(?<line>\d+)(?:\.(?<word>\d+))?(?<end>>)?(?<off>[+-][\d.]+)?/) else { return nil }
+        let l = Int(m.output.line)! - 1
+        guard timing.lines.indices.contains(l) else { return nil }
+        var t: Double
+        if let w = m.output.word.flatMap({ Int($0) }) {
+            guard words[l].indices.contains(w - 1) else { return nil }
+            t = words[l][w - 1][m.output.end == nil ? 0 : 1]
+        } else { t = m.output.end == nil ? timing.lines[l].start : timing.lines[l].end }
+        return t + (m.output.off.flatMap { Double($0) } ?? 0)
+    }
+
+    struct Words: Decodable { struct Line: Decodable { let words: [[Double]] }; let lines: [Line] }
+
+    // F002 AC-2
+    @Test("F002 AC-2 · Every moment of the picture is a word of the voice, inside its scene")
+    func momentsAreInTheirScenes() throws {
+        let page = try String(contentsOf: WebsiteLookTests.page, encoding: .utf8)
+        let data = try Data(contentsOf: Self.film.appendingPathComponent("timing.json"))
+        let timing = try JSONDecoder().decode(Timing.self, from: data)
+        let words = try JSONDecoder().decode(Words.self, from: data).lines.map(\.words)
+        // The page carries the same timing as timing.json.
+        let inPage = try #require(page.firstMatch(of: /<script id="timing" type="application\/json">(?<json>[\s\S]*?)<\/script>/), "The page has no timing")
+        let pageTiming = try JSONDecoder().decode(Timing.self, from: Data(inPage.output.json.utf8))
+        #expect(pageTiming.total == timing.total && pageTiming.lines.map(\.start) == timing.lines.map(\.start), "The page's timing is not timing.json")
+        let body = try #require(page.firstMatch(of: /<div class="stage" id="stage">(?<body>[\s\S]*?)<script>/)).output.body
+        let scenes = body.split(separator: "<div class=\"scene").dropFirst()
+        #expect(scenes.count == 13, "\(scenes.count) scenes, not 13")
+        for (k, scene) in scenes.enumerated() {
+            let style = scene.firstMatch(of: /style="(?<s>[^"]*)"/)?.output.s ?? ""
+            func times(_ s: Substring) -> [Double] { s.matches(of: /\{(?<m>[^}]+)\}/).compactMap { Self.moment($0.output.m, timing, words: words) } }
+            let fades = style.split(separator: ",")
+            let enter = fades.first { !$0.contains("reverse") }.flatMap { times($0).first } ?? 0
+            let leave = fades.first { $0.contains("reverse") }.flatMap { times($0).first } ?? timing.total
+            for m in scene.matches(of: /\{(?<m>[^}]+)\}/) {
+                let t = try #require(Self.moment(m.output.m, timing, words: words), "scene \(k + 1): {\(m.output.m)} is no word of the voice")
+                #expect(t >= enter - 0.05 && t <= leave + 0.05, "scene \(k + 1): {\(m.output.m)} is at \(t) s, outside its scene (\(enter)–\(leave) s)")
+            }
+            // No moment written as a bare second: an animation's delay is always a word.
+            for a in scene.matches(of: /animation:\s*(?<a>[^;"]*)/) {
+                for one in a.output.a.split(separator: ",") {
+                    // The times in order, a word standing for its moment: duration first, then delay.
+                    let tokens = String(one).replacing(/\{[^}]*\}s/, with: " WORD ").split(separator: " ")
+                    let secs = tokens.compactMap { $0 == "WORD" ? -1 : $0.wholeMatch(of: /(?<n>\d*\.?\d+)s/).flatMap { Double($0.output.n) } }
+                    #expect(secs.count < 2 || secs[1] < 1, "scene \(k + 1): “\(one.trimmingCharacters(in: .whitespaces))” has a moment in bare seconds")
+                }
+            }
+        }
+    }
+
+    // F002 AC-5
+    @Test("F002 AC-5 · The film's bee leaves from the app's own bee")
+    func beeLeavesFromTheApps() throws {
+        let page = try String(contentsOf: WebsiteLookTests.page, encoding: .utf8)
+        let bees = page.matches(of: /class="[^"]*\bfilmbee\b[^"]*"[^>]*data-from="(?<from>[\w-]+)"/)
+        #expect(!bees.isEmpty, "The page has no film bee")
+        for bee in bees {
+            let from = String(bee.output.from)
+            let screen = try #require(page.firstMatch(of: try Regex("id=\"\(from)\"[^>]*data-bee=\"(?<x>\\d+),(?<y>\\d+)\"[^>]*data-pic=\"(?<pic>[^\"]+)\"")),
+                                      "The bee's screen “\(from)” says nowhere where the app's bee is")
+            let x = Int(screen.output["x"]!.substring!)!, y = Int(screen.output["y"]!.substring!)!
+            let url = Self.film.appendingPathComponent(String(screen.output["pic"]!.substring!))
+            let image = try #require(CGImageSourceCreateWithURL(url as CFURL, nil).flatMap { CGImageSourceCreateImageAtIndex($0, 0, nil) })
+            // The pixel there, drawn into a one-pixel picture.
+            var pixel = [UInt8](repeating: 0, count: 4)
+            let context = CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                                    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+            context.draw(image, in: CGRect(x: -x, y: y - image.height + 1, width: image.width, height: image.height))
+            #expect(pixel[0] > 220 && pixel[1] > 180 && pixel[2] < 110,
+                    "\(from): at \(x),\(y) of \(url.lastPathComponent) is not the app's yellow bee (rgb \(pixel[0]) \(pixel[1]) \(pixel[2]))")
+        }
     }
 
     // F002 AC-6

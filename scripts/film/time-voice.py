@@ -7,7 +7,8 @@ The reading is the whole text in one take, as ElevenLabs read it (concept/film/w
 the voice and model are in timing.json). It is never cut, stitched, sped up or shifted: the film is
 timed to it, not it to the film. The words file is the connector's transcript of the reading, with
 each word's time. Writes site/film/walkthrough/voice.mp3 (the reading, unchanged) and timing.json:
-each line's start and end, and the film's length — the reading and the end card's last seconds.
+each line's and each word's start and end, and the film's length (the reading and the end card's last seconds);
+the same timing is written into index.html, where every moment of the picture is a word of the voice.
 Refuses a reading that does not say the lines as written.
 """
 import json, pathlib, re, shutil, subprocess, sys
@@ -33,7 +34,9 @@ for k, line in enumerate(lines):
     got = [" ".join(plain(w["text"])) for w in spoken[at: at + len(want)]]
     if got != want:
         sys.exit(f"Line {k + 1} is not read as written:\n  written: {' '.join(want)}\n  read:    {' '.join(got)}")
-    timed.append({"text": line, "start": round(spoken[at]["start"], 3), "end": round(spoken[at + len(want) - 1]["end"], 3)})
+    said = spoken[at: at + len(want)]
+    timed.append({"text": line, "start": round(said[0]["start"], 3), "end": round(said[-1]["end"], 3),
+                  "words": [[round(w["start"], 3), round(w["end"], 3)] for w in said]})
     at += len(want)
 if at != len(spoken):
     sys.exit(f"The reading says {len(spoken) - at} words more than voiceover.txt")
@@ -42,5 +45,13 @@ length = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "forma
                               capture_output=True, text=True, check=True).stdout)
 total = round(max(length, timed[-1]["end"]) + END_CARD, 1)
 shutil.copyfile(reading, FILM / "voice.mp3")
-(FILM / "timing.json").write_text(json.dumps({"voice": VOICE, "model": MODEL, "total": total, "lines": timed}, indent=1) + "\n")
+timing = {"voice": VOICE, "model": MODEL, "total": total, "lines": timed}
+(FILM / "timing.json").write_text(json.dumps(timing, indent=1) + "\n")
+# The page reads its moments from the same timing, written into it (so the film's fingerprint changes with it).
+page = FILM / "index.html"
+html = page.read_text()
+block = f'<script id="timing" type="application/json">{json.dumps(timing, separators=(",", ":"))}</script>'
+html, n = re.subn(r'<script id="timing" type="application/json">.*?</script>', lambda _: block, html, flags=re.S)
+if n != 1: sys.exit("index.html has no <script id=\"timing\"> to write the timing into")
+page.write_text(html)
 print(f"{len(timed)} lines, read as written; the film lasts {total} s → site/film/walkthrough/timing.json, voice.mp3")
