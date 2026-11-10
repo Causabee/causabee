@@ -170,14 +170,15 @@ add(sfx, pop(hz('A5'), 0.15), A('16.16'), 0.28, pan=0.5)                        
 add(sfx, pop(hz('F#6'), 0.1), A('16.19'), 0.14, pan=0.5)                            # into Mum's matter
 add(sfx, pop(hz('A6'), 0.1), A('16.24'), 0.14, pan=0.5)                             # a task
 # The pull: the bee leaves its button, comes with the pull, works, and goes home.
-add(sfx, buzz(0.6, base=220), A('17.5-0.7'), 0.04)                                   # out of its button
-add(sfx, buzz(1.7, base=200), A('17.5'), 0.045)                                      # with the pull
+add(sfx, buzz(0.9, base=220), A('17.4'), 0.04)                                       # out of its button
+add(sfx, buzz(1.5, base=200), A('17.6'), 0.045)                                      # with the pull
 add(sfx, swoosh(0.4, 400, 1800), A('17.9>'), 0.03)                                   # let go: it flies down
 add(sfx, pop(hz('F#5'), 0.12), A('17.9>+0.35'), 0.2)                                 # into the mail's place
 add(sfx, buzz(2.6, base=180), A('17.9>+0.4'), 0.03)                                  # at work
 add(sfx, pop(hz('A5'), 0.15), A('17.20'), 0.28)                                     # sorted
 add(sfx, pop(hz('D6'), 0.12), A('17.20+0.25'), 0.14)
-add(sfx, buzz(0.6, base=240), A('17.20+0.3'), 0.04)                                  # home to its button
+add(sfx, buzz(0.9, base=240), A('17.20+0.3'), 0.04)                                  # home to its button
+add(sfx, pop(hz('D6'), 0.1), A('17.20+1.2'), 0.14)                                   # and it settles
 add(sfx, tick(), A('18.1'), 0.25)                                                    # the bee button
 add(sfx, swoosh(0.5, 300, 1600), A('18.1+0.5'), 0.04)                                # the chat comes up
 add(sfx, pop(hz('E6'), 0.12), A('18.4'), 0.24)                                      # the question

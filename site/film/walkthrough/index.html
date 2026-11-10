@@ -222,6 +222,10 @@ svg.drawn { overflow: visible; fill: #000; }
 .check { animation: pop .45s var(--spring) var(--d) both; }
 .taken { animation-timing-function: var(--spring) !important; }
 
+@keyframes bubble { 0% { opacity: 0; scale: .55; translate: 0 calc(24 * var(--u) * 1px); } 60% { opacity: 1; } }
+@keyframes lineIn { from { opacity: 0; translate: 0 calc(18 * var(--u) * 1px); filter: blur(3px); } }
+@keyframes cardIn { from { opacity: 0; scale: .92; translate: 0 calc(40 * var(--u) * 1px); } }
+
 /* The disguise. */
 .night { position: absolute; inset: 0; background: var(--night); color: #fff; }
 .night .small { position: absolute; left: 0; right: 0; text-align: center; font: 600 24px var(--sans); letter-spacing: .1em; color: #a3a29b; }
@@ -252,7 +256,8 @@ svg.drawn { overflow: visible; fill: #000; }
 @keyframes wipe { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes iris { from { clip-path: circle(0 at 50% 50%); } to { clip-path: circle(1200px at 50% 50%); } }
 /* Camera moves, one per scene. */
-@keyframes camB { from { scale: 1; } to { scale: 1.8; } }
+@keyframes camB { from { scale: 1; } to { scale: 1.7; } }
+@keyframes camNext { from { scale: 1; } to { scale: 1.6; } }
 @keyframes camD { 0%, 2% { transform: none; } 10%, 44% { transform: translate(-442px, 0) scale(1.6); } 54%, 100% { transform: translate(-442px, -618px) scale(1.6); } }
 @keyframes open { from { opacity: 0; scale: .96; } }
 @keyframes nod { 40% { translate: 0 -18px; scale: 1.03; } }
@@ -282,7 +287,7 @@ svg.drawn { overflow: visible; fill: #000; }
 <div class="scene" style="animation: enter .7s var(--out) {3-0.3}s both, enter .7s var(--out) {4-0.4}s both reverse">
   <div class="mac" style="left: 470px; top: 150px; width: 980px; animation: rise-far 1s var(--out) {3+0.2}s both, nod .6s var(--out) {3.16}s"><div class="scr" style="--W:2880;--H:1800;--u:.3403"><img src="img/care-morning-2880.webp" alt=""></div></div>
   <div class="pad" style="left: 170px; top: 380px; animation: rise-far 1s var(--out) {3+0.5}s both, nod .6s var(--out) {3.18}s"><div class="scr" style="--W:2360;--H:1640;--u:.2458"><img src="img/ipad-matter.webp" alt=""></div></div>
-  <div class="phone" style="left: 1450px; top: 290px; animation: slide .9s var(--spring) {3+0.8}s both, nod .6s var(--out) {3.21}s"><div class="scr" style="--W:1206;--H:2622;--u:.2067"><img src="img/iphone-care.webp" alt=""></div></div>
+  <div class="phone" style="left: 1330px; top: 330px; animation: slide .9s var(--spring) {3+0.8}s both, nod .6s var(--out) {3.21}s"><div class="scr" style="--W:1206;--H:2622;--u:.2067"><img src="img/iphone-care.webp" alt=""></div></div>
 </div>
 
 <!-- B · lines 4–5 and 9–10: "In the morning, you open your Mac. What came in overnight is already read, and waits on top of
@@ -290,13 +295,15 @@ svg.drawn { overflow: visible; fill: #000; }
      Gather the papers for the visit? One tap, and it's in your plan." Mum's matter opens on its Digest, what is new on top;
      what it brings is a suggestion: the thumb takes it, the row leaves the card for the plan, and the page closes up. -->
 <div class="scene" style="animation: enter .7s var(--out) {4-0.4}s both, enter .7s var(--out) {11-0.4}s both reverse">
-  <div class="cam" style="transform-origin: 1086px 322px; animation: camB 1.2s var(--out) {5.4}s both">
+  <div class="cam" style="transform-origin: 1086px 210px; animation: camB 1.2s var(--out) {5.4}s both">
     <div class="mac" style="left: 290px; top: 80px; transform-origin: 0 0; --from: translate(180px, 70px) scale(.7313); animation: morph 1.1s var(--out) {4-0.4}s both"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
       <img src="img/care-morning-2880.webp" alt="">
       <div class="o ring" style="--x:946;--y:396;--w:1530;--h:250;--rr:30;--d:{5.11}s"></div>
-      <div class="o mark" style="--x:970;--y:476;--w:1480;--h:150; animation: markon 1.8s ease-out {9.9}s both"></div>
+      <div class="o mark" style="--x:974;--y:482;--w:1465;--h:46; animation: markon 2s ease-out {9.9}s both"></div>
+      <div class="o mark" style="--x:974;--y:523;--w:431;--h:44; animation: markon 2s ease-out {9.9+0.18}s both"></div>
+      <div class="o mark" style="--x:974;--y:577;--w:1372;--h:44; animation: markon 2s ease-out {9.11}s both"></div>
       <div class="o ring" style="--x:950;--y:660;--w:1522;--h:116;--rr:20;--d:{9.13}s"></div>
-      <div class="o mark" style="--x:1036;--y:676;--w:452;--h:50; animation: markon 1.6s ease-out {10.1}s both"></div>
+      <div class="o mark" style="--x:1038;--y:679;--w:448;--h:44; animation: markon 1.6s ease-out {10.1}s both"></div>
       <div class="o tap" style="--x:2252;--y:708;--r:44;--d:{10.8}s"></div>
       <div class="o pill" style="--x:1036;--y:676;--w:452;--h:50;--dx:98;--dy:-342; animation: toplan 1.1s var(--in) {10.8+0.45}s both">Gather the papers for the visit</div>
       <div class="o patch" style="--x:948;--y:658;--w:1526;--h:118; animation: fade .25s {10.8+0.45}s both"></div>
@@ -318,15 +325,15 @@ svg.drawn { overflow: visible; fill: #000; }
 <!-- D · lines 11–12: "Every matter has one next step, and the reason it can't wait. And the plan: when each thing is due, and
      where it came from." The step on the Digest, as the morning left it; then the Plan: a day, and the mail it came from. -->
 <div class="scene" style="animation: enter .7s var(--out) {11-0.4}s both, enter .7s var(--out) {13-0.4}s both reverse">
-  <div class="cam" style="transform-origin: 1086px 500px; animation: camB 1.2s var(--out) {11+0.2}s both">
-   <div class="cam" style="--py: 104px; animation: camPan 1.2s var(--out) {12.1+0.4}s both">
+  <div class="cam" style="transform-origin: 1086px 500px; animation: camNext 1.2s var(--out) {11+0.2}s both">
+   <div class="cam" style="--py: 0px; animation: camPan 1.2s var(--out) {12.1+0.4}s both">
     <div class="mac" style="left: 290px; top: 80px"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
       <img src="img/care-morning-2880.webp" alt="">
       <div class="o patch" style="--x:948;--y:658;--w:1526;--h:118"></div>
       <div class="o cut" style="--x:940;--y:666;--w:1550;--h:1024"><img src="img/care-morning-2880.webp" alt="" style="width: calc(2880 * var(--u) * 1px); left: calc(-940 * var(--u) * 1px); top: calc(-776 * var(--u) * 1px)"></div>
       <div class="o patch" style="--x:940;--y:1688;--w:1550;--h:112"></div>
       <div class="o ring" style="--x:946;--y:788;--w:1530;--h:228;--rr:30;--d:{11.5}s"></div>
-      <div class="o mark" style="--x:970;--y:945;--w:422;--h:50; animation: markon 1.8s ease-out {11.9}s both"></div>
+      <div class="o mark" style="--x:975;--y:948;--w:412;--h:44; animation: markon 1.8s ease-out {11.9}s both"></div>
       <div class="o tap" style="--x:1134;--y:334;--r:40;--d:{12.1}s"></div>
       <div class="layer" style="animation: fade .35s {12.1+0.45}s both"><img src="img/care-plan-morning-2880.webp" alt=""></div>
       <div class="o ring" style="--x:946;--y:616;--w:112;--h:112;--rr:18;--d:{12.8}s"></div>
@@ -443,11 +450,18 @@ svg.drawn { overflow: visible; fill: #000; }
     <div class="o tap" style="--x:1067;--y:2404;--r:90;--d:{18.1}s"></div>
     <div class="layer" style="animation: sheet .6s var(--out) {18.1+0.5}s both">
       <img src="img/iphone-assistant.webp" alt="">
-      <div class="o patch" style="--x:440;--y:540;--w:740;--h:150; animation: fade .3s {18.4}s both reverse"></div>
-      <div class="o patch" style="--x:20;--y:750;--w:1170;--h:215; animation: unveil 1.1s linear {19.1}s both"></div>
-      <div class="o patch" style="--x:20;--y:985;--w:1170;--h:215; animation: unveil 1.1s linear {19.3}s both"></div>
-      <div class="o patch" style="--x:20;--y:1215;--w:1170;--h:150; animation: unveil 1.1s linear {19.5}s both"></div>
-      <div class="o patch" style="--x:20;--y:1385;--w:1170;--h:850; animation: unveil .7s var(--out) {19.6+0.3}s both"></div>
+      <div class="o patch" style="--x:20;--y:520;--w:1166;--h:1710"></div>
+      <div class="o cut" style="--x:418;--y:524;--w:744;--h:196;transform-origin: right bottom; animation: bubble .6s var(--spring) {18.4}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-418 * var(--u) * 1px); top: calc(-524 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:30;--y:760;--w:1150;--h:70; animation: lineIn .55s var(--out) {19.1}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-30 * var(--u) * 1px); top: calc(-760 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:30;--y:830;--w:1150;--h:70; animation: lineIn .55s var(--out) {19.1+0.12}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-30 * var(--u) * 1px); top: calc(-830 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:30;--y:894;--w:1150;--h:70; animation: lineIn .55s var(--out) {19.1+0.24}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-30 * var(--u) * 1px); top: calc(-894 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:30;--y:994;--w:1150;--h:70; animation: lineIn .55s var(--out) {19.3}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-30 * var(--u) * 1px); top: calc(-994 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:30;--y:1059;--w:1150;--h:70; animation: lineIn .55s var(--out) {19.3+0.12}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-30 * var(--u) * 1px); top: calc(-1059 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:30;--y:1124;--w:1150;--h:70; animation: lineIn .55s var(--out) {19.3+0.24}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-30 * var(--u) * 1px); top: calc(-1124 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:30;--y:1223;--w:1150;--h:70; animation: lineIn .55s var(--out) {19.5}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-30 * var(--u) * 1px); top: calc(-1223 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:30;--y:1287;--w:1150;--h:70; animation: lineIn .55s var(--out) {19.5+0.12}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-30 * var(--u) * 1px); top: calc(-1287 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:44;--y:1384;--w:1120;--h:752;transform-origin: center top; animation: cardIn .7s var(--spring) {19.6+0.3}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-44 * var(--u) * 1px); top: calc(-1384 * var(--u) * 1px)"></div>
+      <div class="o cut" style="--x:30;--y:2140;--w:1150;--h:90; animation: lineIn .5s var(--out) {19.6}s both"><img src="img/iphone-assistant.webp" alt="" style="width: calc(1206 * var(--u) * 1px); left: calc(-30 * var(--u) * 1px); top: calc(-2140 * var(--u) * 1px)"></div>
       <div class="o ring" style="--x:296;--y:2150;--w:300;--h:90;--rr:20;--d:{19.6+0.4}s"></div>
       <div class="o tap" style="--x:604;--y:2012;--r:70;--d:{19.15}s"></div>
       <div class="o patch" style="--x:30;--y:1400;--w:1150;--h:720; animation: fade .2s {19.16}s both"></div>
@@ -488,7 +502,7 @@ svg.drawn { overflow: visible; fill: #000; }
 <div class="scene" style="animation: enter .7s var(--out) {21-0.4}s both, fade .3s {22-0.5}s both reverse">
   <div class="mac" style="left: 470px; top: 160px; width: 980px; animation: rise-far 1s var(--out) {21+0.2}s both"><div class="scr" style="--W:2880;--H:1800;--u:.3403"><img src="img/care-plan-2880.webp" alt=""></div></div>
   <div class="pad" style="left: 170px; top: 400px; animation: rise-far 1s var(--out) {21.9}s both"><div class="scr" style="--W:2360;--H:1640;--u:.2458"><img src="img/ipad-plan.webp" alt=""></div></div>
-  <div class="phone" style="left: 1450px; top: 310px; animation: slide .9s var(--spring) {21.9+0.3}s both"><div class="scr" style="--W:1206;--H:2622;--u:.2067"><img src="img/iphone-care-later.webp" alt=""></div></div>
+  <div class="phone" style="left: 1330px; top: 350px; animation: slide .9s var(--spring) {21.9+0.3}s both"><div class="scr" style="--W:1206;--H:2622;--u:.2067"><img src="img/iphone-care-later.webp" alt=""></div></div>
 </div>
 
 <!-- I · line 22: "Causabee. Be organized. Be private." -->
@@ -629,7 +643,7 @@ function drawBee(svg, time, pull = null) {
   const box = document.getElementById('fbox'), boxText = document.getElementById('fboxtext'), boxBee = document.getElementById('boxbee');
   const bee = document.getElementById('pullbee'), empty = document.getElementById('pullempty'), finger = document.getElementById('finger');
   // "pull" … "iPhone." the pull; "and" sorting; "sorted" done, and the bee goes home to its button.
-  const P0 = at('17.5'), R = at('17.9>'), SORT = at('17.14'), DONE = at('17.20'), OUT = P0 - .7, HOME = DONE + .3;
+  const P0 = at('17.6'), R = at('17.9>'), SORT = at('17.14'), DONE = at('17.20'), OUT = at('17.4'), HOME = DONE + .3, FLY = .9;
   const TOP = 210, MAX = 120, BUTTON = [1067, 2404];
   const pulledAt = t => t < P0 ? 0 : t < R ? MAX * smooth((t - P0) / (R - P0)) : MAX * (1 - easeOut3(clamp((t - R) / .35)));
   const px = n => `${n * u}px`;
@@ -649,20 +663,22 @@ function drawBee(svg, time, pull = null) {
     // sorted it flies home to its button. While it is out, the button is honey alone: one bee.
     const above = Math.max(10, pulled / 2 - 15);
     const hover = [W / 2, TOP + (above + 15) * 3];
-    let [x, y] = BUTTON, s = .7, visible = t >= OUT && t < HOME + .6, pull = null;
-    if (t < P0) { const e = smooth(clamp((t - OUT) / .6)); x += (hover[0] - x) * e; y += (hover[1] - y) * e; s = .7 + .3 * e; }
+    let [x, y] = BUTTON, s = .7, visible = t >= OUT && t < HOME + FLY, pull = null;
+    // Out of its button on "home", in an arc, and over the page as the pull begins.
+    if (t < P0) { const e = smooth(clamp((t - OUT) / FLY)); x += (hover[0] - x) * e; y += (hover[1] - y) * e - Math.sin(Math.PI * e) * 160; s = .7 + .3 * e; }
     else if (t < R) { [x, y] = hover; s = 1; pull = t >= P0 + (R - P0) * .62 ? 1 : Math.max(.2, pulled / 90); }
     else if (t < HOME) {
       const [bx, by] = boxCentre(), e = smooth(clamp((t - R - .04) / .34));
       x = hover[0] + (bx - hover[0]) * e; y = hover[1] + (by - hover[1]) * e; s = 1 - .5 * e;
     } else {
-      const [bx, by] = [380, 655], e = smooth(clamp((t - HOME) / .6));
-      x = bx + (BUTTON[0] - bx) * e; y = by + (BUTTON[1] - by) * e; s = .5 + .2 * e;
+      // Home: down in an arc onto its button, and it settles there.
+      const [bx, by] = [380, 655], e = smooth(clamp((t - HOME) / FLY)), land = clamp((t - HOME - FLY * .8) / (FLY * .2));
+      x = bx + (BUTTON[0] - bx) * e; y = by + (BUTTON[1] - by) * e - Math.sin(Math.PI * e) * 220; s = .5 + .2 * e + .06 * Math.sin(Math.PI * land);
     }
     const working = t >= R + .3 && t < SORT;   // the one beside the words is the bee, while it works; from "and" the app's own line has it
     bee.style.opacity = visible && !working && !(t >= SORT && t < HOME) ? 1 : 0;
     boxBee.style.opacity = working ? 1 : 0;
-    empty.style.opacity = t >= OUT && t < HOME + .6 ? 1 : 0;
+    empty.style.opacity = t >= OUT && t < HOME + FLY ? 1 : 0;
     bee.style.left = px(x - 79); bee.style.top = px(y - 45); bee.style.transform = `scale(${s})`;
     if (bee.style.opacity > 0) drawBee(bee, t, pull);
     drawBee(boxBee, t);
