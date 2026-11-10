@@ -10,6 +10,7 @@ Causabee turns what comes in — mail, screenshots, photos, files and scans, not
 - **Messages in your voice.** Drafts follow the way the other side writes and use the language of the exchange. They greet a person by first name, or by title and surname. A change you ask for in a draft is made, and keeps its recipient.
 - **One AI for everything:** GPT-6.1 Sol, with Causabee Pro.
 - **Waiting is not doing.** What others still have to do stands apart from your own tasks.
+- **The film on causabee.app shows Causabee as it is today.**
 
 ## Try it without setting anything up
 
