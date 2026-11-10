@@ -16,7 +16,9 @@
 
 **The ledger** (Cloudflare D1, `beeserver`): one column more, `job TEXT`, NULL for rows from before. Migration `server/beeserver/migrations/0004-job.sql`.
 
-Schema change: none — SwiftData's schema is not touched; the ledger is the server's own database.
+Schema change: none
+
+SwiftData's schema is not touched; the ledger is the server's own database.
 
 ## Sync and other devices
 
