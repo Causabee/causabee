@@ -1,6 +1,6 @@
 # F002 · The film anew from today's app
 
-- Stage: 3
+- Stage: 4
 - Lane: feature
 - Started: 2026-11-10
 - Branch: feature/002-the-film-anew-from-today-s-app
@@ -11,6 +11,7 @@
 |---|---|---|
 | 1 · Why | 2026-11-10 | go |
 | 2 · What | 2026-11-10 | approved |
+| 3 · How | 2026-11-10 | approved |
 
 ## Changes after a gate
 
