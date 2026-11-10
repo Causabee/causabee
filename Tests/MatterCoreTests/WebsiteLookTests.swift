@@ -203,4 +203,24 @@ struct WebsiteLookTests {
             for gone in ["Auto mode", "$0.", "journal"] { #expect(!alt.contains(gone), "An alt text says “\(gone)”: \(alt)") }
         }
     }
+
+    // F003 AC-4
+    @Test("F003 AC-4 · The iPhone's and the iPad's pictures show one state of Mum's matter")
+    func devicesAgree() throws {
+        func words(_ name: String) throws -> String {
+            let url = Self.site.appendingPathComponent("assets/img/\(name)")
+            let image = try #require(CGImageSourceCreateWithURL(url as CFURL, nil).flatMap { CGImageSourceCreateImageAtIndex($0, 0, nil) })
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            try VNImageRequestHandler(cgImage: image).perform([request])
+            return (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
+        }
+        let phone = try words("iphone-matter.webp"), pad = try words("ipad-matter.webp")
+        for both in ["Care for Mum", "Get the bath seat prescription"] {
+            #expect(phone.contains(both) && pad.contains(both), "The iPhone's and the iPad's matter do not both show “\(both)”")
+        }
+        // The iPhone's next step is an open task of the iPad's plan, not another one.
+        let next = try #require(phone.components(separatedBy: "\n").drop { !$0.contains("NEXT") }.dropFirst().first, "No next step on the iPhone's picture")
+        #expect(pad.contains(next), "The iPhone's next step “\(next)” is not on the iPad's plan")
+    }
 }
