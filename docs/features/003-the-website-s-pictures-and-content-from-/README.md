@@ -1,6 +1,6 @@
 # F003 · The website's pictures and content from today's app
 
-- Stage: 4
+- Stage: 5
 - Lane: feature
 - Started: 2026-11-10
 - Branch: feature/003-the-website-s-pictures-and-content-from-
@@ -12,6 +12,7 @@
 | 1 · Why | 2026-11-10 | go |
 | 2 · What | 2026-11-10 | approved |
 | 3 · How | 2026-11-10 | approved |
+| 4 · Looks | 2026-11-10 | approved |
 
 ## Changes after a gate
 
