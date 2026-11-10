@@ -136,14 +136,13 @@ add(sfx, swoosh(0.5, 150, 800, shape=0.6), A('6-0.3'), 0.06)                    
 for w, p in zip(['7.4', '7.9'], [-0.3, 0.3]):
     add(sfx, stamp(), A(w), 0.3, pan=p)                                              # names disguised
 add(sfx, swoosh(0.5, 150, 800, shape=0.6), A('8>+0.3'), 0.04)                        # back to the Mac
-add(sfx, pop(hz('A5'), 0.12), A('9.9'), 0.16)                                       # what is new
 add(sfx, pop(hz('D6'), 0.12), A('9.13'), 0.16)                                      # what it brings
 add(sfx, tick('F#6'), A('10.8'), 0.25, pan=0.3)                                    # the thumb takes the suggestion
 add(sfx, swoosh(0.6, 500, 2200, shape=1.4), A('10.8+0.45'), 0.04)                    # it flies to the plan
 add(sfx, pop(hz('A6'), 0.1), A('10.12'), 0.16)                                      # the Plan
 add(sfx, swoosh(0.5, 300, 1600), A('11-0.4'), 0.03)                                  # to the next step
 add(sfx, tick(), A('12.1'), 0.22)                                                    # the Plan, clicked
-for w, f in [('11.5', 'F#6'), ('11.9', 'A6'), ('12.8', 'D6'), ('12.10', 'E6')]:
+for w, f in [('11.5', 'F#6'), ('12.8', 'D6'), ('12.10', 'E6')]:
     add(sfx, pop(hz(f), 0.1), A(w), 0.14)                                            # what lights up
 add(sfx, swoosh(0.7, 200, 1400, shape=0.7), A('13-0.2'), 0.04)                       # the iPad rises
 for w in ('13.10', '13.12'):
@@ -158,7 +157,6 @@ check(A('14.6'), 0.5)
 check(A('14.6+0.3'), 0.5)
 # The paper letter, scanned on the iPhone.
 add(sfx, swoosh(0.7, 200, 1400, shape=0.7), A('15+0.2'), 0.04)                       # the letter is laid down
-add(sfx, pop(hz('D6'), 0.12), A('15.10+0.3'), 0.16)                                 # her own share lights up
 add(sfx, pop(hz('F#5'), 0.18), A('16-0.3'), 0.26, pan=0.5)                          # the iPhone comes
 add(sfx, pop(hz('A5'), 0.1), A('16.3'), 0.14, pan=0.5)                              # the page is found
 t = t_(0.12)
@@ -167,8 +165,6 @@ add(sfx, swoosh(0.5, 300, 1600), A('16.6'), 0.03)                               
 add(sfx, tick(), A('16.12'), 0.25, pan=0.5)                                          # Sort in
 add(sfx, buzz(1.0, base=200), A('16.12+0.5'), 0.04, pan=0.5)                        # read on the iPhone
 add(sfx, pop(hz('A5'), 0.15), A('16.16'), 0.28, pan=0.5)                            # sorted in
-add(sfx, pop(hz('F#6'), 0.1), A('16.19'), 0.14, pan=0.5)                            # into Mum's matter
-add(sfx, pop(hz('A6'), 0.1), A('16.24'), 0.14, pan=0.5)                             # a task
 # The pull: the bee leaves its button, comes with the pull, works, and goes home.
 add(sfx, buzz(0.9, base=220), A('17.4'), 0.04)                                       # out of its button
 add(sfx, buzz(1.5, base=200), A('17.6'), 0.045)                                      # with the pull

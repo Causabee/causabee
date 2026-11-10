@@ -139,7 +139,7 @@ svg.drawn { overflow: visible; fill: #000; }
 .letter .foot u { display: block; height: 7px; border-radius: 4px; background: #ebe8e1; }
 /* "her own share of the hospital stay": the line is marked on the paper as she says it (77 s). */
 .letter .sum span { position: relative; }
-.letter:not(.mini) .sum span::before { content: ""; position: absolute; inset: -4px -10px; border-radius: 6px; background: rgba(255,219,13,.6); z-index: -1; transform-origin: left; animation: strike .5s var(--out) var(--mark, 0s) both; }
+.letter:not(.mini) .sum span::before { display: none; content: ""; position: absolute; inset: -4px -10px; border-radius: 6px; background: rgba(255,219,13,.6); z-index: -1; transform-origin: left; animation: strike .5s var(--out) var(--mark, 0s) both; }
 .letter .sum { position: relative; z-index: 0; }
 .camera { background: #0b0b0c; }
 .camtop { color: #fff; text-align: center; font: 600 calc(30 * var(--u) * 1px) var(--sans); }
@@ -200,13 +200,11 @@ svg.drawn { overflow: visible; fill: #000; }
 .takenline > div { display: flex; flex-direction: column; gap: calc(10 * var(--u) * 1px); }
 .takenline b { font-weight: 600; font-size: calc(48 * var(--u) * 1px); } .takenline small { color: rgba(0,0,0,.5); font-size: calc(42 * var(--u) * 1px); } .takenline .file { color: rgba(0,0,0,.3); font-size: calc(33 * var(--u) * 1px); }
 .takenline .acts { color: var(--gold); font-size: calc(42 * var(--u) * 1px); font-weight: 500; display: flex; gap: calc(48 * var(--u) * 1px); margin-top: calc(6 * var(--u) * 1px); }
-/* A highlighter: the yellow goes under the letters (multiply), so the words stay as dark as they were. */
-.mark { border-radius: calc(8 * var(--u) * 1px); background: #ffd60a; mix-blend-mode: multiply; }
 /* While the bee is out of its button, the button is honey alone: one bee. */
 .empty { border-radius: 50%; background: #fcd90c; }
 
 /* Motion: scenes come with depth; a device grows from where it was; a finger travels to what it taps; rings spring;
-   marks sweep in as a pen would; the suggestion flies to the plan; the page closes up where it left. */
+   the suggestion flies to the plan; the page closes up where it left. */
 @keyframes enter { from { opacity: 0; scale: .965; filter: blur(8px); } }
 @keyframes morph { from { transform: var(--from); } }
 @keyframes camPan { to { translate: 0 var(--py, 167px); } }
@@ -217,9 +215,7 @@ svg.drawn { overflow: visible; fill: #000; }
 .tap { animation: tap 1.15s cubic-bezier(.25,.7,.2,1) calc(var(--d) - .4s) both; }
 @keyframes tap { 0% { opacity: 0; translate: calc(140 * var(--u) * 1px) calc(190 * var(--u) * 1px); scale: 1.25; } 32% { opacity: 1; translate: 0 0; scale: 1; } 46% { scale: .7; } 60% { opacity: 1; scale: 1.06; } 70% { scale: 1; } 100% { opacity: 0; scale: 1; } }
 @keyframes ring { 0% { opacity: 0; scale: 1.14; } 16% { opacity: 1; scale: .975; } 26% { scale: 1.012; } 34% { scale: 1; } 78% { opacity: 1; } 100% { opacity: 0; scale: 1; } }
-.mark { transform-origin: left center; }
 .ring.in { box-shadow: inset 0 0 0 calc(7 * var(--u) * 1px) var(--honey), inset 0 0 0 calc(18 * var(--u) * 1px) rgba(255,219,13,.3); }
-@keyframes markon { 0% { opacity: 0; } 14% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes gather { to { transform: translate(var(--gx), var(--gy)) scale(.12) rotate(28deg); opacity: 0; } }
 .check { animation: pop .45s var(--spring) var(--d) both; }
 .taken { animation-timing-function: var(--spring) !important; }
@@ -301,11 +297,7 @@ svg.drawn { overflow: visible; fill: #000; }
     <div class="mac" style="left: 290px; top: 80px; transform-origin: 0 0; --from: translate(180px, 70px) scale(.7313); animation: morph 1.1s var(--out) {4-0.4}s both"><div class="scr" style="--W:2880;--H:1800;--u:.4653">
       <img src="img/care-morning-2880.webp" alt="">
       <div class="o ring" style="--x:946;--y:396;--w:1530;--h:250;--rr:30;--d:{5.11}s"></div>
-      <div class="o mark" style="--x:972;--y:481;--w:1469;--h:43; animation: markon 2s ease-out {9.9}s both"></div>
-      <div class="o mark" style="--x:972;--y:525;--w:435;--h:41; animation: markon 2s ease-out {9.9}s both"></div>
-      <div class="o mark" style="--x:972;--y:576;--w:1376;--h:44; animation: markon 2s ease-out {9.9}s both"></div>
       <div class="o ring in" style="--x:952;--y:652;--w:1518;--h:122;--rr:18;--d:{9.13}s"></div>
-      <div class="o mark" style="--x:1036;--y:677;--w:452;--h:48; animation: markon 1.6s ease-out {10.1}s both"></div>
       <div class="o tap" style="--x:2252;--y:708;--r:44;--d:{10.8}s"></div>
       <div class="o pill" style="--x:1036;--y:676;--w:452;--h:50;--dx:98;--dy:-342; animation: toplan 1.1s var(--in) {10.8+0.45}s both">Gather the papers for the visit</div>
       <div class="o patch" style="--x:948;--y:658;--w:1526;--h:118; animation: fade .25s {10.8+0.45}s both"></div>
@@ -335,7 +327,6 @@ svg.drawn { overflow: visible; fill: #000; }
       <div class="o cut" style="--x:940;--y:666;--w:1550;--h:1024"><img src="img/care-morning-2880.webp" alt="" style="width: calc(2880 * var(--u) * 1px); left: calc(-940 * var(--u) * 1px); top: calc(-776 * var(--u) * 1px)"></div>
       <div class="o patch" style="--x:940;--y:1688;--w:1550;--h:112"></div>
       <div class="o ring" style="--x:946;--y:788;--w:1530;--h:228;--rr:30;--d:{11.5}s"></div>
-      <div class="o mark" style="--x:973;--y:946;--w:416;--h:48; animation: markon 1.8s ease-out {11.9}s both"></div>
       <div class="o tap" style="--x:1134;--y:334;--r:40;--d:{12.1}s"></div>
       <div class="layer" style="animation: fade .35s {12.1+0.45}s both"><img src="img/care-plan-morning-2880.webp" alt=""></div>
       <div class="o ring" style="--x:946;--y:616;--w:112;--h:112;--rr:18;--d:{12.8}s"></div>
@@ -415,8 +406,8 @@ svg.drawn { overflow: visible; fill: #000; }
       </div>
       <div class="o chatcard" style="--x:48;--y:426;--w:1110;--h:420; animation: rise .4s var(--out) {16.16}s both">
         <div class="takenline"><i><svg viewBox="0 0 14 14" width="62%"><path d="m3.2 7.3 2.6 2.6 5-5.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></i><div>
-          <b><span class="hl" style="animation: hilite 1.8s ease-out {16.19}s both">Care for Mum (Helga) after her fall</span> · Pay her share of the hospital stay</b>
-          <small class="hl" style="animation: hilite 2.2s ease-out {16.24}s both">by Nov 30 · Pay her share of the hospital stay</small>
+          <b>Care for Mum (Helga) after her fall · Pay her share of the hospital stay</b>
+          <small>by Nov 30 · Pay her share of the hospital stay</small>
           <span class="file">Your share of the hospital stay.pdf</span>
           <span class="acts"><span>Change</span><span>Undo</span></span>
         </div></div>
