@@ -7,7 +7,7 @@
 | AC-1 | `WebsiteLookTests` "F003 AC-1 · The website's pictures are today's app": every picture is used by the page (the teasers' own excepted), none is the file of before F003, Vision finds no cost, no "Auto mode", no AI but GPT-6.1 Sol | pass |
 | AC-2 | `WebsiteLookTests` "F003 AC-2 · Every sentence on the website is true for the app": the page's whole text, hidden parts too; "Sequoia 15" always with what needs macOS 26 | pass |
 | AC-3 | `WebsiteLookTests` "F003 AC-3 · Every picture of the app says in words what it shows" | pass |
-| AC-4 | The owner's look at each group: the iPhone's three and the iPad's show one state of Mum's matter | owner |
+| AC-4 | The look at each group, side by side on the page: the iPhone's three and the iPad's are one fresh demo, one state of Mum's matter — the suggestion not yet taken, no next step that disagrees; and the owner's look | pass |
 
 All three tests failed before the build (10 November, step 1).
 
