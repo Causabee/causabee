@@ -1,0 +1,80 @@
+{
+  "brief": {
+    "gpt-6.1-sol": {
+      "cost": 0.2125,
+      "errors": 0,
+      "matters": 16
+    },
+    "gpt-6.1-terra": {
+      "cost": 0.0958,
+      "errors": 0,
+      "matters": 16
+    }
+  },
+  "digest": {
+    "gpt-6-luna": {
+      "cost": 0.0041,
+      "errors": 0,
+      "items": 78,
+      "numbersNotInSol": 0
+    },
+    "gpt-6.1-sol": {
+      "cost": 0.07,
+      "items": 78
+    },
+    "gpt-6.1-terra": {
+      "cost": 0.0342,
+      "errors": 0,
+      "items": 78,
+      "numbersNotInSol": 0
+    }
+  },
+  "read": {
+    "gpt-6-luna": {
+      "cost": 0.0544,
+      "datesOfSol": [
+        29,
+        34
+      ],
+      "errorsApart": 0,
+      "items": 93,
+      "meetsMatterBar": false,
+      "meetsShareBar": false,
+      "notInSol": 31,
+      "otherMatterThanSol": 2,
+      "placedRight": 75,
+      "read": 93,
+      "shareOfSol": 0.5632,
+      "tasksOfSol": [
+        20,
+        53
+      ]
+    },
+    "gpt-6.1-sol": {
+      "cost": 0.674,
+      "items": 93,
+      "placedRight": 75,
+      "read": 93
+    },
+    "gpt-6.1-terra": {
+      "cost": 0.3617,
+      "datesOfSol": [
+        30,
+        34
+      ],
+      "errorsApart": 0,
+      "items": 93,
+      "meetsMatterBar": false,
+      "meetsShareBar": false,
+      "notInSol": 5,
+      "otherMatterThanSol": 7,
+      "placedRight": 71,
+      "read": 93,
+      "shareOfSol": 0.8506,
+      "tasksOfSol": [
+        44,
+        53
+      ]
+    }
+  }
+}

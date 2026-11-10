@@ -35,9 +35,14 @@ public struct Claude: Sendable {
         public var outputPerMillion: Double
 
         public static let gptSol = Model(id: "gpt-6.1-sol", inputPerMillion: 2, outputPerMillion: 10)
-        /// The one model Causabee uses, for everything — through the beeserver with Pro.
-        public static let known = [gptSol]
+        public static let gptTerra = Model(id: "gpt-6.1-terra", inputPerMillion: 1, outputPerMillion: 5, cachedPerMillion: 0.05)
+        public static let gptLuna = Model(id: "gpt-6-luna", inputPerMillion: 0.1, outputPerMillion: 0.5, cachedPerMillion: 0.01)
+        /// The models a job may use (`AIJob`), through the beeserver with Pro or with an own key.
+        public static let known = [gptSol, gptTerra, gptLuna]
         public static let choices = [gptSol]
+
+        /// A cached read, where OpenAI prices it apart; nil: a tenth of the input.
+        public var cachedPerMillion: Double? = nil
 
         /// Sent to OpenAI's Responses API.
         public var isOpenAI: Bool { id.hasPrefix("gpt-") }
@@ -48,8 +53,15 @@ public struct Claude: Sendable {
         public var label: String {
             switch id {
             case Model.gptSol.id: "OpenAI GPT-6.1 Sol"
+            case Model.gptTerra.id: "OpenAI GPT-6.1 Terra"
+            case Model.gptLuna.id: "OpenAI GPT-6 Luna"
             default: id
             }
+        }
+
+        /// The name without the provider, where OpenAI is said already: "GPT-6.1 Terra".
+        public var shortLabel: String {
+            label.hasPrefix("OpenAI ") ? String(label.dropFirst("OpenAI ".count)) : label
         }
 
         /// A mail: about 5,000 tokens in and 900 out, from the label's record.
@@ -80,7 +92,7 @@ public struct Claude: Sendable {
         /// it back a tenth. `input` is what was neither.
         public func cost(input: Int, output: Int, cacheWrite: Int = 0, cacheRead: Int = 0) -> Double {
             (Double(input) * inputPerMillion + Double(output) * outputPerMillion
-             + Double(cacheWrite) * inputPerMillion * 1.25 + Double(cacheRead) * inputPerMillion * 0.1) / 1_000_000
+             + Double(cacheWrite) * inputPerMillion * 1.25 + Double(cacheRead) * (cachedPerMillion ?? inputPerMillion * 0.1)) / 1_000_000
         }
 
         /// Opus 5 thinks adaptively by default and has a safety classifier that can decline;
@@ -252,6 +264,13 @@ public struct Claude: Sendable {
         }
     }
 
+    /// A request for one of the bee's jobs: asked of the job's model (`AIJob`), whatever the body
+    /// was built for, and through the beeserver with the job named, so it sets the model and counts it.
+    public func send(_ body: [String: Any], model: Model, job: AIJob) async throws -> Answer {
+        guard model.isOpenAI else { return try await send(body, model: model) }
+        return try await sendOpenAI(body, model: job.asked, job: job)
+    }
+
     public func send(_ body: [String: Any], model: Model) async throws -> Answer {
         if model.isMistral { return try await sendMistral(body, model: model) }
         if model.isOpenAI { return try await sendOpenAI(body, model: model) }
@@ -353,9 +372,15 @@ public struct Claude: Sendable {
         return out
     }
 
-    func sendOpenAI(_ body: [String: Any], model: Model) async throws -> Answer {
+    func sendOpenAI(_ body: [String: Any], model: Model, job: AIJob? = nil) async throws -> Answer {
         var request = request(.openai)
-        request.httpBody = try JSONSerialization.data(withJSONObject: Self.openAIBody(body, model: model), options: [.sortedKeys])
+        var sent = Self.openAIBody(body, model: model)
+        if let job, relay != nil {
+            // The beeserver sets the job's model from its own table: a build stays right when a job moves.
+            request.setValue(job.rawValue, forHTTPHeaderField: "causabee-job")
+            sent["model"] = nil
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: sent, options: [.sortedKeys])
         let started = Date()
         var attempt = 0
         while true {
@@ -374,12 +399,14 @@ public struct Claude: Sendable {
                     throw Failure.unreadable("no text in OpenAI's answer")
                 }
                 let usage = object["usage"] as? [String: Any] ?? [:]
-                // What OpenAI had cached of the beginning is in its input, and costs a tenth.
+                // What OpenAI read from its cache, and wrote to it, is inside its input, priced apart.
                 let input = usage["input_tokens"] as? Int ?? 0
-                let cached = min(input, (usage["input_tokens_details"] as? [String: Any])?["cached_tokens"] as? Int ?? 0)
+                let details = usage["input_tokens_details"] as? [String: Any]
+                let cached = min(input, details?["cached_tokens"] as? Int ?? 0)
+                let written = min(input - cached, details?["cache_write_tokens"] as? Int ?? 0)
                 return Answer(json: Data(text.utf8), servedBy: object["model"] as? String ?? model.id,
-                              inputTokens: input - cached, outputTokens: usage["output_tokens"] as? Int ?? 0,
-                              seconds: Date().timeIntervalSince(started), cacheReadTokens: cached)
+                              inputTokens: input - cached - written, outputTokens: usage["output_tokens"] as? Int ?? 0,
+                              seconds: Date().timeIntervalSince(started), cacheWriteTokens: written, cacheReadTokens: cached)
             }
             guard status == 429 || status >= 500, attempt < 6, !Self.isOutOfCredit(data) else {
                 throw Failure.http(status: status, body: String(decoding: data, as: UTF8.self))

@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS ledger (
   micros INTEGER NOT NULL,             -- spend positive; a topup or grant adds to what may be spent
   ref TEXT UNIQUE,                     -- the request's id, or the purchase's: never counted twice
   model TEXT,
+  job TEXT,                            -- read | digest | brief | chat | unknown (F004)
+  tier TEXT,                           -- flex | default: what OpenAI answered on
   tokens_in INTEGER, tokens_out INTEGER, tokens_cached INTEGER, searches INTEGER,
   time TEXT NOT NULL
 );

@@ -17,7 +17,8 @@ struct OpenAITests {
         #expect((format["schema"] as? [String: Any])?["required"] as? [String] == ["digest"])
         // The effort reaches OpenAI as its reasoning effort: without it every request thought at length.
         #expect((body["reasoning"] as? [String: Any])?["effort"] as? String == "low")
-        #expect(Claude.Model.gptSol.keyName == "OPENAI_API_KEY" && Claude.Model.known == [.gptSol])
+        // F004: each job its model, all of them OpenAI's, on the one key.
+        #expect(Claude.Model.known == [.gptSol, .gptTerra, .gptLuna] && Claude.Model.known.allSatisfy { $0.isOpenAI && $0.keyName == "OPENAI_API_KEY" })
         #expect(Claude.Model.gptSol.isServing("gpt-6.1-sol-2026-09-01") && !Claude.Model.gptSol.isServing("gpt-6-astra"))
     }
 }

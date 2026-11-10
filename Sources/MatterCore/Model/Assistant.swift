@@ -510,7 +510,7 @@ public enum AssistantAsk {
         // Stopped while the names were being disguised: nothing goes out.
         try Task.checkCancellation()
         step?(.waiting)
-        let answer = try await claude.send(body, model: model)
+        let answer = try await claude.send(body, model: model, job: .chat)
         step?(.restoring)
         var reply = try JSONDecoder().decode(AssistantPrompt.Reply.self, from: answer.json)
 
@@ -639,7 +639,7 @@ extension AssistantAsk {
 
     static func nextStep(_ prepared: Prepared, facts: Facts, claude: Claude, model: Claude.Model) async throws -> (step: String, why: String, todo: FactRef?, cost: Double) {
         let body = Claude.body(model: model, system: NextStepPrompt.system(writingIn: facts.language), user: prepared.sent, schema: NextStepPrompt.schema, effort: "low")
-        let answer = try await claude.send(body, model: model)
+        let answer = try await claude.send(body, model: model, job: .brief)
         let reply = try JSONDecoder().decode(NextStepPrompt.Reply.self, from: answer.json)
         let restorer = prepared.pseudonymizer.restorer
         return (restorer.apply(reply.step).text, restorer.apply(reply.why).text, reply.todo.flatMap { facts.refs[$0] }, answer.cost)
@@ -663,7 +663,7 @@ extension AssistantAsk {
 
     static func summarize(_ prepared: Prepared, facts: Facts, claude: Claude, model: Claude.Model) async throws -> (lines: [String], cost: Double) {
         let body = Claude.body(model: model, system: SummaryPrompt.system(writingIn: facts.language), user: prepared.sent, schema: SummaryPrompt.schema, effort: "low")
-        let answer = try await claude.send(body, model: model)
+        let answer = try await claude.send(body, model: model, job: .brief)
         let reply = try JSONDecoder().decode(SummaryPrompt.Reply.self, from: answer.json)
         let restorer = prepared.pseudonymizer.restorer
         return (reply.lines.map { restorer.apply($0.text).text }, answer.cost)

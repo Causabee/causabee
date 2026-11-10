@@ -8,7 +8,7 @@ Causabee turns what comes in — mail, screenshots, photos, files and scans, not
 - **The chat changes exactly what you name.** Before, a card could change another item: "Change date" on an appointment changed an unrelated task, and "Set again" closed the app. If something changed it back since, the card says so and offers "Set again".
 - **Full control from the chat.** Put away, open again, change one detail, move to another matter, close a matter, keep a decision. Each can be undone. A card that cannot do something says why.
 - **Messages in your voice.** Drafts follow the way the other side writes and use the language of the exchange. They greet a person by first name, or by title and surname. A change you ask for in a draft is made, and keeps its recipient.
-- **One AI for everything:** GPT-6.1 Sol, with Causabee Pro.
+- **The bee costs less:** each job uses the smallest OpenAI model that does it as well as GPT-6.1 Sol. With Causabee Pro, Sol reads what comes in and answers in the chat; GPT-6.1 Terra writes digests and briefs, at half the price. What may wait, waits for half the price again.
 - **Waiting is not doing.** What others still have to do stands apart from your own tasks.
 - **causabee.app shows Causabee as it is today:** the film, the pictures, and what works on macOS 15 and what needs macOS 26.
 

@@ -300,7 +300,7 @@ struct PlanSettings: View {
                             Text("Pro on")
                         }
                     }
-                    Text(pro.wrappedValue ? "GPT-6.1 Sol reads what comes in, as it comes, names disguised first."
+                    Text(pro.wrappedValue ? "\(AIJob.read.model.shortLabel) reads what comes in, as it comes, names disguised first."
                          : "Off: Apple's model on this device reads what comes in. Nothing leaves it.")
                         .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }

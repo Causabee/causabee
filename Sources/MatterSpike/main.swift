@@ -158,7 +158,7 @@ mapping.json holds the originals. It is gitignored and never leaves this machine
 """
 
 struct Options {
-    enum Command: String { case run, labels, check, review, report, login, fetch, `import`, matters, merge, rename, parties, same, notsame, rules, ask, owner, close, reopen, party, screenshot, digest, pressure }
+    enum Command: String { case run, labels, check, review, report, login, fetch, `import`, matters, merge, rename, parties, same, notsame, rules, ask, owner, close, reopen, party, screenshot, digest, pressure, jobs }
     var command = Command.run
     var folder = URL(fileURLWithPath: "Samples/mail")
     var log = URL(fileURLWithPath: "decisions.jsonl")
@@ -351,6 +351,7 @@ case .notsame: try notSame()
 case .rules: try rules()
 case .ask: try await ask()
 case .pressure: try await pressure()
+case .jobs: try await jobs()
 case .owner: try setOwner()
 case .close: try close()
 case .digest: try await digest()
@@ -1489,4 +1490,158 @@ func pressure() async throws {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         try encoder.encode(results).write(to: URL(fileURLWithPath: options.words[1]))
     }
+}
+
+
+// MARK: jobs — each job on Sol and on the model it may move to (F004 AC-3)
+
+/// `matter-spike jobs <out folder> --store <demo store> --mapping <mapping.json> [--limit n]`: the
+/// demo's invented items read again, their digests and each open matter's brief written again —
+/// once by the table's model and once by each model the job is tested on — with the prompts, the
+/// disguise and the jobs the app sends. Only the demo's matters: never real mail. Writes
+/// `read.json`, `digest.json` and `brief.json`, the answers still disguised where the app keeps
+/// them so; `jobs-report.py` compares them.
+struct JobAnswer: Codable {
+    var item: String
+    var title: String
+    var kind: String
+    var placed: String?
+    var model: String
+    var servedBy: String?
+    var matter: String?
+    var matterIsNew: Bool?
+    var todos: [String] = []
+    var dates: [String] = []
+    var digest: String?
+    var brief: [String] = []
+    var summary: [String] = []
+    var step: String?
+    var why: String?
+    var cost: Double = 0
+    var seconds: Double = 0
+    var error: String?
+}
+
+@MainActor
+func jobs() async throws {
+    guard options.words.count == 1 else { fail("matter-spike jobs <out folder> --store <demo store> --mapping <mapping.json> [--limit n]") }
+    let out = URL(fileURLWithPath: options.words[0], isDirectory: true)
+    try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
+    let context = try openStore()
+    let profile = try context.fetch(FetchDescriptor<Profile>()).first
+    let owner = profile?.names ?? []
+    // The demo's own owner, or nothing goes: this command is for the invented matters only.
+    guard owner.contains("Mara Voss") else { fail("not the demo's store: its owner is not Mara Voss") }
+    guard let key = Claude.key(for: .gptSol) else { fail("no OPENAI_API_KEY in .env") }
+    let claude = Claude(key: key)
+    let store = options.store
+    var mapping = Pseudonymizer.Mapping()
+    if let data = try? Data(contentsOf: options.mapping) { mapping = try JSONDecoder().decode(Pseudonymizer.Mapping.self, from: data) }
+    _ = mapping.upgrade()
+    let today = MatterStatus.day(Date())
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+    // `JOBS_ONLY=gpt-6.1-sol`: one model alone — Sol against itself, to see how far it differs from its own answers.
+    let only = ProcessInfo.processInfo.environment["JOBS_ONLY"]
+    func models(_ job: AIJob) -> [Claude.Model] {
+        if let only { return Claude.Model.known.filter { $0.id == only } }
+        return [job.model] + Claude.Model.known.filter { $0 != job.model && ["gpt-6-luna", "gpt-6.1-terra"].contains($0.id) && (job != .brief || $0.id == "gpt-6.1-terra") }
+    }
+
+    let matters = try context.fetch(FetchDescriptor<Matter>())
+    let entries = matters.flatMap { matter in (matter.entries ?? []).map { (matter, $0) } }
+        .sorted { ($0.1.date ?? .distantPast) < ($1.1.date ?? .distantPast) }
+    let chosen = options.limit.map { Array(entries.prefix($0)) } ?? entries
+    // An item as it came in: a mail as it is kept, a screenshot or a file by the words the demo gives it.
+    func email(_ entry: Entry) -> Email {
+        if let kept = MailText.load(entry.messageID, besides: store) { return kept }
+        let date = entry.date.map { ISO8601DateFormatter().string(from: $0) } ?? ""
+        let eml = "From: \(entry.from)\r\nSubject: \(entry.title)\r\nDate: \(date)\r\nMessage-ID: <\(entry.messageID)>\r\n\r\n\(entry.digest ?? entry.title)\r\n"
+        return EMLParser.parse(data: Data(eml.utf8), url: URL(fileURLWithPath: "/demo/" + entry.messageID))
+    }
+    let known = Unplaced.matters(in: context), onFile = Unplaced.onFile(in: context)
+
+    // Reading what comes in: each item alone, as if it came in today, every matter known.
+    var read: [JobAnswer] = []
+    for model in models(.read) {
+        AIJob.trying[.read] = model
+        for (matter, entry) in chosen {
+            var answer = JobAnswer(item: entry.messageID, title: entry.title, kind: entry.source.kind.rawValue, placed: matter.key, model: model.id)
+            do {
+                let report = Spike(detector: EntityDetector())
+                    .run(emails: [email(entry)], pseudonymizer: Pseudonymizer(mode: .placeholder, entries: mapping.placeholder))
+                guard let pseudonymizer = report.pseudonymizer else { throw Claude.Failure.unreadable("nothing to send") }
+                var outcomes = report.outcomes
+                var extractor = Extractor(model: model, claude: claude, cache: out.appendingPathComponent(".cache"), newestOnly: entry.source.kind == .mail, quietAfter: 0)
+                extractor.strict = true
+                extractor.storeMatters = known
+                extractor.onFile = onFile
+                let summary = try await extractor.run(&outcomes, pseudonymizer: pseudonymizer, owner: owner)
+                if let failure = summary.failed.first { throw Claude.Failure.unreadable(failure.error) }
+                guard let judgement = outcomes.first?.judgement else { throw Claude.Failure.unreadable("no answer") }
+                answer.servedBy = judgement.extraction?.servedBy
+                answer.matter = judgement.matter
+                answer.matterIsNew = judgement.extraction.map { _ in !known.contains { $0.key == judgement.matter } }
+                answer.todos = judgement.todos.map { $0.text + ($0.due.map { " (due \($0))" } ?? "") }
+                answer.dates = judgement.deadlines.map { "\($0.date) · \($0.what)" } + judgement.appointments.map { "\($0.date)\($0.time.map { " " + $0 } ?? "") · \($0.what)" }
+                answer.cost = summary.cost
+                answer.seconds = summary.seconds
+                if summary.sent == 0 && summary.cached == 0 { answer.error = judgement.isBulk ? "bulk: not sent" : "not sent" }
+            } catch { answer.error = "\(error)" }
+            read.append(answer)
+            print("read  \(model.id)  \(answer.matter ?? "–")  \(entry.title.prefix(50))\(answer.error.map { "  ✗ " + $0 } ?? "")")
+            try encoder.encode(read).write(to: out.appendingPathComponent("read.json"))
+        }
+    }
+
+    // A digest of each mail kept, disguised as the app sends it.
+    struct DigestReply: Decodable { var digest: String? }
+    var digests: [JobAnswer] = []
+    for model in models(.digest) {
+        AIJob.trying[.digest] = model
+        for (matter, entry) in chosen where MailText.has(entry.messageID, besides: store) {
+            var answer = JobAnswer(item: entry.messageID, title: entry.title, kind: entry.source.kind.rawValue, placed: matter.key, model: model.id)
+            do {
+                guard let text = DigestBackfill.preview(entry, store: store, mapping: options.mapping) else { throw Claude.Failure.unreadable("no text") }
+                let body = Claude.body(model: model, system: DigestPrompt.system, user: text, schema: DigestPrompt.schema, effort: "low")
+                let sent = try await claude.send(body, model: model, job: .digest)
+                answer.servedBy = sent.servedBy
+                answer.digest = try JSONDecoder().decode(DigestReply.self, from: sent.json).digest
+                answer.cost = sent.cost
+                answer.seconds = sent.seconds
+            } catch { answer.error = "\(error)" }
+            digests.append(answer)
+            print("digest \(model.id)  \(entry.title.prefix(50))\(answer.error.map { "  ✗ " + $0 } ?? "")")
+            try encoder.encode(digests).write(to: out.appendingPathComponent("digest.json"))
+        }
+    }
+
+    // Each open matter's brief, summary and next step, from its facts, as Pro writes them.
+    let kept = Dictionary(((try? context.fetch(FetchDescriptor<KeptText>())) ?? []).map { ($0.messageID, $0.data) }, uniquingKeysWith: { a, _ in a })
+    func words(_ id: String) -> String? {
+        guard let data = kept[id], let raw = try? (data as NSData).decompressed(using: .lzfse) as Data else { return MailText.load(id, besides: store)?.body }
+        let text = String(decoding: raw, as: UTF8.self)
+        return text.range(of: "\n\n").map { String(text[$0.upperBound...]) } ?? text
+    }
+    var briefs: [JobAnswer] = []
+    for model in models(.brief) {
+        AIJob.trying[.brief] = model
+        for matter in matters where !matter.isClosed {
+            var answer = JobAnswer(item: matter.key, title: matter.name, kind: "matter", placed: matter.key, model: model.id)
+            do {
+                let facts = FactSheet.facts(for: [matter], today: today, keptText: { words($0.messageID) })
+                let advice = try await AssistantAsk.advise(facts: facts, dismissed: [], owner: owner.first, today: today, mapping: mapping,
+                                                            others: [], claude: claude, model: model)
+                answer.brief = advice.lines.map { "\($0.part.rawValue): \($0.text)" }
+                answer.summary = advice.summary
+                answer.step = advice.step
+                answer.why = advice.why
+                answer.cost = advice.cost
+            } catch { answer.error = "\(error)" }
+            briefs.append(answer)
+            print("brief \(model.id)  \(matter.name.prefix(50))\(answer.error.map { "  ✗ " + $0 } ?? "")")
+            try encoder.encode(briefs).write(to: out.appendingPathComponent("brief.json"))
+        }
+    }
+    AIJob.trying = [:]
 }

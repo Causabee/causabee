@@ -546,7 +546,7 @@ public struct Extractor: Sendable {
                                   cacheReadTokens: stored.cacheReadTokens ?? 0), true)
         }
         guard let claude else { throw Claude.Failure.noKey }
-        let answer = try await claude.send(body, model: model)
+        let answer = try await claude.send(body, model: model, job: .read)
         let stored = Stored(json: String(decoding: answer.json, as: UTF8.self), servedBy: answer.servedBy,
                             inputTokens: answer.inputTokens, outputTokens: answer.outputTokens, seconds: answer.seconds,
                             cacheWriteTokens: answer.cacheWriteTokens, cacheReadTokens: answer.cacheReadTokens)

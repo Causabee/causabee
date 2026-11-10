@@ -206,20 +206,10 @@ public enum ExtractionPrompt {
         } else {
             parts.append("The mailbox owner (\"me\") appears as: \(owner.joined(separator: ", ")).")
         }
-        if let sent {
-            let format = DateFormatter()
-            format.locale = Locale(identifier: "en_US_POSIX")
-            format.dateFormat = "yyyy-MM-dd (EEEE)"
-            parts.append("The email was sent on \(format.string(from: sent)).")
-        }
         if matters.isEmpty {
             parts.append("No matters have been found yet.")
         } else {
             parts.append("Matters found so far:\n" + matters.map { "- \($0.name): \($0.summary)" }.joined(separator: "\n"))
-        }
-        if let thread {
-            parts.append("This email is a reply in a thread whose earlier emails were assigned to the matter `\(thread)`."
-                         + (threadClosed ? " That matter is closed: the email belongs to it only if it carries on what was finished there. Anything else starts a new matter, even from the same person." : ""))
         }
         let listed = open.filter { !$0.todos.isEmpty }
         if !listed.isEmpty {
@@ -238,6 +228,18 @@ public enum ExtractionPrompt {
             parts.append("What the owner took out before — write nothing of this kind again:\n" + taken.map { matter in
                 "\(matter.matter):\n" + matter.unwanted.map { "  - \($0)" }.joined(separator: "\n")
             }.joined(separator: "\n"))
+        }
+        // What is the same for every item a while comes first, for the cache (F004 AC-5); what is
+        // this item's own — its thread, its day, its words — last.
+        if let thread {
+            parts.append("This email is a reply in a thread whose earlier emails were assigned to the matter `\(thread)`."
+                         + (threadClosed ? " That matter is closed: the email belongs to it only if it carries on what was finished there. Anything else starts a new matter, even from the same person." : ""))
+        }
+        if let sent {
+            let format = DateFormatter()
+            format.locale = Locale(identifier: "en_US_POSIX")
+            format.dateFormat = "yyyy-MM-dd (EEEE)"
+            parts.append("The email was sent on \(format.string(from: sent)).")
         }
         parts.append("<email>\n\(mail)\n</email>")
         return parts.joined(separator: "\n\n")

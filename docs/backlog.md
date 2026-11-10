@@ -12,6 +12,8 @@ Seen while building something else. Not built now: each becomes a feature, joins
 Next feature, in the owner's order (10 November): **F004** the right model for each job (evidence: `docs/ai-cost-2026-11.md`).
 
 
+- A third party's health or private reason ("in stationärer Behandlung bis 24.11.") is not repeated as a fact or in a task; only what it means for the owner: "Abrechnung 2025 erst nach dem 24. November". Seen by the owner on 10 November (iPhone, Hausverwaltung). New manifesto rule with its test (2026-11-10)
+- Sol's cached read is counted at 0.1× of the input in the ledger and the app; OpenAI charges 0.05× — the fix lane, a failing test first (2026-11-10)
 - The demo's care matter shows a different next step on each device: the Mac 'Read and sign the Sunrise contract', the iPhone 'Get the bath seat prescription', the iPad 'Out of date' — principle 12, one matter, one state. Seen taking F002's pictures (2026-11-10)
 - Fix lane: the beeserver's ledger writes a request paid from top-ups as two rows, both with its tokens (src/index.ts:199–209); token and request sums over both kinds count it twice. The dollars are right. Found measuring costs, docs/ai-cost-2026-11.md (2026-11-10)
 - Delete site/film/walkthrough/walkthrough-720-cc.mp4: the captions test of 14 October, not served by the website (2026-11-10)

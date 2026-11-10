@@ -20,10 +20,13 @@ enum LabelledMail {
 enum ModelChoice {
     static let mailKey = "model.mail", assistantKey = "model.assistant", strictKey = "model.strict"
 
-    /// One model for everything — sorting what comes in, answers, briefs: GPT-6.1 Sol, through the
-    /// beeserver with Pro, or with the developer's own OpenAI key.
-    static var mail: Claude.Model { .gptSol }
-    static var assistant: Claude.Model { .gptSol }
+    /// Each job its model, from the table (`AIJob`, F004): what reads what comes in, and what
+    /// answers in the chat — through the beeserver with Pro, or with the developer's own OpenAI key.
+    static var mail: Claude.Model { AIJob.read.model }
+    static var assistant: Claude.Model { AIJob.chat.model }
+
+    /// Which model does which job, for Settings: as it is said on causabee.app.
+    static var jobWords: String { AIJob.said(ownKey: "with your own key") }
     /// With Pro the plan picks, so the month goes furthest: GPT-6.1 Sol for everything — it sorts
     /// nearly as well as Opus at two fifths of the price.
     static var proPicks: Bool { BeeServer.isSetUp && AutoMode.isOn }
@@ -75,7 +78,7 @@ enum ModelChoice {
     /// Who reads new mail now, in one sentence for Settings.
     static var readerWords: String {
         if DemoData.isRequested { return "In the demo, the mail is made up and nothing is sent." }
-        if proPicks { return "Pro: GPT-6.1 Sol reads what comes in, as it comes — names disguised first." }
+        if proPicks { return "Pro: \(mail.shortLabel) reads what comes in, as it comes — names disguised first." }
         if case .device = mailReader(for: mail) { return "Apple's model on this device reads what comes in. Nothing leaves it." }
         if case .rules = mailReader(for: mail) { return "New mail comes in by its threads, and you place the rest. Nothing leaves this device." }
         if client(for: mail) != nil {
@@ -133,7 +136,7 @@ struct ModelSettingsView: View {
             Section { CloudSettings() } header: { Text("iCloud") }
             Section {
                 DisclosureGroup("Developer", isExpanded: $developer) {
-                    Text("Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with your own key.")
+                    Text(ModelChoice.jobWords)
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     KeyField(title: "OpenAI", name: "OPENAI_API_KEY")
                     Text("The key is kept in the Keychain like the mail password, never in a file. It gets only pseudonymised text.")
@@ -481,8 +484,7 @@ final class StoredChanges {
 }
 
 /// Under a matter's next step and its summary while Auto is on, in the place of the link that
-/// asks for them: Auto does the asking. "Auto mode", or that the record has changed and they are
-/// written in a moment.
+/// asks for them: Auto does the asking. "Pro", and the model that writes them (F004).
 struct AutoLine: View {
     let matter: Matter
     var size: CGFloat = 10
@@ -490,10 +492,11 @@ struct AutoLine: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: "bolt.fill").font(.system(size: size))
-            Text("Pro")
+            Text("Pro · " + AIJob.brief.model.shortLabel)
         }
         .font(.caption).foregroundStyle(.secondary)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pro, written by " + AIJob.brief.model.label)
         .accessibilityIdentifier("auto.line")
     }
 }

@@ -1,0 +1,2242 @@
+[
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0068612,
+    "dates" : [
+
+    ],
+    "item" : "demo-wedding-june-1@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "wedding-june",
+    "seconds" : 7.326315999031067,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Gut Birkenhof: your visit and the date",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0078312,
+    "dates" : [
+      "2026-10-21 10:00 · Key handover, Birch Road 12"
+    ],
+    "item" : "demo-move-birch-road-1@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "move-birch-road",
+    "seconds" : 7.866207957267761,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Lease for Birch Road 12 signed",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0075137,
+    "dates" : [
+      "2026-10-31 12:00 · Handover of the old flat"
+    ],
+    "item" : "demo-move-birch-road-2@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "move-birch-road",
+    "seconds" : 7.191230058670044,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your notice: confirmation",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0064386999999999995,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-1@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-Linden Street-Linden Street",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "flat-linden-street",
+    "seconds" : 5.593117952346802,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Viewing: 3-room flat, Linden Street 8",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.008401200000000001,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-1@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 9.163547039031982,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "After your mother's hospital stay: what she needs",
+    "todos" : [
+      "Arrange help with showering and shopping for Helga Voss for about six weeks."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0071611999999999995,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-2@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 8.443099021911621,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Who does what this week?",
+    "todos" : [
+      "Cover Mum's care at the start of the week."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0061062,
+    "dates" : [
+
+    ],
+    "item" : "demo-wedding-june-3@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "wedding-june",
+    "seconds" : 6.252090096473694,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Menu proposal for 90 guests",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0081462,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-12@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 11.657975912094116,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Re: Who does what this week?",
+    "todos" : [
+      "Ask Uncle Karl about covering Thursday."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0106437,
+    "dates" : [
+      "2026-10-07 · One-page written summary due",
+      "2026-10-16 · Science fair"
+    ],
+    "item" : "demo-science-fair-9b-1@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 13.868320941925049,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Science fair 2026: project briefing for class 9b",
+    "todos" : [
+      "Submit the one-page project summary (due 2026-10-07)",
+      "Build a working model and create a poster in a group of three"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0070737,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-3@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 7.346356987953186,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Discharge and how to apply for a care level",
+    "todos" : [
+      "Apply for a care level at the health insurer, including the hospital letter."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0055087,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-1@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "bathroom-renovation",
+    "seconds" : 3.7439509630203247,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Quote: bathroom renovation, 6 square metres",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.009031200000000001,
+    "dates" : [
+      "2026-10-17 07:10 · Flight Frankfurt → Lisbon",
+      "2026-10-24 18:45 · Flight Lisbon → Frankfurt"
+    ],
+    "item" : "demo-lisbon-october-1@mail.example",
+    "kind" : "mail",
+    "matter" : "Lisbon-october",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "lisbon-october",
+    "seconds" : 9.089776992797852,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your booking: Frankfurt to Lisbon, 17 and 24 October",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0079537,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-2@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 8.56698203086853,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Topic approval form: parents please sign",
+    "todos" : [
+      "Sign the topic approval form.",
+      "Hand in the signed topic approval form."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0059937,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-2@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "bathroom-renovation",
+    "seconds" : 5.700106978416443,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Our quote for the bathroom",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0067537,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-2@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "flat-linden-street",
+    "seconds" : 6.946717023849487,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your offer was accepted",
+    "todos" : [
+      "Provide the sellers with a written financing commitment from the bank within three weeks."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.007833699999999999,
+    "dates" : [
+      "2026-10-31 · Tax office deadline for the 2025 tax return"
+    ],
+    "item" : "demo-tax-return-2025-1@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "tax-return-2025",
+    "seconds" : 7.522040009498596,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Tax return 2025: what I need from you",
+    "todos" : [
+      "Send Jana Falk the employer's tax certificate, bank and interest statements, donation receipts and home office costs."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0067786999999999995,
+    "dates" : [
+
+    ],
+    "item" : "demo-mums-gym-document-2",
+    "kind" : "document",
+    "matter" : "mums-gym",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "mums-gym",
+    "seconds" : 8.456365942955017,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Membership contract",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.008906200000000001,
+    "dates" : [
+      "2026-10-10 · Free cancellation ends"
+    ],
+    "item" : "demo-lisbon-october-2@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "lisbon-october",
+    "seconds" : 10.885273933410645,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Casa do Largo: booking confirmed",
+    "todos" : [
+      "Send the key box code the day before check-in"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0084712,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-3@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 12.671264052391052,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Group chat: who brings what?",
+    "todos" : [
+      "Bring the bottles for the rainwater filter."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.006056199999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-wedding-june-4@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "wedding-june",
+    "seconds" : 5.781556010246277,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Photography: packages and availability",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0075562,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-4@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 8.905953049659729,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Application received: care level for Helga Voss",
+    "todos" : [
+      "Arrange the medical service visit."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0066587,
+    "dates" : [
+      "2026-10-07 · Moving quote expires"
+    ],
+    "item" : "demo-move-birch-road-3@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "move-birch-road",
+    "seconds" : 6.260625958442688,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Quote: moving on 21 October",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0065612,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-3@mail.example",
+    "kind" : "mail",
+    "matter" : "mortgage-2027",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "flat-linden-street",
+    "seconds" : 4.433221936225891,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Mortgage: documents we need",
+    "todos" : [
+      "Provide Northbank with three salary slips each, the last two years’ tax notices and the sales exposé."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0060737,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-3@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "bathroom-renovation",
+    "seconds" : 4.020473957061768,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Permission for structural changes",
+    "todos" : [
+      "Send drawings and the plumber's plan to Housing Association North for permission to move the shower."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.008283700000000001,
+    "dates" : [
+      "2026-10-20 · Dinner at Tomás Ribeiro's"
+    ],
+    "item" : "demo-lisbon-october-3@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "lisbon-october",
+    "seconds" : 8.873249053955078,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "You are coming!! Dinner at mine?",
+    "todos" : [
+      "Send the dinner address and door code."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0077487,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-4@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 8.3974130153656,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Topic approved: rainwater filter",
+    "todos" : [
+      "Test the filter with muddy water.",
+      "Bring a safety form for the test with cleaning agent."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0071937,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-5@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 8.04791796207428,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Offer: Sunrise Home Care visits for Helga",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0076837,
+    "dates" : [
+      "2026-11-30 · Decision on live band or DJ"
+    ],
+    "item" : "demo-wedding-june-5@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "wedding-june",
+    "seconds" : 8.412162065505981,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Live band or DJ?",
+    "todos" : [
+      "Tell Jule Brandt the decision on a live band or DJ (due 2026-11-30)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0064811999999999995,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-2@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "tax-return-2025",
+    "seconds" : 6.3749680519104,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your tax certificate for 2025",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.008871200000000001,
+    "dates" : [
+
+    ],
+    "item" : "demo-elm-court-manager-1@mail.example",
+    "kind" : "mail",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "elm-court-manager",
+    "seconds" : 12.254764914512634,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Offer: management of Elm Court 51 from 1 January",
+    "todos" : [
+      "Provide a power of attorney for Kessler to manage the building."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0071362,
+    "dates" : [
+
+    ],
+    "item" : "demo-garden-planner-screenshot-2",
+    "kind" : "screenshot",
+    "matter" : "garden-planner",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "garden-planner",
+    "seconds" : 6.88530695438385,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Tom's feedback on the sketch",
+    "todos" : [
+      "Show the weather next to the week in the garden planner."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0075762,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-4@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "flat-linden-street",
+    "seconds" : 9.947404980659485,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Building: minutes and reserve fund",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0064237,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-4@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "bathroom-renovation",
+    "seconds" : 6.603492975234985,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your sample tiles are ready",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0080512,
+    "dates" : [
+      "2026-10-09 10:20 · ID card appointment for Lena"
+    ],
+    "item" : "demo-lisbon-october-4@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "lisbon-october",
+    "seconds" : 7.091863036155701,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your appointment: ID card for Lena",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0052337,
+    "dates" : [
+
+    ],
+    "item" : "demo-brightwave-application-document-1",
+    "kind" : "document",
+    "matter" : "brightwave-application",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "brightwave-application",
+    "seconds" : 3.6752439737319946,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "CV and portfolio",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0060362,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-5@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 4.511327028274536,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Materials list and costs",
+    "todos" : [
+      "Buy filter sand and tubing."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0076912,
+    "dates" : [
+      "2026-10-02 11:00 · Physiotherapy for Helga Voss"
+    ],
+    "item" : "demo-care-for-helga-6@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 7.410338044166565,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Physio appointments for Helga",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0061537,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-1@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "parking-accident",
+    "seconds" : 4.14007294178009,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Claim received: your report of 14 September",
+    "todos" : [
+      "Send Sabine Ott photos, the other driver's details and a repair estimate for claim CR-40917."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0093212,
+    "dates" : [
+      "2026-11-02 · Request the internet transfer to qualify for a free move."
+    ],
+    "item" : "demo-move-birch-road-4@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "move-birch-road",
+    "seconds" : 11.428532004356384,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Moving your internet connection",
+    "todos" : [
+      "Request transfer of the internet connection to the new address. (due 2026-11-02)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0056687,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-2@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "parking-accident",
+    "seconds" : 3.848829984664917,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Re: what happened",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0060162,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-5@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "flat-linden-street",
+    "seconds" : 4.257349967956543,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Survey of the flat: short report",
+    "todos" : [
+      "Have the bedroom windows resealed within two years."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0059037,
+    "dates" : [
+
+    ],
+    "item" : "demo-mortgage-2027-document-1",
+    "kind" : "document",
+    "matter" : "mortgage-2027",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "mortgage-2027",
+    "seconds" : 5.145771026611328,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Offer Nordbank",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0069061999999999995,
+    "dates" : [
+      "2026-10-10 · Hold on the wedding date expires"
+    ],
+    "item" : "demo-wedding-june-2@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "wedding-june",
+    "seconds" : 7.0641770362854,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Deposit reminder",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0068861999999999994,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-3@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "tax-return-2025",
+    "seconds" : 8.152927994728088,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Annual statement 2025",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0106362,
+    "dates" : [
+      "2026-10-06 10:00 · Assessment visit by the medical service"
+    ],
+    "item" : "demo-care-for-helga-7@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 14.311702013015747,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Visit by the medical service on 6 October",
+    "todos" : [
+      "Be present at the assessment visit as a family member. (due 2026-10-06)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0058537,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-5@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "bathroom-renovation",
+    "seconds" : 4.660215973854065,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Plumbing plan for the new shower",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0077612,
+    "dates" : [
+
+    ],
+    "item" : "demo-elm-court-manager-document-2",
+    "kind" : "document",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "elm-court-manager",
+    "seconds" : 8.690305948257446,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Management contract, draft",
+    "todos" : [
+      "Approve the management contract at the owners' meeting"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.008883700000000001,
+    "dates" : [
+      "2026-10-03 · Free rebooking available until this date",
+      "2026-10-17 09:05 · Outbound flight to Lisbon"
+    ],
+    "item" : "demo-lisbon-october-5@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "lisbon-october",
+    "seconds" : 10.056334972381592,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Schedule change: your outbound flight on 17 October",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0079937,
+    "dates" : [
+      "2026-10-15 15:30 · Science fair setup"
+    ],
+    "item" : "demo-science-fair-9b-6@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 8.370875000953674,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Fair: table booking and setup times",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0064887,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-3@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "parking-accident",
+    "seconds" : 6.404727935791016,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Repair estimate for your car",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0058312,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-4@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "tax-return-2025",
+    "seconds" : 5.4403510093688965,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your contributions in 2025",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0076612,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-8@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 8.553572058677673,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Re: Who does what?",
+    "todos" : [
+      "Cover care on Monday, Tuesday and Thursday."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0057612,
+    "dates" : [
+
+    ],
+    "item" : "demo-garden-planner-screenshot-1",
+    "kind" : "screenshot",
+    "matter" : "garden-planner",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "garden-planner",
+    "seconds" : 5.36363410949707,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Watering screen, first sketch",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.008901200000000001,
+    "dates" : [
+
+    ],
+    "item" : "demo-elm-court-manager-5@mail.example",
+    "kind" : "mail",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "elm-court-manager",
+    "seconds" : 11.998823046684265,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Handover of the building documents",
+    "todos" : [
+      "Hand over the building files. (due 2026-12-31)",
+      "Provide the 2025 statement in February."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0074737,
+    "dates" : [
+
+    ],
+    "item" : "demo-move-birch-road-5@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "move-birch-road",
+    "seconds" : 7.163424968719482,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Handover of the flat: what to prepare",
+    "todos" : [
+      "Repaint the walls white before handing over the flat.",
+      "Bring all keys, including the cellar key, to the flat handover."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.008593700000000001,
+    "dates" : [
+      "2027-06-11 · Civil ceremony"
+    ],
+    "item" : "demo-wedding-june-6@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "wedding-june",
+    "seconds" : 8.973534941673279,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Civil ceremony: documents",
+    "todos" : [
+      "Bring both partners' ID, birth certificates and proof of residence to a preparatory appointment."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0069837,
+    "dates" : [
+      "2026-10-12 · Travel insurance offer expires"
+    ],
+    "item" : "demo-lisbon-october-6@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "lisbon-october",
+    "seconds" : 9.085040092468262,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your travel insurance offer",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0054512,
+    "dates" : [
+
+    ],
+    "item" : "demo-next-car-screenshot-1",
+    "kind" : "screenshot",
+    "matter" : "next-car",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "next-car",
+    "seconds" : 3.9133180379867554,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Volvo EX30 offer",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0063212,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-4@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "parking-accident",
+    "seconds" : 6.700456023216248,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "An assessor will look at the car",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0079762,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-6@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "flat-linden-street",
+    "seconds" : 9.971660017967224,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Financing commitment is ready",
+    "todos" : [
+      "Send the last salary slip for the financing commitment."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.008623700000000002,
+    "dates" : [
+      "2026-10-02 · Signed visits contract must be returned"
+    ],
+    "item" : "demo-care-for-helga-9@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 11.231536984443665,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Contract draft: please sign and return by 2 October",
+    "todos" : [
+      "Sign and return the visits contract to Yusuf Kaya (due 2026-10-02)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0079712,
+    "dates" : [
+      "2026-11-12 14:00 · Second interview with the CPO"
+    ],
+    "item" : "demo-brightwave-application-2@mail.example",
+    "kind" : "mail",
+    "matter" : "brightwave-application",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "brightwave-application",
+    "seconds" : 9.27391493320465,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Second interview at Brightwave",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0084887,
+    "dates" : [
+      "2026-10-09 · 30 percent deposit due",
+      "2026-11-02 · Start of the bathroom renovation"
+    ],
+    "item" : "demo-bathroom-renovation-6@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "bathroom-renovation",
+    "seconds" : 7.53744101524353,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Confirmation and deposit",
+    "todos" : [
+      "Pay the 30 percent deposit to Oskar Lenz (due 2026-10-09)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0083762,
+    "dates" : [
+      "2026-10-07 · Written summary due"
+    ],
+    "item" : "demo-science-fair-9b-7@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 9.748677015304565,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Reminder: written summary due 7 October",
+    "todos" : [
+      "Send the summary to Ms. Okafor a few days before the deadline for review."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0061862,
+    "dates" : [
+
+    ],
+    "item" : "demo-next-car-document-2",
+    "kind" : "document",
+    "matter" : "next-car",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "next-car",
+    "seconds" : 6.872009038925171,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "VW ID.3 brochure",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0094937,
+    "dates" : [
+
+    ],
+    "item" : "demo-elm-court-manager-screenshot-3",
+    "kind" : "screenshot",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "elm-court-manager",
+    "seconds" : 13.075897097587585,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Owners' group: vote on Kessler",
+    "todos" : [
+      "Ask Hartmann for the 2025 statement before the vote."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0054912,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-5@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "parking-accident",
+    "seconds" : 4.08638608455658,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Rental car: your quote",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0046187,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-5@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "tax-return-2025",
+    "seconds" : 3.089626908302307,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Donation receipt",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0060737,
+    "dates" : [
+
+    ],
+    "item" : "demo-lisbon-october-7@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "lisbon-october",
+    "seconds" : 4.43231999874115,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Arrival time? Key box and tram tips",
+    "todos" : [
+      "Send Marta Sousa the family's arrival time."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0078987,
+    "dates" : [
+
+    ],
+    "item" : "demo-mums-gym-photo-1",
+    "kind" : "photo",
+    "matter" : "mums-gym",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "mums-gym",
+    "seconds" : 10.278954982757568,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Letter from FitPark",
+    "todos" : [
+      "Mamas FitPark-Vertrag schriftlich kündigen."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.009098700000000001,
+    "dates" : [
+      "2026-10-12 · Send questions about the purchase contract before signing",
+      "2026-10-12 · Signing of the purchase contract"
+    ],
+    "item" : "demo-flat-linden-street-7@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "flat-linden-street",
+    "seconds" : 9.38188099861145,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Draft of the purchase contract",
+    "todos" : [
+      "Review the draft purchase contract and send questions to Office of Dr. Wendt before signing (due 2026-10-12)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0067812,
+    "dates" : [
+
+    ],
+    "item" : "demo-christmas-dinner-screenshot-1",
+    "kind" : "screenshot",
+    "matter" : "christmas-dinner",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "christmas-dinner",
+    "seconds" : 6.891186952590942,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Who comes",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0077986999999999996,
+    "dates" : [
+      "2026-10-31 · Send the meter reading"
+    ],
+    "item" : "demo-move-birch-road-6@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "move-birch-road",
+    "seconds" : 7.912927031517029,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Reading of the meter on moving day",
+    "todos" : [
+      "Send Northlight Energy the meter reading and the new address (due 2026-10-31)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0081187,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-8@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 9.093706011772156,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Deniz has the flu: can we build at yours on Saturday?",
+    "todos" : [
+      "Reply to Elif Demir about whether the group can build at your place on Saturday afternoon."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.007078699999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-care-for-helga-10@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 8.241765975952148,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Prescription for the bath seat is ready",
+    "todos" : [
+      "Collect the bath seat prescription from the practice and provide it to the medical supply store before delivery."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0061912,
+    "dates" : [
+
+    ],
+    "item" : "demo-mortgage-2027-document-2",
+    "kind" : "document",
+    "matter" : "mortgage-2027",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "mortgage-2027",
+    "seconds" : 5.638667941093445,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Offer Sparkasse",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.009018700000000001,
+    "dates" : [
+      "2026-11-20 19:30 · Christmas dinner for six"
+    ],
+    "item" : "demo-christmas-dinner-2@mail.example",
+    "kind" : "mail",
+    "matter" : "christmas-dinner",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "christmas-dinner",
+    "seconds" : 11.244144082069397,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your table on the 20th",
+    "todos" : [
+      "Confirm the guest count with Trattoria Lume before the table hold expires on Friday."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.009773700000000001,
+    "dates" : [
+      "2026-10-01 14:00 · Assessor's inspection"
+    ],
+    "item" : "demo-parking-accident-6@mail.example",
+    "kind" : "mail",
+    "matter" : "parking-accident",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "parking-accident",
+    "seconds" : 13.206400990486145,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Inspection appointment",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0067887,
+    "dates" : [
+
+    ],
+    "item" : "demo-wedding-june-7@mail.example",
+    "kind" : "mail",
+    "matter" : "wedding-june",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "wedding-june",
+    "seconds" : 8.085574984550476,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Guest list, first version",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.009886200000000001,
+    "dates" : [
+      "2026-10-05 · Payment deadline to keep the reservation",
+      "2026-10-22 10:30 · Reservation: three Oceanário Tickets"
+    ],
+    "item" : "demo-lisbon-october-8@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "lisbon-october",
+    "seconds" : 12.883113980293274,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your reservation is held until 5 October",
+    "todos" : [
+      "Pay for the reservation with Oceanário Tickets (due 2026-10-05)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0075837,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-9@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 8.877705931663513,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your order is ready for pickup",
+    "todos" : [
+      "Pick up the filter sand and clear tubing from the store."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0071087,
+    "dates" : [
+
+    ],
+    "item" : "demo-mortgage-2027-screenshot-3",
+    "kind" : "screenshot",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "mortgage-2027",
+    "seconds" : 10.38281500339508,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Rate comparison",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0064437,
+    "dates" : [
+
+    ],
+    "item" : "demo-next-car-3@mail.example",
+    "kind" : "mail",
+    "matter" : "next-car",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "next-car",
+    "seconds" : 6.760210990905762,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Test drive ID.3",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0071662,
+    "dates" : [
+      "2026-11-19 19:00 · Eigentümerversammlung zum Verwalterwechsel"
+    ],
+    "item" : "demo-elm-court-manager-photo-4",
+    "kind" : "photo",
+    "matter" : "elm-court-manager",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "elm-court-manager",
+    "seconds" : 7.2047189474105835,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Notice in the stairwell",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.007036199999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-tax-return-2025-6@mail.example",
+    "kind" : "mail",
+    "matter" : "tax-return-2025",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "tax-return-2025",
+    "seconds" : 7.774434924125671,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Reminder: two things are missing",
+    "todos" : [
+      "Send the home office days and the receipt for the new desk to Jana Falk."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0070637,
+    "dates" : [
+
+    ],
+    "item" : "demo-bathroom-renovation-7@mail.example",
+    "kind" : "mail",
+    "matter" : "bathroom-renovation",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "bathroom-renovation",
+    "seconds" : 8.681136965751648,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Your request: still in review",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0062087,
+    "dates" : [
+
+    ],
+    "item" : "demo-flat-linden-street-8@mail.example",
+    "kind" : "mail",
+    "matter" : "flat-linden-street",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "flat-linden-street",
+    "seconds" : 5.939999103546143,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Building insurance: offer for Linden Street 8",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0068262,
+    "dates" : [
+
+    ],
+    "item" : "demo-lisbon-october-9@mail.example",
+    "kind" : "mail",
+    "matter" : "lisbon-october",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "lisbon-october",
+    "seconds" : 7.013920903205872,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Re: Arrival time?",
+    "todos" : [
+      "Send Marta Sousa the arrival time."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0078662,
+    "dates" : [
+
+    ],
+    "item" : "demo-science-fair-9b-10@mail.example",
+    "kind" : "mail",
+    "matter" : "science-fair-9b",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "science-fair-9b",
+    "seconds" : 7.5543800592422485,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Feedback on the draft poster",
+    "todos" : [
+      "Shorten the poster text to three short sentences under each picture.",
+      "Show Ms. Okafor the revised poster layout before printing."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.008946200000000001,
+    "dates" : [
+      "2026-10-06 · Visit"
+    ],
+    "item" : "demo-care-for-helga-11@mail.example",
+    "kind" : "mail",
+    "matter" : "care-for-Helga Voss",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "care-for-helga",
+    "seconds" : 10.82595705986023,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Please have these documents ready for the visit",
+    "todos" : [
+      "Have the current medication list, doctor's report and hospital letter ready for the visit. (due 2026-10-06)"
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0065236999999999995,
+    "dates" : [
+
+    ],
+    "item" : "demo-brightwave-application-screenshot-3",
+    "kind" : "screenshot",
+    "matter" : "brightwave-application",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "brightwave-application",
+    "seconds" : 8.162125945091248,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "LinkedIn chat with the recruiter",
+    "todos" : [
+
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.0070437,
+    "dates" : [
+
+    ],
+    "item" : "demo-parking-accident-7@mail.example",
+    "kind" : "mail",
+    "matterIsNew" : true,
+    "model" : "gpt-6.1-sol",
+    "placed" : "parking-accident",
+    "seconds" : 7.323794007301331,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Please confirm your bank details",
+    "todos" : [
+      "Confirm the account holder and IBAN to Sabine Ott."
+    ]
+  },
+  {
+    "brief" : [
+
+    ],
+    "cost" : 0.006951199999999999,
+    "dates" : [
+
+    ],
+    "item" : "demo-move-birch-road-7@mail.example",
+    "kind" : "mail",
+    "matter" : "move-birch-road",
+    "matterIsNew" : false,
+    "model" : "gpt-6.1-sol",
+    "placed" : "move-birch-road",
+    "seconds" : 8.84492802619934,
+    "servedBy" : "gpt-6.1-sol",
+    "summary" : [
+
+    ],
+    "title" : "Parking for the van?",
+    "todos" : [
+
+    ]
+  }
+]

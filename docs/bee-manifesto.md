@@ -86,6 +86,7 @@ Each job is tested against its promise:
 - **Chat control** — `ChatControlTests`: every element put away and shown again, each field changed and set back, each moved and back, every element seen by an id.
 - **Offered, then settled** — a time offered in one message and settled in the reply reaches the date; the chat finds it in the words.
 - **Write** — `matter-spike pressure`: 24 situations of nine kinds of people, sent as the chat sends them, recorded whole and drawn on the screen; the report is `docs/message-pressure-test.md`. Its disguise findings hold in `DisguiseFindingsTests`.
+- **A cheaper model** — a job moves to a cheaper model only after it does the job as well as the model before, on the demo's invented matters: the same matter for every item, at least 95% of the tasks and dates, nothing invented; the brief judged blind by the owner. `matter-spike jobs`, its answers kept with the feature; the table of jobs and models is one, the same in the app and on the server (`AIJobTests`).
 
 If a change breaks a principle, it is wrong — however good it looks.
 

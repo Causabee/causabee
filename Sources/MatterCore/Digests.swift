@@ -204,7 +204,7 @@ public enum DigestBackfill {
             guard let (text, pseudonymizer) = prepared(email, entries: entriesKnown) else { continue }
             entriesKnown = pseudonymizer.entries
             let body = Claude.body(model: model, system: DigestPrompt.system, user: text, schema: DigestPrompt.schema, effort: "low")
-            let answer = try await claude.send(body, model: model)
+            let answer = try await claude.send(body, model: model, job: .digest)
             result.cost += answer.cost
             let reply = try JSONDecoder().decode(DigestPrompt.Reply.self, from: answer.json)
             if let digest = reply.digest.map({ pseudonymizer.restorer.apply($0).text }), !digest.isEmpty {

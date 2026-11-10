@@ -1,0 +1,486 @@
+# F004 · Briefs, blind
+
+For each matter, two briefs — A and B. One is GPT-6.1 Sol's, one is the model it may move to. Which is which is kept apart.
+For each matter: is B worse than A, A worse than B, or neither?
+
+## 1. Application: Head of Design, Brightwave
+
+**A**
+
+- about: Application for Head of Design at Brightwave, with a second interview scheduled.
+- people: Priya Raman is the Brightwave recruiter; the second interview is with the CPO.
+- agreed: The video interview is on 12 November at 14:00 and includes a 20-minute design-system case study.
+- open: Prepare the case study, leading with the three-apps story and leaving room for questions.
+- decision: Decide on a salary expectation before the interview; the range is open.
+- Summary: I have a second interview for Head of Design at Brightwave on 12 November. / I need to prepare my case study and decide on a salary expectation.
+- Next step: Prepare the case study, leading with the three-apps story. — The case study is due tomorrow, before the interview and salary decision.
+
+**B**
+
+- about: Application for Head of Design at Brightwave, now at the second interview with the CPO.
+- people: Priya Raman is the Brightwave recruiter arranging the interview.
+- agreed: The second interview is a video call on 12 November at 14:00, including a design-system case study.
+- open: Prepare the case by 11 November: lead with scaling one design system across three apps, keep the presentation to 15 minutes, and leave room for questions.
+- decision: Set a salary expectation before Thursday; the salary range is open.
+- Summary: The second interview with Brightwave’s CPO is on Thursday at 14:00. The plan is a 15-minute case led by the three-apps story, with a salary expectation still to decide.
+- Next step: Prepare a 15-minute case leading with the three-apps story. — The case is due tomorrow, ahead of Thursday’s interview.
+
+## 2. Bathroom renovation
+
+**A**
+
+- about: Bathroom renovation with a shower move, planned to take four weeks.
+- people: Oskar Lenz is the builder; Housing Association North must permit the shower move; Mia Vogel is the plumber.
+- agreed: Lenz Bau was chosen and confirmed; its €14,800 quote includes tiles and fittings. Work is scheduled to start on 11 December.
+- agreed: The €4,440 deposit is due 18 November, but payment depends on shower permission, expected by 23 November.
+- open: Order tiles, discuss their timing with Oskar, and choose the fittings.
+- open: Arrange somewhere to wash, pay the deposit once permission arrives, and keep receipts for taxes.
+- waiting: Housing Association North has had the drawings since at least 7 November; shower permission is expected by 23 November.
+- risks: The deposit is due before permission is expected. The builder's and association's emails also give dates preceding their own messages, so those dates are unclear.
+- risks: Five-week tile delivery could fall after the scheduled start, even if ordered by 11 November.
+- Summary: Lenz Bau is booked for the bathroom renovation, with work scheduled to start on 11 December. / The tiles need ordering, and the deposit is due before shower permission is expected.
+- Next step: Order the tiles at Tile Hall by 11 November. — The order is due tomorrow, and delivery takes five weeks.
+
+**B**
+
+- about: Bathroom renovation with Lenz Bau, including moving the shower.
+- agreed: Lenz Bau was chosen over Wolf Renovations for the earlier start, despite the higher price.
+- agreed: The quote is €14,800 including tiles and fittings, for four weeks of work; the recorded start is 11 December at 08:00.
+- people: Oskar Lenz is the builder; Mia Vogel handles plumbing; Housing Association North grants permission.
+- open: Order the tiles by 11 November and resolve delivery timing with Oskar: five weeks would put arrival after the recorded work start.
+- open: Choose taps and shower head by 19 November and arrange somewhere to wash by 9 December.
+- open: The €4,440 deposit is due 18 November, but payment is blocked until shower permission arrives.
+- open: Keep the receipts for taxes.
+- waiting: Waiting for Housing Association North's shower permission since 7 November; the recorded expected date is 23 November.
+- risks: The deposit deadline falls before the expected permission date, so the payment timing needs resolving.
+- risks: The latest emails give already-past dates for the start, deposit and permission; these conflict with the recorded schedule and need clarification.
+- Summary: Lenz Bau is chosen and work is recorded to start on 11 December, but shower permission is still pending. / Tiles need ordering now, and the deposit falls due before permission is expected.
+- Next step: Order the tiles and confirm the delivery date with Tile Hall. — Ordering is due tomorrow, and the five-week lead time already threatens the start.
+
+## 3. Buying the flat at Linden Street 8
+
+**A**
+
+- about: Buying the flat at Linden Street 8 for an accepted price of €372,000.
+- goal: Keep €20,000 free and ask the sellers to leave the kitchen.
+- people: Jonas Reiter handles the Northbank mortgage; Petra Holm is the estate agent; Dr. Clara Wendt is the notary.
+- agreed: The intended loan is €300,000, with interest fixed for ten years.
+- agreed: Signing is recorded for 21 November at 11:00; key handover is scheduled for 19 December at 10:00, with sellers’ confirmation still outstanding.
+- open: Finish the mortgage paperwork: salary slip due today, tax notices tomorrow, and financing commitment to the sellers by 14 November.
+- open: Read the purchase contract by 15 November, then send questions to the notary by 17 November.
+- open: Resolve the insurance acceptance due 20 November: the listed task says building insurance, but the offer is for contents and liability cover.
+- open: Ask whether the kitchen will remain, while preserving the €20,000 cash reserve.
+- waiting: Waiting since 9 October for the sellers to confirm the handover date; follow-up is due 18 November.
+- risks: Northbank’s commitment is conditional on the last salary slip, leaving little time before the 14 November delivery deadline.
+- risks: The notary’s email gives 12 October as the signing date, conflicting with the recorded appointment on 21 November.
+- Summary: The sellers have accepted €372,000, but the bank still needs the last salary slip before releasing the financing commitment due to the sellers on 14 November. / I want to keep €20,000 free and retain the kitchen; the contract still needs reviewing before I send the notary my questions.
+- Next step: Send the last salary slip to Jonas Reiter at Northbank today. — It is due today and unlocks the financing commitment needed by 14 November.
+
+**B**
+
+- about: Buying the flat at Linden Street 8.
+- goal: Keep €20,000 free and ask the sellers to leave the kitchen.
+- people: Jonas Reiter is the mortgage adviser, Petra Holm the estate agent, and Dr. Clara Wendt the notary.
+- agreed: The accepted price is €372,000; the planned loan is €300,000 with ten-year fixed interest.
+- agreed: Signing is scheduled for 21 November at 11:00; key handover is scheduled for 19 December at 10:00, pending seller confirmation.
+- open: Complete the financing documents and get the written commitment to the sellers.
+- open: Read the draft contract and send questions to the notary by 17 November.
+- open: Decide on insurance; the offer describes contents and liability cover.
+- waiting: The sellers' confirmation of the handover date has been awaited since 9 October.
+- risks: The financing commitment is due to the sellers on 14 November; Northbank says it is ready once the last salary slip is sent.
+- Summary: The sellers accepted the offer, and the financing commitment is needed by 14 November. / Northbank says the commitment is ready once I send my last salary slip.
+- Next step: Send the last salary slip to Northbank today. — The slip is due today and is needed for the financing commitment.
+
+## 4. Cancel Mum's gym membership
+
+**A**
+
+- about: Mum's FitPark membership needs to be cancelled in writing.
+- goal: Cancel the membership before it renews.
+- people: FitPark is Mum's gym.
+- agreed: The contract requires one month's written notice.
+- open: Have Mum sign the cancellation, then send it by registered mail.
+- risks: The recorded last day to cancel is November 18; otherwise the membership renews for 12 months.
+- Summary: I need to cancel Mum's gym membership before it renews. / Mum needs to sign the cancellation before I send it.
+- Next step: Have Mum sign the cancellation. — Her signature comes before sending the cancellation by registered mail.
+
+**B**
+
+- about: Cancel Mum's FitPark gym membership.
+- goal: End the membership before it renews for another 12 months.
+- agreed: The contract requires one month's notice in writing.
+- open: Have Mum sign by 12 November, then send the cancellation by registered mail by 13 November.
+- risks: The recorded cancellation deadline is 18 November; FitPark's letter instead says 'by the 30th'. Do not rely on the later date without clarification.
+- risks: Missing the cancellation deadline risks automatic renewal for 12 months.
+- Summary: Mum needs to sign the cancellation before it goes by registered mail, ahead of the recorded 18 November deadline.
+- Next step: Have Mum sign the cancellation by 12 November. — Her signature is needed before you send the cancellation.
+
+## 5. Care for Mum (Helga) after her fall
+
+**A**
+
+- about: Care for Mum, Helga Voss, at home after her fall; she needs help with showering and shopping while recovering.
+- goal: Keep Mum supported at home, with a care level covering part of the home-care cost.
+- people: You and Nina Voss decide together; Karl only helps out.
+- people: Sunrise Home Care provides the visits; Healthbridge Care Fund decides the care level.
+- agreed: The agreed split is you on Monday, Tuesday and Thursday; Nina Voss on Wednesday and the weekend.
+- agreed: Sunrise was chosen for Monday, Wednesday and Friday visits at 08:00, lasting 45 minutes; the first visit is recorded for 16 November.
+- agreed: No visits before 08:00. Mrs. Adler next door has the spare key.
+- open: Collect the overdue bath seat prescription; the medical supply store needs it before delivery.
+- open: Read the Sunrise contract with Nina Voss today before signing and returning it by 11 November.
+- open: Confirm this week's cover together, establish whether Karl can help on Monday mornings, and find shopping help.
+- open: Prepare the medication list, doctor's report and hospital letter by 14 November for the recorded assessment on 15 November at 10:00; a family member should attend.
+- open: The Tuesday physio move remains open, but the recorded assessment is now on Sunday, so the original reason for moving it needs checking.
+- waiting: Healthbridge acknowledged receipt of the care-level application on 10 October; the decision is recorded as expected by 23 November.
+- risks: The insurer's and Sunrise's messages still refer to October dates, unlike the current November schedule; confirm the dates rather than relying on those old instructions.
+- risks: Sunrise makes its start conditional on receiving the signed contract; the joint review must happen before tomorrow's return deadline.
+- Summary: You and Nina Voss are arranging Mum's care together, with Sunrise due to start next week and its contract needing joint review before tomorrow. / The bath seat prescription is overdue for collection, and the assessment and care-level decision are still ahead.
+- Next step: Collect the bath seat prescription from Dr. Anselm Brandt's practice. — Collection is overdue, and the medical supply store needs the prescription before delivery.
+
+**B**
+
+- about: Helga Voss is home after her fall and needs help with daily care and physiotherapy.
+- goal: Keep Mum supported at home, with a care level covering part of the home-care cost.
+- people: Nina Voss and Mara decide together; Uncle Karl only helps out.
+- people: Healthbridge Care Fund handles the care-level application; Sunrise Home Care is the chosen service.
+- agreed: Mara covers Monday, Tuesday and Thursday; Nina Voss covers Wednesday and the weekend.
+- agreed: Sunrise visits are planned for Monday, Wednesday and Friday at 08:00 for 45 minutes; the first visit is on 16 November.
+- open: Collect the bath-seat prescription; the medical supply store needs it before delivery.
+- open: Read the Sunrise contract with Nina Voss, then sign and return it by 11 November.
+- open: Prepare the medication list, doctor's report and hospital letter for the assessment on 15 November.
+- open: Move Tuesday's physio, find shopping help and agree who is with Mum when.
+- waiting: The owner is waiting for Karl to be asked about Monday mornings.
+- waiting: Healthbridge's care-level decision is expected by 23 November.
+- risks: The signed Sunrise contract is due on 11 November, before the first visit.
+- Summary: Mum needs help at home after her fall, and her assessment and first Sunrise visit are coming up. / The bath-seat prescription is overdue, and the Sunrise contract needs reviewing and returning.
+- Next step: Collect the bath-seat prescription from Dr. Anselm Brandt's practice. — The prescription is overdue and the supply store needs it before delivery.
+
+## 6. Christmas dinner with friends
+
+**A**
+
+- about: Christmas dinner with friends at Trattoria Lume on 20 November at 19:30.
+- agreed: Anna, Ben, Chiara and Dev are coming; Chiara's sister is not yet confirmed.
+- agreed: Trattoria Lume is holding a table for six until Friday.
+- open: Check today whether Chiara's sister is coming, then confirm the guest count to Trattoria Lume by 11 November.
+- risks: The table hold is time-limited; the restaurant's message does not specify which Friday.
+- Summary: Dinner is planned at Trattoria Lume on 20 November, but Chiara's sister is still a maybe. The final guest count needs to go to the restaurant by tomorrow.
+- Next step: Ask Chiara today whether her sister is coming. — Her answer will let you settle the guest count before tomorrow's confirmation.
+
+**B**
+
+- about: Christmas dinner with friends at Trattoria Lume on November 20 at 19:30.
+- people: Anna, Ben, Chiara and Dev are coming; Chiara may bring her sister.
+- agreed: Trattoria Lume is holding a table for six until Friday.
+- open: Check whether Chiara’s sister is coming, then confirm the guest count with the restaurant.
+- risks: The table is held only until Friday; the message does not specify which Friday.
+- Summary: The Christmas dinner is planned for November 20, but the final guest count is still uncertain.
+- Next step: Ask Chiara today whether her sister is coming. — The restaurant needs the guest count confirmed by November 11.
+
+## 7. Garden planner app (side project)
+
+**A**
+
+- about: A side project for a garden planner app, starting with a watering screen.
+- agreed: Keep the first version to one screen.
+- open: Add weather alongside the watering week.
+- open: Ask Tom whether he would test it in spring.
+- Summary: I'm making a one-screen garden planner and still need to add weather to the watering week.
+- Next step: Add weather next to the watering week. — Weather feedback is the existing next step for the screen.
+
+**B**
+
+- about: A garden planner side project, starting with a weekly watering screen.
+- goal: Keep the first version to one screen.
+- people: Tom has given feedback and is a potential spring tester.
+- open: Add weather alongside the watering week so rain is visible when planning.
+- open: Ask Tom whether he would test the app in spring.
+- Summary: The watering screen is sketched; the first version stays on one screen, with weather still to add. / I also want to ask Tom to test it in spring.
+- Next step: Add weather next to the watering week. — This addresses Tom's feedback about avoiding watering when it rains.
+
+## 8. Lisbon, 17–24 October (family trip)
+
+**A**
+
+- about: Family trip to Lisbon, with flights scheduled for 26 November to 3 December.
+- agreed: The family chose a two-bedroom apartment in Alfama rather than a hotel.
+- people: Marta Sousa hosts the apartment; Tomás Ribeiro is a friend in Lisbon.
+- agreed: Dinner at Tomás Ribeiro’s is scheduled for 29 November; the Oceanário visit is scheduled for 1 December.
+- agreed: Keep Thursday afternoon free.
+- open: Tell Marta Sousa the family’s arrival time; she has asked again.
+- open: Pay for the Oceanário and clarify the reservation dates: the ticket email gives October dates, while the listed payment deadline is 14 November.
+- open: Request express processing for Lena’s ID card at the 18 November appointment, bringing the old card, a photo and birth certificate.
+- open: Arrange travel insurance and clarify the offer’s validity: the email gives an October expiry, while the listed deadline is 21 November.
+- open: Choose a Sintra day before booking the train.
+- open: Check in online before the flight.
+- waiting: Waiting for Tomás Ribeiro to send the dinner address and door code, promised on 14 October.
+- risks: The listed free-cancellation deadline for the apartment is 19 November.
+- Summary: The Lisbon family trip is booked, with an apartment in Alfama. / Marta Sousa is still waiting for our arrival time so she can arrange access.
+- Next step: Tell Marta Sousa when the family will arrive. — The reply is overdue, and Marta Sousa wants to prepare the key box before travelling on Friday.
+
+**B**
+
+- about: Family trip to Lisbon, with flights scheduled for 26 November–3 December.
+- goal: Stay in a two-bedroom apartment in Alfama, travel with hand luggage only, and keep Thursday afternoon free.
+- people: Marta Sousa is the apartment host and needs the arrival time to arrange access.
+- people: Tomás Ribeiro is the friend hosting dinner in Alfama on 29 November at 19:30.
+- agreed: The apartment is booked for seven nights, with two bedrooms and check-in from 15:00.
+- agreed: Flights are booked: outbound at 09:05 on 26 November and return at 18:45 on 3 December.
+- open: Tell Marta Sousa the arrival time; this was due 8 November and she has asked twice.
+- open: Pay for the Oceanário by 14 November for the visit on 1 December at 10:30.
+- open: Request express processing for Lena's ID card at the 18 November, 10:20 appointment; take the old card, a photo and the birth certificate.
+- open: Arrange travel insurance by 19 November; the recorded offer deadline is 21 November.
+- decision: Choose the Sintra day by 16 November, keeping Thursday afternoon free; the train booking depends on this choice.
+- open: Complete online check-in by 25 November, before the outbound flight.
+- waiting: Waiting since 14 October for Tomás Ribeiro to send the dinner address and door code; due 23 November.
+- risks: Free cancellation of the apartment ends on 19 November.
+- risks: Standard ID-card processing takes four to six weeks, beyond departure; express processing must be requested at the appointment.
+- Summary: The apartment and flights are booked for the Lisbon trip, but Marta Sousa is still waiting for our arrival time to arrange access. / Next come the Oceanário payment, Lena's express ID request and insurance, with free apartment cancellation ending on 19 November.
+- Next step: Tell Marta Sousa your confirmed arrival time. — The reply is overdue, and Marta Sousa needs it before travelling on Friday.
+
+## 9. Mortgage refinancing 2027
+
+**A**
+
+- about: Choose a mortgage refinancing offer for 2027.
+- goal: Keep special repayment flexibility, even at a slightly higher rate, because a sale in six years is possible.
+- agreed: Nordbank offers 3.4% fixed for ten years, with 5% special repayment annually; its offer expires on 23 November.
+- agreed: Sparkasse offers 3.25% fixed for ten years, without special repayment; its offer is valid until 30 November.
+- open: Clarify whether Sparkasse can include special repayment, then compare both offers against the preference for flexibility.
+- risks: Both offers expire in November, with Nordbank first on 23 November.
+- decision: Choose between Nordbank's repayment flexibility and Sparkasse's lower rate once Sparkasse's options are clear.
+- Summary: Sparkasse is cheaper, but Nordbank includes the special repayment flexibility we prefer because we may sell in six years. / We need to check whether Sparkasse can offer that flexibility before Nordbank's offer expires on 23 November.
+- Next step: Ask Sparkasse whether it can offer special repayment rights. — Sparkasse's answer is needed before comparing the offers on the terms that matter most.
+
+**B**
+
+- about: Comparing mortgage refinancing offers for 2027 from Nordbank and Sparkasse.
+- goal: Prefer a slightly higher rate over an offer without special repayment; a sale in six years is possible.
+- agreed: Nordbank offers 3.4% fixed for ten years, with 5% annual special repayment, until November 23. Sparkasse offers 3.25% fixed for ten years without special repayment, until month end.
+- open: Check whether Sparkasse can allow special repayment, then compare the offers.
+- risks: The Nordbank offer expires on November 23; the Sparkasse offer is valid until month end.
+- Summary: Sparkasse is cheaper, but its offer lacks the special repayment flexibility I prefer. I may sell in six years.
+- Next step: Ask Sparkasse whether special repayment is possible. — The answer is needed to compare the offers against your preference.
+
+## 10. Moving to Birch Road 12
+
+**A**
+
+- about: Move to Birch Road 12 on 30 November, then hand back the old flat on 10 December.
+- agreed: Use professional movers rather than friends: the €620 cost is acceptable and the piano is too heavy for friends.
+- agreed: New keys are due at 10:00 on 30 November; the move starts at the old flat at noon.
+- agreed: The old tenancy ends on 10 December, with handover at noon.
+- people: Carry & Co are the movers; FiberNest handles internet; Mr. Krüger is the old landlord and Ms. Almeida the new landlord.
+- open: Arrange the internet transfer and ensure someone can cover the technician's day at the new address.
+- open: Book Carry & Co by 15 November, ahead of the recorded offer deadline of 16 November.
+- open: Check parking with Ms. Adler; her Wednesday-morning offer does not match the scheduled moving day.
+- open: Arrange mail forwarding, register the new address after booking the movers, and send Northlight Energy the meter reading and new address.
+- open: Prepare the old flat for handover: paint it white and collect every key, including the cellar key.
+- open: Label boxes by room.
+- risks: The four-week notice window for a free internet transfer has already passed; confirm availability and any charge now.
+- risks: Mr. Krüger says the deposit will be reduced unless the walls are repainted white.
+- Summary: I'm moving to Birch Road 12 on 30 November and handing back the old flat on 10 December; I've chosen professional movers but still need to book them. / The internet needs attention now because the notice window for a free transfer has passed.
+- Next step: Ask FiberNest now about transfer availability and any late-notice charge. — The move is less than four weeks away, so FiberNest must confirm timing and cost.
+
+**B**
+
+- about: Moving to Birch Road 12 on 30 November, with the old flat handover on 10 December.
+- goal: Use professional movers rather than friends because the piano is too heavy.
+- people: Mr. Krüger is the old landlord; Ms. Almeida is the new landlord. Carry & Co are the movers, FiberNest the internet provider, and Northlight Energy the electricity provider.
+- people: Ms. Adler at Birch Road 10 may provide parking for the van.
+- agreed: The new keys are due at 10:00 on 30 November, the move at 12:00 that day, and the old flat handover at 12:00 on 10 December.
+- agreed: The new flat’s deposit of two months’ rent has been paid.
+- open: Arrange the internet move and book the movers; the technician needs someone at the new address.
+- open: Ask Ms. Adler about parking and clarify the Wednesday offer against the moving date.
+- open: Arrange mail forwarding, send Northlight Energy the reading and new address, and register the new address after booking the movers.
+- open: Repaint the old flat white and gather all keys, including the cellar key, for handover.
+- risks: The movers’ offer is recorded as holding until 16 November.
+- risks: FiberNest’s free move requires four weeks’ notice; that point has already passed for the 30 November move.
+- risks: The old landlord says the deposit will be reduced if the walls are not repainted white.
+- Summary: I’m moving on 30 November and handing over the old flat on 10 December. I still need to arrange the internet move and book the movers.
+- Next step: Ask FiberNest to move the internet and confirm the cost. — The request is due soon, and the free-transfer notice period has already passed.
+
+## 11. New property manager for Elm Court 51
+
+**A**
+
+- about: Changing the property manager for Elm Court 51 from Hartmann Immobilien to Kessler Hausverwaltung.
+- people: Kessler is the proposed new manager; Hartmann Immobilien is the current manager.
+- agreed: Kessler offers management from 1 January at 28 euros per unit per month, requiring a power of attorney from each owner.
+- agreed: The draft contract provides a three-year term and six months' notice to year end, subject to owners' approval.
+- agreed: The owners' meeting to vote on the new manager is on 19 November at 19:00 in the community room, Elm Court 51.
+- agreed: The boiler room keys are with Mr. Okafor, ground floor left.
+- open: Send Kessler the signed power of attorney by 14 November and ask Hartmann for the 2025 statement before the vote, by 17 November.
+- waiting: Hartmann promised on 31 October to hand over the building files on 31 December; the 2025 statement is promised for February.
+- risks: The promised February delivery of the 2025 statement is too late for the November vote.
+- risks: Notice to Hartmann is recorded as due on 30 November, but its description says six months to year end; the applicable deadline needs checking.
+- decision: Whether to approve Kessler's appointment and draft contract at the owners' meeting.
+- Summary: The owners vote on Kessler on 19 November, with management proposed to start on 1 January. / The 2025 statement is wanted before the vote, but Hartmann has only promised it for February.
+- Next step: Send the signed power of attorney to Kessler by 14 November. — Kessler needs each owner's power of attorney, and yours is due first.
+
+**B**
+
+- about: The owners are considering a change of property manager for Elm Court 51.
+- goal: Vote on appointing Kessler as the new manager.
+- people: Kessler Hausverwaltung is the proposed manager; Hartmann Immobilien is the current manager.
+- agreed: The owners’ meeting and vote are on 19 November at 19:00 in the community room.
+- agreed: Hartmann plans to hand over the building files on 31 December.
+- open: Send the signed power of attorney to Kessler by 14 November.
+- open: Ask Hartmann for the 2025 statement before the vote; it has said the statement will follow in February.
+- waiting: Waiting for Hartmann to hand over the building files on 31 December.
+- risks: Notice to Hartmann is recorded as due on 30 November; check how that date relates to the stated notice period.
+- Summary: We’re due to vote on Kessler as the new manager at the owners’ meeting. / We want the 2025 statement before the vote, but Hartmann says it will follow in February.
+- Next step: Send the signed power of attorney to Kessler. — It is the earliest actionable to-do, due on 14 November.
+
+## 12. Parking-lot accident, 14 September
+
+**A**
+
+- about: Claim CR-40917 concerns the parking-lot accident on 14 September; Tobias Lindqvist confirms he backed into the parked car.
+- agreed: Repair at Kessel Auto, rather than the cheaper garage, because they deal directly with the insurer.
+- people: Sabine Ott handles the claim at ClearRoad Insurance; Kai Marek is the assessor; Kessel Auto is the chosen garage. Tobias Lindqvist's insurer is Nordic Mutual.
+- agreed: The other driver's insurer pays, with no excess.
+- agreed: The rear bumper and tail-light repair is estimated at €1,840 including paint, taking three working days once parts arrive.
+- open: Get the car to Kessel Auto for today's 14:00 assessment; the inspection must happen before repair.
+- open: Send the repair estimate today and confirm the account holder and IBAN by 11 November; the insurer's document deadline is 12 November.
+- decision: Decide by 12 November whether to rent a small car at €39 a day; rental reimbursement is described as usual, not guaranteed.
+- waiting: Kessel Auto's repair follows delivery of the car, with a to-do date of 19 November; collection is booked for 21 November at 16:00.
+- risks: The assessor's message names Thursday 1 October, unlike today's recorded appointment; check the booking before travelling.
+- Summary: The repair is going through Kessel Auto, with the assessor booked for today. I still need to send the estimate today and confirm my bank details tomorrow.
+- Next step: Send the repair estimate to Sabine Ott today. — The estimate has been requested twice and is due today, ahead of the insurer's document deadline.
+
+**B**
+
+- about: A claim for damage after Tobias Lindqvist backed into the parked car.
+- people: Sabine Ott is the claims handler; Kai Marek is the assessor.
+- people: Kessel Auto is the chosen garage; Tobias Lindqvist is the other driver, insured by Nordic Mutual.
+- agreed: Kessel Auto was chosen because it deals directly with the insurer.
+- agreed: The repair estimate is €1,840 including paint; repairs take three working days once parts arrive.
+- agreed: The other driver's insurer pays, with no excess.
+- open: The assessment is recorded for today at 14:00, but the assessor's email gives a conflicting, already-past date.
+- open: Send the estimate and confirm the account holder and IBAN for payment.
+- decision: Decide whether to rent a small car at €39 per day.
+- waiting: Kessel Auto is to repair the car after it is brought in; pickup is recorded for 21 November.
+- risks: The insurer's document deadline is 12 November.
+- Summary: My parked car was hit, and I've chosen Kessel Auto for the repair. / The assessment is recorded for today, but its date needs checking; the insurer also needs the estimate.
+- Next step: Confirm today's assessment time, then take the car to the garage. — The recorded appointment is today, but the assessor's email gives a conflicting date.
+
+## 13. Science fair: rainwater filter (Noa, 9b)
+
+**A**
+
+- about: Noa's class 9b group is preparing a rainwater-filter model and poster for the science fair on 25 November.
+- goal: Keep the project under €20 and demonstrate the filter live, with Noa presenting the test.
+- people: Ms. Okafor is the teacher and approves the poster; Elif Demir is Deniz's parent, and Deniz is bringing bottles and filters.
+- agreed: Build at our place on 12 November at 14:00 because the test needs the garden tap.
+- agreed: Noa presents the test; practise once on Sunday.
+- agreed: Send the written summary to Ms. Okafor by 14 November for review before the 16 November deadline.
+- agreed: Print the poster by 20 November and get it to the copy shop by 21 November; setup is 24 November at 15:30, and the fair is 25 November at 09:00.
+- open: Return the safety form today; Noa has it in her school bag.
+- open: Collect the ready filter sand and tubing by 11 November so they are available for the build.
+- open: Shorten the poster text and send the revised layout for approval; arrange printing and a stand that fits the 1 m table.
+- waiting: Ms. Okafor's layout approval is due 13 November, but she first needs to see the revised version requested on 8 November.
+- waiting: Deniz is to bring bottles and filters for the build on 12 November.
+- risks: The poster cannot go to print until Ms. Okafor approves the layout.
+- Summary: We're building the rainwater filter at our place on 12 November for the fair on 25 November. The safety form is due today, and the poster needs shorter text before Ms. Okafor can approve it.
+- Next step: Return the safety form from Noa's school bag today. — The safety form is due today and is already in Noa's school bag.
+
+**B**
+
+- about: Noa’s class 9b group is making a rainwater filter for the science fair.
+- goal: Build a working model that can be tested live, with materials under €20.
+- people: Noa will present the test; Ms. Okafor is the teacher, and Elif Demir is Deniz’s parent.
+- agreed: The group will build at Mara’s place on November 12 at 14:00; Deniz will bring bottles and filters.
+- agreed: Fair setup is November 24 at 15:30; the fair is November 25 at 09:00.
+- open: Return the safety form, collect materials, prepare the summary and poster, and practise the presentation on Sunday.
+- waiting: Ms. Okafor’s approval of the revised poster layout is needed before printing.
+- risks: The safety form is due today; the summary is due November 16 and the poster must reach the copy shop by November 21.
+- Summary: Noa’s group is preparing a rainwater filter for the November 25 science fair. / The safety form is due today, and materials and the revised poster still need attention.
+- Next step: Return the safety form from Noa’s school bag today. — The form is due today.
+
+## 14. Tax return 2025
+
+**A**
+
+- about: The 2025 tax return is being prepared by a tax advisor.
+- goal: Have the advisor prepare the return this year because it is too complicated to do alone.
+- people: Jana Falk is the tax advisor preparing the return.
+- agreed: Send documents as PDFs only.
+- agreed: Documents are due to Jana on 14 November; the return is due to the tax office on 10 December. A review call is booked for 25 November at 16:00.
+- open: Send Jana the supporting documents and home-office information, including the employer's tax certificate.
+- waiting: Jana is to prepare the return by 23 November; it can be signed afterwards.
+- risks: Without the home-office days and desk receipt, the deduction cannot be claimed.
+- risks: Jana's October email gives 31 October as the tax-office deadline, while the recorded deadline is 10 December; the discrepancy needs checking.
+- Summary: Jana is preparing my 2025 tax return, and I still need to send her the supporting information. / The home-office days and desk receipt are still missing, and documents are due to her on 14 November.
+- Next step: Send Jana the bank statement and capital gains certificate as PDFs. — It is due tomorrow and Jana needs the documents to prepare the return.
+
+**B**
+
+- about: The 2025 tax return is being handled by a tax advisor because this year's return is too complicated to manage alone.
+- people: Jana Falk is the tax advisor preparing the return.
+- agreed: Send PDFs only; documents are due to Jana on 14 November and the return to the tax office on 10 December.
+- open: Send the bank and health statements by 11 November and the donation receipt by 12 November.
+- open: Find the desk receipt by 11 November and finish counting home office days by 13 November.
+- agreed: Jana's preparation is due 23 November; review the return by phone on 25 November at 16:00, then sign by 27 November.
+- waiting: Signing depends on Jana finishing the return.
+- risks: Jana says the deduction cannot be claimed without the home office days and desk receipt.
+- Summary: The remaining documents need to reach Jana by 14 November, with several tasks due tomorrow; the home office days and desk receipt are essential for the deduction. / The plan is to review the return on 25 November, sign by 27 November and submit by 10 December.
+- Next step: Send Jana the bank statement as a PDF by tomorrow. — It is due tomorrow, ahead of Jana's document deadline.
+
+## 15. Volvo or VW — next car
+
+**A**
+
+- about: Choosing between a Volvo EX30 and a VW ID.3 as the next car.
+- goal: Have the next car ready before the old car's lease ends in about three months; delivery time matters.
+- people: Autohaus Weber is the VW dealer offering the ID.3 test drive.
+- open: Confirm the ID.3 test drive for 14 November at 10:00; confirmation is due today.
+- open: Establish actual annual mileage to assess whether the Volvo offer's 10,000 km allowance fits.
+- risks: Volvo's quoted four-month delivery would run beyond the old lease; VW's quoted eight weeks fits within it.
+- Summary: We're choosing between the Volvo EX30 and VW ID.3, but Volvo's delivery time would leave a gap after our current lease ends. / The VW test drive is set for Saturday at 10:00 and still needs confirming today.
+- Next step: Confirm Saturday's 10:00 ID.3 test drive with Autohaus Weber today. — Confirmation is due today and keeps the test drive moving.
+
+**B**
+
+- about: Choosing the next car: Volvo EX30 or VW ID.3.
+- goal: Choose a car with delivery timing in mind; the current lease ends in three months.
+- people: Autohaus Weber is the VW dealer.
+- agreed: An ID.3 test drive is available on 14 November at 10:00; confirmation is still needed.
+- open: Confirm the test drive and work out the annual driving distance.
+- risks: The Volvo's four-month delivery time could leave a gap after the current lease ends.
+- Summary: I'm choosing between a Volvo and a VW, but the Volvo may arrive after my current lease ends. / I need to confirm Saturday's ID.3 test drive.
+- Next step: Confirm Saturday's ID.3 test drive with Autohaus Weber. — Confirmation is due today, and the test drive is on Saturday.
+
+## 16. Wedding, 12 June 2027 (Mara and Sam)
+
+**A**
+
+- about: Planning the wedding at Gut Birkenhof, chosen for its garden, barn and date.
+- agreed: No speeches before the food.
+- agreed: The budget is €24,000, with €9,000 saved.
+- risks: The €2,000 deposit is due 17 November, but the hold dates conflict: the deadline says 19 November while Anke's reminder says 10 October.
+- open: Clarify the ceremony and wedding dates: the matter and venue mail say June, the registry mail says 11 June, and the appointments are in July.
+- open: Book the registry preparatory appointment, then obtain the required documents.
+- open: Book the tasting and send save-the-dates; Sam has sent a first guest list, with 12 names uncertain.
+- decision: Choose the photographer and whether to have a band or DJ; Jule asks for the music decision by the end of November.
+- Summary: We're planning our wedding at Gut Birkenhof, but the recorded dates need clarification. / The deposit is coming due, and it's unclear whether the venue still holds the date.
+- Next step: Ask Anke whether the wedding date is still held before paying. — The venue's reminder gives an expired hold date, unlike the recorded deadline.
+
+**B**
+
+- about: Planning the wedding with Sam at Gut Birkenhof, chosen for its garden, barn rain plan and availability on 12 June 2027.
+- agreed: No speeches before the food.
+- people: Sam Keller is your partner; Anke Roth manages the venue.
+- agreed: Budget: €24,000, with €9,000 saved.
+- agreed: The venue accommodates 90 guests, with a garden ceremony and the barn as the rain plan.
+- risks: The booking hold is uncertain: Anke's 26 October reminder says it expired on 10 October, while the deposit task is due 17 November and the recorded hold deadline is 19 November.
+- open: Confirm the actual ceremony and wedding dates: the plan and correspondence point to 11–12 June, but the calendar appointments show 21–22 July 2027.
+- open: Book the registry preparatory appointment, then obtain the required documents for both partners.
+- open: Arrange the November menu tasting.
+- open: Sam's first guest list has arrived, so the recorded prerequisite for sending save-the-dates is met; dates still need clarification before sending.
+- decision: Settle the guest numbers: the first list has 74 names, 12 uncertain, and Sam's parents want six additional guests; venue capacity is 90.
+- decision: Choose the photographer; Ravi has offered availability on 12 June, not the July calendar date.
+- risks: Jule needs the band-or-DJ decision by the end of November, earlier than the recorded 24 December deadline.
+- Summary: We've chosen Gut Birkenhof, but need to clear up conflicting wedding dates and whether the venue is still holding our booking. / Sam's first guest list is in, and the music decision is needed by the end of November.
+- Next step: Contact Anke to confirm the wedding date and deposit deadline. — The hold may already have expired, so confirm the booking before paying or sending save-the-dates.
+

@@ -10,6 +10,7 @@
 import { NotApple, verifySigned, verifyTransaction, type AppleTransaction } from "./apple";
 import { cycle } from "./cycle";
 import { newEnd, replaces } from "./notifications";
+import { askOpenAI, choose, tierUsed, type Tier } from "./jobs";
 import { anthropicUsage, costMicros, openAIUsage, prices, type Usage } from "./prices";
 
 export interface Env {
@@ -34,7 +35,8 @@ export const topUps: Record<string, number> = { "de.chille.causabee.pro.topup": 
 const allowanceMicros = 4_500_000;
 /// Pro goes on this long past the end Apple last told: a renewal is seen when the app next opens.
 const graceMs = 3 * 86_400_000;
-/// What a subscriber's requests may use: the plan picks the model, and the month goes furthest with Sol.
+/// What a subscriber's request may use when it names no job (a build before F004): Sol, as then.
+/// A request with its job gets the job's model from jobs.json.
 const subscriberModels = ["gpt-6.1-sol"];
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -150,10 +152,15 @@ async function relay(request: Request, env: Env, provider: "openai" | "anthropic
   const ended = kind?.kind === "apple" && (!kind.expires || Date.parse(kind.expires) + graceMs < Date.now());
 
   const body = (await request.json()) as Record<string, any>;
-  const model = String(body.model ?? "");
-  if (!prices[model] || (kind?.kind !== "hand" && !subscriberModels.includes(model))) return json({ error: "model_not_offered", model }, 400);
-  if (provider === "openai") body.max_output_tokens = Math.min(Number(body.max_output_tokens ?? mostOutputTokens), mostOutputTokens);
-  else body.max_tokens = Math.min(Number(body.max_tokens ?? mostOutputTokens), mostOutputTokens);
+  const choice = choose(request.headers.get("causabee-job"), body.model, (m) => !!prices[m] && (kind?.kind === "hand" || subscriberModels.includes(m)));
+  if ("refused" in choice || !prices[choice.model]) return json({ error: "model_not_offered", model: "refused" in choice ? choice.refused : choice.model }, 400);
+  const { job, model } = choice;
+  body.model = model;
+  if (provider === "openai") {
+    body.max_output_tokens = Math.min(Number(body.max_output_tokens ?? mostOutputTokens), mostOutputTokens);
+    // One person's requests share their cache; the key says nothing about who it is.
+    body.prompt_cache_key = (await sha256("cache:" + account)).slice(0, 32);
+  } else body.max_tokens = Math.min(Number(body.max_tokens ?? mostOutputTokens), mostOutputTokens);
 
   const r = await room(env, account);
   const monthLeft = ended ? 0 : r.allowance - r.spentThisMonth;
@@ -163,31 +170,36 @@ async function relay(request: Request, env: Env, provider: "openai" | "anthropic
   // A day may use at most a quarter of the month: a loop gone wrong cannot eat it in an afternoon.
   if (r.spentToday >= r.allowance / 4 && r.extraLeft <= 0) return json({ error: "daily_limit" }, 429);
 
-  const upstream =
-    provider === "openai"
-      ? await fetch("https://api.openai.com/v1/responses", {
-          method: "POST",
-          headers: { "content-type": "application/json", authorization: `Bearer ${env.OPENAI_API_KEY}` },
-          body: JSON.stringify(body),
-        })
-      : await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "x-api-key": env.ANTHROPIC_API_KEY,
-            "anthropic-version": request.headers.get("anthropic-version") ?? "2023-06-01",
-            ...(request.headers.get("anthropic-beta") ? { "anthropic-beta": request.headers.get("anthropic-beta")! } : {}),
-          },
-          body: JSON.stringify(body),
-        });
+  const send = (b: Record<string, any>, signal?: AbortSignal) =>
+    fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${env.OPENAI_API_KEY}` },
+      body: JSON.stringify(b),
+      signal,
+    });
+  let asked: Tier = "default";
+  let upstream: Response;
+  if (provider === "openai") ({ response: upstream, tier: asked } = await askOpenAI(body, job, send));
+  else
+    upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": env.ANTHROPIC_API_KEY,
+        "anthropic-version": request.headers.get("anthropic-version") ?? "2023-06-01",
+        ...(request.headers.get("anthropic-beta") ? { "anthropic-beta": request.headers.get("anthropic-beta")! } : {}),
+      },
+      body: JSON.stringify(body),
+    });
 
   const text = await upstream.text();
   if (!upstream.ok) return new Response(text, { status: upstream.status, headers: { "content-type": "application/json" } });
 
   const answer = JSON.parse(text);
   const usage: Usage = provider === "openai" ? openAIUsage(answer) : anthropicUsage(answer);
-  const cost = costMicros(model, usage) ?? 0;
-  await spend(env, account, await period(env, account), model, usage, cost, String(answer.id ?? crypto.randomUUID()), monthLeft);
+  const tier = provider === "openai" ? tierUsed(answer, asked) : "default";
+  const cost = costMicros(model, usage, tier) ?? 0;
+  await spend(env, account, await period(env, account), { model, job, tier }, usage, cost, String(answer.id ?? crypto.randomUUID()), monthLeft);
   const now = await allowance(env, account);
   return new Response(text, {
     status: 200,
@@ -196,17 +208,26 @@ async function relay(request: Request, env: Env, provider: "openai" | "anthropic
 }
 
 /// Into the ledger: from this month's allowance first, the rest from top-ups.
-async function spend(env: Env, account: string, month: string, model: string, usage: Usage, cost: number, ref: string, monthLeft: number) {
+async function spend(env: Env, account: string, month: string, what: { model: string; job: string; tier: Tier }, usage: Usage, cost: number, ref: string, monthLeft: number) {
   const fromMonth = Math.max(0, Math.min(cost, monthLeft));
   const fromExtra = cost - fromMonth;
   const time = new Date().toISOString();
   const row = (kind: string, micros: number, suffix: string) =>
     env.DB.prepare(
+      "INSERT OR IGNORE INTO ledger (account, period, kind, micros, ref, model, job, tier, tokens_in, tokens_out, tokens_cached, searches, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ).bind(account, month, kind, micros, ref + suffix, what.model, what.job, what.tier, usage.input + usage.cacheWrite, usage.output, usage.cacheRead, usage.searches, time);
+  // Before migration 0004 the ledger has no job: the money is written all the same, and the log says why the job is missing.
+  const before = (kind: string, micros: number, suffix: string) =>
+    env.DB.prepare(
       "INSERT OR IGNORE INTO ledger (account, period, kind, micros, ref, model, tokens_in, tokens_out, tokens_cached, searches, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ).bind(account, month, kind, micros, ref + suffix, model, usage.input + usage.cacheWrite, usage.output, usage.cacheRead, usage.searches, time);
-  const rows = [row("spend", fromMonth, "")];
-  if (fromExtra > 0) rows.push(row("spend_extra", fromExtra, "#extra"));
-  await env.DB.batch(rows);
+    ).bind(account, month, kind, micros, ref + suffix, what.model, usage.input + usage.cacheWrite, usage.output, usage.cacheRead, usage.searches, time);
+  const rows = (make: typeof row) => [make("spend", fromMonth, ""), ...(fromExtra > 0 ? [make("spend_extra", fromExtra, "#extra")] : [])];
+  try {
+    await env.DB.batch(rows(row));
+  } catch {
+    console.error("beeserver ledger: no job column — apply migrations/0004-job.sql");
+    await env.DB.batch(rows(before));
+  }
 }
 
 // MARK: Bought in the app
@@ -379,8 +400,12 @@ async function admin(request: Request, url: URL, env: Env): Promise<Response> {
     const sold = await env.DB.prepare(
       "SELECT kind, COUNT(*) AS count, SUM(micros) AS micros FROM ledger WHERE kind IN ('topup', 'refund', 'grant') AND substr(time, 1, 7) = ? GROUP BY kind",
     ).bind(month).all();
+    // F004: each job, per day — what it cost, on which tier, and the share of what was sent that the cache read.
+    const byJob = await env.DB.prepare(
+      "SELECT substr(time, 1, 10) AS day, COALESCE(job, 'unknown') AS job, model, tier, COUNT(*) AS requests, SUM(micros) AS micros, SUM(tokens_in) AS tokens_in, SUM(tokens_cached) AS tokens_cached, SUM(tokens_out) AS tokens_out FROM ledger WHERE kind = 'spend' AND substr(time, 1, 7) = ? GROUP BY day, job, model, tier ORDER BY day, job",
+    ).bind(month).all();
     const subscribers = await env.DB.prepare("SELECT COUNT(*) AS n FROM accounts WHERE kind = 'apple' AND expires > ?").bind(now).first<{ n: number }>();
-    return json({ period: month, spent: spent.results, sold: sold.results, subscribers: subscribers?.n ?? 0 });
+    return json({ period: month, spent: spent.results, jobs: byJob.results, sold: sold.results, subscribers: subscribers?.n ?? 0 });
   }
   return json({ error: "not_found" }, 404);
 }

@@ -24,6 +24,36 @@ subscriptions, the notifications and the Mac's device grant come next.
 Answers carry `causabee-month-used` and `causabee-renews-on`. Errors: `401` unknown token,
 `400 model_not_offered`, `402 allowance_used` (the app falls back to Apple's models), `429 daily_limit`.
 
+## Jobs and their models (F004)
+
+A request says its job in the header `causabee-job`: `read`, `digest`, `brief` or `chat`. The
+server sets the job's model from `src/jobs.json` and refuses another (`400 model_not_offered`).
+A job marked `flex` goes with `service_tier: "flex"`, at half the price; when OpenAI answers `429`
+or keeps it past 60 seconds, the same request goes once more at the normal tier. Every request
+gets a `prompt_cache_key` made from the account, so one person's requests share their cache.
+A request without a job — a build from before — is answered with the model it names, as before,
+and counted as `unknown`.
+
+Each ledger row has its `job` and `tier`. `GET /admin/report?period=2026-11` adds `jobs`: per day,
+per job and model, what it cost and what share of what was sent the cache read. In the D1 console:
+
+```sql
+SELECT substr(time, 1, 10) AS day, COALESCE(job, 'unknown') AS job, tier, COUNT(*) AS requests,
+       SUM(micros) / 1e6 AS dollars, ROUND(1.0 * SUM(tokens_cached) / SUM(tokens_in + tokens_cached), 3) AS cached
+FROM ledger WHERE kind = 'spend' GROUP BY day, job, tier ORDER BY day, job;
+```
+
+A job's model changes in `src/jobs.json` and `Sources/MatterCore/AIJob.swift` together (a unit
+test compares them), and only after its test on the demo's matters (`matter-spike jobs`).
+
+## Deploying F004, in this order
+
+1. The migration, in the D1 console or with
+   `npx wrangler d1 execute beeserver --remote --file=migrations/0004-job.sql`.
+   Without it the ledger still counts every request, but not its job; the log says so.
+2. The server: `npm run deploy`. Builds from before keep working: they send no job.
+3. Then the app. A build that sends jobs leaves the model to the server, so it needs step 2 first.
+
 ## Run it here
 
 ```

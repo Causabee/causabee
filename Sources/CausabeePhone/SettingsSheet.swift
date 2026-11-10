@@ -36,7 +36,9 @@ struct SettingsSheet: View {
             Section {
                 KeyField(title: "OpenAI", name: "OPENAI_API_KEY")
             } header: { Text("Your own key") } footer: {
-                Text("Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with this key. It gets only pseudonymised text, and is kept in iCloud Keychain like the mail password. Never in a file.")
+                Text(AIJob.said(ownKey: "with this key").hasPrefix("Everything")
+                     ? "Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with this key. It gets only pseudonymised text, and is kept in iCloud Keychain like the mail password. Never in a file."
+                     : AIJob.said(ownKey: "with this key") + " The key is kept in iCloud Keychain like the mail password. Never in a file.")
             }
             Section { BeeServerSettings() } header: { Text("Pro's server") }
         }

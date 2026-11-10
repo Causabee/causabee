@@ -1,0 +1,66 @@
+{
+  "bathroom-renovation": {
+    "A": "gpt-6.1-terra",
+    "B": "gpt-6.1-sol"
+  },
+  "brightwave-application": {
+    "A": "gpt-6.1-terra",
+    "B": "gpt-6.1-sol"
+  },
+  "care-for-helga": {
+    "A": "gpt-6.1-sol",
+    "B": "gpt-6.1-terra"
+  },
+  "christmas-dinner": {
+    "A": "gpt-6.1-sol",
+    "B": "gpt-6.1-terra"
+  },
+  "elm-court-manager": {
+    "A": "gpt-6.1-sol",
+    "B": "gpt-6.1-terra"
+  },
+  "flat-linden-street": {
+    "A": "gpt-6.1-sol",
+    "B": "gpt-6.1-terra"
+  },
+  "garden-planner": {
+    "A": "gpt-6.1-terra",
+    "B": "gpt-6.1-sol"
+  },
+  "lisbon-october": {
+    "A": "gpt-6.1-terra",
+    "B": "gpt-6.1-sol"
+  },
+  "mortgage-2027": {
+    "A": "gpt-6.1-sol",
+    "B": "gpt-6.1-terra"
+  },
+  "move-birch-road": {
+    "A": "gpt-6.1-sol",
+    "B": "gpt-6.1-terra"
+  },
+  "mums-gym": {
+    "A": "gpt-6.1-terra",
+    "B": "gpt-6.1-sol"
+  },
+  "next-car": {
+    "A": "gpt-6.1-sol",
+    "B": "gpt-6.1-terra"
+  },
+  "parking-accident": {
+    "A": "gpt-6.1-sol",
+    "B": "gpt-6.1-terra"
+  },
+  "science-fair-9b": {
+    "A": "gpt-6.1-sol",
+    "B": "gpt-6.1-terra"
+  },
+  "tax-return-2025": {
+    "A": "gpt-6.1-terra",
+    "B": "gpt-6.1-sol"
+  },
+  "wedding-june": {
+    "A": "gpt-6.1-terra",
+    "B": "gpt-6.1-sol"
+  }
+}
