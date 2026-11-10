@@ -39,7 +39,6 @@
 
 ## Open questions
 
-1. **The screenshot of a matter: taken anew, or only its words changed?**
-   - *Taken anew* from today's demo on the Mac: the whole picture is the app as it is now. Other small things in it may change too, such as spacing and the words under the answer.
-   - *Only the words changed*: "Claude Opus 5" is replaced by what the app shows there today. Everything else stays as on 1 November.
-   - Recommended: taken anew. A picture that shows the product should be the product.
+None.
+
+**Decided:** the screenshot of a matter is taken anew from today's demo on the Mac (the owner, 10 November: "Taken anew"). Small things beside the AI's name may change with it; that is accepted.
