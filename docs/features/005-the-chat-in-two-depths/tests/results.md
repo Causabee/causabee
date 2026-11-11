@@ -34,7 +34,17 @@ The 3 others went light first, lacked something, and were asked again deep: "Wha
 | q07 "What do I have to do this week?", q09 "Is anything due tomorrow?" | yes, worded differently | yes |
 | q10b "And after that?" | the same days; it begins with 15 November where today began with 14 | yes |
 
-The difference that counts: on "What's next?" the light answer suggested marking one task done where today suggested three. The two it left out — Sam's guest list came in, the care rota is agreed — are known from items older than the 15 newest, which the light text does not hold. Sol asked twice the same way also varies in what it offers; whether this is worse is the owner's to say, blind: `blind.md`, the key in `blind-key.json`.
+The difference that counts: on "What's next?" the light answer suggested marking one task done where today suggested three.
+
+**Read blind by Claude Fable 5.2** (the owner's choice, 11 November: the invented matters and their long answers are too much to judge by hand). Each of the six pairs twice, A and B swapped, with the whole matter to judge from (`judge.py`, `answers/fable-judge.json`; $0.61):
+
+| Case | Fable 5.2, both orders |
+|---|---|
+| q02 "What's next?" | **today's is worse**: its card marks Sam's guest list as received, but that task came from the very message with the first list — 12 names unsure, six more wanted — so the card would close an open task and unblock the save-the-dates |
+| q10 "What's next?" | **today's is worse**, for the same card |
+| q04, q07, q09, q10b | neither is worse |
+
+So the "mark done" cards the light answers left out were the wrong ones. **No two-depth answer is worse than today's.**
 
 ## Terra for quick questions — does not pass
 

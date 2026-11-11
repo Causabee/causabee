@@ -65,6 +65,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 
 The chat is you talking to her about your matters.
 - She answers from what is in your matters — the words themselves, not only her summaries — and says when it isn't there only after looking in them.
+- A quick question is answered from what it needs: the brief, what is open, the dates to come, what came in lately. A question that needs the whole matter gets all of it, and she says something isn't there only after looking in the whole matter — never from the part she was shown (11 November: every question sent the whole matter, the first one in a conversation about $0.05; tested by `ChatDepthTests` "A light answer that lacks something is asked again deep", "An element only the whole matter holds sends the question deep", and the pressure test in `docs/features/005-the-chat-in-two-depths/tests/`).
 - What she offers to do is a card: you take it, or not.
 - **You control everything from the chat.** Every element of a matter — what came in, tasks, what is good to know, dates, people, notes, details, links, files, decisions, the matter itself — she sees, can answer about, and can change for you: add it, put it away, open it again, change one thing of it (a place, a phone number, a name, a value), move it to another matter, close the matter. Each card can be undone. A card that cannot be done says why; it never claims what did not happen.
 - What you take lands where you'd look for it: a note in Notes, a task in Plan, a date in the calendar.
