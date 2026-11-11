@@ -70,7 +70,7 @@ struct AIJobTests {
         #expect(request.value(forHTTPHeaderField: "causabee-job") == "brief")
         let sent = try #require(try JSONSerialization.jsonObject(with: Stub.body(of: request)) as? [String: Any])
         #expect(sent["model"] == nil, "the server sets the job's model")
-        #expect(sent["instructions"] as? String == "rules")
+        #expect(Claude.sentTexts(sent).first?.text == "rules")
         // AC-6: the answer is named for the model that wrote it, not the one asked.
         #expect(answer.servedBy == "gpt-6.1-terra")
         #expect(Claude.Model.serving(answer.servedBy)?.label == "OpenAI GPT-6.1 Terra")
@@ -112,7 +112,8 @@ struct AIJobTests {
                                  (AssistantPrompt.system, AssistantPrompt.schema)] {
             let one = Claude.openAIBody(Claude.body(model: .gptSol, system: system, user: "one", schema: schema, effort: "low"), model: .gptSol)
             let two = Claude.openAIBody(Claude.body(model: .gptSol, system: system, user: "two", schema: schema, effort: "low"), model: .gptSol)
-            #expect(one["instructions"] as? String == two["instructions"] as? String)
+            #expect(Claude.sentTexts(one).first?.text == system && Claude.sentTexts(two).first?.text == system)
+            #expect(Claude.sentTexts(one).first?.marked == true)
             #expect(NSDictionary(dictionary: one["text"] as! [String: Any]) == NSDictionary(dictionary: two["text"] as! [String: Any]))
         }
     }

@@ -210,8 +210,9 @@ public struct Claude: Sendable {
     static func content(_ user: String, model: Model) -> Any {
         guard let range = user.range(of: cacheBreak) else { return user }
         let head = String(user[..<range.lowerBound]), tail = String(user[range.upperBound...])
-        // OpenAI caches a beginning it has seen by itself; Mistral not at all: one text for both.
-        guard !model.isOpenAI, !model.isMistral else { return head + "\n\n" + tail }
+        // OpenAI keeps the break, to mark its cache there (`openAIBody`); Mistral caches nothing: one text.
+        if model.isOpenAI { return user }
+        guard !model.isMistral else { return head + "\n\n" + tail }
         return [["type": "text", "text": head, "cache_control": ["type": "ephemeral"]], ["type": "text", "text": tail]]
     }
 
@@ -365,10 +366,27 @@ public struct Claude: Sendable {
         let user = ((body["messages"] as? [[String: Any]]) ?? []).compactMap { $0["content"] as? String }.joined(separator: "\n\n")
         let config = body["output_config"] as? [String: Any]
         let schema = (config?["format"] as? [String: Any])?["schema"] ?? [:]
+        // GPT-6.1 writes into its cache up to a mark, at 1.25× the input, and reads back only what was
+        // written. Left to itself it marked the end of every request — the question too — so each one
+        // was written whole and only the instructions were ever read back. Marked here: after the
+        // instructions, the same for every request of a job, and after a matter's facts, the same
+        // for every question about it; what follows the last mark is neither written nor read.
+        let mark: [String: Any] = ["mode": "explicit"]
+        var said: [[String: Any]] = []
+        if let range = user.range(of: cacheBreak) {
+            said.append(["type": "input_text", "text": String(user[..<range.lowerBound]), "prompt_cache_breakpoint": mark])
+            said.append(["type": "input_text", "text": String(user[range.upperBound...])])
+        } else {
+            said.append(["type": "input_text", "text": user])
+        }
         var out: [String: Any] = [
             "model": model.id,
-            "instructions": system,
-            "input": user,
+            // A mark cannot go on the top-level instructions: they go as the developer's message.
+            "input": [
+                ["role": "developer", "content": [["type": "input_text", "text": system, "prompt_cache_breakpoint": mark]]],
+                ["role": "user", "content": said],
+            ],
+            "prompt_cache_options": mark,
             "max_output_tokens": 8000,
             "text": ["format": ["type": "json_schema", "name": "answer", "schema": schema, "strict": true]],
         ]
