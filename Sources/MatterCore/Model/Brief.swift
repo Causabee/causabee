@@ -68,6 +68,10 @@ public struct Brief: Codable, Equatable, Sendable {
     /// mails of the matter are read knowing the owner does not want things of that kind.
     public var unwanted: [String] = []
     public var writtenAt: Date?
+    /// The record this brief was written for, by its stamp (`Matter.recordStamp`) — the same on
+    /// every device. While the matter's record has this stamp, the brief holds everywhere and no
+    /// device writes it again. Nil in a brief from a build before it was kept.
+    public var writtenFor: String?
     /// When the owner last said "Seen" to what is new on the Digest: what came after is new.
     public var newSeenAt: Date?
     /// What the owner kept one by one from what is new — ✓ on its line: off the New card, in the
@@ -113,7 +117,7 @@ public struct Brief: Codable, Equatable, Sendable {
         self.lines = lines; self.said = said; self.proposals = proposals; self.lookups = lookups; self.writtenAt = writtenAt
     }
 
-    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, unwanted, writtenAt, newSeenAt, newKept, newLookedAt }
+    enum CodingKeys: String, CodingKey { case lines, said, proposals, lookups, news, unwanted, writtenAt, writtenFor, newSeenAt, newKept, newLookedAt }
 
     /// A brief kept before there were lookups reads as one without any.
     public init(from decoder: any Decoder) throws {
@@ -125,6 +129,7 @@ public struct Brief: Codable, Equatable, Sendable {
         news = try c.decodeIfPresent(News.self, forKey: .news)
         unwanted = try c.decodeIfPresent([String].self, forKey: .unwanted) ?? []
         writtenAt = try c.decodeIfPresent(Date.self, forKey: .writtenAt)
+        writtenFor = try c.decodeIfPresent(String.self, forKey: .writtenFor)
         newSeenAt = try c.decodeIfPresent(Date.self, forKey: .newSeenAt)
         newKept = try c.decodeIfPresent([String].self, forKey: .newKept) ?? []
         newLookedAt = try c.decodeIfPresent(Date.self, forKey: .newLookedAt)
@@ -213,6 +218,15 @@ extension Matter {
             brief = newValue.flatMap { try? JSONEncoder().encode($0) }.flatMap { String(data: $0, encoding: .utf8) }
             briefAt = newValue?.writtenAt
         }
+    }
+
+    /// Says that the brief just written is for the record as it stands now: called once everything
+    /// the adviser's answer brought is in the matter. From then on it holds on every device, until
+    /// the owner changes something or something new comes in.
+    public func sealBrief() {
+        guard var brief = shownBrief else { return }
+        brief.writtenFor = recordStamp
+        shownBrief = brief
     }
 
     /// Keeps something the owner said about the matter: the next brief is written around it.

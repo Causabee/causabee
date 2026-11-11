@@ -1288,6 +1288,9 @@ enum Adviser {
             }
             matter.putFacts(facts, in: context, at: now)
         }
+        // Written for the record as it stands now, with all the answer brought: it holds on every
+        // device until the owner changes something or something new comes in.
+        matter.sealBrief()
         try? context.save()
     }
 

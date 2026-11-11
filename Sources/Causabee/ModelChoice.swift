@@ -703,9 +703,12 @@ final class AutoUpdate {
                 if pending.contains(key) { pending.remove(key) }
                 continue
             }
-            // Both written elsewhere in the last minutes — the other device's Auto: taken as they are.
-            if let step = matter.nextStepAt, let summary = matter.summaryAt, step != before.stepAt, summary != before.summaryAt,
-               min(step, summary) > Date().addingTimeInterval(-600) {
+            // A brief is written once, for every device: while the one the matter holds is for the
+            // record as it stands — written here or elsewhere, minutes or days ago — it is taken as
+            // it is. Only a change by the owner or something new that came in has it written again.
+            let elsewhere: Date? = if let step = matter.nextStepAt, let summary = matter.summaryAt,
+                                      step != before.stepAt, summary != before.summaryAt { min(step, summary) } else { nil }
+            if AutoPace.holds(brief: matter.shownBrief, stamp: stamp, writtenElsewhere: elsewhere, now: Date()) {
                 known[key] = Known(stamp: stamp, mails: mails)
                 lastSeen[key] = nil; changedAt[key] = nil; asked.remove(key)
                 pending.remove(key)
