@@ -4,12 +4,9 @@ Causabee turns what comes in — mail, screenshots, photos, files and scans, not
 
 ## New in this beta
 
-- **Dates you set stay set.** A time or how long a date lasts, set in the chat or by hand, stays. Calendar and what comes in later no longer put it back. A date shows from when to when and how long: "14:30–17:30 · 3 h". You set how long it lasts, not when it ends.
-- **The chat changes exactly what you name.** Before, a card could change another item: "Change date" on an appointment changed an unrelated task, and "Set again" closed the app. If something changed it back since, the card says so and offers "Set again".
-- **Full control from the chat.** Put away, open again, change one detail, move to another matter, close a matter, keep a decision. Each can be undone. A card that cannot do something says why.
-- **Messages in your voice.** Drafts follow the way the other side writes and use the language of the exchange. They greet a person by first name, or by title and surname. A change you ask for in a draft is made, and keeps its recipient.
 - **The bee costs less:** each job uses the smallest OpenAI model that does it as well as GPT-6.1 Sol. With Causabee Pro, Sol reads what comes in and answers in the chat; GPT-6.1 Terra writes digests and briefs, at half the price. What may wait, waits for half the price again.
-- **Waiting is not doing.** What others still have to do stands apart from your own tasks.
+- **One brief on every device.** A matter's brief, summary and next step, once written, are the same on your Mac, iPhone and iPad. They are written again only when you change something or something new comes in — not each time another device opens.
+- **The demo is the same on every device**, also on the day after.
 - **causabee.app shows Causabee as it is today:** the film, the pictures, and what works on macOS 15 and what needs macOS 26.
 
 ## Try it without setting anything up

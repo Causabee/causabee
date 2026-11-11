@@ -15,7 +15,7 @@ export const prices: Record<string, Price> = {
   "claude-opus-5": { inputPerMillion: 5, outputPerMillion: 25 },
   "claude-sonnet-5": { inputPerMillion: 2, outputPerMillion: 10 },
   "claude-haiku-4-5": { inputPerMillion: 1, outputPerMillion: 5 },
-  "gpt-6.1-sol": { inputPerMillion: 2, outputPerMillion: 10 },
+  "gpt-6.1-sol": { inputPerMillion: 2, outputPerMillion: 10, cachedPerMillion: 0.1 },
   "gpt-6.1-terra": { inputPerMillion: 1, outputPerMillion: 5, cachedPerMillion: 0.05 },
   "gpt-6-luna": { inputPerMillion: 0.1, outputPerMillion: 0.5, cachedPerMillion: 0.01 },
 };

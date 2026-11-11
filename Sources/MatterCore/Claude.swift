@@ -34,7 +34,7 @@ public struct Claude: Sendable {
         public var inputPerMillion: Double
         public var outputPerMillion: Double
 
-        public static let gptSol = Model(id: "gpt-6.1-sol", inputPerMillion: 2, outputPerMillion: 10)
+        public static let gptSol = Model(id: "gpt-6.1-sol", inputPerMillion: 2, outputPerMillion: 10, cachedPerMillion: 0.1)
         public static let gptTerra = Model(id: "gpt-6.1-terra", inputPerMillion: 1, outputPerMillion: 5, cachedPerMillion: 0.05)
         public static let gptLuna = Model(id: "gpt-6-luna", inputPerMillion: 0.1, outputPerMillion: 0.5, cachedPerMillion: 0.01)
         /// The models a job may use (`AIJob`), through the beeserver with Pro or with an own key.

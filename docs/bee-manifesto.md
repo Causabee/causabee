@@ -87,7 +87,7 @@ Each job is tested against its promise:
 - **Offered, then settled** — a time offered in one message and settled in the reply reaches the date; the chat finds it in the words.
 - **Write** — `matter-spike pressure`: 24 situations of nine kinds of people, sent as the chat sends them, recorded whole and drawn on the screen; the report is `docs/message-pressure-test.md`. Its disguise findings hold in `DisguiseFindingsTests`.
 - **A cheaper model** — a job moves to a cheaper model only after it does the job as well as the model before, on the demo's invented matters: the same matter for every item, at least 95% of the tasks and dates, nothing invented; the brief judged blind by the owner. `matter-spike jobs`, its answers kept with the feature; the table of jobs and models is one, the same in the app and on the server (`AIJobTests`).
-- **One brief for every device** — `BriefHoldsTests`: a brief written elsewhere an hour ago, for the record as it stands, is not written again; a new item, a task ticked or what you say of the matter has it written again; looking at it does not; a brief from a build before is taken as before.
+- **One brief for every device** — `BriefHoldsTests`: a brief written elsewhere an hour ago, for the record as it stands, is not written again; a new item, a task ticked or what you say of the matter has it written again; looking at it does not; a brief from a build before is taken as before. In the demo, `AutoTests.testADemoFilledAnewKeepsItsSteps`: filled anew on a new day, its steps hold on every device.
 
 If a change breaks a principle, it is wrong — however good it looks.
 
