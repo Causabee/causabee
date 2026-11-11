@@ -12,6 +12,7 @@ Seen while building something else. Not built now: each becomes a feature, joins
 Next feature, in the owner's order (10 November): **F004** the right model for each job (evidence: `docs/ai-cost-2026-11.md`).
 
 
+- Chat with a read PDF in hand: she gets only what reading put into tasks, dates and notes, never the file's own words (Assistant.facts: "Its text is not kept"). Asked to sum up an offer, she said its numbers were not in her facts, while the owner saw them in the PDF (11 Nov, iPad). Keep a read file's words on the device, beside the store, and give them to the chat when the file is in hand; until then she should say she has only what was read from it. (2026-11-11)
 - "No matter found" opens unfolded at every start with items up to 30 days old; after a new build the owner took four of them (22 Oct to 5 Nov) for old items the app wanted to take in again. Say when each was read, or fold the list when nothing in it is new. (2026-11-11)
 - Reading on Claude Haiku 5.5 ($0.10 in / $0.50 out, Luna's price) through the beeserver's Anthropic route: test with matter-spike jobs on the demo, as Luna was. A new feature — F004 keeps to OpenAI (2026-11-10)
 - A third party's health or private reason ("in stationärer Behandlung bis 24.11.") is not repeated as a fact or in a task; only what it means for the owner: "Abrechnung 2025 erst nach dem 24. November". Seen by the owner on 10 November (iPhone, Hausverwaltung). New manifesto rule with its test (2026-11-10)
