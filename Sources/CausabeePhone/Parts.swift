@@ -92,7 +92,7 @@ struct AssistantButton: View {
     @State private var asks = false
 
     /// On, and Pro bought.
-    private var pro: Bool { auto && Store.shared.plan == .pro }
+    private var pro: Bool { Plan.proIsOn(switched: auto, plan: Store.shared.plan, credit: BeeServer.hasCredit) }
 
     var body: some View {
         bee
@@ -203,7 +203,7 @@ struct PhoneAutoButton: View {
     @Environment(\.modelContext) private var context
     @State private var asks = false
     /// On, and Pro bought.
-    private var pro: Bool { auto && Store.shared.plan == .pro }
+    private var pro: Bool { Plan.proIsOn(switched: auto, plan: Store.shared.plan, credit: BeeServer.hasCredit) }
 
     var body: some View {
         Button {

@@ -225,7 +225,7 @@ final class Store {
 
     /// Pro may be turned on — with Pro, or with a top-up left — or the plan sheet.
     func mayTurnOnPro() -> Bool {
-        if plan == .pro || BeeServer.hasCredit { return true }
+        if Plan.proIsOn(switched: true, plan: plan, credit: BeeServer.hasCredit) { return true }
         asks = .pro
         return false
     }

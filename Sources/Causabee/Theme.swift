@@ -935,8 +935,8 @@ enum AppRelease {
 /// reading sends the mail, pseudonymised, and costs what it costs.
 enum AutoMode {
     static let key = "mail.auto"
-    /// On, and Pro bought: without Pro the switch stays as the owner left it, and nothing is read.
-    static var isOn: Bool { UserDefaults.standard.bool(forKey: key) && (Plan.cached == .pro || UserDefaults.standard.bool(forKey: "beeserver.credit")) }
+    /// On, with Pro or a top-up left: without either the switch stays as the owner left it, and nothing is read.
+    static var isOn: Bool { Plan.proIsOn(switched: UserDefaults.standard.bool(forKey: key), plan: Plan.cached, credit: UserDefaults.standard.bool(forKey: "beeserver.credit")) }
     /// The owner has been told once what Auto does, and said yes.
     static let agreedKey = "auto.agreed"
     /// The bolt was pressed to turn Auto on, and what Auto does has not been said and agreed to

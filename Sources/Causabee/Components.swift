@@ -275,7 +275,7 @@ struct CornerBee: View {
     let open: () -> Void
     @AppStorage(AutoMode.key) private var auto = false
     @State private var asks = false
-    private var pro: Bool { auto && Store.shared.plan == .pro }
+    private var pro: Bool { Plan.proIsOn(switched: auto, plan: Store.shared.plan, credit: BeeServer.hasCredit) }
 
     var body: some View {
         Button(action: open) {
