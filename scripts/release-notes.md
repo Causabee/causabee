@@ -4,10 +4,8 @@ Causabee turns what comes in — mail, screenshots, photos, files and scans, not
 
 ## New in this beta
 
-- **The bee costs less:** each job uses the smallest OpenAI model that does it as well as GPT-6.1 Sol. With Causabee Pro, Sol reads what comes in and answers in the chat; GPT-6.1 Terra writes digests and briefs, at half the price. What may wait, waits for half the price again.
-- **One brief on every device.** A matter's brief, summary and next step, once written, are the same on your Mac, iPhone and iPad. They are written again only when you change something or something new comes in — not each time another device opens.
-- **The demo is the same on every device**, also on the day after.
-- **causabee.app shows Causabee as it is today:** the film, the pictures, and what works on macOS 15 and what needs macOS 26.
+- **The chat costs less with every follow-up:** a second question about the same matter reads the matter from OpenAI's cache, at a twentieth of the price, and pays in full only for the question.
+- **Everything else the bee does costs less too:** reading what comes in, digests and briefs no longer pay extra to store text in the cache that was never read back.
 
 ## Try it without setting anything up
 
