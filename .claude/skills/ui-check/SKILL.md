@@ -5,7 +5,7 @@ description: Check new or changed Causabee UI (SwiftUI in Sources/Causabee, Sour
 
 # /ui-check
 
-The rules are `docs/design-system.md`. Read it first; every finding names one of its rules.
+The rules are `docs/design-system.md`. Read it first; every finding names one of its rules. Its guides in `docs/design-system/` (colors, typography, components) say what to use instead: name that part in each finding.
 
 Arguments: none (this branch's changes since main, and what is not yet committed) · `--all` (every view; for an audit) · file paths (those files whole) · a feature number, e.g. `5` (its branch's changes, report into its folder).
 

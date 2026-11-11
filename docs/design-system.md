@@ -24,6 +24,14 @@ Where the tokens and components live:
 
 A new shared part goes into one of these files, with a `///` line that says what it is for.
 
+How to use them, token by token and part by part:
+
+- [design-system/colors.md](design-system/colors.md) — every colour token, its light and dark value, what it means, what may stand on what.
+- [design-system/typography.md](design-system/typography.md) — the serif and the system's text styles, their sizes on each device, one style per role.
+- [design-system/components.md](design-system/components.md) — which part to use for what: surfaces, buttons, labels, the matter page, the chat, glass, sizes.
+
+These rules are what is checked; the three guides say how to keep them. A new token or part goes into its guide in the same change.
+
 ## H · Apple's Human Interface Guidelines
 
 The reference is Apple's HIG (developer.apple.com/design/human-interface-guidelines). The review of 9 October (`docs/hig-review/HIG-REVIEW.md`) lists what the app already owes; a change does not add to it.
