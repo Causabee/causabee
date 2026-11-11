@@ -1,6 +1,6 @@
 # F005 · The chat in two depths
 
-- Stage: 3
+- Stage: 4
 - Lane: feature
 - Started: 2026-11-11
 - Branch: feature/005-the-chat-in-two-depths
@@ -11,6 +11,7 @@
 |---|---|---|
 | 1 · Why | 2026-11-11 | Yes, go |
 | 2 · What | 2026-11-11 | yes, go |
+| 3 · How | 2026-11-11 | Yes, go. |
 
 ## Changes after a gate
 
