@@ -30,6 +30,10 @@ The owner has said this since the first day. Getting it wrong again is not accep
 - Something noticed in the middle of work — by the owner too — is parked (`scripts/feature.py park "…"`), not built. Say so, and go on.
 - `/feature` runs the stages; `scripts/feature.py status` says where things stand.
 
+## Screens
+
+**New or changed UI keeps [docs/design-system.md](docs/design-system.md):** Apple's guidelines, Causabee's tokens and components, Liquid Glass. `/ui-check` reports against it; a hook runs `scripts/ui-check.py` after each edit to a view.
+
 ## Standing rules
 
 - Causabee takes the mental load: short, precise sentences, few words.

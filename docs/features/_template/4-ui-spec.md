@@ -21,6 +21,11 @@
 
 <!-- VoiceOver names, large text, dark mode, the tap area. -->
 
+## Design system
+
+<!-- docs/design-system.md: which of its parts each screen uses (NextCard, .journalCard(), .filledButton(),
+     .onGlass …), its type and colours. A new part, colour or font: what it is, and why none fits. -->
+
 ## Picture
 
 <!-- A Figma link or a sketch in this folder. -->

@@ -12,6 +12,11 @@
 | Criterion | Test | Kind |
 |---|---|---|
 
+## The UI check
+
+<!-- /ui-check after the code: its report is ui-check.md in this folder, "Verdict: pass" before the gate.
+     No screen changes: "Not needed:" and why. -->
+
 ## What it adds to the manifesto
 
 <!-- A new rule and its test, or "Nothing". -->

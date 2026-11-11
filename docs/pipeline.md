@@ -18,7 +18,7 @@ The manifesto ([bee-manifesto.md](bee-manifesto.md)) says what the bee must do. 
 | Lane | When | Path |
 |---|---|---|
 | **Feature** | Something new, or something that should work differently. | All six stages. |
-| **Fix** | The product does not do what an approved criterion, the manifesto or a test promises. | A test that fails first. Then the fix. Then the test passes. No new behaviour. No folder. |
+| **Fix** | The product does not do what an approved criterion, the manifesto or a test promises. | A test that fails first. Then the fix. Then the test passes. No new behaviour. No folder. A fix that touches a screen: `/ui-check` before the commit. |
 | **Polish** | Small things from the backlog: a word, a gap, an icon. | Collected, not done one by one. At most one batch a week, through the six stages, kept short. |
 
 If a fix needs a decision about what *should* happen, it is not a fix. It is a feature.
@@ -70,6 +70,7 @@ Done when each criterion can be answered yes or no by looking.
 - Mac, iPhone, iPad: what is the same, what the layout changes.
 - Undo. Dark mode. Large text. VoiceOver names.
 - A picture: a Figma frame or a sketch.
+- The design system ([design-system.md](design-system.md)): which of its parts each screen uses, and any new one with why none of them fits.
 
 ### 5 · Build
 
@@ -78,6 +79,7 @@ First the plan: the steps, and a table that gives every criterion its test. Then
 1. The tests, written first, each tagged `FNNN AC-n` in its name or comment. They fail.
 2. The code. They pass.
 3. `scripts/test.sh`, the screen tests on iPhone, iPad and Mac.
+4. `/ui-check`: the changed screens against [design-system.md](design-system.md) — Apple's guidelines, the tokens, the components, Liquid Glass. Its report is `ui-check.md` in the feature's folder; the gate stays shut without it, or while it says "open". No screen changes (Looks says "Not needed"): no report.
 
 The plan is followed. If it cannot be, see "When something comes up".
 
@@ -104,6 +106,7 @@ Done when every criterion is "pass" and the owner says "done".
 - [ ] Every criterion has a tagged test, and it passes.
 - [ ] What must not change did not: all unit tests, the screen tests on three devices.
 - [ ] The words are the spec's words.
+- [ ] The UI check says "pass" (`ui-check.md`), or Looks says there are no screen changes.
 - [ ] A new rule found on the way is in the manifesto, with its test.
 - [ ] The release notes have its line.
 - [ ] The owner tried it and said "done".
@@ -125,6 +128,9 @@ scripts/feature.py check 7                     # is stage's file complete? crite
 scripts/feature.py advance 7 --word "approved" # the gate, opened by the owner's word
 scripts/feature.py park "The gap under the date is too small"
 scripts/feature.py drop 7 "Not needed after all"
+scripts/ui-check.py                            # the screens changed on this branch, against design-system.md
 ```
+
+While Claude Code edits a view, a hook runs `scripts/ui-check.py` on the lines it changed and says what they break.
 
 In Claude Code, `/feature` walks through the same stages and asks the questions each one needs.

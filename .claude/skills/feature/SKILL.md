@@ -29,8 +29,8 @@ Work only on the current stage's file in `docs/features/NNN-name/`. Fill every s
 | 1 Why | Ask the owner what is missing, at most five questions, one at a time. Look for evidence in the repo, the backlog and the manifesto. Write "Not in this feature" generously: it is what stops tweaks later. |
 | 2 What | Write the criteria as Given / When / Then. For each, name the sources (mail, screenshots, photos, files and scans, notes, the chat, by hand), the devices and Pro / without Pro — "all" unless there is a reason. List what must not change with the tests that guard it (`grep` Tests/ for them). Put every decision you cannot make under "Open questions" and ask the owner. |
 | 3 How | Read the code before writing. No schema change: if one seems needed, stop and ask. Say what an older build on another device does. Say what leaves the device. A prompt change names its new version. |
-| 4 Looks | Every state, every word exactly, three devices. Check each text against the house rules: short sentences, never mail-only. Ask for or make a picture. |
-| 5 Build | Write the plan and the criterion-to-test table. Then branch `feature/NNN-name`. Tests first, tagged `FNNN AC-n` in the name or a comment; see them fail; then the code. Run `scripts/test.sh` and the screen tests on iPhone, iPad and Mac. |
+| 4 Looks | Every state, every word exactly, three devices. Check each text against the house rules: short sentences, never mail-only. Name the parts of `docs/design-system.md` each screen uses; a new part, colour or font says why none fits. Ask for or make a picture. |
+| 5 Build | Write the plan and the criterion-to-test table. Then branch `feature/NNN-name`. Tests first, tagged `FNNN AC-n` in the name or a comment; see them fail; then the code. Run `scripts/test.sh` and the screen tests on iPhone, iPad and Mac. Then `/ui-check <n>`: its report `ui-check.md` in the folder, "Verdict: pass" before the gate. |
 | 6 Proof | Fill the table from what actually ran. "pass" only for a test you saw pass in this session. Say what was not run. Ask the owner to try it — a TestFlight or Mac build only on their "now" or "yes" — and write down what they report. |
 
 ## The gate
@@ -47,6 +47,7 @@ When the stage's file is complete:
 - A criterion is wrong or missing: stop building. Change `2-acceptance.md`, add a line under "Changes after a gate" in the feature's README, get the owner's "approved" again. Then go on.
 - The spec cannot be built as written: the same, with `3-spec.md`.
 - A bug in an older feature: the fix lane, in its own commit.
+- The UI-check hook names a line you just wrote: use the design system's part. A line you did not touch: park it.
 
 ## Done
 

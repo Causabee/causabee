@@ -10,8 +10,8 @@
 #   scripts/feature.py drop 7 "Not needed after all"
 #
 # It checks what a machine can: nothing left empty, every criterion written as Given / When / Then,
-# every criterion with a test in the plan, and — before "done" — with a tagged test in Tests/ and
-# "pass" in the report. Whether a criterion is the right one is the owner's to say.
+# every criterion with a test in the plan, the UI check's "pass" before Build's gate (unless Looks has
+# no screen), and — before "done" — with a tagged test in Tests/ and "pass" in the report. Whether a criterion is the right one is the owner's to say.
 # --root names another repository folder: for trying the script without touching this one.
 import argparse, datetime, pathlib, re, sys
 
@@ -142,6 +142,7 @@ def check(repo, folder, stage):
         for ac in acs:
             if not re.search(rf"^\|\s*{ac}\b.*\|\s*\S.*\|", plain(text), re.M):
                 problems.append(f"5-plan.md: {ac} has no test in the table.")
+        problems += ui_check(folder)
     if stage == 6:
         tests = repo.root / "Tests"
         sources = "\n".join(p.read_text(errors="ignore") for p in tests.rglob("*.swift")) if tests.exists() else ""
@@ -154,6 +155,24 @@ def check(repo, folder, stage):
             elif row.group(1).lower() != "pass":
                 problems.append(f"6-test-report.md: {ac} is “{row.group(1)}”, not “pass”.")
     return problems
+
+
+def ui_check(folder):
+    """Build's gate needs the UI check's report (docs/design-system.md), unless Looks has no screen."""
+    looks = folder / "4-ui-spec.md"
+    if looks.exists():
+        screens = re.split(r"^## +Screens and states\s*$", plain(looks.read_text()), flags=re.M)
+        if len(screens) > 1 and re.match(r"\s*Not needed\b", screens[1], re.I):
+            return []
+    report = folder / "ui-check.md"
+    if not report.exists():
+        return ["ui-check.md is missing. Run /ui-check on the screens this feature changed (docs/design-system.md)."]
+    verdict = re.search(r"^Verdict:\s*(\w+)", report.read_text(), re.M)
+    if not verdict:
+        return ["ui-check.md has no “Verdict:” line."]
+    if verdict.group(1).lower() != "pass":
+        return [f"ui-check.md says “{verdict.group(1)}”. Each finding is fixed, or kept with the owner's yes; then “pass”."]
+    return []
 
 
 def slug(name):
