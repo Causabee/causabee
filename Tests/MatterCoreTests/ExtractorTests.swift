@@ -352,10 +352,10 @@ struct ExtractorTests {
         #expect(try Claude.cacheKey(body) == Claude.cacheKey(old))
     }
 
-    @Test("Cached input costs a tenth to read and a quarter more to write")
+    @Test("Cached input costs a twentieth to read on Sol, as OpenAI charges it, and a quarter more to write")
     func cachePricing() {
         let sol = Claude.Model.gptSol
-        #expect(abs(sol.cost(input: 0, output: 0, cacheRead: 1_000_000) - 0.2) < 0.0001)
+        #expect(abs(sol.cost(input: 0, output: 0, cacheRead: 1_000_000) - 0.1) < 0.0001)
         #expect(abs(sol.cost(input: 0, output: 0, cacheWrite: 1_000_000) - 2.5) < 0.0001)
     }
 }
