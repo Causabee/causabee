@@ -172,4 +172,7 @@ describe("F004 AC-5 · The cache is counted as OpenAI charges it", () => {
     expect(costMicros("gpt-6.1-terra", { input: 0, output: 0, cacheWrite: 0, cacheRead: 1_000_000, searches: 0 })).toBe(50_000);
     expect(costMicros("gpt-6-luna", { input: 1_000_000, output: 1_000_000, cacheWrite: 0, cacheRead: 1_000_000, searches: 0 })).toBe(100_000 + 500_000 + 10_000);
   });
+  it("prices a cached read of Sol at $0.10 a million, a twentieth of its input, as OpenAI charges it", () => {
+    expect(costMicros("gpt-6.1-sol", { input: 0, output: 0, cacheWrite: 0, cacheRead: 1_000_000, searches: 0 })).toBe(100_000);
+  });
 });

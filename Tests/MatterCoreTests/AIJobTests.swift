@@ -189,10 +189,11 @@ struct AIJobTests {
 
     @Test("F004 · Each model's price, as OpenAI charges it")
     func prices() {
-        // A million cached tokens read: Terra $0.05, Luna $0.01; Sol as before.
+        // A million cached tokens read: Sol $0.10, Terra $0.05, Luna $0.01 — a twentieth of the input
+        // each, as OpenAI charges it (Sol was counted at a tenth until 11 November).
         #expect(abs(Claude.Model.gptTerra.cost(input: 0, output: 0, cacheRead: 1_000_000) - 0.05) < 1e-9)
         #expect(abs(Claude.Model.gptLuna.cost(input: 1_000_000, output: 1_000_000) - 0.6) < 1e-9)
-        #expect(abs(Claude.Model.gptSol.cost(input: 0, output: 0, cacheRead: 1_000_000) - 0.2) < 1e-9)
+        #expect(abs(Claude.Model.gptSol.cost(input: 0, output: 0, cacheRead: 1_000_000) - 0.1) < 1e-9)
     }
 }
 
