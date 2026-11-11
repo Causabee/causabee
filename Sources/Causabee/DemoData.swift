@@ -133,6 +133,10 @@ enum DemoData {
         try? context.save()
         noMatter(context)
         if CommandLine.arguments.contains("--big") { big(context) }
+        // Each brief as filled in stands for its matter as it is now — on every device, whatever its
+        // Auto knew of a demo filled before (principle 12): written again only once something in it changes.
+        for made in cases { made.matter.sealBrief() }
+        try? context.save()
     }
 
     /// Two items the bee read and found no matter for: one with a task, a date and a person in it,

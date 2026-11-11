@@ -75,4 +75,30 @@ final class AutoTests: XCTestCase {
         matter.tap()
         XCTAssertTrue(app.staticTexts["NEXT · FROM CAUSABEE"].waitForExistence(timeout: 10), "Leaving the matter did not write it again.")
     }
+
+    /// Principle 12 in the demo (seen 10 November): filled anew on a new day, the demo kept what Auto
+    /// knew of yesterday's matters, so each of its matters looked changed — written again after a few
+    /// minutes on one device, "Out of date" on another, as it was filled on a third. A brief filled
+    /// in holds as it is, on every device, until something in the matter changes.
+    func testADemoFilledAnewKeepsItsSteps() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        // Auto on, and what it knew of the care matter from a demo filled before: another record.
+        app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "YES",
+                               "-auto.known", "<\(Self.staleCare)>"]
+        app.launch()
+        showMatters(in: app)
+        let matter = app.staticTexts["Care for Mum (Helga) after her fall"].firstMatch
+        for _ in 0..<4 where !matter.isHittable { app.swipeUp() }
+        XCTAssertTrue(matter.waitForExistence(timeout: 20), "The demo's care matter is not there.")
+        matter.tap()
+        XCTAssertTrue(app.staticTexts["Read and sign the Sunrise contract"].waitForExistence(timeout: 10), "The care matter's step is not the one the demo was filled with.")
+        // Auto's looks, a few seconds apart: the step holds, and nothing says it is out of date.
+        Thread.sleep(forTimeInterval: 8)
+        XCTAssertFalse(app.staticTexts["OUT OF DATE"].exists, "A demo filled anew calls its step out of date.")
+        XCTAssertTrue(app.staticTexts["Read and sign the Sunrise contract"].exists, "The care matter's step changed by itself.")
+    }
+
+    /// `auto.known` as a device that ran yesterday's demo keeps it: the care matter with another stamp.
+    private static let staleCare = "7b22636172652d666f722d68656c6761223a7b227374616d70223a2230303030303030303030303030303030227d7d"
 }
