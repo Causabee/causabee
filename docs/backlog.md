@@ -12,6 +12,7 @@ Seen while building something else. Not built now: each becomes a feature, joins
 Next feature, in the owner's order (10 November): **F004** the right model for each job (evidence: `docs/ai-cost-2026-11.md`).
 
 
+- Shared parts for every device: Card, PageRows, RowDivider, MoreMenu, RowIconStyle and SourceLink (openURL in place of NSWorkspace) out of the Mac-only Components.swift into a file both apps take; the Mac's window and sidebar parts stay. Then the iPhone's and iPad's own ⋯ menus (PeopleAndLinks.swift:149, :425, MatterScreen.swift:380, OverviewScreen.swift:360) and its 11 hand-written row dividers onto them, the row icon at 44 pt on touch (HIG B1). Moving the first three changes no look; the rest does — C3, C4 (docs/design-system/components.md) (2026-11-11)
 - Tap gestures that should be buttons (18, HIG review B11) and SF Symbols at a point size (17, B10): not in the HIG backlog yet — H1, H5 (UI check, docs/ui-check/2026-11-11.md) (2026-11-11)
 - Theme.onBee: one token for the words on the bee's yellow and the honey, then the 15 lines that say .black use it — T1 (UI check, docs/ui-check/2026-11-11.md) (2026-11-11)
 - The hand-made cards onto .journalCard(), .box(), .phoneCard(): 40 lines at seven radii, and the radii down to named ones (13 values in 119 lines) — C2, T5 (UI check, docs/ui-check/2026-11-11.md) (2026-11-11)
