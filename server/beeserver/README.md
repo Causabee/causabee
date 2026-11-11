@@ -38,10 +38,14 @@ Each ledger row has its `job` and `tier`. `GET /admin/report?period=2026-11` add
 per job and model, what it cost and what share of what was sent the cache read. In the D1 console:
 
 ```sql
-SELECT substr(time, 1, 10) AS day, COALESCE(job, 'unknown') AS job, tier, COUNT(*) AS requests,
+SELECT substr(time, 1, 10) AS day, COALESCE(job, 'unknown') AS job, tier, SUM(kind = 'spend') AS requests,
        SUM(micros) / 1e6 AS dollars, ROUND(1.0 * SUM(tokens_cached) / SUM(tokens_in + tokens_cached), 3) AS cached
-FROM ledger WHERE kind = 'spend' GROUP BY day, job, tier ORDER BY day, job;
+FROM ledger WHERE kind IN ('spend', 'spend_extra') GROUP BY day, job, tier ORDER BY day, job;
 ```
+
+A request paid from top-ups is two rows: `spend` with its tokens and what the month carried,
+`spend_extra` with what top-ups paid and no tokens (since `migrations/0005-extra-tokens.sql`). Count
+requests by their `spend` rows, add the money of both.
 
 A job's model changes in `src/jobs.json` and `Sources/MatterCore/AIJob.swift` together (a unit
 test compares them), and only after its test on the demo's matters (`matter-spike jobs`).

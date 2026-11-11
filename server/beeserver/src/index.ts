@@ -212,15 +212,19 @@ async function spend(env: Env, account: string, month: string, what: { model: st
   const fromMonth = Math.max(0, Math.min(cost, monthLeft));
   const fromExtra = cost - fromMonth;
   const time = new Date().toISOString();
+  // The tokens are one request's: on its "spend" row only. A "spend_extra" row carries the money
+  // top-ups paid, and no tokens — else every sum of tokens over both kinds counts them twice.
+  const tokens = (kind: string) =>
+    kind === "spend" ? [usage.input + usage.cacheWrite, usage.output, usage.cacheRead, usage.searches] : [0, 0, 0, 0];
   const row = (kind: string, micros: number, suffix: string) =>
     env.DB.prepare(
       "INSERT OR IGNORE INTO ledger (account, period, kind, micros, ref, model, job, tier, tokens_in, tokens_out, tokens_cached, searches, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ).bind(account, month, kind, micros, ref + suffix, what.model, what.job, what.tier, usage.input + usage.cacheWrite, usage.output, usage.cacheRead, usage.searches, time);
+    ).bind(account, month, kind, micros, ref + suffix, what.model, what.job, what.tier, ...tokens(kind), time);
   // Before migration 0004 the ledger has no job: the money is written all the same, and the log says why the job is missing.
   const before = (kind: string, micros: number, suffix: string) =>
     env.DB.prepare(
       "INSERT OR IGNORE INTO ledger (account, period, kind, micros, ref, model, tokens_in, tokens_out, tokens_cached, searches, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ).bind(account, month, kind, micros, ref + suffix, what.model, usage.input + usage.cacheWrite, usage.output, usage.cacheRead, usage.searches, time);
+    ).bind(account, month, kind, micros, ref + suffix, what.model, ...tokens(kind), time);
   const rows = (make: typeof row) => [make("spend", fromMonth, ""), ...(fromExtra > 0 ? [make("spend_extra", fromExtra, "#extra")] : [])];
   try {
     await env.DB.batch(rows(row));
@@ -395,14 +399,15 @@ async function admin(request: Request, url: URL, env: Env): Promise<Response> {
     // A month in all: what the AI cost, what was topped up, how many subscribers — beside the invoices.
     const month = url.searchParams.get("period") ?? now.slice(0, 7);
     const spent = await env.DB.prepare(
-      "SELECT model, COUNT(*) AS requests, SUM(micros) AS micros FROM ledger WHERE kind IN ('spend', 'spend_extra') AND substr(time, 1, 7) = ? GROUP BY model",
+      // A request is its "spend" row; its money is that and the "spend_extra" row top-ups paid.
+      "SELECT model, SUM(kind = 'spend') AS requests, SUM(micros) AS micros FROM ledger WHERE kind IN ('spend', 'spend_extra') AND substr(time, 1, 7) = ? GROUP BY model",
     ).bind(month).all();
     const sold = await env.DB.prepare(
       "SELECT kind, COUNT(*) AS count, SUM(micros) AS micros FROM ledger WHERE kind IN ('topup', 'refund', 'grant') AND substr(time, 1, 7) = ? GROUP BY kind",
     ).bind(month).all();
     // F004: each job, per day — what it cost, on which tier, and the share of what was sent that the cache read.
     const byJob = await env.DB.prepare(
-      "SELECT substr(time, 1, 10) AS day, COALESCE(job, 'unknown') AS job, model, tier, COUNT(*) AS requests, SUM(micros) AS micros, SUM(tokens_in) AS tokens_in, SUM(tokens_cached) AS tokens_cached, SUM(tokens_out) AS tokens_out FROM ledger WHERE kind = 'spend' AND substr(time, 1, 7) = ? GROUP BY day, job, model, tier ORDER BY day, job",
+      "SELECT substr(time, 1, 10) AS day, COALESCE(job, 'unknown') AS job, model, tier, SUM(kind = 'spend') AS requests, SUM(micros) AS micros, SUM(tokens_in) AS tokens_in, SUM(tokens_cached) AS tokens_cached, SUM(tokens_out) AS tokens_out FROM ledger WHERE kind IN ('spend', 'spend_extra') AND substr(time, 1, 7) = ? GROUP BY day, job, model, tier ORDER BY day, job",
     ).bind(month).all();
     const subscribers = await env.DB.prepare("SELECT COUNT(*) AS n FROM accounts WHERE kind = 'apple' AND expires > ?").bind(now).first<{ n: number }>();
     return json({ period: month, spent: spent.results, jobs: byJob.results, sold: sold.results, subscribers: subscribers?.n ?? 0 });
