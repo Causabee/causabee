@@ -15,7 +15,8 @@ struct AskSteps: View {
         HStack(spacing: 8) {
             BeeLoader(size: size).frame(width: size * BeeLoader.aspect)
             Text(words)
-            if step == .waiting, let sentAt {
+            // The seconds go on while it looks deeper: from when the question first went out.
+            if step == .waiting || step == .lookingDeeper, let sentAt {
                 TimelineView(.periodic(from: sentAt, by: 1)) { timeline in
                     Text("· \(max(0, Int(timeline.date.timeIntervalSince(sentAt)))) s").monospacedDigit()
                 }
@@ -29,6 +30,7 @@ struct AskSteps: View {
         switch step {
         case .disguising: "Disguising names …"
         case .waiting: "Thinking …"
+        case .lookingDeeper: "Looking in the whole matter …"
         case .restoring: "Putting names back …"
         }
     }
@@ -38,6 +40,7 @@ struct AskSteps: View {
     VStack(alignment: .leading, spacing: 24) {
         AskSteps(step: .disguising, sentAt: nil)
         AskSteps(step: .waiting, sentAt: Date().addingTimeInterval(-7))
+        AskSteps(step: .lookingDeeper, sentAt: Date().addingTimeInterval(-9))
         AskSteps(step: .restoring, sentAt: Date().addingTimeInterval(-12))
     }
     .padding(32)

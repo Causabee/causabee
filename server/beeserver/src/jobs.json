@@ -30,6 +30,22 @@
       "effort": "medium",
       "flex": false,
       "testing": []
+    },
+    "chat-light": {
+      "name": "A quick question in the chat",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "flex": false,
+      "testing": [
+        "gpt-6.1-terra"
+      ]
+    },
+    "chat-deeper": {
+      "name": "A quick question asked again with the whole matter",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "flex": false,
+      "testing": []
     }
   }
 }

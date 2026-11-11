@@ -32,6 +32,20 @@ public struct Facts: Sendable {
     /// The language the matter is written in — its mails, tasks and notes — in English words:
     /// "German", "English". What a summary or a next step is written in. Nil when it cannot be told.
     public var language: String? = nil
+    /// F005: the light text — what a quick question needs of one matter, with the same ids as `text`.
+    /// Nil for several matters, a pinned item, or a matter where it would not be at most half.
+    public var light: String? = nil
+    /// The ids the light text shows: a light answer citing another one asks again with the whole matter.
+    public var lightIDs: Set<String> = []
+
+    /// The same facts with only the light text to send.
+    public var lightened: Facts? {
+        guard let light else { return nil }
+        var facts = self
+        facts.text = light
+        facts.light = nil
+        return facts
+    }
 }
 
 @MainActor
@@ -62,15 +76,18 @@ public enum FactSheet {
             return id
         }
         let detailed = matters.count == 1
-        var blocks: [String] = []
+        var blocks: [String] = [], lightBlocks: [String] = []
         var ownerText: [String] = []
         var mailCount = 0, todos = 0, dates = 0, keptCount = 0
         for matter in matters {
             let status = MatterStatus(matter)
             var lines: [String] = []
+            // F005: beside the whole matter, what a quick question needs of it — the same lines, the same ids.
+            var light: [String] = []
+            func both(_ line: String) { lines.append(line); light.append(line) }
             let names = ([matter.key] + matter.aliases).filter { $0 != matter.name }
-            lines.append("<matter id=\"\(id("M", .matter(matter.persistentModelID)))\" name=\"\(matter.name)\"\(names.isEmpty ? "" : " also=\"\(names.joined(separator: ", "))\"")>")
-            if matter.isClosed, let closed = matter.closedAt { lines.append("Closed since \(MatterStatus.day(closed)).") }
+            both("<matter id=\"\(id("M", .matter(matter.persistentModelID)))\" name=\"\(matter.name)\"\(names.isEmpty ? "" : " also=\"\(names.joined(separator: ", "))\"")>")
+            if matter.isClosed, let closed = matter.closedAt { both("Closed since \(MatterStatus.day(closed)).") }
             if let notes = matter.notesText {
                 // Each with its id: to be changed, put away or moved from the chat.
                 var noteLines: [String] = []
@@ -79,29 +96,31 @@ public enum FactSheet {
                     noteLines.append("\(id("N", .note(note.persistentModelID))) \(MatterStatus.day(note.createdAt))"
                                      + "\(note.fromAssistant ? " (an answer of yours the owner kept)" : ""): \(note.text)")
                 }
-                lines.append("The owner's notes on this matter:\n" + noteLines.joined(separator: "\n"))
+                both("The owner's notes on this matter:\n" + noteLines.joined(separator: "\n"))
                 ownerText.append(notes)
             }
             // What is understood of it, and what the owner said: the owner's words read like the notes.
             if let brief = matter.shownBrief, let text = detailed ? brief.forFacts : brief.gist.map({ "In short: \($0)" }) {
-                lines.append(text)
+                both(text)
                 ownerText += brief.said.map(\.text)
             }
             ownerText += (matter.todos ?? []).shown.compactMap(\.note)
             // Of the details only that they are kept, by their label: never a value.
             let labels = matter.sortedDetails.map { id("X", .detail($0.persistentModelID)) + " " + $0.label + ($0.party.map { " (\($0.name))" } ?? "") }
-            if !labels.isEmpty { lines.append("Details the owner keeps here, values not shown (the owner sees them under Details): " + labels.joined(separator: "; ")) }
+            if !labels.isEmpty { both("Details the owner keeps here, values not shown (the owner sees them under Details): " + labels.joined(separator: "; ")) }
             let decisions = (matter.decisions ?? []).sorted { $0.decidedAt > $1.decidedAt }
             if !decisions.isEmpty {
-                lines.append("Decisions:")
-                for decision in decisions.prefix(20) {
-                    lines.append("\(id("C", .decision(decision.persistentModelID))) \(MatterStatus.day(decision.decidedAt)): \(decision.what)"
-                                 + (decision.why.isEmpty ? "" : " — why: \(decision.why)"))
+                both("Decisions:")
+                for (n, decision) in decisions.prefix(20).enumerated() {
+                    let line = "\(id("C", .decision(decision.persistentModelID))) \(MatterStatus.day(decision.decidedAt)): \(decision.what)"
+                        + (decision.why.isEmpty ? "" : " — why: \(decision.why)")
+                    lines.append(line)
+                    if n < 5 { light.append(line) }
                 }
             }
             ownerText += (matter.links ?? []).shown.filter(\.isKept).map(\.title).filter { !$0.isEmpty }
             let open = [Todo.Owner.me, .we, .other, .unknown].flatMap(status.open)
-            lines.append(open.isEmpty ? "No open to-dos." : "Open to-dos:")
+            both(open.isEmpty ? "No open to-dos." : "Open to-dos:")
             // Ids first, so a to-do can say which one it waits for, wherever that one is listed.
             let openIDs = Dictionary(uniqueKeysWithValues: open.map { ($0.persistentModelID, id("T", .todo($0.persistentModelID))) })
             for todo in open {
@@ -115,21 +134,26 @@ public enum FactSheet {
                 if let note = todo.note, !note.isEmpty { line += " — owner's note: \(note.replacingOccurrences(of: "\n", with: "; "))" }
                 // The name of a link only: its address may open a shared doc.
                 for link in (todo.links ?? []).shown { line += " — linked: \(id("L", .link(link.persistentModelID))) \(link.forFacts)" }
-                if detailed, !focused || mentions(todo.text), let quote = todo.sources.first?.quote { line += " — \"\(quote.prefix(160))\"" }
-                if let day = todo.sources.first?.date { line += " — since \(MatterStatus.day(day))" }
-                lines.append(line)
+                var quoted = ""
+                if detailed, !focused || mentions(todo.text), let quote = todo.sources.first?.quote { quoted = " — \"\(quote.prefix(160))\"" }
+                let since = todo.sources.first?.date.map { " — since \(MatterStatus.day($0))" } ?? ""
+                lines.append(line + quoted + since)
+                // Light: without the words it came with.
+                light.append(line + since)
             }
             todos += open.count
             let links = (matter.links ?? []).shown.filter { $0.todo == nil && $0.isKept }.sorted { $0.createdAt < $1.createdAt }
             if detailed, !links.isEmpty {
-                lines.append("The owner's links (names only; the owner opens them):")
-                for link in links { lines.append("\(id("L", .link(link.persistentModelID))) \(link.forFacts)") }
+                both("The owner's links (names only; the owner opens them):")
+                for link in links { both("\(id("L", .link(link.persistentModelID))) \(link.forFacts)") }
             }
             if detailed, !matter.infos.isEmpty {
                 // Worth knowing, and not to do: the owner said so.
-                lines.append("Worth knowing (not to-dos):")
-                for info in matter.infos.prefix(focused ? 10 : 30) {
-                    lines.append("\(id("T", .todo(info.persistentModelID))) \(info.text)" + (info.holdsUntil.map { " (holds until \($0))" } ?? ""))
+                both("Worth knowing (not to-dos):")
+                for (n, info) in matter.infos.prefix(focused ? 10 : 30).enumerated() {
+                    let line = "\(id("T", .todo(info.persistentModelID))) \(info.text)" + (info.holdsUntil.map { " (holds until \($0))" } ?? "")
+                    lines.append(line)
+                    if n < 10 { light.append(line) }
                 }
             }
             if detailed {
@@ -142,22 +166,29 @@ public enum FactSheet {
             let upcoming = status.upcomingAppointments
             let appointments = detailed ? upcoming + status.pastAppointments.prefix(10) : upcoming
             if !appointments.isEmpty { lines.append("Appointments:") }
-            for item in appointments {
+            // Light: the dates to come only.
+            if !upcoming.isEmpty { light.append("Appointments:") }
+            for (n, item) in appointments.enumerated() {
                 // When and how long, as the card shows it (principle 14): "14:30–17:30 · 3 h", until its last day.
                 let hours = Calendars.hoursLine(what: item.what, day: item.day, time: item.time, endDay: item.endDay, endTime: item.endTime)
                 let when = [hours == "No time yet" ? nil : hours, item.endDay.map { "until \($0)" }].compactMap { $0 }.joined(separator: " ")
-                lines.append("\(id("A", .appointment(item.persistentModelID))) \(item.day)\(when.isEmpty ? "" : " \(when)") \(item.what)\(item.place.map { " at \($0)" } ?? "")"
-                             + (item.isOwners ? " — set by the owner" : ""))
+                let line = "\(id("A", .appointment(item.persistentModelID))) \(item.day)\(when.isEmpty ? "" : " \(when)") \(item.what)\(item.place.map { " at \($0)" } ?? "")"
+                    + (item.isOwners ? " — set by the owner" : "")
+                lines.append(line)
+                if n < upcoming.count { light.append(line) }
             }
             let deadlines = detailed ? status.deadlines : status.deadlines.filter { $0.day >= status.today }
             if !deadlines.isEmpty { lines.append("Deadlines:") }
+            if deadlines.contains(where: { $0.day >= status.today }) { light.append("Deadlines:") }
             for item in deadlines {
-                lines.append("\(id("D", .deadline(item.persistentModelID))) \(item.day) \(item.what)")
+                let line = "\(id("D", .deadline(item.persistentModelID))) \(item.day) \(item.what)"
+                lines.append(line)
+                if item.day >= status.today { light.append(line) }
             }
             dates += appointments.count + deadlines.count
             if detailed {
                 let memberships = status.memberships
-                if !memberships.isEmpty { lines.append("Parties:") }
+                if !memberships.isEmpty { both("Parties:") }
                 for membership in memberships {
                     guard let party = membership.party else { continue }
                     // How to reach them — disguised on the way out like every address and number,
@@ -165,7 +196,7 @@ public enum FactSheet {
                     var line = "\(id("P", .party(party.persistentModelID))) \(party.name)\(membership.role.map { " — \($0)" } ?? "") (in \(membership.mentions) items)"
                     if let mail = matter.reachAddress(of: party) { line += " — mail: \(mail)" }
                     if let phone = party.phone?.trimmingCharacters(in: .whitespacesAndNewlines), !phone.isEmpty { line += " — phone: \(phone)" }
-                    lines.append(line)
+                    both(line)
                 }
                 // A file in hand: what is known of it, and the mail it came with — always listed,
                 // whatever its subject says. Its text is not kept; a scanned file's facts are above.
@@ -186,14 +217,16 @@ public enum FactSheet {
                 let named = (matter.documents ?? []).filter { file in !file.isHidden && !file.isSmallImage && !files.contains { $0 === file } }
                     .sorted { ($0.source.date ?? .distantPast) > ($1.source.date ?? .distantPast) }
                 if !named.isEmpty {
-                    lines.append("Files of this matter, newest first (names only; a draft sends one along when `attach` names it):")
-                    for file in named.prefix(40) {
+                    both("Files of this matter, newest first (names only; a draft sends one along when `attach` names it):")
+                    for (n, file) in named.prefix(40).enumerated() {
                         let state = switch file.reading {
                         case .read: "read"
                         case .kept: "kept, not read — the owner can have it read with \"Read\" on its card"
                         case .unreadable: "kept, a kind of file Causabee cannot read yet"
                         }
-                        lines.append("\(id("F", .document(file.persistentModelID))) \(file.shownName) — \(state)")
+                        let line = "\(id("F", .document(file.persistentModelID))) \(file.shownName) — \(state)"
+                        lines.append(line)
+                        if n < 10 { light.append(line) }
                     }
                 }
                 keptCount += named.filter { $0.reading != .read }.count
@@ -201,12 +234,13 @@ public enum FactSheet {
                 let entries = focused
                     ? Array(status.entries.filter { fileMails.contains($0.messageID) || mentions($0.title) || mentions($0.from) }.prefix(15))
                     : Array(status.entries.prefix(mails))
-                if !entries.isEmpty { lines.append("What came in — mail, screenshots, photos, files, notes — newest first:") }
+                if !entries.isEmpty { both("What came in — mail, screenshots, photos, files, notes — newest first:") }
                 for (n, entry) in entries.enumerated() {
                     let from = Email.displayName(in: entry.from) ?? Email.address(in: entry.from)
                     var line = "\(id("E", .entry(entry.persistentModelID))) \(entry.date.map(MatterStatus.day) ?? "?") from \(from): \(entry.title)"
                     // What the mail said, so a question about its details has something to go on.
                     if let digest = entry.digest, !digest.isEmpty { line += " — " + digest.replacingOccurrences(of: "\n", with: " ") }
+                    let summed = line
                     if [.screenshot, .photo, .document, .spokenNote].contains(entry.source.kind), let text = keptText?(entry), !text.isEmpty {
                         line += " — its words: \"" + String(text.prefix(1500)).replacingOccurrences(of: "\n", with: " / ") + "\""
                     } else if entry.source.kind == .mail, n < 10, let text = keptText?(entry), !text.isEmpty {
@@ -222,13 +256,17 @@ public enum FactSheet {
                         }
                     }
                     lines.append(line)
+                    // Light: the newest 15, the own words of the newest 3 only.
+                    if n < 15 { light.append(n < 3 ? line : summed) }
                 }
                 mailCount += entries.count
             } else if let last = status.lastDate {
                 lines.append("Last came in: \(MatterStatus.day(last)), \(matter.entries?.count ?? 0) items in all.")
             }
-            lines.append("</matter>")
+            light.append("Not shown here: older items, done tasks, past dates, older files. If the question needs any of them, or something is not here, say so in not_in_facts.")
+            both("</matter>")
             blocks.append(lines.joined(separator: "\n"))
+            lightBlocks.append(light.joined(separator: "\n"))
         }
         var seen: [String] = []
         if detailed { seen.append("\(mailCount) \(mailCount == 1 ? "item" : "items") that came in") } else { seen.append("\(matters.count) \(matters.count == 1 ? "matter" : "matters")") }
@@ -239,8 +277,14 @@ public enum FactSheet {
         let words = matters.flatMap { matter in
             [matter.notesText ?? ""] + (matter.todos ?? []).shown.map(\.text) + (matter.entries ?? []).prefix(40).flatMap { [$0.title, $0.digest ?? ""] }
         }
-        return Facts(text: blocks.joined(separator: "\n\n"), refs: refs, seen: seen.joined(separator: ", "),
-                     ownerText: ownerText.joined(separator: "\n"), language: AssistantAsk.language(of: words))
+        let text = blocks.joined(separator: "\n\n")
+        // F005: one matter, nothing in hand, and light at most half of the whole — or none.
+        let lightText = lightBlocks.joined(separator: "\n\n")
+        let light = detailed && !focused && lightText.count * 2 <= text.count ? lightText : nil
+        let lightIDs = light.map { light in Set(refs.keys.filter { light.range(of: "\\b\($0)\\b", options: .regularExpression) != nil }) } ?? []
+        return Facts(text: text, refs: refs, seen: seen.joined(separator: ", "),
+                     ownerText: ownerText.joined(separator: "\n"), language: AssistantAsk.language(of: words),
+                     light: light, lightIDs: lightIDs)
     }
 }
 
@@ -267,6 +311,10 @@ public enum AssistantAsk {
         /// before this was counted.
         public var disguisedInQuestion: Int?
         public var disguised: Int?
+        /// F005: the depth it was answered at, and whether a light answer was asked again deep.
+        /// Nil in answers from before.
+        public var depth: ChatDepth?
+        public var wentDeeper: Bool?
 
         /// What the line under an answer says of it: that the question was looked at, and what was found.
         public var disguiseLine: String? {
@@ -301,6 +349,8 @@ public enum AssistantAsk {
         case disguising
         /// Sent, and the model is writing.
         case waiting
+        /// F005: the light answer lacked something; asked again with the whole matter.
+        case lookingDeeper
         /// On the device again: the stand-ins swapped back for the names.
         case restoring
 
@@ -456,21 +506,57 @@ public enum AssistantAsk {
 
     public static func ask(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
                            facts: Facts, owner: String?, today: String, mapping url: URL, claude: Claude,
-                           model: Claude.Model = .gptSol, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
-        step?(.disguising)
-        let prepared = try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today, mapping: url)
-        return try await send(prepared, claude: claude, model: model, step: step)
+                           model: Claude.Model = .gptSol, depth: ChatDepth = .deep, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
+        try await deepening(facts: facts, depth: depth, claude: claude, model: model, step: step) { facts in
+            try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today, mapping: url)
+        }
     }
 
     /// Asks with a list of names in hand — the iPhone's way: it uses the Mac's list and keeps
     /// nothing it learned for the question.
     public static func ask(question: String, inHand: (kind: String, text: String)?, earlier: [(question: String, answer: String)],
                            facts: Facts, owner: String?, today: String, mapping: Pseudonymizer.Mapping, others: [Pseudonymizer.Entry],
-                           claude: Claude, model: Claude.Model = .gptSol, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
+                           claude: Claude, model: Claude.Model = .gptSol, depth: ChatDepth = .deep,
+                           step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
+        try await deepening(facts: facts, depth: depth, claude: claude, model: model, step: step) { facts in
+            try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today,
+                        mapping: mapping, others: others, save: nil)
+        }
+    }
+
+    /// F005: asked light when it may be, and once more with the whole matter when the light answer
+    /// lacks something — it says so (`not_in_facts`), or cites what it was not shown. Only the
+    /// deeper answer is shown then: "not there" only after the whole matter.
+    static func deepening(facts: Facts, depth: ChatDepth, claude: Claude, model: Claude.Model,
+                          step: (@Sendable (Step) -> Void)?, prepare: (Facts) throws -> Prepared) async throws -> Answer {
         step?(.disguising)
-        let prepared = try prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner, today: today,
-                                   mapping: mapping, others: others, save: nil)
-        return try await send(prepared, claude: claude, model: model, step: step)
+        guard depth == .light, let light = facts.lightened else {
+            var answer = try await send(try prepare(facts), claude: claude, model: model, job: .chat, step: step)
+            answer.depth = .deep
+            return answer
+        }
+        var first = try await send(try prepare(light), claude: claude, model: model, job: .chatLight, step: step, restores: false)
+        guard lacks(first.reply, shown: facts.lightIDs) else {
+            step?(.restoring)
+            first.depth = .light
+            return first
+        }
+        try Task.checkCancellation()
+        step?(.lookingDeeper)
+        var answer = try await send(try prepare(facts), claude: claude, model: model, job: .chatDeeper, step: step, waits: false)
+        answer.depth = .deep
+        answer.wentDeeper = true
+        answer.cost += first.cost
+        answer.seconds += first.seconds
+        return answer
+    }
+
+    /// A light answer that says something is not in what it was shown, or cites an id it was not shown.
+    static func lacks(_ reply: AssistantPrompt.Reply, shown: Set<String>) -> Bool {
+        if let missing = reply.notInFacts, !missing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return true }
+        let isID = /^[A-Z][0-9]+$/
+        let cited = reply.lines.flatMap(\.cites) + reply.cards.flatMap { [$0.todo, $0.into, $0.from].compactMap { $0 } + $0.cites }
+        return cited.contains { (try? isID.wholeMatch(in: $0)) != nil && !shown.contains($0) }
     }
 
     /// The times the owner said, for a date change that left them out: the first is its start,
@@ -504,14 +590,17 @@ public enum AssistantAsk {
         return out
     }
 
-    static func send(_ prepared: Prepared, claude: Claude, model: Claude.Model, step: (@Sendable (Step) -> Void)? = nil) async throws -> Answer {
+    /// `waits`: says that it waits — not when it is the deeper ask, which says it looks deeper.
+    /// `restores`: says that it puts the names back — not when the answer may yet be asked again.
+    static func send(_ prepared: Prepared, claude: Claude, model: Claude.Model, job: AIJob = .chat,
+                     step: (@Sendable (Step) -> Void)? = nil, waits: Bool = true, restores: Bool = true) async throws -> Answer {
         let (sent, pseudonymizer, newNames) = (prepared.sent, prepared.pseudonymizer, prepared.newNames)
         let body = Claude.body(model: model, system: AssistantPrompt.system, user: sent, schema: AssistantPrompt.schema, effort: AIJob.chat.effort)
         // Stopped while the names were being disguised: nothing goes out.
         try Task.checkCancellation()
-        step?(.waiting)
-        let answer = try await claude.send(body, model: model, job: .chat)
-        step?(.restoring)
+        if waits { step?(.waiting) }
+        let answer = try await claude.send(body, model: model, job: job)
+        if restores { step?(.restoring) }
         var reply = try JSONDecoder().decode(AssistantPrompt.Reply.self, from: answer.json)
 
         let restorer = pseudonymizer.restorer

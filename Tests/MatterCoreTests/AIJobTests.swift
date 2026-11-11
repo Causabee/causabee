@@ -51,7 +51,8 @@ struct AIJobTests {
             let lines = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")
             for line in lines where line.contains("claude.send(") || line.contains("client.send(") {
                 calls += 1
-                if !line.contains("job: .") { without.append(file.lastPathComponent + ": " + line.trimmingCharacters(in: .whitespaces)) }
+                // F005: the chat's asks pass theirs on — light, deep, or deeper.
+                if !line.contains("job: .") && !line.contains("job: job)") { without.append(file.lastPathComponent + ": " + line.trimmingCharacters(in: .whitespaces)) }
             }
         }
         #expect(calls >= 6, "the reading, the digest, the brief, the summary, the next step and the chat")
@@ -178,7 +179,7 @@ struct AIJobTests {
     @Test("F004 AC-4 · What may wait is marked for Flex in the table, and only the server asks for it")
     func flexInTheTable() throws {
         let server = try Self.serverTable()
-        for job in AIJob.allCases { #expect(server.jobs[job.rawValue]?.flex == (job != .chat), "\(job)") }
+        for job in AIJob.allCases { #expect(server.jobs[job.rawValue]?.flex == !job.isChat, "\(job)") }
         #expect([AIJob.read, .digest, .brief].allSatisfy(\.flex) && !AIJob.chat.flex)
         // The app sends no tier of its own: with an own key a request goes at the normal tier, and
         // through the beeserver the server adds Flex and asks again without it when Flex is busy.
