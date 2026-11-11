@@ -66,7 +66,7 @@ struct AssistantSheet: View {
     @AppStorage(AutoMode.key) private var auto = false
     /// On, and Pro bought: without it the line on top offers Pro, the chips under the thread offer
     /// what can be added, and nothing typed goes to an AI.
-    private var pro: Bool { auto && Store.shared.plan == .pro }
+    private var pro: Bool { Plan.proIsOn(switched: auto, plan: Store.shared.plan, credit: BeeServer.hasCredit) }
     /// A task or a note picked without Pro: it is typed in its card, over where the field was —
     /// the card is the form, and the field steps back until it is added or put away.
     private var typesInCard: Bool {

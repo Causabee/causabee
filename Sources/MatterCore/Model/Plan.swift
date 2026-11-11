@@ -11,6 +11,12 @@ public enum Plan: String, Codable, Sendable, Comparable {
     public static let cacheKey = "plan.current"
     public static var cached: Plan { Plan(rawValue: UserDefaults.standard.string(forKey: cacheKey) ?? "") ?? .free }
 
+    /// Pro is on when its switch is, and there is Pro to use: the subscription, or a top-up left
+    /// ("Pro, now and then"). The one rule, for the bee, the chat and what is read.
+    public static func proIsOn(switched: Bool, plan: Plan, credit: Bool) -> Bool {
+        switched && (plan == .pro || credit)
+    }
+
     /// Open matters Normal holds for free; closed ones do not count.
     public static let freeMatters = 3
 

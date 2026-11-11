@@ -30,8 +30,8 @@ struct AssistantColumn: View {
     /// A card's second field, from the chips: a link's name, what a detail says, a contact's role.
     @State private var second = ""
     @AppStorage(AutoMode.key) private var auto = false
-    /// On, and Pro bought: without it the line on top offers Pro, and nothing typed goes to an AI.
-    private var pro: Bool { auto && Store.shared.plan == .pro }
+    /// On, with Pro or a top-up left: without either the line on top offers Pro, and nothing typed goes to an AI.
+    private var pro: Bool { Plan.proIsOn(switched: auto, plan: Store.shared.plan, credit: BeeServer.hasCredit) }
     /// Where the thread stands and when it moves by itself: the one rule, kept with the iPhone's.
     /// The window's top line stands over the thread; what is put "at the top" stands under it.
     @State private var placement = ThreadPlacement()

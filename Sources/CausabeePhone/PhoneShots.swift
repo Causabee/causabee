@@ -438,7 +438,7 @@ struct AttachButton: View {
     /// A file picked from Files, kept on the device until it is read or imported.
     private struct Picked { let file: URL; let name: String }
 
-    private var pro: Bool { auto && Store.shared.plan == .pro }
+    private var pro: Bool { Plan.proIsOn(switched: auto, plan: Store.shared.plan, credit: BeeServer.hasCredit) }
 
     /// How the panel comes out of the plus, and goes back into it.
     static let panelMotion = Animation.spring(response: 0.36, dampingFraction: 0.86)
