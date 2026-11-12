@@ -34,9 +34,10 @@
 
 ### AC-5 · A follow-up keeps the depth
 
-- Given a conversation about one matter
+- Given a conversation about one matter: the question before it about this matter was answered at most 30 minutes ago, the cache's life
 - When the owner asks a follow-up
 - Then it goes at the depth of the question before it, or deeper if it needs to, so the cache reads what was sent before; it never goes lighter in the same conversation
+- And a question asked later — the next hour, the next day — is a first question again: its depth is picked anew, whatever went before in the matter's chat, an answer from a build before F005 too
 - Holds for: Mac, iPhone, iPad; with Pro and with an own key
 
 ### AC-6 · The same question, the same depth, on every device
