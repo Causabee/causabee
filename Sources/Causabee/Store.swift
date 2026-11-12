@@ -41,6 +41,18 @@ final class Store {
         case billingProblem(until: Date?)
     }
     private(set) var renewal: Renewal?
+    /// When this Apple Account's Pro last ran out, from the App Store's history (F007).
+    private(set) var lastProEnd: Date?
+
+    /// Pro ended, and since when: said in the plan's corner while top-ups are left (F007). From this
+    /// device's App Store history; on a device that never bought, from the profile.
+    var proEnded: Date? {
+        if let shot = PlanShot.current { return shot.proEnded }
+        guard plan != .pro else { return nil }
+        let end = lastProEnd ?? (shared.plan == .pro ? shared.until : nil)
+        return end.flatMap { $0 < Date() ? $0 : nil }
+    }
+
     /// This Apple Account may still have the group's free trial: it is offered once.
     private(set) var trialOpen = false
 
@@ -131,6 +143,12 @@ final class Store {
             }
         }
         bought = best
+        var lastEnd: Date?
+        for await result in Transaction.all {
+            guard case .verified(let transaction) = result, Self.proIDs.contains(transaction.productID), let end = transaction.expirationDate else { continue }
+            lastEnd = max(lastEnd ?? end, end)
+        }
+        lastProEnd = lastEnd
         if best.plan != .free { share(best) }
         remember()
         await readRenewal()
@@ -183,7 +201,9 @@ final class Store {
                     // Added: Pro goes on at once. Not yet: kept by the App Store, and sent again.
                     if await BeeServer.shared.topUp(transaction: result.jwsRepresentation) {
                         await transaction.finish()
+                        // Bought to be used: "Use Pro" on, and no longer waiting (F007 AC-9).
                         UserDefaults.standard.set(true, forKey: AutoMode.key)
+                        ProWait.clear()
                         asks = nil
                     } else {
                         problem = "The top-up is bought and kept: it is added as soon as the beeserver answers."
@@ -225,7 +245,7 @@ final class Store {
 
     /// Pro may be turned on — with Pro, or with a top-up left — or the plan sheet.
     func mayTurnOnPro() -> Bool {
-        if Plan.proIsOn(switched: true, plan: plan, credit: BeeServer.hasCredit) { return true }
+        if Plan.proIsOn(switched: true, plan: plan, credit: BeeServer.hasCredit || BeeServer.shared.extraShare > 0) { return true }
         asks = .pro
         return false
     }

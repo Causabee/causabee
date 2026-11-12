@@ -233,7 +233,7 @@ struct AttachList: View {
     }
 }
 
-/// While Pro is off, on top of the chat: Causabee Pro in one line with Start Pro — the plans first
+/// While Pro is not in use, on top of the chat: Causabee Pro in one line with Use Pro — the plans first
 /// when it is not bought, else asked once and turned on. As on the iPhone and the iPad.
 struct MacProOffer: View {
     @AppStorage(AutoMode.key) private var auto = false
@@ -249,7 +249,7 @@ struct MacProOffer: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 4)
-            Button("Start Pro") { start() }.inkButton().fixedSize()
+            Button("Use Pro") { start() }.inkButton().fixedSize()
                 .accessibilityIdentifier("pro.start")
         }
         .padding(.vertical, 10).padding(.leading, 12).padding(.trailing, 10)

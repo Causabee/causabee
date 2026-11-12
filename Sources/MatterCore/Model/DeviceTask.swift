@@ -93,7 +93,7 @@ public enum DeviceTask {
         } else if filled != nil {
             lines.append(.init(text: "That reads as something to do. Open its matter and say it there, to add it as a task.", cites: []))
         } else {
-            lines.append(.init(text: "Asking needs Pro. Start Pro on top, then ask again.", cites: []))
+            lines.append(.init(text: "Asking needs Pro. Use Pro on top, then ask again.", cites: []))
         }
         var answer = AssistantAsk.Answer(reply: AssistantPrompt.Reply(lines: lines, cards: cards, notInFacts: nil),
                                          sent: "", cost: 0, seconds: 0, newNames: 0)

@@ -199,22 +199,105 @@ struct PlanSheet: View {
     }
 }
 
-/// Settings' first part, the same on every device, in three blocks: the plan with what is left of
-/// it and a top-up; Pro's bolt; changing or managing it.
+/// What the plan says now, for the page, its row in Settings and the switch (F007): one set of words
+/// on every device, from what is bought, what is left, and whether "Use Pro" is on.
+@MainActor
+enum PlanNow {
+    static func meter(useOn: Bool) -> ProMeter { BeeServer.shared.meter(inUse: useOn) }
+
+    static func words(useOn: Bool) -> PlanWords {
+        let store = Store.shared
+        let renewal: PlanWords.Renewal? = switch store.renewal {
+        case .renews(let date): .renews(date)
+        case .ends(let date): .ends(date)
+        case .changes(let plan, let date): .changes(to: plan, on: date)
+        case .billingProblem(let until): .billingProblem(until)
+        case nil: nil
+        }
+        return PlanWords(plan: store.plan, renewal: renewal, until: [store.bought.until, store.shared.until].compactMap { $0 }.max(),
+                         proEnded: store.proEnded, meter: meter(useOn: useOn), credit: BeeServer.hasCredit || BeeServer.shared.extraShare > 0,
+                         useOn: useOn, wait: ProWait.stored, reader: AIJob.read.model.shortLabel)
+    }
+}
+
+/// "Use Pro": whether Pro, or a top-up, is used now — never what is bought (F007). Without either, a
+/// tap shows the plans; used up, it stays on and waits.
+struct UseProToggle: View {
+    @AppStorage(AutoMode.key) private var auto = false
+    @State private var store = Store.shared
+
+    var body: some View {
+        let words = PlanNow.words(useOn: auto)
+        VStack(alignment: .leading, spacing: 6) {
+            Toggle(isOn: Binding(get: { words.switchShownOn },
+                                 set: { on in if !on { auto = false } else if store.mayTurnOnPro() { auto = true } })) {
+                HStack(spacing: 8) {
+                    Image(systemName: "bolt.fill").foregroundStyle(Theme.gold)
+                    Text("Use Pro")
+                }
+            }
+            Text(words.switchLine)
+                .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityIdentifier("settings.usePro")
+    }
+}
+
+/// The top of Settings on the iPhone and the iPad (F007): the plan in one row that opens its page,
+/// and "Use Pro" — so Settings opens with its own sections in view.
+struct PlanUsageRows: View {
+    @AppStorage(AutoMode.key) private var auto = false
+    @State private var store = Store.shared
+    @State private var server = BeeServer.shared
+
+    var body: some View {
+        let words = PlanNow.words(useOn: auto), meter = PlanNow.meter(useOn: auto)
+        Section {
+            NavigationLink {
+                Form { PlanSettings() }
+                    .navigationTitle("Plan and usage")
+                    #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                    #endif
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Plan and usage")
+                    Text(words.row).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    // The bar now in use, thin: the month's while any is left, then the top-ups' — the
+                    // first alone said "used up" while top-ups were in use (the owner's iPhone, 12 November:
+                    // "it should always show what using").
+                    if let bar = meter.bars.first(where: { $0.counted && $0.kind == meter.using }) {
+                        GeometryReader { box in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(Theme.line)
+                                Capsule().fill(!bar.inUse ? Theme.strongLine : bar.low ? Theme.warning : bar.kind == .month ? Theme.bee : Theme.topUp)
+                                    .frame(width: max(4, box.size.width * bar.length))
+                            }
+                        }
+                        .frame(maxWidth: 220).frame(height: 4)
+                    }
+                }
+                .padding(.vertical, 2)
+                .accessibilityElement(children: .combine)
+            }
+            .accessibilityIdentifier("settings.plan")
+            UseProToggle()
+        }
+        .task {
+            if BeeServer.isSetUp { await server.refresh() }
+            if let shot = PlanShot.current, shot.meters { shot.fill(server) }
+        }
+    }
+}
+
+/// The plan's page — "Plan and usage" on the iPhone and the iPad, the Plan pane on the Mac, the plan
+/// in the setup assistant: what is bought, what is left of it, a top-up, "Use Pro", and changing it.
 struct PlanSettings: View {
     @State private var store = Store.shared
     @State private var server = BeeServer.shared
     @State private var choosing = false
     @State private var managing = false
     @AppStorage(AutoMode.key) private var auto = false
-
-    private var name: String {
-        switch store.plan {
-        case .free: "Causabee"
-        case .matters: "Causabee Plus"
-        case .pro: "Causabee Pro"
-        }
-    }
 
     private var holds: String {
         switch store.plan {
@@ -224,54 +307,28 @@ struct PlanSettings: View {
         }
     }
 
-
-    /// Renews, ends or changes — as this device's App Store says; on the Mac, until when.
-    private var end: String {
-        if let shot = PlanShot.current { return shot.end }
-        switch store.renewal {
-        case .renews(let date): return "renews " + Dates.long(date)
-        case .ends(let date): return "ends " + Dates.long(date)
-        case .changes(let plan, let date): return (plan == .pro ? "Pro" : "Plus") + " from " + Dates.long(date)
-        case .billingProblem: return "payment problem"
-        case nil:
-            if store.plan == .free { return "Free" }
-            // A day gone by says nothing true: kept by another device's purchase, which renews there.
-            return [store.bought.until, store.shared.until].compactMap { $0 }.max().flatMap { $0 > Date() ? "until " + Dates.long($0) : nil } ?? ""
-        }
-    }
-
-    /// Pro's bolt: with Pro, or with a top-up left.
-    private var canUsePro: Bool { store.plan == .pro || BeeServer.hasCredit }
-
-    private var pro: Binding<Bool> {
-        Binding(get: { auto && canUsePro },
-                set: { on in if !on { auto = false } else if store.mayTurnOnPro() { auto = true } })
-    }
-
-    /// What is left is on the page: it says more than what the plan holds.
-    private var showsMeter: Bool { (BeeServer.isSetUp || PlanShot.current?.meters == true) && (server.kind == "credit" || server.monthUsed != nil) }
-
     private var topUpPrice: String? { store.products.first { Store.topUpIDs.contains($0.id) }?.displayPrice ?? PlanShot.current?.price("topup") }
 
     var body: some View {
+        let words = PlanNow.words(useOn: auto), meter = PlanNow.meter(useOn: auto)
         Section {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(name).font(Theme.cardTitleFont)
+                    Text(words.name).font(Theme.cardTitleFont)
                     Spacer(minLength: 0)
-                    Text(end).font(.footnote).foregroundStyle(.secondary)
+                    Text(PlanShot.current?.end ?? words.corner).font(.footnote).foregroundStyle(.secondary)
                 }
-                if !showsMeter { Text(holds).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                if meter.bars.isEmpty { Text(holds).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
                 if case .billingProblem(let until) = store.renewal {
                     Text("Apple could not charge your payment method. " + (until.map { "The plan goes on until \(Dates.long($0)); " } ?? "")
                          + "update it in your Apple Account, and it renews as before.")
                         .font(.footnote).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
                 }
-                if showsMeter { ProBar() }
-                if store.plan == .free {
+                ProBar(meter: meter)
+                if words.seesPlans {
                     Button("See the plans") { choosing = true }.filledButton()
-                } else if let price = topUpPrice {
-                    topUp(price)
+                } else if let label = words.topUp, let price = topUpPrice {
+                    topUp(label, price, low: meter.runsLow)
                 }
                 if let problem = server.problem ?? store.problem {
                     Text(problem).font(.footnote).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
@@ -281,7 +338,7 @@ struct PlanSettings: View {
             // Asked of the server each time it is shown: here, where there is a view before the answer.
             .task {
                 if BeeServer.isSetUp { await server.refresh() }
-                if let shot = PlanShot.current, shot.meters { server.monthUsed = shot.used; server.renewsOn = "2026-11-28"; server.extraShare = shot.extra; server.kind = "apple" }
+                if let shot = PlanShot.current, shot.meters { shot.fill(server) }
             }
             .sheetWhenAsked(isPresented: $choosing) { PlanSheet(reason: .choose) }
             #if os(iOS)
@@ -291,21 +348,7 @@ struct PlanSettings: View {
         } header: { Text("Your plan") } footer: {
             if store.plan == .free { restore }
         }
-        if canUsePro {
-            Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    Toggle(isOn: pro) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "bolt.fill").foregroundStyle(Theme.gold)
-                            Text("Pro on")
-                        }
-                    }
-                    Text(pro.wrappedValue ? "\(AIJob.read.model.shortLabel) reads what comes in, as it comes, names disguised first."
-                         : "Off: Apple's model on this device reads what comes in. Nothing leaves it.")
-                        .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
+        Section { UseProToggle() }
         if store.plan != .free {
             Section {
                 PlanRow("Change plan") { choosing = true }
@@ -328,17 +371,17 @@ struct PlanSettings: View {
             .buttonStyle(.plain).font(.footnote).foregroundStyle(.secondary)
     }
 
-    /// Quiet while there is plenty left; the one thing to do once the month runs low.
-    private func topUp(_ price: String) -> some View {
+    /// Quiet while there is plenty left; the one thing to do once Pro runs low.
+    private func topUp(_ label: String, _ price: String, low: Bool) -> some View {
         let action = {
             if let product = store.products.first(where: { Store.topUpIDs.contains($0.id) }) { Task { await store.buy(product) } }
         }
-        let label = (store.plan == .pro ? "Add a top-up" : "Pro, now and then") + " · " + price
+        let text = label + " · " + price
         return VStack(alignment: .leading, spacing: 6) {
-            if server.runsLow {
-                Button(action: action) { Text(label) }.filledButton().disabled(store.buying != nil)
+            if low {
+                Button(action: action) { Text(text) }.filledButton().disabled(store.buying != nil)
             } else {
-                Button(action: action) { Text(label) }.quietButton().disabled(store.buying != nil)
+                Button(action: action) { Text(text) }.quietButton().disabled(store.buying != nil)
             }
             Text(PlanSheet.topUpWords).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
@@ -383,7 +426,15 @@ enum PlanShot: String {
     var meters: Bool { self == .pro || self == .low || self == .topups }
     var used: Double { self == .topups ? 1 : self == .low ? 0.88 : 0.41 }
     var extra: Double { self == .topups ? 0.37 : self == .low ? 0 : 0.33 }
-    var end: String { self == .free || self == .topups ? "Free" : self == .plus ? "renews 14 November" : "renews 31 October" }
+    var end: String { self == .topups ? "Pro ended 7 November" : self == .free ? "Free" : self == .plus ? "renews 14 November" : "renews 31 October" }
+
+    /// What the beeserver would say, for the picture.
+    @MainActor func fill(_ server: BeeServer) {
+        server.monthUsed = used; server.renewsOn = "2026-11-28"; server.extraShare = extra; server.kind = "apple"; server.counted = true
+    }
+
+    /// When Pro ended, in the picture of top-ups alone.
+    var proEnded: Date? { self == .topups ? MatterStatus.date(of: "2026-11-07") : nil }
 
     func price(_ what: String) -> String {
         switch what {

@@ -28,6 +28,8 @@ final class BeeServer {
     var extraShare = 0.0
     /// Whose the account is: a subscriber's, one of top-ups only, or one made by hand.
     var kind = "hand"
+    /// The beeserver has said what is left, since this launch: until then the bar is empty (F007).
+    var counted = false
 
     /// A top-up is left: Pro's bolt works with it, Pro bought or not. As the server said last.
     nonisolated static var hasCredit: Bool { storedToken != nil && UserDefaults.standard.bool(forKey: creditKey) }
@@ -41,6 +43,10 @@ final class BeeServer {
         extraShare = object["extraShare"] as? Double ?? 0
         kind = object["kind"] as? String ?? kind
         UserDefaults.standard.set(extra, forKey: Self.creditKey)
+        counted = true
+        // Something left again: the wait is over (F007).
+        let wait = ProWait.stored
+        if wait != .none, wait.over(monthUsed: monthUsed, extraShare: extraShare) { ProWait.clear() }
     }
     var problem: String?
 
@@ -69,14 +75,15 @@ final class BeeServer {
                 if !renews.isEmpty { BeeServer.shared.renewsOn = renews }
             }
         }
-        // Used up, or ended: the bolt goes off by itself, and Apple's model on the device takes over.
+        // Used up, or ended: "Use Pro" keeps the owner's setting and waits (F007); Apple's model on
+        // the device reads meanwhile, and nothing is sent that would be refused.
         Claude.proStopped = { why in
             Task { @MainActor in
-                UserDefaults.standard.set(false, forKey: AutoMode.key)
+                ProWait.store(ProWait.after(why, renewsOn: BeeServer.shared.renewsOn))
                 if why == "allowance_used" { BeeServer.shared.monthUsed = 1 }
                 BeeServer.shared.problem = why == "subscription_ended"
-                    ? "Causabee Pro has ended, so Pro is off. Apple's model on this device reads what comes in."
-                    : "This month's Pro is used up, so Pro is off until it starts anew — or until a top-up. Apple's model on this device reads what comes in meanwhile."
+                    ? "Causabee Pro has ended. A top-up goes on at once; meanwhile Apple's model on this device reads what comes in."
+                    : "This month's Pro is used up. It waits until it starts anew — or a top-up. Apple's model on this device reads what comes in meanwhile."
             }
         }
     }
@@ -107,6 +114,8 @@ final class BeeServer {
             }
             if let new = object["token"] as? String, new.hasPrefix("bee_") { try APIKeys.save(new, as: Self.tokenName) }
             take(object)
+            // Pro bought again: whatever it waited for is over (F007).
+            ProWait.clear()
             problem = nil
             return true
         } catch {
@@ -155,7 +164,15 @@ final class BeeServer {
     }
 
     /// What the plan shows of it: the month's bar and the top-ups' (F006).
-    var meter: ProMeter { ProMeter(monthUsed: monthUsed, extraShare: extraShare, kind: kind, renewsOn: renewsOn, pro: Store.shared.plan == .pro || kind == "hand") }
+    var meter: ProMeter { meter(inUse: true) }
+
+    /// What the plan shows of it, with "Use Pro" on or off (F007): until the beeserver has answered,
+    /// an empty bar for Pro bought or a top-up known.
+    func meter(inUse: Bool) -> ProMeter {
+        let answered = counted || PlanShot.current?.meters == true
+        return ProMeter(monthUsed: monthUsed, extraShare: extraShare, kind: answered ? kind : (Self.hasCredit ? "credit" : kind),
+                        renewsOn: renewsOn, pro: Store.shared.plan == .pro || (answered && kind == "hand"), inUse: inUse, counted: answered)
+    }
 
     /// What is left, of the month and of top-ups together, is running out: a top-up is the thing to do.
     var runsLow: Bool { meter.runsLow }
@@ -164,35 +181,34 @@ final class BeeServer {
 /// What is left of this month’s Pro and of top-ups, each as one number and a bar, and when the month starts
 /// anew — never money.
 struct ProBar: View {
-    @State private var server = BeeServer.shared
+    let meter: ProMeter
 
     var body: some View {
-        if BeeServer.isSetUp || PlanShot.current?.meters == true {
-            let meter = server.meter
-            if !meter.bars.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    // The month's bar, and under it the top-ups', on the same scale (F006).
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(meter.bars, id: \.words) { bar($0) }
-                    }
-                    if let line = meter.line { Text(line).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
-                    if let note = meter.note { Text(note).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+        if !meter.bars.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                // The month's bar, and under it the top-ups', on the same scale (F006).
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(meter.bars, id: \.words) { bar($0) }
                 }
+                if let line = meter.line { Text(line).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                if let note = meter.note { Text(note).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
             }
         }
     }
 
+    /// Off, greyed (F007): the plan is still there, only not in use.
     private func bar(_ bar: ProMeter.Bar) -> some View {
-        let colour = bar.low ? Theme.warning : bar.kind == .month ? Theme.bee : Theme.topUp
+        let colour = !bar.inUse ? Theme.strongLine : bar.low ? Theme.warning : bar.kind == .month ? Theme.bee : Theme.topUp
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(bar.number).font(Theme.planNumberFont).foregroundStyle(bar.low ? Theme.warning : Color.primary)
+                Text(bar.number).font(Theme.planNumberFont)
+                    .foregroundStyle(!bar.inUse ? Color.secondary : bar.low ? Theme.warning : Color.primary)
                 Text(bar.words).font(.subheadline).foregroundStyle(.secondary)
             }
             GeometryReader { box in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Theme.line)
-                    Capsule().fill(colour).frame(width: max(6, box.size.width * bar.length))
+                    if bar.counted { Capsule().fill(colour).frame(width: max(6, box.size.width * bar.length)) }
                 }
             }
             .frame(height: 6)

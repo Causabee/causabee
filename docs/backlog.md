@@ -9,13 +9,25 @@ purpose-layer experiment, are a list of their own: `docs/hig-review/BACKLOG.md`.
 
 Seen while building something else. Not built now: each becomes a feature, joins a polish batch, or is dropped.
 
-Next feature, in the owner's order (10 November): **F004** the right model for each job (evidence: `docs/ai-cost-2026-11.md`).
+### The order — the owner's, 12 November: "welcome page and the chat fixes first, then appstore"
+
+1. **F007** plan and usage — in flight, at Proof.
+2. **Fixes:** the chat footer's mail-only words; the iPhone saying Pro after it ended (the iCloud grace on the device that bought it); delete the captions video.
+3. **Feature: the welcome page overhaul** — first impression in the App Store; drawn in Figma first.
+4. **Feature: the chat with a read file in hand** — the file's own words for the chat, so it never says "not there" while the PDF shows it.
+5. **Feature: the Mac in the App Store** — every device buys; the iCloud plan-borrowing retired.
+6. **Feature: Causabee for other AIs, on the Mac without a server** — an MCP server the Mac runs locally (stdio), so an assistant the owner already uses (Claude Desktop, ChatGPT, Claude Code) reads their matters with its own AI, at no cost to the beeserver; on the iPhone and the iPad the same door through App Intents (Shortcuts, Siri, Apple Intelligence and its Private Cloud Compute). Read-only first, each matter off / shared / shared disguised, every read logged. Design note: `docs/mcp-design.md` (6 November). Right after the Mac in the App Store: its sandbox decides the door — a helper the client starts, or App Intents for all. The owner, 12 November: "something I see very valuable … like an MCP on the Mac without a server."
+7. **Then, in this order:** a third party's private reason kept out of tasks; calendar invitations as their own event (.ics); "No matter found" not showing old items as new.
+8. **Polish batch 1** (one week, between features): the grey question bubble (the owner's A) with one shared bubble view; `Theme.onBee`; Summary and Good to know set like the Next card; the serif off-sizes and the two off-style buttons.
+9. **Before the App Store, after those:** the overview with many matters (chosen: the week strip and pinned); the chat's second round; scanning and naming one's own files; a moved Calendar event found again.
+10. **Later:** the chat's memory past four turns, widgets, the icon's badge, copy and read a link, sticky section titles, shared components, glass details, choosing a calendar plainly, the iPhone test race.
+11. **Not planned:** reading on Claude Haiku (OpenAI only, the owner's decision); pinning files (needs a schema change); sharing with the family (after the release).
 
 
+- The owner's question bubble in the chat is honey yellow (Theme.honey: AssistantView.swift:692, AssistantSheet.swift:667, :785), against colors.md's rule that yellow means something waits for the owner, or the bee herself. Three greys drawn at https://claude.ai/artifact/GHo8fLerdz7FG6M29T2Y2u; the owner chose A, the quiet grey box (Theme.box, words .primary), 12 November: "A, grey box". Built after F007. (2026-11-12)
 - Fix lane: the iPhone says "Causabee Pro" with no renewal date (12 November), while the beeserver has Pro ended on 7 November and the Mac says Free. The empty corner means the iPhone's App Store has no running subscription: its Pro likely comes from the 7-day grace for a purchase seen through iCloud (Store.plan, grace), meant for the Mac, not for the device that bought it. Check: Settings › Apple Account › Subscriptions on the iPhone. (2026-11-12)
 - The chat's memory past its last four turns: a short note of what was talked about in a matter's chat, kept with the matter and sent with each question, so the bee can relate to older talk. Today only the last four turns go, word for word, whatever their age (AssistantPrompt.user, earlier.suffix(4)). Owner's idea, 12 November 2026, during F005's Proof. (2026-11-12)
 - Fix lane: the chat's footer on Mac and iPhone says "goes pseudonymised, like the mails" — mail only, against principle 1 (Conversation.swift:702, AssistantSheet.swift:417). (2026-11-11)
-- Chat in two depths: a quick question (a task for tomorrow) goes light — the brief, what is open, a cheaper model; a question that needs the whole matter (a file's number, an offer's details) goes deep with every item. The bee picks the depth itself and goes deeper on its own when the light answer lacks something (not_in_facts); no button to press first. Owner's idea, 11 November. (2026-11-11)
 - Shared parts for every device: Card, PageRows, RowDivider, MoreMenu, RowIconStyle and SourceLink (openURL in place of NSWorkspace) out of the Mac-only Components.swift into a file both apps take; the Mac's window and sidebar parts stay. Then the iPhone's and iPad's own ⋯ menus (PeopleAndLinks.swift:149, :425, MatterScreen.swift:380, OverviewScreen.swift:360) and its 11 hand-written row dividers onto them, the row icon at 44 pt on touch (HIG B1). Moving the first three changes no look; the rest does — C3, C4 (docs/design-system/components.md) (2026-11-11)
 - Tap gestures that should be buttons (18, HIG review B11) and SF Symbols at a point size (17, B10): not in the HIG backlog yet — H1, H5 (UI check, docs/ui-check/2026-11-11.md) (2026-11-11)
 - Theme.onBee: one token for the words on the bee's yellow and the honey, then the 15 lines that say .black use it — T1 (UI check, docs/ui-check/2026-11-11.md) (2026-11-11)

@@ -24,7 +24,7 @@ struct ProMeterTests {
         #expect(later.bars[0].left < early.bars[0].left)
         let used = ProMeter(monthUsed: 1, extraShare: 0.2, kind: "apple", renewsOn: "2026-12-01", pro: true)
         #expect(used.bars[0].number == "0 %" && used.bars[1].number == "20 %")
-        #expect(used.inUse == .topUps && early.inUse == .month)
+        #expect(used.using == .topUps && early.using == .month)
     }
 
     @Test("F006 AC-3 · A new month: the month full again, the top-up where it was, and the line says it carries over")
