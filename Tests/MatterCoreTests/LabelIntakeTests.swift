@@ -4,7 +4,7 @@ import Testing
 
 /// A mailbox in memory: folders of raw mails, searched the way a server would.
 actor FakeMailbox: ReadOnlyMailbox {
-    struct Stored { var uid: UInt32; var thread: String?; var raw: String; var seen = true }
+    struct Stored { var uid: UInt32; var thread: String?; var raw: String; var seen = true; var draft = false }
     let isGmail: Bool
     let folderList: [MailFolder]
     let content: [String: [Stored]]
@@ -43,6 +43,7 @@ actor FakeMailbox: ReadOnlyMailbox {
                 case .cc(let address): (headers["cc"]?.first ?? "").lowercased().contains(address.lowercased())
                 case .any(let keys): keys.contains(where: fits)
                 case .unseen: !stored.seen
+                case .notDraft: !stored.draft
                 }
             }
             return keys.allSatisfy(fits)
@@ -154,6 +155,77 @@ struct LabelIntakeTests {
         #expect(result.toKnown == ["known@owner.example": "tanguy@berger-hv.example"])
         #expect(!result.emails.contains { $0.id == "private@owner.example" })
         #expect(result.way("draft@owner.example") == " · written from Causabee")
+    }
+
+    /// Fix, 12 November 2026: a reply opened from the chat in the mail program was saved as a draft
+    /// — empty at first — and Gmail keeps drafts in All Mail, in the labelled thread. It came in as
+    /// an empty mail, and the mail sent from it, under the same Message-ID, was then known and never read.
+    static let draft = """
+    Message-ID: <d@owner.example>
+    From: Owner <owner@gmail.com>
+    In-Reply-To: <a@berger-hv.example>
+    References: <a@berger-hv.example>
+    Date: Thu, 4 Sep 2026 10:00:00 +0200
+    Subject: Re: Sonderumlage Dach
+
+    """
+    static let sentFromDraft = """
+    Message-ID: <d@owner.example>
+    From: Owner <owner@gmail.com>
+    In-Reply-To: <a@berger-hv.example>
+    References: <a@berger-hv.example>
+    Date: Thu, 4 Sep 2026 10:05:00 +0200
+    Subject: Re: Sonderumlage Dach
+
+    Die Umlage ist überwiesen.
+    """
+
+    @Test("A draft never comes in — not by label, thread, reference or Message-ID — and the mail sent from it does")
+    func draftsStayOut() async throws {
+        // While it is a draft: in the label, as Gmail labels the thread, and in All Mail.
+        let writing = FakeMailbox(gmail: true, folders: [
+            MailFolder(name: "Causabee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
+        ], content: [
+            "Causabee": [.init(uid: 1, thread: "100", raw: Self.first), .init(uid: 2, thread: "100", raw: Self.draft, draft: true)],
+            "[Gmail]/All Mail": [.init(uid: 10, thread: "100", raw: Self.first), .init(uid: 13, thread: "100", raw: Self.draft, draft: true)],
+        ])
+        let before = try await LabelIntake(label: "Causabee", host: "imap.gmail.com").run(writing)
+        #expect(before.emails.map(\.id) == ["a@berger-hv.example"])
+
+        // Sent: the draft is gone, the mail has its Message-ID, and comes in with its words.
+        let sent = FakeMailbox(gmail: true, folders: [
+            MailFolder(name: "Causabee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
+        ], content: [
+            "Causabee": [.init(uid: 1, thread: "100", raw: Self.first)],
+            "[Gmail]/All Mail": [.init(uid: 10, thread: "100", raw: Self.first), .init(uid: 14, thread: "100", raw: Self.sentFromDraft)],
+        ])
+        var intake = LabelIntake(label: "Causabee", host: "imap.gmail.com", known: Set(before.emails.map(\.id)))
+        intake.ownAddresses = ["owner@gmail.com"]
+        let after = try await intake.run(sent)
+        #expect(after.emails.map(\.id) == ["d@owner.example"])
+        #expect(after.emails.first?.body.contains("überwiesen") == true)
+
+        // Elsewhere, by References: the same.
+        let imap = FakeMailbox(gmail: false, folders: [
+            MailFolder(name: "INBOX"), MailFolder(name: "Causabee"), MailFolder(name: "Sent", attributes: ["\\Sent"]),
+            MailFolder(name: "Drafts", attributes: ["\\Drafts"]),
+        ], content: [
+            "Causabee": [.init(uid: 1, thread: nil, raw: Self.first)],
+            "INBOX": [.init(uid: 5, thread: nil, raw: Self.draft, draft: true)],
+            "Sent": [.init(uid: 6, thread: nil, raw: Self.draft, draft: true)],
+        ])
+        #expect(try await LabelIntake(label: "Causabee", host: "imap.example").run(imap).emails.map(\.id) == ["a@berger-hv.example"])
+
+        // Read again by its Message-ID: the mail sent, never its draft.
+        let both = FakeMailbox(gmail: true, folders: [
+            MailFolder(name: "Causabee"), MailFolder(name: "[Gmail]/All Mail", attributes: ["\\All"]),
+        ], content: [
+            "Causabee": [],
+            "[Gmail]/All Mail": [.init(uid: 13, thread: "100", raw: Self.draft, draft: true), .init(uid: 14, thread: "100", raw: Self.sentFromDraft)],
+        ])
+        let again = try await MailFetch.message(pointer: "imap://imap.gmail.com/Causabee;UIDVALIDITY=99/;UID=2",
+                                                messageID: "d@owner.example", from: both)
+        #expect(String(decoding: again, as: UTF8.self).contains("überwiesen"))
     }
 
     @Test("A draft's subject is compared without Re: and case")
