@@ -175,6 +175,18 @@ struct ChatDepthTests {
         }
     }
 
+    @Test("F005 AC-7 · Tested before it ships: the pressure test and its blind reading are kept")
+    func pressureTestKept() throws {
+        let tests = AIJobTests.root.appendingPathComponent("docs/features/005-the-chat-in-two-depths/tests")
+        let results = try String(contentsOf: tests.appendingPathComponent("results.md"), encoding: .utf8)
+        #expect(results.contains("No two-depth answer is worse than today's"))
+        for answers in ["today.json", "two-depths.json", "fable-judge.json"] {
+            #expect(FileManager.default.fileExists(atPath: tests.appendingPathComponent("answers/\(answers)").path), "\(answers)")
+        }
+        // Light stays on Sol: Terra was tried, and fell below the bar.
+        #expect(AIJob.chatLight.model == .gptSol)
+    }
+
     @Test("F005 AC-6 · The depth depends on the question and the matter alone")
     func sameEverywhere() throws {
         let (container, matter, words) = try fullMatter()
