@@ -10,4 +10,4 @@ Every feature built through the pipeline ([how](../pipeline.md)). Written by `sc
 | [F004](004-the-right-model-for-each-job/README.md) | The right model for each job | feature | Done |
 | [F005](005-the-chat-in-two-depths/README.md) | The chat in two depths | feature | Done |
 | [F006](006-the-top-up-in-the-bar/README.md) | The top-up in the bar | feature | Done |
-| [F007](007-plan-and-usage-the-same-on-every-device/README.md) | Plan and usage, the same on every device | feature | 6 · Proof |
+| [F007](007-plan-and-usage-the-same-on-every-device/README.md) | Plan and usage, the same on every device | feature | Done |

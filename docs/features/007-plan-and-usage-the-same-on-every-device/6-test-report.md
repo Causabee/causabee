@@ -18,7 +18,7 @@
 ## Everything else still works
 
 - **Unit tests:** 678 in 142 suites pass, 12 November, after the last change of code.
-- **The screen tests,** 12 November, on the build the owner tried: iPhone 18 Pro 87 (7 skipped as made, none failed), iPad Air 5 of 5, Mac 33 of 33 — and again for TestFlight 247, the same.
+- **The screen tests,** 12 November, on the build the owner tried: iPhone 18 Pro 87 (7 skipped as made, none failed), iPad Air 5 of 5, Mac 33 of 33 — and again for TestFlight 247 and 248 on the iPhone and the iPad, the same.
 - **The server:** not changed. **The schema:** untouched.
 - **The UI check:** `ui-check.md`, "Verdict: pass".
 - **Found while building, in the simulator:** Free showed "not counted yet" — an account counted as made by hand before the beeserver had answered; and the switch could not be turned on with a top-up the server had counted but not stored — both fixed before the screen tests.
@@ -31,4 +31,6 @@ No AI involved.
 ## The owner's own try
 
 - **Mac,** "Causabee 0.5 Beta 134" (202611121635, signed, not notarized, never published), 12 November: "usage on mac is counted an looks like expected".
-- **iPhone and iPad:** TestFlight 247, uploaded 12 November — not yet tried when this was written.
+- **iPhone,** TestFlight 247, 12 November: the Settings row showed the month's empty bar while the top-ups were in use — "can be misleading"; the owner: "it should always show what using". The row now draws the bar in use (AC-10's test), in TestFlight 248.
+- **TestFlight 248,** 12 November, after the iPhone's 87 screen tests (7 skipped as made, none failed) and the iPad's 5: the owner said "done".
+- **Left for the fix lane:** the iPhone says "Causabee Pro" for a while after Pro ended on the server (Apple's grace on the buying device) — parked.
