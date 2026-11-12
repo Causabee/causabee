@@ -146,6 +146,10 @@ struct PlanWordsTests {
         // One page and one set of words for the Mac, the iPhone and the iPad.
         let page = try Self.source("Sources/Causabee/PlanSheet.swift")
         #expect(page.contains("PlanWords(") && page.contains("struct PlanUsageRows"))
+        // The row draws the bar in use — the top-ups' once the month is used — not the first (the owner's iPhone, 12 November).
+        #expect(page.contains("$0.kind == meter.using") && !page.contains("if let first = meter.bars.first, first.counted"))
+        let used = ProMeter(monthUsed: 1, extraShare: 0.36, kind: "apple", renewsOn: "2026-11-28", pro: true)
+        #expect(used.using == .topUps && used.bars.first { $0.kind == used.using }?.number == "36 %")
         #expect(!page.contains("#if os(macOS)\n                    Text(\"Use Pro\")"))
     }
 }

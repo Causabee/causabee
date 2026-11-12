@@ -263,12 +263,15 @@ struct PlanUsageRows: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Plan and usage")
                     Text(words.row).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    if let first = meter.bars.first, first.counted {
+                    // The bar now in use, thin: the month's while any is left, then the top-ups' — the
+                    // first alone said "used up" while top-ups were in use (the owner's iPhone, 12 November:
+                    // "it should always show what using").
+                    if let bar = meter.bars.first(where: { $0.counted && $0.kind == meter.using }) {
                         GeometryReader { box in
                             ZStack(alignment: .leading) {
                                 Capsule().fill(Theme.line)
-                                Capsule().fill(!first.inUse ? Theme.strongLine : first.low ? Theme.warning : first.kind == .month ? Theme.bee : Theme.topUp)
-                                    .frame(width: max(4, box.size.width * first.length))
+                                Capsule().fill(!bar.inUse ? Theme.strongLine : bar.low ? Theme.warning : bar.kind == .month ? Theme.bee : Theme.topUp)
+                                    .frame(width: max(4, box.size.width * bar.length))
                             }
                         }
                         .frame(maxWidth: 220).frame(height: 4)
