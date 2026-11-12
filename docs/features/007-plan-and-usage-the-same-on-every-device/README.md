@@ -1,6 +1,6 @@
 # F007 · Plan and usage, the same on every device
 
-- Stage: 5
+- Stage: 6
 - Lane: feature
 - Started: 2026-11-12
 - Branch: feature/007-plan-and-usage-the-same-on-every-device
@@ -13,6 +13,7 @@
 | 2 · What | 2026-11-12 | Yes, go |
 | 3 · How | 2026-11-12 | Yes, go |
 | 4 · Looks | 2026-11-12 | Approved |
+| 5 · Build | 2026-11-12 | Yes, both |
 
 ## Changes after a gate
 
