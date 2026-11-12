@@ -83,7 +83,7 @@
 
 - Given the first matter exists, and the bee does not yet know the person's name
 - When the matter is open
-- Then one line asks it, with the name from this device's own contact card filled in ("This is you: Alex? · Change"); once answered it is not asked again, on any device; until then the matter works as it does
+- Then one line asks it — on the Mac with the Mac's own user name filled in ("This is you: Alex? · Change"), on the iPhone and the iPad as an empty field ("Your name"), iOS having no card of its own; once answered it is not asked again, on any device; until then the matter works as it does
 - Holds for: iPhone, iPad, Mac · all (the owner, 12 November: "Yes, asked for the name. That's a good one.")
 
 ## Must not change
