@@ -49,7 +49,7 @@ struct SettingsSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                PlanSettings()
+                PlanUsageRows()
 
                 Section {
                     if accounts.isEmpty { Text("Not set up yet").foregroundStyle(.secondary) }

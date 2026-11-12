@@ -939,7 +939,11 @@ enum AppRelease {
 enum AutoMode {
     static let key = "mail.auto"
     /// On, with Pro or a top-up left: without either the switch stays as the owner left it, and nothing is read.
-    static var isOn: Bool { Plan.proIsOn(switched: UserDefaults.standard.bool(forKey: key), plan: Plan.cached, credit: UserDefaults.standard.bool(forKey: "beeserver.credit")) }
+    /// F007: and not waiting — the month used up, or Pro ended — so nothing is sent that would be refused.
+    static var isOn: Bool {
+        Plan.proIsOn(switched: UserDefaults.standard.bool(forKey: key), plan: Plan.cached, credit: UserDefaults.standard.bool(forKey: "beeserver.credit"))
+            && !ProWait.stored.holds(now: Date())
+    }
     /// The owner has been told once what Auto does, and said yes.
     static let agreedKey = "auto.agreed"
     /// The bolt was pressed to turn Auto on, and what Auto does has not been said and agreed to

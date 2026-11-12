@@ -289,15 +289,15 @@ struct CornerBee: View {
         .buttonStyle(.plain)
         .contextMenu {
             if pro {
-                Button("Turn off Pro", systemImage: "bolt.slash") { withAnimation(.easeInOut(duration: 0.2)) { auto = false } }
+                Button("Stop using Pro", systemImage: "bolt.slash") { withAnimation(.easeInOut(duration: 0.2)) { auto = false } }
             } else {
-                Button("Turn on Pro", systemImage: "bolt") { turnOn() }
+                Button("Use Pro", systemImage: "bolt") { turnOn() }
             }
         }
-        .help(pro ? "Opens the chat. Right-click to turn off Pro"
-                  : "Opens the chat. Right-click to turn on Pro")
+        .help(pro ? "Opens the chat. Right-click to stop using Pro"
+                  : "Opens the chat. Right-click to use Pro")
         .accessibilityLabel("Causabee")
-        .accessibilityValue(pro ? "Pro on" : "Pro off")
+        .accessibilityValue(pro ? "Using Pro" : "Not using Pro")
         .accessibilityIdentifier("window.bee")
         .asksBeforeAuto($asks) { withAnimation(.easeInOut(duration: 0.2)) { auto = true } }
     }

@@ -106,9 +106,9 @@ struct AssistantButton: View {
             // white could hardly be read.
             Group {
                 if pro {
-                    Button("Turn off Pro", systemImage: "bolt.slash") { auto = false; Haptics.tap() }
+                    Button("Stop using Pro", systemImage: "bolt.slash") { auto = false; Haptics.tap() }
                 } else {
-                    Button("Turn on Pro", systemImage: "bolt") { turnOn() }
+                    Button("Use Pro", systemImage: "bolt") { turnOn() }
                 }
             }
             .menuSigns()
@@ -127,8 +127,8 @@ struct AssistantButton: View {
         // Held: a small knock in the hand as its menu comes, as the system's own held things give.
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
         .accessibilityLabel("Causabee")
-        .accessibilityValue(pro ? "Pro on" : "Pro off")
-        .accessibilityHint(pro ? "Opens the chat. Hold to turn off Pro" : "Opens the chat. Hold to turn on Pro")
+        .accessibilityValue(pro ? "Using Pro" : "Not using Pro")
+        .accessibilityHint(pro ? "Opens the chat. Hold to stop using Pro" : "Opens the chat. Hold to use Pro")
         .accessibilityIdentifier("bee")
     }
 
@@ -171,7 +171,7 @@ struct ProOffer: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 4)
-            Button("Start Pro") { start() }
+            Button("Use Pro") { start() }
                 .buttonStyle(PhoneButtonStyle(filled: true))
                 .accessibilityIdentifier("pro.start")
         }

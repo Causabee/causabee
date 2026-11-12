@@ -99,7 +99,7 @@ enum ModelChoice {
     static func missingKey(_ model: Claude.Model) -> String {
         if DemoData.usesReal { return "This is the demo with your real matters: nothing is sent to an AI from it." }
         if DemoData.isRequested { return "This is the demo: your keys are not used in it, so nothing is sent to an AI from it." }
-        return deviceOnly ? "Pro is off. Turn it on with the bolt for this." : "This needs Causabee Pro for now."
+        return deviceOnly ? "Pro is not in use. Use Pro with the bee for this." : "This needs Causabee Pro for now."
     }
 }
 
@@ -111,9 +111,21 @@ struct ModelSettingsView: View {
 
     @State private var developer = false
 
+    /// Two panes (F007): General, and the plan on its own — so Settings opens with its own sections.
     var body: some View {
+        TabView {
+            general
+                .tabItem { Label("General", systemImage: "gearshape") }
+            Form { PlanSettings() }
+                .formStyle(.grouped)
+                .frame(width: 480)
+                .padding(.vertical, 8)
+                .tabItem { Label("Plan", systemImage: "creditcard") }
+        }
+    }
+
+    private var general: some View {
         Form {
-            PlanSettings()
             Section {
                 if ModelChoice.mail.isMistral || ModelChoice.mail.isOpenAI {
                     Toggle("Fewer, real tasks", isOn: $strict)
@@ -793,8 +805,8 @@ struct AutoQuestion: ViewModifier {
 
     func body(content: Content) -> some View {
         let model = ModelChoice.mail
-        content.confirmationDialogWhenAsked("Turn on Pro?", isPresented: $asks, titleVisibility: .visible) {
-            Button("Turn Pro On") { agreed = true; turnOn() }
+        content.confirmationDialogWhenAsked("Use Pro?", isPresented: $asks, titleVisibility: .visible) {
+            Button("Use Pro") { agreed = true; turnOn() }
             Button("Cancel", role: .cancel) { }
         } message: {
             // Short, and by name: which model reads, that names are disguised, who decides.

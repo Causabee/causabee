@@ -49,7 +49,7 @@ On the page, the rule is: **page under, card on it, box inside the card.** Never
 | `Theme.ink` | `#22211B` | `#ECECEA` | The filled button's ground (`.filledButton()`). |
 | `Theme.onInk` | `#FFFFFF` | `#0B0A05` | Words on `ink` and on `warning`. |
 | `Theme.line` | `#E3E3E0` | `#3A3932` | A thin frame or divider: `.quietBox()`, `.phoneCard()`, `RowDivider`. |
-| `Theme.strongLine` | `#C7C6C2` | `#6C6B63` | The firmer frame of a box that asks for the owner: `.box()`, an unticked tick. |
+| `Theme.strongLine` | `#C7C6C2` | `#6C6B63` | The firmer frame of a box that asks for the owner: `.box()`, an unticked tick. The plan's bars while "Use Pro" is off (F007): there, not in use. |
 
 ### Words
 
