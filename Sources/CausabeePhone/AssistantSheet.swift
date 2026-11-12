@@ -460,8 +460,8 @@ extension AssistantSheet {
             guard let answer = item.turn.answer, item.turn.note == nil else { return nil }
             return (item.turn.question, CardActions.earlierWords(answer.reply, applied: item.turn.applied))
         }
-        // F005: light when what a quick question needs will do; never lighter than the question before it.
-        let after = shown.last { $0.turn.answer != nil && $0.turn.note == nil }.map { $0.turn.answer?.depth ?? .deep }
+        // F005: light when what a quick question needs will do; never lighter than the question before it, within the cache's 30 minutes.
+        let after = shown.last { $0.turn.answer != nil && $0.turn.note == nil }.flatMap { ChatDepth.following($0.turn.answer?.depth, askedAt: $0.turn.date) }
         let depth = ChatDepth.pick(question: question, facts: facts, after: after)
         // The model chosen in Settings, as on the Mac, with the key its service takes.
         let model = ModelChoice.assistant

@@ -24,6 +24,16 @@ public enum ChatDepth: String, Sendable, Codable, Comparable {
         return .light
     }
 
+    /// How long a conversation lasts: the cache's life. A question within it is a follow-up.
+    public static let conversation: TimeInterval = 30 * 60
+
+    /// The depth a question follows: that of the question before it about the matter, asked at
+    /// most 30 minutes ago — an answer from a build before F005 as deep. Later — the next hour, the
+    /// next day — none: the matter's chat is kept, but the cache is gone, and the depth is picked anew.
+    public static func following(_ depth: ChatDepth?, askedAt: Date, now: Date = Date()) -> ChatDepth? {
+        now.timeIntervalSince(askedAt) <= conversation ? (depth ?? .deep) : nil
+    }
+
     /// The question asks to look through the matter: find, search, what was written, everything, a file.
     static func searches(_ lower: String) -> Bool {
         if phrases.contains(where: { lower.contains($0) }) { return true }

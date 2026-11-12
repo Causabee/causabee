@@ -103,13 +103,13 @@ struct Conversation {
             guard before.matter == turn.matter, case .answered(let answer) = before.state else { return nil }
             return (before.question, CardActions.earlierWords(answer.reply, applied: before.applied))
         }
-        // F005: light when what a quick question needs will do; never lighter than the question before it.
+        // F005: light when what a quick question needs will do; never lighter than the question before it, within the cache's 30 minutes.
         let before = navigation.turns[..<position].last { before in
             guard before.matter == turn.matter, case .answered = before.state else { return false }
             return true
         }
         var after: ChatDepth? = nil
-        if case .answered(let answer)? = before?.state { after = answer.depth ?? .deep }
+        if let before, case .answered(let answer) = before.state { after = ChatDepth.following(answer.depth, askedAt: before.date) }
         let depth = ChatDepth.pick(question: turn.question, facts: facts, after: after)
         navigation.turns[position].seen = facts.seen
         navigation.turns[position].refs = facts.refs

@@ -158,6 +158,23 @@ struct ChatDepthTests {
         #expect(ChatDepth.pick(question: "Was hat der Dachdecker geschrieben?", facts: facts, after: .light) == .deep)
     }
 
+    @Test("F005 AC-5 · A follow-up is one within the cache's 30 minutes; later, the depth is picked anew")
+    func conversationIsTheCachesLife() throws {
+        let now = Date()
+        // Within 30 minutes: the depth before it, an answer from a build before F005 as deep.
+        #expect(ChatDepth.following(.light, askedAt: now.addingTimeInterval(-10 * 60), now: now) == .light)
+        #expect(ChatDepth.following(nil, askedAt: now.addingTimeInterval(-29 * 60), now: now) == .deep)
+        // Later — the next hour, the next morning: a first question again.
+        #expect(ChatDepth.following(.deep, askedAt: now.addingTimeInterval(-31 * 60), now: now) == nil)
+        #expect(ChatDepth.following(nil, askedAt: now.addingTimeInterval(-14 * 3_600), now: now) == nil)
+        // The Mac and the iPhone and iPad ask the rule, not a depth of their own.
+        for path in ["Sources/Causabee/Conversation.swift", "Sources/CausabeePhone/AssistantSheet.swift"] {
+            let source = try String(contentsOf: AIJobTests.root.appendingPathComponent(path), encoding: .utf8)
+            #expect(source.contains("ChatDepth.following("), "\(path)")
+            #expect(!source.contains("depth ?? .deep"), "\(path)")
+        }
+    }
+
     @Test("F005 AC-6 · The depth depends on the question and the matter alone")
     func sameEverywhere() throws {
         let (container, matter, words) = try fullMatter()
