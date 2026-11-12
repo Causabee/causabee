@@ -37,16 +37,18 @@ public struct ProMeter: Equatable, Sendable {
     public private(set) var inUse: Kind?
 
     /// `monthUsed` 0…1 of this month's Pro, nil when there is none; `extraShare` the top-ups left,
-    /// in Pro months; `kind` the account's — "credit" is top-ups without Pro; `renewsOn` "2026-12-01".
-    public init(monthUsed: Double?, extraShare: Double, kind: String, renewsOn: String?) {
+    /// in Pro months; `kind` the account's — "credit" is top-ups without Pro; `renewsOn` "2026-12-01";
+    /// `pro` whether Pro is bought, as the App Store says: without it there is no month to show, whatever
+    /// the server still counts of one (the owner's Mac, 12 November: Pro ended, "0 % left" above the top-ups).
+    public init(monthUsed: Double?, extraShare: Double, kind: String, renewsOn: String?, pro: Bool) {
         let extra = max(0, extraShare)
-        if kind == "credit" {
+        if kind == "credit" || (!pro && (monthUsed != nil || extra > 0)) {
             bars = [Bar(kind: .topUps, left: extra, low: false)]
             inUse = .topUps
             runsLow = extra <= Self.lowShare
             line = extra > 0 ? "Top-ups carry over from month to month." : nil
             note = extra > 0 ? nil : "Used. Apple's model on this device reads what comes in — or buy another top-up."
-        } else if let monthUsed {
+        } else if pro, let monthUsed {
             let month = max(0, 1 - monthUsed)
             bars = [Bar(kind: .month, left: month, low: false)]
             if extra > 0 { bars.append(Bar(kind: .topUps, left: extra, low: false)) }

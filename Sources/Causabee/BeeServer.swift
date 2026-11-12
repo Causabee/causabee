@@ -155,7 +155,7 @@ final class BeeServer {
     }
 
     /// What the plan shows of it: the month's bar and the top-ups' (F006).
-    var meter: ProMeter { ProMeter(monthUsed: monthUsed, extraShare: extraShare, kind: kind, renewsOn: renewsOn) }
+    var meter: ProMeter { ProMeter(monthUsed: monthUsed, extraShare: extraShare, kind: kind, renewsOn: renewsOn, pro: Store.shared.plan == .pro || kind == "hand") }
 
     /// What is left, of the month and of top-ups together, is running out: a top-up is the thing to do.
     var runsLow: Bool { meter.runsLow }
