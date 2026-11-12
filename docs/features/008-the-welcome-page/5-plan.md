@@ -8,7 +8,7 @@
 4. **The iPhone and the iPad:** `WelcomeSheet` from `Welcome`, four pages, Start at the end; `FirstStep` in `OverviewScreen.empty`, with the iCloud line; what is added with no matters goes straight into a new matter.
 5. **The Mac:** `IntroView` from `Welcome`; `FirstStep` where "No matters yet" stood; the setup no longer opens by itself.
 6. **The name box and the mail card,** for both apps.
-7. **The pictures:** three cut-outs from the demo, on the Mac and in the simulator.
+7. **The pictures:** three cut-outs of the demo's matters per device, cropped from the introduction's own shots (`App/Resources/Intro/welcome-N.png`, `phone-welcome-N.jpg`) — a matter's Next card, the tasks and dates found, a question and its answer.
 8. **The pressure test:** ten made-up lines through Apple's model on this Mac; the names and dates checked.
 9. **Everything:** `scripts/test.sh`, the screen tests on the iPhone, the iPad and the Mac, then `/ui-check 8`.
 
