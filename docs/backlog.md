@@ -16,11 +16,12 @@ Seen while building something else. Not built now: each becomes a feature, joins
 3. **Feature: the welcome page overhaul** — first impression in the App Store; drawn in Figma first.
 4. **Feature: the chat with a read file in hand** — the file's own words for the chat, so it never says "not there" while the PDF shows it.
 5. **Feature: the Mac in the App Store** — every device buys; the iCloud plan-borrowing retired.
-6. **Then, in this order:** a third party's private reason kept out of tasks; calendar invitations as their own event (.ics); "No matter found" not showing old items as new.
-7. **Polish batch 1** (one week, between features): the grey question bubble (the owner's A) with one shared bubble view; `Theme.onBee`; Summary and Good to know set like the Next card; the serif off-sizes and the two off-style buttons.
-8. **Before the App Store, after those:** the overview with many matters (chosen: the week strip and pinned); the chat's second round; scanning and naming one's own files; a moved Calendar event found again.
-9. **Later:** the chat's memory past four turns, widgets, the icon's badge, copy and read a link, sticky section titles, shared components, glass details, choosing a calendar plainly, the iPhone test race.
-10. **Not planned:** reading on Claude Haiku (OpenAI only, the owner's decision); pinning files (needs a schema change); sharing with the family (after the release).
+6. **Feature: Causabee for other AIs, on the Mac without a server** — an MCP server the Mac runs locally (stdio), so an assistant the owner already uses (Claude Desktop, ChatGPT, Claude Code) reads their matters with its own AI, at no cost to the beeserver; on the iPhone and the iPad the same door through App Intents (Shortcuts, Siri, Apple Intelligence and its Private Cloud Compute). Read-only first, each matter off / shared / shared disguised, every read logged. Design note: `docs/mcp-design.md` (6 November). Right after the Mac in the App Store: its sandbox decides the door — a helper the client starts, or App Intents for all. The owner, 12 November: "something I see very valuable … like an MCP on the Mac without a server."
+7. **Then, in this order:** a third party's private reason kept out of tasks; calendar invitations as their own event (.ics); "No matter found" not showing old items as new.
+8. **Polish batch 1** (one week, between features): the grey question bubble (the owner's A) with one shared bubble view; `Theme.onBee`; Summary and Good to know set like the Next card; the serif off-sizes and the two off-style buttons.
+9. **Before the App Store, after those:** the overview with many matters (chosen: the week strip and pinned); the chat's second round; scanning and naming one's own files; a moved Calendar event found again.
+10. **Later:** the chat's memory past four turns, widgets, the icon's badge, copy and read a link, sticky section titles, shared components, glass details, choosing a calendar plainly, the iPhone test race.
+11. **Not planned:** reading on Claude Haiku (OpenAI only, the owner's decision); pinning files (needs a schema change); sharing with the family (after the release).
 
 
 - The owner's question bubble in the chat is honey yellow (Theme.honey: AssistantView.swift:692, AssistantSheet.swift:667, :785), against colors.md's rule that yellow means something waits for the owner, or the bee herself. Three greys drawn at https://claude.ai/artifact/GHo8fLerdz7FG6M29T2Y2u; the owner chose A, the quiet grey box (Theme.box, words .primary), 12 November: "A, grey box". Built after F007. (2026-11-12)
