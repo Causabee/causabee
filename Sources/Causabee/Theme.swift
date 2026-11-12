@@ -32,6 +32,9 @@ enum Theme {
     /// calm, so the send button stays the one yellow thing (Figma "bg/bee-soft").
     static let beeSoft = adaptive("beeSoft", light: Palette.yellowLight[8], dark: 0x3A3528)
     static let gold = adaptive("gold", light: Palette.yellowDark[5], dark: Palette.yellowLight[2])
+    /// The top-ups' bar in the plan, under the month's yellow (F006): a step of the yellow ladder darker
+    /// than the bee, a step less dark in the dark. Never for anything else.
+    static let topUp = adaptive("topUp", light: Palette.yellowDark[3], dark: Palette.yellowDark[2])
     /// What the owner said to the assistant: #FFE23E, in both modes, with black words.
     static let honey = fixed(0xFFE23E)
     /// Late, missing, not done: an orange of its own, so a warning is not mistaken for the accent.

@@ -56,7 +56,7 @@ struct PlanSheet: View {
         all.append(Choice(id: "pro", name: "Causabee Pro", holds: "The bigger AI, up to a monthly limit, names always disguised",
                           price: pro.map(Store.price) ?? PlanShot.current?.price("pro"), product: pro, yours: store.plan == .pro))
         if topUp != nil || PlanShot.current != nil {
-            all.append(Choice(id: "topup", name: store.plan == .pro ? "Top up this month" : "Pro, now and then",
+            all.append(Choice(id: "topup", name: store.plan == .pro ? "Add a top-up" : "Pro, now and then",
                               holds: Self.topUpWords, price: topUp?.displayPrice ?? PlanShot.current?.price("topup"), product: topUp))
         }
         return all
@@ -281,7 +281,7 @@ struct PlanSettings: View {
             // Asked of the server each time it is shown: here, where there is a view before the answer.
             .task {
                 if BeeServer.isSetUp { await server.refresh() }
-                if let shot = PlanShot.current, shot.meters { server.monthUsed = shot.used; server.renewsOn = "2026-11-28"; server.extraShare = shot.extra }
+                if let shot = PlanShot.current, shot.meters { server.monthUsed = shot.used; server.renewsOn = "2026-11-28"; server.extraShare = shot.extra; server.kind = "apple" }
             }
             .sheetWhenAsked(isPresented: $choosing) { PlanSheet(reason: .choose) }
             #if os(iOS)
@@ -333,7 +333,7 @@ struct PlanSettings: View {
         let action = {
             if let product = store.products.first(where: { Store.topUpIDs.contains($0.id) }) { Task { await store.buy(product) } }
         }
-        let label = (store.plan == .pro ? "Top up this month · " : "Pro, now and then · ") + price
+        let label = (store.plan == .pro ? "Add a top-up" : "Pro, now and then") + " · " + price
         return VStack(alignment: .leading, spacing: 6) {
             if server.runsLow {
                 Button(action: action) { Text(label) }.filledButton().disabled(store.buying != nil)
@@ -367,7 +367,8 @@ private struct PlanRow: View {
 /// `--demo --plan-shot low`: the plan as a picture shows it, with no App Store to ask: Pro with
 /// plenty left, Pro running low, Plus, or free. With `--plan-sheet` the plans are open.
 enum PlanShot: String {
-    case pro, low, plus, free
+    /// `topups`: Pro bought once and ended, top-ups left — Free, with the top-ups' bar alone (F006).
+    case pro, low, plus, free, topups
 
     static let current: PlanShot? = {
         let arguments = CommandLine.arguments
@@ -378,11 +379,11 @@ enum PlanShot: String {
     /// With `--plan-sheet` the plans, else Settings.
     static var showsSheet: Bool { current != nil && CommandLine.arguments.contains("--plan-sheet") }
 
-    var plan: Plan { self == .plus ? .matters : self == .free ? .free : .pro }
-    var meters: Bool { self == .pro || self == .low }
-    var used: Double { self == .low ? 0.88 : 0.41 }
-    var extra: Double { self == .low ? 0 : 0.33 }
-    var end: String { self == .free ? "Free" : self == .plus ? "renews 14 November" : "renews 31 October" }
+    var plan: Plan { self == .plus ? .matters : self == .free || self == .topups ? .free : .pro }
+    var meters: Bool { self == .pro || self == .low || self == .topups }
+    var used: Double { self == .topups ? 1 : self == .low ? 0.88 : 0.41 }
+    var extra: Double { self == .topups ? 0.37 : self == .low ? 0 : 0.33 }
+    var end: String { self == .free || self == .topups ? "Free" : self == .plus ? "renews 14 November" : "renews 31 October" }
 
     func price(_ what: String) -> String {
         switch what {

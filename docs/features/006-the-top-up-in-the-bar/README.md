@@ -1,6 +1,6 @@
 # F006 · The top-up in the bar
 
-- Stage: 5
+- Stage: done
 - Lane: feature
 - Started: 2026-11-12
 - Branch: feature/006-the-top-up-in-the-bar
@@ -13,6 +13,8 @@
 | 2 · What | 2026-11-12 | yes go |
 | 3 · How | 2026-11-12 | yes go |
 | 4 · Looks | 2026-11-12 | approved |
+| 5 · Build | 2026-11-12 | yes |
+| 6 · Proof | 2026-11-12 | Yes: F006 done |
 
 ## Changes after a gate
 
