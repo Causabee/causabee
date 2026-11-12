@@ -91,7 +91,9 @@ final class PhoneShots {
         return (try? data.write(to: file)) != nil ? file : nil
     }
 
-    func bring(_ file: URL, matter: PersistentIdentifier?, document: PersistentIdentifier? = nil, context: ModelContext, owner: String?, quiet: Bool = false) {
+    /// The shot's id, to follow it: the first step opens the matter it goes into.
+    @discardableResult
+    func bring(_ file: URL, matter: PersistentIdentifier?, document: PersistentIdentifier? = nil, context: ModelContext, owner: String?, quiet: Bool = false) -> UUID {
         var shot = Shot(file: file, matter: matter, document: document)
         shot.quiet = quiet
         // This iPhone's own list of names, started from the Mac's, with the other devices' names in it.
@@ -101,10 +103,10 @@ final class PhoneShots {
             }
         }
         shots.append(shot)
-        guard case .reading = shot.stage else { return }
+        let id = shot.id
+        guard case .reading = shot.stage else { return id }
         let door = ScreenshotDoor(besides: store, model: ModelChoice.mail)
         let owner = owner ?? "Ich"
-        let id = shot.id
         Task {
             // Text recognition takes a moment: away from the screen.
             let stage = await Task.detached { () -> Stage in
@@ -114,6 +116,7 @@ final class PhoneShots {
             // Brought in is the yes: sorted in at once, no "Sort in".
             if case .read = stage { classify(id, context: context, owner: AutoMode.owner(in: context)) }
         }
+        return id
     }
 
     /// Sends it, pseudonymised, after "Sort in". The same file twice is answered from the record.
@@ -150,8 +153,13 @@ final class PhoneShots {
     /// Sorted in: into its matter by itself when Causabee is sure which — the one it was brought
     /// in from, or the one the answer names with confidence. Otherwise the card asks.
     func settle(_ id: UUID, owner: [String], context: ModelContext) {
-        guard let shot = shots.first(where: { $0.id == id }), case .answered(_, let judgement) = shot.stage,
-              let matter = SortsIn.matter(for: judgement, from: shot.matter, in: context) else { return }
+        guard let shot = shots.first(where: { $0.id == id }), case .answered(let look, let judgement) = shot.stage else { return }
+        // No matters at all (F008 AC-4, AC-5): nothing to choose — a new matter at once, the bee's name.
+        if shot.matter == nil, Welcome.takesAtOnce(matters: (try? context.fetchCount(FetchDescriptor<Matter>())) ?? 1) {
+            take(id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading), owner: owner, context: context)
+            return
+        }
+        guard let matter = SortsIn.matter(for: judgement, from: shot.matter, in: context) else { return }
         take(id, into: matter, newName: "", owner: owner, skipping: SortsIn.doubles(judgement, in: matter), context: context)
     }
 
@@ -195,6 +203,8 @@ final class PhoneShots {
                     if membership.roles.isEmpty { membership.roles = ["in the chat"] }
                 }
             }
+            // Typed words (F008): kept on the matter as the owner's own note, too.
+            if let taken { Welcome.keepTyped(look, in: taken, context: context) }
             // Who wrote and the numbers it is filed under, as far as the owner left them ticked.
             taken?.take(look.offers(own: owner).keeping { !skipped.contains($0) }, in: context)
             if let document = shot.document.flatMap({ context.model(for: $0) as? MatterCore.Document }) { document.readAt = Date() }
@@ -421,6 +431,10 @@ struct AttachButton: View {
     var request: Binding<AttachKind?> = .constant(nil)
     /// "Task" or "Note" was picked: the field takes the cursor.
     var picked: () -> Void = {}
+    /// Off on the first step (F008): it shows the reading itself, and opens the matter.
+    var opensAssistant = true
+    /// Each file brought in, by its shot's id.
+    var brought: (UUID) -> Void = { _ in }
     @Environment(\.modelContext) private var context
     @Environment(Navigation.self) private var navigation
     @Query private var profiles: [Profile]
@@ -587,10 +601,10 @@ struct AttachButton: View {
     /// Read on the device and by Pro, and shown in the assistant, where it waits for "Sort in".
     private func read() {
         for item in waiting {
-            PhoneShots.shared.bring(item.file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first)
+            brought(PhoneShots.shared.bring(item.file, matter: matter?.persistentModelID, context: context, owner: profiles.first?.names.first))
         }
         waiting = []
-        navigation.showsAssistant = true
+        if opensAssistant { navigation.showsAssistant = true }
     }
 
     /// Kept with the matter as files, unread — as "Files or a folder" did.

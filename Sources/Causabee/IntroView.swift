@@ -1,34 +1,17 @@
 import AppKit
+import MatterCore
 import SwiftUI
 
-/// What Causabee is, in five pictures of the demo's matters: shown once, the first time the app
-/// starts, and again from Help. The pictures ship with the app bundle; a build without them — from
+/// What Causabee is (F008): the promise, then three calm pages, each a cut-out of a demo matter —
+/// shown once, the first time the app starts, and again from Help. Nothing is asked here, and no
+/// setup follows it. The pictures ship with the app bundle; a build without them — from
 /// `swift run` — shows an empty frame in their place.
 struct IntroView: View {
     /// Set once the owner has seen the introduction to its end or skipped it.
     static let seenKey = "intro.seen"
 
-    struct Page {
-        let image: String
-        let title: String
-        let text: String
-        /// A line of its own under the text, with a lock: what stays private.
-        var privacy: String? = nil
-    }
-
-    static let pages = [
-        Page(image: "intro-1", title: "Everything that comes in, sorted into matters",
-             text: "Give Causabee whatever you have: a mail, a PDF, a screenshot, a photo, a note. It sorts everything into matters, like a trip, a move or care for a parent, and the overview shows what comes next and what is late.",
-             privacy: "Private by design: what comes in stays on your devices and in your own iCloud. Before anything goes to the AI, names, addresses and numbers are replaced."),
-        Page(image: "intro-2", title: "One page for each matter",
-             text: "The next step, a short summary, your own notes and every task, all in one place. On the right is the assistant for this matter."),
-        Page(image: "intro-3", title: "Who does what, and by when",
-             text: "Tasks are yours, shared, or someone else's you wait for, and some can only start after another. Dates and tasks go to Calendar and Reminders with one click."),
-        Page(image: "intro-4", title: "Files, links and people",
-             text: "Attachments, shared documents and everyone involved, each with their role. Every fact links back to where it came from."),
-        Page(image: "intro-5", title: "Ask about a matter",
-             text: "Ask a question and get an answer with its sources. A suggestion becomes a task with one click. Your question goes out disguised, like everything else."),
-    ]
+    /// The promise, then `Welcome`'s three pages (F008): the same words as the iPhone's and the iPad's.
+    private static let count = Welcome.pages.count + 1
 
     /// The pictures at three quarters of the 813 × 508 they filled before, and the sheet shorter by
     /// what that frees, so no gap opens under the text.
@@ -58,40 +41,35 @@ struct IntroView: View {
     }
 
     @ViewBuilder private var pageView: some View {
-        let page = Self.pages[index]
         VStack(spacing: 0) {
-            picture(page.image)
-                .frame(maxWidth: Self.pictureWidth)
-                .padding([.horizontal, .top], 28)
-            VStack(spacing: 10) {
-                Text(page.title).font(Theme.titleFont)
-                Text(page.text)
-                    .font(.title3).foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: 640)
-                if let privacy = page.privacy {
-                    Label(privacy, systemImage: "lock.fill")
-                        .font(.callout)
-                        .padding(.horizontal, 14).padding(.vertical, 9)
-                        .background(Theme.box, in: RoundedRectangle(cornerRadius: 8))
+            if index == 0 {
+                promise
+            } else {
+                let page = Welcome.pages[index - 1]
+                picture(page.image)
+                    .frame(maxWidth: Self.pictureWidth, maxHeight: 360)
+                    .padding([.horizontal, .top], 28)
+                VStack(spacing: 10) {
+                    Text(page.title).font(Theme.titleFont)
+                    Text(page.line)
+                        .font(.title3).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 680)
-                        .padding(.top, 4)
+                        .frame(maxWidth: 640)
                 }
+                .padding(.horizontal, 28).padding(.top, 22)
+                .frame(minHeight: 120, alignment: .top)
+                .id(index)
             }
-            .padding(.horizontal, 28).padding(.top, 22)
-            .frame(minHeight: 170, alignment: .top)
-            .id(index)
             Spacer(minLength: 16)
             HStack {
                 Button("Skip") { finish() }
                     .keyboardShortcut(.cancelAction)
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
-                    .opacity(index == Self.pages.count - 1 ? 0 : 1)
+                    .opacity(index == Self.count - 1 ? 0 : 1)
                 Spacer()
                 HStack(spacing: 8) {
-                    ForEach(Self.pages.indices, id: \.self) { dot in
+                    ForEach(0..<Self.count, id: \.self) { dot in
                         Circle()
                             .fill(dot == index ? Theme.ink : Theme.strongLine)
                             .frame(width: 7, height: 7)
@@ -106,13 +84,8 @@ struct IntroView: View {
                             .quietButton()
                             .keyboardShortcut(.leftArrow, modifiers: [])
                     }
-                    // A look around first, with nothing to set up: the made-up matters, apart from any real ones.
-                    if index == Self.pages.count - 1, !DemoData.isRequested {
-                        Button("Try the demo") { seen = true; DemoData.restart(demo: true) }
-                            .quietButton()
-                            .help("Starts Causabee again with nine made-up matters, kept apart from your own. The sidebar has the way back.")
-                    }
-                    Button(index == Self.pages.count - 1 ? "Get started" : "Next") { next() }
+                    // Into the person's own Causabee and its first step; the demo is a quiet link there.
+                    Button(index == Self.count - 1 ? "Start" : "Next") { next() }
                         .filledButton()
                         .keyboardShortcut(.defaultAction)
                 }
@@ -124,7 +97,32 @@ struct IntroView: View {
         .background(Theme.canvas)
     }
 
-    /// The screenshot in a frame of its own, so a window shows as a window on the sheet.
+    /// The promise: the bee, two lines, an example matter, and the privacy line — said once (AC-2).
+    private var promise: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            BeeMark(size: 48, livesNowAndThen: true).foregroundStyle(Theme.beeMark)
+            Text(Welcome.promise).font(Theme.planNumberFont).fixedSize(horizontal: false, vertical: true)
+            Text(Welcome.promiseLine).font(.title3).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                BeeChip(text: "1 for you · waiting for 1")
+                Text("Care for Mum (Helga) after her fall").font(Theme.cardTitleFont)
+                Text("Next, on Oct 6: The medical service visits").foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .journalCard()
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("An example: Care for Mum after her fall. Next, on October 6, the medical service visits.")
+            Label(Welcome.privacy, systemImage: "lock.fill")
+                .font(.callout)
+                .padding(.horizontal, 14).padding(.vertical, 9)
+                .background(Theme.box, in: RoundedRectangle(cornerRadius: 8))
+        }
+        .frame(maxWidth: 560, alignment: .leading)
+        .padding(.horizontal, 28).padding(.top, 48)
+        .id(index)
+    }
+
+    /// One part of a matter, cut out, in a frame of its own — never the whole window.
     private func picture(_ name: String) -> some View {
         Group {
             if let image = NSImage(named: name) {
@@ -141,7 +139,7 @@ struct IntroView: View {
     }
 
     private func next() {
-        if index < Self.pages.count - 1 {
+        if index < Self.count - 1 {
             withAnimation(.easeOut(duration: 0.2)) { index += 1 }
         } else {
             finish()

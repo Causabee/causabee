@@ -204,7 +204,8 @@ struct MatterScreen: View {
                         VStack(alignment: .leading, spacing: Theme.cardGap) {
                             if !matter.isClosed {
                                 // The next step with the digest only, as on the iPhone.
-                                if part == .all { nextStep(status, scroller) }
+                                // F008 AC-12: the name, asked once, while none is known.
+                                if part == .all { NameLine(); nextStep(status, scroller) }
                                 ForYouCard(matter: matter, folds: part != .all)
                             }
                             // The summary over what is ahead: what the matter is, then its dates.
@@ -888,6 +889,8 @@ struct MatterScreen: View {
         if matter.isClosed { closedBanner(status) }
         NewsCard(matter: matter, editor: Self.newEditor)
         if !matter.isClosed {
+            // F008 AC-12: the name, asked once, while none is known.
+            NameLine()
             nextStep(status, scroller)
             ForYouCard(matter: matter)
         }

@@ -91,3 +91,18 @@ extension Source.Kind {
             : emailID.hasPrefix("typed:") ? .conversation : .mail
     }
 }
+
+import SwiftData
+
+extension Welcome {
+    /// Typed words, read: kept on their matter as the owner's own note as well, word for word —
+    /// so the first matter holds what was typed, whatever the bee found in it. Once.
+    public static func keepTyped(_ look: ScreenshotDoor.Look, in matter: Matter, context: ModelContext) {
+        guard look.file.pathExtension.lowercased() == "txt",
+              let words = look.report.outcomes.first?.email.body.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty,
+              !(matter.noteBlocks ?? []).contains(where: { $0.text == words }) else { return }
+        let note = MatterNote(text: words)
+        context.insert(note)
+        note.matter = matter
+    }
+}

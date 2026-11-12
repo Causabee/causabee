@@ -255,6 +255,7 @@ struct OverviewScreen: View {
     @Environment(\.modelContext) private var context
     @AppStorage(WelcomeSheet.seenKey) private var introSeen = false
     @State private var showsWelcome = false
+    @State private var addsMail = false
     /// What happened across the matters, or the matters themselves.
     @State private var part = OverviewPart.all
     /// How many cards fit side by side: one on the iPhone, two on a wide iPad.
@@ -278,7 +279,8 @@ struct OverviewScreen: View {
                 // With nothing in the last two weeks there is no journal: the matters stand here at once.
                 let hasJournal = !StoredChanges.shared.overview(matters).recent.isEmpty
                 if matters.isEmpty {
-                    empty
+                    // F008: the first step — type it or add it; the demo a quiet link under it.
+                    FirstStep().padding(.top, 24)
                 } else {
                     PhoneWeek(matters: matters).journalCard(inset: 14)
                 }
@@ -323,6 +325,8 @@ struct OverviewScreen: View {
                 // The quiet and the closed ones, folded away: the ones going on are the cards.
                 OtherMattersList(matters: matters)
                 }
+                // F008 AC-8: once there is a matter, mail offered once, quietly.
+                if !store.isDemo { MailOffer(matters: matters.count) { addsMail = true }.padding(.top, 8) }
                 if store.isDemo {
                     Button("Leave the demo") { store.switchDemo(false) }
                         .font(.footnote).foregroundStyle(Theme.gold).padding(.top, 8)
@@ -370,6 +374,7 @@ struct OverviewScreen: View {
         }
         // Once, at the first start: what Causabee is and what it needs.
         .sheetWhenAsked(isPresented: $showsWelcome) { WelcomeSheet() }
+        .sheet(isPresented: $addsMail) { MailAccountSheet() }
         .onAppear { if !introSeen, !store.isDemo { showsWelcome = true } }
     }
 
@@ -459,21 +464,6 @@ struct OverviewScreen: View {
         guard Store.shared.mayStartMatter(in: context), let matter = try? Matter.make(named: name, in: context) else { return }
         search = ""
         navigation.open(matter)
-    }
-
-    /// Nothing here yet: iCloud may still be bringing the matters, or they are made on the Mac.
-    private var empty: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("No matters yet").font(.headline)
-            Text(PhoneCloud.container == nil
-                 ? "This store stays on the \(ThisDevice.name)."
-                 : "Pull down to get new mail, or share a screenshot, photo or file to Causabee — it makes the matters from what comes in. From your Mac, they come here through your iCloud — the first time can take a few minutes.")
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if !store.isDemo {
-                Button("Try the demo") { store.switchDemo(true) }.buttonStyle(.phoneFilled)
-            }
-        }
-        .phoneBox()
     }
 }
 

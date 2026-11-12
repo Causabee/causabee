@@ -2,63 +2,33 @@ import MatterCore
 import SwiftData
 import SwiftUI
 
-/// The first start on the iPhone and the iPad, and again from ⋯ on the overview: the Mac's
-/// introduction, page by page — the promise; four pictures of the demo's matters, each with what
-/// it shows; and what this device has, as ticks, with the way in: the demo first on a first start,
-/// the owner's own matters first once everything is there.
+/// The first start on the iPhone and the iPad, and again from ⋯ on the overview (F008): the
+/// promise, then three calm pages — each a cut-out of a matter, a title and one line — then Start,
+/// into the person's own Causabee and its first step. Nothing is asked here. The words are
+/// `Welcome`'s, the same as the Mac's.
 struct WelcomeSheet: View {
     static let seenKey = "intro.seen"
 
-    struct Page {
-        let image: String
-        let title: String
-        let text: String
-        /// A line of its own under the text, with a lock: what stays private.
-        var privacy: String? = nil
-    }
-
-    /// The Mac's pages, said for a touch screen; its files-and-people page goes into the third.
-    static let pages = [
-        Page(image: "phone-intro-1.jpg", title: "Everything that comes in, sorted into matters",
-             text: "Give Causabee whatever you have: a mail, a PDF, a screenshot, a photo, a note. It sorts everything into matters — a trip, a move, care for a parent — and the overview shows what comes next and what is late.",
-             privacy: "What comes in stays with you. Before anything goes to the AI, names, addresses and numbers are replaced."),
-        Page(image: "phone-intro-2.jpg", title: "One page for each matter",
-             text: "The next step, a short summary, your own notes and every task, all in one place. The bee opens the assistant for this matter."),
-        Page(image: "phone-intro-3.jpg", title: "Who does what, and by when",
-             text: "Tasks are yours, shared, or someone else’s you wait for. Dates and tasks go to Calendar and Reminders with a tap, and every fact leads back to where it came from."),
-        Page(image: "phone-intro-4.jpg", title: "Ask about a matter",
-             text: "Ask, or speak, and get an answer with its sources. A suggestion becomes a task with one tap. Your question goes out disguised, like everything else."),
-    ]
-    /// The promise, the pictures, and what this device has.
-    private static let count = pages.count + 2
+    /// The promise and the pages.
+    private static let count = Welcome.pages.count + 1
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(PhoneStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var sync = PhoneCloudStatus.shared
-    @State private var addsAccount = false
-    @State private var opensSettings = false
     @State private var index = 0
-    /// Counts up when something may have come in meanwhile — a password, a key.
-    @State private var tick = 0
 
     var body: some View {
         NavigationStack {
             TabView(selection: $index) {
                 page { promise }.tag(0)
-                ForEach(Array(Self.pages.enumerated()), id: \.offset) { offset, item in
+                ForEach(Array(Welcome.pages.enumerated()), id: \.offset) { offset, item in
                     page { picturePage(item) }.tag(offset + 1)
                 }
-                page { ready }.tag(Self.count - 1)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             // The dots and the buttons stay at the foot, whatever the page.
             .safeAreaInset(edge: .bottom) { foot }
             .background(Theme.canvas)
             .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { finish() } } }
-            .sheet(isPresented: $addsAccount, onDismiss: { tick += 1 }) { MailAccountSheet() }
-            .sheet(isPresented: $opensSettings, onDismiss: { tick += 1 }) { SettingsSheet() }
-            .onAppear { tick += 1 }
         }
     }
 
@@ -77,10 +47,17 @@ struct WelcomeSheet: View {
     private var promise: some View {
         VStack(alignment: .leading, spacing: 16) {
             BeeMark(size: 44, livesNowAndThen: true).foregroundStyle(Theme.beeMark)
-            Text("Every matter.\nIn its place.").font(Theme.phoneTitleFont).fixedSize(horizontal: false, vertical: true)
-            Text("Mum’s care, a claim, a move: each in its own place — with what comes next, and who does what by when.")
+            Text(Welcome.promise).font(Theme.phoneTitleFont).fixedSize(horizontal: false, vertical: true)
+            Text(Welcome.promiseLine)
                 .font(.title3).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             sample.padding(.top, 8)
+            // Said once, here (F008 AC-2).
+            Label(Welcome.privacy, systemImage: "lock.fill")
+                .font(.footnote)
+                .padding(.horizontal, 12).padding(.vertical, 9)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.top, 24)
     }
@@ -99,103 +76,35 @@ struct WelcomeSheet: View {
         .accessibilityLabel("An example: Care for Mum after her fall. Next, on October 6, the medical service visits.")
     }
 
-    /// A picture of the demo on this device, its title and what it shows.
-    private func picturePage(_ item: Page) -> some View {
+    /// A cut-out of a demo matter, its title and one line.
+    private func picturePage(_ item: Welcome.Page) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            picture(item.image)
+            picture("phone-" + item.image + ".jpg")
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 8)
             Text(item.title).font(Theme.phoneCardTitleFont).fixedSize(horizontal: false, vertical: true)
-            Text(item.text).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if let privacy = item.privacy {
-                Label(privacy, systemImage: "lock.fill")
-                    .font(.footnote)
-                    .padding(.horizontal, 12).padding(.vertical, 9)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text(item.line).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.top, 24)
     }
 
-    /// The screenshot as a small phone screen: rounded, framed, about half the height it has.
+    /// One part of a matter, cut out — never the whole screen: rounded, framed, 240 points high.
     private func picture(_ name: String) -> some View {
         Group {
             if let image = UIImage(named: name) {
                 Image(uiImage: image).resizable().aspectRatio(contentMode: .fit)
             } else {
-                Theme.box.aspectRatio(0.46, contentMode: .fit)
+                Theme.box.aspectRatio(1.4, contentMode: .fit)
             }
         }
-        .frame(height: 380)
+        .frame(height: 240)
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .overlay(RoundedRectangle(cornerRadius: 22).stroke(Theme.line))
         .shadow(color: .black.opacity(0.10), radius: 12, y: 4)
         .accessibilityHidden(true)
     }
 
-    /// What this device has, and that names are disguised.
-    private var ready: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Ready when you are").font(Theme.phoneCardTitleFont)
-            checks.id(tick)
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Image(systemName: "eyeglasses").font(.footnote)
-                Text("Names are disguised before anything is sent — and only when you tap.")
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .font(.footnote).foregroundStyle(.secondary)
-        }
-        .padding(.top, 24)
-    }
-
-    private var signedIn: Bool { sync.account == "signed in to iCloud" }
-    private var hasAccount: Bool { !Keychain.accounts().filter { !$0.usesGoogle }.isEmpty }
-    private var allThere: Bool { signedIn && hasAccount }
-    /// No key needed: without Pro, Apple's model on the device reads the mail.
-    private var planWords: String {
-        switch Store.shared.plan {
-        case .free: "free — reads on this \(ThisDevice.name)"
-        case .matters: "Causabee Plus"
-        case .pro: "Causabee Pro"
-        }
-    }
-
-    /// What this iPhone has: a tick and two words where it is there, a button where it is not.
-    /// The list of names is no row: it comes from the Mac, and until it is there nothing is sent.
-    private var checks: some View {
-        let there = [signedIn, true, hasAccount].filter { $0 }.count
-        return VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "On this \(ThisDevice.name)", detail: there == 3 ? "All there" : "\(there) of 3 there")
-            VStack(spacing: 0) {
-                check("iCloud", done: signedIn, detail: signedIn ? "from your Mac" : "sign in, in Settings")
-                Divider().padding(.leading, 48)
-                check("Plan", done: true, detail: planWords)
-                Divider().padding(.leading, 48)
-                check("Mail", done: hasAccount, detail: hasAccount ? "ready" : "for new mail") {
-                    Button("Add …") { addsAccount = true }.buttonStyle(.phone)
-                }
-            }
-            .phoneCard()
-        }
-    }
-
-    private func check<Action: View>(_ title: String, done: Bool, detail: String, @ViewBuilder action: () -> Action = { EmptyView() }) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                .font(.title3).foregroundStyle(done ? Theme.done : .secondary)
-                .frame(width: 20)
-            Text(title).fontWeight(.medium)
-            Text(detail).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
-            Spacer(minLength: 0)
-            if !done { action() }
-        }
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .accessibilityElement(children: .combine)
-    }
-
-    /// The dots, and the way on: Next through the pages — Skip goes to the last — and on the last,
-    /// the demo first on a first start, the owner's own matters first once everything is there.
+    /// The dots, and the way on: Next through the pages, Skip and Start both into Causabee.
     private var foot: some View {
         VStack(spacing: 12) {
             HStack(spacing: 8) {
@@ -208,15 +117,10 @@ struct WelcomeSheet: View {
             VStack(spacing: 8) {
                 if index < Self.count - 1 {
                     Button("Next") { go(index + 1) }.buttonStyle(.phone(filled: true, wide: true))
-                    Button("Skip") { go(Self.count - 1) }.buttonStyle(.phone(wide: true))
-                } else if store.isDemo {
-                    Button("Start") { finish() }.buttonStyle(.phone(filled: true, wide: true))
-                } else if allThere {
-                    Button("Open my matters") { finish() }.buttonStyle(.phone(filled: true, wide: true))
-                    Button("Try the demo") { finish(); store.switchDemo(true) }.buttonStyle(.phone(wide: true))
+                    Button("Skip") { finish() }.buttonStyle(.phone(wide: true))
                 } else {
-                    Button("Try the demo") { finish(); store.switchDemo(true) }.buttonStyle(.phone(filled: true, wide: true))
-                    Button("Start with my matters") { finish() }.buttonStyle(.phone(wide: true))
+                    // Into the person's own Causabee: the first step, or their matters.
+                    Button("Start") { finish() }.buttonStyle(.phone(filled: true, wide: true))
                 }
             }
             .frame(maxWidth: 520)

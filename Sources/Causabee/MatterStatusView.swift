@@ -352,6 +352,8 @@ struct MatterStatusView: View {
         closedBanner(status)
         NewsCard(matter: matter, editor: newEditor)
         if !matter.isClosed {
+            // F008 AC-12: the name, asked once, while none is known.
+            NameLine()
             nextStep(status)
             ForYouCard(matter: matter)
             // The page has the room the column had: as many days as it showed.
