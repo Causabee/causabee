@@ -130,7 +130,9 @@ public struct LabelIntake: Sendable {
             throw Failure.noSuchLabel(label, available: folders.filter { !$0.attributes.contains("\\noselect") }.map(\.name))
         }
         let gmail = await mailbox.isGmail
-        let window: [SearchKey] = since.map { [.since($0)] } ?? []
+        // Never a draft: a reply being written — saved empty at first, in the labelled thread on
+        // Gmail — is not mail yet, and the mail sent from it has its Message-ID (12 November 2026).
+        let window: [SearchKey] = [.notDraft] + (since.map { [.since($0)] } ?? [])
 
         // The labelled mail.
         let opened = try await mailbox.examine(folder.name)
@@ -236,7 +238,7 @@ public struct LabelIntake: Sendable {
             let newest = max(from, since ?? from)
             var candidates: [UInt32] = []
             for chunk in senders.chunked(Self.searchBatch) {
-                candidates += try await mailbox.search([.since(newest), .any(chunk.map { .from($0) })])
+                candidates += try await mailbox.search([.notDraft, .since(newest), .any(chunk.map { .from($0) })])
             }
             let added = try await fetchNew(candidates, from: mailbox, in: opened, known: &known, tried: &tried[inbox.name, default: []])
             for email in added { result.bySender[email.id] = Email.address(in: email.from) }
@@ -256,7 +258,7 @@ public struct LabelIntake: Sendable {
                 for draft in drafts {
                     guard let word = draft.searchWord else { continue }
                     let day = Calendar.current.date(byAdding: .day, value: -1, to: draft.date) ?? draft.date
-                    let candidates = try await mailbox.search([.since(day), fromOwner, .subject(word)])
+                    let candidates = try await mailbox.search([.notDraft, .since(day), fromOwner, .subject(word)])
                     let added = try await fetchNew(candidates, from: mailbox, in: opened, known: &known, tried: &tried[name, default: []])
                     for email in added {
                         if SentDraft.plain(email.subject) == SentDraft.plain(draft.subject) {
@@ -276,7 +278,7 @@ public struct LabelIntake: Sendable {
                 let newest = max(from, since ?? from)
                 var candidates: [UInt32] = []
                 for chunk in senders.chunked(Self.searchBatch / 2) {
-                    candidates += try await mailbox.search([.since(newest), fromOwner, .any(chunk.flatMap { [.to($0), .cc($0)] })])
+                    candidates += try await mailbox.search([.notDraft, .since(newest), fromOwner, .any(chunk.flatMap { [.to($0), .cc($0)] })])
                 }
                 let added = try await fetchNew(candidates, from: mailbox, in: opened, known: &known, tried: &tried[name, default: []])
                 for email in added { result.toKnown[email.id] = knownRecipient(of: email, among: senders) ?? "" }

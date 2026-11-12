@@ -9,6 +9,7 @@ struct UnreadMailTests {
     @Test("UNSEEN is a search, on the read-only list; nothing that sets a flag can be sent")
     func readOnly() throws {
         #expect(try IMAPClient.criterion(.unseen) == "UNSEEN")
+        #expect(try IMAPClient.criterion(.notDraft) == "UNDRAFT")
         #expect(IMAPClient.allowed.contains("UID SEARCH"))
         #expect(!IMAPClient.allowed.contains("STORE") && !IMAPClient.allowed.contains("UID STORE"))
     }

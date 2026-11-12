@@ -54,6 +54,8 @@ public enum SearchKey: Sendable, Equatable {
     case cc(String)
     /// Mail not read yet — the mailbox's own `\Seen` flag, asked about, never changed.
     case unseen
+    /// Not a draft — the mailbox's own `\Draft` flag: a reply being written is not mail yet.
+    case notDraft
     /// Mail that fits any of these: many threads or Message-IDs in one question to the server,
     /// not one round trip each.
     case any([SearchKey])
@@ -286,6 +288,7 @@ public actor IMAPClient: ReadOnlyMailbox {
         case .to(let address): return "TO \(try quoted(address))"
         case .cc(let address): return "CC \(try quoted(address))"
         case .unseen: return "UNSEEN"
+        case .notDraft: return "UNDRAFT"
         case .any(let keys):
             guard let first = keys.first else { throw IMAPError.unsafeArgument("an empty OR") }
             guard keys.count > 1 else { return try criterion(first) }

@@ -29,7 +29,7 @@ public enum MailFetch {
         let everywhere = folders.first { $0.attributes.contains("\\all") }.map { [$0.name] } ?? folders.map(\.name)
         for name in everywhere where !(folders.first { $0.name == name }?.attributes.contains("\\noselect") ?? false) {
             _ = try await mailbox.examine(name)
-            if let uid = try await mailbox.search([.messageID(messageID)]).first, let message = try await mailbox.fetch([uid], .whole).first {
+            if let uid = try await mailbox.search([.notDraft, .messageID(messageID)]).first, let message = try await mailbox.fetch([uid], .whole).first {
                 return message.data
             }
         }
