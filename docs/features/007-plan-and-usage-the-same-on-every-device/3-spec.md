@@ -8,7 +8,7 @@ Nothing new is stored in the model. What is shown comes from what is there today
 - **When Pro ended:** the newest Pro transaction's `expirationDate` in StoreKit's history (`Transaction.all`), on a device that bought it; elsewhere the profile's `planUntil` once it is past. Shown only while top-ups are left.
 - **What is left:** `ProMeter` (F006) from `BeeServer`'s `monthUsed`, `extraShare`, `renewsOn`, `kind`.
 - **Not counted yet:** Pro bought or a top-up known (`BeeServer.hasCredit`), and the beeserver has said nothing yet (`monthUsed` and `extraShare` unknown).
-- **The switch:** `AutoMode` (`mail.auto`), synced through the profile's `autoOn` as today. Only its words change.
+- **The switch:** `AutoMode` (`mail.auto`), synced through the profile's `autoOn` as today; its words change. When the beeserver says the month is used up or Pro ended, the switch is no longer turned off: it keeps the owner's setting, and the device keeps when it waits until (`pro.waitsUntil` in UserDefaults — the month's new start, or none for an ended Pro). `AutoMode.isOn` is false while it waits, so nothing is sent that would be refused; the wait ends with a top-up bought, the date reached, or the beeserver saying something is left (AC-7).
 
 A new type in MatterCore, `PlanWords`, turns these into every word the row, the page and the switch say — the plan's name and corner, the row's line, the switch's words (on, off, waiting until a date), and whether the bars are in use — so each case of the wireframes is tested without a screen. `ProMeter` gains `inUse`: off, its bars are drawn greyed and their words end "· not in use"; and an empty bar for "not counted yet".
 
@@ -43,6 +43,7 @@ Not touched.
 - `Sources/CausabeePhone/SettingsSheet.swift`: the row and "Use Pro" at the top, the row opening `PlanPage` in the navigation stack.
 - `Sources/Causabee/ModelChoice.swift`: the Mac's `Settings` window becomes panes — "General" (today's form without the plan) and "Plan" (`PlanPage`) — with a `TabView`.
 - `Sources/Causabee/Store.swift`: when Pro ended, from StoreKit's history.
+- `Sources/Causabee/BeeServer.swift` (`proStopped`) and `Sources/Causabee/Theme.swift` (`AutoMode`): waiting instead of turning the switch off; the words it says then.
 - `Sources/Causabee/Components.swift`, `Sources/CausabeePhone/Parts.swift`, `Sources/Causabee/ChatAdding.swift`, `Sources/Causabee/ModelChoice.swift` (`asksBeforeAuto`), `Sources/MatterCore/Model/DeviceTask.swift`: "Turn on Pro", "Turn off Pro", "Start Pro", "Turn on Pro?" become "Use Pro", "Stop using Pro", "Use Pro", "Use Pro?".
 - Shared: `PlanRow`, `PlanPage`, `PlanWords` on every device; per device only where the row sits — a navigation row on the iPhone and the iPad, a pane on the Mac.
 - Tests: `Tests/MatterCoreTests/PlanWordsTests.swift`, tagged `F007 AC-n`; the screen tests find Settings' sections by their ids.
