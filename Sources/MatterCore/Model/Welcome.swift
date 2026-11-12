@@ -25,7 +25,7 @@ public enum Welcome {
 
     // MARK: The first step
 
-    public static let firstTitle = "What's on your mind?"
+    public static let firstTitle = "What’s on your mind?"
     public static let firstLine = "Type it in a few words, or add what you have."
     public static let placeholder = "Mum’s care, a claim, a move …"
     public static let demoAsk = "Not sure yet?"
@@ -80,6 +80,13 @@ public enum Welcome {
     }
     public static let mailTitle = "Also what comes by mail?"
     public static let mailLine = "Causabee reads one label or folder you choose — nothing else in your mailbox."
+}
+
+extension Source {
+    /// The owner's own typed words (F008): kept as the kind every build knows, with "you" as where
+    /// they came from — so they read as the owner's, never as the assistant's.
+    public static let ownWords = "you"
+    public var isOwnWords: Bool { kind == .conversation && pointer == Self.ownWords }
 }
 
 extension Source.Kind {

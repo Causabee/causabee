@@ -78,12 +78,6 @@ struct FirstStep: View {
                 now = Date()
             }
         }
-        .onChange(of: takenMatter) { _, matter in
-            guard let matter else { return }
-            waiting = nil
-            text = ""
-            navigation.open(matter)
-        }
         .onChange(of: failedWords) { _, words in
             guard let words else { return }
             waiting = nil
@@ -195,17 +189,6 @@ struct FirstStep: View {
         #endif
     }
 
-    /// The matter what was sent went into, once it is made.
-    private var takenMatter: Matter? {
-        guard let waiting else { return nil }
-        #if os(iOS)
-        guard let shot = PhoneShots.shared.shots.first(where: { $0.id == waiting }), case .taken(_, let id?) = shot.stage else { return nil }
-        #else
-        guard let turn = navigation.turns.first(where: { $0.id == waiting }), case .taken(_, let id?) = turn.shot?.stage else { return nil }
-        #endif
-        return context.model(for: id) as? Matter
-    }
-
     private var failedWords: String? {
         guard let waiting else { return nil }
         #if os(iOS)
@@ -234,6 +217,25 @@ struct FirstStep: View {
         #else
         CloudSync.shared.lastImport != nil
         #endif
+    }
+}
+
+extension Notification.Name {
+    /// A first matter was made at once from what came in (F008): the window opens it. The first
+    /// step cannot — it is gone the moment there is a matter.
+    static let firstMatter = Notification.Name("causabee.firstMatter")
+}
+
+/// Opens the first matter once it is made (F008), wherever the window is.
+struct FirstMatterOpens: ViewModifier {
+    let navigation: Navigation
+    @Environment(\.modelContext) private var context
+
+    func body(content: Content) -> some View {
+        content.onReceive(NotificationCenter.default.publisher(for: .firstMatter)) { note in
+            guard let id = note.object as? PersistentIdentifier, let matter = context.model(for: id) as? Matter else { return }
+            navigation.open(matter)
+        }
     }
 }
 

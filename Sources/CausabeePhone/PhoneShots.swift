@@ -156,7 +156,7 @@ final class PhoneShots {
         guard let shot = shots.first(where: { $0.id == id }), case .answered(let look, let judgement) = shot.stage else { return }
         // No matters at all (F008 AC-4, AC-5): nothing to choose — a new matter at once, the bee's name.
         if shot.matter == nil, Welcome.takesAtOnce(matters: (try? context.fetchCount(FetchDescriptor<Matter>())) ?? 1) {
-            take(id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading), owner: owner, context: context)
+            take(id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading), owner: owner, opens: true, context: context)
             return
         }
         guard let matter = SortsIn.matter(for: judgement, from: shot.matter, in: context) else { return }
@@ -164,7 +164,8 @@ final class PhoneShots {
     }
 
     /// Takes what it said into a matter: the one chosen, or a new one with the name given.
-    func take(_ id: UUID, into matter: Matter?, newName: String, owner: [String], skipping skipped: Set<String> = [], context: ModelContext) {
+    /// `opens`: the first matter, made at once (F008) — the window opens it.
+    func take(_ id: UUID, into matter: Matter?, newName: String, owner: [String], skipping skipped: Set<String> = [], opens: Bool = false, context: ModelContext) {
         guard let shot = shots.first(where: { $0.id == id }), case .answered(let look, var judgement) = shot.stage else { return }
         // Only what the owner left ticked, as on the Mac; the file and its words come in either way.
         judgement.todos = judgement.todos.enumerated().filter { !skipped.contains("t\($0.offset)") }.map(\.element)
@@ -228,6 +229,7 @@ final class PhoneShots {
                 shots[index].fileID = judgement.emailID
             }
             set(id, .taken(taken?.name ?? judgement.matter ?? "", taken?.persistentModelID))
+            if opens, let made = taken?.persistentModelID { NotificationCenter.default.post(name: .firstMatter, object: made) }
             Haptics.success()
             // Kept in the thread, as the Mac keeps it: every device shows what became of it, also
             // after a restart. The card here gives way to it.

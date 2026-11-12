@@ -1192,28 +1192,11 @@ struct MatterScreen: View {
     }
 
     /// "32 mails · 3 screenshots · 1 document": each kind counted as what it is.
-    static func count(_ entries: [Entry]) -> String {
-        var counts: [Source.Kind: Int] = [:]
-        for entry in entries { counts[entry.source.kind, default: 0] += 1 }
-        return count(kinds: counts)
-    }
+    static func count(_ entries: [Entry]) -> String { SourceCount(entries).line }
 
     /// Worked out only while it is asked: read every time the page drew, it made the page draw
     /// again after every change to the store.
     static func splitTitle(_ new: Int) -> String { "A new matter with the \(new) new \(new == 1 ? "mail" : "mails")" }
-
-    static func count(kinds counts: [Source.Kind: Int]) -> String {
-        let names: [(Source.Kind, String, String)] = [
-            (.mail, "mail", "mails"), (.screenshot, "screenshot", "screenshots"), (.document, "document", "documents"),
-            (.photo, "photo", "photos"), (.spokenNote, "spoken note", "spoken notes"), (.phoneCall, "call", "calls"),
-            (.conversation, "from the assistant", "from the assistant"),
-        ]
-        let parts = names.compactMap { kind, one, many -> String? in
-            let n = counts[kind] ?? 0
-            return n == 0 ? nil : "\(n) \(n == 1 ? one : many)"
-        }
-        return parts.isEmpty ? "No mails yet" : parts.joined(separator: " · ")
-    }
 }
 
 /// A task with its box to tick: whose it is, by when, and where it came from.
@@ -1793,7 +1776,7 @@ private struct PhoneCountLine: View {
                     let container = context.container
                     let version = StoredChanges.shared.count
                     let kinds = await Task.detached { RecordKinds.count(of: id, in: container) }.value
-                    counted = (version, MatterScreen.count(kinds: kinds))
+                    counted = (version, kinds.line)
                 }
                 .font(.subheadline).foregroundStyle(.secondary)
         }

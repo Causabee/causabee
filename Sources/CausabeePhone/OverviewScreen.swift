@@ -375,6 +375,8 @@ struct OverviewScreen: View {
         // Once, at the first start: what Causabee is and what it needs.
         .sheetWhenAsked(isPresented: $showsWelcome) { WelcomeSheet() }
         .sheet(isPresented: $addsMail) { MailAccountSheet() }
+        // F008: the first matter, made at once from what came in, opens.
+        .modifier(FirstMatterOpens(navigation: navigation))
         .onAppear { if !introSeen, !store.isDemo { showsWelcome = true } }
     }
 

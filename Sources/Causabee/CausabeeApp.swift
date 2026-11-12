@@ -877,6 +877,8 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .showIntro)) { _ in showsIntro = true }
         .onReceive(NotificationCenter.default.publisher(for: .showSetup)) { _ in showsSetup = true }
         .onReceive(NotificationCenter.default.publisher(for: .newMatter)) { _ in newMatterName = ""; startsMatter = true }
+        // F008: the first matter, made at once from what came in, opens.
+        .modifier(FirstMatterOpens(navigation: navigation))
         // A notification of news tapped: its matter opens. Of new mail: the overview.
         .onReceive(NotificationCenter.default.publisher(for: .openMatterKey)) { note in
             if let key = note.object as? String, let matter = matters.first(where: { $0.key == key }) {

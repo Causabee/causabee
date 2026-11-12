@@ -40,7 +40,7 @@ struct WelcomeTests {
     func endsAtFirstStep() throws {
         #expect(try Self.source(Self.phoneOverview).contains("FirstStep("))
         #expect(try Self.source(Self.macApp).contains("FirstStep("))
-        #expect(Welcome.firstTitle == "What's on your mind?")
+        #expect(Welcome.firstTitle == "What’s on your mind?")
     }
 
     @Test("F008 AC-4 · Typed, it becomes the first matter")

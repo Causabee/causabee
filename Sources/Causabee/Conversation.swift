@@ -257,7 +257,7 @@ struct Conversation {
         guard let turn = navigation.turns.first(where: { $0.id == id }), case .answered(let look, let judgement) = turn.shot?.stage else { return }
         // No matters at all (F008 AC-4, AC-5): nothing to choose — a new matter at once, the bee's name.
         if turn.matter == nil, Welcome.takesAtOnce(matters: (try? context.fetchCount(FetchDescriptor<Matter>())) ?? 1) {
-            take(shot: id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading), owner: owner)
+            take(shot: id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading), owner: owner, opens: true)
             return
         }
         guard let matter = SortsIn.matter(for: judgement, from: turn.matter, in: context) else { return }
@@ -268,7 +268,8 @@ struct Conversation {
 
     /// Takes what the screenshot said into a matter: the one the owner chose, or a new one with
     /// the name the owner left on the card.
-    func take(shot id: UUID, into matter: Matter?, newName: String, owner: [String], keep: Set<String>? = nil) {
+    /// `opens`: the first matter, made at once (F008) — the window opens it.
+    func take(shot id: UUID, into matter: Matter?, newName: String, owner: [String], keep: Set<String>? = nil, opens: Bool = false) {
         guard let turn = navigation.turns.first(where: { $0.id == id }), case .answered(let look, var judgement) = turn.shot?.stage else { return }
         // Only what the owner left checked: nothing already in the matter twice.
         if let keep {
@@ -339,6 +340,7 @@ struct Conversation {
                 navigation.turns[index].shot?.fileID = judgement.emailID
             }
             Self.set(shot: id, .taken(taken?.name ?? judgement.matter ?? "", taken?.persistentModelID), in: navigation)
+            if opens, let made = taken?.persistentModelID { NotificationCenter.default.post(name: .firstMatter, object: made) }
             if let index = navigation.turns.firstIndex(where: { $0.id == id }) { navigation.turns[index].matter = taken?.persistentModelID }
             if let document = turn.shot?.document.flatMap({ live($0, as: MatterCore.Document.self) }) {
                 document.readAt = Date()

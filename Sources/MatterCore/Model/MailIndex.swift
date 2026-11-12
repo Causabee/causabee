@@ -39,11 +39,37 @@ extension Matter {
 /// from the screen: each one's source has to be read for it, and with a few hundred that held the
 /// matter's page for a tenth of a second each time it came up.
 public enum RecordKinds {
-    public static func count(of matter: PersistentIdentifier, in container: ModelContainer) -> [Source.Kind: Int] {
+    public static func count(of matter: PersistentIdentifier, in container: ModelContainer) -> SourceCount {
         let context = ModelContext(container)
         let entries = (try? context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { $0.matter?.persistentModelID == matter }))) ?? []
-        var counts: [Source.Kind: Int] = [:]
-        for entry in entries { counts[entry.source.kind, default: 0] += 1 }
-        return counts
+        return SourceCount(entries)
+    }
+}
+
+/// "32 mails · 3 screenshots · 1 note of yours": each kind counted as what it is — the owner's own
+/// typed words (F008) as theirs, not the assistant's. One line for the Mac, the iPhone and the iPad.
+public struct SourceCount: Sendable {
+    public var kinds: [Source.Kind: Int] = [:]
+    public var own = 0
+
+    public init(_ entries: [Entry]) {
+        for entry in entries {
+            let source = entry.source
+            if source.isOwnWords { own += 1 } else { kinds[source.kind, default: 0] += 1 }
+        }
+    }
+
+    public var line: String {
+        let names: [(Source.Kind, String, String)] = [
+            (.mail, "mail", "mails"), (.screenshot, "screenshot", "screenshots"), (.document, "document", "documents"),
+            (.photo, "photo", "photos"), (.spokenNote, "spoken note", "spoken notes"), (.phoneCall, "call", "calls"),
+            (.conversation, "from the assistant", "from the assistant"),
+        ]
+        var parts = names.compactMap { kind, one, many -> String? in
+            let n = kinds[kind] ?? 0
+            return n == 0 ? nil : "\(n) \(n == 1 ? one : many)"
+        }
+        if own > 0 { parts.append(own == 1 ? "1 note of yours" : "\(own) notes of yours") }
+        return parts.isEmpty ? "Nothing yet" : parts.joined(separator: " · ")
     }
 }
