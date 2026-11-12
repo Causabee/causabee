@@ -4,8 +4,7 @@ Causabee turns what comes in — mail, screenshots, photos, files and scans, not
 
 ## New in this beta
 
-- **The chat costs less with every follow-up:** a second question about the same matter reads the matter from OpenAI's cache, at a twentieth of the price, and pays in full only for the question.
-- **Everything else the bee does costs less too:** reading what comes in, digests and briefs no longer pay extra to store text in the cache that was never read back.
+- **A quick question in the chat costs a fraction:** the bee sends what it needs — the brief, what is open, what came in lately — and looks in the whole matter when it must. The first question about a full matter costs less than half.
 
 ## Try it without setting anything up
 

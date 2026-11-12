@@ -1,0 +1,103 @@
+{
+  "model": "claude-fable-5-2",
+  "effort": "medium",
+  "cost": 0.614,
+  "verdicts": [
+    {
+      "case": "q02",
+      "question": "What's next?",
+      "a_was": "today",
+      "worse": "today",
+      "why": "A offers a card to mark 'Sam sends the guest list' as done, but that task was created from the very mail that delivered the first list (12 names unsure, six more wanted), so nothing shows it is finished and the card would wrongly close an open item. B has no wrong card, and it adds the physio appointment and the correct catch that the Saturday test-drive offer conflicts with the appointment saved for Monday. B lacks a card for the 14 November clash but states the clash in its text.",
+      "cost": 0.2318
+    },
+    {
+      "case": "q02",
+      "question": "What's next?",
+      "a_was": "two depths",
+      "worse": "today",
+      "why": "B offers a card to mark Sam's guest list as done, but that task was created from the very mail in which Sam sent the first list (74 names, 12 unsure, six more wanted), and nothing has come in since to show it is finished. Tapping it would also wrongly unblock the save-the-dates. B also leaves out tomorrow's 11:00 physio and the mismatch between the Saturday test-drive offer and the appointment saved for Monday 16 November, both of which A mentions. The Carry & Co card is the same in both and is supported by the confirmation mail.",
+      "cost": 0.038
+    },
+    {
+      "case": "q04",
+      "question": "Remind me on Friday to answer about the menu tasting",
+      "a_was": "today",
+      "worse": "neither",
+      "why": "Both offer the same new to-do card due Friday 2026-11-13; the only difference is that A's title names Gut Birkenhof, which changes nothing for the person.",
+      "cost": 0.0177
+    },
+    {
+      "case": "q04",
+      "question": "Remind me on Friday to answer about the menu tasting",
+      "a_was": "two depths",
+      "worse": "neither",
+      "why": "Both offer the same new reminder task due Friday 2026-11-13; the title in B names Gut Birkenhof, but that is only a wording difference. Neither duplicates an existing task exactly (T44 is booking the tasting), and both do what was asked.",
+      "cost": 0.009
+    },
+    {
+      "case": "q07",
+      "question": "What do I have to do this week?",
+      "a_was": "today",
+      "worse": "neither",
+      "why": "Both answers list the same overdue items, the same tasks for each day from Thursday to Sunday, the same appointments and the 14:00 Saturday clash. Both offer the same single card, marking the care-rota agreement (T60) as done, which fits the decision already made on the split week. The differences are wording only, such as \"collect\" versus \"buy\" the filter sand and where the appointments are listed.",
+      "cost": 0.0354
+    },
+    {
+      "case": "q07",
+      "question": "What do I have to do this week?",
+      "a_was": "two depths",
+      "worse": "neither",
+      "why": "Both answers list the same overdue items, the same tasks for 12–15 November, the same appointments and the 14:00 Saturday clash, and both include the insurer's documents deadline. Both offer the same card, marking \"Agree who is with Mum when\" as done, which fits the split-the-week decision of 2 November. The differences are wording only (for example \"buy\" versus \"collect\" the filter sand).",
+      "cost": 0.0389
+    },
+    {
+      "case": "q09",
+      "question": "Is anything due tomorrow?",
+      "a_was": "today",
+      "worse": "neither",
+      "why": "Both list the same eight tasks due 12 November (T3–T8, T60, T61) and both appointments (physio 11:00, assessor 14:00). Differences are only in ordering and wording; neither offers cards and none are needed.",
+      "cost": 0.0105
+    },
+    {
+      "case": "q09",
+      "question": "Is anything due tomorrow?",
+      "a_was": "two depths",
+      "worse": "neither",
+      "why": "Both answers list the same six own tasks due 12 November (T3–T8), the two shared tasks (T60, T61) and both appointments (physio 11:00, assessor 14:00). Only the grouping and wording differ; nothing is missing or wrong in either, and neither needed a card.",
+      "cost": 0.0112
+    },
+    {
+      "case": "q10",
+      "question": "What's next?",
+      "a_was": "today",
+      "worse": "today",
+      "why": "A's card to mark the guest list as received rests only on the 8 November message that created that to-do; nothing newer shows it is finished, and with 12 names unsure and six more wanted, ticking it off would wrongly unlock the save-the-dates. Both answers cover the overdue items, tomorrow's key dues, the Sunrise contract and the 14:00 clash on Saturday, and both offer the well-founded card for the confirmed movers. B leaves out the Chiara and test-drive reminders, and A leaves out taking the car in; those are lesser gaps than a wrong card.",
+      "cost": 0.0561
+    },
+    {
+      "case": "q10",
+      "question": "What's next?",
+      "a_was": "two depths",
+      "worse": "today",
+      "why": "B's card to mark the guest list as received is not supported: task T74 was created from Sam's first-list mail itself (74 names, 12 not sure, six more wanted), and nothing later shows the awaited list arrived. Tapping it would wrongly unblock the save-the-dates. A's single card (Carry & Co booked) is backed by the movers' confirmation mail. B's care-rota card is defensible, but that does not outweigh the wrong card.",
+      "cost": 0.0435
+    },
+    {
+      "case": "q10b",
+      "question": "And after that? (a follow-up to \"What's next?\")",
+      "a_was": "today",
+      "worse": "neither",
+      "why": "Both answers match the matter's dates, dependencies and appointments, and neither states anything wrong. A runs through 20 November and B stops around 18–19 November but adds the test drive and the Sintra choice; each leaves out a few items the other has, and none of those gaps is clearly decisive for an open-ended \"and after that?\". Neither offers cards, and none was clearly needed.",
+      "cost": 0.063
+    },
+    {
+      "case": "q10b",
+      "question": "And after that? (a follow-up to \"What's next?\")",
+      "a_was": "two depths",
+      "worse": "neither",
+      "why": "Both answers match the matter's dates, to-dos and deadlines for the days after 14 November. A covers a shorter window and B a longer one, and each skips a few minor items the other has (A the Kessler power of attorney, B the ID.3 test drive), but nothing stated is wrong and neither omission is decisive. Neither offers cards, and none was clearly needed.",
+      "cost": 0.0586
+    }
+  ]
+}

@@ -94,8 +94,8 @@ describe("F004 AC-1 · A request's job is in the ledger", () => {
 });
 
 describe("F004 AC-2 · A model the table does not give the job is refused", () => {
-  it("knows the four jobs, each with a priced model", () => {
-    expect(Object.keys(jobs).sort()).toEqual(["brief", "chat", "digest", "read"]);
+  it("knows the six jobs, each with a priced model", () => {
+    expect(Object.keys(jobs).sort()).toEqual(["brief", "chat", "chat-deeper", "chat-light", "digest", "read"]);
     for (const j of Object.values(jobs)) expect(costMicros(j.model, { input: 1, output: 1, cacheWrite: 0, cacheRead: 0, searches: 0 })).not.toBeNull();
   });
   it("sets the job's model when the request names none", async () => {
@@ -134,8 +134,8 @@ describe("F004 AC-4 · What may wait goes on Flex, and once more without it when
   it("sends reading, digests and the brief on Flex; never the chat", async () => {
     const { env } = fakeEnv();
     const sent = fakeOpenAI();
-    for (const job of ["read", "digest", "brief", "chat"]) await ask(env, { input: "x" }, job);
-    expect(sent.map((b) => b.service_tier)).toEqual(["flex", "flex", "flex", undefined]);
+    for (const job of ["read", "digest", "brief", "chat", "chat-light", "chat-deeper"]) await ask(env, { input: "x" }, job);
+    expect(sent.map((b) => b.service_tier)).toEqual(["flex", "flex", "flex", undefined, undefined, undefined]);
     expect(jobs.chat.flex).toBe(false);
   });
   it("asks again at the normal tier when Flex answers 429, and counts only what was answered", async () => {
@@ -174,5 +174,22 @@ describe("F004 AC-5 · The cache is counted as OpenAI charges it", () => {
   });
   it("prices a cached read of Sol at $0.10 a million, a twentieth of its input, as OpenAI charges it", () => {
     expect(costMicros("gpt-6.1-sol", { input: 0, output: 0, cacheWrite: 0, cacheRead: 1_000_000, searches: 0 })).toBe(100_000);
+  });
+});
+
+describe("F005 AC-8 · The ledger tells light from deep", () => {
+  it("writes a quick question as chat-light, its deeper ask as chat-deeper, and the whole matter as chat", async () => {
+    const { env, ledger } = fakeEnv();
+    fakeOpenAI();
+    for (const job of ["chat-light", "chat-deeper", "chat"]) expect((await ask(env, { input: "x" }, job)).status).toBe(200);
+    expect(ledger.map((row) => row.job)).toEqual(["chat-light", "chat-deeper", "chat"]);
+    expect(ledger.every((row) => row.model === jobs.chat.model)).toBe(true);
+  });
+  it("counts a question from a build before F005, named chat, as deep", async () => {
+    const { env, ledger } = fakeEnv();
+    fakeOpenAI();
+    await ask(env, { input: "x" }, "chat");
+    expect(ledger[0]).toMatchObject({ job: "chat" });
+    expect(jobs.chat.name).toBe("The chat");
   });
 });

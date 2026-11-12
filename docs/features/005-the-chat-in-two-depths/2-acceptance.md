@@ -9,7 +9,7 @@
 - Given a matter with much in it
 - When the owner asks a quick question about it — a task for tomorrow, a date, a note, who someone is, what comes next
 - Then only the light part of the matter is sent, and the answer and its cards are the ones the whole matter would have given
-- Holds for: every source of what came in; Mac, iPhone, iPad; with Pro and with an own key. Measured on the demo's fullest matter: a light question sends at most half the tokens it sends today.
+- Holds for: every source of what came in; Mac, iPhone, iPad; with Pro and with an own key. Measured on **the full demo matter** — all the demo's invented matters merged into one, in a copy of the demo's store (below): a light question sends at most half the tokens it sends today. The demo's own matters are too small for a light text (the fullest about 2,500 tokens), so they stay deep, as today.
 
 ### AC-2 · A question that needs the whole matter goes deep
 
@@ -34,9 +34,10 @@
 
 ### AC-5 · A follow-up keeps the depth
 
-- Given a conversation about one matter
+- Given a conversation about one matter: the question before it about this matter was answered at most 30 minutes ago, the cache's life
 - When the owner asks a follow-up
 - Then it goes at the depth of the question before it, or deeper if it needs to, so the cache reads what was sent before; it never goes lighter in the same conversation
+- And a question asked later — the next hour, the next day — is a first question again: its depth is picked anew, whatever went before in the matter's chat, an answer from a build before F005 too
 - Holds for: Mac, iPhone, iPad; with Pro and with an own key
 
 ### AC-6 · The same question, the same depth, on every device
@@ -51,7 +52,7 @@
 - Given the chat's pressure test on the demo's invented matters only, never real data
 - When it runs with two depths and as today
 - Then the two-depth answers are as good as today's: the same facts cited, the same cards, and no "not there" where today found it. A light depth on Terra goes in only if Terra passes the same test; otherwise light stays on Sol
-- Holds for: a set of light and deep questions on each demo matter, kept with the feature with its answers
+- Holds for: a set of light and deep questions on the full demo matter, kept with the feature with its answers. The full demo matter is made by `matter-spike merge` in a copy of the demo's store: invented text only, never real data, never the demo the app shows.
 
 ### AC-8 · The ledger tells light from deep
 

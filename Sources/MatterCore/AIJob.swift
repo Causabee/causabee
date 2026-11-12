@@ -10,8 +10,15 @@ public enum AIJob: String, CaseIterable, Sendable {
     case digest
     /// A matter's brief, summary and next step.
     case brief
-    /// The chat, where someone waits for the answer.
+    /// The chat, where someone waits for the answer: a question asked with the whole matter.
     case chat
+    /// F005: a quick question, asked with what it needs of the matter.
+    case chatLight = "chat-light"
+    /// F005: a quick question asked again with the whole matter, when its light answer lacked something.
+    case chatDeeper = "chat-deeper"
+
+    /// One of the chat's three: someone waits.
+    public var isChat: Bool { self == .chat || self == .chatLight || self == .chatDeeper }
 
     /// The model the job is asked of — through the beeserver, which sets it too, or with an own key.
     public var model: Claude.Model {
@@ -21,16 +28,18 @@ public enum AIJob: String, CaseIterable, Sendable {
         case .read: .gptSol
         case .digest: .gptTerra
         case .brief: .gptTerra
-        case .chat: .gptSol
+        case .chat, .chatDeeper: .gptSol
+        // F005: on Sol until the light questions pass their test on Terra (AC-7).
+        case .chatLight: .gptSol
         }
     }
 
     /// How hard the model thinks. Reading on "low" since 10 November: as good as Sol left to itself
     /// on the demo's matters, a little cheaper and nearly twice as fast (tests/results.md).
-    public var effort: String { self == .chat ? "medium" : "low" }
+    public var effort: String { isChat ? "medium" : "low" }
 
     /// Whether it may wait for Flex, at half the price. The beeserver decides; the chat never waits.
-    public var flex: Bool { self != .chat }
+    public var flex: Bool { !isChat }
 
     /// For `matter-spike jobs` only: a model to try a job on, in place of the table's.
     nonisolated(unsafe) public static var trying: [AIJob: Claude.Model] = [:]
@@ -40,6 +49,15 @@ public enum AIJob: String, CaseIterable, Sendable {
 }
 
 public extension AIJob {
+    /// F005: ", quick questions with OpenAI GPT-6.1 Terra" — only while quick questions go to
+    /// another model than the rest of the chat.
+    static func quickQuestions(with word: String) -> String {
+        chatLight.model == chat.model ? "" : ", quick questions \(word) \(chatLight.model.label)"
+    }
+
+    /// Where the chat's questions go, as its footer says it: "OpenAI GPT-6.1 Sol", or with the model of quick questions.
+    static var chatSentTo: String { chat.model.label + quickQuestions(with: "to") }
+
     /// Which model does which job, as Settings says it on every device — and causabee.app too.
     /// While every job is on one model, the one sentence of before.
     static func said(ownKey: String) -> String {
@@ -48,7 +66,7 @@ public extension AIJob {
         let reading = digest == read ? "Read, sorted and digested with \(read.label)." : "Read and sorted with \(read.label)."
         let writing = digest == brief && digest != read ? "Each item's digest, and each matter's brief and next step, with \(brief.label)."
             : "Each matter's brief and next step with \(brief.label)."
-        return reading + " " + writing + " The chat with \(chat.label). "
+        return reading + " " + writing + " The chat with \(chat.label)\(quickQuestions(with: "with")). "
             + "Each model was chosen only after it did its job as well as GPT-6.1 Sol. All of them get only pseudonymised text."
     }
 }

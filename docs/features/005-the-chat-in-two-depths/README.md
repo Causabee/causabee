@@ -1,6 +1,6 @@
 # F005 · The chat in two depths
 
-- Stage: 5
+- Stage: done
 - Lane: feature
 - Started: 2026-11-11
 - Branch: feature/005-the-chat-in-two-depths
@@ -13,7 +13,11 @@
 | 2 · What | 2026-11-11 | yes, go |
 | 3 · How | 2026-11-11 | Yes, go. |
 | 4 · Looks | 2026-11-11 | Approved |
+| 5 · Build | 2026-11-11 | yes |
+| 6 · Proof | 2026-11-12 | Done |
 
 ## Changes after a gate
 
-<!-- A criterion or the spec changed after it was approved: the date, what changed, why. One line each. -->
+- 2026-11-11, AC-1 and AC-7: measured and tested on the full demo matter — all demo matters merged into one, in a copy of the store — not on the demo's fullest matter. Why: the demo's matters are too small for a light text (the fullest about 2,500 tokens; the owner's about 14,000), so every demo question stays deep and nothing would be measured. Merged: 44,783 characters, its light text 21,709 (48%). The owner: "Approved".
+- 2026-11-11, AC-7: the blind reading of the answers that differ by Claude Fable 5.2, each pair in both orders, not by the owner. The owner: "it s impossible to give good answers/verdicts. All these made up matters and so many text. You can use your judgement. Maybe we ask Fable 5.2?"
+- 2026-11-12, AC-5: "the same conversation" is the question before it answered at most 30 minutes ago, the cache's life; later, the depth is picked anew. Why: in the Proof on the owner's own matter, the chat is kept from day to day, and its answers from before F005 count as deep — so every question there went deep, the first of the morning at full price ($0.048, nothing read from the cache). The owner: "Approved".

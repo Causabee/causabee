@@ -414,7 +414,7 @@ struct AssistantSheet: View {
             // As on the Mac: "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(!pro || ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro."
                 : showsMore
-                ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen) · goes pseudonymised, like the mails • [less](causabee://footer)"
+                ? "Always pseudonymised sent to \(AIJob.chatSentTo) • Sees: \(seen) · goes pseudonymised, like the mails • [less](causabee://footer)"
                 : "Always pseudonymised sent • [more](causabee://footer)"))
                 .font(.caption2).foregroundStyle(.secondary).tint(Theme.gold)
                 .environment(\.openURL, OpenURLAction { _ in showsMore.toggle(); return .handled })
@@ -460,6 +460,9 @@ extension AssistantSheet {
             guard let answer = item.turn.answer, item.turn.note == nil else { return nil }
             return (item.turn.question, CardActions.earlierWords(answer.reply, applied: item.turn.applied))
         }
+        // F005: light when what a quick question needs will do; never lighter than the question before it, within the cache's 30 minutes.
+        let after = shown.last { $0.turn.answer != nil && $0.turn.note == nil }.flatMap { ChatDepth.following($0.turn.answer?.depth, askedAt: $0.turn.date) }
+        let depth = ChatDepth.pick(question: question, facts: facts, after: after)
         // The model chosen in Settings, as on the Mac, with the key its service takes.
         let model = ModelChoice.assistant
         let client = ModelChoice.client(for: model)
@@ -582,7 +585,7 @@ extension AssistantSheet {
             do {
                 let answer = try await AssistantAsk.ask(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner,
                                                         today: today, mapping: names.mapping, others: names.others,
-                                                        claude: claude, model: model) { said.yield($0) }
+                                                        claude: claude, model: model, depth: depth) { said.yield($0) }
                 // Stopped while the answer was coming: it is not put into the thread.
                 guard !Task.isCancelled else { return }
                 var turn = Navigation.Turn(question: question, scope: matter.map { "about \($0.name)" } ?? "about all matters",

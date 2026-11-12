@@ -1,0 +1,163 @@
+[
+  {
+    "id": "q01",
+    "profile": "quick",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Make a task for tomorrow: buy moving boxes"
+    ]
+  },
+  {
+    "id": "q02",
+    "profile": "quick",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "What's next?"
+    ]
+  },
+  {
+    "id": "q03",
+    "profile": "quick",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Note: the spare key is with the neighbour"
+    ]
+  },
+  {
+    "id": "q04",
+    "profile": "quick",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Remind me on Friday to answer about the menu tasting"
+    ]
+  },
+  {
+    "id": "q05",
+    "profile": "quick",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Who wrote about the key box by the door?"
+    ]
+  },
+  {
+    "id": "q06",
+    "profile": "quick",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "When is my move?"
+    ]
+  },
+  {
+    "id": "q07",
+    "profile": "quick",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "What do I have to do this week?"
+    ]
+  },
+  {
+    "id": "q08",
+    "profile": "quick",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Add a task: confirm my bank details by Monday"
+    ]
+  },
+  {
+    "id": "q09",
+    "profile": "quick",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Is anything due tomorrow?"
+    ]
+  },
+  {
+    "id": "q10",
+    "profile": "quick, then a follow-up",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "What's next?",
+      "And after that?"
+    ]
+  },
+  {
+    "id": "d01",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "What is the number of the building insurance offer for Linden Street 8?"
+    ]
+  },
+  {
+    "id": "d02",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "What did Sunrise Home Care offer for Helga's visits?"
+    ]
+  },
+  {
+    "id": "d03",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Find the change to the outbound flight on 17 October"
+    ]
+  },
+  {
+    "id": "d04",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "What did the assessor say about the car?"
+    ]
+  },
+  {
+    "id": "d05",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Which sample tiles are ready for the bathroom?"
+    ]
+  },
+  {
+    "id": "d06",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "What happened in the parking-lot accident?"
+    ]
+  },
+  {
+    "id": "d07",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "When was the care level application for Helga received?"
+    ]
+  },
+  {
+    "id": "d08",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Summarize everything about the mortgage"
+    ]
+  },
+  {
+    "id": "d09",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "Which offers did the banks make?"
+    ]
+  },
+  {
+    "id": "d10",
+    "profile": "needs the whole matter",
+    "matter": "Care for Mum (Helga) after her fall",
+    "turns": [
+      "How much is the repair estimate for my car?"
+    ]
+  }
+]

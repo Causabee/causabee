@@ -158,7 +158,7 @@ mapping.json holds the originals. It is gitignored and never leaves this machine
 """
 
 struct Options {
-    enum Command: String { case run, labels, check, review, report, login, fetch, `import`, matters, merge, rename, parties, same, notsame, rules, ask, owner, close, reopen, party, screenshot, digest, pressure, jobs }
+    enum Command: String { case run, labels, check, review, report, login, fetch, `import`, matters, merge, rename, parties, same, notsame, rules, ask, owner, close, reopen, party, screenshot, digest, pressure, jobs, depths }
     var command = Command.run
     var folder = URL(fileURLWithPath: "Samples/mail")
     var log = URL(fileURLWithPath: "decisions.jsonl")
@@ -171,6 +171,9 @@ struct Options {
     var classify = false
     var dryRun: URL?
     var model = Claude.Model.gptSol
+    /// F005: `pressure --depths` asks as the app does now, light when it may be; `--light <model>` tries quick questions on another model.
+    var depths = false
+    var lightModel: Claude.Model?
     var effort: String?
     var limit: Int?
     var me: [String] = []
@@ -251,6 +254,8 @@ struct Options {
                     options.dryRun = URL(fileURLWithPath: "requests.jsonl")
                 }
             case "--model": guard let name = next(), let model = Claude.Model.named(name) else { return nil }; options.model = model
+            case "--depths": options.depths = true
+            case "--light": guard let name = next(), let model = Claude.Model.named(name) else { return nil }; options.lightModel = model
             case "--effort": guard let level = next() else { return nil }; options.effort = level
             case "--limit": guard let count = next(), let number = Int(count) else { return nil }; options.limit = number
             case "--me": guard let name = next() else { return nil }; options.me.append(name)
@@ -352,6 +357,7 @@ case .rules: try rules()
 case .ask: try await ask()
 case .pressure: try await pressure()
 case .jobs: try await jobs()
+case .depths: try depths()
 case .owner: try setOwner()
 case .close: try close()
 case .digest: try await digest()
@@ -1403,6 +1409,10 @@ struct PressureTurn: Codable {
     var cards: [[String: String]]
     var seconds: Double
     var cost: Double
+    /// F005: the depth it was answered at, whether a light answer was asked again, and what went out.
+    var depth: String? = nil
+    var wentDeeper: Bool? = nil
+    var sentCharacters: Int? = nil
 }
 
 struct PressureResult: Codable {
@@ -1426,6 +1436,7 @@ func pressure() async throws {
     let owner = try context.fetch(FetchDescriptor<Profile>()).first?.names.first
     let besides = options.store
     let today = MatterStatus.day(Date())
+    if let light = options.lightModel { AIJob.trying[.chatLight] = light }
     var results: [PressureResult] = []
     for item in cases {
         var result = PressureResult(id: item.id, profile: item.profile, matter: item.matter, inHand: item.inHand, model: model.label, turns: [])
@@ -1447,6 +1458,7 @@ func pressure() async throws {
                 inHand = ("Mail", "From: \(entry.from)\nSubject: \(entry.title)\n\n\(body)")
             }
             var earlier: [(question: String, answer: String)] = []
+            var lastDepth: ChatDepth?
             for question in item.turns {
                 // The words as the store keeps them — the copies beside it may be older.
                 let kept = Dictionary(((try? context.fetch(FetchDescriptor<KeptText>())) ?? []).map { ($0.messageID, $0.data) }, uniquingKeysWith: { a, _ in a })
@@ -1458,8 +1470,10 @@ func pressure() async throws {
                 let facts = FactSheet.facts(for: [matter], today: today, keptText: { words($0.messageID) })
                 let prepared = try AssistantAsk.prepare(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner,
                                                         today: today, mapping: options.mapping, saves: false)
+                let depth = options.depths ? ChatDepth.pick(question: question, facts: facts, after: lastDepth) : .deep
                 let answer = try await AssistantAsk.ask(question: question, inHand: inHand, earlier: earlier, facts: facts, owner: owner,
-                                                        today: today, mapping: options.mapping, claude: claude, model: model)
+                                                        today: today, mapping: options.mapping, claude: claude, model: model, depth: depth)
+                lastDepth = answer.depth
                 let cards: [[String: String]] = answer.reply.cards.map { card in
                     var row: [String: String] = ["kind": card.kind.rawValue, "text": card.text, "reason": card.reason, "owner": card.owner]
                     for (name, value) in [("todo", card.todo), ("party", card.party), ("into", card.into), ("from", card.from),
@@ -1471,7 +1485,8 @@ func pressure() async throws {
                 }
                 result.turns.append(PressureTurn(question: question, factsShown: facts.text, sent: prepared.sent,
                                                  lines: answer.reply.lines.map { $0.text + ($0.cites.isEmpty ? "" : "  [" + $0.cites.joined(separator: " ") + "]") },
-                                                 notInFacts: answer.reply.notInFacts, cards: cards, seconds: answer.seconds, cost: answer.cost))
+                                                 notInFacts: answer.reply.notInFacts, cards: cards, seconds: answer.seconds, cost: answer.cost,
+                                                 depth: answer.depth?.rawValue, wentDeeper: answer.wentDeeper, sentCharacters: answer.sent.count))
                 // As the app sends it: the lines, and what was offered (here: not taken).
                 let offered = answer.reply.cards.enumerated().map { index, card in
                     "\(index + 1)) " + ([card.kind.rawValue, card.todo, card.due, card.time.map { "at " + $0 }, card.subject,
@@ -1492,6 +1507,24 @@ func pressure() async throws {
     }
 }
 
+
+// MARK: depths — F005: how much a light text saves, matter by matter
+
+/// `matter-spike depths --store <demo store>`: each matter's whole text and its light text, in characters.
+/// Nothing is sent. Only the demo's store.
+@MainActor
+func depths() throws {
+    let context = try openStore()
+    let owner = try context.fetch(FetchDescriptor<Profile>()).first?.names ?? []
+    guard owner.contains("Mara Voss") else { fail("not the demo's store: its owner is not Mara Voss") }
+    let besides = options.store
+    let today = MatterStatus.day(Date())
+    for matter in try context.fetch(FetchDescriptor<Matter>()).sorted(by: { ($0.entries?.count ?? 0) > ($1.entries?.count ?? 0) }) {
+        let facts = FactSheet.facts(for: [matter], today: today, keptText: { MailText.load($0.messageID, besides: besides)?.body })
+        let light = facts.light.map { "\($0.count)  (\(percent($0.count, of: facts.text.count)))" } ?? "none"
+        print("\(matter.name.prefix(44).padding(toLength: 44, withPad: " ", startingAt: 0))  whole \(facts.text.count)  light \(light)")
+    }
+}
 
 // MARK: jobs — each job on Sol and on the model it may move to (F004 AC-3)
 

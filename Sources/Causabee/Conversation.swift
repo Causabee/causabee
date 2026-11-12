@@ -103,6 +103,14 @@ struct Conversation {
             guard before.matter == turn.matter, case .answered(let answer) = before.state else { return nil }
             return (before.question, CardActions.earlierWords(answer.reply, applied: before.applied))
         }
+        // F005: light when what a quick question needs will do; never lighter than the question before it, within the cache's 30 minutes.
+        let before = navigation.turns[..<position].last { before in
+            guard before.matter == turn.matter, case .answered = before.state else { return false }
+            return true
+        }
+        var after: ChatDepth? = nil
+        if let before, case .answered(let answer) = before.state { after = ChatDepth.following(answer.depth, askedAt: before.date) }
+        let depth = ChatDepth.pick(question: turn.question, facts: facts, after: after)
         navigation.turns[position].seen = facts.seen
         navigation.turns[position].refs = facts.refs
         navigation.turns[position].keys = CardActions.keys(of: facts.refs, in: context)
@@ -133,7 +141,8 @@ struct Conversation {
             defer { said.finish() }
             do {
                 let answer = try await AssistantAsk.ask(question: question, inHand: inHand, earlier: earlier, facts: facts,
-                                                        owner: owner, today: today, mapping: mapping, claude: claude, model: model) { said.yield($0) }
+                                                        owner: owner, today: today, mapping: mapping, claude: claude, model: model,
+                                                        depth: depth) { said.yield($0) }
                 // Stopped while the answer was coming: it is not put into the thread.
                 guard !Task.isCancelled else { return }
                 if let adding {
@@ -699,7 +708,7 @@ struct Composer: View {
             // "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(!pro || ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro."
                 : showsMore
-                ? "Always pseudonymised sent to \(ModelChoice.assistant.label) • Sees: \(seen()) · goes pseudonymised, like the mails • [less](causabee://footer)"
+                ? "Always pseudonymised sent to \(AIJob.chatSentTo) • Sees: \(seen()) · goes pseudonymised, like the mails • [less](causabee://footer)"
                 : "Always pseudonymised sent • [more](causabee://footer)"))
                 .font(.caption2).foregroundStyle(.secondary).tint(Theme.gold)
                 .environment(\.openURL, OpenURLAction { _ in showsMore.toggle(); return .handled })
