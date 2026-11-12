@@ -1,6 +1,6 @@
 # F005 · The chat in two depths
 
-- Stage: 6
+- Stage: done
 - Lane: feature
 - Started: 2026-11-11
 - Branch: feature/005-the-chat-in-two-depths
@@ -14,6 +14,7 @@
 | 3 · How | 2026-11-11 | Yes, go. |
 | 4 · Looks | 2026-11-11 | Approved |
 | 5 · Build | 2026-11-11 | yes |
+| 6 · Proof | 2026-11-12 | Done |
 
 ## Changes after a gate
 
