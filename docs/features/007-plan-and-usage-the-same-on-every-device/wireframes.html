@@ -1,0 +1,321 @@
+<title>Pro and Its Switch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap">
+<style>
+/* Layout: one row per thing the owner can have; in each, the switch off and on, side by side — wireframes, not designs. */
+:root {
+  --bg: #f4f4f2; --card: #ffffff; --ink: #22211b; --muted: #6c6b63; --line: #e3e3e0; --strong: #c7c6c2;
+  --bee: #ffdb0d; --topup: #b38f00; --warn: #c76600; --off: #c7c6c2; --note: #fff5c8;
+  --serif: "Source Serif 4", Georgia, serif; --sans: Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141310; --card: #22211b; --ink: #ecece9; --muted: #a3a29b; --line: #3a3932; --strong: #6c6b63;
+  --bee: #ffdb0d; --topup: #cca800; --warn: #ff9e33; --off: #53524a; --note: #3a3528; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141310; --card: #22211b; --ink: #ecece9; --muted: #a3a29b; --line: #3a3932; --strong: #6c6b63;
+  --bee: #ffdb0d; --topup: #cca800; --warn: #ff9e33; --off: #53524a; --note: #3a3528; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; }
+main { max-width: 1080px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font-family: var(--serif); font-weight: 500; font-size: 2rem; margin: 0; text-wrap: balance; }
+h2 { font-size: 1rem; font-weight: 600; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.intro { display: grid; gap: 10px; }
+.model { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.model div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 4px; }
+.model b { font-weight: 600; }
+.label { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.row { display: grid; gap: 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+.row header { display: grid; gap: 4px; }
+.today { color: var(--muted); font-size: .9rem; }
+.today strong { color: var(--ink); font-weight: 600; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.state { display: grid; gap: 6px; }
+.plan { background: var(--card); border: 1.5px dashed var(--strong); border-radius: 16px; padding: 16px 18px; display: grid; gap: 12px; }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.name { font-family: var(--serif); font-size: 1.45rem; }
+.corner { font-size: .82rem; color: var(--muted); }
+.holds { color: var(--muted); font-size: .9rem; }
+.meter { display: grid; gap: 6px; }
+.num { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.num span:first-child { font-family: var(--serif); font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.num span:last-child { color: var(--muted); font-size: .88rem; }
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 3px; min-width: 6px; }
+.m i { background: var(--bee); } .t i { background: var(--topup); } .w i { background: var(--warn); } .w .num span:first-child { color: var(--warn); }
+.none i { min-width: 0; }
+.dim .num span:first-child, .dim .num span:last-child { color: var(--muted); }
+.dim .bar i { background: var(--off); }
+.line { color: var(--muted); font-size: .82rem; }
+.button { justify-self: start; border-radius: 999px; padding: 7px 14px; font-size: .9rem; font-weight: 500; background: var(--line); }
+.button.filled { background: var(--ink); color: var(--card); }
+.switch { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.switch div { display: grid; gap: 2px; }
+.switch b { font-weight: 600; }
+.switch small { color: var(--muted); font-size: .82rem; }
+.toggle { flex: none; width: 44px; height: 26px; border-radius: 13px; background: var(--off); position: relative; }
+.toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); }
+.toggle.on { background: var(--topup); } .toggle.on::after { left: 21px; }
+.toggle.locked { opacity: .45; }
+.caption { font-size: .8rem; color: var(--muted); font-weight: 500; }
+.questions { background: var(--note); border-radius: 14px; padding: 18px 20px; display: grid; gap: 10px; }
+.questions ol { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; max-width: 72ch; }
+.settings { background: var(--card); border: 1.5px dashed var(--strong); border-radius: 16px; padding: 10px 0; display: grid; }
+.srow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 18px; border-bottom: 1px solid var(--line); }
+.srow:last-child { border-bottom: 0; }
+.srow .sum { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.srow .sum b { font-weight: 600; }
+.srow .sum small { color: var(--muted); font-size: .82rem; }
+.mini { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; display: flex; max-width: 220px; }
+.mini i { display: block; height: 100%; }
+.chev { color: var(--muted); font-size: 1.1rem; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; padding: 10px; border-bottom: 1px solid var(--line); }
+.tabs span { padding: 6px 12px; border-radius: 8px; font-size: .85rem; color: var(--muted); }
+.tabs span.sel { background: var(--line); color: var(--ink); font-weight: 600; }
+</style>
+
+<main>
+  <section class="intro">
+    <span class="label">F007 · Why · wireframes, 12 November</span>
+    <h1>Pro and its switch</h1>
+    <p>Where the plan lives in Settings, and every plan page the owner can meet, each with its switch off and on, for the App Store release: the same on the Mac, the iPhone and the iPad. The words and bars are a proposal, built on the owner's distinction: Pro is what you have; the switch is whether you use it right now.</p>
+  </section>
+
+  <section class="model">
+    <div><span class="label">Every device</span><b>Mac, iPhone and iPad buy alike</b><span class="holds">From the App Store, on each. Bought on one, restored on the others — never borrowed through iCloud. The same card everywhere.</span></div>
+    <div><span class="label">What you have</span><b>Free, Plus, Pro — and top-ups</b><span class="holds">Bought in the App Store. Pro and top-ups both give the bigger AI. Shown as bars whenever you have any.</span></div>
+    <div><span class="label">Whether you use it</span><b>The switch: “Use Pro”</b><span class="holds">Off keeps everything you have. Apple's model on this device reads what comes in, and nothing leaves it. The bars stay, greyed.</span></div>
+    <div><span class="label">The top-up button</span><b>With Plus or Pro, always</b><span class="holds">Grey while there is plenty; filled black once the month and top-ups together are a fifth of a Pro month or less. With Free, today: “See the plans” instead — proposed in C: the top-up's own button too.</span></div>
+    <div><span class="label">The rule</span><b>Pro or top-ups: always a bar</b><span class="holds">Even before the server has counted anything: then an empty bar that says so.</span></div>
+  </section>
+
+  <!-- Where it lives -->
+  <section class="row">
+    <header><h2>Where it lives — one row in Settings, a page of its own</h2>
+      <p class="today"><strong>Today:</strong> the whole plan card opens Settings and pushes the rest far down — on the Mac and the iPhone.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">iPhone and iPad — the top of Settings</span>
+        <div class="settings">
+          <div class="srow"><div class="sum"><b>Plan and usage</b><small>Causabee Pro · 59 % left · 33 % in top-ups</small>
+            <div class="mini"><i style="width:59%;background:var(--bee)"></i></div></div><span class="chev">›</span></div>
+          <div class="srow"><div class="sum"><b>Use Pro</b><small>GPT-6.1 Sol reads what comes in, names disguised first.</small></div><span class="toggle on"></span></div>
+          <div class="srow"><div class="sum"><b>Mail</b><small>2 accounts</small></div><span class="chev">›</span></div>
+          <div class="srow"><div class="sum"><b>Calendar and Reminders</b></div><span class="chev">›</span></div>
+          <div class="srow"><div class="sum"><b>iCloud</b><small>On</small></div><span class="chev">›</span></div>
+        </div></div>
+      <div class="state"><span class="caption">The row, by what you have</span>
+        <div class="settings">
+          <div class="srow"><div class="sum"><b>Plan and usage</b><small>Causabee · Free · See the plans</small></div><span class="chev">›</span></div>
+          <div class="srow"><div class="sum"><b>Plan and usage</b><small>Causabee · 37 % in top-ups</small>
+            <div class="mini"><i style="width:37%;background:var(--topup)"></i></div></div><span class="chev">›</span></div>
+          <div class="srow"><div class="sum"><b>Plan and usage</b><small>Causabee Pro · used for this month · add a top-up</small>
+            <div class="mini"><i style="width:2%;background:var(--warn)"></i></div></div><span class="chev">›</span></div>
+          <div class="srow"><div class="sum"><b>Plan and usage</b><small>Causabee Pro · not counted yet</small></div><span class="chev">›</span></div>
+        </div></div>
+      <div class="state"><span class="caption">Mac — a pane of the Settings window</span>
+        <div class="settings">
+          <div class="tabs"><span>General</span><span class="sel">Plan</span><span>Mail</span><span>Calendar</span><span>iCloud</span><span>Privacy</span></div>
+          <div class="srow"><div class="sum"><b>The plan page: one of the cards below</b><small>Bars, top-up, buying, Restore, Manage subscription, Use Pro.</small></div></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- A -->
+  <section class="row">
+    <header><h2>A · Nothing bought</h2>
+      <p class="today"><strong>Today:</strong> the same, but the switch is called “Pro on” and sits there as if it could be used.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">Switch off — the only state</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee</span><span class="corner">Free</span></div>
+          <span class="holds">3 open matters. Apple's model on this device.</span>
+          <span class="button filled">See the plans</span>
+          <div class="switch"><div><b>Use Pro</b><small>Needs Pro or a top-up. A tap shows the plans.</small></div><span class="toggle locked"></span></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="row">
+    <header><h2>B · Plus, every matter, no top-ups</h2>
+      <p class="today"><strong>Today:</strong> the same, with “Pro on”.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">Switch off — the only state</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee Plus</span><span class="corner">renews 14 November</span></div>
+          <span class="holds">Every matter. Apple's model on this device.</span>
+          <span class="button">Pro, now and then · 2,99 €</span>
+          <div class="switch"><div><b>Use Pro</b><small>Needs Pro or a top-up. A tap shows the plans.</small></div><span class="toggle locked"></span></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="row">
+    <header><h2>C · Top-ups only — Free or Plus, or after Pro ended</h2>
+      <p class="today"><strong>Today:</strong> the corner says “Free” beside a switch that says “Pro on”, and the only button is “See the plans” — a top-up only through the plans. Your Mac now, with Pro ended on 7 November.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">Use Pro off</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee</span><span class="corner">Pro ended 7 November</span></div>
+          <div class="meter t dim"><div class="num"><span>37 %</span><span>of a Pro month in top-ups · not in use</span></div><div class="bar"><i style="width:37%"></i></div></div>
+          <span class="line">Top-ups carry over from month to month.</span>
+          <span class="button">Pro, now and then · 2,99 €</span>
+          <div class="switch"><div><b>Use Pro</b><small>Off: Apple's model on this device reads what comes in. Nothing leaves it.</small></div><span class="toggle"></span></div>
+        </div></div>
+      <div class="state"><span class="caption">Use Pro on</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee</span><span class="corner">Pro ended 7 November</span></div>
+          <div class="meter t"><div class="num"><span>37 %</span><span>of a Pro month in top-ups</span></div><div class="bar"><i style="width:37%"></i></div></div>
+          <span class="line">Top-ups carry over from month to month.</span>
+          <span class="button">Pro, now and then · 2,99 €</span>
+          <div class="switch"><div><b>Use Pro</b><small>On: GPT-6.1 Sol reads what comes in, names disguised first.</small></div><span class="toggle on"></span></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- D -->
+  <section class="row">
+    <header><h2>D · Pro, the month in use</h2>
+      <p class="today"><strong>Today:</strong> with the switch off, the bar shows as if in use.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">Use Pro off</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee Pro</span><span class="corner">renews 28 November</span></div>
+          <div class="meter m dim"><div class="num"><span>59 %</span><span>left · not in use</span></div><div class="bar"><i style="width:59%"></i></div></div>
+          <span class="line">Starts anew on 28 November</span>
+          <span class="button">Add a top-up · 2,99 €</span>
+          <div class="switch"><div><b>Use Pro</b><small>Off: Apple's model on this device reads what comes in. Nothing leaves it.</small></div><span class="toggle"></span></div>
+        </div></div>
+      <div class="state"><span class="caption">Use Pro on</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee Pro</span><span class="corner">renews 28 November</span></div>
+          <div class="meter m"><div class="num"><span>59 %</span><span>left</span></div><div class="bar"><i style="width:59%"></i></div></div>
+          <span class="line">Starts anew on 28 November</span>
+          <span class="button">Add a top-up · 2,99 €</span>
+          <div class="switch"><div><b>Use Pro</b><small>On: GPT-6.1 Sol reads what comes in, names disguised first.</small></div><span class="toggle on"></span></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- E -->
+  <section class="row">
+    <header><h2>E · Pro and a top-up</h2>
+      <p class="today"><strong>Today with F006:</strong> as on the right; off is not greyed. The top-up button is there, grey until you run low.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">Use Pro off</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee Pro</span><span class="corner">renews 28 November</span></div>
+          <div class="meter m dim"><div class="num"><span>59 %</span><span>left · not in use</span></div><div class="bar"><i style="width:59%"></i></div></div>
+          <div class="meter t dim"><div class="num"><span>33 %</span><span>of a Pro month in top-ups</span></div><div class="bar"><i style="width:33%"></i></div></div>
+          <span class="line">Starts anew on 28 November · top-ups carry over</span>
+          <span class="button">Add a top-up · 2,99 €</span>
+          <div class="switch"><div><b>Use Pro</b><small>Off: Apple's model on this device reads what comes in. Nothing leaves it.</small></div><span class="toggle"></span></div>
+        </div></div>
+      <div class="state"><span class="caption">Use Pro on</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee Pro</span><span class="corner">renews 28 November</span></div>
+          <div class="meter m"><div class="num"><span>59 %</span><span>left</span></div><div class="bar"><i style="width:59%"></i></div></div>
+          <div class="meter t"><div class="num"><span>33 %</span><span>of a Pro month in top-ups</span></div><div class="bar"><i style="width:33%"></i></div></div>
+          <span class="line">Starts anew on 28 November · top-ups carry over</span>
+          <span class="button">Add a top-up · 2,99 €</span>
+          <div class="switch"><div><b>Use Pro</b><small>On: GPT-6.1 Sol reads what comes in, names disguised first.</small></div><span class="toggle on"></span></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- F -->
+  <section class="row">
+    <header><h2>F · Pro, the month used up, no top-up</h2>
+      <p class="today"><strong>Today:</strong> the same; the switch stays “on” while nothing can be used.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">Use Pro on — but used up</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee Pro</span><span class="corner">renews 28 November</span></div>
+          <div class="meter w"><div class="num"><span>0 %</span><span>left</span></div><div class="bar"><i style="width:0%"></i></div></div>
+          <span class="line">Used for this month. Apple's model on this device reads until 28 November — or with a top-up.</span>
+          <span class="button filled">Add a top-up · 2,99 €</span>
+          <div class="switch"><div><b>Use Pro</b><small>On, waiting: nothing left to use until 28 November.</small></div><span class="toggle on"></span></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- G -->
+  <section class="row">
+    <header><h2>G · Pro, not counted yet — a new device, the server not reached</h2>
+      <p class="today"><strong>Today:</strong> “Causabee Pro” and no bar at all, as in your simulator picture.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">Use Pro off or on</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee Pro</span><span class="corner">renews 28 November</span></div>
+          <div class="meter m none"><div class="num"><span>–</span><span>not counted yet</span></div><div class="bar"><i style="width:0%"></i></div></div>
+          <span class="line">Shown once Causabee reaches its server.</span>
+          <div class="switch"><div><b>Use Pro</b><small>Off: Apple's model on this device reads what comes in. Nothing leaves it.</small></div><span class="toggle"></span></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- H -->
+  <section class="row">
+    <header><h2>H · Pro that will end, or cannot be charged</h2>
+      <p class="today"><strong>Today:</strong> the same words in the corner. After the end, it becomes C, or A without top-ups.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">Cancelled, still running</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee Pro</span><span class="corner">ends 28 November</span></div>
+          <div class="meter m"><div class="num"><span>59 %</span><span>left</span></div><div class="bar"><i style="width:59%"></i></div></div>
+          <span class="line">Pro ends on 28 November. Top-ups you have stay.</span>
+          <span class="button">Add a top-up · 2,99 €</span>
+          <div class="switch"><div><b>Use Pro</b><small>On: GPT-6.1 Sol reads what comes in, names disguised first.</small></div><span class="toggle on"></span></div>
+        </div></div>
+      <div class="state"><span class="caption">The card could not be charged</span>
+        <div class="plan">
+          <div class="top"><span class="name">Causabee Pro</span><span class="corner">payment problem</span></div>
+          <div class="meter m"><div class="num"><span>59 %</span><span>left</span></div><div class="bar"><i style="width:59%"></i></div></div>
+          <span class="line" style="color:var(--warn)">Apple could not charge your payment method. The plan goes on until 3 December; update it in your Apple Account.</span>
+          <div class="switch"><div><b>Use Pro</b><small>On: GPT-6.1 Sol reads what comes in, names disguised first.</small></div><span class="toggle on"></span></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- Buying -->
+  <section class="row">
+    <header><h2>Buying — the plans, on every device</h2>
+      <p class="today"><strong>Today:</strong> only on the iPhone and the iPad; the Mac shows the plans but cannot buy.</p></header>
+    <div class="pair">
+      <div class="state"><span class="caption">The plans — Pro chosen</span>
+        <div class="plan">
+          <div class="top"><span class="name">Your plan</span><span class="corner">Free stays on your device</span></div>
+          <div class="meter"><div class="num"><span style="font-size:1.05rem;font-family:var(--sans);font-weight:600">Causabee</span><span>3 open matters · Free</span></div></div>
+          <div class="meter"><div class="num"><span style="font-size:1.05rem;font-family:var(--sans);font-weight:600">Causabee Plus</span><span>Every matter, on your device · 0,99 € a month, or 9,99 € a year</span></div></div>
+          <div class="meter" style="border:2px solid var(--bee);border-radius:10px;padding:8px 10px"><div class="num"><span style="font-size:1.05rem;font-family:var(--sans);font-weight:600">Causabee Pro</span><span>The bigger AI, up to a monthly limit · 1 week free, then 7,99 € a month</span></div></div>
+          <div class="meter"><div class="num"><span style="font-size:1.05rem;font-family:var(--sans);font-weight:600">Pro, now and then</span><span>A third of a Pro month, kept until used · 2,99 €</span></div></div>
+          <span class="button filled">Continue with Pro · 1 week free</span>
+          <span class="line">Restore Purchases</span>
+        </div></div>
+      <div class="state"><span class="caption">While buying, and after</span>
+        <div class="plan">
+          <span class="holds"><b>Buying:</b> the button waits, the App Store's own sheet asks.</span>
+          <span class="holds"><b>Waits for approval:</b> “The purchase waits for approval — Ask to Buy, or the bank.”</span>
+          <span class="holds"><b>Cancelled:</b> nothing changes, nothing is said.</span>
+          <span class="holds"><b>Could not be confirmed:</b> “The App Store could not confirm the purchase. Nothing was charged that is not confirmed.”</span>
+          <span class="holds"><b>Bought:</b> the sheet closes; the card is D or E. A top-up bought turns Use Pro on by itself, today.</span>
+          <span class="holds"><b>On another device:</b> the same plan after Restore, or by itself at the next start.</span>
+        </div></div>
+    </div>
+  </section>
+
+  <section class="questions">
+    <h2>For you to decide</h2>
+    <ol>
+      <li><b>The switch's name.</b> “Use Pro” keeps Pro as what you have and the switch as using it. Today it is “Pro on”.</li>
+      <li><b>Off keeps the bars, greyed, “not in use”.</b> Or hide them while off?</li>
+      <li><b>Top-ups without Pro (C).</b> The corner says why: “Free”, “Plus · renews …”, or “Pro ended 7 November”. Or the card's name becomes “Causabee · top-ups”?</li>
+      <li><b>Not counted yet (G).</b> An empty bar with “not counted yet”, as you said: Pro is never without a bar.</li>
+      <li><b>A top-up bought turns Use Pro on by itself.</b> Keep that, now that the switch is your decision?</li>
+      <li><b>Manage subscription</b> on the Mac too, once it buys — the App Store's own sheet there.</li>
+      <li><b>Where it lives.</b> One row “Plan and usage” at the top of Settings, opening its page; on the Mac a “Plan” pane. “Use Pro” also as a row under it — or only on the page and the bee?</li>
+      <li><b>What F007 holds.</b> The row and the page, the switch's name and its greyed state, the cases above. Buying on the Mac needs the Mac in the App Store — its own piece of work, before or after?</li>
+    </ol>
+  </section>
+</main>
