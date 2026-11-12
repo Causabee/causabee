@@ -1,0 +1,233 @@
+<title>Welcome and First Step</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap">
+<style>
+/* F008 wireframes: the four welcome pages, the first step and its states, the name box, the mail card — iPhone and Mac. */
+:root {
+  --page: #f4f4f2; --ink: #22211b; --muted: #6c6b63; --line: #e3e3e0; --strong: #c7c6c2;
+  --screen: #ffffff; --card: #ffffff; --box: #f5f5f4; --bee: #ffdb0d; --beesoft: #fff5c8; --gold: #7f5e00; --onink: #ffffff;
+  --serif: "Source Serif 4", Georgia, serif; --sans: Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0e0d0a; --ink: #ecece9; --muted: #a3a29b; --line: #3a3932; --strong: #6c6b63;
+  --screen: #141310; --card: #1b1a16; --box: #3a3932; --beesoft: #3a3528; --gold: #ffe03a; --onink: #0b0a05; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #0e0d0a; --ink: #ecece9; --muted: #a3a29b; --line: #3a3932; --strong: #6c6b63;
+  --screen: #141310; --card: #1b1a16; --box: #3a3932; --beesoft: #3a3528; --gold: #ffe03a; --onink: #0b0a05; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.45; margin: 0;
+  padding: 28px max(16px, env(safe-area-inset-right, 0px)) 56px max(16px, env(safe-area-inset-left, 0px)); }
+main { max-width: 1180px; margin: 0 auto; display: grid; gap: 34px; }
+h1 { font-family: var(--serif); font-weight: 500; font-size: 2rem; margin: 0; }
+h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 72ch; }
+.lead, .note { color: var(--muted); }
+.note { font-size: .88rem; }
+section { display: grid; gap: 14px; padding-top: 20px; border-top: 1px solid var(--line); }
+.row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+.cap { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+
+/* An iPhone screen */
+.phone { width: 270px; height: 560px; background: var(--screen); border: 1px solid var(--line); border-radius: 34px; padding: 22px 18px 16px;
+  display: flex; flex-direction: column; gap: 10px; overflow: hidden; position: relative; font-size: 13.5px; }
+.phone .grow { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.bee { width: 30px; height: 30px; border-radius: 9px; background: var(--bee); display: grid; place-items: center; font-size: 15px; color: #000; }
+.bee.s { width: 22px; height: 22px; border-radius: 7px; font-size: 11px; }
+.title { font-family: var(--serif); font-size: 1.55rem; line-height: 1.12; font-weight: 500; }
+.ptitle { font-family: var(--serif); font-size: 1.15rem; line-height: 1.2; font-weight: 500; }
+.sub { color: var(--muted); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: grid; gap: 4px; }
+.chip { justify-self: start; background: var(--bee); color: #000; font-size: .62rem; font-weight: 700; letter-spacing: .06em; border-radius: 6px; padding: 2px 6px; }
+.lock { background: var(--box); border-radius: 10px; padding: 8px 10px; font-size: .78rem; }
+.cut { border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,.08); padding: 10px; display: grid; gap: 6px; background: var(--card); }
+.next { background: var(--beesoft); border-radius: 12px; padding: 8px 10px; display: grid; gap: 2px; }
+.task { display: flex; gap: 8px; align-items: center; font-size: .82rem; }
+.task i { width: 14px; height: 14px; border: 1.5px solid var(--strong); border-radius: 50%; flex: none; }
+.task.wait i { border-style: dashed; }
+.task small { color: var(--muted); margin-left: auto; }
+.shot { display: grid; grid-template-columns: 76px 1fr; gap: 8px; align-items: center; }
+.shotimg { height: 120px; border-radius: 10px; background: repeating-linear-gradient(180deg, var(--box) 0 10px, transparent 10px 16px); border: 1px solid var(--line); }
+.found { display: grid; gap: 6px; }
+.found div { background: var(--box); border-radius: 8px; padding: 6px 8px; font-size: .78rem; }
+.q { justify-self: end; background: var(--box); border-radius: 14px; padding: 7px 10px; font-size: .82rem; max-width: 85%; }
+.a { font-size: .82rem; }
+.src { color: var(--gold); font-size: .75rem; }
+.dots { display: flex; gap: 6px; justify-content: center; }
+.dots b { width: 6px; height: 6px; border-radius: 50%; background: var(--strong); }
+.dots b.on { background: var(--ink); }
+.btn { border-radius: 999px; padding: 9px 12px; text-align: center; font-weight: 600; font-size: .85rem; border: 0; }
+.btn.fill { background: var(--ink); color: var(--onink); }
+.btn.quiet { background: var(--box); color: var(--ink); font-weight: 500; }
+.link { color: var(--gold); font-weight: 500; }
+.field { border-radius: 22px; border: 1px solid var(--line); background: color-mix(in srgb, var(--screen) 70%, var(--box)); padding: 10px 10px 10px 14px;
+  min-height: 82px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+.field .ph { color: var(--muted); }
+.field .end { display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
+.mic { color: var(--muted); font-size: .9rem; }
+.send { width: 28px; height: 28px; border-radius: 50%; background: var(--bee); color: #000; display: grid; place-items: center; font-weight: 700; }
+.send.off { background: var(--box); color: var(--muted); }
+.adds { display: flex; gap: 6px; }
+.adds .btn { flex: 1; padding: 8px 4px; }
+.spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--strong); border-top-color: var(--ink); display: inline-block; vertical-align: -2px; margin-right: 6px; }
+.search { border-radius: 12px; background: var(--box); padding: 7px 10px; color: var(--muted); font-size: .8rem; }
+.namebox { background: var(--box); border-radius: 14px; padding: 10px; display: grid; gap: 8px; font-size: .82rem; }
+.namebox .in { background: var(--screen); border: 1px solid var(--line); border-radius: 10px; padding: 7px 9px; color: var(--muted); }
+.mailcard { border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: grid; gap: 6px; font-size: .82rem; }
+.mailcard .acts { display: flex; gap: 12px; align-items: center; }
+.matterrow { border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; display: grid; gap: 2px; font-size: .82rem; }
+.matterrow b { font-weight: 600; font-size: .9rem; }
+
+/* A Mac window */
+.mac { width: min(100%, 760px); height: 420px; background: var(--screen); border: 1px solid var(--line); border-radius: 14px; display: grid; grid-template-columns: 190px 1fr; overflow: hidden; font-size: 13px; }
+.side { background: var(--box); padding: 34px 12px 12px; display: grid; align-content: start; gap: 6px; color: var(--muted); font-size: .8rem; }
+.side .sel { background: var(--screen); color: var(--ink); border-radius: 8px; padding: 5px 8px; }
+.macmain { display: grid; place-items: center; padding: 24px; }
+.col { width: 100%; max-width: 420px; display: grid; gap: 10px; }
+.drop { color: var(--muted); font-size: .8rem; align-self: center; }
+@media (max-width: 560px) { .mac { grid-template-columns: 1fr } .side { display: none } }
+</style>
+
+<main>
+  <header style="display:grid;gap:8px">
+    <span class="cap">F008 · Looks · 12 November</span>
+    <h1>Welcome and first step</h1>
+    <p class="lead">Four calm pages, then your own empty Causabee with one first step: type what's on your mind, or add what you have. The demo is a quiet link. Nothing is asked at the door; your name and mail come once a matter exists.</p>
+  </header>
+
+  <section>
+    <h2>1 · The welcome, four pages</h2>
+    <p class="note">Was six pages ending in iCloud / Plan / Mail ticks. Each picture is a cut-out of a demo matter, not a full screen. Privacy is said once, on the first page.</p>
+    <div class="row">
+      <div><div class="cap">1 · The promise</div>
+        <div class="phone"><div class="grow">
+          <div class="bee">🐝</div>
+          <div class="title">Every matter.<br>In its place.</div>
+          <div class="sub">Mum's care, a claim, a move: each in its own place — with what comes next, and who does what by when.</div>
+          <div class="card"><span class="chip">1 FOR YOU · WAITING FOR 1</span><b>Care for Mum after her fall</b><span class="sub" style="font-size:.8rem">Next, on Oct 6: The medical service visits</span></div>
+          <div class="lock">🔒 Names are disguised before anything is sent.</div>
+        </div>
+        <div class="dots"><b class="on"></b><b></b><b></b><b></b></div>
+        <div class="btn fill">Next</div><div class="btn quiet">Skip</div></div></div>
+
+      <div><div class="cap">2 · A matter's page</div>
+        <div class="phone"><div class="grow">
+          <div class="cut">
+            <b style="font-size:.85rem">Moving to Lisbon</b>
+            <div class="next"><span class="chip">NEXT</span><span style="font-size:.8rem">Send the flat's papers to the agent</span></div>
+            <div class="task"><i></i>Book the movers<small>Fri</small></div>
+            <div class="task wait"><i></i>Sam: the keys<small>waiting</small></div>
+          </div>
+          <div class="ptitle">One page for each matter</div>
+          <div class="sub">What comes next, and who does what by when.</div>
+        </div>
+        <div class="dots"><b></b><b class="on"></b><b></b><b></b></div>
+        <div class="btn fill">Next</div><div class="btn quiet">Skip</div></div></div>
+
+      <div><div class="cap">3 · From whatever you have</div>
+        <div class="phone"><div class="grow">
+          <div class="cut"><div class="shot"><div class="shotimg"></div>
+            <div class="found"><div>📅 Thu 17:00 · site visit</div><div>☐ Guest list to Sam · Fri</div></div></div></div>
+          <div class="ptitle">From whatever you have</div>
+          <div class="sub">A screenshot, a photo, a letter, a few words: the bee finds the dates and the tasks.</div>
+        </div>
+        <div class="dots"><b></b><b></b><b class="on"></b><b></b></div>
+        <div class="btn fill">Next</div><div class="btn quiet">Skip</div></div></div>
+
+      <div><div class="cap">4 · Ask about it</div>
+        <div class="phone"><div class="grow">
+          <div class="cut"><div class="q">When does the care service come?</div>
+            <div class="a">Thursday at 10, for the first visit. <span class="src">↗ letter of 2 Oct</span></div></div>
+          <div class="ptitle">Ask about it</div>
+          <div class="sub">Ask, and get an answer with where it came from.</div>
+        </div>
+        <div class="dots"><b></b><b></b><b></b><b class="on"></b></div>
+        <div class="btn fill">Start</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2 · The first step — your own Causabee, nothing in it yet</h2>
+    <p class="note">The overview while there are no matters. The field is the chat's field, on glass. Without Pro the screen is the same: Apple's model on the device reads it.</p>
+    <div class="row">
+      <div><div class="cap">Empty</div>
+        <div class="phone"><div class="search">Find or start a matter</div><div class="grow" style="justify-content:center">
+          <div class="bee s">🐝</div>
+          <div class="title" style="font-size:1.35rem">What's on your mind?</div>
+          <div class="sub">Type it in a few words, or add what you have.</div>
+          <div class="field"><span class="ph">Mum's care, a claim, a move …</span><span class="end"><span class="mic">🎙</span><span class="send off">↑</span></span></div>
+          <div class="adds"><span class="btn quiet">Photo</span><span class="btn quiet">Scan</span><span class="btn quiet">File</span></div>
+          <div style="margin-top:14px;font-size:.82rem" class="sub">Not sure yet? <span class="link">Look around in an example.</span></div>
+        </div></div></div>
+
+      <div><div class="cap">Typed</div>
+        <div class="phone"><div class="search">Find or start a matter</div><div class="grow" style="justify-content:center">
+          <div class="bee s">🐝</div>
+          <div class="title" style="font-size:1.35rem">What's on your mind?</div>
+          <div class="sub">Type it in a few words, or add what you have.</div>
+          <div class="field"><span>Mum fell. The care service visits on Thursday.</span><span class="end"><span class="mic">🎙</span><span class="send">↑</span></span></div>
+          <div class="adds"><span class="btn quiet">Photo</span><span class="btn quiet">Scan</span><span class="btn quiet">File</span></div>
+          <div style="margin-top:14px;font-size:.82rem" class="sub">Not sure yet? <span class="link">Look around in an example.</span></div>
+        </div></div></div>
+
+      <div><div class="cap">Reading</div>
+        <div class="phone"><div class="search">Find or start a matter</div><div class="grow" style="justify-content:center">
+          <div class="bee s">🐝</div>
+          <div class="title" style="font-size:1.35rem">What's on your mind?</div>
+          <div class="field" style="opacity:.55"><span>Mum fell. The care service visits on Thursday.</span><span class="end"><span class="send off">↑</span></span></div>
+          <div class="sub" style="font-size:.85rem"><span class="spin"></span>Reading …</div>
+        </div></div></div>
+
+      <div><div class="cap">Looking in iCloud (new device)</div>
+        <div class="phone"><div class="search">Find or start a matter</div><div class="grow" style="justify-content:center">
+          <div class="sub" style="font-size:.8rem"><span class="spin"></span>Looking in iCloud for your matters …</div>
+          <div class="bee s">🐝</div>
+          <div class="title" style="font-size:1.35rem">What's on your mind?</div>
+          <div class="sub">Type it in a few words, or add what you have.</div>
+          <div class="field"><span class="ph">Mum's care, a claim, a move …</span><span class="end"><span class="mic">🎙</span><span class="send off">↑</span></span></div>
+          <div class="adds"><span class="btn quiet">Photo</span><span class="btn quiet">Scan</span><span class="btn quiet">File</span></div>
+        </div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3 · The first matter, and then</h2>
+    <p class="note">The matter opens with what the bee found. While your name is not known, one quiet box asks it — once, on every device. Back on the overview, mail is offered as one grey card: visible, never an obligation.</p>
+    <div class="row">
+      <div><div class="cap">The first matter · name box (iPhone, iPad)</div>
+        <div class="phone"><div class="grow">
+          <div class="ptitle">Care for Mum after her fall</div>
+          <div class="namebox">Your name, so your tasks show as yours.<div class="in">Your name</div><span class="btn fill" style="justify-self:start;padding:6px 14px">Save</span></div>
+          <div class="next"><span class="chip">NEXT</span><span style="font-size:.8rem">Be home when the care service visits</span></div>
+          <div class="task"><i></i>Care service visits<small>Thu</small></div>
+          <div class="card" style="font-size:.8rem"><span class="cap" style="margin:0">From you</span>Mum fell. The care service visits on Thursday.</div>
+        </div></div></div>
+
+      <div><div class="cap">The overview · the mail card</div>
+        <div class="phone"><div class="search">Find or start a matter</div><div class="grow">
+          <div class="matterrow"><b>Care for Mum after her fall</b><span class="sub">Next, Thu: Care service visits</span></div>
+          <div class="mailcard"><b>Also what comes by mail?</b><span class="sub">Causabee reads one label or folder you choose — nothing else in your mailbox.</span>
+            <div class="acts"><span class="btn quiet" style="padding:6px 14px">Set up</span><span class="link">Not now</span></div></div>
+        </div></div></div>
+
+      <div style="flex:1;min-width:280px"><div class="cap">The name box on the Mac</div>
+        <div class="namebox" style="max-width:420px;font-size:.9rem">This is you: Alex?<div style="display:flex;gap:12px;align-items:center"><span class="btn fill" style="padding:6px 16px">Yes</span><span class="link">Change</span></div></div>
+        <p class="note" style="margin-top:10px">The Mac fills in its own user name. The iPhone and the iPad have no card of their own: the field starts empty (the change to AC-12).</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4 · The Mac</h2>
+    <p class="note">The welcome is today's sheet with four pages and the Mac's own cut-outs. After it, no setup opens: the first step stands where "No matters yet" stood. One button and the window's drop; Set Up Causabee … stays in the menu.</p>
+    <div class="mac">
+      <div class="side"><span class="sel">Overview</span><span>No matters yet</span></div>
+      <div class="macmain"><div class="col">
+        <div class="bee s">🐝</div>
+        <div class="title" style="font-size:1.6rem">What's on your mind?</div>
+        <div class="sub">Type it in a few words, or add what you have.</div>
+        <div class="field"><span class="ph">Mum's care, a claim, a move …</span><span class="end"><span class="mic">🎙</span><span class="send off">↑</span></span></div>
+        <div style="display:flex;gap:10px;align-items:center"><span class="btn quiet" style="border-radius:8px;padding:6px 12px">Add a file …</span><span class="drop">or drop it here</span></div>
+        <div style="margin-top:12px;font-size:.85rem" class="sub">Not sure yet? <span class="link">Look around in an example.</span></div>
+      </div></div>
+    </div>
+  </section>
+</main>
