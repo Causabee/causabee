@@ -62,6 +62,9 @@ struct WelcomeTests {
         #expect(Welcome.matterName(proposed: "Care for Mum", typed: "Mum fell.") == "Care for Mum")
         #expect(Welcome.matterName(proposed: nil, typed: "Mum fell. The care service visits on Thursday.\nMore") == "Mum fell. The care service visits on Thursday.")
         #expect(Welcome.matterName(proposed: " ", typed: String(repeating: "a", count: 80)).count == 60)
+        // A long line is cut at a word, never in one (the pressure test, 12 November).
+        #expect(Welcome.matterName(proposed: nil, typed: "Car insurance claim after the parking-lot accident, the assessor calls next week")
+                == "Car insurance claim after the parking-lot accident, the")
     }
 
     @Test("F008 AC-5 · Added, it becomes the first matter")

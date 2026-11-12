@@ -43,7 +43,12 @@ public enum Welcome {
     public static func matterName(proposed: String?, typed: String) -> String {
         if let proposed = proposed?.trimmingCharacters(in: .whitespacesAndNewlines), !proposed.isEmpty { return proposed }
         let line = typed.split(whereSeparator: \.isNewline).first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
-        return String((line.isEmpty ? "A new matter" : line).prefix(60))
+        guard !line.isEmpty else { return "A new matter" }
+        guard line.count > 60 else { return line }
+        // Cut at a word, never in one.
+        let cut = String(line.prefix(60))
+        let words = cut.split(separator: " ").dropLast()
+        return (words.isEmpty ? cut : words.joined(separator: " ")).trimmingCharacters(in: CharacterSet(charactersIn: " ,;:—-"))
     }
 
     /// Typed words as a file that comes in like any other: a `.txt`, read by `ScreenshotDoor` as the

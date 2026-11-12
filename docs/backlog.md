@@ -24,6 +24,7 @@ Seen while building something else. Not built now: each becomes a feature, joins
 11. **Not planned:** reading on Claude Haiku (OpenAI only, the owner's decision); pinning files (needs a schema change); sharing with the family (after the release).
 
 
+- Fix lane: the device reader dates "Science fair project with Lena, due 20 November" as 12 November (today), and "Steuererklärung 2025 bis 31. Juli" as 31 July 2025, in the past — F008's pressure test, 12 November (WelcomePressureTests, CAUSABEE_PRESSURE=1) (2026-11-12)
 - The ProLine on a matter's Next card says "Pro reads every mail for this." — mail only, against principle 1 (seen in F008's simulator try, 12 November) (2026-11-12)
 - Grow with the product: show Causabee's other features when they become useful — mail offered once a matter exists, Pro when an answer needs it, the rest step by step — not all at once (the owner, 12 November, during F008's Why) (2026-11-12)
 - The owner's question bubble in the chat is honey yellow (Theme.honey: AssistantView.swift:692, AssistantSheet.swift:667, :785), against colors.md's rule that yellow means something waits for the owner, or the bee herself. Three greys drawn at https://claude.ai/artifact/GHo8fLerdz7FG6M29T2Y2u; the owner chose A, the quiet grey box (Theme.box, words .primary), 12 November: "A, grey box". Built after F007. (2026-11-12)

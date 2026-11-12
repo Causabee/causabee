@@ -450,7 +450,8 @@ public struct Extractor: Sendable {
             // The name as listed, whatever the model added around it; a name not listed is a new matter only when it says so.
             let answered = read.matter?.trimmingCharacters(in: CharacterSet(charactersIn: "`\"' ")).components(separatedBy: " — ").first
             let listed = answered.flatMap { name in known.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.name }
-            let matter = assignedTo ?? listed ?? (read.isNew ? answered : nil)
+            // With no matters at all (the first step, F008), any name it gives is a new matter's.
+            let matter = assignedTo ?? listed ?? (read.isNew || known.isEmpty ? answered.flatMap { $0.isEmpty ? nil : $0 } : nil)
             decision.matter = matter
             decision.matterTitle = listed == nil && assignedTo == nil ? matter : nil
             decision.digest = read.digest
