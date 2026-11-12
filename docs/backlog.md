@@ -11,9 +11,9 @@ Seen while building something else. Not built now: each becomes a feature, joins
 
 ### The order — the owner's, 12 November: "welcome page and the chat fixes first, then appstore"
 
-1. **F007** plan and usage — in flight, at Proof.
+1. **F007** plan and usage — done 12 November.
 2. **Fixes:** done 12 November — the chat footer's words, the iPhone's Pro after it ended, the captions video.
-3. **Feature: the welcome page overhaul** — first impression in the App Store; drawn in Figma first.
+3. **F008, the welcome page** — in flight, at Why — first impression in the App Store; drawn in Figma first.
 4. **Feature: the chat with a read file in hand** — the file's own words for the chat, so it never says "not there" while the PDF shows it.
 5. **Feature: the Mac in the App Store** — every device buys; the iCloud plan-borrowing retired.
 6. **Feature: Causabee for other AIs, on the Mac without a server** — an MCP server the Mac runs locally (stdio), so an assistant the owner already uses (Claude Desktop, ChatGPT, Claude Code) reads their matters with its own AI, at no cost to the beeserver; on the iPhone and the iPad the same door through App Intents (Shortcuts, Siri, Apple Intelligence and its Private Cloud Compute). Read-only first, each matter off / shared / shared disguised, every read logged. Design note: `docs/mcp-design.md` (6 November). Right after the Mac in the App Store: its sandbox decides the door — a helper the client starts, or App Intents for all. The owner, 12 November: "something I see very valuable … like an MCP on the Mac without a server."
