@@ -5,6 +5,7 @@ Causabee turns what comes in — mail, screenshots, photos, files and scans, not
 ## New in this beta
 
 - **A quick question in the chat costs a fraction:** the bee sends what it needs — the brief, what is open, what came in lately — and looks in the whole matter when it must. The first question about a full matter costs less than half.
+- **Pro with a top-up turns on:** with a top-up left and no Pro subscription, the bee and the chat now count Pro as on, on the Mac too.
 
 ## Try it without setting anything up
 
