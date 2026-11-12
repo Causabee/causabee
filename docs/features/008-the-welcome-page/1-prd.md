@@ -16,6 +16,7 @@ Someone who just found Causabee in the App Store and opens it for the first time
 - The first step: typing or adding — "depends on the person. Both should work."
 - Pictures: "how a matter can look like and what's all possible would be good. But when they are too full, it's also kind of creating mental load and maybe also fear." Balanced: some inspiration, "and then jump into the matter."
 - Today (`Sources/Causabee/CausabeeApp.swift` the Mac's five pages, `Sources/CausabeePhone/Welcome.swift` the iPhone's and the iPad's, the same since `ec2461f`): the promise, four pictures of the demo's matters, then "Ready when you are" with what this device has, "Try the demo" and "Start".
+- Growing with it: "you need to grow with the product … simple first to get started, but when you grow with it, then the features can be very useful and meaningful."
 - A guess, not known: that fewer, calmer pictures and one first step bring a first matter sooner. Nobody but the owner has tried the first start.
 
 ## The goal
@@ -32,6 +33,7 @@ A new person sees in a few calm pictures what a matter can be, then starts their
 - Help's other pages, and the Settings.
 - How the bee reads what is added, or what the first matter's page shows.
 - A tour, tips or hints on the pages after the welcome.
+- Showing the rest of Causabee step by step as someone grows with it — the rule is named here; where else it applies is parked, each its own feature.
 
 ## How we know it worked
 
@@ -44,4 +46,4 @@ Someone the owner gives Causabee to, opening it for the first time, has their fi
 - **10 · Clear words:** one short promise, short lines under each picture.
 - **11 · Private:** said once, in one line, before anything is added.
 - **12 · Everywhere the same:** the same welcome on the iPhone, the iPad and the Mac.
-- A new rule is likely: *Ask for nothing before it is needed* — mail, iCloud and Pro are offered when they help, not at the door. Named here; it goes into the manifesto at stage 5 if the owner agrees.
+- A new rule is likely: *Simple to start, more as you grow.* The first start asks for nothing before it is needed — mail, iCloud and Pro are offered when they help, not at the door; what Causabee can do shows when it becomes useful. Named here; it goes into the manifesto at stage 5 if the owner agrees.
