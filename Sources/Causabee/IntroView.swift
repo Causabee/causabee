@@ -115,7 +115,7 @@ struct IntroView: View {
             Label(Welcome.privacy, systemImage: "lock.fill")
                 .font(.callout)
                 .padding(.horizontal, 14).padding(.vertical, 9)
-                .background(Theme.box, in: RoundedRectangle(cornerRadius: 8))
+                .quietBox(radius: 8)
         }
         .frame(maxWidth: 560, alignment: .leading)
         .padding(.horizontal, 28).padding(.top, 48)

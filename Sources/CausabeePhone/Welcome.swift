@@ -54,10 +54,8 @@ struct WelcomeSheet: View {
             // Said once, here (F008 AC-2).
             Label(Welcome.privacy, systemImage: "lock.fill")
                 .font(.footnote)
-                .padding(.horizontal, 12).padding(.vertical, 9)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
                 .fixedSize(horizontal: false, vertical: true)
+                .phoneBox()
         }
         .padding(.top, 24)
     }

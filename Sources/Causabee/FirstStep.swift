@@ -63,6 +63,9 @@ struct FirstStep: View {
                     Text(Welcome.demoAsk).foregroundStyle(.secondary)
                     Button(Welcome.demo) { lookAround() }.buttonStyle(.gold)
                         .accessibilityLabel("Look around in an example")
+                        #if os(iOS)
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                        #endif
                 }
                 .font(.subheadline)
                 .padding(.top, 10)

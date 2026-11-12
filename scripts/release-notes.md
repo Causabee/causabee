@@ -4,6 +4,7 @@ Causabee turns what comes in — mail, screenshots, photos, files and scans, not
 
 ## New in this beta
 
+- **A calmer first start:** four short pages, then your own Causabee — type what is on your mind, or add a screenshot, a photo or a file, and it becomes your first matter. Mail, your name and notifications come later, when they help.
 - **Plan and usage, in one row:** Settings opens with your own settings; your plan is one row, its page says what you have, and "Use Pro" decides whether it is used — off takes nothing away, and running out does not turn it off.
 - **A top-up in a bar of its own:** the plan shows what is left of this month's Pro and, under it, what is left of your top-ups. A top-up carries over to the next month until it is used.
 - **A reply opened from the chat comes back as the mail you sent:** no more empty drafts in what came in.

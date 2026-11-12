@@ -38,7 +38,6 @@ struct NameLine: View {
             .padding(12)
             .quietBox()
             #else
-            .padding(14)
             .phoneBox()
             #endif
         }
