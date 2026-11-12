@@ -56,7 +56,7 @@ struct PlanSheet: View {
         all.append(Choice(id: "pro", name: "Causabee Pro", holds: "The bigger AI, up to a monthly limit, names always disguised",
                           price: pro.map(Store.price) ?? PlanShot.current?.price("pro"), product: pro, yours: store.plan == .pro))
         if topUp != nil || PlanShot.current != nil {
-            all.append(Choice(id: "topup", name: store.plan == .pro ? "Top up this month" : "Pro, now and then",
+            all.append(Choice(id: "topup", name: store.plan == .pro ? "Add a top-up" : "Pro, now and then",
                               holds: Self.topUpWords, price: topUp?.displayPrice ?? PlanShot.current?.price("topup"), product: topUp))
         }
         return all
@@ -333,7 +333,7 @@ struct PlanSettings: View {
         let action = {
             if let product = store.products.first(where: { Store.topUpIDs.contains($0.id) }) { Task { await store.buy(product) } }
         }
-        let label = (store.plan == .pro ? "Top up this month · " : "Pro, now and then · ") + price
+        let label = (store.plan == .pro ? "Add a top-up" : "Pro, now and then") + " · " + price
         return VStack(alignment: .leading, spacing: 6) {
             if server.runsLow {
                 Button(action: action) { Text(label) }.filledButton().disabled(store.buying != nil)

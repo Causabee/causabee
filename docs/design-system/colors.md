@@ -25,6 +25,7 @@ Most tokens adapt: one value in light mode, one in dark. Two are **fixed** — `
 | `Theme.gold` | `#7F5E00` | `#FFE03A` | Links and link-like buttons (`.buttonStyle(.gold)`), where the Mac would put its blue. Words in it read on white. | A filled button. A heading. |
 | `Theme.warning` | `#C76600` | `#FF9E33` | Late, missing, not done: OVERDUE, FOLLOW UP, an overdue line on a card. `Theme.onInk` words on it. | An accent, an emphasis, an error that is not late. |
 | `Theme.done` | `#53524A` | `#D0D0CC` | Done, taken in, read: a checkmark, a step of the setup that is done, the frame of what is known. | A disabled control (`.secondary` is that). |
+| `Theme.topUp` | `#B38F00` | `#CCA800` | The top-ups' bar in the plan, under the month's yellow (F006). | Anything else. |
 | `Theme.beeMark` | `#22211B` | `#FFDB0D` | The working bee's stripes (`BeeLoader`, `BeeMark`). | Anything else. |
 
 There is no green and no blue anywhere. Done is grey.

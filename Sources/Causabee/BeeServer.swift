@@ -154,65 +154,51 @@ final class BeeServer {
         }
     }
 
-    /// Under the bar: "Starts anew on 1 November · 33 % of it from top-ups", from the server's "2026-11-01":
-    /// the month's share, which is not the subscription and has a day of its own.
-    var meterLine: String? {
-        let anew = renewsOn.flatMap(MatterStatus.date(of:)).map { "Starts anew on " + Dates.long($0) }
-        let top = extraShare > 0 ? "\(Int((extraShare * 100).rounded())) % of it from top-ups" : nil
-        let parts = [anew, top].compactMap { $0 }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
-    }
+    /// What the plan shows of it: the month's bar and the top-ups' (F006).
+    var meter: ProMeter { ProMeter(monthUsed: monthUsed, extraShare: extraShare, kind: kind, renewsOn: renewsOn) }
 
-    /// Below this share the month runs low: the bar turns, and a top-up is the thing to do.
-    static let lowShare = 0.2
-
-    /// What is left, of the month and of top-ups together, is running out.
-    var runsLow: Bool {
-        guard let monthUsed else { return kind == "credit" && extraShare <= Self.lowShare }
-        return (1 - monthUsed) + extraShare <= Self.lowShare
-    }
+    /// What is left, of the month and of top-ups together, is running out: a top-up is the thing to do.
+    var runsLow: Bool { meter.runsLow }
 }
 
-/// What is left of this month's Pro, first of all as one number, then the bar, and when it starts
+/// What is left of this month’s Pro and of top-ups, each as one number and a bar, and when the month starts
 /// anew — never money.
 struct ProBar: View {
     @State private var server = BeeServer.shared
 
     var body: some View {
-        if BeeServer.isSetUp, server.kind == "credit" {
-            // Top-ups without Pro: what is left of them, in Pro months.
-            meter("Your top-ups", left: min(1, server.extraShare), words: "of a Pro month left", line: nil,
-                  note: server.extraShare <= 0 ? "Used. Apple's model on this device reads what comes in — or buy another top-up." : nil)
-        } else if BeeServer.isSetUp || PlanShot.current?.meters == true, let used = server.monthUsed {
-            // What can still be used: the month's and the top-ups' together (8 November: after a
-            // top-up it said "0 % left", the top-up only in small print).
-            let left = max(0, 1 - used) + max(0, server.extraShare)
-            meter("This month's Pro", left: left, words: "left", line: server.meterLine,
-                  note: left > 0 ? nil : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.")
+        if BeeServer.isSetUp || PlanShot.current?.meters == true {
+            let meter = server.meter
+            if !meter.bars.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    // The month's bar, and under it the top-ups', on the same scale (F006).
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(meter.bars, id: \.words) { bar($0) }
+                    }
+                    if let line = meter.line { Text(line).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                    if let note = meter.note { Text(note).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                }
+            }
         }
     }
 
-    private func meter(_ title: String, left: Double, words: String, line: String?, note: String?) -> some View {
-        let low = left <= BeeServer.lowShare
+    private func bar(_ bar: ProMeter.Bar) -> some View {
+        let colour = bar.low ? Theme.warning : bar.kind == .month ? Theme.bee : Theme.topUp
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(Int((left * 100).rounded())) %").font(Theme.planNumberFont).foregroundStyle(low ? Theme.warning : Color.primary)
-                Text(words).font(.subheadline).foregroundStyle(.secondary)
+                Text(bar.number).font(Theme.planNumberFont).foregroundStyle(bar.low ? Theme.warning : Color.primary)
+                Text(bar.words).font(.subheadline).foregroundStyle(.secondary)
             }
             GeometryReader { box in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Theme.line)
-                    Capsule().fill(low ? Theme.warning : Theme.bee).frame(width: max(6, box.size.width * min(1, left)))
+                    Capsule().fill(colour).frame(width: max(6, box.size.width * bar.length))
                 }
             }
             .frame(height: 6)
-            .accessibilityElement()
-            .accessibilityLabel("\(title): \(Int((left * 100).rounded())) percent left")
-            if let line { Text(line).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
-            if let note {
-                Text(note).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            }
         }
+        .accessibilityElement()
+        .accessibilityLabel(bar.spoken)
     }
 }
 
