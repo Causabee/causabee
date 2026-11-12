@@ -28,6 +28,7 @@
 | AC-10 | "F008 AC-10 · Already in use elsewhere" — `FirstStep.waitsForCloud(signedIn:imported:since:now:)` | unit |
 | AC-11 | "F008 AC-11 · The same welcome on every device" — both welcomes take their pages from `Welcome` (source) | unit |
 | AC-12 | "F008 AC-12 · Your name, asked once" — `NameLine.asks(names:)`, the Mac's fill-in from its user name (source) | unit |
+| AC-13 | "F008 AC-13 · Notifications asked later" — `Welcome.mayAskNotifications(starts:)`; every system question behind it, both apps count their starts (source) | unit |
 
 ## The UI check
 

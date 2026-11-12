@@ -132,4 +132,17 @@ struct WelcomeTests {
         let line = try Self.source("Sources/Causabee/NameLine.swift")
         #expect(line.contains("NSFullUserName()") && line.contains("Welcome.asksName("))
     }
+
+    @Test("F008 AC-13 · Notifications asked later, not at the door")
+    func notificationsLater() throws {
+        #expect(!Welcome.mayAskNotifications(starts: 0) && !Welcome.mayAskNotifications(starts: 1))
+        #expect(Welcome.mayAskNotifications(starts: 2) && Welcome.mayAskNotifications(starts: 5))
+        // Every system question waits for it; both apps count their starts.
+        let actions = try Self.source("Sources/Causabee/CardActions.swift")
+        let asks = actions.components(separatedBy: "requestAuthorization(").count - 1
+        let guarded = actions.components(separatedBy: "NewsNotice.mayAsk, ").count - 1
+        #expect(asks > 0 && asks == guarded, "\(asks) questions, \(guarded) waiting for the second start")
+        #expect(try Self.source("Sources/CausabeePhone/PhoneApp.swift").contains("Welcome.countStart()"))
+        #expect(try Self.source(Self.macApp).contains("Welcome.countStart()"))
+    }
 }

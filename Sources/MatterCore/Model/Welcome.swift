@@ -66,6 +66,20 @@ public enum Welcome {
 
     // MARK: Afterwards
 
+    /// How often Causabee has been started on this device (F008 AC-13).
+    public static let startsKey = "app.starts"
+    /// Counted once per start, as the app comes up.
+    public static func countStart() {
+        let defaults = UserDefaults.standard
+        defaults.set(defaults.integer(forKey: startsKey) + 1, forKey: startsKey)
+    }
+    /// The system's question about notifications waits for the second start: the first is for
+    /// getting in, not for being asked (the owner, 12 November). It is asked then only when there is
+    /// something to tell — a date, or something new — which is where it is called from.
+    public static func mayAskNotifications(starts: Int = UserDefaults.standard.integer(forKey: startsKey)) -> Bool {
+        starts >= 2
+    }
+
     /// The name is asked while none is known.
     public static func asksName(names: [String]) -> Bool {
         names.allSatisfy { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }

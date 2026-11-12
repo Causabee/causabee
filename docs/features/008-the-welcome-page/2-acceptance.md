@@ -86,6 +86,13 @@
 - Then one line asks it — on the Mac with the Mac's own user name filled in ("This is you: Alex? · Change"), on the iPhone and the iPad as an empty field ("Your name"), iOS having no card of its own; once answered it is not asked again, on any device; until then the matter works as it does
 - Holds for: iPhone, iPad, Mac · all (the owner, 12 November: "Yes, asked for the name. That's a good one.")
 
+### AC-13 · Notifications asked later, not at the door
+
+- Given Causabee is started for the first time
+- When something with a date is made, or something new comes in
+- Then nothing asks to send notifications on that first start; from the second start on, the system's question comes once — only when a matter has a date or something new came in — the same rule on every device
+- Holds for: all sources · iPhone, iPad, Mac · all (the owner, 12 November: "place the ask for notification carefully … maybe on the second start or the third start"; approved: "Approved")
+
 ## Must not change
 
 - Mail's setup, step by step, once it is opened: the IMAP and label tests (`IMAPTests`, `LabelIntakeTests`, `UnreadMailTests`).

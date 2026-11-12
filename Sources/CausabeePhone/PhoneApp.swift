@@ -27,6 +27,8 @@ struct CausabeePhoneApp: App {
         // Before anything shows: a notification tapped on the lock screen starts Causabee with it.
         NewsNotice.listen()
         BeeServer.listen()
+        // F008 AC-13: notifications are asked for from the second start on.
+        Welcome.countStart()
     }
 
     var body: some Scene {

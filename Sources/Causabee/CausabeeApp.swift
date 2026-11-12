@@ -15,6 +15,8 @@ struct CausabeeApp: App {
     let opened: Result<ModelContainer, Error>
 
     init() {
+        // F008 AC-13: notifications are asked for from the second start on.
+        Welcome.countStart()
         // The demo never touches the Keychain: no password or key of the owner's is read, so macOS
         // asks for none, and none is used from it.
         if DemoData.isRequested { Keychain.isSealed = true }
