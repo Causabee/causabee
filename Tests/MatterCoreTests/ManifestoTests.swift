@@ -87,6 +87,16 @@ struct ManifestoTests {
         #expect(world.onCard == 0 && !world.says)
     }
 
+    @Test("1 The chat's footer names no source alone, on the Mac and the iPhone")
+    nonisolated func footerNamesNoSourceAlone() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        for path in ["Sources/Causabee/Conversation.swift", "Sources/CausabeePhone/AssistantSheet.swift"] {
+            let text = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            let footer = try #require(text.components(separatedBy: "\n").first { $0.contains("Always pseudonymised sent to") })
+            #expect(!footer.lowercased().contains("mail"), "\(path)'s footer names mail alone")
+        }
+    }
+
     // MARK: Principle 3 — one signal
 
     @Test("3 The dot and NEW are one signal: on together, off together", arguments: everything)

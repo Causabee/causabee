@@ -43,7 +43,7 @@ She works by herself while **Auto** is on. Off, she waits for your tap.
 
 ## 4. Principles — check every change against these
 
-1. **Every source counts the same.** Nothing is mail-only unless it truly is.
+1. **Every source counts the same.** Nothing is mail-only unless it truly is. (12 November: the chat's footer said "goes pseudonymised, like the mails"; tested by `ManifestoTests` "1 The chat's footer names no source alone".)
 2. **New is said once.** New means it *reached the bee* after you last opened the matter — not the date written on it. A screenshot taken last week, shared today, is new today. Reworded is not new. Re-read is not new.
 3. **One signal, one meaning.** The yellow dot and NEW say the same thing: something came you haven't looked at. Opening the matter — on any tab — takes them away. Nothing else does.
 4. **Looked at is not handled.** Like a read mail: still there until you act — 👍, ×, done, Seen.

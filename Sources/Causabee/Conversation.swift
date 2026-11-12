@@ -708,7 +708,7 @@ struct Composer: View {
             // "more" and "less" are links inside the line, so the full one wraps like a sentence.
             Text(LocalizedStringKey(!pro || ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro."
                 : showsMore
-                ? "Always pseudonymised sent to \(AIJob.chatSentTo) • Sees: \(seen()) · goes pseudonymised, like the mails • [less](causabee://footer)"
+                ? "Always pseudonymised sent to \(AIJob.chatSentTo) • Sees: \(seen()) • [less](causabee://footer)"
                 : "Always pseudonymised sent • [more](causabee://footer)"))
                 .font(.caption2).foregroundStyle(.secondary).tint(Theme.gold)
                 .environment(\.openURL, OpenURLAction { _ in showsMore.toggle(); return .handled })
