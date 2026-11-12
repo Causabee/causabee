@@ -64,6 +64,14 @@ Where the bar is: the plan in Settings (Mac, iPhone, iPad) and in the setup assi
 - Then it reads each bar apart: "This month's Pro: 40 percent left", "Top-ups: 67 percent of a Pro month left"
 - Holds for: Mac, iPhone, iPad
 
+### AC-9 · The top-up's button says it carries over
+
+- Given Pro bought
+- When the owner looks at the plan in Settings or the plan sheet
+- Then the top-up's button and choice say "Add a top-up", where today they say "Top up this month"; its words stay "Adds a third of a month's Pro use, kept until it is used."
+- And without Pro they say "Pro, now and then", as today
+- Holds for: Mac, iPhone, iPad; with Pro
+
 ## Must not change
 
 - How the beeserver counts, spends and keeps top-ups: the month first, top-ups after, a top-up never ends — the server's tests, `ledger.test.ts` among them (38 pass today).
