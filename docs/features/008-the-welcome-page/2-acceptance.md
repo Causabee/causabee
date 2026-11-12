@@ -27,7 +27,7 @@
 
 - Given the first step
 - When the person types a line or a few ("Mum fell, the care service visits on Thursday") and sends it
-- Then a matter is made from it, opened, and holds what was typed as their own words; what the bee finds in it — a task, a date — is on it, as for anything that comes in
+- Then the bee reads it like a note: it names the matter from what was typed and puts on it what it finds — a task, a date — as for anything that comes in; the matter opens and holds the typed words as their own; if the bee finds nothing, the typed line is the name (the owner, 12 November: "try to understand them and make a name out of it, and already a first thing")
 - Holds for: notes and what is said in the chat (typed or spoken) · iPhone, iPad, Mac · Pro and without Pro (without Pro, Apple's model on the device reads it, nothing leaves it)
 
 ### AC-5 · Added, it becomes the first matter
@@ -55,8 +55,8 @@
 
 - Given the first matter exists, and no mail account is set up
 - When the person is on the overview
-- Then one quiet offer says what mail adds and leads to the setup that is there today; "Not now" puts it away for good, and it never stands before the first step
-- Holds for: mail · iPhone, iPad, Mac · all
+- Then one quiet card under the matters, "Also what comes by mail?", says what mail adds, with Set up — the setup that is there today — and Not now; after either it is gone for good, and mail is always in Settings; it never stands before the first step. Visible, never an obligation: no badge, no yellow, no count, nothing that waits for the owner
+- Holds for: mail · iPhone, iPad, Mac · all (the owner, 12 November: "it needs to be visible, but not feeling like an obligation")
 
 ### AC-9 · Empty is the first step, everywhere
 
@@ -79,6 +79,13 @@
 - Then the pages, their words and the first step are the same — laid out for each screen
 - Holds for: iPhone, iPad, Mac · all
 
+### AC-12 · Your name, asked once, after the first matter
+
+- Given the first matter exists, and the bee does not yet know the person's name
+- When the matter is open
+- Then one line asks it, with the name from this device's own contact card filled in ("This is you: Alex? · Change"); once answered it is not asked again, on any device; until then the matter works as it does
+- Holds for: iPhone, iPad, Mac · all (the owner, 12 November: "Yes, asked for the name. That's a good one.")
+
 ## Must not change
 
 - Mail's setup, step by step, once it is opened: the IMAP and label tests (`IMAPTests`, `LabelIntakeTests`, `UnreadMailTests`).
@@ -91,6 +98,4 @@
 
 ## Open questions
 
-1. **Typed words (AC-4):** does the bee read them like a note — so "Mum fell, the care service visits on Thursday" gives a matter named by the bee, with the visit as a date — or does the typed line simply become the matter's name? *Recommended: the bee reads it like a note; if it finds nothing, the line is the name.*
-2. **"About you" — your name, so the bee knows which tasks are yours (AC-7):** today the Mac asks it in the setup. When is it asked instead? *Recommended: once, after the first matter, as one line with the name from this device's own contact card filled in — "This is you: Alex? · Change".*
-3. **Mail's offer (AC-8):** where? *Recommended: one quiet card on the overview under the matters, "Also what comes by mail?" with Set up and Not now; gone after either; always in Settings.*
+None. The owner, 12 November: typed words read by the bee like a note (AC-4), the name asked after the first matter (AC-12), mail offered as one quiet card (AC-8).
