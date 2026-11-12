@@ -17,6 +17,19 @@ public enum Plan: String, Codable, Sendable, Comparable {
         switched && (plan == .pro || credit)
     }
 
+    /// A purchase seen through iCloud counts a week past its end: the device that renews it may
+    /// not have been opened since.
+    public static let grace: TimeInterval = 7 * 86_400
+
+    /// The plan this device holds: what its App Store says is bought, or iCloud's copy of a purchase
+    /// made elsewhere, for a week past its end — unless this device's own App Store saw that very
+    /// purchase end (the device that bought it), when the week adds nothing.
+    public static func held(bought: Plan, shared: Plan, sharedUntil: Date?, ownEnd: Date?, now: Date = Date()) -> Plan {
+        guard let until = sharedUntil, until.addingTimeInterval(grace) > now else { return bought }
+        if let ownEnd, ownEnd >= until.addingTimeInterval(-60), ownEnd < now { return bought }
+        return max(bought, shared)
+    }
+
     /// Open matters Normal holds for free; closed ones do not count.
     public static let freeMatters = 3
 

@@ -12,7 +12,7 @@ Seen while building something else. Not built now: each becomes a feature, joins
 ### The order — the owner's, 12 November: "welcome page and the chat fixes first, then appstore"
 
 1. **F007** plan and usage — in flight, at Proof.
-2. **Fixes:** the chat footer's mail-only words; the iPhone saying Pro after it ended (the iCloud grace on the device that bought it); delete the captions video.
+2. **Fixes:** done 12 November — the chat footer's words, the iPhone's Pro after it ended, the captions video.
 3. **Feature: the welcome page overhaul** — first impression in the App Store; drawn in Figma first.
 4. **Feature: the chat with a read file in hand** — the file's own words for the chat, so it never says "not there" while the PDF shows it.
 5. **Feature: the Mac in the App Store** — every device buys; the iCloud plan-borrowing retired.
@@ -25,7 +25,6 @@ Seen while building something else. Not built now: each becomes a feature, joins
 
 
 - The owner's question bubble in the chat is honey yellow (Theme.honey: AssistantView.swift:692, AssistantSheet.swift:667, :785), against colors.md's rule that yellow means something waits for the owner, or the bee herself. Three greys drawn at https://claude.ai/artifact/GHo8fLerdz7FG6M29T2Y2u; the owner chose A, the quiet grey box (Theme.box, words .primary), 12 November: "A, grey box". Built after F007. (2026-11-12)
-- Fix lane: the iPhone says "Causabee Pro" with no renewal date (12 November), while the beeserver has Pro ended on 7 November and the Mac says Free. The empty corner means the iPhone's App Store has no running subscription: its Pro likely comes from the 7-day grace for a purchase seen through iCloud (Store.plan, grace), meant for the Mac, not for the device that bought it. Check: Settings › Apple Account › Subscriptions on the iPhone. (2026-11-12)
 - The chat's memory past its last four turns: a short note of what was talked about in a matter's chat, kept with the matter and sent with each question, so the bee can relate to older talk. Today only the last four turns go, word for word, whatever their age (AssistantPrompt.user, earlier.suffix(4)). Owner's idea, 12 November 2026, during F005's Proof. (2026-11-12)
 - Shared parts for every device: Card, PageRows, RowDivider, MoreMenu, RowIconStyle and SourceLink (openURL in place of NSWorkspace) out of the Mac-only Components.swift into a file both apps take; the Mac's window and sidebar parts stay. Then the iPhone's and iPad's own ⋯ menus (PeopleAndLinks.swift:149, :425, MatterScreen.swift:380, OverviewScreen.swift:360) and its 11 hand-written row dividers onto them, the row icon at 44 pt on touch (HIG B1). Moving the first three changes no look; the rest does — C3, C4 (docs/design-system/components.md) (2026-11-11)
 - Tap gestures that should be buttons (18, HIG review B11) and SF Symbols at a point size (17, B10): not in the HIG backlog yet — H1, H5 (UI check, docs/ui-check/2026-11-11.md) (2026-11-11)

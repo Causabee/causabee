@@ -70,14 +70,9 @@ final class Store {
         proIDs.contains(productID) ? .pro : mattersIDs.contains(productID) ? .matters : .free
     }
 
-    /// A purchase seen through iCloud counts a week past its end: the device that renews it may
-    /// not have been opened since.
-    private static let grace: TimeInterval = 7 * 86_400
-
     var plan: Plan {
         if DemoData.isRequested { return PlanShot.current?.plan ?? .pro }
-        let elsewhere = (shared.until.map { $0.addingTimeInterval(Self.grace) > Date() } ?? false) ? shared.plan : .free
-        return max(bought.plan, elsewhere)
+        return Plan.held(bought: bought.plan, shared: shared.plan, sharedUntil: shared.until, ownEnd: lastProEnd)
     }
 
     private var listening: Task<Void, Never>?
