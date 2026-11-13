@@ -8,7 +8,9 @@
 |---|---|
 | `python3 -I scripts/words.py` | takes in what is new, keeps the German there is, drops a word no line shows any more |
 | `--missing` | says which words have no German yet |
-| `--only core` / `--only app` | one catalogue alone, while the other's files are in hand |
+| `--only core` / `--only app` / `--only share` | one catalogue alone, while the others' files are in hand |
+| `--list` | every word, English beside German, under the screen it is on — `words.md`, for the owner to read |
+| `--prune` | drops a word no line shows any more; without it such a word is kept, so German is never lost to a file that is open for a minute |
 | `--build <derived data>` | the words that carry a value in a SwiftUI part, whose placeholder only the compiler knows; they are written into `scripts/words-values.txt` so a run without a build keeps them |
 | `--escaped` | every literal in the sources that reads like words a person is shown and is in no catalogue. `--write` accepts what is found into `scripts/words-machine.txt`, the list of what was looked at and is not a word |
 
@@ -22,7 +24,7 @@ Three kinds of word, and how each is found:
 
 1. **Tests first:** `GermanTests` and `DateLocaleTests` (MatterCore), seen failing — there is no catalogue and the forced locales are still there.
 2. **The shared catalogue:** `defaultLocalization: "en"` in Package.swift, MatterCore `resources: [.process("Resources")]`, `Localizable.xcstrings` with the English side; every built word in MatterCore becomes `String(localized:bundle: .module)` — `Welcome`, `ProMeter`, `GoodToKnow`, `DeviceTask`, `Digests`, `ScreenshotDoor`, `plainWords`. The words' tests must stay green at every step: they compare the English, which is also the key.
-3. **The apps' catalogue:** `App/Resources/Localizable.xcstrings`, `de` in `knownRegions`; Xcode fills the English side from the sources. The apps' own built words — `Say`, the notifications in `CardActions`, `PlanSheet`, `Theme` — looked up through `Bundle.main`.
+3. **The apps' catalogue:** `App/Resources/Localizable.xcstrings`, `de` in `knownRegions`; Xcode fills the English side from the sources. The apps' own built words — `Say`, the notifications in `CardActions`, `PlanSheet`, `Theme` — looked up through `Bundle.main`. **And the share sheet's own,** `Sources/CausabeeShare/Localizable.xcstrings`: an extension is its own bundle, so `Bundle.main` there is the extension and the app's words never reach it (found at Build, 13 November).
 4. **The dates:** the 20 display places drop their forced locale; the 18 `en_US_POSIX` stay, and the test says so.
 5. **The German side,** written into both catalogues in the Looks's words and rules — du, short, no jargon, nouns capitalised. The words of the Looks's tables exactly as they stand there.
 6. **Does it fit:** the iPhone, the iPad and the Mac in German (`-AppleLanguages (de)`), through the welcome, the first step, a matter and the plan, at the usual text size and the largest. A line that does not fit is rewritten shorter, in both languages' catalogues if it was English's fault too.
