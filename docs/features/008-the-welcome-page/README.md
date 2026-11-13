@@ -1,6 +1,6 @@
 # F008 · The welcome page
 
-- Stage: 2
+- Stage: 3
 - Lane: feature
 - Started: 2026-11-12
 - Branch: feature/008-the-welcome-page
@@ -14,6 +14,7 @@
 | 3 · How | 2026-11-12 | Approved, go. |
 | 4 · Looks | 2026-11-12 | Approved |
 | 1 · Why | 2026-11-13 | Yes, go |
+| 2 · What | 2026-11-13 | Yes, go, AC-14 but i want somehow test it of coure. |
 
 ## Changes after a gate
 
