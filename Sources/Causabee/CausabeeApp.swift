@@ -15,6 +15,10 @@ struct CausabeeApp: App {
     let opened: Result<ModelContainer, Error>
 
     init() {
+        // F008 AC-13: notifications are asked for from the second start on.
+        Welcome.countStart()
+        // F008 AC-14: the start credit, asked once at the first start.
+        Task { @MainActor in await BeeServer.shared.askStart() }
         // The demo never touches the Keychain: no password or key of the owner's is read, so macOS
         // asks for none, and none is used from it.
         if DemoData.isRequested { Keychain.isSealed = true }
@@ -740,7 +744,12 @@ struct RootView: View {
                                 MatterStatusView(matter: matter).equatable().id(id)
                             }
                         case .assistant, nil:
-                            OverviewView(matters: sorted, search: $search, start: start)
+                            if matters.isEmpty {
+                                // F008: the first step — type it or add it; the demo a quiet link under it.
+                                ScrollView { FirstStep().padding(40).frame(maxWidth: .infinity, minHeight: geometry.size.height - 80) }
+                            } else {
+                                OverviewView(matters: sorted, search: $search, start: start)
+                            }
                         }
                     }
                     .frame(minWidth: 320, maxWidth: .infinity, maxHeight: .infinity)
@@ -843,11 +852,11 @@ struct RootView: View {
             MirrorRunner.shared.start(context)
             Store.shared.start(context)
             // Not over the demo: it is started to be looked at, and photographed, as it is.
-            // The setup's test starts as a first start does: the introduction, then the setup.
             // `--intro`: the demo's made-up matters, with the introduction over them first.
+            // No setup opens by itself (F008 AC-7): it is in the Causabee menu; mail is offered once
+            // there is a matter. Only the setup's own test (`--fresh-setup`) walks into it.
             if SetupState.isFresh || CommandLine.arguments.contains("--intro") { showsIntro = true }
             else if !introSeen, !DemoData.isRequested { showsIntro = true }
-            else if !setupLater, !DemoData.isRequested, SetupAssistant.isMissingSomething { showsSetup = true }
         }
         // New mail by itself: on start, every ten minutes while Causabee is open, and after sleep.
         // Reading is free; it waits as "3 new mails" until the owner sorts in what they tick.
@@ -872,6 +881,8 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .showIntro)) { _ in showsIntro = true }
         .onReceive(NotificationCenter.default.publisher(for: .showSetup)) { _ in showsSetup = true }
         .onReceive(NotificationCenter.default.publisher(for: .newMatter)) { _ in newMatterName = ""; startsMatter = true }
+        // F008: the first matter, made at once from what came in, opens.
+        .modifier(FirstMatterOpens(navigation: navigation))
         // A notification of news tapped: its matter opens. Of new mail: the overview.
         .onReceive(NotificationCenter.default.publisher(for: .openMatterKey)) { note in
             if let key = note.object as? String, let matter = matters.first(where: { $0.key == key }) {
@@ -881,9 +892,9 @@ struct RootView: View {
                 navigation.place = .assistant
             }
         }
-        // After the introduction, the setup — when something Causabee needs is still missing.
+        // After the introduction, the first step — no setup (F008 AC-7); the setup's own test goes on into it.
         .sheet(isPresented: $showsIntro, onDismiss: {
-            if SetupState.isFresh || (!setupLater && !DemoData.isRequested && SetupAssistant.isMissingSomething) { showsSetup = true }
+            if SetupState.isFresh { showsSetup = true }
         }) { IntroView() }
         .sheetWhenAsked(isPresented: $showsSetup) {
             SetupAssistant { mailCheck.look(store: navigation.store, context: context) }
@@ -931,12 +942,6 @@ struct RootView: View {
             if let flag = arguments.firstIndex(of: "--open"), flag + 1 < arguments.count,
                let matter = matters.first(where: { $0.answers(to: arguments[flag + 1]) }) {
                 navigation.open(matter)
-            }
-        }
-        .overlay {
-            if matters.isEmpty {
-                ContentUnavailableView("No matters yet", systemImage: "tray",
-                                       description: Text("Choose Causabee → Set Up Causabee … to bring in your mail, drop in screenshots, photos or files, or File → New Matter … to start one."))
             }
         }
     }

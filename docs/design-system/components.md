@@ -21,6 +21,8 @@ The page is grey, the cards on it are white, the boxes in a card are grey again.
 | Part | Use it for | Not for |
 |---|---|---|
 | `.journalCard()` | A card on the matter page or the overview: white, `Theme.cardRadius`, `Theme.cardInset` inside. | A box inside a card. |
+| `.outlinedCard()` | A card alone on a white page, as the welcome's example matter: `.journalCard()` with a plain `Theme.line` round it, like the iPhone's `.phoneCard()`. | A card on the matter page or the overview. |
+| `.offerCard()` | An offer under the matters, as the mail card: the cards' radius and inset, no fill, a plain `Theme.line` round it — apart from the white cards, asking for nothing. Mac and iPhone. | A matter's own content. |
 | `.journalRows()` | A card of rows that keep their own room (no inset). | |
 | `.waitingTile(forYou)` | What waits for the owner: `beeSoft` when `forYou`, the same room without colour when not, grey when out of date. Inside a card, `Theme.tileInset` from its edge. | Anything that does not wait for the owner. |
 | `.waitingRows()` | What others must do: no card, a dashed line round it, so it never reads as something to do now. | The owner's own tasks. |

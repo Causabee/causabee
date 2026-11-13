@@ -7,7 +7,7 @@ import Foundation
 /// prompt that asks for something different from what the labels mean would measure the
 /// difference between two definitions, not how good the model is.
 public enum ExtractionPrompt {
-    public static let version = "extract-v17"
+    public static let version = "extract-v18"
 
     /// Added for a model that writes a to-do for everything a mail touches — Mistral wrote half
     /// again as many as Opus, most of them "confirm the appointment" and "prepare for it". Opus
@@ -197,10 +197,18 @@ public enum ExtractionPrompt {
         public init(id: String, owner: String, text: String) { self.id = id; self.owner = owner; self.text = text }
     }
 
+    /// v18 (F008): told only for what is brought in at the first start, while there are no matters.
+    public static let firstMatter = """
+    This is what the person brought in at their very first start: it is always a matter, never \
+    none — set the matter and its title. Name it in one to three words, in the text's own language, \
+    from its own words: fix an obvious typo, never translate. Take each date's "what" from the \
+    text's own words.
+    """
+
     public static func user(mail: String, sent: Date?, owner: [String], matters: [(name: String, summary: String)],
                             thread: String? = nil, threadClosed: Bool = false, open: [(matter: String, todos: [OpenTodo])] = [],
                             onFile: [(matter: String, appointments: [String], unwanted: [String])] = [],
-                            language: String? = nil) -> String {
+                            language: String? = nil, first: Bool = false) -> String {
         var parts: [String] = []
         if owner.isEmpty {
             parts.append("The mailbox owner is not known.")
@@ -209,6 +217,8 @@ public enum ExtractionPrompt {
         }
         if matters.isEmpty {
             parts.append("No matters have been found yet.")
+            // v18 (F008): what the person brought in at their first start is always their first matter.
+            if first { parts.append(firstMatter) }
         } else {
             parts.append("Matters found so far:\n" + matters.map { "- \($0.name): \($0.summary)" }.joined(separator: "\n"))
         }

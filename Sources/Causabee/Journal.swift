@@ -38,6 +38,13 @@ extension View {
             .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 
+    /// A card standing alone on a white page — the welcome's example matter: the journal card with a
+    /// plain line round it, as the iPhone's `phoneCard`, so it does not vanish into the page.
+    func outlinedCard() -> some View {
+        journalCard()
+            .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous).stroke(Theme.line))
+    }
+
     /// A card of rows, which keep their own room.
     func journalRows() -> some View { journalCard(inset: 0) }
 

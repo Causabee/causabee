@@ -96,6 +96,8 @@ public enum RecordBrowse {
 
     public static func pick(threads: [MailThreads.Thread], documents: [Document], links: [WebLink],
                             kind: Kind, show: Show, made: RecordLinks) -> Picked {
+        // Words typed in the first step (F008) are the owner's note already: shown once, as that.
+        let threads = threads.filter { !$0.rows.allSatisfy { $0.entry.messageID.hasPrefix("typed:") } }
         let mailIDs = Dictionary(threads.flatMap { thread in thread.rows.map { ($0.entry.messageID, thread.id) } }.filter { !$0.0.isEmpty },
                                  uniquingKeysWith: { first, _ in first })
         // Files kind: every file on its own. Otherwise a file that came with a mail stands under it.

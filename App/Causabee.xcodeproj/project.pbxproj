@@ -74,6 +74,8 @@
 				CalendarChip.swift,
 				CardActions.swift,
 				DemoData.swift,
+				FirstStep.swift,
+				NameLine.swift,
 				ScreenMeter.swift,
 				MirrorRunner.swift,
 				MatterMenus.swift,

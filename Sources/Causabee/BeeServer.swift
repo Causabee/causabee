@@ -1,5 +1,6 @@
 import Foundation
 import MatterCore
+import StoreKit
 import SwiftUI
 
 /// Causabee Pro through the beeserver — for now a switch for testing, with a token made by hand
@@ -30,6 +31,9 @@ final class BeeServer {
     var kind = "hand"
     /// The beeserver has said what is left, since this launch: until then the bar is empty (F007).
     var counted = false
+    /// F008: what is left beyond the month is only the start credit, as the server said last.
+    var startCredit = UserDefaults.standard.bool(forKey: startCreditKey)
+    nonisolated static let startCreditKey = "beeserver.startCredit"
 
     /// A top-up is left: Pro's bolt works with it, Pro bought or not. As the server said last.
     nonisolated static var hasCredit: Bool { storedToken != nil && UserDefaults.standard.bool(forKey: creditKey) }
@@ -42,6 +46,13 @@ final class BeeServer {
         extra = object["extra"] as? Bool ?? false
         extraShare = object["extraShare"] as? Double ?? 0
         kind = object["kind"] as? String ?? kind
+        startCredit = object["startCredit"] as? Bool ?? false
+        UserDefaults.standard.set(startCredit, forKey: Self.startCreditKey)
+        // F008 AC-16: the start credit is used — "Use Pro" on, unless the owner ever set it.
+        if Welcome.switchesProOn(startCredit: startCredit, extra: extra,
+                                 setByOwner: UserDefaults.standard.object(forKey: AutoMode.key) != nil) {
+            UserDefaults.standard.set(true, forKey: AutoMode.key)
+        }
         UserDefaults.standard.set(extra, forKey: Self.creditKey)
         counted = true
         // Something left again: the wait is over (F007).
@@ -144,6 +155,37 @@ final class BeeServer {
         return true
     }
 
+    /// F008 AC-14: asks once, at the first start, for the start credit — with Apple's signed record
+    /// of this download and the app's own id for the Apple account. Nothing to sign up for, nothing
+    /// said when none is given. Asked once per install, whatever token is kept — the beeserver decides,
+    /// once per Apple account in the App Store, again in TestFlight after the owner forgets it; not in
+    /// the demo; asked again at a later start only when the beeserver could not be reached.
+    func askStart() async {
+        // A start credit given before Pro switched on by itself (TestFlight 250): on at this start.
+        if Welcome.switchesProOn(startCredit: startCredit, extra: UserDefaults.standard.bool(forKey: Self.creditKey),
+                                 setByOwner: UserDefaults.standard.object(forKey: AutoMode.key) != nil) {
+            UserDefaults.standard.set(true, forKey: AutoMode.key)
+        }
+        if CommandLine.arguments.contains("--fresh-start") {
+            UserDefaults.standard.removeObject(forKey: Welcome.startAskedKey)
+            UserDefaults.standard.removeObject(forKey: Welcome.startUsedLaterKey)
+        }
+        guard !DemoData.isRequested, !UserDefaults.standard.bool(forKey: Welcome.startAskedKey), let base = Self.base,
+              let download = try? await AppTransaction.shared else { return }
+        var request = URLRequest(url: base.appendingPathComponent("v1/start"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization") }
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["download": download.jwsRepresentation, "account": Store.accountID.uuidString])
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        // Answered, given or not: never asked again on this device.
+        UserDefaults.standard.set(true, forKey: Welcome.startAskedKey)
+        if let new = object["token"] as? String, new.hasPrefix("bee_") { try? APIKeys.save(new, as: Self.tokenName) }
+        if object["monthUsed"] != nil || object["extraShare"] != nil { take(object) }
+    }
+
     /// Asks the server how much of this month is used.
     func refresh() async {
         guard let relay, let token else { return }
@@ -171,7 +213,8 @@ final class BeeServer {
     func meter(inUse: Bool) -> ProMeter {
         let answered = counted || PlanShot.current?.meters == true
         return ProMeter(monthUsed: monthUsed, extraShare: extraShare, kind: answered ? kind : (Self.hasCredit ? "credit" : kind),
-                        renewsOn: renewsOn, pro: Store.shared.plan == .pro || (answered && kind == "hand"), inUse: inUse, counted: answered)
+                        renewsOn: renewsOn, pro: Store.shared.plan == .pro || (answered && kind == "hand"), inUse: inUse, counted: answered,
+                        startCredit: startCredit)
     }
 
     /// What is left, of the month and of top-ups together, is running out: a top-up is the thing to do.

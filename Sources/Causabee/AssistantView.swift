@@ -597,6 +597,12 @@ struct OverviewView: View {
                 // in — as on the iPhone and the iPad.
                 OtherMatters(matters: matters)
                 }
+                // F008 AC-8: once there is a matter, mail offered once, quietly.
+                if !DemoData.isRequested {
+                    StartCreditUsed(matters: matters.count)
+                    MailOffer(matters: matters.count) { NotificationCenter.default.post(name: .showSetup, object: nil) }
+                        .padding(.top, 8)
+                }
             }
             .padding(24)
             // The whole width, up to where lines would get too long to follow; the journal is read

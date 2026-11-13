@@ -37,7 +37,7 @@ public struct ScreenshotDoor: Sendable {
     public enum Kind: String, Sendable { case chat, mail, document }
 
     public static let chatTypes: Set<String> = ["png", "jpg", "jpeg", "heic", "tiff", "gif"]
-    public static let readable: Set<String> = chatTypes.union(["eml", "emlx", "pdf"])
+    public static let readable: Set<String> = chatTypes.union(["eml", "emlx", "pdf", "txt"])
 
     public struct Look: Sendable {
         public var file: URL
@@ -108,6 +108,14 @@ public struct ScreenshotDoor: Sendable {
         case "eml", "emlx":
             kind = .mail
             email = try EMLParser.parse(contentsOf: file)
+        case "txt":
+            // The owner's own words, typed (F008): read whole, as a note from them.
+            kind = .document
+            let text = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            let first = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
+            picture = (heading: String(first.prefix(80)), body: text)
+            email = Email(source: file, id: "typed:" + Self.id(of: data).dropFirst("screenshot:".count), headers: ["subject": [first]],
+                          subject: first, from: "Notiz", to: [owner], cc: [], date: date, body: text, attachments: [])
         case "pdf":
             kind = .document
             let (text, pageNotes, title) = try Self.read(pdf: file)
@@ -151,7 +159,7 @@ public struct ScreenshotDoor: Sendable {
         let byline = switch kind {
         case .chat: picture != nil ? (phoneShaped ? "Screenshot · text" : "Photo · text read on this device") : (transcript.subtitle ?? "Chat")
         case .mail: [Email.displayName(in: email.from) ?? email.fromAddress, when].filter { !$0.isEmpty }.joined(separator: " · ")
-        case .document: pages == 1 ? "PDF · 1 page" : "PDF · \(pages) pages"
+        case .document: file.pathExtension.lowercased() == "txt" ? "Your words" : pages == 1 ? "PDF · 1 page" : "PDF · \(pages) pages"
         }
         return Look(file: file, kind: kind, transcript: transcript,
                     heading: picture?.heading ?? (kind == .chat ? (transcript.title ?? "Chat without a name") : (email.subject.isEmpty ? file.lastPathComponent : email.subject)),
@@ -197,8 +205,9 @@ public struct ScreenshotDoor: Sendable {
     /// Sends it, pseudonymised, with the matters and open to-dos as context, and keeps the answer in
     /// the record. What comes back is a judgement for the owner to look at before it goes in.
     /// `claude` nil: read on this device, by Apple's model or by the rules.
+    /// `first`: brought in at the first start, with no matters yet (F008) — always the first matter.
     public func classify(_ look: Look, claude: Claude?, owner: [String], matters: [(key: String, about: String)] = [],
-                         onFile: [String: Extractor.OnFile] = [:]) async throws -> Judgement {
+                         onFile: [String: Extractor.OnFile] = [:], first: Bool = false) async throws -> Judgement {
         if let earlier = look.earlier { return earlier }
         var outcomes = look.report.outcomes
         guard let pseudonymizer = look.report.pseudonymizer else { throw Claude.Failure.unreadable("nothing to send") }
@@ -208,6 +217,7 @@ public struct ScreenshotDoor: Sendable {
         extractor.onDevice = claude == nil
         extractor.storeMatters = matters
         extractor.onFile = onFile
+        extractor.firstMatter = first && matters.isEmpty
         let summary = try await extractor
             .run(&outcomes, pseudonymizer: pseudonymizer, owner: owner, known: look.answered)
         if let failure = summary.failed.first { throw Claude.Failure.unreadable(failure.error) }

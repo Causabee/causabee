@@ -18,6 +18,7 @@ struct PlanSheet: View {
         case .matters: "Room for a fourth matter"
         case .pro: "Causabee Pro"
         case .choose: "Your plan"
+        case .topUp: "Pro, now and then"
         }
     }
 
@@ -26,6 +27,7 @@ struct PlanSheet: View {
         case .matters: "Causabee holds \(Plan.freeMatters) open matters for free. Close one — or make room for all of them. Nothing you have is ever locked."
         case .pro: "The bigger AI reads what comes in, as it comes, writes each matter's brief and answers about everything — names always disguised."
         case .choose: "Free stays on your device. Plus for every matter, Pro for the bigger AI."
+        case .topUp: "A top-up lets Pro read again: \(Self.topUpWords.prefix(1).lowercased() + Self.topUpWords.dropFirst())"
         }
     }
 
@@ -69,7 +71,7 @@ struct PlanSheet: View {
     private var chosen: Choice? {
         let open = choices.filter(canChoose)
         return open.first { $0.id == picked }
-            ?? open.first { $0.id == (store.plan == .pro ? "topup" : reason == .matters ? "plus" : "pro") } ?? open.first
+            ?? open.first { $0.id == (store.plan == .pro || reason == .topUp ? "topup" : reason == .matters ? "plus" : "pro") } ?? open.first
     }
 
     static let topUpWords = "Adds a third of a month's Pro use, kept until it is used."

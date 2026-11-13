@@ -55,6 +55,18 @@ Grey card on white, no yellow, no badge, no count.
 
 **5 · The Mac's start** — after the welcome, no setup sheet opens. Causabee → Set Up Causabee … stays in the menu.
 
+**6 · The start credit, said once** (AC-15) — on the first step, while the start credit is there and nothing of it is used: one quiet line under the demo's link, with a small bolt, as Pro's lines are marked today. No number, no countdown. Without a start credit (not given, or used), the line is not there.
+
+**7 · The start credit in Pro's use** (AC-15) — Settings and the plan's page, where the top-ups' bar is (`ProBar`): while the account's extra is only the start credit, that bar is named "Start credit" and its words say so; once a top-up is bought, it is the top-ups' bar as today, the credit counted in it.
+
+**8 · The start credit used** (AC-17) — on the overview, under the matters, above the mail card, while the start credit is used, no Pro month or top-up is left, and Not now has not been tapped. An offer, as the mail card: `.offerCard()`, outlined, no yellow, no count.
+
+- "Your start credit is used."
+- "Apple's model on this device reads from now on. A top-up lets Pro read again."
+- **Top up** (quiet) — opens the plan's page with "Pro, now and then" chosen — and *Not now* (a link). After either it is gone for good.
+
+With both offers due, only this card shows; the mail card comes once it is gone.
+
 ## Words
 
 | Where | Text |
@@ -84,8 +96,15 @@ Grey card on white, no yellow, no badge, no count.
 | Mail card, title | Also what comes by mail? |
 | Mail card, line | Causabee reads one label or folder you choose — nothing else in your mailbox. |
 | Mail card, buttons | Set up · Not now |
+| Start credit, under the first step | A start credit is yours: Pro reads your first things, names disguised. |
+| The bar, its name | Start credit |
+| The bar, its words | of a Pro month in your start credit |
+| The bar, read aloud | Start credit: 33 percent of a Pro month left |
+| Used, title | Your start credit is used. |
+| Used, line | Apple's model on this device reads from now on. A top-up lets Pro read again. |
+| Used, buttons | Top up · Not now |
 
-Checked against the house rules: short sentences, few words. Page 3 and the first step name every way in; mail is named only on the mail card, which is about mail alone. The empty overview no longer says "Set Up Causabee … to bring in your mail" or "Pull down to get new mail".
+Checked against the house rules: short sentences, few words. The start credit's words say what it is and what follows, never "free", "only", "left!" or a countdown. Page 3 and the first step name every way in; mail is named only on the mail card, which is about mail alone. The empty overview no longer says "Set Up Causabee … to bring in your mail" or "Pull down to get new mail".
 
 ## On each device
 
@@ -103,7 +122,7 @@ Checked against the house rules: short sentences, few words. Page 3 and the firs
 
 ## Accessibility
 
-- VoiceOver: the field "What's on your mind?"; Send "Send"; the buttons "Add a photo", "Scan a document", "Add a file"; the demo link "Look around in an example"; each picture hidden, its title and line read; the dots "Page 2 of 4", as today.
+- VoiceOver: the start credit's line read as written; the used card read as one, its buttons "Top up", "Not now"; the field "What's on your mind?"; Send "Send"; the buttons "Add a photo", "Scan a document", "Add a file"; the demo link "Look around in an example"; each picture hidden, its title and line read; the dots "Page 2 of 4", as today.
 - Large type: everything wraps, the column scrolls; the buttons stack under one another.
 - Dark mode: the tokens' own dark values; the pictures taken in both modes, as today.
 - Targets: 44 points on touch; the demo link too.
@@ -114,7 +133,8 @@ Checked against the house rules: short sentences, few words. Page 3 and the firs
 - **The welcome:** `BeeMark`, `Theme.phoneTitleFont`, `.phoneCard()` for the example matter, `BeeChip` on it (as today); the privacy line as today's lock line on `Theme.box`; the foot's `.phone(filled:wide:)` / `.filledButton()`.
 - **The first step:** the field with `.glassBehind(RoundedRectangle(cornerRadius: 24))` and `SendGlyph`, as the chat's (G1); `MicButton` in the field, as in the chat; the add buttons `.quietButton()`, built on the iPhone's existing `AttachButton`; the demo `.buttonStyle(.gold)`; "Reading …" with the bee working (`BeeLoader`).
 - **The name box:** `.phoneBox()` on the iPhone and iPad, `.quietBox()` on the Mac; Yes / Save `.filledButton()`, Change `.buttonStyle(.gold)`.
-- **The mail card:** `.phoneCard()` / `.journalCard()`; Set up `.quietButton()`, Not now `.buttonStyle(.gold)`.
+- **The mail card:** `.offerCard()` (built in Build at the owner's ask: outlined, the cards' radius, no fill); Set up `.quietButton()`, Not now `.buttonStyle(.gold)`.
+- **The start credit:** its line under the first step `.font(.footnote)`, `.foregroundStyle(.secondary)`, with `Image(systemName: "bolt")` as Pro's lines; the used card `StartCreditUsed`, made as `MailOffer` — `.offerCard()`, Top up `.quietButton()`, Not now `.buttonStyle(.gold)`; the bar `ProBar` as today, only its name and words from `ProMeter`.
 - No new colour, font or part type. `FirstStep`, `NameLine` and `MailOffer` are views made of the parts above, shared by both apps (C4).
 
 ## Picture

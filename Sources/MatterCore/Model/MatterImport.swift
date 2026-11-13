@@ -109,9 +109,9 @@ public enum MatterImport {
                 matters.append(matter)
                 summary.mattersNew += 1
             }
-            let kind: Source.Kind = judgement.emailID.hasPrefix("screenshot:") ? .screenshot
-                : judgement.emailID.hasPrefix("document:") ? .document : .mail
-            let source = Source(kind: kind, pointer: judgement.source, messageID: judgement.emailID, date: judgement.date)
+            let kind = Source.Kind.of(emailID: judgement.emailID)
+            let source = Source(kind: kind, pointer: judgement.emailID.hasPrefix("typed:") ? Source.ownWords : judgement.source,
+                                messageID: judgement.emailID, date: judgement.date)
             // A file added by hand that the matter has already, to the byte — from a mail, or from
             // its own folder, where it stands with its day in front: not taken in a second time.
             if isNew, [.screenshot, .document].contains(kind), let file = source.fileURL,

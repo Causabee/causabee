@@ -10,7 +10,7 @@ import FoundationModels
 public enum DeviceReader {
     /// What the record says read a mail.
     public static let modelID = "apple-on-device"
-    public static let version = "device-1"
+    public static let version = "device-2"
 
     public struct Unavailable: LocalizedError {
         public init() {}
@@ -73,7 +73,14 @@ public enum DeviceReader {
 
     /// `matters`: each matter's name with a few words on what it is about. `thread`: the matter the
     /// thread is in already — decided by rule before the model is asked.
-    public static func read(mail: String, sent: Date?, owner: [String], matters: [String], thread: String? = nil) async throws -> Read? {
+    /// device-2 (F008): told only for what is brought in at the first start, while there are no matters.
+    static let firstMatter = """
+    This is what the person brought in at their very first start: it is always a new matter, never \
+    "none" — set isNew. For matter, write its name: one to three words taken from the text, in the \
+    text's language. Take each date's "what" from the text's own words.
+    """
+
+    public static func read(mail: String, sent: Date?, owner: [String], matters: [String], thread: String? = nil, first: Bool = false) async throws -> Read? {
         #if canImport(FoundationModels)
         guard #available(iOS 26, macOS 26, *), isAvailable else { return nil }
         let start = Date()
@@ -86,6 +93,7 @@ public enum DeviceReader {
             prompt.append("The email was sent on \(format.string(from: sent)).")
         }
         prompt.append(matters.isEmpty ? "No matters yet." : "Matters:\n" + matters.map { "- \($0)" }.joined(separator: "\n"))
+        if first, matters.isEmpty { prompt.append(firstMatter) }
         let found = DateFinder.dates(in: String(mail.prefix(mostCharacters)), sent: sent)
         prompt.append(found.isEmpty ? "Dates found in the email: none." : "Dates found in the email:\n"
                       + found.enumerated().map { "D\($0.offset + 1): \($0.element.day)\($0.element.time.map { " " + $0 } ?? "") — “\($0.element.quote)”" }.joined(separator: "\n"))

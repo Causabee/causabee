@@ -89,7 +89,7 @@ struct ShotView: View {
                     Text(line).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if lines.count > 4 { Text("and \(lines.count - 4) more").font(.callout).foregroundStyle(.secondary) }
-                Text(Document.ownName(of: shot.file)).font(.caption).foregroundStyle(.tertiary).lineLimit(1)
+                Text(Welcome.isTyped(shot.file) ? "Your words" : Document.ownName(of: shot.file)).font(.caption).foregroundStyle(.tertiary).lineLimit(1)
                 // Its tasks with no day: given one here, where it came in, they are a plan.
                 let undated = undated(in: id)
                 if !undated.isEmpty {
@@ -139,6 +139,8 @@ struct ShotView: View {
 
     private var card: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // Typed words (F008) are no file to the owner: no picture, no file name, no folder.
+            if !Welcome.isTyped(shot.file) {
             HStack(alignment: .top, spacing: 12) {
                 if ScreenshotDoor.chatTypes.contains(shot.file.pathExtension.lowercased()) {
                     ShotThumbnail(file: shot.file)
@@ -159,9 +161,10 @@ struct ShotView: View {
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
+            }
             switch shot.stage {
             case .reading:
-                progress("Scanning on the Mac …")
+                progress(Welcome.isTyped(shot.file) ? "Reading on the Mac …" : "Scanning on the Mac …")
             case .read(let look), .sending(let look):
                 read(look)
                 progress("Sorting it in …")
@@ -206,6 +209,7 @@ struct ShotView: View {
         switch shot.file.pathExtension.lowercased() {
         case "eml", "emlx": "Mail"
         case "pdf": "Document"
+        case "txt" where Welcome.isTyped(shot.file): "Your words"
         default:
             // A phone's screen is a screenshot; a photographed letter or a scan is a picture of a page.
             switch shot.stage {
@@ -233,7 +237,7 @@ struct ShotView: View {
             ForEach(look.warnings, id: \.self) { note in
                 Label(note, systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(Theme.warning)
             }
-            sentDisclosure(look)
+            if !Welcome.isTyped(look.file) { sentDisclosure(look) }  // typed words (F008) are read on the Mac: nothing is sent
         }
     }
 
@@ -277,7 +281,7 @@ struct ShotView: View {
                 Text("Left out: " + chat.leftOut.map { "“\($0.text)” (\($0.why))" }.joined(separator: ", "))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            sentDisclosure(look)
+            if !Welcome.isTyped(look.file) { sentDisclosure(look) }  // typed words (F008) are read on the Mac: nothing is sent
         }
     }
 

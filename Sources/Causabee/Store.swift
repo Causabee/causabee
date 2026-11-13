@@ -21,6 +21,8 @@ final class Store {
     /// Why the plan sheet is open: a fourth matter, Pro asked for, or chosen from Settings.
     enum Reason: String, Identifiable {
         case matters, pro, choose
+        /// F008 AC-17: from the card once the start credit is used — "Pro, now and then" chosen.
+        case topUp
         var id: String { rawValue }
     }
 

@@ -16,7 +16,7 @@ Where the tokens and components live:
 | File | Holds |
 |---|---|
 | `Sources/Causabee/Theme.swift` | Colours, serif fonts, `.onGlass` and `.glassBehind`, the buttons, `.box()` and `.quietBox()`, `SectionHeader`, `BeeChip`, `CardFace`, `MatterIconTile` |
-| `Sources/Causabee/Journal.swift` | The matter page: `.journalCard()`, `.journalRows()`, `.waitingTile()`, `.waitingRows()`, `.planRow()`, `.planDate()`, `NextCard`, `DayTile`, `JournalPills`, `WhenChips`, `ProLine`, `UpdateNowButton`; the radii and gaps (`Theme.cardRadius`, `tileRadius`, `cardGap`, `cardInset`, `tileInset`) |
+| `Sources/Causabee/Journal.swift` | The matter page: `.journalCard()`, `.outlinedCard()`, `.journalRows()`, `.waitingTile()`, `.waitingRows()`, `.planRow()`, `.planDate()`, `NextCard`, `DayTile`, `JournalPills`, `WhenChips`, `ProLine`, `UpdateNowButton`; the radii and gaps (`Theme.cardRadius`, `tileRadius`, `cardGap`, `cardInset`, `tileInset`) |
 | `Sources/Causabee/Components.swift` | The Mac's parts: `Card`, `RowDivider`, `MoreMenu`, `.rowIcon`, `SourceLink`, `CornerBee`, `.cardField()`, `.sidebarRow` |
 | `Sources/CausabeePhone/Parts.swift` | The iPhone's and the iPad's parts: the title fonts, `.phoneBox()`, `.phoneCard()`, `PhoneEmptyBox`, `AssistantButton`, `PhoneMatterCard` |
 | `Sources/Causabee/TextSize.swift` | The Mac's text styles, a fifth larger than the system's |

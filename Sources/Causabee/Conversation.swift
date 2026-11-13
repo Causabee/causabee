@@ -165,7 +165,9 @@ struct Conversation {
 
     /// A screenshot brought in: kept where it is if it has a home, copied in if not, then read on
     /// the device. Nothing is sent.
-    func bring(_ file: URL, document: MatterCore.Document? = nil) {
+    /// The turn's id, to follow it: the first step opens the matter it goes into.
+    @discardableResult
+    func bring(_ file: URL, document: MatterCore.Document? = nil) -> UUID {
         var file = file
         var copied = false
         if document == nil, !ScreenshotDoor.hasHome(file) {
@@ -183,6 +185,7 @@ struct Conversation {
         }
         navigation.turns.append(turn)
         read(turn.id, file)
+        return turn.id
     }
 
     /// An image on the pasteboard has no home: it is written beside the store, then brought in.
@@ -234,13 +237,13 @@ struct Conversation {
             Self.set(shot: id, .failed(why), in: navigation)
             return
         }
+        let matters = Unplaced.matters(in: context)
         let claude = reader.client
         Self.set(shot: id, .sending(look), in: navigation)
-        let matters = Unplaced.matters(in: context)
         let navigation = self.navigation
         Task {
             do {
-                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context))
+                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context), first: matters.isEmpty)
                 Conversation.set(shot: id, .answered(look, judgement), in: navigation)
                 settle(shot: id, owner: owner)
             } catch {
@@ -251,8 +254,13 @@ struct Conversation {
 
     /// Into its matter by itself when Causabee is sure which; otherwise the card asks.
     func settle(shot id: UUID, owner: [String]) {
-        guard let turn = navigation.turns.first(where: { $0.id == id }), case .answered(let look, let judgement) = turn.shot?.stage,
-              let matter = SortsIn.matter(for: judgement, from: turn.matter, in: context) else { return }
+        guard let turn = navigation.turns.first(where: { $0.id == id }), case .answered(let look, let judgement) = turn.shot?.stage else { return }
+        // No matters at all (F008 AC-4, AC-5): nothing to choose — a new matter at once, the bee's name.
+        if turn.matter == nil, Welcome.takesAtOnce(matters: (try? context.fetchCount(FetchDescriptor<Matter>())) ?? 1) {
+            take(shot: id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading, within: Welcome.words(of: look)), owner: owner, opens: true)
+            return
+        }
+        guard let matter = SortsIn.matter(for: judgement, from: turn.matter, in: context) else { return }
         let all = Set(judgement.todos.indices.map { "t\($0)" } + judgement.appointments.indices.map { "a\($0)" }
                       + judgement.deadlines.indices.map { "d\($0)" } + look.offers(own: owner).lines.map(\.id))
         take(shot: id, into: matter, newName: "", owner: owner, keep: all.subtracting(SortsIn.doubles(judgement, in: matter)))
@@ -260,7 +268,8 @@ struct Conversation {
 
     /// Takes what the screenshot said into a matter: the one the owner chose, or a new one with
     /// the name the owner left on the card.
-    func take(shot id: UUID, into matter: Matter?, newName: String, owner: [String], keep: Set<String>? = nil) {
+    /// `opens`: the first matter, made at once (F008) — the window opens it.
+    func take(shot id: UUID, into matter: Matter?, newName: String, owner: [String], keep: Set<String>? = nil, opens: Bool = false) {
         guard let turn = navigation.turns.first(where: { $0.id == id }), case .answered(let look, var judgement) = turn.shot?.stage else { return }
         // Only what the owner left checked: nothing already in the matter twice.
         if let keep {
@@ -280,6 +289,7 @@ struct Conversation {
                 judgement.matter = key
             }
             judgement.matterTitle = name.isEmpty ? nil : name
+            if opens, !name.isEmpty { Welcome.nameDates(&judgement, name: name, line: Welcome.words(of: look)) }
         }
         judgement.decidedBy = .claude
         // A mail file is kept inside Causabee once taken in: its attachments are read from it,
@@ -302,6 +312,8 @@ struct Conversation {
             // Its words kept on this Mac with it — a mail's, a chat's, a screen's, a PDF's — for the assistant.
             if let email = look.report.outcomes.first?.email { MailText.save(email, besides: navigation.store) }
             // Who wrote and the numbers it is filed under, as far as the owner left them ticked.
+            // Typed words (F008): kept on the matter as the owner's own note, too.
+            if let taken { Welcome.keepTyped(look, in: taken, context: context) }
             taken?.take(look.offers(own: owner).keeping { keep?.contains($0) ?? true }, in: context)
             if let taken { try? context.save(); FolderSaver.shared.save([taken]) }
             // The people in a chat are its parties, whatever the model thought of the chat: read on
@@ -329,6 +341,7 @@ struct Conversation {
                 navigation.turns[index].shot?.fileID = judgement.emailID
             }
             Self.set(shot: id, .taken(taken?.name ?? judgement.matter ?? "", taken?.persistentModelID), in: navigation)
+            if opens, let made = taken?.persistentModelID { NotificationCenter.default.post(name: .firstMatter, object: made) }
             if let index = navigation.turns.firstIndex(where: { $0.id == id }) { navigation.turns[index].matter = taken?.persistentModelID }
             if let document = turn.shot?.document.flatMap({ live($0, as: MatterCore.Document.self) }) {
                 document.readAt = Date()

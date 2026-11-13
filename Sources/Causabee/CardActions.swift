@@ -1434,6 +1434,9 @@ extension Notification.Name {
 /// news first, Auto's or a sync's. Allowed by the owner when the first news comes; nothing without.
 @MainActor
 enum NewsNotice {
+    /// Not on the first start (F008 AC-13): from the second on, and only where there is something to tell.
+    static var mayAsk: Bool { Welcome.mayAskNotifications() }
+
     /// Off: everything that comes in, the owner brought in — a label, a share, a file — so there
     /// is nothing to tell them (docs/digest-and-chat.md, 6 November 2026). Kept for reminders by
     /// time, the first notifications worth having.
@@ -1475,7 +1478,7 @@ enum NewsNotice {
         let request = UNNotificationRequest(identifier: "news-\(key)", content: content, trigger: nil)
         let center = UNUserNotificationCenter.current()
         Task {
-            if await center.notificationSettings().authorizationStatus == .notDetermined {
+            if NewsNotice.mayAsk, await center.notificationSettings().authorizationStatus == .notDetermined {
                 _ = try? await center.requestAuthorization(options: [.alert, .sound])
             }
             try? await center.add(request)
@@ -1487,7 +1490,7 @@ enum NewsNotice {
         guard tellsArrivals else { return }
         let center = UNUserNotificationCenter.current()
         Task {
-            if await center.notificationSettings().authorizationStatus == .notDetermined {
+            if NewsNotice.mayAsk, await center.notificationSettings().authorizationStatus == .notDetermined {
                 _ = try? await center.requestAuthorization(options: [.alert, .sound])
             }
         }
@@ -1538,7 +1541,7 @@ enum DueReminders {
         let reminders = Planning.reminders(matters)
         let center = UNUserNotificationCenter.current()
         if reminders.isEmpty { center.removePendingNotificationRequests(withIdentifiers: await pending(center)); return }
-        if await center.notificationSettings().authorizationStatus == .notDetermined {
+        if NewsNotice.mayAsk, await center.notificationSettings().authorizationStatus == .notDetermined {
             _ = try? await center.requestAuthorization(options: [.alert, .sound])
         }
         guard await center.notificationSettings().authorizationStatus == .authorized else { return }

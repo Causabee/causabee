@@ -150,15 +150,19 @@ public struct MatterSummary: Identifiable, Equatable, Sendable {
             let onLast = MailDates.onLastDay(of: matter, entries: entries)
             let files = Date().timeIntervalSince(last) > 15 * 86_400 ? 0
                 : (matter.documents ?? []).filter { onLast.ids.contains($0.messageID) && !$0.isHidden && !$0.isSmallImage }.count
+            let source = newest.source
             mail = Latest(title: newest.title, digest: newest.digest, from: from(newest),
-                          date: last, mails: onLast.mails, files: files, kind: newest.source.kind, entry: shown(newest))
+                          date: last, mails: onLast.mails, files: files, kind: source.kind, entry: shown(newest),
+                          made: source.isOwnWords ? .note : nil)
         }
         // Filed later than it was written: the day it was filed is when it happened here (8 November:
         // a mail written earlier, filed today, stood under yesterday's task).
         if !quick, let (entry, at) = entries.compactMap({ entry in filed[entry.messageID].map { (entry, $0) } }).max(by: { $0.1 < $1.1 }),
            at > (mail?.date ?? .distantPast) {
+            let source = entry.source
             mail = Latest(title: entry.title, digest: entry.digest, from: from(entry),
-                          date: at, mails: 1, files: 0, kind: entry.source.kind, entry: shown(entry))
+                          date: at, mails: 1, files: 0, kind: source.kind, entry: shown(entry),
+                          made: source.isOwnWords ? .note : nil)
         }
         // What happened last is the latest, whoever did it: a mail, a file, a note, a task added or
         // done (7 November: "it is not clear to me when what appears" — a note or a task of the

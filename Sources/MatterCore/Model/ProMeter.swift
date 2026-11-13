@@ -12,6 +12,8 @@ public struct ProMeter: Equatable, Sendable {
         public var left: Double
         /// In the warning colour: what is left together is running out, and this is the bar in use.
         public var low: Bool
+        /// F008: the top-ups' bar holds only the start credit — it is named so.
+        public var start = false
         /// F007: "Use Pro" is on. Off, the bar stays, greyed, and says it is not in use.
         public var inUse = true
         /// F007: the beeserver has said what is left. Not yet: an empty bar, never none.
@@ -24,10 +26,10 @@ public struct ProMeter: Equatable, Sendable {
         public var number: String { counted ? "\(percent) %" : "–" }
         public var words: String {
             guard counted else { return "not counted yet" }
-            return (kind == .month ? "left" : "of a Pro month in top-ups") + (inUse ? "" : " · not in use")
+            return (kind == .month ? "left" : start ? "of a Pro month in your start credit" : "of a Pro month in top-ups") + (inUse ? "" : " · not in use")
         }
         public var spoken: String {
-            let name = kind == .month ? "This month's Pro" : "Top-ups"
+            let name = kind == .month ? "This month's Pro" : start ? Welcome.startName : "Top-ups"
             guard counted else { return "\(name): not counted yet" }
             return (kind == .month ? "\(name): \(percent) percent left" : "\(name): \(percent) percent of a Pro month left") + (inUse ? "" : ", not in use")
         }
@@ -51,7 +53,12 @@ public struct ProMeter: Equatable, Sendable {
     /// the server still counts of one (the owner's Mac, 12 November: Pro ended, "0 % left" above the top-ups).
     /// `inUse`: "Use Pro" is on (F007). `counted`: the beeserver has answered — until then Pro or a
     /// top-up known shows an empty bar, never none.
-    public init(monthUsed: Double?, extraShare: Double, kind: String, renewsOn: String?, pro: Bool, inUse: Bool = true, counted: Bool = true) {
+    /// `startCredit` (F008): what is left beyond the month is only the start credit.
+    public init(monthUsed: Double?, extraShare: Double, kind: String, renewsOn: String?, pro: Bool, inUse: Bool = true, counted: Bool = true,
+                startCredit: Bool = false) {
+        defer {
+            if startCredit { for index in bars.indices where bars[index].kind == .topUps { bars[index].start = true } }
+        }
         let extra = max(0, extraShare)
         if !counted {
             if pro { bars = [Bar(kind: .month, left: 0, low: false, inUse: inUse, counted: false)] }
@@ -63,8 +70,9 @@ public struct ProMeter: Equatable, Sendable {
             bars = [Bar(kind: .topUps, left: extra, low: false)]
             using = .topUps
             runsLow = extra <= Self.lowShare
-            line = extra > 0 ? "Top-ups carry over from month to month." : nil
-            note = extra > 0 ? nil : "Used. Apple's model on this device reads what comes in — or buy another top-up."
+            line = extra > 0 ? (startCredit ? "Kept until it is used." : "Top-ups carry over from month to month.") : nil
+            note = extra > 0 ? nil : startCredit ? "Used. Apple's model on this device reads what comes in — or buy a top-up."
+                : "Used. Apple's model on this device reads what comes in — or buy another top-up."
         } else if pro, let monthUsed {
             let month = max(0, 1 - monthUsed)
             bars = [Bar(kind: .month, left: month, low: false)]
