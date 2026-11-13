@@ -271,7 +271,7 @@ struct OverviewScreen: View {
                 // F008: with no matters, the first step alone, as on the Mac — no title, nothing to find.
                 if !matters.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))).uppercased())
+                        Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)).uppercased())
                             .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         Text("Overview").font(Theme.phoneTitleFont)
                     }

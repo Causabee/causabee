@@ -5,6 +5,14 @@ import Testing
 /// F006: the plan's bars — this month's Pro, and the top-ups' in a bar of their own, on the month's scale.
 @Suite("F006 · The top-up in the bar")
 struct ProMeterTests {
+    /// A day as the store writes it, so a test can say which day without saying how it is written.
+    static func day(_ text: String) -> Date {
+        let reader = DateFormatter()
+        reader.locale = Locale(identifier: "en_US_POSIX")
+        reader.dateFormat = "yyyy-MM-dd"
+        return reader.date(from: text)!
+    }
+
     static let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
     @Test("F006 AC-1 · Pro and a top-up: two bars, the month's alone and the top-ups'")
@@ -32,8 +40,8 @@ struct ProMeterTests {
         let last = ProMeter(monthUsed: 1, extraShare: 0.25, kind: "apple", renewsOn: "2026-12-01", pro: true)
         let first = ProMeter(monthUsed: 0, extraShare: 0.25, kind: "apple", renewsOn: "2027-01-01", pro: true)
         #expect(first.bars[0].length == 1 && first.bars[1].left == last.bars[1].left)
-        #expect(last.line == "Starts anew on 1 December · top-ups carry over")
-        #expect(ProMeter(monthUsed: 0.5, extraShare: 0, kind: "apple", renewsOn: "2026-12-01", pro: true).line == "Starts anew on 1 December")
+        #expect(last.line == "Starts anew on \(ProMeter.long(Self.day("2026-12-01"))) · top-ups carry over")
+        #expect(ProMeter(monthUsed: 0.5, extraShare: 0, kind: "apple", renewsOn: "2026-12-01", pro: true).line == "Starts anew on \(ProMeter.long(Self.day("2026-12-01")))")
     }
 
     @Test("F006 AC-4 · Top-ups add up on the month's scale, the number past 100 %")

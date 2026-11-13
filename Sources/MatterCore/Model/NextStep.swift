@@ -164,10 +164,9 @@ extension MatterStatus {
     /// `2026-10-13` → `13. Okt.`, as the app writes a day.
     static func short(_ day: String) -> String { date(day).map(short) ?? day }
     static func short(_ date: Date) -> String {
-        let english = Locale(identifier: "en_US")
         let sameYear = Calendar.current.isDate(date, equalTo: Date(), toGranularity: .year)
-        return sameYear ? date.formatted(.dateTime.day().month(.abbreviated).locale(english))
-                        : date.formatted(.dateTime.day().month(.abbreviated).year().locale(english))
+        return sameYear ? date.formatted(.dateTime.day().month(.abbreviated))
+                        : date.formatted(.dateTime.day().month(.abbreviated).year())
     }
 
     static func date(_ day: String) -> Date? { MatterStatus.date(of: day) }

@@ -185,7 +185,7 @@ struct AssistantSheet: View {
                         let newest = entry.id == newestID
                         VStack(alignment: .leading, spacing: 20) {
                             if index == 0 || !Calendar.current.isDate(entries[index - 1].date, inSameDayAs: entry.date) {
-                                Text(entry.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
+                                Text(entry.date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                                     .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity)
                                     .padding(.top, index == 0 ? 0 : 4)
                             }

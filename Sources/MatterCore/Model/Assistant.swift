@@ -723,6 +723,7 @@ extension AssistantAsk {
         let recognizer = NLLanguageRecognizer()
         recognizer.processString(texts.joined(separator: "\n"))
         guard let language = recognizer.dominantLanguage, language != .undetermined else { return nil }
+        // for the model: the language's name in English, as the prompt expects it — never shown.
         return Locale(identifier: "en_US").localizedString(forLanguageCode: language.rawValue)
     }
 

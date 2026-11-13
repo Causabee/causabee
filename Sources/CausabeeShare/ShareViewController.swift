@@ -164,7 +164,7 @@ struct ShareView: View {
                                 ForEach(model.choices) { choice in
                                     Divider().padding(.leading, 50)
                                     row(key: choice.key, title: choice.name,
-                                        sub: choice.last.map { "last mail " + $0.formatted(.dateTime.month(.abbreviated).day().locale(Locale(identifier: "en_US"))) }, bee: false)
+                                        sub: choice.last.map { "last mail " + $0.formatted(.dateTime.month(.abbreviated).day()) }, bee: false)
                                 }
                             }
                             .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))

@@ -238,8 +238,7 @@ struct OverviewWeek: View {
 
     private static func formatter(_ format: String) -> DateFormatter {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = format
+                formatter.dateFormat = format
         return formatter
     }
     private static let weekday = formatter("EEE")

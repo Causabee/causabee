@@ -41,12 +41,12 @@ struct PlanWordsTests {
     func corner() {
         #expect(Self.words(plan: .free, used: nil, extra: 0).name == "Causabee")
         #expect(Self.words(plan: .free, used: nil, extra: 0).corner == "Free")
-        #expect(Self.words(plan: .matters, renewal: .renews(Self.day("2026-11-14"))).corner == "renews 14 November")
-        #expect(Self.words(renewal: .renews(Self.day("2026-11-28"))).corner == "renews 28 November")
-        #expect(Self.words(renewal: .ends(Self.day("2026-11-28"))).corner == "ends 28 November")
+        #expect(Self.words(plan: .matters, renewal: .renews(Self.day("2026-11-14"))).corner == "renews \(PlanWords.long(Self.day("2026-11-14")))")
+        #expect(Self.words(renewal: .renews(Self.day("2026-11-28"))).corner == "renews \(PlanWords.long(Self.day("2026-11-28")))")
+        #expect(Self.words(renewal: .ends(Self.day("2026-11-28"))).corner == "ends \(PlanWords.long(Self.day("2026-11-28")))")
         #expect(Self.words(renewal: .billingProblem(nil)).corner == "payment problem")
         // Pro ended, top-ups left: the corner says why the plan is Free.
-        #expect(Self.words(plan: .free, used: 1, extra: 0.37, ended: Self.day("2026-11-07")).corner == "Pro ended 7 November")
+        #expect(Self.words(plan: .free, used: 1, extra: 0.37, ended: Self.day("2026-11-07")).corner == "Pro ended \(PlanWords.long(Self.day("2026-11-07")))")
         // Ended and nothing left: Free, as it is.
         #expect(Self.words(plan: .free, used: nil, extra: 0, ended: Self.day("2026-11-07")).corner == "Free")
     }
@@ -107,7 +107,7 @@ struct PlanWordsTests {
         // An ended Pro still counts a month on the server: only a top-up ends its wait.
         #expect(!ended.over(monthUsed: 0.2, extraShare: 0) && ended.over(monthUsed: 0.2, extraShare: 0.33))
         let waiting = Self.words(used: 1, extra: 0, wait: used)
-        #expect(waiting.switchShownOn && waiting.switchLine == "On, waiting: nothing left to use until 28 November.")
+        #expect(waiting.switchShownOn && waiting.switchLine == "On, waiting: nothing left to use until \(PlanWords.long(Self.day("2026-11-28"))).")
         #expect(Self.words(plan: .free, used: nil, extra: 0, wait: ended).switchLine == "On, waiting: Pro has ended. A top-up goes on at once.")
         // The switch is no longer turned off by itself; while it waits, nothing is sent.
         let bee = try Self.source("Sources/Causabee/BeeServer.swift")

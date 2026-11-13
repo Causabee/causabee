@@ -20,8 +20,12 @@ struct DateLocaleTests {
         var forced: [String] = []
         for folder in ["Sources/MatterCore", "Sources/Causabee", "Sources/CausabeePhone", "Sources/CausabeeShare"] {
             for file in try Self.sources(folder) {
-                for (number, line) in file.text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+                let lines = file.text.split(separator: "\n", omittingEmptySubsequences: false)
+                for (number, line) in lines.enumerated() {
                     guard line.contains("Locale(identifier: \"en_US\")") || line.contains("Locale(identifier: \"en_GB\")") else { continue }
+                    // A line said to be for a machine, in the line above it, is allowed to stay English.
+                    let why = number > 0 ? lines[number - 1] : ""
+                    if why.contains("for the model:") || why.contains("for the store:") { continue }
                     forced.append("\(file.path):\(number + 1)")
                 }
             }

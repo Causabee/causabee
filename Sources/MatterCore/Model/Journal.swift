@@ -426,8 +426,7 @@ public enum Journal {
 
     private static func formatter(_ pattern: String) -> DateFormatter {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.calendar = monday
+                formatter.calendar = monday
         formatter.timeZone = .autoupdatingCurrent
         formatter.dateFormat = pattern
         return formatter

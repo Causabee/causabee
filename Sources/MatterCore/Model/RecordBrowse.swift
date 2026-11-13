@@ -181,8 +181,7 @@ public enum RecordBrowse {
 
     private static let month: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "LLLL yyyy"
+                formatter.dateFormat = "LLLL yyyy"
         return formatter
     }()
 

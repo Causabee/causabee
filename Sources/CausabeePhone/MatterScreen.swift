@@ -1447,7 +1447,6 @@ struct PhoneTodoEditor: View {
                     }
                 }
             }
-            .environment(\.locale, Locale(identifier: "en_US"))
             .navigationTitle(isNew ? "New task" : "Change task")
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink])
@@ -1669,7 +1668,6 @@ struct PhoneDateEditor: View {
                     TextField("Place", text: $place)
                 }
             }
-            .environment(\.locale, Locale(identifier: "en_US"))
             .navigationTitle(isAppointment ? "Change appointment" : "Change deadline")
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([what, day, hasTime, time, duration, place])

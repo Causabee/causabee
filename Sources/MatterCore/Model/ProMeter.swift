@@ -88,6 +88,6 @@ public struct ProMeter: Equatable, Sendable {
         for index in bars.indices { bars[index].inUse = inUse }
     }
 
-    /// "1 December", as the plan's other dates.
-    static func long(_ date: Date) -> String { date.formatted(.dateTime.day().month(.wide).locale(Locale(identifier: "en_GB"))) }
+    /// "1 December", "1. Dezember": the day as the device writes it (F009 AC-3).
+    static func long(_ date: Date) -> String { date.formatted(.dateTime.day().month(.wide)) }
 }

@@ -146,9 +146,7 @@ public enum IntakeSummary {
         reader.locale = Locale(identifier: "en_US_POSIX")
         reader.dateFormat = "yyyy-MM-dd"
         guard let date = reader.date(from: day) else { return day }
-        let writer = DateFormatter()
-        writer.locale = Locale(identifier: "en_US")
-        writer.dateFormat = "MMM d"
-        return writer.string(from: date)
+        // F009: as the device writes a day — German puts the day first ("6. Okt.").
+        return date.formatted(.dateTime.day().month(.abbreviated))
     }
 }

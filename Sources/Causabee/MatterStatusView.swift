@@ -1921,7 +1921,6 @@ struct TodoEditor: View {
         }
         .padding(.horizontal, 18).padding(.vertical, 16)
         .frame(width: 396)
-        .environment(\.locale, Locale(identifier: "en_US"))
         .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink], cancel: cancel)
         .onAppear { load(); focus = .text }
     }
@@ -2219,7 +2218,6 @@ struct DateEditor: View {
             }
         }
         .padding(16)
-        .environment(\.locale, Locale(identifier: "en_US"))
         .keepsWhatWasTyped([what, day, hasTime, time, duration, place], cancel: cancel)
         .onAppear(perform: load)
     }

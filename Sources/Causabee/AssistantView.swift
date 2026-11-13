@@ -219,7 +219,7 @@ struct AssistantColumn: View {
                         ForEach(Array(turns.enumerated()), id: \.element.id) { index, turn in
                             // The day, where it changes: one thread since the first question.
                             if index == 0 || !Calendar.current.isDate(turns[index - 1].date, inSameDayAs: turn.date) {
-                                Text(turn.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
+                                Text(turn.date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                                     .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, index == 0 ? 16 : 24)
                             }
                             Group {
@@ -548,7 +548,7 @@ struct OverviewView: View {
                 // The day and the search: one block in the middle, as wide as a search needs — not
                 // the page — with room above it, so the page does not begin tight under the top.
                 VStack(spacing: 10) {
-                    Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
+                    Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)))
                         .font(.caption).foregroundStyle(.secondary)
                     searchField.padding(.top, 4)
                     // The assistant about every matter, beside the overview.
