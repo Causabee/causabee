@@ -1,6 +1,6 @@
 # F009 · Causabee in German
 
-- Stage: 5
+- Stage: 6
 - Lane: feature
 - Started: 2026-11-13
 - Branch: feature/009-causabee-in-german
@@ -13,6 +13,7 @@
 | 2 · What | 2026-11-13 | open |
 | 3 · How | 2026-11-13 | Approved, go |
 | 4 · Looks | 2026-11-13 | Approved |
+| 5 · Build | 2026-11-13 | go |
 
 ## Changes after a gate
 
