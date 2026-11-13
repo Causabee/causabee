@@ -1324,7 +1324,7 @@ shown on more than one screen is under the first of them.
 | Is “%@” the same as “%@”? | Ist „%@“ dasselbe wie „%@“? |
 | Who writes and who is named come in with mail and screenshots — or add a contact yourself. | Wer schreibt und wer genannt wird, kommt mit Mail und Screenshots — oder füg selbst einen Kontakt hinzu. |
 | Add Contact | Kontakt hinzufügen |
-| TO MERGE, DRAG ONE NAME ONTO ANOTHER | ZUM ZUSAMMENFÜHREN EINEN NAMEN AUF EINEN ANDEREN ZIEHEN |
+| TO MERGE, DRAG ONE NAME ONTO ANOTHER | EINEN NAMEN AUF EINEN ANDEREN ZIEHEN |
 | Takes them out of this matter only. Nothing that comes in later will put them back. | Nimmt sie nur aus diesem Anliegen. Nichts, was später hereinkommt, bringt sie zurück. |
 | Nothing here was written by %@ or names them. | Hier hat %@ nichts geschrieben, und nichts nennt sie. |
 | them | sie |
@@ -1885,7 +1885,7 @@ shown on more than one screen is under the first of them.
 | Shows the closed matters | Zeigt die abgeschlossenen Anliegen |
 | Looking for mail | Mail wird gesucht |
 | overdue | überfällig |
-| Mail read, to take in | Mail gelesen, zum Hereinnehmen |
+| Mail read, to take in | Mail gelesen, zum Übernehmen |
 
 ## Sources/CausabeePhone/Parts.swift
 
