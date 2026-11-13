@@ -66,6 +66,32 @@ def shown_in(text: str) -> list[str]:
                 found.append(word)
     return found
 
+def from_build(folders: list[str]) -> list[str]:
+    """What Xcode found when it last built: a word with a value in it ("Next: %@"), whose
+    placeholder only the compiler knows. Pass --build <derived data> to take them in."""
+    where = sys.argv[sys.argv.index("--build") + 1] if "--build" in sys.argv else None
+    if not where:
+        return []
+    names = {"Sources/Causabee": "Causabee.build", "Sources/CausabeePhone": "Causabee.build",
+             "Sources/CausabeeShare": "Causabee.build", "Sources/MatterCore": "MatterCore"}
+    wanted = {names[f] for f in folders if f in names}
+    found = []
+    for file in sorted(pathlib.Path(where).rglob("*.stringsdata")):
+        if not any(name in str(file) for name in wanted):
+            continue
+        try:
+            book = json.loads(file.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for table, entries in book.get("tables", {}).items():
+            if table != "Localizable":
+                continue
+            for entry in entries:
+                key = entry.get("key", "")
+                if key and "%" in key and key not in found:
+                    found.append(key)
+    return found
+
 def words(folders: list[str]) -> list[str]:
     found, seen = [], set()
     for folder in folders:
@@ -92,7 +118,7 @@ def main() -> int:
         path = ROOT / catalogue
         book = read(path)
         strings = book.setdefault("strings", {})
-        found = words(folders)
+        found = words(folders) + [w for w in from_build(folders) if w not in words(folders)]
         added = [word for word in found if word not in strings]
         for word in added:
             strings[word] = {"localizations": {}}
