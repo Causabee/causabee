@@ -37,7 +37,13 @@
   loops over `["Digest", "Mail", …]` and so was a third place building the handle out of a word.
   Reading for that shape turned up the same in `ScrollTests`, `PadTests` and both of the Mac's
   suites, which had not run yet; the Mac's two helpers looked a tab up by its label outright. All
-  of them pass the part's own name now. **The runs that prove this are still going.**
+  of them pass the part's own name now.
+- **The iPhone, the four suites that look a tab up**, run again on the fixed tests: **35 tests, 0
+  failures** (`RegressionTests` 7, `ManifestoUITests` 19, `ChatAddTests` 1, and the rest).
+  `testTheFilters` is among them.
+- **The Mac:** `CausabeeAppUITests`, **34 tests, 0 failures**, built after the two helpers were
+  rewritten — the test binary holds `part.…` and no longer holds the label predicate.
+- **The iPad:** `PadTests` on an iPad Pro 13-inch, running as this is written.
 - Nine of those test files were changed by this feature: a pill's accessibility identifier is the
   part's own name now ("part.plan", "overview.matters"), not the word on it, because the word is
   German on a German device and a test must find the same button in every language. The suites that
