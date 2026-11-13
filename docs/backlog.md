@@ -25,6 +25,12 @@ Seen while building something else. Not built now: each becomes a feature, joins
 12. **Not planned:** reading on Claude Haiku (OpenAI only, the owner's decision); pinning files (needs a schema change); sharing with the family (after the release).
 
 
+- Connections between things already there: a picture or a document on a task, a document on a mail (2026-11-13)
+- The mails of 30 October: trace what was imported, where it showed, and whether it is behind the duplicate files (2026-11-13)
+- Digest against Plan: what belongs where — and whether Up next should only be in the Digest (2026-11-13)
+- Comments pinned on a suggestion and on the yellow boxes: reachable by a long press, and said more clearly than "Ask" (2026-11-13)
+- Duplicate documents: reproduce them, and find why one copy does not work or stays unread (near the parked item of 12 October: a file in a matter's folder is kept unread with no way to read it later) (2026-11-13)
+- Intake by hand: paste a mail without connecting an account, and a watched Causabee folder whose files go to the right matter — each thing once, never twice (2026-11-13)
 - The start credit on iPhones and Macs older than iOS 18.4 / macOS 15.4: their download record has no appTransactionId, so today they get no credit and nothing is said — the owner, 13 November: "we handle this later" (2026-11-13)
 - A free start credit: every new user gets one top-up (about 3 euros) at first launch, usable in Light, Light plus or Pro; they start in Light; when it runs out, Causabee falls back to the device and asks for a top-up — so they see what the product can really do, for conversion (2026-11-13)
 - The device reader's digest mixes languages: 'Muttis Reha startet am 24.11. No weiteren Details.' — one language per line, the line's own (2026-11-13)
