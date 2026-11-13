@@ -1,6 +1,6 @@
 # F008 · The welcome page
 
-- Stage: 1
+- Stage: 2
 - Lane: feature
 - Started: 2026-11-12
 - Branch: feature/008-the-welcome-page
@@ -13,6 +13,7 @@
 | 2 · What | 2026-11-12 | Yes, go. |
 | 3 · How | 2026-11-12 | Approved, go. |
 | 4 · Looks | 2026-11-12 | Approved |
+| 1 · Why | 2026-11-13 | Yes, go |
 
 ## Changes after a gate
 
