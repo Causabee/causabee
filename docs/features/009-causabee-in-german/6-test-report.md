@@ -4,7 +4,7 @@
 
 | Criterion | Test | Result |
 |---|---|---|
-| AC-1 · Every word of the app is German | `GermanTests` "F009 AC-1 · Every word has German" — 347 shared words and 1,453 of the apps', none without German, none left "new" or "stale" | pass |
+| AC-1 · Every word of the app is German | `GermanTests` "F009 AC-1 · Every word has German" — 347 shared words, 1,443 of the apps' and 20 of the share sheet's, none without German, none left "new" or "stale" | pass |
 | AC-1 | `EveryWordTests` "F009 AC-1 · No word a person reads escapes the catalogue" — every string literal in the sources read as Swift reads it; each is a catalogue key or named in `scripts/words-machine.txt` | pass |
 | AC-1 | `EveryWordTests` "F009 AC-1 · Every word is looked up in its own catalogue" — `bundle: .module` in MatterCore, never in the apps | pass |
 | AC-1 | `GermanAtRuntimeTests` — the compiled German side of the bundle asked for every one of its keys: German comes back, not English, and a value lands where German puts it | pass |
@@ -25,10 +25,17 @@
 ## Everything else still works
 
 - **The unit tests:** 720 in 149 suites, all green (`scripts/test.sh`). 14 of them are F009's.
-- **The screen tests:** `CausabeePhoneUITests` on the iPhone — see below. Nine of those files were
-  changed by this feature: a pill's accessibility identifier is the part's own name now
-  ("part.plan", "overview.matters"), not the word on it, because the word is German on a German
-  device and a test must find the same button in every language.
+- **The screen tests:** `CausabeePhoneUITests` on the iPhone, 87 of them, were started and are
+  still running as this is written. Of the first 20, one failed —
+  `DigestNewUITests.testAPinnedCardSaysItsNextDayByItsCount`, which asked for "4 open · Nov 14" by
+  a regular expression; this Mac's region is German, so the day reads "14. Nov.". It asks for a
+  month and a number in either order now and has yet to be re-run. **The suite's result is not in
+  this report yet.**
+- Nine of those test files were changed by this feature: a pill's accessibility identifier is the
+  part's own name now ("part.plan", "overview.matters"), not the word on it, because the word is
+  German on a German device and a test must find the same button in every language. The suites that
+  have run so far cover that change (`AutoTests`, `ChatAddTests`, `GoodToKnowUITests`,
+  `DigestNewUITests` apart from the day).
 - **The net:** `python3 -I scripts/words.py --escaped` names nothing. `scripts/words-machine.txt`
   holds the 344 literals that are not words a person reads, each looked at once;
   `scripts/words-values.txt` the 409 keys only the compiler can name.
