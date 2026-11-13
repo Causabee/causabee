@@ -15,7 +15,7 @@ struct IntroView: View {
 
     /// The pictures at three quarters of the 813 × 508 they filled before, and the sheet shorter by
     /// what that frees, so no gap opens under the text.
-    private static let pictureWidth: CGFloat = 610
+    private static let pictureWidth: CGFloat = 480
     private static let size = CGSize(width: 880, height: 680)
 
     @Environment(\.dismiss) private var dismiss
@@ -122,18 +122,20 @@ struct IntroView: View {
         .id(index)
     }
 
-    /// One part of a matter, cut out, in a frame of its own — never the whole window.
+    /// One part of a matter, cut out — the same pictures as on the iPhone, on white with room all
+    /// round, so their own corners never meet the frame's; one layer under the shadow.
     private func picture(_ name: String) -> some View {
         Group {
             if let image = NSImage(named: name) {
-                Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
+                Image(nsImage: image).resizable()
+                    .aspectRatio(image.size.width / max(image.size.height, 1), contentMode: .fit)
             } else {
                 Theme.box.aspectRatio(1.6, contentMode: .fit)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
-        .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+        .outlinedCard()
+        .compositingGroup()
+        .shadow(color: .black.opacity(0.10), radius: 12, y: 4)
         .id(name)
         .transition(.opacity)
     }

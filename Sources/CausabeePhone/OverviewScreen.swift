@@ -268,19 +268,22 @@ struct OverviewScreen: View {
         let _ = StoredChanges.shared.count
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))).uppercased())
-                        .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-                    Text("Overview").font(Theme.phoneTitleFont)
+                // F008: with no matters, the first step alone, as on the Mac — no title, nothing to find.
+                if !matters.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))).uppercased())
+                            .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("Overview").font(Theme.phoneTitleFont)
+                    }
                 }
                 // In the demo, three made-up mails come in: the whole round, nothing read or sent.
                 PhoneMailCheckView()
-                searchField
+                if !matters.isEmpty { searchField }
                 // With nothing in the last two weeks there is no journal: the matters stand here at once.
                 let hasJournal = !StoredChanges.shared.overview(matters).recent.isEmpty
                 if matters.isEmpty {
                     // F008: the first step — type it or add it; the demo a quiet link under it.
-                    FirstStep().padding(.top, 24)
+                    FirstStep().padding(.top, 8)
                 } else {
                     PhoneWeek(matters: matters).journalCard(inset: 14)
                 }

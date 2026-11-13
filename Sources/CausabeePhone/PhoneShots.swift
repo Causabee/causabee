@@ -180,6 +180,7 @@ final class PhoneShots {
             let taken = ((try? context.fetch(FetchDescriptor<Matter>())) ?? []).contains { $0.answers(to: key) }
             judgement.matter = taken ? key + "-" + String(id.uuidString.prefix(4)).lowercased() : key
             judgement.matterTitle = name.isEmpty ? nil : name
+            if opens, !name.isEmpty { Welcome.nameDates(&judgement, name: name) }
         }
         judgement.decidedBy = .claude
         do {

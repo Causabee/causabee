@@ -24,6 +24,7 @@ Seen while building something else. Not built now: each becomes a feature, joins
 11. **Not planned:** reading on Claude Haiku (OpenAI only, the owner's decision); pinning files (needs a schema change); sharing with the family (after the release).
 
 
+- The device reader's digest mixes languages: 'Muttis Reha startet am 24.11. No weiteren Details.' — one language per line, the line's own (2026-11-13)
 - The bare Mac binary from scripts/build.sh stops at start: NewsNotice.listen calls UNUserNotificationCenter, which needs an app bundle — guard it or drop the bare-binary way (2026-11-13)
 - Fix lane: the device reader dates "Science fair project with Lena, due 20 November" as 12 November (today), and "Steuererklärung 2025 bis 31. Juli" as 31 July 2025, in the past — F008's pressure test, 12 November (WelcomePressureTests, CAUSABEE_PRESSURE=1) (2026-11-12)
 - The ProLine on a matter's Next card says "Pro reads every mail for this." — mail only, against principle 1 (seen in F008's simulator try, 12 November) (2026-11-12)

@@ -42,13 +42,35 @@ public enum Welcome {
     /// The first matter's name: the bee's, or the typed words' first line when it gives none.
     public static func matterName(proposed: String?, typed: String) -> String {
         if let proposed = proposed?.trimmingCharacters(in: .whitespacesAndNewlines), !proposed.isEmpty { return proposed }
-        let line = typed.split(whereSeparator: \.isNewline).first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
-        guard !line.isEmpty else { return "A new matter" }
+        let first = typed.split(whereSeparator: \.isNewline).first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
+        guard !first.isEmpty else { return "A new matter" }
+        let line = beforeDate(first)
         guard line.count > 60 else { return line }
         // Cut at a word, never in one.
         let cut = String(line.prefix(60))
         let words = cut.split(separator: " ").dropLast()
         return (words.isEmpty ? cut : words.joined(separator: " ")).trimmingCharacters(in: CharacterSet(charactersIn: " ,;:—-"))
+    }
+
+    /// A first matter's dates named by the matter when the reader gave only the date itself
+    /// ("2.12.2026 · Deadline" reads "Muttis Reha · Deadline").
+    public static func nameDates(_ judgement: inout Judgement, name: String) {
+        func bare(_ what: String) -> Bool { !what.contains { $0.isLetter } }
+        for index in judgement.appointments.indices where bare(judgement.appointments[index].what) { judgement.appointments[index].what = name }
+        for index in judgement.deadlines.indices where bare(judgement.deadlines[index].what) { judgement.deadlines[index].what = name }
+    }
+
+    /// The line before its first date, without the words that lead to it: "Muttis Reha started am
+    /// 2.12.2026" is "Muttis Reha". A line that starts with its date stays as it is.
+    static func beforeDate(_ line: String) -> String {
+        let months = "January|February|March|April|May|June|July|August|September|October|November|December|Januar|Februar|März|Mai|Juni|Juli|Oktober|Dezember"
+        let pattern = "\\b(\\d{1,2}\\.\\s?\\d{1,2}\\.(\\d{2,4})?|\\d{4}-\\d{2}-\\d{2}|\\d{1,2}/\\d{1,2}(/\\d{2,4})?|\\d{1,2}\\.?\\s(\(months))|(\(months))\\s\\d{1,2})"
+        guard let date = line.range(of: pattern, options: [.regularExpression, .caseInsensitive]) else { return line }
+        let leadIn: Set<String> = ["am", "an", "ab", "bis", "vom", "zum", "zur", "um", "on", "by", "at", "from", "until", "till",
+                                   "due", "fällig", "start", "starts", "started", "startet", "beginnt", "begins", "is", "ist"]
+        var words = line[..<date.lowerBound].split(separator: " ").map { $0.trimmingCharacters(in: CharacterSet(charactersIn: ",;:—-")) }
+        while let last = words.last, last.isEmpty || leadIn.contains(last.lowercased()) { words.removeLast() }
+        return words.isEmpty ? line : words.joined(separator: " ")
     }
 
     /// Typed words as a file that comes in like any other: a `.txt`, read by `ScreenshotDoor` as the

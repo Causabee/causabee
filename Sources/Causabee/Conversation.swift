@@ -289,6 +289,7 @@ struct Conversation {
                 judgement.matter = key
             }
             judgement.matterTitle = name.isEmpty ? nil : name
+            if opens, !name.isEmpty { Welcome.nameDates(&judgement, name: name) }
         }
         judgement.decidedBy = .claude
         // A mail file is kept inside Causabee once taken in: its attachments are read from it,

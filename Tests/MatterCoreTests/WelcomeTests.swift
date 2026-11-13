@@ -42,6 +42,8 @@ struct WelcomeTests {
         #expect(try Self.source(Self.phoneOverview).contains("FirstStep("))
         #expect(try Self.source(Self.macApp).contains("FirstStep("))
         #expect(Welcome.firstTitle == "What’s on your mind?")
+        // The iPhone as simple as the Mac: no title, no search over nothing (the owner, 13 November).
+        #expect(try Self.source(Self.phoneOverview).contains("if !matters.isEmpty { searchField }"))
     }
 
     @Test("F008 AC-4 · Typed, it becomes the first matter")
@@ -66,6 +68,17 @@ struct WelcomeTests {
         #expect(Welcome.matterName(proposed: "Care for Mum", typed: "Mum fell.") == "Care for Mum")
         #expect(Welcome.matterName(proposed: nil, typed: "Mum fell. The care service visits on Thursday.\nMore") == "Mum fell. The care service visits on Thursday.")
         #expect(Welcome.matterName(proposed: " ", typed: String(repeating: "a", count: 80)).count == 60)
+        // With no name from the reader, the line before its date — without the words that lead to it
+        // (the owner's try on the Mac, 13 November).
+        #expect(Welcome.matterName(proposed: nil, typed: "Muttis Reha started am 2.12.2026") == "Muttis Reha")
+        #expect(Welcome.matterName(proposed: nil, typed: "Muttis Reha startet am 23.11.") == "Muttis Reha")
+        #expect(Welcome.matterName(proposed: nil, typed: "Science fair project with Lena, due 20 November") == "Science fair project with Lena")
+        #expect(Welcome.matterName(proposed: nil, typed: "12.3. Umzug") == "12.3. Umzug", "nothing before the date: the line")
+        // A date the reader gave only as itself takes the matter's name.
+        var judgement = try #require(look.report.outcomes.first?.judgement)
+        judgement.deadlines = [Judgement.Deadline(what: "2.12.2026", date: "2026-12-02", sourceQuote: "")]
+        Welcome.nameDates(&judgement, name: "Muttis Reha")
+        #expect(judgement.deadlines.first?.what == "Muttis Reha")
         // A long line is cut at a word, never in one (the pressure test, 12 November).
         #expect(Welcome.matterName(proposed: nil, typed: "Car insurance claim after the parking-lot accident, the assessor calls next week")
                 == "Car insurance claim after the parking-lot accident, the")
