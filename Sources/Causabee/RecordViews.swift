@@ -644,7 +644,7 @@ struct FileFace<Items: View>: View {
                 #endif
             }
             if let state {
-                Text(state.words).font(.caption).foregroundStyle(state.isOnTheWay ? Color.secondary : Theme.warning).lineLimit(2)
+                Text(state.words).font(.caption).foregroundStyle(state.didFail ? Theme.warning : Color.secondary).lineLimit(2)
             } else if document.reading == .kept {
                 readButton
             }
@@ -694,7 +694,7 @@ struct FileFace<Items: View>: View {
                         .help("Reads the heading of the first page on this device and takes it as the name. Costs nothing, sends nothing.")
                 }
                 if let state {
-                    Text(state.words).font(.caption).foregroundStyle(state.isOnTheWay ? Color.secondary : Theme.warning)
+                    Text(state.words).font(.caption).foregroundStyle(state.didFail ? Theme.warning : Color.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

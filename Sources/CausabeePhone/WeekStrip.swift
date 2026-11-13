@@ -194,14 +194,16 @@ struct PhoneWeek: View {
     /// "Thu, Oct 8"
     static func heading(_ day: String) -> String { MatterStatus.date(of: day).map(dayHeading.string) ?? day }
 
-    private static func formatter(_ format: String) -> DateFormatter {
+    /// A day a person reads: the template says which parts are wanted, the device's language how
+    /// they are put together — "Thu, Nov 13" in English, "Do., 13. Nov." in German (F009 AC-3).
+    private static func formatter(_ template: String) -> DateFormatter {
         let formatter = DateFormatter()
-                formatter.dateFormat = format
+        formatter.setLocalizedDateFormatFromTemplate(template)
         return formatter
     }
     private static let weekday = formatter("EEE")
     private static let weekdayWide = formatter("EEEE")
     private static let dayOfMonth = formatter("d")
-    private static let dayHeading = formatter("EEE, MMM d")
-    private static let spoken = formatter("EEEE, MMMM d")
+    private static let dayHeading = formatter("EEEMMMd")
+    private static let spoken = formatter("EEEEMMMMd")
 }

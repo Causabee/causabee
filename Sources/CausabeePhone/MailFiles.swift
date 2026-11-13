@@ -291,7 +291,7 @@ struct FilesSection: View {
                 state[id] = nil
                 use(url)
             } catch {
-                state[id] = plainWords(error)
+                state[id] = .failed(plainWords(error))
             }
         }
     }

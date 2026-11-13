@@ -210,8 +210,9 @@ public enum Welcome {
 
 extension Source {
     /// The owner's own typed words (F008): kept as the kind every build knows, with "you" as where
-    /// they came from — so they read as the owner's, never as the assistant's.
-    public static var ownWords: String { String(localized: "you", bundle: .module) }
+    /// they came from — so they read as the owner's, never as the assistant's. Stored and compared,
+    /// on every device and in every language, so it is never looked up (F009).
+    public static let ownWords = "you"
     public var isOwnWords: Bool { kind == .conversation && pointer == Self.ownWords }
 }
 

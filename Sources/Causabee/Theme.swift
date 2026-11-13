@@ -123,9 +123,12 @@ struct BeeChip: View {
 enum Fetching: Equatable {
     case onTheWay(String)
     case failed(String)
+    /// Finished, with what came of it: no spinner, and not the warning colour either.
+    case done(String)
 
-    var words: String { switch self { case .onTheWay(let said), .failed(let said): said } }
+    var words: String { switch self { case .onTheWay(let said), .failed(let said), .done(let said): said } }
     var isOnTheWay: Bool { if case .onTheWay = self { true } else { false } }
+    var didFail: Bool { if case .failed = self { true } else { false } }
 }
 
 enum Dates {

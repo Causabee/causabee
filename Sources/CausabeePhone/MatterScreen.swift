@@ -828,13 +828,13 @@ struct MatterScreen: View {
             if waiting {
                 Button("Write follow-up") {
                     navigation.talk(todo?.text ?? text, kind: todo == nil ? "Step" : "Task", in: matter,
-                                    prefill: "Write a short, friendly follow-up about this.")
+                                    prefill: String(localized: "Write a short, friendly follow-up about this."))
                 }
                 .buttonStyle(.phoneFilled)
             } else if Todo.isMessage(text) || todo?.isMessage == true {
                 Button("Write message") {
                     navigation.talk(todo?.text ?? text, kind: todo == nil ? "Step" : "Task", in: matter,
-                                    prefill: "Write a short message about this.")
+                                    prefill: String(localized: "Write a short message about this."))
                 }
                 .buttonStyle(.phoneFilled)
             }

@@ -51,7 +51,7 @@ struct FolderSetting: View {
             Text("Causabee's own folder in your iCloud Drive, with a folder per matter — the same on your Mac and here. A letter photographed here opens on the Mac, and the Mac's files open here. Causabee has no server.")
                 .font(.footnote).foregroundStyle(.secondary)
         } else {
-            LabeledContent(String(localized: "Folder"), value: name ?? String(localized: "None"))
+            LabeledContent(String(localized: "Folder"), value: name ?? String(localized: "No folder"))
             Button(name == nil ? String(localized: "Choose a folder …") : String(localized: "Choose another …")) { picks = true }
                 .fileImporter(isPresented: $picks, allowedContentTypes: [.folder]) { result in
                     guard case .success(let url) = result else { return }

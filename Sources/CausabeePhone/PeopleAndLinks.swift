@@ -276,7 +276,7 @@ struct LinksSection: View {
     @Environment(\.undoManager) private var undoManager
     @State private var adding = false
     @State private var showsSuggestions = true
-    @State private var searching: String?
+    @State private var searching: Fetching?
 
     private func newestFirst(_ a: WebLink, _ b: WebLink) -> Bool { a.createdAt > b.createdAt }
 
@@ -322,10 +322,10 @@ struct LinksSection: View {
             }
             HStack(spacing: 8) {
                 if let searching {
-                    if searching.hasSuffix("…") { ProgressView() }
-                    Text(searching).font(.caption).foregroundStyle(.secondary)
+                    if searching.isOnTheWay { ProgressView() }
+                    Text(searching.words).font(.caption).foregroundStyle(.secondary)
                 }
-                if searching?.hasSuffix("…") != true, !(matter.entries ?? []).isEmpty {
+                if searching?.isOnTheWay != true, !(matter.entries ?? []).isEmpty {
                     Button(matter.linksSearchedAt == nil ? String(localized: "Look for links in the mails") : String(localized: "Look in the mails again"), action: search)
                         .font(.caption).foregroundStyle(Theme.gold)
                         .tool()
@@ -352,19 +352,19 @@ struct LinksSection: View {
     /// in them that matter. Free: nothing is sent but the reading itself.
     private func search() {
         guard let account = Keychain.accounts().first(where: { !$0.usesGoogle }) else {
-            searching = String(localized: "No mail account saved: add it in Settings (⋯ on the overview).")
+            searching = .failed(String(localized: "No mail account saved: add it in Settings (⋯ on the overview)."))
             return
         }
         let mails = (matter.entries ?? []).filter { $0.source.pointer.hasPrefix("imap://") && !$0.messageID.isEmpty }
             .map { (pointer: $0.source.pointer, id: $0.messageID) }
-        searching = String(format: String(localized: "Reading %lld of %lld mails …"), 0, mails.count)
+        searching = .onTheWay(String(format: String(localized: "Reading %lld of %lld mails …"), 0, mails.count))
         Task {
             var found = 0, missing = 0
             do {
                 guard let password = try Keychain.password(for: account.user) else { throw MailFetch.Failure.gone(account.user) }
                 let client = try await IMAPClient.connect(to: account, password: password)
                 for (index, mail) in mails.enumerated() {
-                    searching = String(format: String(localized: "Reading %lld of %lld mails …"), index + 1, mails.count)
+                    searching = .onTheWay(String(format: String(localized: "Reading %lld of %lld mails …"), index + 1, mails.count))
                     guard let data = try? await MailFetch.message(pointer: mail.pointer, messageID: mail.id, from: client) else { missing += 1; continue }
                     let email = EMLParser.parse(data: data, url: URL(string: mail.pointer) ?? URL(fileURLWithPath: "/"))
                     found += MailLinks.suggest(email.links, messageID: mail.id, to: matter, in: context)
@@ -379,9 +379,9 @@ struct LinksSection: View {
                 let gone = missing == 0 ? ""
                     : missing == 1 ? String(localized: " 1 mail is no longer in the mailbox.")
                     : String(format: String(localized: " %lld mails are no longer in the mailbox."), missing)
-                searching = said + gone
+                searching = .done(said + gone)
             } catch {
-                searching = plainWords(error)
+                searching = .failed(plainWords(error))
             }
         }
     }

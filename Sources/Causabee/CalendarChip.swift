@@ -167,9 +167,9 @@ struct CalendarAccessBanner: View {
 /// ⌘, · where new appointments and tasks go.
 struct CalendarSettings: View {
     #if os(iOS)
-    static let press = String(localized: "tap")
+    static let press = String(localized: "you tap")
     #else
-    static let press = String(localized: "click")
+    static let press = String(localized: "you click")
     #endif
     @AppStorage(Calendars.calendarKey) private var calendar = ""
     @AppStorage(Calendars.listKey) private var list = ""
@@ -214,7 +214,7 @@ struct CalendarSettings: View {
             Text("Last kept in step at \(at.formatted(date: .omitted, time: .shortened)): \(last.pulled) taken in, \(last.pushed) written out.")
                 .font(.caption).foregroundStyle(.secondary)
         }
-        Text("Causabee reads your calendars and reminders to show what is there already. It adds only when you \(Self.press) “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.")
+        Text("Causabee reads your calendars and reminders to show what is there already. It adds only when \(Self.press) “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.")
             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
     }
 }

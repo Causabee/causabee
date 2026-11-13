@@ -61,6 +61,18 @@ struct GermanTests {
         "berichtigen",    // "Correct" and "Correct it"
         "anliegen",       // "matter" and "matters": German's word is the same in one and in many,
                           // which is why the owner chose it (13 November)
+        "weiter",         // "Next" and "Continue": the one button that goes on
+        "datei hinzufügen", "datei hinzufügen …", "dokument hinzufügen",  // "Add a file" / "Add file"
+        "unklar, wessen", // "Unclear whose" and "whose is not clear"
+        "termin ändern",  // "Change date" and "Change appointment": German's Termin is both
+        "bis %@",         // "by" and "until": German says bis for both
+        "in „%@“",        // "in" and "into"
+    ]
+
+    /// Two jobs for one English word, where the capital letter is what tells them apart. Each line
+    /// is a word whose two uses are different things, not an inconsistency.
+    static let twoJobs: Set<String> = [
+        "open",           // "open", how a task stands, and "Open", the button that opens a file
     ]
 
     @Test("F009 AC-4 · One word for one thing")
@@ -74,7 +86,9 @@ struct GermanTests {
             // kind of source — two meanings of one English word, in two bundles.
             germanFor[word.catalogue + "|" + word.englishWords.lowercased(), default: []].insert(word.german.lowercased())
         }
-        let twice = germanFor.filter { $0.value.count > 1 }
+        let twice = germanFor.filter { pair in
+            pair.value.count > 1 && !Self.twoJobs.contains(pair.key.split(separator: "|").last.map(String.init) ?? "")
+        }
         #expect(twice.isEmpty, "one English word, two German: \(twice.prefix(4).map { "\($0.key) → \($0.value)" })")
         // Two different English things sharing one German word: a menu would read the same twice.
         var englishFor: [String: Set<String>] = [:]
@@ -89,13 +103,22 @@ struct GermanTests {
 
     @Test("F009 AC-11 · Causabee says du")
     func saysDu() throws {
-        // "Sie" as an address, not "sie" the word for they or she; nouns are capitalised in German,
-        // so only these forms at a word's start, or after a comma, give it away.
+        // "Sie" as an address, not "sie" meaning she, it or they. German capitalises the first word
+        // of a sentence, so "Sie liest nur" — of the bee — looks the same as the formal address;
+        // only a capital in the middle of a sentence gives the address away. Same for "Ihre".
         let formal = ["Sie ", "Ihnen", "Ihre ", "Ihrem", "Ihren", "Ihrer", "Ihres", "Ihr "]
         for word in try Self.all() where !word.german.isEmpty {
-            let german = " " + word.german
+            // Where a sentence begins: the start, and after what ends one.
+            var starts: Set<String.Index> = [word.german.startIndex]
+            for (at, character) in zip(word.german.indices, word.german) where ".!?:;—\n".contains(character) {
+                var next = word.german.index(after: at)
+                while next < word.german.endIndex, word.german[next] == " " { next = word.german.index(after: next) }
+                if next < word.german.endIndex { starts.insert(next) }
+            }
             for form in formal {
-                #expect(!german.contains(" " + form), "\(word.key): German says “\(form.trimmingCharacters(in: .whitespaces))” — Causabee says du")
+                for found in word.german.ranges(of: form) where !starts.contains(found.lowerBound) {
+                    #expect(Bool(false), "\(word.key): German says “\(form.trimmingCharacters(in: .whitespaces))” in the middle of a sentence — Causabee says du")
+                }
             }
         }
     }

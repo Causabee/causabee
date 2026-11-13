@@ -86,6 +86,7 @@ SHOWN = [
     r'\bStepper\("((?:[^"\\]|\\.)+)"',
     r'\bLink\("((?:[^"\\]|\\.)+)"',
     r'\bAlert\("((?:[^"\\]|\\.)+)"',
+    r'\.alert\("((?:[^"\\]|\\.)+)"',
     r'\.help\("((?:[^"\\]|\\.)+)"',
     r'\.accessibilityLabel\("((?:[^"\\]|\\.)+)"',
     r'\.accessibilityHint\("((?:[^"\\]|\\.)+)"',
@@ -295,6 +296,11 @@ def machine() -> set[tuple[str, str]]:
         out.add((where, json.loads(literal)))
     return out
 
+def skeleton(text: str) -> str:
+    """The same words with every value taken out, so a literal with a hole in it can be compared
+    with the key Xcode named for it: "Sort in ⟦⟧" and "Sort in %@" are one word."""
+    return re.sub(r"%(?:[0-9]+\$)?(?:lld|ld|d|@|lf|f)", "\u0001", text)
+
 def could_be_words(text: str) -> bool:
     """Reads like something a person could be shown: two words, or one capitalised word."""
     said = text.replace(HOLE, " ").strip()
@@ -335,6 +341,9 @@ def escaped() -> int:
     keys |= set(extra())
     for tag in ("core", "app"):
         keys |= set(kept(tag))
+    # A word with a value in it is compared without its value: the literal has a hole where the
+    # key has %@, and only the compiler knows which placeholder it chose.
+    shapes = {skeleton(key) for key in keys if "%" in key}
     allowed, found, seen = machine(), [], set()
     for folder in sorted({f for _, folders, _ in PLACES for f in folders}):
         for file in sorted((ROOT / folder).rglob("*.swift")):
@@ -354,7 +363,7 @@ def escaped() -> int:
                         continue
                     # A part that takes a plain String: the literal is a mistake, key or not.
                     takes = TAKES_A_WORD.search(line[:literal["at"]]) is not None
-                    if not takes and word in keys:
+                    if not takes and (word in keys or (HOLE in word and word in shapes)):
                         continue
                     if not takes and LOOKS_ITSELF_UP.search(line[:literal["at"]]):
                         continue

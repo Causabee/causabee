@@ -3131,16 +3131,6 @@
         }
       }
     },
-    "you": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "du"
-          }
-        }
-      }
-    },
     "%@ is not an image this Mac can read": {
       "localizations": {
         "de": {

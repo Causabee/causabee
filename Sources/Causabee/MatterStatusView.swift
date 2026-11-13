@@ -37,7 +37,7 @@ struct MatterStatusView: View {
     /// The owner's reminders, read when the matter opens and again when Reminders changes.
     @State private var reminders: [Calendars.Reminder] = []
     @State private var calendarTick = 0
-    @State private var searchingLinks: String?
+    @State private var searchingLinks: Fetching?
     @State private var showsSuggestions = true
     @State private var stepError: String?
     /// Per file: fetching it, or why it could not be.
@@ -713,10 +713,10 @@ struct MatterStatusView: View {
             }
             HStack(spacing: 8) {
                 if let searchingLinks {
-                    if searchingLinks.hasSuffix("…") { ProgressView().controlSize(.small) }
-                    Text(searchingLinks).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                    if searchingLinks.isOnTheWay { ProgressView().controlSize(.small) }
+                    Text(searchingLinks.words).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                 }
-                if searchingLinks?.hasSuffix("…") != true, !(matter.entries ?? []).isEmpty {
+                if searchingLinks?.isOnTheWay != true, !(matter.entries ?? []).isEmpty {
                     Button(matter.linksSearchedAt == nil ? "Look for links in the mails" : "Look in the mails again", action: searchLinks)
                         .buttonStyle(.gold).font(.caption)
                         .tool()
@@ -734,19 +734,19 @@ struct MatterStatusView: View {
     /// in them matter. Free: nothing leaves the Mac but the reading itself.
     private func searchLinks() {
         guard let account = Keychain.accounts().first else {
-            searchingLinks = String(localized: "No mail account saved. Choose Causabee → Set Up Causabee … to add one.")
+            searchingLinks = .failed(String(localized: "No mail account saved. Choose Causabee → Set Up Causabee … to add one."))
             return
         }
         let mails = (matter.entries ?? []).filter { $0.source.pointer.hasPrefix("imap://") && !$0.messageID.isEmpty }
             .map { (pointer: $0.source.pointer, id: $0.messageID) }
-        searchingLinks = String(format: String(localized: "Reading 0 of %lld mails …"), mails.count)
+        searchingLinks = .onTheWay(String(format: String(localized: "Reading 0 of %lld mails …"), mails.count))
         Task {
             var found = 0, missing = 0
             do {
                 guard let password = try await MailSecret.secret(for: account) else { throw MailFetch.Failure.gone(account.user) }
                 let client = try await IMAPClient.connect(to: account, password: password)
                 for (index, mail) in mails.enumerated() {
-                    searchingLinks = String(format: String(localized: "Reading %lld of %lld mails …"), index + 1, mails.count)
+                    searchingLinks = .onTheWay(String(format: String(localized: "Reading %lld of %lld mails …"), index + 1, mails.count))
                     guard let data = try? await MailFetch.message(pointer: mail.pointer, messageID: mail.id, from: client) else { missing += 1; continue }
                     let email = EMLParser.parse(data: data, url: URL(string: mail.pointer) ?? URL(fileURLWithPath: "/"))
                     found += MailLinks.suggest(email.links, messageID: mail.id, to: matter, in: context)
@@ -758,9 +758,9 @@ struct MatterStatusView: View {
                     : found == 1 ? String(localized: "1 link suggested.") : String(format: String(localized: "%lld links suggested."), found)
                 let gone = missing == 0 ? "" : missing == 1 ? String(localized: " 1 mail is no longer in the mailbox.")
                     : String(format: String(localized: " %lld mails are no longer in the mailbox."), missing)
-                searchingLinks = said + gone
+                searchingLinks = .done(said + gone)
             } catch {
-                searchingLinks = plainWords(error)
+                searchingLinks = .failed(plainWords(error))
             }
         }
     }
