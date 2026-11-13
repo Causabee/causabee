@@ -131,6 +131,12 @@ public enum Welcome {
     /// Asked once on this device; `--fresh-start` forgets it, for the owner's tries.
     public static let startAskedKey = "start.asked"
 
+    /// "Use Pro" turned on by the start credit (AC-16): it is there, something of it is left, and the
+    /// owner has never set the switch — their own choice, on or off, always stays.
+    public static func switchesProOn(startCredit: Bool, extra: Bool, setByOwner: Bool) -> Bool {
+        startCredit && extra && !setByOwner
+    }
+
     /// The line under the first step: the credit is there, and nothing of it is used yet.
     public static func showsStartLine(startCredit: Bool, extraShare: Double) -> Bool {
         startCredit && extraShare >= 0.33

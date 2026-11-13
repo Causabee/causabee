@@ -250,7 +250,14 @@ struct WelcomeTests {
     }
 
     @Test("F008 AC-16 · It works as a top-up does, on every plan")
-    func startWorks() {
+    func startWorks() throws {
+        // Pro is used: the start credit turns "Use Pro" on, unless the owner has set it themselves
+        // (TestFlight 250, 13 November: the credit given, Pro never switched on, nothing read with it).
+        #expect(Welcome.switchesProOn(startCredit: true, extra: true, setByOwner: false))
+        #expect(!Welcome.switchesProOn(startCredit: true, extra: true, setByOwner: true), "the owner's own choice stays")
+        #expect(!Welcome.switchesProOn(startCredit: true, extra: false, setByOwner: false), "used up: nothing to switch on")
+        #expect(!Welcome.switchesProOn(startCredit: false, extra: true, setByOwner: false), "a bought top-up: as today")
+        #expect(try Self.source("Sources/Causabee/BeeServer.swift").contains("Welcome.switchesProOn("))
         // Pro's reader is on with credit alone, whatever the plan: the start credit is credit.
         #expect(Plan.proIsOn(switched: true, plan: .free, credit: true))
         #expect(Plan.proIsOn(switched: true, plan: .matters, credit: true))

@@ -48,6 +48,11 @@ final class BeeServer {
         kind = object["kind"] as? String ?? kind
         startCredit = object["startCredit"] as? Bool ?? false
         UserDefaults.standard.set(startCredit, forKey: Self.startCreditKey)
+        // F008 AC-16: the start credit is used — "Use Pro" on, unless the owner ever set it.
+        if Welcome.switchesProOn(startCredit: startCredit, extra: extra,
+                                 setByOwner: UserDefaults.standard.object(forKey: AutoMode.key) != nil) {
+            UserDefaults.standard.set(true, forKey: AutoMode.key)
+        }
         UserDefaults.standard.set(extra, forKey: Self.creditKey)
         counted = true
         // Something left again: the wait is over (F007).
@@ -156,6 +161,11 @@ final class BeeServer {
     /// once per Apple account in the App Store, again in TestFlight after the owner forgets it; not in
     /// the demo; asked again at a later start only when the beeserver could not be reached.
     func askStart() async {
+        // A start credit given before Pro switched on by itself (TestFlight 250): on at this start.
+        if Welcome.switchesProOn(startCredit: startCredit, extra: UserDefaults.standard.bool(forKey: Self.creditKey),
+                                 setByOwner: UserDefaults.standard.object(forKey: AutoMode.key) != nil) {
+            UserDefaults.standard.set(true, forKey: AutoMode.key)
+        }
         if CommandLine.arguments.contains("--fresh-start") {
             UserDefaults.standard.removeObject(forKey: Welcome.startAskedKey)
             UserDefaults.standard.removeObject(forKey: Welcome.startUsedLaterKey)
