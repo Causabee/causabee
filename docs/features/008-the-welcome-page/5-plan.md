@@ -45,6 +45,8 @@
 
 19. **Simple to start, more as you grow.** The first start asks for nothing before it is needed: mail, iCloud, Pro and your name come when they help, never at the door. Tested by `WelcomeTests` "F008 AC-7".
 
+20. **A name is made of the words that came in.** What the bee calls a matter, and what it calls a date, is taken from what it read — its own language, its own words; a typo mended, nothing translated, nothing invented. Tested by `WelcomeTests` "F008 AC-4 · Nothing made up".
+
 ## The line for the release notes
 
 - **A calmer first start:** four short pages, then your own Causabee — type what's on your mind or add a screenshot, photo or file, and it becomes your first matter.
