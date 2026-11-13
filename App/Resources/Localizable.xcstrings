@@ -1,0 +1,1707 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "· \\(max(0, Int(timeline.date.timeIntervalSince(sentAt)))) s": {
+      "localizations": {}
+    },
+    "Close the assistant": {
+      "localizations": {}
+    },
+    "Show earlier · \\(all.count - turns.count) more": {
+      "localizations": {}
+    },
+    "New answer": {
+      "localizations": {}
+    },
+    "Find or start a matter": {
+      "localizations": {}
+    },
+    "RECENT": {
+      "localizations": {}
+    },
+    "Start new matter: “\\(query)”": {
+      "localizations": {}
+    },
+    "Made on the Mac, nothing is sent.": {
+      "localizations": {}
+    },
+    "Ask Causabee": {
+      "localizations": {}
+    },
+    "Ask about all your matters": {
+      "localizations": {}
+    },
+    "Overview": {
+      "localizations": {}
+    },
+    "Reading on this Mac …": {
+      "localizations": {}
+    },
+    "Try again": {
+      "localizations": {}
+    },
+    "Asks the same question once more": {
+      "localizations": {}
+    },
+    "Copy the answer": {
+      "localizations": {}
+    },
+    "Save as note": {
+      "localizations": {}
+    },
+    "Try again: asks the same question once more, for another answer": {
+      "localizations": {}
+    },
+    "Sources (\\(cites.count))": {
+      "localizations": {}
+    },
+    "On this device": {
+      "localizations": {}
+    },
+    "Nothing was sent for this answer.": {
+      "localizations": {}
+    },
+    "You dismissed this suggestion": {
+      "localizations": {}
+    },
+    "Set again": {
+      "localizations": {}
+    },
+    "Sets the date as it was asked for, once more": {
+      "localizations": {}
+    },
+    "Undo": {
+      "localizations": {}
+    },
+    "Opens it in its matter": {
+      "localizations": {}
+    },
+    "Draft opened in Mail · To: \\(recipient?.name ?? ": {
+      "localizations": {}
+    },
+    "Edit": {
+      "localizations": {}
+    },
+    "Opens it in Mail again": {
+      "localizations": {}
+    },
+    "Next: \\(next.what)": {
+      "localizations": {}
+    },
+    "Overdue since \\(Dates.short(todo.due)): \\(todo.text)": {
+      "localizations": {}
+    },
+    "Open the matter, at this task": {
+      "localizations": {}
+    },
+    "… and \\(overdue.count - 3) more overdue": {
+      "localizations": {}
+    },
+    "Open the matter, at the first of these": {
+      "localizations": {}
+    },
+    "Open the matter": {
+      "localizations": {}
+    },
+    "Quiet · \\(quiet.count)\\(Text(": {
+      "localizations": {}
+    },
+    "Sorting in 12 mails …": {
+      "localizations": {}
+    },
+    "Causabee is on it …": {
+      "localizations": {}
+    },
+    "Keep": {
+      "localizations": {}
+    },
+    "The address must start with https://": {
+      "localizations": {}
+    },
+    "in \\(where_)": {
+      "localizations": {}
+    },
+    "Connected and kept in step. Click to open it in \\(where_).": {
+      "localizations": {}
+    },
+    "Open in \\(where_)": {
+      "localizations": {}
+    },
+    "Disconnect": {
+      "localizations": {}
+    },
+    "no longer in \\(where_)": {
+      "localizations": {}
+    },
+    "Add again": {
+      "localizations": {}
+    },
+    "found in \\(list.isEmpty ? where_ : list): \\(found)": {
+      "localizations": {}
+    },
+    "Connect": {
+      "localizations": {}
+    },
+    "It is there already: connect to it instead of adding a second one.": {
+      "localizations": {}
+    },
+    "Connect Calendar and Reminders": {
+      "localizations": {}
+    },
+    "To see which appointments and tasks are there already — nothing is added unless you tap.": {
+      "localizations": {}
+    },
+    "To see which appointments and tasks are there already — nothing is added unless you click.": {
+      "localizations": {}
+    },
+    "Add appointments to": {
+      "localizations": {}
+    },
+    "“Causabee” (made when first needed)": {
+      "localizations": {}
+    },
+    "\\($0.title) · \\($0.source?.title ?? ": {
+      "localizations": {}
+    },
+    "Add tasks to": {
+      "localizations": {}
+    },
+    "Last kept in step at \\(at.formatted(date: .omitted, time: .shortened)): \\(last.pulled) taken in, \\(last.pushed) written out.": {
+      "localizations": {}
+    },
+    "Causabee reads your calendars and reminders to show what is there already. It adds only when you \\(Self.press) “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.": {
+      "localizations": {}
+    },
+    "Write mail": {
+      "localizations": {}
+    },
+    "Copy address": {
+      "localizations": {}
+    },
+    "You dismissed this message": {
+      "localizations": {}
+    },
+    "Copied": {
+      "localizations": {}
+    },
+    "Dismiss": {
+      "localizations": {}
+    },
+    "Share": {
+      "localizations": {}
+    },
+    "Copy": {
+      "localizations": {}
+    },
+    "\\(storeURL.path)\\n\\(error.localizedDescription)": {
+      "localizations": {}
+    },
+    "New Matter …": {
+      "localizations": {}
+    },
+    "About Causabee": {
+      "localizations": {}
+    },
+    "Set Up Causabee …": {
+      "localizations": {}
+    },
+    "Introduction to Causabee": {
+      "localizations": {}
+    },
+    "Pinned": {
+      "localizations": {}
+    },
+    "Matters": {
+      "localizations": {}
+    },
+    "Closed · \\(closed.count)": {
+      "localizations": {}
+    },
+    "Merge": {
+      "localizations": {}
+    },
+    "Cancel": {
+      "localizations": {}
+    },
+    "Everything comes along: mail, screenshots, files, notes, tasks, dates and people. The old name stays as an alias, so what comes in later still finds it. You cannot split it again later.": {
+      "localizations": {}
+    },
+    "Name": {
+      "localizations": {}
+    },
+    "Create": {
+      "localizations": {}
+    },
+    "Mail, screenshots, photos, files, notes and tasks can be put into it afterwards.": {
+      "localizations": {}
+    },
+    "Save": {
+      "localizations": {}
+    },
+    "The old name stays as an alias, so what comes in later still finds the matter.": {
+      "localizations": {}
+    },
+    "\\(new) new \\(new == 1 ? ": {
+      "localizations": {}
+    },
+    "\\(late) overdue": {
+      "localizations": {}
+    },
+    "Write Next Step and Summary Again": {
+      "localizations": {}
+    },
+    "Next Matter": {
+      "localizations": {}
+    },
+    "Previous Matter": {
+      "localizations": {}
+    },
+    "Get New Mail": {
+      "localizations": {}
+    },
+    "Find …": {
+      "localizations": {}
+    },
+    "Find Next": {
+      "localizations": {}
+    },
+    "Find Previous": {
+      "localizations": {}
+    },
+    "Put it away (esc)": {
+      "localizations": {}
+    },
+    "Put it away": {
+      "localizations": {}
+    },
+    "Add": {
+      "localizations": {}
+    },
+    "Attach to the mail": {
+      "localizations": {}
+    },
+    "Search this matter's files": {
+      "localizations": {}
+    },
+    "Causabee Pro": {
+      "localizations": {}
+    },
+    "Reads what comes in — mail, screenshots, photos, files, your notes — fills the cards, answers.": {
+      "localizations": {}
+    },
+    "Use Pro": {
+      "localizations": {}
+    },
+    "This version of Causabee has no iCloud: your matters stay on this Mac.": {
+      "localizations": {}
+    },
+    "iCloud": {
+      "localizations": {}
+    },
+    "In the demo, iCloud stays off: the made-up matters never meet your iCloud. Your choice counts again when you leave the demo.": {
+      "localizations": {}
+    },
+    "Takes effect when Causabee starts again.": {
+      "localizations": {}
+    },
+    "Quit Causabee": {
+      "localizations": {}
+    },
+    "Now: \\(started.label) · \\(sync.account)": {
+      "localizations": {}
+    },
+    "Last sent: \\(sync.lastExport.map { $0.formatted(date: .omitted, time: .shortened) } ?? ": {
+      "localizations": {}
+    },
+    "Your matters, tasks, dates, people, digests, the assistant's history, and the full texts of mails and scans — those end to end encrypted — sync through your private iCloud. Files go into the matters' folders.": {
+      "localizations": {}
+    },
+    "Sidebar": {
+      "localizations": {}
+    },
+    "More": {
+      "localizations": {}
+    },
+    "Open the mail in Mail": {
+      "localizations": {}
+    },
+    "Stop using Pro": {
+      "localizations": {}
+    },
+    "Causabee": {
+      "localizations": {}
+    },
+    "Put it down": {
+      "localizations": {}
+    },
+    "Read and sorted in": {
+      "localizations": {}
+    },
+    "Screenshot, Mail or PDF …": {
+      "localizations": {}
+    },
+    "Kept only, not read": {
+      "localizations": {}
+    },
+    "Add to this matter": {
+      "localizations": {}
+    },
+    "Attach a screenshot, a mail (.eml) or a PDF — or drag it here, or paste it (⌘V). It is scanned on the Mac.": {
+      "localizations": {}
+    },
+    "Look around in an example": {
+      "localizations": {}
+    },
+    "Send": {
+      "localizations": {}
+    },
+    "Add a file …": {
+      "localizations": {}
+    },
+    "or drop it here": {
+      "localizations": {}
+    },
+    "Photo": {
+      "localizations": {}
+    },
+    "Add a photo": {
+      "localizations": {}
+    },
+    "Scan": {
+      "localizations": {}
+    },
+    "Scan a document": {
+      "localizations": {}
+    },
+    "File": {
+      "localizations": {}
+    },
+    "Add a file": {
+      "localizations": {}
+    },
+    "Set up": {
+      "localizations": {}
+    },
+    "Not now": {
+      "localizations": {}
+    },
+    "Top up": {
+      "localizations": {}
+    },
+    "Choose folder …": {
+      "localizations": {}
+    },
+    "Use iCloud Drive": {
+      "localizations": {}
+    },
+    "One folder per matter inside it": {
+      "localizations": {}
+    },
+    "Open": {
+      "localizations": {}
+    },
+    "Save all files now": {
+      "localizations": {}
+    },
+    "Every matter's files into its folder: attachments fetched read-only from Gmail, and what you dropped in. Files you hid are left out.": {
+      "localizations": {}
+    },
+    "Choose a folder — in Documents, or a synced one like Google Drive or Dropbox. iCloud Drive is not switched on for this Mac.": {
+      "localizations": {}
+    },
+    "Files only — the texts of the mails are in your private iCloud, end to end encrypted, not in this folder. New files are saved there by themselves.": {
+      "localizations": {}
+    },
+    "Be organized. Be private.": {
+      "localizations": {}
+    },
+    "Causabee. Be organized. Be private.": {
+      "localizations": {}
+    },
+    "Goes on to the introduction": {
+      "localizations": {}
+    },
+    "Dr. Brandt": {
+      "localizations": {}
+    },
+    "Prescription for the bath seat is ready": {
+      "localizations": {}
+    },
+    "PDF": {
+      "localizations": {}
+    },
+    "Insurance_letter.pdf": {
+      "localizations": {}
+    },
+    "Nina: Who does what this week?": {
+      "localizations": {}
+    },
+    "Skip": {
+      "localizations": {}
+    },
+    "Back": {
+      "localizations": {}
+    },
+    "Care for Mum (Helga) after her fall": {
+      "localizations": {}
+    },
+    "Next, on Oct 6: The medical service visits": {
+      "localizations": {}
+    },
+    "An example: Care for Mum after her fall. Next, on October 6, the medical service visits.": {
+      "localizations": {}
+    },
+    "Filter": {
+      "localizations": {}
+    },
+    "Set day": {
+      "localizations": {}
+    },
+    "Set a day for \\(todo.text)": {
+      "localizations": {}
+    },
+    "Changes the day": {
+      "localizations": {}
+    },
+    "Set Day": {
+      "localizations": {}
+    },
+    "Something changed since this was written.": {
+      "localizations": {}
+    },
+    "When you leave": {
+      "localizations": {}
+    },
+    "together": {
+      "localizations": {}
+    },
+    "No day yet": {
+      "localizations": {}
+    },
+    "No answer yet": {
+      "localizations": {}
+    },
+    "Wait a week": {
+      "localizations": {}
+    },
+    "\\(plan.overdue.count) overdue": {
+      "localizations": {}
+    },
+    " · ": {
+      "localizations": {}
+    },
+    "Summary": {
+      "localizations": {}
+    },
+    "A brief helps Causabee follow this matter as more comes in.": {
+      "localizations": {}
+    },
+    "\\(count)": {
+      "localizations": {}
+    },
+    "Held until \\(Dates.short(until)) · may be outdated": {
+      "localizations": {}
+    },
+    "Hide": {
+      "localizations": {}
+    },
+    "Not wanted here: it goes, and is not brought back": {
+      "localizations": {}
+    },
+    "DECISION · \\(Dates.short(decision.decidedAt).uppercased())": {
+      "localizations": {}
+    },
+    "Done: ": {
+      "localizations": {}
+    },
+    "Deadline": {
+      "localizations": {}
+    },
+    "Waits for you: ": {
+      "localizations": {}
+    },
+    "You wait for: ": {
+      "localizations": {}
+    },
+    "WHO HAS THE BALL": {
+      "localizations": {}
+    },
+    "\\(name) waits for you": {
+      "localizations": {}
+    },
+    "You wait for \\(name)": {
+      "localizations": {}
+    },
+    "\\(summary.openCount) open": {
+      "localizations": {}
+    },
+    "\\(new) new in the closed matter “\\(matter.name)”": {
+      "localizations": {}
+    },
+    "Start": {
+      "localizations": {}
+    },
+    "What came in goes, with what only it brought. The closed matter stays closed.": {
+      "localizations": {}
+    },
+    "\\(count) hidden · Show": {
+      "localizations": {}
+    },
+    "Hidden": {
+      "localizations": {}
+    },
+    "Show \\(other.item.title)": {
+      "localizations": {}
+    },
+    "Take away": {
+      "localizations": {}
+    },
+    "Read from, by Causabee": {
+      "localizations": {}
+    },
+    "Shown with it already. × on its chip takes one away.": {
+      "localizations": {}
+    },
+    "Connect to …": {
+      "localizations": {}
+    },
+    "New": {
+      "localizations": {}
+    },
+    "Shows what is in it": {
+      "localizations": {}
+    },
+    "Into that matter, with its tasks and dates. Nothing is sent: it was read already.": {
+      "localizations": {}
+    },
+    "Not needed": {
+      "localizations": {}
+    },
+    "No matter found · \\(unplaced.count)": {
+      "localizations": {}
+    },
+    "A new matter": {
+      "localizations": {}
+    },
+    "The mail starts it, with its tasks and dates. Nothing is sent: it was read already.": {
+      "localizations": {}
+    },
+    "\\(look.pending) new \\(look.pending == 1 ? ": {
+      "localizations": {}
+    },
+    "Review ›": {
+      "localizations": {}
+    },
+    "No new mail.": {
+      "localizations": {}
+    },
+    "Close": {
+      "localizations": {}
+    },
+    "Open it in its matter": {
+      "localizations": {}
+    },
+    "Checked \\(MailReview.ago(at)) · ": {
+      "localizations": {}
+    },
+    "Get new mail": {
+      "localizations": {}
+    },
+    "Later": {
+      "localizations": {}
+    },
+    "\\(offers.count) \\(offers.count == 1 ? ": {
+      "localizations": {}
+    },
+    "Read. ": {
+      "localizations": {}
+    },
+    "\\(DemoData.newMail.count) new mails": {
+      "localizations": {}
+    },
+    "In the demo, sorting in sends nothing.": {
+      "localizations": {}
+    },
+    "→ ": {
+      "localizations": {}
+    },
+    "Move to a new matter": {
+      "localizations": {}
+    },
+    "Move": {
+      "localizations": {}
+    },
+    "The mail goes, with the tasks, dates and files only it brought.": {
+      "localizations": {}
+    },
+    "\\(known.name) — Causabee knows how to connect it.": {
+      "localizations": {}
+    },
+    "Outlook can’t be connected yet — continue to see what works instead.": {
+      "localizations": {}
+    },
+    "What works instead:": {
+      "localizations": {}
+    },
+    "Not listed? Enter the settings yourself ›": {
+      "localizations": {}
+    },
+    "Step \\(step) of 4": {
+      "localizations": {}
+    },
+    "\\(number)": {
+      "localizations": {}
+    },
+    "← \\(MailSetupFlow.tap.lowercased()) here": {
+      "localizations": {}
+    },
+    "Sunrise Care": {
+      "localizations": {}
+    },
+    "09:12": {
+      "localizations": {}
+    },
+    "Your contract for the care at home": {
+      "localizations": {}
+    },
+    "Merge “\\(matter.name)” with": {
+      "localizations": {}
+    },
+    "Can only be done after": {
+      "localizations": {}
+    },
+    "This also counts for what comes in next. You can undo it in the rules.": {
+      "localizations": {}
+    },
+    "OK": {
+      "localizations": {}
+    },
+    "Mark all done and close": {
+      "localizations": {}
+    },
+    "Leave them open and close": {
+      "localizations": {}
+    },
+    "The matter goes away from the list and from the assistant. Nothing is deleted, and “Open again” brings it back.": {
+      "localizations": {}
+    },
+    "Writing the brief …": {
+      "localizations": {}
+    },
+    "Write the brief": {
+      "localizations": {}
+    },
+    "Causabee's adviser writes what it understands of this matter, the summary and the next step, and proposes changes to the list — from the facts, pseudonymised.": {
+      "localizations": {}
+    },
+    "Nothing for you right now": {
+      "localizations": {}
+    },
+    "From \\(Dates.short(at)) ·": {
+      "localizations": {}
+    },
+    "Causabee suggested this on \\(Dates.short(at)); the matter has changed since.": {
+      "localizations": {}
+    },
+    "Causabee reads the facts of this matter with your notes, pseudonymised, and suggests a step with a reason.": {
+      "localizations": {}
+    },
+    "Write follow-up": {
+      "localizations": {}
+    },
+    "Puts the task into the assistant and writes the request for you. Nothing is sent until you press Return.": {
+      "localizations": {}
+    },
+    "Write message": {
+      "localizations": {}
+    },
+    "Puts the task into the assistant and writes the request for you. Nothing is sent until you press Return; the draft opens in Mail.": {
+      "localizations": {}
+    },
+    "Done": {
+      "localizations": {}
+    },
+    "Show": {
+      "localizations": {}
+    },
+    "Talk it over": {
+      "localizations": {}
+    },
+    "Puts the step into the assistant, to talk it over or to make a task from it.": {
+      "localizations": {}
+    },
+    "Found in what came in · \\(offered.count) \\(offered.count == 1 ? ": {
+      "localizations": {}
+    },
+    "Reads the \\((matter.entries ?? []).count) mails of this matter again from Gmail, only reading, and suggests the important links. Costs nothing, sends nothing.": {
+      "localizations": {}
+    },
+    "last on \\(Dates.short(at))": {
+      "localizations": {}
+    },
+    "Closed on \\(Dates.short(closed))": {
+      "localizations": {}
+    },
+    "Start a new matter": {
+      "localizations": {}
+    },
+    "What came in, with what it brought, becomes a matter of its own; this one stays closed": {
+      "localizations": {}
+    },
+    "A new matter with the \\(count) new \\(count == 1 ? ": {
+      "localizations": {}
+    },
+    "Their tasks, dates, files and links go with them. “\\(matter.name)” stays closed.": {
+      "localizations": {}
+    },
+    "More: write the next step and summary again, pin, rename, merge, export, close": {
+      "localizations": {}
+    },
+    "Choose another icon": {
+      "localizations": {}
+    },
+    "Click to rename. The old name stays as an alias, so what comes in later still finds the matter.": {
+      "localizations": {}
+    },
+    "Shows what \\(party.name) wrote, in the journal": {
+      "localizations": {}
+    },
+    "Takes them out of this matter only. Nothing that comes in later will put them back.": {
+      "localizations": {}
+    },
+    "Only what \\(party.name) wrote or is named in. Click to show everyone's again.": {
+      "localizations": {}
+    },
+    "Show in Finder": {
+      "localizations": {}
+    },
+    "Opens this matter's folder in iCloud Drive → Causabee": {
+      "localizations": {}
+    },
+    "Choose …": {
+      "localizations": {}
+    },
+    "Choose several files and read them at once": {
+      "localizations": {}
+    },
+    "… and \\(all.count - visible.count) older — show them": {
+      "localizations": {}
+    },
+    "Waiting for ": {
+      "localizations": {}
+    },
+    "Open \\(link.kind) in the browser": {
+      "localizations": {}
+    },
+    "Makes the address in the note a link on this task, and takes the line out of the note.": {
+      "localizations": {}
+    },
+    "Delete": {
+      "localizations": {}
+    },
+    "What to do": {
+      "localizations": {}
+    },
+    "Note — a list, a detail, what was agreed": {
+      "localizations": {}
+    },
+    "WHOSE": {
+      "localizations": {}
+    },
+    "Only after": {
+      "localizations": {}
+    },
+    "nothing — can go any time": {
+      "localizations": {}
+    },
+    "When this task can only go ahead after another one is done": {
+      "localizations": {}
+    },
+    "The other one already waits for this one — neither could ever be done.": {
+      "localizations": {}
+    },
+    "+ time": {
+      "localizations": {}
+    },
+    "No day": {
+      "localizations": {}
+    },
+    "Add a day": {
+      "localizations": {}
+    },
+    "Take it off the task. The link stays in the matter.": {
+      "localizations": {}
+    },
+    "Paste a link": {
+      "localizations": {}
+    },
+    "This is not a web address.": {
+      "localizations": {}
+    },
+    "What": {
+      "localizations": {}
+    },
+    "Time": {
+      "localizations": {}
+    },
+    "Duration": {
+      "localizations": {}
+    },
+    "Place": {
+      "localizations": {}
+    },
+    "· \\(role)": {
+      "localizations": {}
+    },
+    "also written: ": {
+      "localizations": {}
+    },
+    "also in: ": {
+      "localizations": {}
+    },
+    "Change person": {
+      "localizations": {}
+    },
+    "Role in \\(matter.name)": {
+      "localizations": {}
+    },
+    "Mail": {
+      "localizations": {}
+    },
+    "Phone": {
+      "localizations": {}
+    },
+    "The old name stays as a spelling, so what comes in later still finds the person.": {
+      "localizations": {}
+    },
+    "Only from this matter. Nothing that comes in later will put them back.": {
+      "localizations": {}
+    },
+    "Same person? · \\(suggestions.count)": {
+      "localizations": {}
+    },
+    "\\(suggestion.party.name)  →  \\(suggestion.into.name)": {
+      "localizations": {}
+    },
+    "Not the same": {
+      "localizations": {}
+    },
+    "Read": {
+      "localizations": {}
+    },
+    "Reads it on this Mac and sorts it in, in the assistant.": {
+      "localizations": {}
+    },
+    "Rename file": {
+      "localizations": {}
+    },
+    "Only here in Causabee: the file keeps its own name in the mail and in its folder.": {
+      "localizations": {}
+    },
+    "· for: \\(todo.text)": {
+      "localizations": {}
+    },
+    "· \\(Dates.short(link.createdAt))": {
+      "localizations": {}
+    },
+    "Take the link out of the matter. The document itself stays where it is.": {
+      "localizations": {}
+    },
+    "https://docs.google.com/…": {
+      "localizations": {}
+    },
+    "Name, e.g. Cost list": {
+      "localizations": {}
+    },
+    "Causabee does not open the link by itself. The assistant learns only the name, never the address.": {
+      "localizations": {}
+    },
+    "For task": {
+      "localizations": {}
+    },
+    "none — just for the matter": {
+      "localizations": {}
+    },
+    "· from the mail of \\(mail.date.map(Dates.short) ?? ": {
+      "localizations": {}
+    },
+    "Not important": {
+      "localizations": {}
+    },
+    "It will not come back. Nothing is deleted: the link is in the mail.": {
+      "localizations": {}
+    },
+    "General": {
+      "localizations": {}
+    },
+    "Plan": {
+      "localizations": {}
+    },
+    "Fewer, real tasks": {
+      "localizations": {}
+    },
+    "The rule from the test: no task for saying yes or getting ready, unless the mail asks for it.": {
+      "localizations": {}
+    },
+    "The bee is glad when you tick a task": {
+      "localizations": {}
+    },
+    "Privacy": {
+      "localizations": {}
+    },
+    "Names are disguised before anything leaves this Mac. Big companies and brands — Expedia, Lufthansa — are not: the AI reads them as they are, and a question looked up on the web may name them. Mark one here, or in a person's menu.": {
+      "localizations": {}
+    },
+    "The key is kept in the Keychain like the mail password, never in a file. It gets only pseudonymised text.": {
+      "localizations": {}
+    },
+    "Remove": {
+      "localizations": {}
+    },
+    "Pro · ": {
+      "localizations": {}
+    },
+    "Pro, written by ": {
+      "localizations": {}
+    },
+    "Pro reads what comes in — mail, screenshots, photos, files — as it arrives, with \\(model.label) — names disguised. ": {
+      "localizations": {}
+    },
+    "\\(Welcome.nameAskMac) \\(full)?": {
+      "localizations": {}
+    },
+    "Yes": {
+      "localizations": {}
+    },
+    "Change": {
+      "localizations": {}
+    },
+    "Your name": {
+      "localizations": {}
+    },
+    "\\(thing.what) — \\(thing.matter.name)": {
+      "localizations": {}
+    },
+    "\\(late.count) overdue": {
+      "localizations": {}
+    },
+    "the longest since \\(late.first?.due.map(Dates.short) ?? ": {
+      "localizations": {}
+    },
+    "since \\(todo.due.map(Dates.short) ?? ": {
+      "localizations": {}
+    },
+    "Next: \\(Self.heading(next.day)) — \\((next.thing.time.map { ": {
+      "localizations": {}
+    },
+    "· next \\(Dates.short(next.day))": {
+      "localizations": {}
+    },
+    "· \\(summary.overdue.count) overdue": {
+      "localizations": {}
+    },
+    "Up to \\(Pins.most) matters stay on top of the overview.": {
+      "localizations": {}
+    },
+    "Find in this matter (⌘F)": {
+      "localizations": {}
+    },
+    "Find in matter": {
+      "localizations": {}
+    },
+    "Previous (⇧↩)": {
+      "localizations": {}
+    },
+    "Next (↩)": {
+      "localizations": {}
+    },
+    "Close (esc)": {
+      "localizations": {}
+    },
+    "Add note": {
+      "localizations": {}
+    },
+    "The assistant reads your notes too — names in them are pseudonymised first.": {
+      "localizations": {}
+    },
+    "Note": {
+      "localizations": {}
+    },
+    "Role — insurer, doctor, office": {
+      "localizations": {}
+    },
+    "A contact you add stays in this matter. If something from them comes in later, it is the same contact.": {
+      "localizations": {}
+    },
+    "New contact": {
+      "localizations": {}
+    },
+    "Of": {
+      "localizations": {}
+    },
+    "no one": {
+      "localizations": {}
+    },
+    "What — Versichertennummer, file number": {
+      "localizations": {}
+    },
+    "Value": {
+      "localizations": {}
+    },
+    "Kept on your devices. The assistant learns that it is here, never the value.": {
+      "localizations": {}
+    },
+    "New detail": {
+      "localizations": {}
+    },
+    "A membership number, a file number, a ward and room: what you need on the phone with them.": {
+      "localizations": {}
+    },
+    "\\(detail.label): \\(detail.value)": {
+      "localizations": {}
+    },
+    "Copies it": {
+      "localizations": {}
+    },
+    "Copy with its label": {
+      "localizations": {}
+    },
+    "Call": {
+      "localizations": {}
+    },
+    "Call \\(party.name)": {
+      "localizations": {}
+    },
+    "Copy phone number": {
+      "localizations": {}
+    },
+    "Changing between Plus and Pro: up to Pro at once, the rest of Plus paid back by Apple; down to Plus at the next renewal. Cancelling is in your Apple Account.": {
+      "localizations": {}
+    },
+    "Restore Purchases": {
+      "localizations": {}
+    },
+    "Terms of Use": {
+      "localizations": {}
+    },
+    "Subscriptions renew until cancelled in your Apple Account settings.": {
+      "localizations": {}
+    },
+    "Plan and usage": {
+      "localizations": {}
+    },
+    "Apple could not charge your payment method. ": {
+      "localizations": {}
+    },
+    "See the plans": {
+      "localizations": {}
+    },
+    "Your plan": {
+      "localizations": {}
+    },
+    "Change or cancel it on your iPhone or iPad: this Mac follows through iCloud.": {
+      "localizations": {}
+    },
+    "unread": {
+      "localizations": {}
+    },
+    "more": {
+      "localizations": {}
+    },
+    "“\\(quote.text)”": {
+      "localizations": {}
+    },
+    "Its own words, kept on this device — without opening Mail": {
+      "localizations": {}
+    },
+    "The file is not here": {
+      "localizations": {}
+    },
+    "It is neither on this device nor in the matter's folder in iCloud Drive yet. What it said is here.": {
+      "localizations": {}
+    },
+    "\\(count) \\(count == 1 ? one : many)": {
+      "localizations": {}
+    },
+    "The \\(count == 1 ? one : many) that came from it": {
+      "localizations": {}
+    },
+    "Reads it on this device and sorts it in, in the assistant.": {
+      "localizations": {}
+    },
+    "Reads the heading of the first page on this device and takes it as the name. Costs nothing, sends nothing.": {
+      "localizations": {}
+    },
+    "Read all \\(count) attachments": {
+      "localizations": {}
+    },
+    "Reads each on this device and sorts it in, in the assistant.": {
+      "localizations": {}
+    },
+    "All": {
+      "localizations": {}
+    },
+    "Sort": {
+      "localizations": {}
+    },
+    "Only what \\(person) wrote or is named in. Click to show everyone's again.": {
+      "localizations": {}
+    },
+    "\\(name): \\(value)": {
+      "localizations": {}
+    },
+    "also under ": {
+      "localizations": {}
+    },
+    "Matters with unread mail": {
+      "localizations": {}
+    },
+    "Opens the matter at its newest unread mail": {
+      "localizations": {}
+    },
+    "Since \\(Dates.short(seen.since))": {
+      "localizations": {}
+    },
+    "Since \\(Dates.short(news.since))": {
+      "localizations": {}
+    },
+    "Seen": {
+      "localizations": {}
+    },
+    "Seen: it stays in the matter as it is, and is not new any more": {
+      "localizations": {}
+    },
+    "Seen, keep it": {
+      "localizations": {}
+    },
+    "Correct it": {
+      "localizations": {}
+    },
+    "Correct": {
+      "localizations": {}
+    },
+    "Not wanted: it goes, and is not brought back": {
+      "localizations": {}
+    },
+    "Put away": {
+      "localizations": {}
+    },
+    "LOOK UP?": {
+      "localizations": {}
+    },
+    "Only this question goes to the web — nothing of the matter.": {
+      "localizations": {}
+    },
+    "Looked up": {
+      "localizations": {}
+    },
+    "You said": {
+      "localizations": {}
+    },
+    "Take it back: the next brief is written without it.": {
+      "localizations": {}
+    },
+    "Take back": {
+      "localizations": {}
+    },
+    "What it was about is no longer there.": {
+      "localizations": {}
+    },
+    "“\\(lookup.question)”": {
+      "localizations": {}
+    },
+    "Looking it up …": {
+      "localizations": {}
+    },
+    "Look up": {
+      "localizations": {}
+    },
+    "From the web, \\(Dates.short(date)) · general, not about this matter — check the source": {
+      "localizations": {}
+    },
+    "You put away a question to look up": {
+      "localizations": {}
+    },
+    "“\\(question)”": {
+      "localizations": {}
+    },
+    "Not sent: \\(refusal)": {
+      "localizations": {}
+    },
+    "“\\(name)” is a public name — not disguised": {
+      "localizations": {}
+    },
+    "Public Name": {
+      "localizations": {}
+    },
+    "For a big company or a brand: its name goes to the AI as it is, and may be named in a question looked up on the web.": {
+      "localizations": {}
+    },
+    "Disguise “\\(name)” again": {
+      "localizations": {}
+    },
+    "Add a company or brand": {
+      "localizations": {}
+    },
+    "Public name — not disguised": {
+      "localizations": {}
+    },
+    "“\\(one.text)”": {
+      "localizations": {}
+    },
+    "Take it back: the next writing goes without it": {
+      "localizations": {}
+    },
+    "Comment": {
+      "localizations": {}
+    },
+    "“\\(about)”": {
+      "localizations": {}
+    },
+    "Causabee writes it again with your words, and keeps them — they are never written over.": {
+      "localizations": {}
+    },
+    "Set up Causabee": {
+      "localizations": {}
+    },
+    "Test mode: nothing is saved": {
+      "localizations": {}
+    },
+    "optional": {
+      "localizations": {}
+    },
+    "Nothing here costs money. Mail is only read until you click “Sort in”.": {
+      "localizations": {}
+    },
+    "Close for now. Causabee → Set Up Causabee … opens it again.": {
+      "localizations": {}
+    },
+    "How it goes from here": {
+      "localizations": {}
+    },
+    "Use another account": {
+      "localizations": {}
+    },
+    "and \\(lines.count - 4) more": {
+      "localizations": {}
+    },
+    "Open \\(name)": {
+      "localizations": {}
+    },
+    "Open the image": {
+      "localizations": {}
+    },
+    "Open the file": {
+      "localizations": {}
+    },
+    "Dismissed — nothing was taken into a matter.": {
+      "localizations": {}
+    },
+    "Bring back": {
+      "localizations": {}
+    },
+    "Scan it again. If it was sorted in before, that answer is used again and costs nothing.": {
+      "localizations": {}
+    },
+    "what would be sent, pseudonymised": {
+      "localizations": {}
+    },
+    "\\(chat.messages.count) messages scanned": {
+      "localizations": {}
+    },
+    "Left out: ": {
+      "localizations": {}
+    },
+    "Which matter?": {
+      "localizations": {}
+    },
+    "Matter": {
+      "localizations": {}
+    },
+    "New matter": {
+      "localizations": {}
+    },
+    "Name of the new matter": {
+      "localizations": {}
+    },
+    "Tasks · \\(judgement.todos.count)": {
+      "localizations": {}
+    },
+    "Appointments and deadlines · \\(judgement.appointments.count + judgement.deadlines.count)": {
+      "localizations": {}
+    },
+    "Contact and details · \\(offers.lines.count) — found on this Mac, not sent": {
+      "localizations": {}
+    },
+    "What it says": {
+      "localizations": {}
+    },
+    "Files · \\(files.count) — kept with the matter": {
+      "localizations": {}
+    },
+    "\\(file.filename) · \\(ByteCountFormatter.string(fromByteCount: Int64(file.byteCount), countStyle: .file))": {
+      "localizations": {}
+    },
+    "People: ": {
+      "localizations": {}
+    },
+    "already in the matter: \\(already)": {
+      "localizations": {}
+    },
+    "Let Causabee choose": {
+      "localizations": {}
+    },
+    "Icon for this matter": {
+      "localizations": {}
+    },
+    "Causabee chose this one from the name.": {
+      "localizations": {}
+    },
+    "Speak (⌥ Space): it is written down on this device, and you send it": {
+      "localizations": {}
+    },
+    "Speak": {
+      "localizations": {}
+    },
+    "Throw the recording away (esc)": {
+      "localizations": {}
+    },
+    "Done: write it down (↩)": {
+      "localizations": {}
+    },
+    "Speech is written down on this \\(ThisDevice.name)": {
+      "localizations": {}
+    },
+    "Speech is written down on this Mac": {
+      "localizations": {}
+    },
+    "For that Causabee loads a speech model once: \\(Transcriber.megabytes) MB, best on Wi-Fi. After that it works without a connection, and no sound is sent anywhere.": {
+      "localizations": {}
+    },
+    "\\(Int(done * Double(Transcriber.megabytes))) of \\(Transcriber.megabytes) MB": {
+      "localizations": {}
+    },
+    "Getting it ready …": {
+      "localizations": {}
+    },
+    "Ready. Click the microphone and speak.": {
+      "localizations": {}
+    },
+    "Load": {
+      "localizations": {}
+    },
+    "Subject": {
+      "localizations": {}
+    },
+    "Attach …": {
+      "localizations": {}
+    },
+    "As suggested": {
+      "localizations": {}
+    },
+    "Taking the mail in starts it, with what you left ticked.": {
+      "localizations": {}
+    },
+    "Part of the matter": {
+      "localizations": {}
+    },
+    "Open the original in Mail": {
+      "localizations": {}
+    },
+    "closed \\(matter.closedAt.map(Dates.short) ?? ": {
+      "localizations": {}
+    },
+    "· \\(new) new \\(new == 1 ? ": {
+      "localizations": {}
+    },
+    "· \\(Dates.short(next.day))": {
+      "localizations": {}
+    },
+    "Show earlier · \\(all.count - entries.count) more": {
+      "localizations": {}
+    },
+    "\\(answer.disguiseSentence ?? ": {
+      "localizations": {}
+    },
+    "Take Photo": {
+      "localizations": {}
+    },
+    "Photo Library": {
+      "localizations": {}
+    },
+    "Move to another matter": {
+      "localizations": {}
+    },
+    "Add another account": {
+      "localizations": {}
+    },
+    "Mail account": {
+      "localizations": {}
+    },
+    "Remove from all devices": {
+      "localizations": {}
+    },
+    "It goes from iCloud Keychain, so from your Macs as well. To get mail again you connect it anew.": {
+      "localizations": {}
+    },
+    "Icon": {
+      "localizations": {}
+    },
+    "Chooses another icon": {
+      "localizations": {}
+    },
+    "Find in this matter": {
+      "localizations": {}
+    },
+    "Previous": {
+      "localizations": {}
+    },
+    "Next": {
+      "localizations": {}
+    },
+    "Closed on \\(matter.closedAt.map(Dates.short) ?? ": {
+      "localizations": {}
+    },
+    "Show in Files": {
+      "localizations": {}
+    },
+    "Opens this matter's folder in iCloud Drive → Causabee, in Files": {
+      "localizations": {}
+    },
+    "… and \\(hidden) older \\(hidden == 1 ? ": {
+      "localizations": {}
+    },
+    "Whose": {
+      "localizations": {}
+    },
+    "Mine": {
+      "localizations": {}
+    },
+    "Ours": {
+      "localizations": {}
+    },
+    "Waiting for": {
+      "localizations": {}
+    },
+    "Unclear whose": {
+      "localizations": {}
+    },
+    "Paste a link — https://docs.google.com/…": {
+      "localizations": {}
+    },
+    "Links": {
+      "localizations": {}
+    },
+    "By a day": {
+      "localizations": {}
+    },
+    "It was merged or removed on another device.": {
+      "localizations": {}
+    },
+    "Leave the demo": {
+      "localizations": {}
+    },
+    "Settings": {
+      "localizations": {}
+    },
+    "Introduction": {
+      "localizations": {}
+    },
+    "Clear": {
+      "localizations": {}
+    },
+    "New Matter": {
+      "localizations": {}
+    },
+    "Closed": {
+      "localizations": {}
+    },
+    "\\(closed.count)": {
+      "localizations": {}
+    },
+    "Looking for mail": {
+      "localizations": {}
+    },
+    "Overview, \\(today) today, \\(late) overdue": {
+      "localizations": {}
+    },
+    "\\(late)": {
+      "localizations": {}
+    },
+    "\\(new)": {
+      "localizations": {}
+    },
+    "Mail read, to take in": {
+      "localizations": {}
+    },
+    "\\(number) new \\(number == 1 ? ": {
+      "localizations": {}
+    },
+    "Pro": {
+      "localizations": {}
+    },
+    "Pro: the bigger AI reads what comes in at once. Without Pro: only when you say so": {
+      "localizations": {}
+    },
+    "Stop": {
+      "localizations": {}
+    },
+    "\\(Text(party.name).fontWeight(.medium))\\(Text(membership.role.map { ": {
+      "localizations": {}
+    },
+    "\\(link.kind)\\(link.todo.map { ": {
+      "localizations": {}
+    },
+    "\\(link.kind)\\(mail.map { ": {
+      "localizations": {}
+    },
+    "\\(store.url.path)\\n\\(error.localizedDescription)": {
+      "localizations": {}
+    },
+    "Settings …": {
+      "localizations": {}
+    },
+    "In the demo, files stay in the demo.": {
+      "localizations": {}
+    },
+    "Causabee's own folder in your iCloud Drive, with a folder per matter — the same on your Mac and here. A letter photographed here opens on the Mac, and the Mac's files open here. Causabee has no server.": {
+      "localizations": {}
+    },
+    "Use none": {
+      "localizations": {}
+    },
+    "iCloud Drive is off for Causabee on this \\(ThisDevice.name), so its own folder is not found. Switch it on in the \\(ThisDevice.name)'s Settings › your name › iCloud › Drive — or choose a folder here. Then a letter photographed here opens on the Mac, and the Mac's files open here. The files are in your own iCloud Drive; Causabee has no server.": {
+      "localizations": {}
+    },
+    "\\(count) new \\(count == 1 ? ": {
+      "localizations": {}
+    },
+    "Review": {
+      "localizations": {}
+    },
+    "Checked when you opened Causabee": {
+      "localizations": {}
+    },
+    "Pull down to try again.": {
+      "localizations": {}
+    },
+    "Saved on this \\(ThisDevice.name), in \\(PhoneShots.place).": {
+      "localizations": {}
+    },
+    "Scanning it on this \\(ThisDevice.name) …": {
+      "localizations": {}
+    },
+    "Sorting it in …": {
+      "localizations": {}
+    },
+    "Nothing to do or to note in it — it is kept with the matter, with its words.": {
+      "localizations": {}
+    },
+    "A new matter …": {
+      "localizations": {}
+    },
+    "Other": {
+      "localizations": {}
+    },
+    "Make it": {
+      "localizations": {}
+    },
+    "New: \\(proposed)": {
+      "localizations": {}
+    },
+    "Files or a folder": {
+      "localizations": {}
+    },
+    "Take a photo": {
+      "localizations": {}
+    },
+    "Photo or screenshot": {
+      "localizations": {}
+    },
+    "Bring in files, a scan or a photo": {
+      "localizations": {}
+    },
+    "Read and sort in": {
+      "localizations": {}
+    },
+    "Only import": {
+      "localizations": {}
+    },
+    "Recent": {
+      "localizations": {}
+    },
+    "Open \\(matter.name)": {
+      "localizations": {}
+    },
+    "\\(file.name) · \\(ByteCountFormatter.string(fromByteCount: Int64(file.data.count), countStyle: .file))": {
+      "localizations": {}
+    },
+    "The document": {
+      "localizations": {}
+    },
+    "For example: Tax assessment, rental contract, invoice": {
+      "localizations": {}
+    },
+    "What is it?": {
+      "localizations": {}
+    },
+    "Saved on this \\(ThisDevice.name), in \\(PhoneShots.place), under this name. Then scanned here and sorted into “\\(matter.name)” when you tap “Sort in”, as with the paperclip. Its tasks and dates go to all your devices; the file stays on this \\(ThisDevice.name).": {
+      "localizations": {}
+    },
+    "Add a document": {
+      "localizations": {}
+    },
+    "Your own key": {
+      "localizations": {}
+    },
+    "Pro's server": {
+      "localizations": {}
+    },
+    "Developer": {
+      "localizations": {}
+    },
+    "Not set up yet": {
+      "localizations": {}
+    },
+    "You": {
+      "localizations": {}
+    },
+    "Your name and the email addresses you use, one per line, and a nickname if people write to you by it. Causabee needs them to tell you apart from everyone else: you are never listed as a person in your own matters, and tasks for you are marked “Mine”.": {
+      "localizations": {}
+    },
+    "No list of names here yet": {
+      "localizations": {}
+    },
+    "Names are disguised before anything leaves the device: each device keeps a list of them, end-to-end encrypted in iCloud, and without any list the assistant sends nothing. Big companies and brands — Expedia, Lufthansa — are not disguised; mark one here, or in a person's menu.": {
+      "localizations": {}
+    },
+    "In the demo, iCloud stays off: the made-up matters never meet your iCloud.": {
+      "localizations": {}
+    },
+    "Now: On — your matters, in your private iCloud · \\(sync.account)": {
+      "localizations": {}
+    },
+    "Your matters, tasks, dates, people, digests, what each mail was sorted as, the assistant's history, and the full texts of mails and scans — those end to end encrypted — sync through your private iCloud. Files go into the matters' folders.": {
+      "localizations": {}
+    },
+    "Add to …": {
+      "localizations": {}
+    },
+    "Page \\(index + 1) of \\(Self.count)": {
+      "localizations": {}
+    },
+    "INTO": {
+      "localizations": {}
+    },
+    "Your open matters, the latest first.": {
+      "localizations": {}
+    },
+    "Causabee sorts it in when it next opens, and says where it went.": {
+      "localizations": {}
+    },
+    "It is sorted in when Causabee opens.": {
+      "localizations": {}
+    }
+  },
+  "version": "1.0"
+}

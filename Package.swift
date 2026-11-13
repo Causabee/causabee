@@ -3,6 +3,8 @@ import PackageDescription
 
 let package = Package(
     name: "MatterCore",
+    // F009: the app speaks the device's language; the words live in String Catalogues.
+    defaultLocalization: "en",
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
         .library(name: "MatterCore", targets: ["MatterCore"]),
@@ -15,7 +17,8 @@ let package = Package(
         .package(url: "https://github.com/argmaxinc/WhisperKit", exact: "0.18.0"),
     ],
     targets: [
-        .target(name: "MatterCore", dependencies: [.product(name: "WhisperKit", package: "WhisperKit")]),
+        .target(name: "MatterCore", dependencies: [.product(name: "WhisperKit", package: "WhisperKit")],
+                resources: [.process("Resources")]),
         .executableTarget(name: "MatterSpike", dependencies: ["MatterCore"]),
         // The Mac app. A SwiftPM target for now, run with `swift run Causabee`; it becomes an
         // app bundle when it needs one (a signed build, the share extension, Reminders access).

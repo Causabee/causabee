@@ -1,0 +1,114 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "not counted yet": {
+      "localizations": {}
+    },
+    "left": {
+      "localizations": {}
+    },
+    "of a Pro month in your start credit": {
+      "localizations": {}
+    },
+    "of a Pro month in top-ups": {
+      "localizations": {}
+    },
+    " · not in use": {
+      "localizations": {}
+    },
+    "This month's Pro": {
+      "localizations": {}
+    },
+    "Top-ups": {
+      "localizations": {}
+    },
+    "percent left": {
+      "localizations": {}
+    },
+    "percent of a Pro month left": {
+      "localizations": {}
+    },
+    ", not in use": {
+      "localizations": {}
+    },
+    "Shown once Causabee reaches its server.": {
+      "localizations": {}
+    },
+    "Kept until it is used.": {
+      "localizations": {}
+    },
+    "Top-ups carry over from month to month.": {
+      "localizations": {}
+    },
+    "Used. Apple's model on this device reads what comes in — or buy a top-up.": {
+      "localizations": {}
+    },
+    "Used. Apple's model on this device reads what comes in — or buy another top-up.": {
+      "localizations": {}
+    },
+    "Every matter.\\nIn its place.": {
+      "localizations": {}
+    },
+    "Mum’s care, a claim, a move: each in its own place — with what comes next, and who does what by when.": {
+      "localizations": {}
+    },
+    "Names are disguised before anything is sent.": {
+      "localizations": {}
+    },
+    "What’s on your mind?": {
+      "localizations": {}
+    },
+    "Type it in a few words, or add what you have.": {
+      "localizations": {}
+    },
+    "Mum’s care, a claim, a move …": {
+      "localizations": {}
+    },
+    "Not sure yet?": {
+      "localizations": {}
+    },
+    "Look around in an example.": {
+      "localizations": {}
+    },
+    "Reading …": {
+      "localizations": {}
+    },
+    "Looking in iCloud for your matters …": {
+      "localizations": {}
+    },
+    "Causabee can't read this file.": {
+      "localizations": {}
+    },
+    "Not read yet — your words are kept.": {
+      "localizations": {}
+    },
+    "A start credit is yours: Pro reads your first things, names disguised.": {
+      "localizations": {}
+    },
+    "Start credit": {
+      "localizations": {}
+    },
+    "Your start credit is used.": {
+      "localizations": {}
+    },
+    "Apple's model on this device reads from now on. A top-up lets Pro read again.": {
+      "localizations": {}
+    },
+    "This is you:": {
+      "localizations": {}
+    },
+    "Your name, so your tasks show as yours.": {
+      "localizations": {}
+    },
+    "Also what comes by mail?": {
+      "localizations": {}
+    },
+    "Causabee reads one label or folder you choose — nothing else in your mailbox.": {
+      "localizations": {}
+    },
+    "you": {
+      "localizations": {}
+    }
+  },
+  "version": "1.0"
+}
