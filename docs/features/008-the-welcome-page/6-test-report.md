@@ -28,11 +28,11 @@ AC-17's card has not been seen on a device: it needs a credit used up, and the o
 
 ## Everything else still works
 
-- **Unit tests (`scripts/test.sh`, 13 November):** 704 tests, 145 suites. One failure: `SpeedTests` "What the screens work out, measured", which fails on this Mac under load with and without this branch — not a regression. Everything else passes.
+- **Unit tests (`scripts/test.sh`, 13 November):** 704 tests in 145 suites, all pass. In an earlier run, while the simulator's tests were running beside them, the load-sensitive `SpeedTests` "What the screens work out, measured" failed; on a quiet Mac it passes.
 - **The beeserver (`npx vitest run`):** 44 tests in 6 files, all pass; 6 of them new for the start credit.
 - **Screen tests, the iPhone (`CausabeePhoneUITests`, iPhone 17e):** 87 tests, 7 skipped as designed, 0 failures.
 - **Screen tests, the iPad (`PadTests`) and the iPhone again:** run by `scripts/testflight.sh` before TestFlight 250 and 251, both times green — nothing is uploaded otherwise.
-- **The Mac's click-through tests (`scripts/mac-tests.sh`):** not run on this version. They last passed on 12 November (33 of 33); since then the Mac changed in the first step's field, the welcome's card and pictures, the chat card and the start credit. The Mac was tried by hand instead (below).
+- **The Mac's click-through tests (`scripts/mac-tests.sh`, 13 November):** 32 of 33 passed. One, `ManifestoMacTests` "every matter opens at its next step · Application", timed out while the iPhone's screen tests ran beside it; run again on its own it passes. The three chat-panel tests are expected failures, as before (the Mac's test runner cannot click the chat panel's pills).
 - **The UI check (`/ui-check 8`):** 0 ✗, one radius kept on purpose. `ui-check.md` says "Verdict: pass", twice — 12 November and again on 13 November for the second round.
 
 ## The AI's answers
