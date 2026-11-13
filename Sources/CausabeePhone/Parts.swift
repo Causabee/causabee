@@ -72,11 +72,12 @@ extension View {
             .background(Theme.box, in: RoundedRectangle(cornerRadius: 12))
     }
 
-    /// Rows or a card on white, with a thin line round it.
-    func phoneCard() -> some View {
+    /// Rows or a card on white, with a thin line round it. `radius`: larger for a card holding
+    /// rounded things of its own, as the welcome's pictures — its radius theirs plus the room.
+    func phoneCard(radius: CGFloat = 12) -> some View {
         frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(Theme.line))
     }
 }
 

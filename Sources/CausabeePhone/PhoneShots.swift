@@ -136,9 +136,9 @@ final class PhoneShots {
             set(id, .failed(why))
             return
         }
-        let claude = reader.client
-        set(id, .sending(look))
         let matters = Unplaced.matters(in: context)
+        let claude = Welcome.readsOnDevice(look.file, matters: matters.count) ? nil : reader.client
+        set(id, .sending(look))
         Task {
             do {
                 let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context))

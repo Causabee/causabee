@@ -74,6 +74,9 @@ struct WelcomeSheet: View {
         .accessibilityLabel("An example: Care for Mum after her fall. Next, on October 6, the medical service visits.")
     }
 
+    private static let pictureRoom: CGFloat = 14
+    private static let pictureRadius: CGFloat = 28
+
     /// A cut-out of a demo matter, its title and one line.
     private func picturePage(_ item: Welcome.Page) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -86,8 +89,9 @@ struct WelcomeSheet: View {
         .padding(.top, 24)
     }
 
-    /// One part of a matter, cut out — never the whole screen: rounded and framed, the frame on the
-    /// picture's own edge, so nothing is cut and no empty band shows; at most 280 points high.
+    /// One part of a matter, cut out — never the whole screen: on white, with room all round, as a
+    /// matter's dates sit in their card — so the picture's own corners never meet the frame's, and
+    /// the frame's radius is theirs plus the room; at most 280 points high, nothing cut.
     private func picture(_ name: String) -> some View {
         Group {
             if let image = UIImage(named: name) {
@@ -97,9 +101,12 @@ struct WelcomeSheet: View {
                 Theme.box.aspectRatio(1.4, contentMode: .fit)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-        .overlay(RoundedRectangle(cornerRadius: 22).stroke(Theme.line))
-        .frame(maxHeight: 280)
+        .frame(maxHeight: 280 - 2 * Self.pictureRoom)
+        .padding(Self.pictureRoom)
+        .frame(maxWidth: .infinity)
+        .phoneCard(radius: Self.pictureRadius)
+        // One layer before its shadow: the picture must not cast a grey onto its own white card.
+        .compositingGroup()
         .shadow(color: .black.opacity(0.10), radius: 12, y: 4)
         .accessibilityHidden(true)
     }

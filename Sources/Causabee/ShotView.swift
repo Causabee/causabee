@@ -206,6 +206,7 @@ struct ShotView: View {
         switch shot.file.pathExtension.lowercased() {
         case "eml", "emlx": "Mail"
         case "pdf": "Document"
+        case "txt" where Welcome.isTyped(shot.file): "Your words"
         default:
             // A phone's screen is a screenshot; a photographed letter or a scan is a picture of a page.
             switch shot.stage {

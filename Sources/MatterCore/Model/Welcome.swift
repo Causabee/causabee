@@ -58,6 +58,13 @@ public enum Welcome {
         file.pathExtension.lowercased() == "txt" && file.lastPathComponent.contains("typed-")
     }
 
+    /// The first step's own words are read on this device, with Pro too (the owner, 13 November):
+    /// Apple's model names the first matter and finds its dates, and nothing leaves the device at
+    /// the door. What is added there, and every word after, is read as anything that comes in.
+    public static func readsOnDevice(_ file: URL, matters: Int) -> Bool {
+        isTyped(file) && matters == 0
+    }
+
     public static func typedFile(_ text: String, in folder: URL) throws -> URL {
         let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let hash = SHA256.hash(data: Data(words.utf8)).prefix(6).map { String(format: "%02x", $0) }.joined()

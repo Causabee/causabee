@@ -90,6 +90,17 @@ struct WelcomeTests {
         #expect(picked.items.map(\.id) == ["thread-<1@x>"], "the typed words are the note already")
     }
 
+    @Test("F008 AC-4 · The first words are read on the device, with Pro too")
+    func firstWordsOnDevice() throws {
+        let typed = URL(fileURLWithPath: "/x/B8EC6F27-typed-726fc2c7af88.txt")
+        #expect(Welcome.readsOnDevice(typed, matters: 0))
+        #expect(!Welcome.readsOnDevice(typed, matters: 1), "later words are read as anything that comes in")
+        #expect(!Welcome.readsOnDevice(URL(fileURLWithPath: "/x/IMG_0001.png"), matters: 0), "an added file is read as any file")
+        for path in ["Sources/Causabee/Conversation.swift", "Sources/CausabeePhone/PhoneShots.swift"] {
+            #expect(try Self.source(path).contains("Welcome.readsOnDevice("), "\(path) asks before it sends")
+        }
+    }
+
     @Test("F008 AC-5 · Added, it becomes the first matter")
     func added() throws {
         #expect(Welcome.takesAtOnce(matters: 0) && !Welcome.takesAtOnce(matters: 1))

@@ -22,7 +22,8 @@ Schema change: none
 ## Privacy
 
 - **Without Pro:** typed words and added files are read by Apple's model on this device. Nothing leaves it.
-- **With Pro** ("Use Pro" on, something left to use): read as anything that comes in is, through the beeserver, names, addresses and numbers disguised first (`Pseudonymizer`). The privacy line on the first page says so once.
+- **The first step's typed words, with Pro too:** read by Apple's model on this device (`Welcome.readsOnDevice`): it names the first matter and finds its dates; nothing leaves the device at the door.
+- **With Pro** ("Use Pro" on, something left to use), everything else — what is added at the first step, and all that comes in after: read through the beeserver, names, addresses and numbers disguised first (`Pseudonymizer`). The privacy line on the first page says so once.
 - The name stays in iCloud as today, never sent except as part of what is disguised.
 - No Contacts access: not asked, not used.
 

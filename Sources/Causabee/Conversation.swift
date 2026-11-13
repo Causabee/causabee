@@ -237,9 +237,9 @@ struct Conversation {
             Self.set(shot: id, .failed(why), in: navigation)
             return
         }
-        let claude = reader.client
-        Self.set(shot: id, .sending(look), in: navigation)
         let matters = Unplaced.matters(in: context)
+        let claude = Welcome.readsOnDevice(look.file, matters: matters.count) ? nil : reader.client
+        Self.set(shot: id, .sending(look), in: navigation)
         let navigation = self.navigation
         Task {
             do {
