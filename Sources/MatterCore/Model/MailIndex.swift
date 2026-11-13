@@ -60,6 +60,9 @@ public struct SourceCount: Sendable {
     }
 
     public var line: String {
+        func say(_ one: String, _ many: String, _ n: Int) -> String {
+            "\(n) " + String(localized: n == 1 ? .init(one) : .init(many), bundle: .module)
+        }
         let names: [(Source.Kind, String, String)] = [
             (.mail, "mail", "mails"), (.screenshot, "screenshot", "screenshots"), (.document, "document", "documents"),
             (.photo, "photo", "photos"), (.spokenNote, "spoken note", "spoken notes"), (.phoneCall, "call", "calls"),
@@ -67,9 +70,9 @@ public struct SourceCount: Sendable {
         ]
         var parts = names.compactMap { kind, one, many -> String? in
             let n = kinds[kind] ?? 0
-            return n == 0 ? nil : "\(n) \(n == 1 ? one : many)"
+            return n == 0 ? nil : say(one, many, n)
         }
-        if own > 0 { parts.append(own == 1 ? "1 note of yours" : "\(own) notes of yours") }
-        return parts.isEmpty ? "Nothing yet" : parts.joined(separator: " · ")
+        if own > 0 { parts.append(say("note of yours", "notes of yours", own)) }
+        return parts.isEmpty ? String(localized: "Nothing yet", bundle: .module) : parts.joined(separator: " · ")
     }
 }

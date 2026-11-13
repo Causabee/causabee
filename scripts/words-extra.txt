@@ -1,0 +1,18 @@
+# Words the code chooses as it runs, so no line in the sources holds them (F009).
+# One per line, with the file that picks them. The catalogue keeps them; German is still asked for.
+# MailIndex.swift · SourceCount.line, one or many
+mail
+mails
+screenshot
+screenshots
+document
+documents
+photo
+photos
+spoken note
+spoken notes
+call
+calls
+from the assistant
+note of yours
+notes of yours

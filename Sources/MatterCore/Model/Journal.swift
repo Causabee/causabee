@@ -10,12 +10,12 @@ public enum Journal {
 
         public var label: String {
             switch self {
-            case .all: "Digest"
-            case .plan: "Plan"
-            case .mail: "Mail"
-            case .files: "Files"
-            case .people: "People"
-            case .notes: "Notes"
+            case .all: String(localized: "Digest", bundle: .module)
+            case .plan: String(localized: "Plan", bundle: .module)
+            case .mail: String(localized: "Mail", bundle: .module)
+            case .files: String(localized: "Files", bundle: .module)
+            case .people: String(localized: "People", bundle: .module)
+            case .notes: String(localized: "Notes", bundle: .module)
             }
         }
 

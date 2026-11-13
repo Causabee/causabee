@@ -109,6 +109,15 @@ def words(folders: list[str]) -> list[str]:
                     found.append(word)
     return found
 
+def extra() -> list[str]:
+    """Words the code picks as it runs, named in scripts/words-extra.txt: no line holds them, so
+    nothing but this list keeps them in the catalogue."""
+    file = ROOT / "scripts" / "words-extra.txt"
+    if not file.exists():
+        return []
+    return [line.rstrip("\n") for line in file.read_text(encoding="utf-8").split("\n")
+            if line.strip() and not line.startswith("#")]
+
 def read(path: pathlib.Path) -> dict:
     if not path.exists():
         return {"sourceLanguage": "en", "strings": {}, "version": "1.0"}
@@ -125,7 +134,9 @@ def main() -> int:
         path = ROOT / catalogue
         book = read(path)
         strings = book.setdefault("strings", {})
-        found = words(folders) + [w for w in from_build(folders) if w not in words(folders)]
+        found = words(folders)
+        keep = (from_build(folders) + (extra() if "MatterCore" in catalogue else []))
+        found = found + [w for w in keep if w not in found]
         added = [word for word in found if word not in strings]
         for word in added:
             strings[word] = {"localizations": {}}
