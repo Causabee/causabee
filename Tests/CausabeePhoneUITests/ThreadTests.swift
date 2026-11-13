@@ -6,7 +6,7 @@ import XCTest
 final class ThreadTests: XCTestCase {
     /// The overview opens on its journal; the matters are one filter away.
     private func showMatters() {
-        let filter = app.buttons["part.Matters"]
+        let filter = app.buttons["overview.matters"]
         if filter.waitForExistence(timeout: 40) { filter.tap() }
     }
 
@@ -329,11 +329,11 @@ final class ThreadTests: XCTestCase {
         let receipt = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Note added'")).firstMatch
         XCTAssertTrue(receipt.waitForExistence(timeout: 5), "The note was not taken.")
         receipt.tap()
-        let notes = app.buttons["part.Notes"]
+        let notes = app.buttons["part.notes"]
         XCTAssertTrue(notes.waitForExistence(timeout: 10), "The matter did not open.")
         for _ in 0..<20 where !notes.isSelected { Thread.sleep(forTimeInterval: 0.2) }
         XCTAssertTrue(notes.isSelected, "The receipt did not open Notes.")
-        XCTAssertFalse(app.buttons["part.Plan"].isSelected, "The receipt opened Plan.")
+        XCTAssertFalse(app.buttons["part.plan"].isSelected, "The receipt opened Plan.")
         let note = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'keys back by noon'")).firstMatch
         XCTAssertTrue(note.waitForExistence(timeout: 5), "The note is not in Notes.")
         if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {

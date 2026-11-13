@@ -85,17 +85,18 @@ SHOWN = [
     r'\bPicker\("((?:[^"\\]|\\.)+)"',
     r'\bStepper\("((?:[^"\\]|\\.)+)"',
     r'\bLink\("((?:[^"\\]|\\.)+)"',
-    # Ours: a part whose only job is to say a word (F009).
-    r'\bBeeChip\(text: "((?:[^"\\]|\\.)+)"',
-    r'\bEmptyBox\(text: "((?:[^"\\]|\\.)+)"',
-    r'\bSectionHeader\(title: "((?:[^"\\]|\\.)+)"',
     r'\bAlert\("((?:[^"\\]|\\.)+)"',
     r'\.help\("((?:[^"\\]|\\.)+)"',
     r'\.accessibilityLabel\("((?:[^"\\]|\\.)+)"',
     r'\.accessibilityHint\("((?:[^"\\]|\\.)+)"',
     r'\.navigationTitle\("((?:[^"\\]|\\.)+)"',
-    r'\.alertWhenAsked\("((?:[^"\\]|\\.)+)"',
     r'\.confirmationDialog\("((?:[^"\\]|\\.)+)"',
+    r'\bMenu\("((?:[^"\\]|\\.)+)"',
+    r'\bCommandMenu\("((?:[^"\\]|\\.)+)"',
+    r'\bContentUnavailableView\("((?:[^"\\]|\\.)+)"',
+    r'\bDatePicker\("((?:[^"\\]|\\.)+)"',
+    r'\.searchable\(prompt: "((?:[^"\\]|\\.)+)"',
+    r'\.accessibilityValue\("((?:[^"\\]|\\.)+)"',
 ]
 
 def literals(line: str) -> list[dict]:
@@ -204,6 +205,49 @@ def words(folders: list[str]) -> list[str]:
                     found.append(word)
     return found
 
+def listing() -> int:
+    """Every word, in both languages, under the screen it is on — for the owner to read before the
+    gate. The file a word is shown from is the nearest thing the code knows to a screen."""
+    said = {}
+    for catalogue, _, _ in PLACES:
+        for key, entry in read(ROOT / catalogue).get("strings", {}).items():
+            said[key] = german_of(entry)[0]
+    where: dict[str, list[str]] = {}
+    for _, folders, _ in PLACES:
+        for folder in folders:
+            for file in sorted((ROOT / folder).rglob("*.swift")):
+                name = str(file.relative_to(ROOT))
+                if name in NOT_READ:
+                    continue
+                shown = [w for w in shown_in(file.read_text(encoding="utf-8")) if w in said]
+                if shown:
+                    where[name] = shown
+    print("# Causabee's words, English and German\n")
+    print(f"{len(said)} words in all. The file each one is shown from stands for its screen; a word")
+    print("shown on more than one screen is under the first of them.\n")
+    seen = set()
+    for name in sorted(where, key=lambda n: (0 if "MatterCore" in n else 1, n)):
+        mine = [w for w in where[name] if w not in seen]
+        if not mine:
+            continue
+        seen |= set(mine)
+        print(f"\n## {name}\n")
+        print("| English | German |")
+        print("|---|---|")
+        for word in mine:
+            def cell(text: str) -> str:
+                return text.replace("|", "\\|").replace("\n", " ⏎ ").strip()
+            print(f"| {cell(word)} | {cell(said[word])} |")
+    left = sorted(set(said) - seen)
+    if left:
+        print("\n## Words the code picks as it runs, and words with a value in them\n")
+        print("| English | German |")
+        print("|---|---|")
+        for word in left:
+            print(f"| {word.replace('|', chr(92) + '|').replace(chr(10), ' ⏎ ')} "
+                  f"| {said[word].replace('|', chr(92) + '|').replace(chr(10), ' ⏎ ')} |")
+    return 0
+
 def extra() -> list[str]:
     """Words the code picks as it runs, named in scripts/words-extra.txt: no line holds them, so
     nothing but this list keeps them in the catalogue."""
@@ -269,6 +313,13 @@ LOOKS_ITSELF_UP = re.compile(
     r"\.(help|accessibilityLabel|accessibilityHint|navigationTitle|alert|alertWhenAsked|confirmationDialog)\(|"
     r"\b(BeeChip|EmptyBox)\(text:|\bSectionHeader\(title:)\s*$")
 
+# Parts of ours that take a plain String and draw it as it is: SwiftUI looks nothing up for them,
+# so a bare literal here is never looked up, however much it reads like a word. The net names one
+# even when the catalogue happens to hold it, because nothing would ever read it from there (F009).
+TAKES_A_WORD = re.compile(
+    r"(\b(BeeChip|EmptyBox|PhoneEmptyBox)\(text:|\bSectionHeader\(title:|\.(alertWhenAsked|confirmationDialogWhenAsked)\(|"
+    r"\bSheetConfirm\(title:|\bJournalHeading\(title:)\s*$")
+
 # A line that shows nothing: what it says goes to a log, a key, a symbol or the system.
 SHOWS_NOTHING = re.compile(
     r"\b(print|fatalError|assertionFailure|precondition|Logger|os_log|systemName|forKey|"
@@ -299,9 +350,13 @@ def escaped() -> int:
                     continue
                 for literal in literals(line):
                     word = literal["text"]
-                    if word in keys or not could_be_words(word):
+                    if not could_be_words(word):
                         continue
-                    if LOOKS_ITSELF_UP.search(line[:literal["at"]]):
+                    # A part that takes a plain String: the literal is a mistake, key or not.
+                    takes = TAKES_A_WORD.search(line[:literal["at"]]) is not None
+                    if not takes and word in keys:
+                        continue
+                    if not takes and LOOKS_ITSELF_UP.search(line[:literal["at"]]):
                         continue
                     if (where, word) in allowed or (where, word) in seen:
                         continue
@@ -335,6 +390,8 @@ def german_of(entry: dict) -> tuple[str, str]:
 def main() -> int:
     if "--escaped" in sys.argv:
         return escaped()
+    if "--list" in sys.argv:
+        return listing()
     only_missing = "--missing" in sys.argv
     built = "--build" in sys.argv
     missing_all, added_all, values = 0, 0, {}
@@ -364,12 +421,17 @@ def main() -> int:
             if len(missing) > 40:
                 print(f"    … and {len(missing) - 40} more")
         else:
-            # Gone from the code: dropped, so a word never outlives what shows it.
-            for word in [w for w in strings if w not in found]:
-                del strings[word]
-            book["strings"] = {word: strings[word] for word in found}
+            # No line shows it any more. Its German took work and a line can come back — a file in
+            # hand for a minute, a word moved — so it is kept and counted, and `--prune` drops it.
+            stale = [w for w in strings if w not in found]
+            kept_stale = [] if "--prune" in sys.argv else [w for w in stale if german_of(strings[w])[0].strip()]
+            for word in stale:
+                if word not in kept_stale:
+                    del strings[word]
+            book["strings"] = {word: strings[word] for word in found + kept_stale}
             path.write_text(json.dumps(book, ensure_ascii=False, indent=2, sort_keys=False) + "\n", encoding="utf-8")
-            print(f"{catalogue}: {len(found)} words, {len(added)} new, {len(missing)} without German")
+            print(f"{catalogue}: {len(found)} words, {len(added)} new, {len(missing)} without German"
+                  + (f", {len(kept_stale)} no line shows any more (--prune drops them)" if kept_stale else ""))
     if built and not only_missing:
         keep(values)
         print(f"{VALUES}: {sum(len(v) for v in values.values())} words that carry a value")

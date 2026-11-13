@@ -77,6 +77,9 @@ extension View {
 struct JournalPills<Part: Hashable>: View {
     let parts: [Part]
     let label: (Part) -> String
+    /// What a test finds the pill by: the part's own name, never the word on it — that word is the
+    /// device's language, and an identifier must be the same in every language (F009).
+    var handle: (Part) -> String = { "\($0)" }
     @Binding var selection: Part
     /// Onto a second line where they do not fit, not scrolled: in a sheet, whose edge hid the rest.
     var wraps = false
@@ -108,7 +111,7 @@ struct JournalPills<Part: Hashable>: View {
                 .fixedSize()
                 .accessibilityLabel(label(part))
                 .accessibilityAddTraits(chosen ? .isSelected : [])
-                .accessibilityIdentifier("part." + label(part))
+                .accessibilityIdentifier(handle(part))
             }
     }
 
@@ -130,7 +133,7 @@ struct JournalPills<Part: Hashable>: View {
 
 extension JournalPills where Part == Journal.Part {
     init(parts: [Journal.Part], selection: Binding<Journal.Part>) {
-        self.init(parts: parts, label: \.label, selection: selection)
+        self.init(parts: parts, label: \.label, handle: { "part." + $0.rawValue }, selection: selection)
     }
 }
 
@@ -1905,7 +1908,7 @@ struct ConnectSheet: View {
                 }
             }
             .listStyle(.plain)
-            .kindPills { JournalPills(parts: kinds, label: JournalItem.kindWord, selection: $kind) }
+            .kindPills { JournalPills(parts: kinds, label: JournalItem.kindWord, handle: { "kind." + $0 }, selection: $kind) }
             .searchable(text: $query, prompt: "Search this matter")
             .navigationTitle("Connect to …")
             #if os(iOS)

@@ -52,6 +52,9 @@ public struct ScreenshotDoor: Sendable {
         public var heading: String
         /// Who and when: "Frau Behrend · 22. Juni", "PDF · 3 Seiten".
         public var byline: String
+        /// A picture of something on paper — a photographed letter, a scan — not a phone's screen.
+        /// Said here and not read back out of `byline`, which is in the device's language (F009).
+        public var isPhoto = false
         /// The start of what was read.
         public var preview: String
         /// What could not be read as text, page by page, and how it was read instead.
@@ -169,7 +172,8 @@ public struct ScreenshotDoor: Sendable {
         }
         return Look(file: file, kind: kind, transcript: transcript,
                     heading: picture?.heading ?? (kind == .chat ? (transcript.title ?? String(localized: "Chat without a name", bundle: .module)) : (email.subject.isEmpty ? file.lastPathComponent : email.subject)),
-                    byline: byline, preview: String(email.body.prefix(600)), notes: notes,
+                    byline: byline, isPhoto: kind == .chat && picture != nil && !phoneShaped,
+                    preview: String(email.body.prefix(600)), notes: notes,
                     report: report, answered: answered,
                     earlier: answered[id].flatMap { Extractor.isSettled($0) ? $0 : nil },
                     estimate: DailyDoor.costPerMail(model), sent: sent)

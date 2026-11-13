@@ -7,7 +7,7 @@ import XCTest
 final class RegressionTests: XCTestCase {
     /// The overview opens on its journal; the matters are one filter away.
     private func showMatters() {
-        let filter = app.buttons["part.Matters"]
+        let filter = app.buttons["overview.matters"]
         if filter.waitForExistence(timeout: 40) { filter.tap() }
     }
 

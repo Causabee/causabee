@@ -333,7 +333,7 @@ struct Conversation {
                         return new
                     }()
                     membership.mentions += look.transcript.messages.filter { $0.speaker == name }.count
-                    if membership.roles.isEmpty { membership.roles = ["in the chat"] }
+                    if membership.roles.isEmpty { membership.roles = [String(localized: "in the chat")] }
                 }
                 try context.save()
             }

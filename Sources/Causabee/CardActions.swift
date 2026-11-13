@@ -105,8 +105,8 @@ enum CardActions {
                                leftOut: Set<PersistentIdentifier> = []) -> String? {
         let along = attachments(text: text, question: question, scope: scope, attach: attach, chosen: chosen, leftOut: leftOut)
         var parts: [String] = []
-        if !along.files.isEmpty { parts.append("Attached: " + along.files.map(\.lastPathComponent).joined(separator: ", ")) }
-        if !along.missing.isEmpty { parts.append("Not on this \(ThisDevice.name), attach by hand: " + along.missing.joined(separator: ", ")) }
+        if !along.files.isEmpty { parts.append(String(localized: "Attached: ") + along.files.map(\.lastPathComponent).joined(separator: ", ")) }
+        if !along.missing.isEmpty { parts.append(String(format: String(localized: "Not on this %@, attach by hand: "), ThisDevice.name) + along.missing.joined(separator: ", ")) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
@@ -154,15 +154,15 @@ enum CardActions {
     /// Why a card did nothing, in a line.
     static func whyNot(_ card: AssistantPrompt.Reply.Card) -> String {
         switch card.kind {
-        case .markDone: "Not done: it is done already, or not a task."
-        case .correctText: "Nothing changed: those words are not in the tasks or dates."
-        case .putAway: "Nothing put away: it is not there any more, or put away already."
-        case .reopen: "Nothing opened: it is open already."
-        case .changeField: "Not changed: that cannot be set this way, or the value is missing."
-        case .closeMatter: "Not closed: it is closed already."
-        case .moveTo: "Not moved: the other matter was not found, or it is there already."
-        case .changeDate: "Not changed: no day was given, or the date is not there any more."
-        default: "Could not be done: what it names is not there any more, or something it needs was not given."
+        case .markDone: String(localized: "Not done: it is done already, or not a task.")
+        case .correctText: String(localized: "Nothing changed: those words are not in the tasks or dates.")
+        case .putAway: String(localized: "Nothing put away: it is not there any more, or put away already.")
+        case .reopen: String(localized: "Nothing opened: it is open already.")
+        case .changeField: String(localized: "Not changed: that cannot be set this way, or the value is missing.")
+        case .closeMatter: String(localized: "Not closed: it is closed already.")
+        case .moveTo: String(localized: "Not moved: the other matter was not found, or it is there already.")
+        case .changeDate: String(localized: "Not changed: no day was given, or the date is not there any more.")
+        default: String(localized: "Could not be done: what it names is not there any more, or something it needs was not given.")
         }
     }
 
@@ -170,27 +170,33 @@ enum CardActions {
     struct ControlWords { var title: String; var verb: String; var what: String?; var taken: String }
 
     static func controlWords(_ card: AssistantPrompt.Reply.Card, name: (String?) -> String) -> ControlWords? {
-        let field = card.subject.map(fieldName) ?? "it"
+        let field = card.subject.map(fieldName) ?? String(localized: "it")
         switch card.kind {
-        case .putAway: return ControlWords(title: "Put away?", verb: "Put away", what: name(card.todo), taken: "Put away")
-        case .reopen: return ControlWords(title: "Open again?", verb: "Open again", what: name(card.todo), taken: "Open again")
+        case .putAway: return ControlWords(title: String(localized: "Put away?"), verb: String(localized: "Put away"), what: name(card.todo), taken: String(localized: "Put away"))
+        case .reopen: return ControlWords(title: String(localized: "Open again?"), verb: String(localized: "Open again"), what: name(card.todo), taken: String(localized: "Open again"))
         case .changeField:
             let value = card.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            return ControlWords(title: "Change the \(field)?", verb: value.isEmpty ? "Clear" : "Change",
-                                what: name(card.todo) + " · " + field + ":", taken: field.prefix(1).uppercased() + field.dropFirst() + (value.isEmpty ? " cleared" : " changed"))
-        case .closeMatter: return ControlWords(title: "Close the matter?", verb: "Close", what: name(card.todo), taken: "Matter closed")
+            let named = field.prefix(1).uppercased() + field.dropFirst()
+            return ControlWords(title: String(format: String(localized: "Change the %@?"), field), verb: value.isEmpty ? String(localized: "Clear") : String(localized: "Change"),
+                                what: name(card.todo) + " · " + field + ":",
+                                taken: String(format: value.isEmpty ? String(localized: "%@ cleared") : String(localized: "%@ changed"), named))
+        case .closeMatter: return ControlWords(title: String(localized: "Close the matter?"), verb: String(localized: "Close"), what: name(card.todo), taken: String(localized: "Matter closed"))
         case .moveTo:
             let target = card.into.map { name($0) } ?? card.text
-            return ControlWords(title: "Move?", verb: "Move", what: "\(name(card.todo))  →  \(target)", taken: "Moved to " + target)
-        case .addDecision: return ControlWords(title: "Decision?", verb: "Save decision", what: card.subject.map { "Why: " + $0 }, taken: "Decision saved")
+            return ControlWords(title: String(localized: "Move?"), verb: String(localized: "Move"), what: "\(name(card.todo))  →  \(target)",
+                                taken: String(format: String(localized: "Moved to %@"), target))
+        case .addDecision: return ControlWords(title: String(localized: "Decision?"), verb: String(localized: "Save decision"),
+                                               what: card.subject.map { String(format: String(localized: "Why: %@"), $0) }, taken: String(localized: "Decision saved"))
         default: return nil
         }
     }
 
     /// A field as the owner reads it.
     static func fieldName(_ field: String) -> String {
-        ["text": "words", "note": "note", "kind": "kind", "place": "place", "label": "label", "value": "value",
-         "title": "name", "name": "name", "phone": "phone number", "mail": "mail address", "why": "reason"][field.lowercased()] ?? field
+        ["text": String(localized: "words"), "note": String(localized: "note"), "kind": String(localized: "kind"),
+         "place": String(localized: "place"), "label": String(localized: "label"), "value": String(localized: "value"),
+         "title": String(localized: "name"), "name": String(localized: "name"), "phone": String(localized: "phone number"),
+         "mail": String(localized: "mail address"), "why": String(localized: "reason")][field.lowercased()] ?? field
     }
 
     /// A date changed in the chat, as it stands now — not as it stood when the card was taken: what
@@ -204,7 +210,7 @@ enum CardActions {
             return ([Dates.short(item.day), hours].compactMap { $0 }.joined(separator: ", "), holds)
         }
         if let item = live(ref, as: Todo.self, in: context) {
-            let now = item.due.map { Dates.short($0) + (item.dueTime.map { ", \($0)" } ?? "") } ?? "no day"
+            let now = item.due.map { Dates.short($0) + (item.dueTime.map { ", \($0)" } ?? "") } ?? String(localized: "no day")
             return (now, item.due == card.due && (card.time == nil || item.dueTime == card.time))
         }
         if let item = live(ref, as: Deadline.self, in: context) {
@@ -251,32 +257,34 @@ enum CardActions {
 
     private static func labelNow(_ ref: FactRef, in context: ModelContext) -> String {
         switch ref {
-        case .matter: return live(ref, as: Matter.self, in: context)?.name ?? "Matter (no longer there)"
+        case .matter: return live(ref, as: Matter.self, in: context)?.name ?? String(localized: "Matter (no longer there)")
         case .entry:
             // What it came as — not every source is a mail.
-            guard let entry = live(ref, as: Entry.self, in: context) else { return "Gone" }
+            guard let entry = live(ref, as: Entry.self, in: context) else { return String(localized: "Gone") }
             let kind = switch entry.source.kind {
-            case .mail: "Mail"
-            case .screenshot: "Screenshot"
-            case .photo: "Photo"
-            case .document: "File"
-            case .spokenNote: "Spoken note"
-            case .phoneCall: "Call"
-            case .conversation: "Chat"
+            case .mail: String(localized: "Mail")
+            case .screenshot: String(localized: "Screenshot")
+            case .photo: String(localized: "Photo")
+            case .document: String(localized: "File")
+            case .spokenNote: String(localized: "Spoken note")
+            // Not "Call": that is the app's own button, which German says "Anrufen". A kind of
+            // source is a thing, not a doing, so it has a word of its own (F009 AC-4).
+            case .phoneCall: String(localized: "Phone call")
+            case .conversation: String(localized: "Chat")
             }
             return kind + (entry.date.map { " " + Dates.short($0) } ?? "")
         case .todo:
-            guard let todo = live(ref, as: Todo.self, in: context) else { return "Task (no longer there)" }
+            guard let todo = live(ref, as: Todo.self, in: context) else { return String(localized: "Task (no longer there)") }
             let words = todo.text.split(separator: " ").prefix(4).joined(separator: " ")
             return (todo.isDone ? "✓ " : "") + words + (todo.text.split(separator: " ").count > 4 ? " …" : "")
-        case .appointment: return "Appointment " + (live(ref, as: Appointment.self, in: context).map { Dates.short($0.day) } ?? "")
-        case .deadline: return "Deadline " + (live(ref, as: Deadline.self, in: context).map { Dates.short($0.day) } ?? "")
-        case .party: return live(ref, as: Party.self, in: context)?.name ?? "merged"
-        case .note: return "Note " + (live(ref, as: MatterNote.self, in: context).map { Dates.short($0.createdAt) } ?? "")
-        case .detail: return live(ref, as: MatterDetail.self, in: context)?.label ?? "Detail"
-        case .link: return live(ref, as: WebLink.self, in: context)?.shownName ?? "Link"
-        case .document: return live(ref, as: MatterCore.Document.self, in: context)?.shownName ?? "File"
-        case .decision: return "Decision " + (live(ref, as: Decision.self, in: context).map { Dates.short($0.decidedAt) } ?? "")
+        case .appointment: return String(localized: "Appointment ") + (live(ref, as: Appointment.self, in: context).map { Dates.short($0.day) } ?? "")
+        case .deadline: return String(localized: "Deadline ") + (live(ref, as: Deadline.self, in: context).map { Dates.short($0.day) } ?? "")
+        case .party: return live(ref, as: Party.self, in: context)?.name ?? String(localized: "merged")
+        case .note: return String(localized: "Note ") + (live(ref, as: MatterNote.self, in: context).map { Dates.short($0.createdAt) } ?? "")
+        case .detail: return live(ref, as: MatterDetail.self, in: context)?.label ?? String(localized: "Detail")
+        case .link: return live(ref, as: WebLink.self, in: context)?.shownName ?? String(localized: "Link")
+        case .document: return live(ref, as: MatterCore.Document.self, in: context)?.shownName ?? String(localized: "File")
+        case .decision: return String(localized: "Decision ") + (live(ref, as: Decision.self, in: context).map { Dates.short($0.decidedAt) } ?? "")
         }
     }
 
@@ -297,10 +305,10 @@ enum CardActions {
     private static func sourceNow(_ ref: FactRef, in context: ModelContext) -> SourceLine {
         switch ref {
         case .matter:
-            guard let matter = live(ref, as: Matter.self, in: context) else { return gone("folder", "A matter", "not found on this \(device)") }
-            return SourceLine(symbol: "folder", title: matter.name, detail: "Matter")
+            guard let matter = live(ref, as: Matter.self, in: context) else { return gone("folder", String(localized: "A matter"), String(format: String(localized: "not found on this %@"), device)) }
+            return SourceLine(symbol: "folder", title: matter.name, detail: String(localized: "Matter"))
         case .entry:
-            guard let entry = live(ref, as: Entry.self, in: context) else { return gone("tray", "Something that came in", "not found on this \(device)") }
+            guard let entry = live(ref, as: Entry.self, in: context) else { return gone("tray", String(localized: "Something that came in"), String(format: String(localized: "not found on this %@"), device)) }
             let symbol = switch entry.source.kind {
             case .mail: "envelope"
             case .screenshot, .photo: "photo"
@@ -310,36 +318,37 @@ enum CardActions {
             case .conversation: "bubble.left"
             }
             let who = Email.displayName(in: entry.from) ?? Email.address(in: entry.from)
-            let title = entry.title.isEmpty ? "(no subject)" : entry.title
+            let title = entry.title.isEmpty ? String(localized: "(no subject)") : entry.title
             return SourceLine(symbol: symbol, title: who.isEmpty ? title : "\(who) — \(title)", detail: entry.date.map(Dates.short) ?? "")
         case .todo:
-            guard let todo = live(ref, as: Todo.self, in: context) else { return gone("circle", "A task of the matter", "not found on this \(device)") }
-            let detail = todo.isDone ? "done" + (todo.doneAt.map { " " + Dates.short($0) } ?? "") : todo.due.map { "due " + Dates.short($0) } ?? "Task"
+            guard let todo = live(ref, as: Todo.self, in: context) else { return gone("circle", String(localized: "A task of the matter"), String(format: String(localized: "not found on this %@"), device)) }
+            let detail = todo.isDone ? String(localized: "done") + (todo.doneAt.map { " " + Dates.short($0) } ?? "")
+                : todo.due.map { String(localized: "due ") + Dates.short($0) } ?? String(localized: "Task")
             return SourceLine(symbol: todo.isDone ? "checkmark.circle" : "circle", title: todo.text, detail: detail)
         case .appointment:
-            guard let appointment = live(ref, as: Appointment.self, in: context) else { return gone("calendar", "An appointment of the matter", "not found on this \(device)") }
+            guard let appointment = live(ref, as: Appointment.self, in: context) else { return gone("calendar", String(localized: "An appointment of the matter"), String(format: String(localized: "not found on this %@"), device)) }
             return SourceLine(symbol: "calendar", title: appointment.what, detail: Dates.short(appointment.day) + (appointment.time.map { ", " + $0 } ?? ""))
         case .deadline:
-            guard let deadline = live(ref, as: Deadline.self, in: context) else { return gone("calendar.badge.clock", "A deadline of the matter", "not found on this \(device)") }
-            return SourceLine(symbol: "calendar.badge.clock", title: deadline.what, detail: "Deadline " + Dates.short(deadline.day))
+            guard let deadline = live(ref, as: Deadline.self, in: context) else { return gone("calendar.badge.clock", String(localized: "A deadline of the matter"), String(format: String(localized: "not found on this %@"), device)) }
+            return SourceLine(symbol: "calendar.badge.clock", title: deadline.what, detail: String(localized: "Deadline ") + Dates.short(deadline.day))
         case .party:
-            guard let party = live(ref, as: Party.self, in: context) else { return gone("person", "A person of the matter", "not found on this \(device)") }
-            return SourceLine(symbol: "person", title: party.name, detail: "Person")
+            guard let party = live(ref, as: Party.self, in: context) else { return gone("person", String(localized: "A person of the matter"), String(format: String(localized: "not found on this %@"), device)) }
+            return SourceLine(symbol: "person", title: party.name, detail: String(localized: "Person"))
         case .note:
-            guard let note = live(ref, as: MatterNote.self, in: context) else { return gone("note.text", "A note of the matter", "not found on this \(device)") }
-            return SourceLine(symbol: "note.text", title: note.text, detail: "Note " + Dates.short(note.createdAt))
+            guard let note = live(ref, as: MatterNote.self, in: context) else { return gone("note.text", String(localized: "A note of the matter"), String(format: String(localized: "not found on this %@"), device)) }
+            return SourceLine(symbol: "note.text", title: note.text, detail: String(localized: "Note ") + Dates.short(note.createdAt))
         case .detail:
-            guard let detail = live(ref, as: MatterDetail.self, in: context) else { return gone("info.circle", "A detail of the matter", "not found on this \(device)") }
-            return SourceLine(symbol: "info.circle", title: detail.label, detail: "Detail")
+            guard let detail = live(ref, as: MatterDetail.self, in: context) else { return gone("info.circle", String(localized: "A detail of the matter"), String(format: String(localized: "not found on this %@"), device)) }
+            return SourceLine(symbol: "info.circle", title: detail.label, detail: String(localized: "Detail"))
         case .link:
-            guard let link = live(ref, as: WebLink.self, in: context) else { return gone("link", "A link of the matter", "not found on this \(device)") }
-            return SourceLine(symbol: "link", title: link.shownName, detail: "Link")
+            guard let link = live(ref, as: WebLink.self, in: context) else { return gone("link", String(localized: "A link of the matter"), String(format: String(localized: "not found on this %@"), device)) }
+            return SourceLine(symbol: "link", title: link.shownName, detail: String(localized: "Link"))
         case .document:
-            guard let file = live(ref, as: MatterCore.Document.self, in: context) else { return gone("doc", "A file of the matter", "not found on this \(device)") }
-            return SourceLine(symbol: "doc", title: file.shownName, detail: "File")
+            guard let file = live(ref, as: MatterCore.Document.self, in: context) else { return gone("doc", String(localized: "A file of the matter"), String(format: String(localized: "not found on this %@"), device)) }
+            return SourceLine(symbol: "doc", title: file.shownName, detail: String(localized: "File"))
         case .decision:
-            guard let decision = live(ref, as: Decision.self, in: context) else { return gone("checkmark.seal", "A decision of the matter", "not found on this \(device)") }
-            return SourceLine(symbol: "checkmark.seal", title: decision.what, detail: "Decision " + Dates.short(decision.decidedAt))
+            guard let decision = live(ref, as: Decision.self, in: context) else { return gone("checkmark.seal", String(localized: "A decision of the matter"), String(format: String(localized: "not found on this %@"), device)) }
+            return SourceLine(symbol: "checkmark.seal", title: decision.what, detail: String(localized: "Decision ") + Dates.short(decision.decidedAt))
         }
     }
 
@@ -347,17 +356,17 @@ enum CardActions {
     /// facts: what kind it is, by the letter of its id.
     static func source(named cite: String) -> SourceLine {
         switch cite.first {
-        case "E": gone("tray", "Something that came in")
-        case "M": gone("folder", "A matter")
-        case "N": gone("note.text", "A note of the matter")
-        case "X": gone("info.circle", "A detail of the matter")
-        case "L": gone("link", "A link of the matter")
-        case "F": gone("doc", "A file of the matter")
-        case "C": gone("checkmark.seal", "A decision of the matter")
-        case "T": gone("circle", "A task of the matter")
-        case "A": gone("calendar", "An appointment of the matter")
-        case "D": gone("calendar.badge.clock", "A deadline of the matter")
-        case "P": gone("person", "A person of the matter")
+        case "E": gone("tray", String(localized: "Something that came in"))
+        case "M": gone("folder", String(localized: "A matter"))
+        case "N": gone("note.text", String(localized: "A note of the matter"))
+        case "X": gone("info.circle", String(localized: "A detail of the matter"))
+        case "L": gone("link", String(localized: "A link of the matter"))
+        case "F": gone("doc", String(localized: "A file of the matter"))
+        case "C": gone("checkmark.seal", String(localized: "A decision of the matter"))
+        case "T": gone("circle", String(localized: "A task of the matter"))
+        case "A": gone("calendar", String(localized: "An appointment of the matter"))
+        case "D": gone("calendar.badge.clock", String(localized: "A deadline of the matter"))
+        case "P": gone("person", String(localized: "A person of the matter"))
         default: gone("doc", cite)
         }
     }
@@ -473,9 +482,9 @@ enum CardActions {
         var id: String { address }
         /// "2 mails, last Oct 2" — what tells one address from the person's other.
         var note: String {
-            if count == 0 { return "added by you" }
-            let mails = count == 1 ? "1 mail" : "\(count) mails"
-            return last.map { "\(mails), last \(Dates.short($0))" } ?? mails
+            if count == 0 { return String(localized: "added by you") }
+            let mails = count == 1 ? String(localized: "1 mail") : String(format: String(localized: "%lld mails"), count)
+            return last.map { String(format: String(localized: "%@, last %@"), mails, Dates.short($0)) } ?? mails
         }
         /// Mail opens with a new message to it; the owner writes and sends it.
         var url: URL? {
@@ -524,7 +533,7 @@ enum CardActions {
     /// What a draft's card says of whom it goes to: the name and the address — or that none is known,
     /// so it is not found out only in Mail.
     static func toLine(_ recipient: (name: String, address: String?)) -> String {
-        "To " + recipient.name + " · " + (recipient.address ?? "no address known — add one under People")
+        String(format: String(localized: "To %@"), recipient.name) + " · " + (recipient.address ?? String(localized: "no address known — add one under People"))
     }
 
     /// The address a party last wrote from.
@@ -968,7 +977,7 @@ private struct SourceRow: View {
         .buttonStyle(.plain)
         .disabled(open == nil)
         .onHover { hovering = $0 }
-        .accessibilityHint(open == nil ? "" : "Shows it in its matter")
+        .accessibilityHint(open == nil ? "" : String(localized: "Shows it in its matter"))
     }
 }
 
@@ -978,7 +987,7 @@ struct MailAddressLine: View {
 
     var body: some View {
         if let first = addresses.first {
-            Text(addresses.count > 1 ? "\(first.address) · last used of \(addresses.count)" : first.address)
+            Text(addresses.count > 1 ? String(format: String(localized: "%@ · last used of %lld"), first.address, addresses.count) : first.address)
                 .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 .textSelection(.enabled)
         }
@@ -1085,7 +1094,7 @@ struct MessageCard: View {
         #endif
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Text(to.map { "Message · for \($0)" } ?? "Message").font(.caption).foregroundStyle(.secondary)
+                Text(to.map { String(format: String(localized: "Message · for %@"), $0) } ?? String(localized: "Message")).font(.caption).foregroundStyle(.secondary)
                     .padding(.leading, 4)
                 Spacer(minLength: 4)
                 // Always there, seen only for a moment: the line keeps its height.
@@ -1112,7 +1121,7 @@ struct MessageCard: View {
                 .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
                 .padding(.top, 14)
                 .accessibilityIdentifier("message.text")
-            Text((reason.isEmpty ? "" : reason + " ") + "On your clipboard: paste it into the chat.")
+            Text((reason.isEmpty ? "" : reason + " ") + String(localized: "On your clipboard: paste it into the chat."))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 10).padding(.leading, 4)
             HStack {
@@ -1244,7 +1253,7 @@ enum Adviser {
 
     enum Missing: LocalizedError {
         case key
-        var errorDescription: String? { "No key for the assistant's model is saved." }
+        var errorDescription: String? { String(localized: "No key for the assistant's model is saved.") }
     }
 
     /// What the owner put away, said to the adviser so it is not proposed again.
@@ -1411,9 +1420,9 @@ final class MailPreparing {
     /// "Getting photo.jpg from iCloud …" for a file not on this device yet; "Making photo.jpg
     /// smaller for the mail …" for a big picture; nil when nothing takes a moment.
     static func note(for files: [URL]) -> String? {
-        if let away = files.first(where: { !isHere($0) }) { return "Getting \(away.lastPathComponent) from iCloud …" }
+        if let away = files.first(where: { !isHere($0) }) { return String(format: String(localized: "Getting %@ from iCloud …"), away.lastPathComponent) }
         if let big = files.first(where: { (try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap { $0 } ?? 0 > ImageSize.limit }) {
-            return "Making \(big.lastPathComponent) smaller for the mail …"
+            return String(format: String(localized: "Making %@ smaller for the mail …"), big.lastPathComponent)
         }
         return nil
     }
@@ -1551,7 +1560,7 @@ enum DueReminders {
         for reminder in reminders {
             let content = UNMutableNotificationContent()
             content.title = reminder.matter
-            content.body = (reminder.isDeadline ? "Deadline tomorrow: " : "Tomorrow: ") + reminder.text
+            content.body = String(format: reminder.isDeadline ? String(localized: "Deadline tomorrow: %@") : String(localized: "Tomorrow: %@"), reminder.text)
             content.sound = .default
             content.threadIdentifier = reminder.matterKey
             content.userInfo = ["matter": reminder.matterKey]
@@ -1586,9 +1595,9 @@ enum MailNotice {
 
         let all = look.newIDs.count
         let content = UNMutableNotificationContent()
-        content.title = all == 1 ? "1 new mail" : "\(all) new mails"
+        content.title = all == 1 ? String(localized: "1 new mail") : String(format: String(localized: "%lld new mails"), all)
         let senders = Array(NSOrderedSet(array: look.newMails.map { MailNotice.name($0.email.from) })) as? [String] ?? []
-        content.body = senders.prefix(3).joined(separator: ", ") + (senders.count > 3 ? " and \(senders.count - 3) more" : "")
+        content.body = senders.prefix(3).joined(separator: ", ") + (senders.count > 3 ? String(format: String(localized: " and %lld more"), senders.count - 3) : "")
         content.sound = .default
         content.threadIdentifier = "new-mail"
         content.userInfo = ["open": "overview"]

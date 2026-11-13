@@ -76,7 +76,7 @@ final class DigestNewUITests: XCTestCase {
         first.tap()
         let text = app.textFields["task.text"].exists ? app.textFields["task.text"] : app.textViews["task.text"]
         XCTAssertTrue(text.waitForExistence(timeout: 5), "Tapped, the task did not open its editor.")
-        XCTAssertFalse(app.buttons["part.Plan"].isSelected, "Tapped, the task went to Plan.")
+        XCTAssertFalse(app.buttons["part.plan"].isSelected, "Tapped, the task went to Plan.")
     }
 
     /// The overview's latest updates say what happened, and a pinned matter how much is open.
@@ -84,7 +84,7 @@ final class DigestNewUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO"]
         app.launch()
-        let updates = app.buttons["part.Latest updates"]
+        let updates = app.buttons["overview.all"]
         XCTAssertTrue(updates.waitForExistence(timeout: 40), "The overview did not come up.")
         updates.tap()
         let card = app.buttons["overview.day"].firstMatch
@@ -122,7 +122,7 @@ final class DigestNewUITests: XCTestCase {
         } else {
             app.navigationBars.buttons.firstMatch.tap()
         }
-        let updates = app.buttons["part.Latest updates"]
+        let updates = app.buttons["overview.all"]
         XCTAssertTrue(updates.waitForExistence(timeout: 20), "The overview did not come back.")
         updates.tap()
         let card = app.buttons.matching(NSPredicate(format: "identifier == 'overview.day' AND label CONTAINS 'Done · '")).firstMatch
@@ -136,7 +136,7 @@ final class DigestNewUITests: XCTestCase {
         if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/done-opened.png"))
         }
-        XCTAssertFalse(app.buttons["part.Plan"].isSelected, "The card went to the plan, not to the next step.")
+        XCTAssertFalse(app.buttons["part.plan"].isSelected, "The card went to the plan, not to the next step.")
     }
 
     /// A pinned matter says how much is open and its next day on one line, as every other row does.
@@ -144,7 +144,7 @@ final class DigestNewUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO"]
         app.launch()
-        let matters = app.buttons["part.Matters"]
+        let matters = app.buttons["overview.matters"]
         XCTAssertTrue(matters.waitForExistence(timeout: 40), "The overview did not come up.")
         matters.tap()
         // The demo pins none: one is pinned as the owner does it, held.
@@ -179,7 +179,7 @@ final class DigestNewUITests: XCTestCase {
         keep.firstMatch.tap()
         for _ in 0..<25 where keep.count >= before { Thread.sleep(forTimeInterval: 0.2) }
         XCTAssertEqual(keep.count, before - 1, "Kept, the line is still new.")
-        app.buttons["part.Plan"].tap()
+        app.buttons["part.plan"].tap()
         let task = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'Ask Ms. Adler'")).firstMatch
         XCTAssertTrue(task.waitForExistence(timeout: 8), "Kept, the task is not in the plan.")
     }
@@ -284,7 +284,7 @@ final class DigestNewUITests: XCTestCase {
         }
         app.navigationBars["Change day"].buttons.element(boundBy: app.navigationBars["Change day"].buttons.count - 1).tap()
         XCTAssertTrue(calendar.waitForNonExistence(timeout: 5), "Set, the calendar stayed open.")
-        XCTAssertFalse(app.buttons["part.Plan"].isSelected, "Tapped, the day went to Plan.")
+        XCTAssertFalse(app.buttons["part.plan"].isSelected, "Tapped, the day went to Plan.")
     }
 
     func testWaitingForOthersSaysWhom() {
@@ -292,7 +292,7 @@ final class DigestNewUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "Care for Mum (Helga) after her fall"]
         app.launch()
-        let plan = app.buttons["part.Plan"]
+        let plan = app.buttons["part.plan"]
         XCTAssertTrue(plan.waitForExistence(timeout: 10))
         plan.tap()
         let heading = app.staticTexts["WAITING FOR OTHERS"]

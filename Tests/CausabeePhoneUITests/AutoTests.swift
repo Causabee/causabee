@@ -6,7 +6,7 @@ import XCTest
 final class AutoTests: XCTestCase {
     /// The overview opens on its journal; the matters are one filter away.
     private func showMatters(in app: XCUIApplication) {
-        let filter = app.buttons["part.Matters"]
+        let filter = app.buttons["overview.matters"]
         guard filter.waitForExistence(timeout: 40) else { return }
         // The sorted mails' card comes in over the filters just after the start, and a tap then misses.
         let row = app.staticTexts["Bathroom renovation"].firstMatch

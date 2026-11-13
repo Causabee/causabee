@@ -286,7 +286,8 @@ final class MailCheck {
             // Into the record the other devices read, and the names it learned into the store.
             try SortedMails.record(answered.judgements.map { held.contains($0.emailID) ? $0.waitingForRoom() : $0 }, device: NameListPublisher.device, in: context)
             NameListPublisher.publish()
-            taken?(judgements, judgements.contains { $0.decidedBy == .onDevice } ? "Apple's model on this device" : door.model.label)
+            taken?(judgements, judgements.contains { $0.decidedBy == .onDevice }
+                   ? String(localized: "Apple's model on this device") : door.model.label)
             // Their attachments into the matters' folders, by themselves.
             let withFiles = Set(judgements.filter { !$0.attachments.isEmpty }.compactMap(\.matter))
             FolderSaver.shared.save(try context.fetch(FetchDescriptor<Matter>()).filter { matter in withFiles.contains { matter.answers(to: $0) } })

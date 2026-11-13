@@ -36,9 +36,12 @@ struct SettingsSheet: View {
             Section {
                 KeyField(title: "OpenAI", name: "OPENAI_API_KEY")
             } header: { Text("Your own key") } footer: {
-                Text(AIJob.said(ownKey: "with this key").hasPrefix("Everything")
-                     ? "Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with this key. It gets only pseudonymised text, and is kept in iCloud Keychain like the mail password. Never in a file."
-                     : AIJob.said(ownKey: "with this key") + " The key is kept in iCloud Keychain like the mail password. Never in a file.")
+                // One model for every job: the one sentence, as `AIJob.said` has it. Asked of the
+                // table, not of the words — they are German too (F009).
+                let oneModel = Set(AIJob.allCases.map(\.model)).count == 1
+                Text(oneModel
+                     ? String(localized: "Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with this key. It gets only pseudonymised text, and is kept in iCloud Keychain like the mail password. Never in a file.")
+                     : AIJob.said(ownKey: String(localized: "with this key")) + String(localized: " The key is kept in iCloud Keychain like the mail password. Never in a file."))
             }
             Section { BeeServerSettings() } header: { Text("Pro's server") }
         }
@@ -54,12 +57,12 @@ struct SettingsSheet: View {
                 Section {
                     if accounts.isEmpty { Text("Not set up yet").foregroundStyle(.secondary) }
                     ForEach(accounts, id: \.user) { account in LabeledContent(account.user, value: account.host) }
-                    Button(accounts.isEmpty ? "Add mail account …" : "Change …") { addsAccount = true }
+                    Button(accounts.isEmpty ? String(localized: "Add mail account …") : String(localized: "Change …")) { addsAccount = true }
                     if ModelChoice.mail.isMistral || ModelChoice.mail.isOpenAI {
                         Toggle("Fewer, real tasks", isOn: $strict)
                     }
                 } header: { Text("Mail") } footer: {
-                    Text(ModelChoice.readerWords + " A mail is sorted only once — here or on your Mac. The password comes from your Mac through iCloud Keychain, or is typed here once.")
+                    Text(ModelChoice.readerWords + String(localized: " A mail is sorted only once — here or on your Mac. The password comes from your Mac through iCloud Keychain, or is typed here once."))
                 }
 
                 Section {
@@ -73,19 +76,21 @@ struct SettingsSheet: View {
                 }
 
                 Section {
-                    SettingsPart("Calendar and Reminders")
+                    SettingsPart(String(localized: "Calendar and Reminders"))
                     CalendarSettings()
-                    SettingsPart("Files")
+                    SettingsPart(String(localized: "Files"))
                     FolderSetting()
                     Toggle("The bee is glad when you tick a task", isOn: $celebrates)
                 } header: { Text("Matters") }
 
                 Section {
-                    SettingsPart("Public names")
+                    SettingsPart(String(localized: "Public names"))
                     PublicNamesSettings()
-                    SettingsPart("Lists of names")
+                    SettingsPart(String(localized: "Lists of names"))
                     ForEach(lists) { list in
-                        LabeledContent("Names · " + (list.device == PhoneNames.device ? "this \(ThisDevice.name)" : list.deviceName.isEmpty ? "a Mac" : list.deviceName),
+                        let whose = list.device == PhoneNames.device ? String(format: String(localized: "this %@"), ThisDevice.name)
+                            : list.deviceName.isEmpty ? String(localized: "a Mac") : list.deviceName
+                        LabeledContent(String(localized: "Names · ") + whose,
                                        value: list.updatedAt.formatted(date: .abbreviated, time: .shortened))
                     }
                     if lists.isEmpty { Label("No list of names here yet", systemImage: "hourglass").foregroundStyle(Theme.warning) }
@@ -95,13 +100,13 @@ struct SettingsSheet: View {
 
                 Section {
                     if store.isDemo {
-                        LabeledContent("iCloud", value: "Off in the demo")
+                        LabeledContent("iCloud", value: String(localized: "Off in the demo"))
                         Text("In the demo, iCloud stays off: the made-up matters never meet your iCloud.")
                             .font(.footnote).foregroundStyle(.secondary)
                     } else {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Now: On — your matters, in your private iCloud · \(sync.account)").font(.footnote)
-                            Text("Last sent: \(sync.lastExport.map { $0.formatted(date: .omitted, time: .shortened) } ?? "not yet") · last received: \(sync.lastImport.map { $0.formatted(date: .omitted, time: .shortened) } ?? "not yet")")
+                            Text("Last sent: \(sync.lastExport.map { $0.formatted(date: .omitted, time: .shortened) } ?? String(localized: "not yet")) · last received: \(sync.lastImport.map { $0.formatted(date: .omitted, time: .shortened) } ?? String(localized: "not yet"))")
                                 .font(.footnote).foregroundStyle(.secondary)
                             if let error = sync.lastError { Text(error).font(.footnote).foregroundStyle(Theme.warning) }
                         }
@@ -118,7 +123,7 @@ struct SettingsSheet: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Done")) { dismiss() } } }
             .sheet(isPresented: $addsAccount, onDismiss: { accounts = Keychain.accounts().filter { !$0.usesGoogle } }) { MailAccountSheet() }
             // A key or a password saved on a Mac may have arrived meanwhile.
             .onAppear {

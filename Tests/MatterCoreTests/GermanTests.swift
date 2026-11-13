@@ -185,3 +185,81 @@ struct EveryWordTests {
         #expect(wrong.isEmpty, "these look a word up in the wrong catalogue: \(wrong)")
     }
 }
+
+/// F009: the catalogue read as a German device reads it — not as JSON, but through the compiled
+/// German side of MatterCore's bundle. This is what proves the whole chain: the catalogue is built
+/// into the bundle, the key the code asks for is the key that is in there, and German comes back.
+/// Foundation picks the language from the device, not from a locale handed to a call, so the German
+/// side is opened by itself here; that a German device picks it is Apple's part, and the owner's own
+/// look on three devices (AC-6).
+@Suite("F009 · German as a German device reads it")
+struct GermanAtRuntimeTests {
+    /// The German side of the shared words, as the build compiled it.
+    static let german: Bundle? = Bundle.words.url(forResource: "de", withExtension: "lproj").flatMap(Bundle.init(url:))
+
+    /// What a German device would read for this word; the key itself when nothing is there for it.
+    static func said(_ key: String) -> String {
+        german?.localizedString(forKey: key, value: "", table: "Localizable") ?? key
+    }
+
+    @Test("F009 AC-1 · A word of the app's own comes back in German")
+    func wordsComeBackGerman() throws {
+        #expect(Self.german != nil, "MatterCore's bundle holds a German side")
+        #expect(Self.said("Overdue") == "Überfällig")
+        #expect(Self.said("Digest") == "Überblick")
+        #expect(Self.said("Deadline") == "Frist")
+        #expect(Self.said("Matter") == "Anliegen")
+        // And a word of several lines, with its new line kept.
+        #expect(Self.said("Every matter.\nIn its place.") == "Jedes Anliegen.\nAn seinem Platz.")
+    }
+
+    @Test("F009 AC-1 · A word that carries a value puts it where German wants it")
+    func valuesLandRight() {
+        // A short German day carries a full stop of its own, so the German says none and the app
+        // closes the sentence — one stop after "12. Nov.", one added after a year (F009).
+        #expect(MatterStatus.sentence(String(format: Self.said("Overdue since %@"), "12. Nov.")) == "Überfällig seit 12. Nov.")
+        #expect(MatterStatus.sentence(String(format: Self.said("Overdue since %@"), "12. Nov. 2027")) == "Überfällig seit 12. Nov. 2027.")
+        #expect(String(format: Self.said("%lld mails sorted into %@"), 3, "Umzug") == "3 Mails in Umzug einsortiert")
+        #expect(String(format: Self.said("%lld h %lld min"), 1, 30) == "1 Std. 30 Min.")
+    }
+
+    @Test("F009 AC-2 · What the bee wrote is not looked up")
+    func whatWasWrittenStays() {
+        // A word that is not the app's own comes back as it was asked for, so a matter's own words
+        // handed to the same call by mistake could never be turned into something else.
+        let mine = "Der Umzug ist für den 1. Februar geplant."
+        #expect(Self.said(mine) == mine)
+    }
+
+    @Test("F009 AC-1 · Every shared word comes back in German, not in English")
+    func noneFallsBackToEnglish() throws {
+        // The strongest form: ask the bundle for every key the catalogue holds and see that what
+        // comes back is the German written there. A key the build did not take in, or one whose
+        // German is missing, comes back as the English itself.
+        var english: [String] = []
+        for word in try GermanTests.words(of: "Sources/MatterCore/Resources/Localizable.xcstrings") {
+            let said = Self.said(word.key)
+            if said != word.german { english.append("\(word.key) → \(said)") }
+        }
+        #expect(english.isEmpty, "these did not come back as the catalogue says: \(english.prefix(8))")
+    }
+
+    @Test("F009 AC-1 · A value lands in German where the English put it")
+    func placeholdersMatch() throws {
+        // The dangerous one: a German word with a placeholder the English has not, or of another
+        // kind, puts the wrong value in — or crashes the app. Both catalogues, read as text.
+        var wrong: [String] = []
+        for word in try GermanTests.all() where !word.german.isEmpty {
+            let holes = { (text: String) in
+                text.matches(of: /%(?:[0-9]+\$)?(?:lld|ld|d|@|lf|f|%)/).map { String($0.output) }
+            }
+            let mine = holes(word.englishWords), theirs = holes(word.german)
+            // Numbered (%1$@) may be reordered; unnumbered must stand in the same order.
+            let numbered = theirs.contains { $0.contains("$") }
+            if numbered ? mine.count != theirs.count : mine != theirs {
+                wrong.append("\(word.key) · \(mine) vs \(theirs)")
+            }
+        }
+        #expect(wrong.isEmpty, "the German does not carry the same values: \(wrong.prefix(8))")
+    }
+}

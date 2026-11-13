@@ -41,7 +41,7 @@ struct MatterStatusView: View {
     @State private var showsSuggestions = true
     @State private var stepError: String?
     /// Per file: fetching it, or why it could not be.
-    @State private var fetching: [PersistentIdentifier: String] = [:]
+    @State private var fetching: [PersistentIdentifier: Fetching] = [:]
     /// Choosing kept files to read several at once: nil when not choosing.
     @State private var chosen: Set<PersistentIdentifier>?
     @State private var summaryError: String?
@@ -326,7 +326,7 @@ struct MatterStatusView: View {
                     Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
                 } else if AutoUpdate.shared.updating(matter) {
-                    AutoWaitLine(matter: matter, writing: "Writing the brief …")
+                    AutoWaitLine(matter: matter, writing: String(localized: "Writing the brief …"))
                 } else if matter.summaryAt != nil, auto {
                     AutoLine(matter: matter)
                     Spacer()
@@ -465,7 +465,7 @@ struct MatterStatusView: View {
                     BeeLoader(size: 10)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else if coming {
-                    AutoWaitLine(matter: matter, writing: "Causabee is on it …")
+                    AutoWaitLine(matter: matter, writing: String(localized: "Causabee is on it …"))
                 } else if auto {
                     // Auto asks: no link to ask with.
                     AutoLine(matter: matter)
@@ -494,14 +494,14 @@ struct MatterStatusView: View {
     private func stepButtons(text: String, todo: Todo?, waiting: Bool) -> some View {
         if waiting {
             Button("Write follow-up") {
-                navigation.prefill = "Write a short, friendly follow-up about this."
+                navigation.prefill = String(localized: "Write a short, friendly follow-up about this.")
                 talk(todo?.text ?? text, todo == nil ? "Step" : "Task")
             }
             .inkButton().fixedSize()
             .help("Puts the task into the assistant and writes the request for you. Nothing is sent until you press Return.")
         } else if Todo.isMessage(text) || todo?.isMessage == true {
             Button("Write message") {
-                navigation.prefill = "Write a short message about this."
+                navigation.prefill = String(localized: "Write a short message about this.")
                 talk(todo?.text ?? text, todo == nil ? "Step" : "Task")
             }
             .inkButton().fixedSize()
@@ -582,13 +582,14 @@ struct MatterStatusView: View {
         }
         VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
-                                  + (hidden.isEmpty ? "" : " · \(hidden.count) hidden")
-                                  + (small.isEmpty ? "" : " · \(small.count) small \(small.count == 1 ? "image" : "images")"))
+                    SectionHeader(title: String(localized: "Files"), detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
+                                  + (hidden.isEmpty ? "" : String(format: String(localized: " · %lld hidden"), hidden.count))
+                                  + (small.isEmpty ? "" : small.count == 1 ? String(localized: " · 1 small image")
+                                     : String(format: String(localized: " · %lld small images"), small.count)))
                 }
                 if all.isEmpty {
-                    EmptyBox(text: "A letter, a scan, a PDF, a whole folder — or drag it here from the Finder. Files in mail come by themselves.",
-                             action: "Add File", symbol: "doc.badge.plus") { addingFile = true }
+                    EmptyBox(text: String(localized: "A letter, a scan, a PDF, a whole folder — or drag it here from the Finder. Files in mail come by themselves."),
+                             action: String(localized: "Add File"), symbol: "doc.badge.plus") { addingFile = true }
                 }
                 if !shown.isEmpty {
                     // A mosaic, read at a glance, drawn near the screen only.
@@ -636,7 +637,7 @@ struct MatterStatusView: View {
                     NSFileCoordinator().coordinate(readingItemAt: file, options: [], error: nil) { done = (try? FileManager.default.copyItem(at: $0, to: target)) != nil }
                     return done ? target : nil
                 } progress: { done, total, _ in
-                    if total > 1 { Task { @MainActor in filesSaid = "Bringing in \(done) of \(total) …" } }
+                    if total > 1 { Task { @MainActor in filesSaid = String(format: String(localized: "Bringing in %lld of %lld …"), done, total) } }
                 }
             }.value
             let result = FolderImport.take(outcome, into: matter, context: context)
@@ -670,7 +671,7 @@ struct MatterStatusView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 // Added by the plus — beside the assistant's field — or dragged from the browser.
-                SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
+                SectionHeader(title: String(localized: "Links"), detail: all.isEmpty ? nil : "\(all.count)")
             }
             .popoverWhenAsked(isPresented: $addingLink, arrowEdge: .bottom) {
                 LinkEditor(link: nil, todos: matter.openTodos) { address, title, todo in
@@ -687,8 +688,8 @@ struct MatterStatusView: View {
                     }
                 }
             } else if offered.isEmpty {
-                EmptyBox(text: "A Google Doc, a sheet — or drag it here from the browser.",
-                         action: "Add Link", symbol: "link.badge.plus") { addingLink = true }
+                EmptyBox(text: String(localized: "A Google Doc, a sheet — or drag it here from the browser."),
+                         action: String(localized: "Add Link"), symbol: "link.badge.plus") { addingLink = true }
             }
             if !offered.isEmpty, !reading {
                 DisclosureGroup(isExpanded: open($showsSuggestions)) {
@@ -733,19 +734,19 @@ struct MatterStatusView: View {
     /// in them matter. Free: nothing leaves the Mac but the reading itself.
     private func searchLinks() {
         guard let account = Keychain.accounts().first else {
-            searchingLinks = "No mail account saved. Choose Causabee → Set Up Causabee … to add one."
+            searchingLinks = String(localized: "No mail account saved. Choose Causabee → Set Up Causabee … to add one.")
             return
         }
         let mails = (matter.entries ?? []).filter { $0.source.pointer.hasPrefix("imap://") && !$0.messageID.isEmpty }
             .map { (pointer: $0.source.pointer, id: $0.messageID) }
-        searchingLinks = "Reading 0 of \(mails.count) mails …"
+        searchingLinks = String(format: String(localized: "Reading 0 of %lld mails …"), mails.count)
         Task {
             var found = 0, missing = 0
             do {
                 guard let password = try await MailSecret.secret(for: account) else { throw MailFetch.Failure.gone(account.user) }
                 let client = try await IMAPClient.connect(to: account, password: password)
                 for (index, mail) in mails.enumerated() {
-                    searchingLinks = "Reading \(index + 1) of \(mails.count) mails …"
+                    searchingLinks = String(format: String(localized: "Reading %lld of %lld mails …"), index + 1, mails.count)
                     guard let data = try? await MailFetch.message(pointer: mail.pointer, messageID: mail.id, from: client) else { missing += 1; continue }
                     let email = EMLParser.parse(data: data, url: URL(string: mail.pointer) ?? URL(fileURLWithPath: "/"))
                     found += MailLinks.suggest(email.links, messageID: mail.id, to: matter, in: context)
@@ -753,8 +754,11 @@ struct MatterStatusView: View {
                 await client.logout()
                 matter.linksSearchedAt = Date()
                 try? context.save()
-                searchingLinks = (found == 0 ? "No new important links found." : "\(found) \(found == 1 ? "link" : "links") suggested.")
-                    + (missing > 0 ? " \(missing) \(missing == 1 ? "mail is" : "mails are") no longer in the mailbox." : "")
+                let said = found == 0 ? String(localized: "No new important links found.")
+                    : found == 1 ? String(localized: "1 link suggested.") : String(format: String(localized: "%lld links suggested."), found)
+                let gone = missing == 0 ? "" : missing == 1 ? String(localized: " 1 mail is no longer in the mailbox.")
+                    : String(format: String(localized: " %lld mails are no longer in the mailbox."), missing)
+                searchingLinks = said + gone
             } catch {
                 searchingLinks = plainWords(error)
             }
@@ -799,7 +803,7 @@ struct MatterStatusView: View {
     }
 
     private func remove(_ link: WebLink) {
-        withAnimation { context.deleteByHand([link], undo: undoManager, named: "Remove Link") }
+        withAnimation { context.deleteByHand([link], undo: undoManager, named: String(localized: "Remove Link")) }
     }
 
     /// Off the list or back on it. Nothing is deleted: the file lives in its mail.
@@ -812,7 +816,7 @@ struct MatterStatusView: View {
                 try? context.save()
                 fetching[id] = nil
             } else {
-                fetching[id] = "No heading found in it — give it a name with ⋯ → Rename."
+                fetching[id] = .failed(String(localized: "No heading found in it — give it a name with ⋯ → Rename."))
             }
         }
     }
@@ -833,14 +837,14 @@ struct MatterStatusView: View {
             if let file = document.source.fileURL { use(file) } else if let kept = MatterFolders.kept(document) {
                 // Brought in on the iPhone, and put into the matter's folder in iCloud Drive there.
                 let id = document.persistentModelID
-                fetching[id] = "Getting the file from the matter's folder …"
+                fetching[id] = .onTheWay(String(localized: "Getting the file from the matter's folder …"))
                 Task {
-                    do { let url = try await MatterFolders.fetched(kept); fetching[id] = nil; use(url) } catch { fetching[id] = plainWords(error) }
+                    do { let url = try await MatterFolders.fetched(kept); fetching[id] = nil; use(url) } catch { fetching[id] = .failed(plainWords(error)) }
                 }
             } else {
-                fetching[document.persistentModelID] = document.source.isFromMac
+                fetching[document.persistentModelID] = .failed(document.source.isFromMac
                     ? String(format: String(localized: "The file is not on this Mac: %@"), document.source.pointer)
-                    : String(localized: "Added on your iPhone: the file is only there. What it said is here.")
+                    : String(localized: "Added on your iPhone: the file is only there. What it said is here."))
             }
             return
         }
@@ -856,12 +860,12 @@ struct MatterStatusView: View {
             if (try? bytes.write(to: target, options: .atomic)) != nil { use(target); return }
         }
         guard let account = Keychain.accounts().first else {
-            fetching[document.persistentModelID] = "No mail account saved. Choose Causabee → Set Up Causabee … to add one."
+            fetching[document.persistentModelID] = .failed(String(localized: "No mail account saved. Choose Causabee → Set Up Causabee … to add one."))
             return
         }
         let id = document.persistentModelID
         let (name, pointer, messageID) = (document.name, document.source.pointer, document.messageID)
-        fetching[id] = "Getting the file from the mail …"
+        fetching[id] = .onTheWay(String(localized: "Getting the file from the mail …"))
         Task {
             do {
                 guard let password = try await MailSecret.secret(for: account) else { throw MailFetch.Failure.gone(messageID) }
@@ -870,7 +874,7 @@ struct MatterStatusView: View {
                 fetching[id] = nil
                 use(url)
             } catch {
-                fetching[id] = plainWords(error)
+                fetching[id] = .failed(plainWords(error))
             }
         }
     }
@@ -950,8 +954,9 @@ struct MatterStatusView: View {
 
     private var closeQuestion: String {
         let open = matter.openTodos.count
-        return open == 0 ? "Close “\(matter.name)”?"
-            : "Close “\(matter.name)”? \(open) \(open == 1 ? "task is" : "tasks are") still open."
+        if open == 0 { return String(format: String(localized: "Close “%@”?"), matter.name) }
+        return open == 1 ? String(format: String(localized: "Close “%@”? 1 task is still open."), matter.name)
+            : String(format: String(localized: "Close “%@”? %lld tasks are still open."), matter.name, open)
     }
 
     private func startRenaming() {
@@ -984,7 +989,7 @@ struct MatterStatusView: View {
                         Text("Closed on \(Dates.short(closed))").font(Theme.rowTitleFont)
                         let new = StoredChanges.shared.summary(matter).newMailsSinceClosed
                         if new > 0 {
-                            Text("\(new) new \(new == 1 ? "mail" : "mails") since closing").font(.callout).foregroundStyle(Theme.warning)
+                            Text(new == 1 ? String(localized: "1 new mail since closing") : String(format: String(localized: "%lld new mails since closing"), new)).font(.callout).foregroundStyle(Theme.warning)
                         }
                     }
                     Spacer()
@@ -1006,7 +1011,7 @@ struct MatterStatusView: View {
     private func splitForm(_ status: MatterStatus) -> some View {
         let count = StoredChanges.shared.summary(matter).newMailsSinceClosed
         return VStack(alignment: .leading, spacing: 10) {
-            Text("A new matter with the \(count) new \(count == 1 ? "mail" : "mails")").font(.headline)
+            Text(count == 1 ? String(localized: "A new matter with the 1 new mail") : String(format: String(localized: "A new matter with the %lld new mails"), count)).font(.headline)
             Text("Their tasks, dates, files and links go with them. “\(matter.name)” stays closed.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             TextField("Name", text: $newMatterName).textFieldStyle(.roundedBorder).onSubmit(startNewMatter)
@@ -1142,7 +1147,7 @@ struct MatterStatusView: View {
             }
             ZStack(alignment: .leading) {
                 // One line of text, so the dot before "since" stands as the others do.
-                Text(count + (since.map { " · since \(Dates.short($0))" } ?? ""))
+                Text(count + (since.map { String(format: String(localized: " · since %@"), Dates.short($0)) } ?? ""))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 // With the page under the bar the count is gone: the page is read there, not the bar.
@@ -1214,8 +1219,8 @@ struct MatterStatusView: View {
                     .findable(row.findID, row.what, row.place)
             }
         } empty: {
-            EmptyBox(text: "What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in.",
-                     action: "Add Task", symbol: "checklist", run: addTodo)
+            EmptyBox(text: String(localized: "What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in."),
+                     action: String(localized: "Add Task"), symbol: "checklist", run: addTodo)
         }
         // A task of one's own is said to the assistant, from its plus, or written from the menu —
         // whose editor opens at the plan's top.
@@ -1271,7 +1276,7 @@ struct MatterStatusView: View {
 
     private var mergeQuestion: String {
         guard let (party, other) = merging else { return "" }
-        return "Is “\(party.name)” the same as “\(other.name)”?"
+        return String(format: String(localized: "Is “%@” the same as “%@”?"), party.name, other.name)
     }
 
     @ViewBuilder
@@ -1279,13 +1284,13 @@ struct MatterStatusView: View {
         let memberships = status.memberships
         if memberships.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "People")
-                EmptyBox(text: "Who writes and who is named come in with mail and screenshots — or add a contact yourself.",
-                         action: "Add Contact", symbol: "person.badge.plus") { addingContact = true }
+                SectionHeader(title: String(localized: "People"))
+                EmptyBox(text: String(localized: "Who writes and who is named come in with mail and screenshots — or add a contact yourself."),
+                         action: String(localized: "Add Contact"), symbol: "person.badge.plus") { addingContact = true }
             }
         } else {
             VStack(alignment: .leading, spacing: Theme.cardGap) {
-                JournalHeading(title: "TO MERGE, DRAG ONE NAME ONTO ANOTHER").tool()
+                JournalHeading(title: String(localized: "TO MERGE, DRAG ONE NAME ONTO ANOTHER")).tool()
                 let rules = StoredChanges.shared.rules(in: context)
                 let suggestions = PartyBook.suggestions(in: matter, rules: rules)
                 if !suggestions.isEmpty {
@@ -1407,8 +1412,8 @@ struct MatterStatusView: View {
                 .help("Only what \(party.name) wrote or is named in. Click to show everyone's again.")
         }
         if lines.isEmpty {
-            EmptyBox(text: party != nil ? "Nothing here was written by \(party?.name ?? "them") or names them."
-                         : "Mail sorted into this matter, its files, links and notes show here, a day at a time.")
+            EmptyBox(text: party != nil ? String(format: String(localized: "Nothing here was written by %@ or names them."), party?.name ?? String(localized: "them"))
+                         : String(localized: "Mail sorted into this matter, its files, links and notes show here, a day at a time."))
         }
         // Only what is near the screen is drawn. On the Mac every scroll event asks all that can
         // be clicked where it now is, and macOS then works out anew where the window can be dragged
@@ -1551,7 +1556,7 @@ struct MatterStatusView: View {
         let readable = kept.filter { $0.reading == .kept }
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                SectionHeader(title: "Kept only", detail: kept.isEmpty ? nil : "\(kept.count) · stored, not read, never sent")
+                SectionHeader(title: String(localized: "Kept only"), detail: kept.isEmpty ? nil : String(format: String(localized: "%lld · stored, not read, never sent"), kept.count))
                 if chosen == nil, readable.count > 1 {
                     Button("Choose …") { chosen = [] }.buttonStyle(.gold).font(.caption)
                         .help("Choose several files and read them at once")
@@ -1564,7 +1569,7 @@ struct MatterStatusView: View {
                           cancel: { chosen = nil })
             }
             if kept.isEmpty {
-                EmptyBox(text: "Every file of this matter has been read. Files from a folder and files in mail are kept only until you have them read.")
+                EmptyBox(text: String(localized: "Every file of this matter has been read. Files from a folder and files in mail are kept only until you have them read."))
             }
             LazyVStack(alignment: .leading, spacing: 10) {
                 ForEach(kept, id: \.persistentModelID) { document in
@@ -1600,15 +1605,15 @@ struct MatterStatusView: View {
         let groups = RecordBrowse.groups(visible, sort: sort) { item in NamedPeople.of(item, in: matter).map(\.name) }
         let lines = RecordBrowse.lines(of: groups)
         if all.isEmpty {
-            EmptyBox(text: show != .all ? "Nothing here is \(show.label.lowercased())."
-                         : "Mail sorted into this matter shows here, newest first.")
+            EmptyBox(text: show != .all ? String(format: String(localized: "Nothing here is %@."), show.label.lowercased())
+                         : String(localized: "Mail sorted into this matter shows here, newest first."))
         }
         // Only what is near the screen is drawn, as in the journal.
         LazyVStack(alignment: .leading, spacing: Theme.cardGap) {
             ForEach(lines) { line in
                 switch line {
                 case .title(let group, _):
-                    JournalHeading(title: group.title.uppercased(), detail: group.items.count == 1 ? "1 entry" : "\(group.items.count) entries")
+                    JournalHeading(title: group.title.uppercased(), detail: group.items.count == 1 ? String(localized: "1 entry") : String(format: String(localized: "%lld entries"), group.items.count))
                 case .item(let item, _, let also):
                     VStack(alignment: .leading, spacing: 10) {
                         AlsoUnder(names: also)
@@ -1629,7 +1634,7 @@ struct MatterStatusView: View {
     private func allMail(_ status: MatterStatus) -> some View {
         let made = StoredChanges.shared.record(matter).made
         return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Mail", detail: MatterKept.shared.value(matter, "count mail") { Self.count(status.mailEntries) })
+            SectionHeader(title: String(localized: "Mail"), detail: MatterKept.shared.value(matter, "count mail") { Self.count(status.mailEntries) })
             ForEach(StoredChanges.shared.record(matter).threads) { thread in
                 ThreadCard(thread: thread, links: made) { entry in talk(entry.title, "Mail") }
             }
@@ -1678,7 +1683,7 @@ struct TodoRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 // Someone else's to do: who, first — the owner only waits.
                 if waiting {
-                    Text("Waiting for " + (Journal.whom(todo) ?? "someone else"))
+                    Text(String(format: String(localized: "Waiting for %@"), Journal.whom(todo) ?? String(localized: "someone else")))
                         .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, Theme.planTop)
@@ -1736,7 +1741,8 @@ struct TodoRow: View {
                         if !line.isEmpty { Text(line).font(.caption).foregroundStyle(.secondary) }
                         if todo.isDone {
                             SourceJump(sources: todo.doneSource.map { [$0] } ?? [],
-                                       label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")",
+                                       label: todo.doneSource == nil ? String(localized: "done by you")
+                                           : String(format: String(localized: "done, says the mail of %@"), todo.doneSource?.date.map(Dates.short) ?? "?"),
                                        matter: todo.matter, color: Theme.done)
                         }
                     }
@@ -1758,11 +1764,11 @@ struct TodoRow: View {
             editing = true
         }
         .sheetWhenAsked(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
-        .confirmationDialogWhenAsked("Delete “\(todo.text)”?", isPresented: $deleting) {
+        .confirmationDialogWhenAsked(String(format: String(localized: "Delete “%@”?"), todo.text), isPresented: $deleting) {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
                 Calendars.shared.removeReminder(todo.reminderID)
-                withAnimation { context.deleteByHand([todo], undo: undoManager, named: "Delete Task") }
+                withAnimation { context.deleteByHand([todo], undo: undoManager, named: String(localized: "Delete Task")) }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -1794,11 +1800,11 @@ struct TodoRow: View {
         if todo.owner == .other, Journal.whom(todo) != nil {
             // Whom it waits for is said above it, when it is still open.
             if todo.isDone, let whom = Journal.whom(todo) { parts.append(whom) }
-        } else if showsOwner, todo.owner != .me, !waiting { parts.append(["we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
+        } else if showsOwner, todo.owner != .me, !waiting { parts.append(["we": String(localized: "Ours"), "other": String(localized: "Waiting for")][todo.owner.rawValue] ?? String(localized: "Unclear whose")) }
         if showsDue, let due = todo.due {
-            parts.append("by " + Dates.short(due) + (todo.dueTime.map { " at \($0)" } ?? ""))
+            parts.append(String(format: String(localized: "by %@"), Dates.short(due)) + (todo.dueTime.map { String(format: String(localized: " at %@"), $0) } ?? ""))
         } else if let time = todo.dueTime, todo.due != nil {
-            parts.append("at \(time)")
+            parts.append(String(format: String(localized: "at %@"), time))
         }
         return parts.joined(separator: " · ")
     }
@@ -1876,17 +1882,17 @@ struct TodoEditor: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("WHOSE").font(.caption).foregroundStyle(.secondary).kerning(0.4)
                 HStack(spacing: 6) {
-                    pill("Mine", .me)
-                    pill("Ours", .we)
-                    pill("Waiting for", .other)
-                    pill("Unclear", .unknown)
+                    pill(String(localized: "Mine"), .me)
+                    pill(String(localized: "Ours"), .we)
+                    pill(String(localized: "Waiting for"), .other)
+                    pill(String(localized: "Unclear"), .unknown)
                 }
             }
             VStack(spacing: 0) {
-                row("Due") { dueControl }
+                row(String(localized: "Due")) { dueControl }
                 if !others.isEmpty {
                     Divider().padding(.leading, 12)
-                    row("Only after") {
+                    row(String(localized: "Only after")) {
                         Menu {
                             Picker("Only after", selection: $after) {
                                 Text("nothing — can go any time").tag(PersistentIdentifier?.none)
@@ -1895,7 +1901,7 @@ struct TodoEditor: View {
                             .pickerStyle(.inline).labelsHidden()
                         } label: {
                             HStack {
-                                Text(others.first { $0.persistentModelID == after }?.text ?? "nothing — can go any time").lineLimit(1)
+                                Text(others.first { $0.persistentModelID == after }?.text ?? String(localized: "nothing — can go any time")).lineLimit(1)
                                 Spacer(minLength: 4)
                                 Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(.secondary)
                             }
@@ -1906,7 +1912,7 @@ struct TodoEditor: View {
                     }
                 }
                 Divider().padding(.leading, 12)
-                row("Link") { linkControl }
+                row(String(localized: "Link")) { linkControl }
             }
             .background(Theme.box, in: RoundedRectangle(cornerRadius: 10))
             if circle {
@@ -2138,11 +2144,11 @@ struct DateRow: View {
         .planDate()
         .contentShape(Rectangle())
         .contextMenu { moreItems }
-        .confirmationDialogWhenAsked("Delete “\(item.what)”?", isPresented: $deleting) {
+        .confirmationDialogWhenAsked(String(format: String(localized: "Delete “%@”?"), item.what), isPresented: $deleting) {
             Button("Delete", role: .destructive) {
                 // The entry in Calendar it is connected with goes too.
                 Calendars.shared.removeEvent(item.calendarID)
-                context.deleteByHand(([item.appointment, item.deadline] as [(any PersistentModel)?]).compactMap { $0 }, undo: undoManager, named: "Delete Date")
+                context.deleteByHand(([item.appointment, item.deadline] as [(any PersistentModel)?]).compactMap { $0 }, undo: undoManager, named: String(localized: "Delete Date"))
                 save()
             }
             Button("Cancel", role: .cancel) {}
@@ -2305,18 +2311,18 @@ struct PartyRow: View {
                 }
                 // How much they are in the matter — the one named most in gold.
                 if let share = membership.share {
-                    Text(share.isMost ? share.text + " · the most" : share.text).font(.caption)
+                    Text(share.isMost ? share.text + String(localized: " · the most") : share.text).font(.caption)
                         .foregroundStyle(share.isMost ? Theme.gold : .secondary)
                 }
                 MailAddressLine(addresses: addresses)
                 ContactActions(party: party)
                 let also = party.otherSpellings
                 if !also.isEmpty {
-                    Text("also written: " + also.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    Text(String(format: String(localized: "also written: %@"), also.joined(separator: " · "))).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
                 let elsewhere = party.matters.filter { $0 !== matter }.map(\.name)
                 if !elsewhere.isEmpty {
-                    Text("also in: " + elsewhere.joined(separator: ", ")).font(.caption).foregroundStyle(.secondary)
+                    Text(String(format: String(localized: "also in: %@"), elsewhere.joined(separator: ", "))).font(.caption).foregroundStyle(.secondary)
                 }
             }
             Spacer(minLength: 8)
@@ -2416,7 +2422,7 @@ struct DocumentRow: View {
     @State private var connecting = false
     let document: MatterCore.Document
     let sender: String?
-    let state: String?
+    let state: Fetching?
     let open: () -> Void
     let read: () -> Void
     let hide: () -> Void
@@ -2448,14 +2454,14 @@ struct DocumentRow: View {
     private var rowBody: some View {
         FileFace(document: document, sender: sender, state: state, tap: chosen == nil ? open : choose, read: read, nameIt: nameIt, chosen: chosen, tile: tile) { moreItems }
             .popoverWhenAsked(isPresented: $renaming, arrowEdge: .bottom) { renameField }
-            .confirmationDialogWhenAsked("Delete “\(document.shownName)”?", isPresented: $deleting, titleVisibility: .visible) {
+            .confirmationDialogWhenAsked(String(format: String(localized: "Delete “%@”?"), document.shownName), isPresented: $deleting, titleVisibility: .visible) {
                 Button("Delete", role: .destructive, action: forget)
                 Button("Cancel", role: .cancel) {}
             } message: { Text(Self.deleteWords(document)) }
             .padding(.horizontal, 14)
             .padding(.vertical, 9)
             .help(chosen != nil ? "Click to choose it" : document.isOwnFile ? "Opens the file." : "Opens the file — only this one mail is read from the mailbox.")
-            .disabled(state?.hasPrefix("Getting") == true)
+            .disabled(state?.isOnTheWay == true)
     }
 
     @ViewBuilder
@@ -2485,8 +2491,11 @@ struct DocumentRow: View {
         guard let matter = document.matter else { return "" }
         let found = matter.brought(by: document)
         let tasks = found.todos.count, dates = found.appointments.count + found.deadlines.count
-        let parts = [tasks == 0 ? nil : tasks == 1 ? "1 task" : "\(tasks) tasks", dates == 0 ? nil : dates == 1 ? "1 date" : "\(dates) dates"].compactMap { $0 }
-        return "Causabee forgets what it read in it" + (parts.isEmpty ? "" : ", and " + parts.joined(separator: " and ") + " only it brought") + ". The file itself stays where it is."
+        let ofTasks = tasks == 0 ? nil : tasks == 1 ? String(localized: "1 task") : String(format: String(localized: "%lld tasks"), tasks)
+        let ofDates = dates == 0 ? nil : dates == 1 ? String(localized: "1 date") : String(format: String(localized: "%lld dates"), dates)
+        let parts = [ofTasks, ofDates].compactMap { $0 }
+        let brought = parts.isEmpty ? "" : String(format: String(localized: ", and %@ only it brought"), parts.joined(separator: String(localized: " and ")))
+        return String(localized: "Causabee forgets what it read in it") + brought + String(localized: ". The file itself stays where it is.")
     }
 
     private func forget() {
@@ -2598,7 +2607,7 @@ struct LinkEditor: View {
             Text(link == nil ? "Add link" : "Change link").font(.headline)
             TextField("https://docs.google.com/…", text: $address).textFieldStyle(.roundedBorder).frame(width: 380)
             if !address.isEmpty {
-                Text(valid.map { WebLink.kind(of: URL(string: $0)) } ?? "This is not a web address.")
+                Text(valid.map { WebLink.kind(of: URL(string: $0)) } ?? String(localized: "This is not a web address."))
                     .font(.caption).foregroundStyle(valid == nil ? Theme.warning : .secondary)
             }
             TextField("Name, e.g. Cost list", text: $title).textFieldStyle(.roundedBorder).frame(width: 380)

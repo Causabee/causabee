@@ -25,10 +25,12 @@ struct ThreadCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(thread.subject.isEmpty ? "(no subject)" : thread.subject).font(.headline).lineLimit(2)
+                Text(thread.subject.isEmpty ? String(localized: "(no subject)") : thread.subject).font(.headline).lineLimit(2)
                 Spacer(minLength: 8)
                 if thread.count > 1 {
-                    Text(span + " · \(thread.senders.count) \(thread.senders.count == 1 ? "person" : "people")")
+                    let who = thread.senders.count == 1 ? String(localized: " · 1 person")
+                        : String(format: String(localized: " · %lld people"), thread.senders.count)
+                    Text(span + who)
                         .font(.caption).foregroundStyle(.secondary).fixedSize()
                 }
             }
@@ -142,10 +144,10 @@ struct ThreadMailRow: View {
     /// A letter scanned and taken in is no mail: the button says what it opens.
     static func openLabel(_ kind: Source.Kind) -> String {
         switch kind {
-        case .screenshot: "Open screenshot"
-        case .document: "Open document"
-        case .photo: "Open photo"
-        default: "Open mail"
+        case .screenshot: String(localized: "Open screenshot")
+        case .document: String(localized: "Open document")
+        case .photo: String(localized: "Open photo")
+        default: String(localized: "Open mail")
         }
     }
 
@@ -200,7 +202,7 @@ struct ThreadMailRow: View {
                             Circle().fill(Theme.gold).frame(width: 7, height: 7)
                                 .accessibilityLabel("unread")
                         }
-                        Text(sent ? "You" : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from))
+                        Text(sent ? String(localized: "You") : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from))
                             .fontWeight(entry.isUnread == true ? .semibold : .medium).lineLimit(1)
                         if entry.source.kind == .mail { MailWay(sent: sent) }
                     }
@@ -266,7 +268,7 @@ struct ThreadMailRow: View {
                     .help("Its own words, kept on this device — without opening Mail")
                 }
                 if let whole {
-                    Text(whole.isEmpty ? "Its words are not on this device yet." : whole)
+                    Text(whole.isEmpty ? String(localized: "Its words are not on this device yet.") : whole)
                         #if os(macOS)
                         .font(.callout)
                         #else
@@ -297,7 +299,7 @@ struct ThreadMailRow: View {
         #if os(iOS)
         .quickLookPreview($preview)
         #endif
-        .alertWhenAsked("The file is not here", isPresented: $cannotOpen) {
+        .alertWhenAsked(String(localized: "The file is not here"), isPresented: $cannotOpen) {
             Button("OK", role: .cancel) {}
         } message: {
             Text("It is neither on this device nor in the matter's folder in iCloud Drive yet. What it said is here.")
@@ -308,7 +310,7 @@ struct ThreadMailRow: View {
         #else
         .contextMenu { Group { items }.menuSigns() }
         #endif
-        .alertWhenAsked("Move to a new matter", isPresented: $naming) {
+        .alertWhenAsked(String(localized: "Move to a new matter"), isPresented: $naming) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}
             Button("Move") {
@@ -405,10 +407,10 @@ struct SourceJump: View {
                 return .handled
             })
             .help(places.contains { $0.item != nil } ? "Shows it in the record" : "Opens it in Mail")
-            .confirmationDialogWhenAsked("Every mail that asked for it", isPresented: $choosing, titleVisibility: .visible) {
+            .confirmationDialogWhenAsked(String(localized: "Every mail that asked for it"), isPresented: $choosing, titleVisibility: .visible) {
                 ForEach(Array(places.enumerated()), id: \.offset) { index, place in
                     if place.item != nil || Self.outside(place.source) != nil {
-                        Button((index == 0 ? "First: " : "") + Sources.origin(place.source)) { go(place) }
+                        Button((index == 0 ? String(localized: "First: ") : "") + Sources.origin(place.source)) { go(place) }
                     }
                 }
             }
@@ -427,12 +429,8 @@ struct SourceItems: View {
     @Environment(Navigation.self) private var navigation
     @Environment(\.openURL) private var openURL
 
-    private func title(_ source: Source) -> String {
-        // One line in a menu: "Mail of Oct 8", not "From the mail of Oct 8".
-        var words = Sources.origin(source)
-        if words.hasPrefix("from the ") { words.removeFirst("from the ".count) }
-        return words.prefix(1).uppercased() + words.dropFirst()
-    }
+    /// One line in a menu: "Mail of Oct 8", not "From the mail of Oct 8".
+    private func title(_ source: Source) -> String { Sources.inAMenu(source) }
 
     private func button(_ source: Source) -> some View {
         Button(title(source), systemImage: source.kind == .mail ? "envelope" : "doc") {
@@ -468,9 +466,9 @@ struct MadeChips: View {
     var body: some View {
         if !made.isEmpty {
             HStack(spacing: 6) {
-                chip(.todos, made.todos.count, "task", "tasks", "checklist")
-                chip(.appointments, made.appointments.count, "date", "dates", "calendar")
-                chip(.deadlines, made.deadlines.count, "deadline", "deadlines", "flag")
+                chip(.todos, made.todos.count, String(localized: "task"), String(localized: "tasks"), "checklist")
+                chip(.appointments, made.appointments.count, String(localized: "date"), String(localized: "dates"), "calendar")
+                chip(.deadlines, made.deadlines.count, String(localized: "deadline"), String(localized: "deadlines"), "flag")
             }
             #if os(macOS)
             .popover(item: $open, arrowEdge: .bottom) { kind in MadeList(made: made, kind: kind) { open = nil }.frame(width: 340) }
@@ -519,21 +517,22 @@ struct MadeList: View {
         case .todos:
             made.todos.map { todo in
                 Line(id: todo.persistentModelID, text: todo.text,
-                     detail: todo.isDone ? "done" : todo.isInfo ? "only to know" : todo.due.map { "by \(Dates.short($0))" } ?? "open",
+                     detail: todo.isDone ? String(localized: "done") : todo.isInfo ? String(localized: "only to know")
+                         : todo.due.map { String(format: String(localized: "by %@"), Dates.short($0)) } ?? String(localized: "open"),
                      done: todo.isDone)
             }
         case .appointments:
-            made.appointments.map { Line(id: $0.persistentModelID, text: $0.what, detail: Dates.short($0.day) + ($0.time.map { " at \($0)" } ?? ""), done: false) }
+            made.appointments.map { Line(id: $0.persistentModelID, text: $0.what, detail: Dates.short($0.day) + ($0.time.map { String(format: String(localized: " at %@"), $0) } ?? ""), done: false) }
         case .deadlines:
-            made.deadlines.map { Line(id: $0.persistentModelID, text: $0.what, detail: "by " + Dates.short($0.day), done: false) }
+            made.deadlines.map { Line(id: $0.persistentModelID, text: $0.what, detail: String(format: String(localized: "by %@"), Dates.short($0.day)), done: false) }
         }
     }
 
     private var title: String {
         switch kind {
-        case .todos: "Tasks from it"
-        case .appointments: "Dates from it"
-        case .deadlines: "Deadlines from it"
+        case .todos: String(localized: "Tasks from it")
+        case .appointments: String(localized: "Dates from it")
+        case .deadlines: String(localized: "Deadlines from it")
         }
     }
 
@@ -565,7 +564,7 @@ struct MadeList: View {
         ScrollView { list.padding(.horizontal, 20) }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done", action: close) } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Done"), action: close) } }
         #endif
     }
 }
@@ -580,7 +579,7 @@ struct FileFace<Items: View>: View {
     let document: MatterCore.Document
     let sender: String?
     /// Getting it, or what went wrong.
-    let state: String?
+    let state: Fetching?
     /// A tap on the card: open it, or — while choosing several — choose it.
     let tap: () -> Void
     let read: () -> Void
@@ -611,11 +610,11 @@ struct FileFace<Items: View>: View {
     /// Where it is and where it came from — its own name too, when it has a name of ours.
     private var line: String {
         if document.isOwnFile {
-            let at = MatterFolders.kept(document) != nil ? "added on \(document.source.addedOn) · in the matter's folder"
-                : document.source.fileURL != nil && MatterFolders.root == nil ? "only on this \(ThisDevice.name) — switch on iCloud Drive for Causabee"
-                : document.source.fileURL != nil ? "on this \(ThisDevice.name), in Causabee's folder"
-                : MatterFolders.root == nil ? "added on \(document.source.addedOn) · to open it here, switch on iCloud Drive for Causabee"
-                : "added on \(document.source.addedOn) · not in the matter's folder yet"
+            let at = MatterFolders.kept(document) != nil ? String(format: String(localized: "added on %@ · in the matter's folder"), document.source.addedOn)
+                : document.source.fileURL != nil && MatterFolders.root == nil ? String(format: String(localized: "only on this %@ — switch on iCloud Drive for Causabee"), ThisDevice.name)
+                : document.source.fileURL != nil ? String(format: String(localized: "on this %@, in Causabee's folder"), ThisDevice.name)
+                : MatterFolders.root == nil ? String(format: String(localized: "added on %@ · to open it here, switch on iCloud Drive for Causabee"), document.source.addedOn)
+                : String(format: String(localized: "added on %@ · not in the matter's folder yet"), document.source.addedOn)
             return [document.title == nil ? nil : document.name, at].compactMap { $0 }.joined(separator: " · ")
         }
         return [document.title == nil ? nil : document.name, Sources.origin(document.source), sender,
@@ -645,7 +644,7 @@ struct FileFace<Items: View>: View {
                 #endif
             }
             if let state {
-                Text(state).font(.caption).foregroundStyle(state.hasPrefix("Getting") ? Color.secondary : Theme.warning).lineLimit(2)
+                Text(state.words).font(.caption).foregroundStyle(state.isOnTheWay ? Color.secondary : Theme.warning).lineLimit(2)
             } else if document.reading == .kept {
                 readButton
             }
@@ -670,7 +669,7 @@ struct FileFace<Items: View>: View {
             FileThumbnail(document: document, symbol: Self.icon(document), state: state)
             VStack(alignment: .leading, spacing: 3) {
                 Text(document.shownName).lineLimit(2).multilineTextAlignment(.leading)
-                (Text(line) + Text(document.readAt.map { " · read \(Dates.short($0))" } ?? "").foregroundColor(Theme.done))
+                (Text(line) + Text(document.readAt.map { String(format: String(localized: " · read %@"), Dates.short($0)) } ?? "").foregroundColor(Theme.done))
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 if let says = document.says {
                     Text(says)
@@ -695,7 +694,7 @@ struct FileFace<Items: View>: View {
                         .help("Reads the heading of the first page on this device and takes it as the name. Costs nothing, sends nothing.")
                 }
                 if let state {
-                    Text(state).font(.caption).foregroundStyle(state.hasPrefix("Getting") ? Color.secondary : Theme.warning)
+                    Text(state.words).font(.caption).foregroundStyle(state.isOnTheWay ? Color.secondary : Theme.warning)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -708,7 +707,7 @@ struct FileFace<Items: View>: View {
                 #if os(macOS)
                 if document.reading == .kept, state == nil { readButton }
                 #endif
-                if state?.hasPrefix("Getting") == true { ProgressView().controlSize(.small) }
+                if state?.isOnTheWay == true { ProgressView().controlSize(.small) }
                 #if os(macOS)
                 MoreMenu { items }
                 #else
@@ -738,7 +737,7 @@ struct FileThumbnail: View {
     let document: MatterCore.Document
     let symbol: String
     /// Changes when a file has just been fetched, so the picture is looked for again.
-    let state: String?
+    let state: Fetching?
     /// As wide as its tile in the mosaic.
     var large = false
     @State private var picture: CGImage?
@@ -776,7 +775,7 @@ struct FileThumbnail: View {
                     .frame(width: Self.size.width, height: shows ? Self.size.height : nil)
             }
         }
-        .task(id: "\(document.name)|\(state ?? "")") { await load() }
+        .task(id: "\(document.name)|\(state?.words ?? "")") { await load() }
     }
 
     private func load() async {
@@ -946,14 +945,14 @@ struct RecordBar<Trailing: View>: View {
     var body: some View {
         HStack(spacing: 12) {
             if kind != .details {
-                menu("Show", show.label) {
+                menu(String(localized: "Show"), show.label) {
                     Picker("Show", selection: $show) {
                         ForEach(RecordBrowse.Show.allCases, id: \.self) { item in
                             Text(counts[item].map { "\(item.label) · \($0)" } ?? item.label).tag(item)
                         }
                     }
                 }
-                menu("Sort", sort.label) {
+                menu(String(localized: "Sort"), sort.label) {
                     Picker("Sort", selection: $sort) {
                         ForEach(RecordBrowse.Sort.allCases, id: \.self) { Text($0.label).tag($0) }
                     }
@@ -1005,7 +1004,7 @@ struct AlsoUnder: View {
 
     var body: some View {
         if !names.isEmpty {
-            Text("also under " + names.joined(separator: ", ")).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+            Text(String(format: String(localized: "also under %@"), names.joined(separator: ", "))).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
         }
     }
 }
@@ -1113,12 +1112,12 @@ enum MatterAction: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .newTask: "New Task …"
-        case .writeNote: "Add Note …"
-        case .addFile: "Add File …"
-        case .addContact: "Add Contact …"
-        case .addDetail: "Add Detail …"
-        case .addLink: "Add Link …"
+        case .newTask: String(localized: "New Task …")
+        case .writeNote: String(localized: "Add Note …")
+        case .addFile: String(localized: "Add File …")
+        case .addContact: String(localized: "Add Contact …")
+        case .addDetail: String(localized: "Add Detail …")
+        case .addLink: String(localized: "Add Link …")
         }
     }
     var symbol: String {
@@ -1246,7 +1245,7 @@ struct NewsCard: View {
                 if let news {
                     VStack(alignment: .leading, spacing: 8) {
                         if saysNew {
-                            BeeChip(text: String(localized: "NEW · SINCE \(Dates.short(news.since).uppercased())"))
+                            BeeChip(text: String(format: String(localized: "NEW · SINCE %@"), Dates.short(news.since).uppercased()))
                         } else {
                             Text("Since \(Dates.short(news.since))").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         }
@@ -1294,10 +1293,18 @@ struct NewsCard: View {
     /// among them, as the notification says it; with nothing listed, what the news came from.
     static func from(_ items: [NewItem], news: Brief.News?) -> String {
         let sources = items.compactMap(\.source)
-        guard !sources.isEmpty else { return news.map { $0.came == "New info" ? "New info" : "From " + $0.came.replacingOccurrences(of: " new", with: "") } ?? "" }
-        guard sources.allSatisfy({ $0.kind == .mail }) else { return "New info" }
-        let mails = Set(sources.map { $0.messageID ?? $0.pointer }).count
-        return mails == 1 ? "From 1 mail" : "From \(mails) mails"
+        guard !sources.isEmpty else {
+            // The news says it in its own words; here it is counted again, so no word is taken apart.
+            guard let news else { return "" }
+            guard (news.screenshots ?? 0) + (news.files ?? 0) == 0, news.mails > 0 else { return String(localized: "New info") }
+            return fromMails(news.mails)
+        }
+        guard sources.allSatisfy({ $0.kind == .mail }) else { return String(localized: "New info") }
+        return fromMails(Set(sources.map { $0.messageID ?? $0.pointer }).count)
+    }
+
+    private static func fromMails(_ mails: Int) -> String {
+        mails == 1 ? String(localized: "From 1 mail") : String(format: String(localized: "From %lld mails"), mails)
     }
 }
 
@@ -1378,17 +1385,17 @@ struct NewItemRow: View {
         var parts: [String] = []
         switch item {
         case .task(let todo):
-            parts.append("Task")
+            parts.append(String(localized: "Task"))
             switch todo.owner {
-            case .me: parts.append("yours")
-            case .we: parts.append("together")
-            case .other: parts.append("someone else's")
+            case .me: parts.append(String(localized: "yours"))
+            case .we: parts.append(String(localized: "together"))
+            case .other: parts.append(String(localized: "someone else's"))
             case .unknown: break
             }
-            parts.append(todo.due.map { "by \(Dates.short($0))" } ?? "no day yet")
-        case .fact: parts.append("Good to know")
-        case .appointment(let date): parts.append("Date · \(Dates.short(date.day))")
-        case .deadline(let date): parts.append("Deadline · \(Dates.short(date.day))")
+            parts.append(todo.due.map { String(format: String(localized: "by %@"), Dates.short($0)) } ?? String(localized: "no day yet"))
+        case .fact: parts.append(String(localized: "Good to know"))
+        case .appointment(let date): parts.append(String(format: String(localized: "Date · %@"), Dates.short(date.day)))
+        case .deadline(let date): parts.append(String(format: String(localized: "Deadline · %@"), Dates.short(date.day)))
         }
         if let source = item.source { parts.append(Sources.origin(source)) }
         return parts.joined(separator: " · ")
@@ -1523,14 +1530,14 @@ struct BriefDetails: View {
 
     static func title(_ part: Brief.Part) -> String {
         switch part {
-        case .about: "What it is about"
-        case .goal: "What you want from it"
-        case .people: "Who is who"
-        case .agreed: "Agreed"
-        case .open: "Still to do"
-        case .waiting: "Waiting for"
-        case .risks: "Watch out"
-        case .decision: "To decide"
+        case .about: String(localized: "What it is about")
+        case .goal: String(localized: "What you want from it")
+        case .people: String(localized: "Who is who")
+        case .agreed: String(localized: "Agreed")
+        case .open: String(localized: "Still to do")
+        case .waiting: String(localized: "Waiting for")
+        case .risks: String(localized: "Watch out")
+        case .decision: String(localized: "To decide")
         }
     }
 }
@@ -1548,7 +1555,7 @@ private struct ProposalRow: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: symbol).foregroundStyle(Theme.gold).frame(width: 18)
             VStack(alignment: .leading, spacing: 4) {
-                Text(what).fixedSize(horizontal: false, vertical: true)
+                Text(shown).fixedSize(horizontal: false, vertical: true)
                 // Why, in one line: the whole of it on a tap — the proposal itself is what to read.
                 if !card.reason.isEmpty {
                     Text(Brief.Proposal.readable(card.reason)).font(.caption).foregroundStyle(.secondary)
@@ -1584,25 +1591,42 @@ private struct ProposalRow: View {
         return CardActions.label(ref, in: context)
     }
 
-    private var what: String {
+    /// What the proposal says, as the row shows it: the device's language.
+    private var shown: String { words(inEnglish: false) }
+
+    /// The same in English. A comment is kept under this line (`TileComments(about:)`, stored in
+    /// `Brief.Said.about`), so it must be the same line in every language (F009).
+    private var what: String { words(inEnglish: true) }
+
+    private func words(inEnglish: Bool) -> String {
         let card = proposal.card
+        func say(_ english: String, _ german: @autoclosure () -> String) -> String { inEnglish ? english : german() }
         switch card.kind {
-        case .newTodo: return card.text + (card.due.map { " · by " + Dates.short($0) } ?? "")
-        case .markDone: return "Done: " + name(card.todo)
+        case .newTodo:
+            guard let due = card.due else { return card.text }
+            return card.text + (inEnglish ? " · by " + Dates.short(due)
+                                          : String(format: String(localized: " · by %@"), Dates.short(due)))
+        case .markDone: return say("Done: ", String(localized: "Done: ")) + name(card.todo)
         case .correctText: return "“\(card.from ?? "")” → “\(card.text)”"
-        case .waitsFor: return name(card.todo) + " — only after " + name(card.into)
-        case .changeOwner: return name(card.todo) + " — " + (Todo.Owner(rawValue: card.owner).map(Self.whose) ?? card.owner)
+        case .waitsFor:
+            return name(card.todo) + say(" — only after ", String(localized: " — only after ")) + name(card.into)
+        case .changeOwner:
+            return name(card.todo) + " — " + (Todo.Owner(rawValue: card.owner).map { whose($0, inEnglish: inEnglish) } ?? card.owner)
         case .changeDate: return name(card.todo) + (card.due.map { " — " + Dates.short($0) } ?? "")
         default: return card.text
         }
     }
 
-    private static func whose(_ owner: Todo.Owner) -> String {
-        switch owner {
-        case .me: "yours"
-        case .we: "yours, together with others"
-        case .other: "someone else's — you wait for it"
-        case .unknown: "whose is not clear"
+    private func whose(_ owner: Todo.Owner, inEnglish: Bool) -> String {
+        switch (owner, inEnglish) {
+        case (.me, true): "yours"
+        case (.me, false): String(localized: "yours")
+        case (.we, true): "yours, together with others"
+        case (.we, false): String(localized: "yours, together with others")
+        case (.other, true): "someone else's — you wait for it"
+        case (.other, false): String(localized: "someone else's — you wait for it")
+        case (.unknown, true): "whose is not clear"
+        case (.unknown, false): String(localized: "whose is not clear")
         }
     }
 
@@ -1620,9 +1644,9 @@ private struct ProposalRow: View {
 
     private var take: String {
         switch proposal.card.kind {
-        case .newTodo: "Add"
-        case .markDone: "Tick off"
-        default: "Change"
+        case .newTodo: String(localized: "Add")
+        case .markDone: String(localized: "Tick off")
+        default: String(localized: "Change")
         }
     }
 }
@@ -1993,7 +2017,7 @@ struct CommentSheet: View {
                     if voice.phase == .listening {
                         ListeningBar(voice: voice)
                     } else {
-                        TextField(voice.phase == .writing ? voice.writingWords : "What Causabee missed, or how it should be",
+                        TextField(voice.phase == .writing ? voice.writingWords : String(localized: "What Causabee missed, or how it should be"),
                                   text: $text, selection: $cursor, axis: .vertical)
                             .textFieldStyle(.plain)
                             .lineLimit(3...8)
@@ -2019,7 +2043,7 @@ struct CommentSheet: View {
             .keepsWhatWasTyped([text])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Send", action: send).disabled(words.isEmpty) }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Send"), action: send).disabled(words.isEmpty) }
             }
         }
         #if os(macOS)

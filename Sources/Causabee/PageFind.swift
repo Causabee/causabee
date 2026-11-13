@@ -401,7 +401,7 @@ struct ContactEditor: View {
             .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Add", action: add).disabled(!canAdd) }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Add"), action: add).disabled(!canAdd) }
             }
         }
         #else
@@ -475,7 +475,7 @@ struct DetailEditor: View {
                 .keepsWhatWasTyped([label, value, party])
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
-                    ToolbarItem(placement: .confirmationAction) { SheetConfirm(detail == nil ? "Add" : "Save", action: save).disabled(!canSave) }
+                    ToolbarItem(placement: .confirmationAction) { SheetConfirm(detail == nil ? String(localized: "Add") : String(localized: "Save"), action: save).disabled(!canSave) }
                 }
             }
             #else
@@ -560,7 +560,7 @@ struct DetailsSection: View {
         } else if !details.isEmpty || showsEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    SectionHeader(title: "Details", detail: details.isEmpty ? nil : "\(details.count)")
+                    SectionHeader(title: String(localized: "Details"), detail: details.isEmpty ? nil : "\(details.count)")
                 }
                 if details.isEmpty {
                     Text("A membership number, a file number, a ward and room: what you need on the phone with them.")

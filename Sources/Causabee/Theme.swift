@@ -116,6 +116,18 @@ struct BeeChip: View {
     }
 }
 
+/// What is happening with a file: on its way here, or why it could not be got. Both are said in a
+/// line under the row — the first quiet, with a spinner, the second in the warning colour — so the
+/// two are told apart by what they are, never by their words, which change with the language (F009:
+/// the line used to be known by its "Getting" prefix, which German never has).
+enum Fetching: Equatable {
+    case onTheWay(String)
+    case failed(String)
+
+    var words: String { switch self { case .onTheWay(let said), .failed(let said): said } }
+    var isOnTheWay: Bool { if case .onTheWay = self { true } else { false } }
+}
+
 enum Dates {
     /// A day in the device's own order: `Oct 23` in English, `23. Okt.` in German. The template
     /// says which parts are wanted — the month's name and the day — and the language says how
@@ -203,6 +215,28 @@ enum Sources {
         case .photo: return String(format: String(localized: "from the photo of %@"), day)
         case .phoneCall: return String(format: String(localized: "from the phone call of %@"), day)
         case .document: return String(format: String(localized: "from the document of %@"), day)
+        }
+    }
+
+    /// The same thing in a menu, where it stands as a line of its own: "Mail of Oct 8". Its own
+    /// words, not `origin` with its first words cut off — in German there is nothing to cut (F009).
+    static func inAMenu(_ source: Source?) -> String {
+        guard let source else { return String(localized: "Source unknown") }
+        let day = source.date.map(Dates.short) ?? "?"
+        switch source.kind {
+        case .mail: return String(format: String(localized: "Mail of %@"), day)
+        case .screenshot: return String(format: String(localized: "Screenshot of %@"), day)
+        case .conversation:
+            switch source.pointer {
+            case "matter-closed": return String(format: String(localized: "Marked done when closing, %@"), day)
+            case "you": return String(format: String(localized: "Added by you, %@"), day)
+            case "brief": return String(format: String(localized: "Proposed in the brief, %@"), day)
+            default: return String(format: String(localized: "From you in the assistant, %@"), day)
+            }
+        case .spokenNote: return String(format: String(localized: "Spoken on %@"), day)
+        case .photo: return String(format: String(localized: "Photo of %@"), day)
+        case .phoneCall: return String(format: String(localized: "Phone call of %@"), day)
+        case .document: return String(format: String(localized: "Document of %@"), day)
         }
     }
 }
@@ -1110,7 +1144,7 @@ struct MailOffers: View {
                 }
             }
         }
-        .alertWhenAsked("A new matter", isPresented: Binding(get: { naming != nil }, set: { if !$0 { naming = nil } })) {
+        .alertWhenAsked(String(localized: "A new matter"), isPresented: Binding(get: { naming != nil }, set: { if !$0 { naming = nil } })) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}
             Button("Start") {

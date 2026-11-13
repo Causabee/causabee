@@ -25,6 +25,10 @@ Seen while building something else. Not built now: each becomes a feature, joins
 12. **Not planned:** reading on Claude Haiku (OpenAI only, the owner's decision); pinning files (needs a schema change); sharing with the family (after the release).
 
 
+- The billing-problem line on the plan page begins a sentence with a lowercase "update" (PlanSheet.swift:325), left over from being built out of three pieces. English wording only. (2026-11-13)
+- The plan screen's picture-only numbers stay English (PlanShot in PlanSheet.swift: "0,99 € a month", "Pro ended 7 November", "renews 14 November", "Free"). They stand in for what the App Store says; German pictures of the plan would need them in German — needed for the German App Store page, not for the app. (2026-11-13)
+- A record read from a typed note, a PDF or a photo carries a German sender name in the English app ("Notiz", "Dokument", "Screenshot", "ohne Namen" in ScreenshotDoor). They cannot simply be looked up: ExtractionPrompt names them to the model, so changing them is a prompt version. (2026-11-13)
+- A time a person reads is forced to 24 hours (Calendars.hoursLine sets de_DE for "HH:mm", MatterStatusView and Calendars likewise). Right on a German device, wrong-looking on an English one: a time should follow the device like a day does (F009 AC-3 covers days only). (2026-11-13)
 - Connections between things already there: a picture or a document on a task, a document on a mail (2026-11-13)
 - The mails of 30 October: trace what was imported, where it showed, and whether it is behind the duplicate files (2026-11-13)
 - Digest against Plan: what belongs where — and whether Up next should only be in the Digest (2026-11-13)

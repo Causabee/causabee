@@ -289,7 +289,7 @@ struct OverviewScreen: View {
                 }
                 UnreadMatters(matters: matters) { matter, mail in navigation.open(matter, showing: mail) }
                 // Under what stands on both, right over what they change.
-                if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, selection: $part) }
+                if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, handle: { "overview." + $0.rawValue }, selection: $part) }
                 if hasJournal, part == .all {
                     OverviewJournal(matters: matters) { matter, mail in
                         if mail == nil { navigation.showsNews = true }

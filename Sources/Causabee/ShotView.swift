@@ -213,7 +213,8 @@ struct ShotView: View {
         default:
             // A phone's screen is a screenshot; a photographed letter or a scan is a picture of a page.
             switch shot.stage {
-            case .read(let look), .sending(let look), .answered(let look, _): look.byline.hasPrefix("Photo") ? String(localized: "Photo or scan") : String(localized: "Screenshot")
+            case .read(let look), .sending(let look), .answered(let look, _):
+                look.isPhoto ? String(localized: "Photo or scan") : String(localized: "Screenshot")
             default: String(localized: "Picture")
             }
         }

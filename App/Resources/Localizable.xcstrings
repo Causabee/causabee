@@ -1,6 +1,18 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Disguising names …": {
+      "localizations": {}
+    },
+    "Thinking …": {
+      "localizations": {}
+    },
+    "Looking in the whole matter …": {
+      "localizations": {}
+    },
+    "Putting names back …": {
+      "localizations": {}
+    },
     "Close the assistant": {
       "localizations": {
         "de": {
@@ -10,6 +22,24 @@
           }
         }
       }
+    },
+    "Ask about this matter": {
+      "localizations": {}
+    },
+    "Ask about %@": {
+      "localizations": {}
+    },
+    "Ask about your matters": {
+      "localizations": {}
+    },
+    "No talk about this matter yet. Ask something — or click “talk” on a line on the right.": {
+      "localizations": {}
+    },
+    "Find a matter below, or start a new one — then ask about it. Screenshots, mails and PDFs can be dropped here too.": {
+      "localizations": {}
+    },
+    "Choose a screenshot, a mail (.eml) or a PDF — it is read on the Mac and sorts itself in.": {
+      "localizations": {}
     },
     "New answer": {
       "localizations": {
@@ -41,6 +71,9 @@
         }
       }
     },
+    " · closed": {
+      "localizations": {}
+    },
     "Made on the Mac, nothing is sent.": {
       "localizations": {
         "de": {
@@ -70,6 +103,22 @@
           }
         }
       }
+    },
+    "Matters": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anliegen"
+          }
+        }
+      }
+    },
+    "Everything else": {
+      "localizations": {}
+    },
+    "right-click one to pin it": {
+      "localizations": {}
     },
     "Overview": {
       "localizations": {
@@ -121,6 +170,16 @@
         }
       }
     },
+    "Copied": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiert"
+          }
+        }
+      }
+    },
     "Copy the answer": {
       "localizations": {
         "de": {
@@ -130,6 +189,15 @@
           }
         }
       }
+    },
+    "Added to notes": {
+      "localizations": {}
+    },
+    "Saved in the notes of %@": {
+      "localizations": {}
+    },
+    "Save as a note in %@": {
+      "localizations": {}
     },
     "Save as note": {
       "localizations": {
@@ -151,6 +219,12 @@
         }
       }
     },
+    "Hide the sources": {
+      "localizations": {}
+    },
+    "What this rests on: mails, tasks, dates": {
+      "localizations": {}
+    },
     "On this device": {
       "localizations": {
         "de": {
@@ -160,6 +234,12 @@
           }
         }
       }
+    },
+    "Hide what was sent": {
+      "localizations": {}
+    },
+    "%@ — shows what was sent, pseudonymised": {
+      "localizations": {}
     },
     "Nothing was sent for this answer.": {
       "localizations": {
@@ -180,6 +260,32 @@
           }
         }
       }
+    },
+    "Draft · Mail": {
+      "localizations": {}
+    },
+    "Cancel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        }
+      }
+    },
+    "Dismiss": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weglegen"
+          }
+        }
+      }
+    },
+    "Later you can only turn merging off for new mail; you cannot split it again.": {
+      "localizations": {}
     },
     "Set again": {
       "localizations": {
@@ -211,6 +317,12 @@
         }
       }
     },
+    "Turns the rule off: the next mail is not merged any more": {
+      "localizations": {}
+    },
+    "Puts it back the way it was": {
+      "localizations": {}
+    },
     "Opens it in its matter": {
       "localizations": {
         "de": {
@@ -220,6 +332,79 @@
           }
         }
       }
+    },
+    "Task added · %@": {
+      "localizations": {}
+    },
+    "Marked done": {
+      "localizations": {}
+    },
+    "Merged into one person": {
+      "localizations": {}
+    },
+    "Name changed": {
+      "localizations": {}
+    },
+    "Role changed · %@": {
+      "localizations": {}
+    },
+    "Note added": {
+      "localizations": {}
+    },
+    "Note added · %@": {
+      "localizations": {}
+    },
+    "Brief corrected": {
+      "localizations": {}
+    },
+    "Looked up": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nachgeschlagen"
+          }
+        }
+      }
+    },
+    "Date changed": {
+      "localizations": {}
+    },
+    "Date changed · %@": {
+      "localizations": {}
+    },
+    "Changed back since · now %@": {
+      "localizations": {}
+    },
+    "Matter started": {
+      "localizations": {}
+    },
+    "Now waits for %@": {
+      "localizations": {}
+    },
+    "Link saved": {
+      "localizations": {}
+    },
+    "Contact saved": {
+      "localizations": {}
+    },
+    "Appointment added": {
+      "localizations": {}
+    },
+    "Deadline added": {
+      "localizations": {}
+    },
+    "Detail saved": {
+      "localizations": {}
+    },
+    "Text corrected": {
+      "localizations": {}
+    },
+    "Now %@": {
+      "localizations": {}
+    },
+    "Opened in Mail": {
+      "localizations": {}
     },
     "Edit": {
       "localizations": {
@@ -240,6 +425,251 @@
           }
         }
       }
+    },
+    " at %@": {
+      "localizations": {}
+    },
+    " · by %@": {
+      "localizations": {}
+    },
+    "Mine": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine"
+          }
+        }
+      }
+    },
+    "Ours": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsere"
+          }
+        }
+      }
+    },
+    "Waiting for": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartet auf"
+          }
+        }
+      }
+    },
+    "Unclear whose": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unklar, wessen"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigt"
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinzufügen"
+          }
+        }
+      }
+    },
+    "Merge": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenführen"
+          }
+        }
+      }
+    },
+    "Save note": {
+      "localizations": {}
+    },
+    "Correct the brief": {
+      "localizations": {}
+    },
+    "Look up": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nachschlagen"
+          }
+        }
+      }
+    },
+    "Open in Mail": {
+      "localizations": {}
+    },
+    "Copy": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopieren"
+          }
+        }
+      }
+    },
+    "Change date": {
+      "localizations": {}
+    },
+    "Create": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anlegen"
+          }
+        }
+      }
+    },
+    "Link": {
+      "localizations": {}
+    },
+    "Save link": {
+      "localizations": {}
+    },
+    "Save contact": {
+      "localizations": {}
+    },
+    "Save detail": {
+      "localizations": {}
+    },
+    "Change": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändern"
+          }
+        }
+      }
+    },
+    "Do": {
+      "localizations": {}
+    },
+    "Done?": {
+      "localizations": {}
+    },
+    "New task? · %@": {
+      "localizations": {}
+    },
+    "Same person?": {
+      "localizations": {}
+    },
+    "Change name?": {
+      "localizations": {}
+    },
+    "Change role?": {
+      "localizations": {}
+    },
+    "Note for the matter?": {
+      "localizations": {}
+    },
+    "Note for the task?": {
+      "localizations": {}
+    },
+    "Correct the brief?": {
+      "localizations": {}
+    },
+    "Look up on the web?": {
+      "localizations": {}
+    },
+    "Draft": {
+      "localizations": {}
+    },
+    "Message": {
+      "localizations": {}
+    },
+    "Change date?": {
+      "localizations": {}
+    },
+    "New matter?": {
+      "localizations": {}
+    },
+    "Waits for another task?": {
+      "localizations": {}
+    },
+    "Save link? · Name:": {
+      "localizations": {}
+    },
+    "Contact? · Name:": {
+      "localizations": {}
+    },
+    "New appointment? · %@": {
+      "localizations": {}
+    },
+    " until %@": {
+      "localizations": {}
+    },
+    "New deadline? · by %@": {
+      "localizations": {}
+    },
+    "Detail? · %@": {
+      "localizations": {}
+    },
+    "Replace in the text?": {
+      "localizations": {}
+    },
+    "Whose task? → %@": {
+      "localizations": {}
+    },
+    "%@  is called:": {
+      "localizations": {}
+    },
+    "%@  is here:": {
+      "localizations": {}
+    },
+    "To: (fill in in Mail)": {
+      "localizations": {}
+    },
+    "To: %@": {
+      "localizations": {}
+    },
+    " — address not known, fill it in in Mail": {
+      "localizations": {}
+    },
+    "“%@”  becomes:": {
+      "localizations": {}
+    },
+    "%@  →  only after: %@": {
+      "localizations": {}
+    },
+    "to the matter": {
+      "localizations": {}
+    },
+    "to: %@": {
+      "localizations": {}
+    },
+    "its value is never among the facts sent": {
+      "localizations": {}
+    },
+    "of %@ · its value is never among the facts sent": {
+      "localizations": {}
+    },
+    "%lld open": {
+      "localizations": {}
     },
     "Open the matter, at this task": {
       "localizations": {
@@ -271,6 +701,24 @@
         }
       }
     },
+    "%lld for you": {
+      "localizations": {}
+    },
+    "%lld together": {
+      "localizations": {}
+    },
+    "waiting for %lld": {
+      "localizations": {}
+    },
+    "Nothing open.": {
+      "localizations": {}
+    },
+    "To the new answer": {
+      "localizations": {}
+    },
+    "To the newest": {
+      "localizations": {}
+    },
     "Sorting in 12 mails …": {
       "localizations": {
         "de": {
@@ -291,6 +739,18 @@
         }
       }
     },
+    "Causabee Pro has ended. A top-up goes on at once; meanwhile Apple's model on this device reads what comes in.": {
+      "localizations": {}
+    },
+    "This month's Pro is used up. It waits until it starts anew — or a top-up. Apple's model on this device reads what comes in meanwhile.": {
+      "localizations": {}
+    },
+    "Causabee Pro could not be set up just now. It is tried again when Causabee next opens.": {
+      "localizations": {}
+    },
+    "The beeserver did not answer as it should.": {
+      "localizations": {}
+    },
     "Keep": {
       "localizations": {
         "de": {
@@ -310,6 +770,15 @@
           }
         }
       }
+    },
+    "Calendar": {
+      "localizations": {}
+    },
+    "Reminders": {
+      "localizations": {}
+    },
+    "in %@": {
+      "localizations": {}
     },
     "Disconnect": {
       "localizations": {
@@ -351,6 +820,9 @@
         }
       }
     },
+    "Not added: %@": {
+      "localizations": {}
+    },
     "Connect Calendar and Reminders": {
       "localizations": {
         "de": {
@@ -380,6 +852,12 @@
           }
         }
       }
+    },
+    "tap": {
+      "localizations": {}
+    },
+    "click": {
+      "localizations": {}
     },
     "Add appointments to": {
       "localizations": {
@@ -411,6 +889,314 @@
         }
       }
     },
+    "Settings → Privacy & Security → Calendars / Reminders": {
+      "localizations": {}
+    },
+    "System Settings → Privacy & Security → Calendars / Reminders": {
+      "localizations": {}
+    },
+    "Attached: ": {
+      "localizations": {}
+    },
+    "Not on this %@, attach by hand: ": {
+      "localizations": {}
+    },
+    "Not done: it is done already, or not a task.": {
+      "localizations": {}
+    },
+    "Nothing changed: those words are not in the tasks or dates.": {
+      "localizations": {}
+    },
+    "Nothing put away: it is not there any more, or put away already.": {
+      "localizations": {}
+    },
+    "Nothing opened: it is open already.": {
+      "localizations": {}
+    },
+    "Not changed: that cannot be set this way, or the value is missing.": {
+      "localizations": {}
+    },
+    "Not closed: it is closed already.": {
+      "localizations": {}
+    },
+    "Not moved: the other matter was not found, or it is there already.": {
+      "localizations": {}
+    },
+    "Not changed: no day was given, or the date is not there any more.": {
+      "localizations": {}
+    },
+    "Could not be done: what it names is not there any more, or something it needs was not given.": {
+      "localizations": {}
+    },
+    "it": {
+      "localizations": {}
+    },
+    "Put away?": {
+      "localizations": {}
+    },
+    "Put away": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weggelegt"
+          }
+        }
+      }
+    },
+    "Open again?": {
+      "localizations": {}
+    },
+    "Open again": {
+      "localizations": {}
+    },
+    "Change the %@?": {
+      "localizations": {}
+    },
+    "Clear": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leeren"
+          }
+        }
+      }
+    },
+    "%@ cleared": {
+      "localizations": {}
+    },
+    "%@ changed": {
+      "localizations": {}
+    },
+    "Close the matter?": {
+      "localizations": {}
+    },
+    "Close": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließen"
+          }
+        }
+      }
+    },
+    "Matter closed": {
+      "localizations": {}
+    },
+    "Move?": {
+      "localizations": {}
+    },
+    "Move": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewegen"
+          }
+        }
+      }
+    },
+    "Moved to %@": {
+      "localizations": {}
+    },
+    "Decision?": {
+      "localizations": {}
+    },
+    "Save decision": {
+      "localizations": {}
+    },
+    "Why: %@": {
+      "localizations": {}
+    },
+    "Decision saved": {
+      "localizations": {}
+    },
+    "words": {
+      "localizations": {}
+    },
+    "note": {
+      "localizations": {}
+    },
+    "kind": {
+      "localizations": {}
+    },
+    "place": {
+      "localizations": {}
+    },
+    "label": {
+      "localizations": {}
+    },
+    "value": {
+      "localizations": {}
+    },
+    "name": {
+      "localizations": {}
+    },
+    "phone number": {
+      "localizations": {}
+    },
+    "mail address": {
+      "localizations": {}
+    },
+    "reason": {
+      "localizations": {}
+    },
+    "no day": {
+      "localizations": {}
+    },
+    "Matter (no longer there)": {
+      "localizations": {}
+    },
+    "Gone": {
+      "localizations": {}
+    },
+    "Mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail"
+          }
+        }
+      }
+    },
+    "Screenshot": {
+      "localizations": {}
+    },
+    "Photo": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto"
+          }
+        }
+      }
+    },
+    "File": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datei"
+          }
+        }
+      }
+    },
+    "Spoken note": {
+      "localizations": {}
+    },
+    "Chat": {
+      "localizations": {}
+    },
+    "Task (no longer there)": {
+      "localizations": {}
+    },
+    "Appointment ": {
+      "localizations": {}
+    },
+    "Deadline ": {
+      "localizations": {}
+    },
+    "merged": {
+      "localizations": {}
+    },
+    "Note ": {
+      "localizations": {}
+    },
+    "Detail": {
+      "localizations": {}
+    },
+    "Decision ": {
+      "localizations": {}
+    },
+    "A matter": {
+      "localizations": {}
+    },
+    "not found on this %@": {
+      "localizations": {}
+    },
+    "Matter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anliegen"
+          }
+        }
+      }
+    },
+    "Something that came in": {
+      "localizations": {}
+    },
+    "(no subject)": {
+      "localizations": {}
+    },
+    "A task of the matter": {
+      "localizations": {}
+    },
+    "done": {
+      "localizations": {}
+    },
+    "due ": {
+      "localizations": {}
+    },
+    "Task": {
+      "localizations": {}
+    },
+    "An appointment of the matter": {
+      "localizations": {}
+    },
+    "A deadline of the matter": {
+      "localizations": {}
+    },
+    "A person of the matter": {
+      "localizations": {}
+    },
+    "Person": {
+      "localizations": {}
+    },
+    "A note of the matter": {
+      "localizations": {}
+    },
+    "A detail of the matter": {
+      "localizations": {}
+    },
+    "A link of the matter": {
+      "localizations": {}
+    },
+    "A file of the matter": {
+      "localizations": {}
+    },
+    "A decision of the matter": {
+      "localizations": {}
+    },
+    "added by you": {
+      "localizations": {}
+    },
+    "1 mail": {
+      "localizations": {}
+    },
+    "%lld mails": {
+      "localizations": {}
+    },
+    "%@, last %@": {
+      "localizations": {}
+    },
+    "To %@": {
+      "localizations": {}
+    },
+    "no address known — add one under People": {
+      "localizations": {}
+    },
+    "Shows it in its matter": {
+      "localizations": {}
+    },
+    "%@ · last used of %lld": {
+      "localizations": {}
+    },
     "Write mail": {
       "localizations": {
         "de": {
@@ -441,25 +1227,11 @@
         }
       }
     },
-    "Copied": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kopiert"
-          }
-        }
-      }
+    "Message · for %@": {
+      "localizations": {}
     },
-    "Dismiss": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weglegen"
-          }
-        }
-      }
+    "On your clipboard: paste it into the chat.": {
+      "localizations": {}
     },
     "Share": {
       "localizations": {
@@ -471,15 +1243,32 @@
         }
       }
     },
-    "Copy": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kopieren"
-          }
-        }
-      }
+    "No key for the assistant's model is saved.": {
+      "localizations": {}
+    },
+    "Getting %@ from iCloud …": {
+      "localizations": {}
+    },
+    "Making %@ smaller for the mail …": {
+      "localizations": {}
+    },
+    "Deadline tomorrow: %@": {
+      "localizations": {}
+    },
+    "Tomorrow: %@": {
+      "localizations": {}
+    },
+    "1 new mail": {
+      "localizations": {}
+    },
+    "%lld new mails": {
+      "localizations": {}
+    },
+    " and %lld more": {
+      "localizations": {}
+    },
+    "The store cannot be opened": {
+      "localizations": {}
     },
     "New Matter …": {
       "localizations": {
@@ -511,6 +1300,12 @@
         }
       }
     },
+    "Leave the Demo": {
+      "localizations": {}
+    },
+    "Try the Demo": {
+      "localizations": {}
+    },
     "Introduction to Causabee": {
       "localizations": {
         "de": {
@@ -521,35 +1316,35 @@
         }
       }
     },
-    "Matters": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anliegen"
-          }
-        }
-      }
+    "1 mail taken in": {
+      "localizations": {}
     },
-    "Merge": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zusammenführen"
-          }
-        }
-      }
+    "%lld mails taken in": {
+      "localizations": {}
     },
-    "Cancel": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abbrechen"
-          }
-        }
-      }
+    " · 1 new task": {
+      "localizations": {}
+    },
+    " · %lld new tasks": {
+      "localizations": {}
+    },
+    " · 1 date": {
+      "localizations": {}
+    },
+    " · %lld dates": {
+      "localizations": {}
+    },
+    " · %lld shown done": {
+      "localizations": {}
+    },
+    " · sorted by %@": {
+      "localizations": {}
+    },
+    "• … and %lld more": {
+      "localizations": {}
+    },
+    "Merge “%@” into “%@”?": {
+      "localizations": {}
     },
     "Everything comes along: mail, screenshots, files, notes, tasks, dates and people. The old name stays as an alias, so what comes in later still finds it. You cannot split it again later.": {
       "localizations": {
@@ -567,16 +1362,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Name"
-          }
-        }
-      }
-    },
-    "Create": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anlegen"
           }
         }
       }
@@ -611,6 +1396,9 @@
         }
       }
     },
+    "Not finished before the app was closed. Please attach it again.": {
+      "localizations": {}
+    },
     "Write Next Step and Summary Again": {
       "localizations": {
         "de": {
@@ -620,6 +1408,24 @@
           }
         }
       }
+    },
+    "Show Sidebar": {
+      "localizations": {}
+    },
+    "Hide Sidebar": {
+      "localizations": {}
+    },
+    "Hide Assistant": {
+      "localizations": {}
+    },
+    "Show Assistant": {
+      "localizations": {}
+    },
+    "Deactivate Reading Mode": {
+      "localizations": {}
+    },
+    "Activate Reading Mode": {
+      "localizations": {}
     },
     "Next Matter": {
       "localizations": {
@@ -651,6 +1457,9 @@
         }
       }
     },
+    "Find": {
+      "localizations": {}
+    },
     "Find …": {
       "localizations": {
         "de": {
@@ -681,6 +1490,18 @@
         }
       }
     },
+    "Screenshot, Mail or PDF": {
+      "localizations": {}
+    },
+    "Causabee reads it, and offers its tasks and dates": {
+      "localizations": {}
+    },
+    "Files or a Folder": {
+      "localizations": {}
+    },
+    "Kept with the matter, unread": {
+      "localizations": {}
+    },
     "Put it away (esc)": {
       "localizations": {
         "de": {
@@ -697,16 +1518,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Weglegen"
-          }
-        }
-      }
-    },
-    "Add": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hinzufügen"
           }
         }
       }
@@ -730,6 +1541,18 @@
           }
         }
       }
+    },
+    "This matter has no files yet.": {
+      "localizations": {}
+    },
+    "No file is called that.": {
+      "localizations": {}
+    },
+    "Named in the draft": {
+      "localizations": {}
+    },
+    "Named in the draft · left out": {
+      "localizations": {}
     },
     "Causabee Pro": {
       "localizations": {
@@ -760,6 +1583,36 @@
           }
         }
       }
+    },
+    "Off — on this Mac only": {
+      "localizations": {}
+    },
+    "Test — made-up data, its own container": {
+      "localizations": {}
+    },
+    "On — your matters, in your private iCloud": {
+      "localizations": {}
+    },
+    "not available in this build": {
+      "localizations": {}
+    },
+    "signed in to iCloud": {
+      "localizations": {}
+    },
+    "no iCloud account on this Mac": {
+      "localizations": {}
+    },
+    "iCloud is restricted on this Mac": {
+      "localizations": {}
+    },
+    "iCloud is not available right now": {
+      "localizations": {}
+    },
+    "iCloud status unknown": {
+      "localizations": {}
+    },
+    "Not in this version": {
+      "localizations": {}
     },
     "This version of Causabee has no iCloud: your matters stay on this Mac.": {
       "localizations": {
@@ -810,6 +1663,9 @@
           }
         }
       }
+    },
+    "not yet": {
+      "localizations": {}
     },
     "Your matters, tasks, dates, people, digests, the assistant's history, and the full texts of mails and scans — those end to end encrypted — sync through your private iCloud. Files go into the matters' folders.": {
       "localizations": {
@@ -871,6 +1727,12 @@
         }
       }
     },
+    "read “%@” as “%@”": {
+      "localizations": {}
+    },
+    "All Matters": {
+      "localizations": {}
+    },
     "Put it down": {
       "localizations": {
         "de": {
@@ -880,6 +1742,32 @@
           }
         }
       }
+    },
+    "Add to this matter: a task, a note, a link, a detail, a contact, a file — or something for Causabee to read": {
+      "localizations": {}
+    },
+    "Add to this matter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu diesem Anliegen hinzufügen"
+          }
+        }
+      }
+    },
+    "Note": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notiz"
+          }
+        }
+      }
+    },
+    "Contact": {
+      "localizations": {}
     },
     "Read and sorted in": {
       "localizations": {
@@ -911,15 +1799,11 @@
         }
       }
     },
-    "Add to this matter": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zu diesem Anliegen hinzufügen"
-          }
-        }
-      }
+    "Files or a Folder …": {
+      "localizations": {}
+    },
+    "Add to a matter: a task, a note, a link, a detail, a contact, files — or something for Causabee to read": {
+      "localizations": {}
     },
     "Attach a screenshot, a mail (.eml) or a PDF — or drag it here, or paste it (⌘V). It is scanned on the Mac.": {
       "localizations": {
@@ -930,6 +1814,21 @@
           }
         }
       }
+    },
+    "Send (↩) · new line with ⇧↩": {
+      "localizations": {}
+    },
+    "Stop (⌘.)": {
+      "localizations": {}
+    },
+    "Stays on this device. Asking needs Pro.": {
+      "localizations": {}
+    },
+    "Always pseudonymised sent to %@ • Sees: %@ • [less](causabee://footer)": {
+      "localizations": {}
+    },
+    "Always pseudonymised sent • [more](causabee://footer)": {
+      "localizations": {}
     },
     "Look around in an example": {
       "localizations": {
@@ -971,16 +1870,6 @@
         }
       }
     },
-    "Photo": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Foto"
-          }
-        }
-      }
-    },
     "Add a photo": {
       "localizations": {
         "de": {
@@ -1007,16 +1896,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dokument scannen"
-          }
-        }
-      }
-    },
-    "File": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Datei"
           }
         }
       }
@@ -1060,6 +1939,27 @@
           }
         }
       }
+    },
+    "Saving files …": {
+      "localizations": {}
+    },
+    "Saving files … %lld of %lld": {
+      "localizations": {}
+    },
+    "%lld saved, %lld there already": {
+      "localizations": {}
+    },
+    ", %lld not found in their mail": {
+      "localizations": {}
+    },
+    "Use this folder": {
+      "localizations": {}
+    },
+    "The folder for Causabee's matter folders — one subfolder per matter.": {
+      "localizations": {}
+    },
+    "No folder chosen yet": {
+      "localizations": {}
     },
     "Choose folder …": {
       "localizations": {
@@ -1311,6 +2211,15 @@
         }
       }
     },
+    "Change day": {
+      "localizations": {}
+    },
+    "Day": {
+      "localizations": {}
+    },
+    "Set": {
+      "localizations": {}
+    },
     "Set Day": {
       "localizations": {
         "de": {
@@ -1381,6 +2290,9 @@
         }
       }
     },
+    "since %@": {
+      "localizations": {}
+    },
     "Wait a week": {
       "localizations": {
         "de": {
@@ -1400,6 +2312,21 @@
           }
         }
       }
+    },
+    "1 task open": {
+      "localizations": {}
+    },
+    "%lld tasks open": {
+      "localizations": {}
+    },
+    "1 more date": {
+      "localizations": {}
+    },
+    "%lld more dates": {
+      "localizations": {}
+    },
+    "The brief · what Causabee understands": {
+      "localizations": {}
     },
     "Summary": {
       "localizations": {
@@ -1421,6 +2348,19 @@
         }
       }
     },
+    "Details": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        }
+      }
+    },
+    "Good to know": {
+      "localizations": {}
+    },
     "Hide": {
       "localizations": {
         "de": {
@@ -1441,15 +2381,54 @@
         }
       }
     },
-    "Done: ": {
+    "you": {
+      "localizations": {}
+    },
+    "NEW": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erledigt: "
+            "value": "NEU"
           }
         }
       }
+    },
+    "1 NEW ANSWER": {
+      "localizations": {}
+    },
+    "%lld NEW ANSWERS": {
+      "localizations": {}
+    },
+    "1 answer": {
+      "localizations": {}
+    },
+    "%lld answers": {
+      "localizations": {}
+    },
+    "Done: %@": {
+      "localizations": {}
+    },
+    "OVERDUE": {
+      "localizations": {}
+    },
+    "NO DAY YET": {
+      "localizations": {}
+    },
+    "WAITING FOR OTHERS": {
+      "localizations": {}
+    },
+    "ONLY AFTER": {
+      "localizations": {}
+    },
+    "Done · %lld": {
+      "localizations": {}
+    },
+    "Past · %lld": {
+      "localizations": {}
+    },
+    "until %@": {
+      "localizations": {}
     },
     "Deadline": {
       "localizations": {
@@ -1461,25 +2440,11 @@
         }
       }
     },
-    "Waits for you: ": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wartet auf dich: "
-          }
-        }
-      }
+    "Waits for you: %@": {
+      "localizations": {}
     },
-    "You wait for: ": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Du wartest auf: "
-          }
-        }
-      }
+    "You wait for: %@": {
+      "localizations": {}
     },
     "WHO HAS THE BALL": {
       "localizations": {
@@ -1491,15 +2456,17 @@
         }
       }
     },
-    "NEW": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "NEU"
-          }
-        }
-      }
+    "Latest updates": {
+      "localizations": {}
+    },
+    "1 file": {
+      "localizations": {}
+    },
+    "%lld files": {
+      "localizations": {}
+    },
+    "%lld new": {
+      "localizations": {}
     },
     "Start": {
       "localizations": {
@@ -1517,6 +2484,55 @@
           "stringUnit": {
             "state": "translated",
             "value": "Was hereinkam, geht — mit dem, was nur es mitbrachte. Das geschlossene Anliegen bleibt geschlossen."
+          }
+        }
+      }
+    },
+    "Files": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dateien"
+          }
+        }
+      }
+    },
+    "Tasks": {
+      "localizations": {}
+    },
+    "Dates": {
+      "localizations": {}
+    },
+    "Notes": {
+      "localizations": {}
+    },
+    "Links": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Links"
+          }
+        }
+      }
+    },
+    "People": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personen"
+          }
+        }
+      }
+    },
+    "All": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle"
           }
         }
       }
@@ -1581,12 +2597,58 @@
         }
       }
     },
+    "It could not be added.": {
+      "localizations": {}
+    },
+    "It is in the matter already.": {
+      "localizations": {}
+    },
+    "No mail account yet. Choose Causabee → Set Up Causabee … to log in.": {
+      "localizations": {}
+    },
+    "Fetching mail …": {
+      "localizations": {}
+    },
+    "No password for %@ in the Keychain. Choose Causabee → Set Up Causabee … to log in again.": {
+      "localizations": {}
+    },
+    "Reading 1 mail …": {
+      "localizations": {}
+    },
+    "Reading %lld mails …": {
+      "localizations": {}
+    },
+    "Apple's model on this device": {
+      "localizations": {}
+    },
+    " · 1 waits for room for a new matter": {
+      "localizations": {}
+    },
+    " · %lld wait for room for a new matter": {
+      "localizations": {}
+    },
+    "Sorting 1 mail …": {
+      "localizations": {}
+    },
+    "Sorting %lld mails …": {
+      "localizations": {}
+    },
     "Shows what is in it": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Zeigt, was darin steht"
+          }
+        }
+      }
+    },
+    "Add to …": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinzufügen zu …"
           }
         }
       }
@@ -1651,16 +2713,6 @@
         }
       }
     },
-    "Close": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schließen"
-          }
-        }
-      }
-    },
     "Open it in its matter": {
       "localizations": {
         "de": {
@@ -1670,6 +2722,15 @@
           }
         }
       }
+    },
+    "Checked %@ · %@": {
+      "localizations": {}
+    },
+    "mail with the label sorts itself in": {
+      "localizations": {}
+    },
+    "nothing is sent until Sort in": {
+      "localizations": {}
     },
     "Get new mail": {
       "localizations": {
@@ -1681,6 +2742,12 @@
         }
       }
     },
+    "None ticked: “Leave out” puts it aside, and it is not offered again. “Later” keeps it for the next time.": {
+      "localizations": {}
+    },
+    "None ticked: “Leave out” puts them aside, and they are not offered again. “Later” keeps them for the next time.": {
+      "localizations": {}
+    },
     "Later": {
       "localizations": {
         "de": {
@@ -1691,15 +2758,32 @@
         }
       }
     },
-    "Read. ": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gelesen. "
-          }
-        }
-      }
+    "just now": {
+      "localizations": {}
+    },
+    "a minute ago": {
+      "localizations": {}
+    },
+    "%lld min ago": {
+      "localizations": {}
+    },
+    "at %@": {
+      "localizations": {}
+    },
+    "1 mail read": {
+      "localizations": {}
+    },
+    "%lld mails read": {
+      "localizations": {}
+    },
+    "Read. Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside.": {
+      "localizations": {}
+    },
+    " 1 left out as a newsletter.": {
+      "localizations": {}
+    },
+    " %lld left out as newsletters.": {
+      "localizations": {}
     },
     "In the demo, sorting in sends nothing.": {
       "localizations": {
@@ -1731,22 +2815,422 @@
         }
       }
     },
-    "Move": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bewegen"
-          }
-        }
-      }
-    },
     "The mail goes, with the tasks, dates and files only it brought.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Die Mail geht, mit den Aufgaben, Terminen und Dateien, die nur sie mitbrachte."
+          }
+        }
+      }
+    },
+    "Tap": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippe auf"
+          }
+        }
+      }
+    },
+    "Click": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klick auf"
+          }
+        }
+      }
+    },
+    "your provider": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "deinem Anbieter"
+          }
+        }
+      }
+    },
+    "Connect my mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Mail verbinden"
+          }
+        }
+      }
+    },
+    "Looking …": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche …"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter"
+          }
+        }
+      }
+    },
+    "Choose another mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andere Mail wählen"
+          }
+        }
+      }
+    },
+    "Open %@ settings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@-Einstellungen öffnen"
+          }
+        }
+      }
+    },
+    "Open Apple Account": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple-Account öffnen"
+          }
+        }
+      }
+    },
+    "Open Google": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google öffnen"
+          }
+        }
+      }
+    },
+    "Open %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ öffnen"
+          }
+        }
+      }
+    },
+    "Google says app passwords aren’t available": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google sagt, App-Passwörter sind nicht verfügbar"
+          }
+        }
+      }
+    },
+    "Making it …": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird angelegt …"
+          }
+        }
+      }
+    },
+    "Make the label": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Label anlegen"
+          }
+        }
+      }
+    },
+    "Make a new app password": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neues App-Passwort anlegen"
+          }
+        }
+      }
+    },
+    "Type it again": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch einmal eingeben"
+          }
+        }
+      }
+    },
+    "Paste again": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch einmal einfügen"
+          }
+        }
+      }
+    },
+    "It’s on — continue": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ist an — weiter"
+          }
+        }
+      }
+    },
+    "Open Google again": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google noch einmal öffnen"
+          }
+        }
+      }
+    },
+    "Check at Google": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei Google nachsehen"
+          }
+        }
+      }
+    },
+    "It’s already on": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ist schon an"
+          }
+        }
+      }
+    },
+    "Try again now": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jetzt noch einmal versuchen"
+          }
+        }
+      }
+    },
+    "Check the settings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen prüfen"
+          }
+        }
+      }
+    },
+    "Let Causabee read the mail you choose": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lass Causabee die Mail lesen, die du wählst"
+          }
+        }
+      }
+    },
+    "It sorts that mail into matters, with its tasks and dates. Three promises first:": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sie sortiert diese Mail in Anliegen ein, mit ihren Aufgaben und Terminen. Vorher drei Versprechen:"
+          }
+        }
+      }
+    },
+    "Only the mail you choose": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur die Mail, die du wählst"
+          }
+        }
+      }
+    },
+    "Causabee reads mail you give the label “%@” — nothing else in your mailbox.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee liest Mail, der du das Label „%@“ gibst — sonst nichts in deinem Postfach."
+          }
+        }
+      }
+    },
+    "It only reads": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sie liest nur"
+          }
+        }
+      }
+    },
+    "It never sends, deletes or moves mail, and leaves it unread. The one thing it adds is its label, when you say so.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sie sendet, löscht und verschiebt keine Mail und lässt sie ungelesen. Das Einzige, was sie hinzufügt, ist ihr Label — wenn du es sagst."
+          }
+        }
+      }
+    },
+    "Your password stays yours": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Passwort bleibt deins"
+          }
+        }
+      }
+    },
+    "You make a password just for Causabee. It is kept in your iCloud Keychain and goes only to your mail provider.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du legst ein Passwort nur für Causabee an. Es liegt in deinem iCloud-Schlüsselbund und geht nur an deinen Mail-Anbieter."
+          }
+        }
+      }
+    },
+    "Which mail do you use?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welche Mail nutzt du?"
+          }
+        }
+      }
+    },
+    "Pick the one you want Causabee to read. You can add another later.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähl die, die Causabee lesen soll. Eine weitere kannst du später hinzufügen."
+          }
+        }
+      }
+    },
+    "Also Google Workspace at work": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auch Google Workspace in der Arbeit"
+          }
+        }
+      }
+    },
+    "Another provider": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein anderer Anbieter"
+          }
+        }
+      }
+    },
+    "Outlook and Hotmail can’t be read by apps like Causabee yet — Microsoft only lets its own apps in.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outlook und Hotmail können Apps wie Causabee noch nicht lesen — Microsoft lässt nur eigene Apps hinein."
+          }
+        }
+      }
+    },
+    "Your Gmail address": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Gmail-Adresse"
+          }
+        }
+      }
+    },
+    "Your iCloud address": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine iCloud-Adresse"
+          }
+        }
+      }
+    },
+    "Your mail address": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Mail-Adresse"
+          }
+        }
+      }
+    },
+    "The one whose mail Causabee should read.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die, deren Mail Causabee lesen soll."
+          }
+        }
+      }
+    },
+    "Next, %@ makes a password just for Causabee. It takes about a minute.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Nächstes legt %@ ein Passwort nur für Causabee an. Das dauert etwa eine Minute."
           }
         }
       }
@@ -1761,12 +3245,72 @@
         }
       }
     },
+    "Outlook can’t be connected yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outlook lässt sich noch nicht verbinden"
+          }
+        }
+      }
+    },
+    "Microsoft lets only its own apps read Outlook and Hotmail mail. That isn’t something Causabee can change.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft lässt nur eigene Apps Outlook- und Hotmail-Mail lesen. Daran kann Causabee nichts ändern."
+          }
+        }
+      }
+    },
     "What works instead:": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Was stattdessen geht:"
+          }
+        }
+      }
+    },
+    "Forward the mails you want sorted to a Gmail or iCloud address, and connect that.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leite die Mails, die einsortiert werden sollen, an eine Gmail- oder iCloud-Adresse weiter und verbinde die."
+          }
+        }
+      }
+    },
+    "Or drop a mail’s PDF or a screenshot into Causabee — it sorts those too.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oder zieh das PDF einer Mail oder einen Screenshot in Causabee — die sortiert sie auch ein."
+          }
+        }
+      }
+    },
+    "Which provider is it?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcher Anbieter ist es?"
+          }
+        }
+      }
+    },
+    "Causabee couldn’t find the settings for %@ by itself. Pick your provider:": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee konnte die Einstellungen für %@ nicht selbst finden. Wähl deinen Anbieter:"
           }
         }
       }
@@ -1780,6 +3324,778 @@
           }
         }
       }
+    },
+    "Your provider’s settings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Einstellungen deines Anbieters"
+          }
+        }
+      }
+    },
+    "Your provider’s help pages name them — look for “IMAP”. Causabee connects securely, usually on port 993.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Hilfeseiten deines Anbieters nennen sie — such nach „IMAP“. Causabee verbindet sich sicher, meist über Port 993."
+          }
+        }
+      }
+    },
+    "Incoming mail server": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server für eingehende Mail"
+          }
+        }
+      }
+    },
+    "Port": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port"
+          }
+        }
+      }
+    },
+    "Many providers want a password made for apps rather than your usual one. Their settings say so.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viele Anbieter wollen ein Passwort für Apps statt deines üblichen. Ihre Einstellungen sagen es."
+          }
+        }
+      }
+    },
+    "Paste the 16 letters": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die 16 Buchstaben einfügen"
+          }
+        }
+      }
+    },
+    "That’s it — %@ Connect.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das war's — %@ Verbinden."
+          }
+        }
+      }
+    },
+    "Causabee noticed something on your clipboard — %@ Paste to use it.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee hat etwas in deiner Zwischenablage gesehen — %@ Einfügen, um es zu nehmen."
+          }
+        }
+      }
+    },
+    "Copy the 16 letters at Google, then %@ Paste.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopier die 16 Buchstaben bei Google, dann %@ Einfügen."
+          }
+        }
+      }
+    },
+    "Make a password for Causabee": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Passwort für Causabee anlegen"
+          }
+        }
+      }
+    },
+    "Google gives apps like Causabee their own password, so your real one is never shared.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google gibt Apps wie Causabee ein eigenes Passwort, damit dein echtes nie weitergegeben wird."
+          }
+        }
+      }
+    },
+    "%@ “Open Google” and sign in if asked.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ „Google öffnen“ und melde dich an, wenn du gefragt wirst."
+          }
+        }
+      }
+    },
+    "Type “Causabee” as the app name, then %@ Create.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gib „Causabee“ als App-Namen ein, dann %@ Erstellen."
+          }
+        }
+      }
+    },
+    "Google shows 16 letters. Copy them and come back here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google zeigt 16 Buchstaben. Kopier sie und komm hierher zurück."
+          }
+        }
+      }
+    },
+    "App passwords": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App-Passwörter"
+          }
+        }
+      }
+    },
+    "App name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App-Name"
+          }
+        }
+      }
+    },
+    "Paste the code": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den Code einfügen"
+          }
+        }
+      }
+    },
+    "Copy the code at Apple, then %@ Paste.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopier den Code bei Apple, dann %@ Einfügen."
+          }
+        }
+      }
+    },
+    "Apple gives apps like Causabee their own password, so your Apple Account password is never shared.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple gibt Apps wie Causabee ein eigenes Passwort, damit das Passwort deines Apple-Accounts nie weitergegeben wird."
+          }
+        }
+      }
+    },
+    "%@ “Open Apple Account” and sign in.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ „Apple-Account öffnen“ und melde dich an."
+          }
+        }
+      }
+    },
+    "Choose Sign-In and Security, then App-Specific Passwords.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähl Anmelden und Sicherheit, dann App-spezifische Passwörter."
+          }
+        }
+      }
+    },
+    "Name it “Causabee”, %@ Create, and copy the code.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenn es „Causabee“, %@ Erstellen, und kopier den Code."
+          }
+        }
+      }
+    },
+    "App-Specific Passwords": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App-spezifische Passwörter"
+          }
+        }
+      }
+    },
+    "A password for Causabee": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Passwort für Causabee"
+          }
+        }
+      }
+    },
+    "%@ wants a password made for apps. Make one named “Causabee”, copy it, and paste it here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ will ein Passwort für Apps. Leg eines namens „Causabee“ an, kopier es und füg es hier ein."
+          }
+        }
+      }
+    },
+    "One setting at %@ first": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuerst eine Einstellung bei %@"
+          }
+        }
+      }
+    },
+    "%@ only lets apps read mail once you allow it. It’s a single switch.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ lässt Apps erst Mail lesen, wenn du es erlaubst. Es ist ein einziger Schalter."
+          }
+        }
+      }
+    },
+    "%@ “Open %@ settings” and sign in.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ „%@-Einstellungen öffnen“ und melde dich an."
+          }
+        }
+      }
+    },
+    "Under POP3 & IMAP, turn on “Allow access”.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schalte unter POP3 & IMAP „Zugriff erlauben“ ein."
+          }
+        }
+      }
+    },
+    "Come back and type your %@ password here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komm zurück und gib hier dein %@-Passwort ein."
+          }
+        }
+      }
+    },
+    "Your %@ mail password": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein %@-Mail-Passwort"
+          }
+        }
+      }
+    },
+    "%@ has a password just for mail, set in its mail settings — not the one you sign in to Telekom with.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ hat ein Passwort nur für Mail, gesetzt in den Mail-Einstellungen — nicht das, mit dem du dich bei Telekom anmeldest."
+          }
+        }
+      }
+    },
+    "Your %@ password": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein %@-Passwort"
+          }
+        }
+      }
+    },
+    "Causabee uses it only to read the mail you give it, and keeps it in your iCloud Keychain.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee nutzt es nur, um die Mail zu lesen, die du ihr gibst, und bewahrt es in deinem iCloud-Schlüsselbund."
+          }
+        }
+      }
+    },
+    "Connecting to %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinde mit %@"
+          }
+        }
+      }
+    },
+    "This takes a few seconds.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das dauert ein paar Sekunden."
+          }
+        }
+      }
+    },
+    "One label for Causabee": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Label für Causabee"
+          }
+        }
+      }
+    },
+    "One folder for Causabee": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Ordner für Causabee"
+          }
+        }
+      }
+    },
+    "Causabee reads only mail with the label “%@”. Shall it make the label in your Gmail now?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee liest nur Mail mit dem Label „%@“. Soll sie das Label jetzt in deinem Gmail anlegen?"
+          }
+        }
+      }
+    },
+    "Causabee reads only mail in the folder “%@”. Shall it make the folder in your mailbox now?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee liest nur Mail im Ordner „%@“. Soll sie den Ordner jetzt in deinem Postfach anlegen?"
+          }
+        }
+      }
+    },
+    "Making this label is the only change Causabee ever makes to your mailbox. You can rename or delete it there.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Label anzulegen ist die einzige Änderung, die Causabee je an deinem Postfach macht. Du kannst es dort umbenennen oder löschen."
+          }
+        }
+      }
+    },
+    "Making this folder is the only change Causabee ever makes to your mailbox. You can rename or delete it there.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesen Ordner anzulegen ist die einzige Änderung, die Causabee je an deinem Postfach macht. Du kannst ihn dort umbenennen oder löschen."
+          }
+        }
+      }
+    },
+    "Your label is ready": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Label ist bereit"
+          }
+        }
+      }
+    },
+    "Your folder is ready": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Ordner ist bereit"
+          }
+        }
+      }
+    },
+    "Causabee found “%@” in your mailbox, with 1 mail in it.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee hat „%@“ in deinem Postfach gefunden, mit 1 Mail darin."
+          }
+        }
+      }
+    },
+    "Causabee found “%@” in your mailbox, with %lld mails in it.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee hat „%@“ in deinem Postfach gefunden, mit %lld Mails darin."
+          }
+        }
+      }
+    },
+    "Connected to %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit %@ verbunden"
+          }
+        }
+      }
+    },
+    "Found “%@” · 1 mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ gefunden · 1 Mail"
+          }
+        }
+      }
+    },
+    "Found “%@” · %lld mails": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ gefunden · %lld Mails"
+          }
+        }
+      }
+    },
+    "You’re all set": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles bereit"
+          }
+        }
+      }
+    },
+    "Here is how Causabee gets its first mail:": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So bekommt Causabee ihre erste Mail:"
+          }
+        }
+      }
+    },
+    "Causabee reads the 1 mail in “%@” now. More come the same way:": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee liest die 1 Mail in „%@“ jetzt. Weitere kommen genauso:"
+          }
+        }
+      }
+    },
+    "Causabee reads the %lld mails in “%@” now. More come the same way:": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee liest die %lld Mails in „%@“ jetzt. Weitere kommen genauso:"
+          }
+        }
+      }
+    },
+    "In Gmail, open a mail about something you’re dealing with — a move, a claim, a parent’s care.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffne in Gmail eine Mail zu etwas, das dich beschäftigt — ein Umzug, ein Schadensfall, die Pflege eines Elternteils."
+          }
+        }
+      }
+    },
+    "%@ the label button, and tick “%@”.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ den Label-Knopf und hak „%@“ an."
+          }
+        }
+      }
+    },
+    "In Mail, open a mail about something you’re dealing with — a move, a claim, a parent’s care.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffne in Mail eine Mail zu etwas, das dich beschäftigt — ein Umzug, ein Schadensfall, die Pflege eines Elternteils."
+          }
+        }
+      }
+    },
+    "Move it to the folder “%@”.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verschieb sie in den Ordner „%@“."
+          }
+        }
+      }
+    },
+    "Come back here. Causabee reads it and sorts it into a matter.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komm hierher zurück. Causabee liest sie und sortiert sie in ein Anliegen ein."
+          }
+        }
+      }
+    },
+    "Connected · %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbunden · %@"
+          }
+        }
+      }
+    },
+    "Label “%@” found": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Label „%@“ gefunden"
+          }
+        }
+      }
+    },
+    "Label “%@” made": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Label „%@“ angelegt"
+          }
+        }
+      }
+    },
+    "Folder “%@” found": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordner „%@“ gefunden"
+          }
+        }
+      }
+    },
+    "Folder “%@” made": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordner „%@“ angelegt"
+          }
+        }
+      }
+    },
+    "Password kept in iCloud Keychain — your other devices have it too": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passwort im iCloud-Schlüsselbund — deine anderen Geräte haben es auch"
+          }
+        }
+      }
+    },
+    "%@ didn’t take that password": {
+      "localizations": {}
+    },
+    "Nothing is wrong with your account. Usually it’s one of these:": {
+      "localizations": {}
+    },
+    "It was your usual password": {
+      "localizations": {}
+    },
+    "Causabee needs the one made for apps": {
+      "localizations": {}
+    },
+    "Only part of it was copied": {
+      "localizations": {}
+    },
+    "Copy all of it, then paste again": {
+      "localizations": {}
+    },
+    "The app password was deleted": {
+      "localizations": {}
+    },
+    "Make a new one — it takes a minute": {
+      "localizations": {}
+    },
+    "A letter was typed wrong": {
+      "localizations": {}
+    },
+    "Capitals count — type it again": {
+      "localizations": {}
+    },
+    "Access for apps is still off": {
+      "localizations": {}
+    },
+    "Turn on POP3 & IMAP in %@’s settings": {
+      "localizations": {}
+    },
+    "It was the login password": {
+      "localizations": {}
+    },
+    "%@ wants its separate mail password": {
+      "localizations": {}
+    },
+    "First, one check at Google": {
+      "localizations": {}
+    },
+    "Google makes a password for apps only when 2-Step Verification is on. Many accounts have it — but not always when you sign in with a passkey.": {
+      "localizations": {}
+    },
+    "%@ “Check at Google” and sign in if asked.": {
+      "localizations": {}
+    },
+    "If Google offers to turn it on, do it and add your phone number. Your passkey stays as it is.": {
+      "localizations": {}
+    },
+    "Come back here — Causabee keeps your place.": {
+      "localizations": {}
+    },
+    "At work or on your own domain, whoever runs your Google account may have to allow 2-Step Verification first.": {
+      "localizations": {}
+    },
+    "No connection right now": {
+      "localizations": {}
+    },
+    "This device is offline. Nothing was lost — try again as soon as you’re back online.": {
+      "localizations": {}
+    },
+    "Can’t reach %@ — no internet": {
+      "localizations": {}
+    },
+    "Connecting, once you’re online": {
+      "localizations": {}
+    },
+    "Couldn’t reach %@": {
+      "localizations": {}
+    },
+    "The mail server didn’t answer as expected. Check the address and the settings, then try again.": {
+      "localizations": {}
+    },
+    "Reaching %@": {
+      "localizations": {}
+    },
+    "Signing in as %@": {
+      "localizations": {}
+    },
+    "Looking for “%@”": {
+      "localizations": {}
+    },
+    "Signed in as %@": {
+      "localizations": {}
+    },
+    "No “%@” yet — next": {
+      "localizations": {}
+    },
+    "Found “%@”": {
+      "localizations": {}
+    },
+    "It couldn’t be made: %@ Make it yourself in Gmail, then come back.": {
+      "localizations": {}
+    },
+    "It couldn’t be made: %@ Make it yourself in your mailbox, then come back.": {
+      "localizations": {}
+    },
+    "The password for apps": {
+      "localizations": {}
+    },
+    "✓ 16 letters — that’s the right kind.": {
+      "localizations": {}
+    },
+    "✓ That’s an app-specific password — the right kind.": {
+      "localizations": {}
+    },
+    "Only part of it — Google shows 16 letters.": {
+      "localizations": {}
+    },
+    "Only part of it — Apple’s code has four groups of four letters.": {
+      "localizations": {}
+    },
+    "That looks like your usual Google password. Causabee needs the 16-letter one made for it.": {
+      "localizations": {}
+    },
+    "That looks like your Apple Account password. Causabee needs the code made for it.": {
+      "localizations": {}
+    },
+    "Google shows 16 letters. Copy them, then paste.": {
+      "localizations": {}
+    },
+    "Apple shows a code like abcd-efgh-ijkl-mnop. Copy it, then paste.": {
+      "localizations": {}
+    },
+    "Kept in your iCloud Keychain. It goes only to %@.": {
+      "localizations": {}
     },
     "Sunrise Care": {
       "localizations": {
@@ -1810,6 +4126,97 @@
           }
         }
       }
+    },
+    "Find a matter": {
+      "localizations": {}
+    },
+    "Add to Calendar": {
+      "localizations": {}
+    },
+    "Add to Reminders": {
+      "localizations": {}
+    },
+    "Pin to Top": {
+      "localizations": {}
+    },
+    "Unpin": {
+      "localizations": {}
+    },
+    "Rename …": {
+      "localizations": {}
+    },
+    "Merge With …": {
+      "localizations": {}
+    },
+    "Icon …": {
+      "localizations": {}
+    },
+    "Open Again": {
+      "localizations": {}
+    },
+    "Ignore New Mail": {
+      "localizations": {}
+    },
+    "Update now": {
+      "localizations": {}
+    },
+    "Start a New Matter": {
+      "localizations": {}
+    },
+    "Close Matter …": {
+      "localizations": {}
+    },
+    "Export as RTF": {
+      "localizations": {}
+    },
+    "Edit …": {
+      "localizations": {}
+    },
+    "Delete …": {
+      "localizations": {}
+    },
+    "Not Needed": {
+      "localizations": {}
+    },
+    "Waits For": {
+      "localizations": {}
+    },
+    "Waits For …": {
+      "localizations": {}
+    },
+    "Stop Waiting": {
+      "localizations": {}
+    },
+    "Remove": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entfernen"
+          }
+        }
+      }
+    },
+    "Remove Link": {
+      "localizations": {}
+    },
+    "Name From Content": {
+      "localizations": {}
+    },
+    "Use File Name": {
+      "localizations": {}
+    },
+    "Show Again": {
+      "localizations": {}
+    },
+    "Move to Matter …": {
+      "localizations": {}
+    },
+    "Connect …": {
+      "localizations": {}
+    },
+    "Use in Chat": {
+      "localizations": {}
     },
     "Can only be done after": {
       "localizations": {
@@ -1941,6 +4348,9 @@
         }
       }
     },
+    "Write a short, friendly follow-up about this.": {
+      "localizations": {}
+    },
     "Puts the task into the assistant and writes the request for you. Nothing is sent until you press Return.": {
       "localizations": {
         "de": {
@@ -1961,22 +4371,15 @@
         }
       }
     },
+    "Write a short message about this.": {
+      "localizations": {}
+    },
     "Puts the task into the assistant and writes the request for you. Nothing is sent until you press Return; the draft opens in Mail.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Legt die Aufgabe in den Assistenten und schreibt die Bitte für dich. Nichts wird gesendet, bis du Return drückst; der Entwurf öffnet sich in Mail."
-          }
-        }
-      }
-    },
-    "Done": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erledigt"
           }
         }
       }
@@ -2011,15 +4414,14 @@
         }
       }
     },
-    "Files": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dateien"
-          }
-        }
-      }
+    " · %lld hidden": {
+      "localizations": {}
+    },
+    " · 1 small image": {
+      "localizations": {}
+    },
+    " · %lld small images": {
+      "localizations": {}
     },
     "A letter, a scan, a PDF, a whole folder — or drag it here from the Finder. Files in mail come by themselves.": {
       "localizations": {
@@ -2031,15 +4433,11 @@
         }
       }
     },
-    "Links": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Links"
-          }
-        }
-      }
+    "Add File": {
+      "localizations": {}
+    },
+    "Bringing in %lld of %lld …": {
+      "localizations": {}
     },
     "A Google Doc, a sheet — or drag it here from the browser.": {
       "localizations": {
@@ -2050,6 +4448,39 @@
           }
         }
       }
+    },
+    "Add Link": {
+      "localizations": {}
+    },
+    "No mail account saved. Choose Causabee → Set Up Causabee … to add one.": {
+      "localizations": {}
+    },
+    "Reading 0 of %lld mails …": {
+      "localizations": {}
+    },
+    "Reading %lld of %lld mails …": {
+      "localizations": {}
+    },
+    "No new important links found.": {
+      "localizations": {}
+    },
+    "1 link suggested.": {
+      "localizations": {}
+    },
+    "%lld links suggested.": {
+      "localizations": {}
+    },
+    " 1 mail is no longer in the mailbox.": {
+      "localizations": {}
+    },
+    " %lld mails are no longer in the mailbox.": {
+      "localizations": {}
+    },
+    "No heading found in it — give it a name with ⋯ → Rename.": {
+      "localizations": {}
+    },
+    "Getting the file from the matter's folder …": {
+      "localizations": {}
     },
     "The file is not on this Mac: %@": {
       "localizations": {
@@ -2071,6 +4502,24 @@
         }
       }
     },
+    "Getting the file from the mail …": {
+      "localizations": {}
+    },
+    "Close “%@”?": {
+      "localizations": {}
+    },
+    "Close “%@”? 1 task is still open.": {
+      "localizations": {}
+    },
+    "Close “%@”? %lld tasks are still open.": {
+      "localizations": {}
+    },
+    "1 new mail since closing": {
+      "localizations": {}
+    },
+    "%lld new mails since closing": {
+      "localizations": {}
+    },
     "Start a new matter": {
       "localizations": {
         "de": {
@@ -2090,6 +4539,12 @@
           }
         }
       }
+    },
+    "A new matter with the 1 new mail": {
+      "localizations": {}
+    },
+    "A new matter with the %lld new mails": {
+      "localizations": {}
     },
     "More: write the next step and summary again, pin, rename, merge, export, close": {
       "localizations": {
@@ -2121,6 +4576,9 @@
         }
       }
     },
+    " · since %@": {
+      "localizations": {}
+    },
     "What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in.": {
       "localizations": {
         "de": {
@@ -2131,15 +4589,11 @@
         }
       }
     },
-    "People": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Personen"
-          }
-        }
-      }
+    "Add Task": {
+      "localizations": {}
+    },
+    "Is “%@” the same as “%@”?": {
+      "localizations": {}
     },
     "Who writes and who is named come in with mail and screenshots — or add a contact yourself.": {
       "localizations": {
@@ -2151,6 +4605,12 @@
         }
       }
     },
+    "Add Contact": {
+      "localizations": {}
+    },
+    "TO MERGE, DRAG ONE NAME ONTO ANOTHER": {
+      "localizations": {}
+    },
     "Takes them out of this matter only. Nothing that comes in later will put them back.": {
       "localizations": {
         "de": {
@@ -2160,6 +4620,15 @@
           }
         }
       }
+    },
+    "Nothing here was written by %@ or names them.": {
+      "localizations": {}
+    },
+    "them": {
+      "localizations": {}
+    },
+    "Mail sorted into this matter, its files, links and notes show here, a day at a time.": {
+      "localizations": {}
     },
     "Show in Finder": {
       "localizations": {
@@ -2191,6 +4660,9 @@
         }
       }
     },
+    "%lld · stored, not read, never sent": {
+      "localizations": {}
+    },
     "Choose …": {
       "localizations": {
         "de": {
@@ -2221,25 +4693,23 @@
         }
       }
     },
-    "Mail": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mail"
-          }
-        }
-      }
+    "Nothing here is %@.": {
+      "localizations": {}
     },
-    "Waiting for ": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wartet auf "
-          }
-        }
-      }
+    "Mail sorted into this matter shows here, newest first.": {
+      "localizations": {}
+    },
+    "1 entry": {
+      "localizations": {}
+    },
+    "%lld entries": {
+      "localizations": {}
+    },
+    "Waiting for %@": {
+      "localizations": {}
+    },
+    "someone else": {
+      "localizations": {}
     },
     "Makes the address in the note a link on this task, and takes the line out of the note.": {
       "localizations": {
@@ -2251,6 +4721,15 @@
         }
       }
     },
+    "done by you": {
+      "localizations": {}
+    },
+    "done, says the mail of %@": {
+      "localizations": {}
+    },
+    "Delete “%@”?": {
+      "localizations": {}
+    },
     "Delete": {
       "localizations": {
         "de": {
@@ -2260,6 +4739,12 @@
           }
         }
       }
+    },
+    "Delete Task": {
+      "localizations": {}
+    },
+    "by %@": {
+      "localizations": {}
     },
     "What to do": {
       "localizations": {
@@ -2290,6 +4775,12 @@
           }
         }
       }
+    },
+    "Unclear": {
+      "localizations": {}
+    },
+    "Due": {
+      "localizations": {}
     },
     "Only after": {
       "localizations": {
@@ -2327,6 +4818,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Die andere wartet schon auf diese — keine von beiden käme je voran."
+          }
+        }
+      }
+    },
+    "Time": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeit"
           }
         }
       }
@@ -2391,22 +4892,15 @@
         }
       }
     },
+    "Delete Date": {
+      "localizations": {}
+    },
     "What": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Was"
-          }
-        }
-      }
-    },
-    "Time": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zeit"
           }
         }
       }
@@ -2431,25 +4925,14 @@
         }
       }
     },
-    "also written: ": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "auch geschrieben: "
-          }
-        }
-      }
+    " · the most": {
+      "localizations": {}
     },
-    "also in: ": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "auch in: "
-          }
-        }
-      }
+    "also written: %@": {
+      "localizations": {}
+    },
+    "also in: %@": {
+      "localizations": {}
     },
     "Change person": {
       "localizations": {
@@ -2520,6 +5003,30 @@
           }
         }
       }
+    },
+    "1 task": {
+      "localizations": {}
+    },
+    "%lld tasks": {
+      "localizations": {}
+    },
+    "1 date": {
+      "localizations": {}
+    },
+    "%lld dates": {
+      "localizations": {}
+    },
+    ", and %@ only it brought": {
+      "localizations": {}
+    },
+    " and ": {
+      "localizations": {}
+    },
+    "Causabee forgets what it read in it": {
+      "localizations": {}
+    },
+    ". The file itself stays where it is.": {
+      "localizations": {}
     },
     "Rename file": {
       "localizations": {
@@ -2621,6 +5128,66 @@
         }
       }
     },
+    "Move to Another Matter": {
+      "localizations": {}
+    },
+    "with your own key": {
+      "localizations": {}
+    },
+    "In the demo, the mail is made up and nothing is sent.": {
+      "localizations": {}
+    },
+    "Pro: %@ reads what comes in, as it comes — names disguised first.": {
+      "localizations": {}
+    },
+    "Apple's model on this device reads what comes in. Nothing leaves it.": {
+      "localizations": {}
+    },
+    "New mail comes in by its threads, and you place the rest. Nothing leaves this device.": {
+      "localizations": {}
+    },
+    "%@ reads what comes in with your own key — names disguised first.": {
+      "localizations": {}
+    },
+    "In the demo, nothing reads what comes in.": {
+      "localizations": {}
+    },
+    "Sorting in 1 mail on this device, with Apple's model: nothing leaves it.": {
+      "localizations": {}
+    },
+    "Sorting in %lld mails on this device, with Apple's model: nothing leaves it.": {
+      "localizations": {}
+    },
+    "Bringing in 1 mail by their threads. You place the rest.": {
+      "localizations": {}
+    },
+    "Bringing in %lld mails by their threads. You place the rest.": {
+      "localizations": {}
+    },
+    "Sorting in 1 mail with Causabee Pro. Sent pseudonymised to %@.": {
+      "localizations": {}
+    },
+    "Sorting in %lld mails with Causabee Pro. Sent pseudonymised to %@.": {
+      "localizations": {}
+    },
+    "Sorting in 1 mail. Sent pseudonymised to %@.": {
+      "localizations": {}
+    },
+    "Sorting in %lld mails. Sent pseudonymised to %@.": {
+      "localizations": {}
+    },
+    "This is the demo with your real matters: nothing is sent to an AI from it.": {
+      "localizations": {}
+    },
+    "This is the demo: your keys are not used in it, so nothing is sent to an AI from it.": {
+      "localizations": {}
+    },
+    "Pro is not in use. Use Pro with the bee for this.": {
+      "localizations": {}
+    },
+    "This needs Causabee Pro for now.": {
+      "localizations": {}
+    },
     "General": {
       "localizations": {
         "de": {
@@ -2661,6 +5228,15 @@
         }
       }
     },
+    " A mail is sorted only once: what a model sorted in stays that way.": {
+      "localizations": {}
+    },
+    "Calendar and Reminders": {
+      "localizations": {}
+    },
+    "Matter folders in iCloud Drive": {
+      "localizations": {}
+    },
     "The bee is glad when you tick a task": {
       "localizations": {
         "de": {
@@ -2670,6 +5246,9 @@
           }
         }
       }
+    },
+    "Public names": {
+      "localizations": {}
     },
     "Privacy": {
       "localizations": {
@@ -2701,16 +5280,6 @@
         }
       }
     },
-    "Remove": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entfernen"
-          }
-        }
-      }
-    },
     "Pro · ": {
       "localizations": {
         "de": {
@@ -2721,15 +5290,14 @@
         }
       }
     },
-    "Pro, written by ": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pro, geschrieben von "
-          }
-        }
-      }
+    "Pro, written by %@": {
+      "localizations": {}
+    },
+    "Use Pro?": {
+      "localizations": {}
+    },
+    "Pro reads what comes in — mail, screenshots, photos, files — as it arrives, with %@ — names disguised. You still decide what goes into a matter. Without Pro, nothing is read by the AI until you tap.": {
+      "localizations": {}
     },
     "Yes": {
       "localizations": {
@@ -2737,16 +5305,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ja"
-          }
-        }
-      }
-    },
-    "Change": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ändern"
           }
         }
       }
@@ -2760,6 +5318,33 @@
           }
         }
       }
+    },
+    "nothing": {
+      "localizations": {}
+    },
+    "nothing left": {
+      "localizations": {}
+    },
+    "1 thing": {
+      "localizations": {}
+    },
+    "%lld things": {
+      "localizations": {}
+    },
+    "Today · %@": {
+      "localizations": {}
+    },
+    " — 1 thing": {
+      "localizations": {}
+    },
+    " — %lld things": {
+      "localizations": {}
+    },
+    ", %lld overdue": {
+      "localizations": {}
+    },
+    "Pin “%@” instead of …": {
+      "localizations": {}
     },
     "Find in this matter (⌘F)": {
       "localizations": {
@@ -2811,6 +5396,9 @@
         }
       }
     },
+    "A thought, what was agreed, what to remember …": {
+      "localizations": {}
+    },
     "Add note": {
       "localizations": {
         "de": {
@@ -2831,15 +5419,20 @@
         }
       }
     },
-    "Note": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notiz"
-          }
-        }
-      }
+    " · from the assistant": {
+      "localizations": {}
+    },
+    "Delete Note": {
+      "localizations": {}
+    },
+    "Earlier": {
+      "localizations": {}
+    },
+    "Today, %@": {
+      "localizations": {}
+    },
+    "Yesterday": {
+      "localizations": {}
     },
     "Role — insurer, doctor, office": {
       "localizations": {
@@ -2921,22 +5514,15 @@
         }
       }
     },
+    "Delete Detail": {
+      "localizations": {}
+    },
     "New detail": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Neues Detail"
-          }
-        }
-      }
-    },
-    "Details": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Details"
           }
         }
       }
@@ -2991,6 +5577,55 @@
         }
       }
     },
+    "Room for a fourth matter": {
+      "localizations": {}
+    },
+    "Your plan": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Plan"
+          }
+        }
+      }
+    },
+    "Pro, now and then": {
+      "localizations": {}
+    },
+    "Causabee holds %lld open matters for free. Close one — or make room for all of them. Nothing you have is ever locked.": {
+      "localizations": {}
+    },
+    "The bigger AI reads what comes in, as it comes, writes each matter's brief and answers about everything — names always disguised.": {
+      "localizations": {}
+    },
+    "Free stays on your device. Plus for every matter, Pro for the bigger AI.": {
+      "localizations": {}
+    },
+    "A top-up lets Pro read again: %@": {
+      "localizations": {}
+    },
+    "%lld open matters": {
+      "localizations": {}
+    },
+    "Free": {
+      "localizations": {}
+    },
+    "Every matter, on your device": {
+      "localizations": {}
+    },
+    "Causabee Plus yearly": {
+      "localizations": {}
+    },
+    "The bigger AI, up to a monthly limit, names always disguised": {
+      "localizations": {}
+    },
+    "Add a top-up": {
+      "localizations": {}
+    },
+    "Adds a third of a month's Pro use, kept until it is used.": {
+      "localizations": {}
+    },
     "Changing between Plus and Pro: up to Pro at once, the rest of Plus paid back by Apple; down to Plus at the next renewal. Cancelling is in your Apple Account.": {
       "localizations": {
         "de": {
@@ -3031,6 +5666,15 @@
         }
       }
     },
+    "Continue with %@ · %@": {
+      "localizations": {}
+    },
+    "This Mac's Causabee comes from the website, where the App Store cannot sell. Choose a plan on your iPhone or iPad: this Mac follows through iCloud.": {
+      "localizations": {}
+    },
+    "The App Store does not answer right now. Try again in a moment.": {
+      "localizations": {}
+    },
     "YOURS": {
       "localizations": {
         "de": {
@@ -3051,15 +5695,20 @@
         }
       }
     },
-    "Apple could not charge your payment method. ": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple konnte deine Zahlungsmethode nicht belasten. "
-          }
-        }
-      }
+    "%lld open matters. Apple's model on this device reads what comes in — nothing leaves it.": {
+      "localizations": {}
+    },
+    "Every matter you need. Apple's model on this device reads what comes in — nothing leaves it.": {
+      "localizations": {}
+    },
+    "Every matter, and the bigger AI up to a monthly limit.": {
+      "localizations": {}
+    },
+    "Apple could not charge your payment method. The plan goes on until %@; update it in your Apple Account, and it renews as before.": {
+      "localizations": {}
+    },
+    "Apple could not charge your payment method. update it in your Apple Account, and it renews as before.": {
+      "localizations": {}
     },
     "See the plans": {
       "localizations": {
@@ -3071,15 +5720,11 @@
         }
       }
     },
-    "Your plan": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dein Plan"
-          }
-        }
-      }
+    "Change plan": {
+      "localizations": {}
+    },
+    "Manage subscription": {
+      "localizations": {}
     },
     "Change or cancel it on your iPhone or iPad: this Mac follows through iCloud.": {
       "localizations": {
@@ -3091,12 +5736,40 @@
         }
       }
     },
+    " · 1 person": {
+      "localizations": {}
+    },
+    " · %lld people": {
+      "localizations": {}
+    },
+    "Open screenshot": {
+      "localizations": {}
+    },
+    "Open document": {
+      "localizations": {}
+    },
+    "Open photo": {
+      "localizations": {}
+    },
+    "Open mail": {
+      "localizations": {}
+    },
     "unread": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "ungelesen"
+          }
+        }
+      }
+    },
+    "You": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du"
           }
         }
       }
@@ -3131,6 +5804,9 @@
         }
       }
     },
+    "Its words are not on this device yet.": {
+      "localizations": {}
+    },
     "The file is not here": {
       "localizations": {
         "de": {
@@ -3151,6 +5827,48 @@
         }
       }
     },
+    "Every mail that asked for it": {
+      "localizations": {}
+    },
+    "First: ": {
+      "localizations": {}
+    },
+    "Where it came from": {
+      "localizations": {}
+    },
+    "task": {
+      "localizations": {}
+    },
+    "tasks": {
+      "localizations": {}
+    },
+    "date": {
+      "localizations": {}
+    },
+    "dates": {
+      "localizations": {}
+    },
+    "deadline": {
+      "localizations": {}
+    },
+    "deadlines": {
+      "localizations": {}
+    },
+    "only to know": {
+      "localizations": {}
+    },
+    "open": {
+      "localizations": {}
+    },
+    "Tasks from it": {
+      "localizations": {}
+    },
+    "Dates from it": {
+      "localizations": {}
+    },
+    "Deadlines from it": {
+      "localizations": {}
+    },
     "Reads it on this device and sorts it in, in the assistant.": {
       "localizations": {
         "de": {
@@ -3160,6 +5878,24 @@
           }
         }
       }
+    },
+    "added on %@ · in the matter's folder": {
+      "localizations": {}
+    },
+    "only on this %@ — switch on iCloud Drive for Causabee": {
+      "localizations": {}
+    },
+    "on this %@, in Causabee's folder": {
+      "localizations": {}
+    },
+    "added on %@ · to open it here, switch on iCloud Drive for Causabee": {
+      "localizations": {}
+    },
+    "added on %@ · not in the matter's folder yet": {
+      "localizations": {}
+    },
+    " · read %@": {
+      "localizations": {}
     },
     "Reads the heading of the first page on this device and takes it as the name. Costs nothing, sends nothing.": {
       "localizations": {
@@ -3181,16 +5917,6 @@
         }
       }
     },
-    "All": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle"
-          }
-        }
-      }
-    },
     "Sort": {
       "localizations": {
         "de": {
@@ -3201,15 +5927,8 @@
         }
       }
     },
-    "also under ": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "auch unter "
-          }
-        }
-      }
+    "also under %@": {
+      "localizations": {}
     },
     "Matters with unread mail": {
       "localizations": {
@@ -3231,6 +5950,27 @@
         }
       }
     },
+    "New Task …": {
+      "localizations": {}
+    },
+    "Add Note …": {
+      "localizations": {}
+    },
+    "Add File …": {
+      "localizations": {}
+    },
+    "Add Contact …": {
+      "localizations": {}
+    },
+    "Add Detail …": {
+      "localizations": {}
+    },
+    "Add Link …": {
+      "localizations": {}
+    },
+    "NEW · SINCE %@": {
+      "localizations": {}
+    },
     "Seen": {
       "localizations": {
         "de": {
@@ -3240,6 +5980,15 @@
           }
         }
       }
+    },
+    "New info": {
+      "localizations": {}
+    },
+    "From 1 mail": {
+      "localizations": {}
+    },
+    "From %lld mails": {
+      "localizations": {}
     },
     "Seen: it stays in the matter as it is, and is not new any more": {
       "localizations": {
@@ -3291,15 +6040,20 @@
         }
       }
     },
-    "Put away": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weggelegt"
-          }
-        }
-      }
+    "yours": {
+      "localizations": {}
+    },
+    "someone else's": {
+      "localizations": {}
+    },
+    "no day yet": {
+      "localizations": {}
+    },
+    "Date · %@": {
+      "localizations": {}
+    },
+    "Deadline · %@": {
+      "localizations": {}
     },
     "LOOK UP?": {
       "localizations": {
@@ -3317,16 +6071,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nur diese Frage geht ins Web — nichts aus dem Anliegen."
-          }
-        }
-      }
-    },
-    "Looked up": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nachgeschlagen"
           }
         }
       }
@@ -3361,6 +6105,27 @@
         }
       }
     },
+    "What it is about": {
+      "localizations": {}
+    },
+    "What you want from it": {
+      "localizations": {}
+    },
+    "Who is who": {
+      "localizations": {}
+    },
+    "Agreed": {
+      "localizations": {}
+    },
+    "Still to do": {
+      "localizations": {}
+    },
+    "Watch out": {
+      "localizations": {}
+    },
+    "To decide": {
+      "localizations": {}
+    },
     "What it was about is no longer there.": {
       "localizations": {
         "de": {
@@ -3371,22 +6136,15 @@
         }
       }
     },
+    "Tick off": {
+      "localizations": {}
+    },
     "Looking it up …": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Wird nachgeschlagen …"
-          }
-        }
-      }
-    },
-    "Look up": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nachschlagen"
           }
         }
       }
@@ -3461,6 +6219,9 @@
         }
       }
     },
+    "What Causabee missed, or how it should be": {
+      "localizations": {}
+    },
     "Causabee writes it again with your words, and keeps them — they are never written over.": {
       "localizations": {
         "de": {
@@ -3470,6 +6231,12 @@
           }
         }
       }
+    },
+    "About you": {
+      "localizations": {}
+    },
+    "Ready": {
+      "localizations": {}
     },
     "Set up Causabee": {
       "localizations": {
@@ -3521,6 +6288,12 @@
         }
       }
     },
+    " — not connected, you can do it later": {
+      "localizations": {}
+    },
+    " — still missing": {
+      "localizations": {}
+    },
     "How it goes from here": {
       "localizations": {
         "de": {
@@ -3531,6 +6304,75 @@
         }
       }
     },
+    "Put the label “Causabee” on the mails you want sorted. Start with a few from one matter.": {
+      "localizations": {}
+    },
+    "Click “Get new mail”. Causabee fetches them; nothing is read by an AI yet.": {
+      "localizations": {}
+    },
+    "Click “Sort in”. Each mail is sorted once — by Apple's model on this Mac, or with Pro by the bigger AI — into a matter with its tasks, dates and people.": {
+      "localizations": {}
+    },
+    "Drop a screenshot, a photo, a PDF or a note onto the window any time. It is sorted the same way.": {
+      "localizations": {}
+    },
+    "Your name and the email addresses you use, one per line. Causabee needs them to tell you apart from everyone else: you are never listed as a person in your own matters, and tasks for you are marked “Mine”.": {
+      "localizations": {}
+    },
+    "Add a nickname if people write to you by it.": {
+      "localizations": {}
+    },
+    "Causabee is free for three open matters: Apple's model on this Mac reads your mail, and nothing leaves it. Causabee Plus holds every matter; Causabee Pro has the bigger AI read and answer, names disguised first.": {
+      "localizations": {}
+    },
+    "Plans are bought in the App Store on your iPhone or iPad. This Mac follows through iCloud — nothing to do here.": {
+      "localizations": {}
+    },
+    "Causabee reads your mail the way a mail app does. It only reads: it never sends, deletes, moves or marks mail as read.": {
+      "localizations": {}
+    },
+    "Connected: %@, signed in with Google": {
+      "localizations": {}
+    },
+    "Connected: %@ on %@": {
+      "localizations": {}
+    },
+    "Causabee reads only the mail that has the label “%@”. Nothing else in your mailbox is read. You decide what it sees by putting the label on a mail.": {
+      "localizations": {}
+    },
+    "Causabee reads only the mail in the folder “%@”. Nothing else in your mailbox is read. You decide what it sees by moving a mail there.": {
+      "localizations": {}
+    },
+    "In Gmail, on the left, click “+” next to Labels and make a label called “%@”.": {
+      "localizations": {}
+    },
+    "Open a mail, click the label icon, and tick “%@”. Start with a few mails from one matter.": {
+      "localizations": {}
+    },
+    "Replies in the same thread are found by themselves: label a thread once.": {
+      "localizations": {}
+    },
+    "Tip: a Gmail filter can put the label on mail from the school, the landlord or the insurer by itself. The label stays on the mail; you can take it off at any time.": {
+      "localizations": {}
+    },
+    "In your mail app or on the provider's website, make a folder called “%@”.": {
+      "localizations": {}
+    },
+    "Move or copy the mails you want sorted into it. Start with a few from one matter.": {
+      "localizations": {}
+    },
+    "The name must be “%@”. Capitals do not matter.": {
+      "localizations": {}
+    },
+    "Found “%@”, with 1 mail.": {
+      "localizations": {}
+    },
+    "Found “%@”, with %lld mails.": {
+      "localizations": {}
+    },
+    "There is no “%@” yet. Make it, put it on a few mails, then check again.": {
+      "localizations": {}
+    },
     "Use another account": {
       "localizations": {
         "de": {
@@ -3540,6 +6382,42 @@
           }
         }
       }
+    },
+    "Could not look: %@": {
+      "localizations": {}
+    },
+    "Appointments and deadlines can go into Calendar, and tasks into Reminders, with one click. Causabee also sees what is already there, so nothing is added twice. It only adds what you click.": {
+      "localizations": {}
+    },
+    "Connected to Calendar and to Reminders.": {
+      "localizations": {}
+    },
+    "Connected to Calendar.": {
+      "localizations": {}
+    },
+    "Connected to Reminders.": {
+      "localizations": {}
+    },
+    "Connected.": {
+      "localizations": {}
+    },
+    "No access. Allow it in System Settings → Privacy & Security → Calendars and Reminders.": {
+      "localizations": {}
+    },
+    "You can skip this and connect later in Settings (⌘,).": {
+      "localizations": {}
+    },
+    "Your words": {
+      "localizations": {}
+    },
+    "When?": {
+      "localizations": {}
+    },
+    "When, for its %lld tasks?": {
+      "localizations": {}
+    },
+    "Move to …": {
+      "localizations": {}
     },
     "Open the image": {
       "localizations": {
@@ -3557,6 +6435,31 @@
           "stringUnit": {
             "state": "translated",
             "value": "Datei öffnen"
+          }
+        }
+      }
+    },
+    "Taken from the mail it is attached to. It stays there; here it is only a cached copy.": {
+      "localizations": {}
+    },
+    "Copied into Causabee: it had no place of its own.": {
+      "localizations": {}
+    },
+    "Stays where it is: %@. Causabee only remembers the path.": {
+      "localizations": {}
+    },
+    "Reading on the Mac …": {
+      "localizations": {}
+    },
+    "Scanning on the Mac …": {
+      "localizations": {}
+    },
+    "Sorting it in …": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird einsortiert …"
           }
         }
       }
@@ -3591,6 +6494,15 @@
         }
       }
     },
+    "Document": {
+      "localizations": {}
+    },
+    "Photo or scan": {
+      "localizations": {}
+    },
+    "Picture": {
+      "localizations": {}
+    },
     "what would be sent, pseudonymised": {
       "localizations": {
         "de": {
@@ -3621,16 +6533,6 @@
         }
       }
     },
-    "Matter": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anliegen"
-          }
-        }
-      }
-    },
     "New matter": {
       "localizations": {
         "de": {
@@ -3651,6 +6553,21 @@
         }
       }
     },
+    "mine": {
+      "localizations": {}
+    },
+    "ours": {
+      "localizations": {}
+    },
+    "waiting for": {
+      "localizations": {}
+    },
+    "unclear": {
+      "localizations": {}
+    },
+    "by %@ %@": {
+      "localizations": {}
+    },
     "What it says": {
       "localizations": {
         "de": {
@@ -3667,6 +6584,100 @@
           "stringUnit": {
             "state": "translated",
             "value": "Personen: "
+          }
+        }
+      }
+    },
+    "Take in": {
+      "localizations": {}
+    },
+    "day": {
+      "localizations": {}
+    },
+    "days": {
+      "localizations": {}
+    },
+    "week": {
+      "localizations": {}
+    },
+    "weeks": {
+      "localizations": {}
+    },
+    "month": {
+      "localizations": {}
+    },
+    "months": {
+      "localizations": {}
+    },
+    "year": {
+      "localizations": {}
+    },
+    "years": {
+      "localizations": {}
+    },
+    "periods": {
+      "localizations": {}
+    },
+    "%lld %@ free, then %@": {
+      "localizations": {}
+    },
+    "The App Store could not confirm the purchase. Nothing was charged that is not confirmed.": {
+      "localizations": {}
+    },
+    "The top-up is bought and kept: it is added as soon as the beeserver answers.": {
+      "localizations": {}
+    },
+    "The purchase waits for approval — Ask to Buy, or the bank.": {
+      "localizations": {}
+    },
+    "period": {
+      "localizations": {}
+    },
+    "%@ a %@": {
+      "localizations": {}
+    },
+    "%@ every %lld %@": {
+      "localizations": {}
+    },
+    "Source unknown": {
+      "localizations": {}
+    },
+    "from the mail of %@": {
+      "localizations": {}
+    },
+    "from the screenshot of %@": {
+      "localizations": {}
+    },
+    "marked done when closing, %@": {
+      "localizations": {}
+    },
+    "added by you, %@": {
+      "localizations": {}
+    },
+    "proposed in the brief, %@": {
+      "localizations": {}
+    },
+    "from you in the assistant, %@": {
+      "localizations": {}
+    },
+    "spoken on %@": {
+      "localizations": {}
+    },
+    "from the photo of %@": {
+      "localizations": {}
+    },
+    "from the phone call of %@": {
+      "localizations": {}
+    },
+    "from the document of %@": {
+      "localizations": {}
+    },
+    "Icon": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeichen"
           }
         }
       }
@@ -3700,6 +6711,15 @@
           }
         }
       }
+    },
+    "Getting speech ready …": {
+      "localizations": {}
+    },
+    "Writing it down …": {
+      "localizations": {}
+    },
+    "Speech is getting ready": {
+      "localizations": {}
     },
     "Speak (⌥ Space): it is written down on this device, and you send it": {
       "localizations": {
@@ -3801,6 +6821,24 @@
         }
       }
     },
+    "taken in": {
+      "localizations": {}
+    },
+    "filed": {
+      "localizations": {}
+    },
+    "Leave out": {
+      "localizations": {}
+    },
+    "New matter: %@": {
+      "localizations": {}
+    },
+    "No matter found": {
+      "localizations": {}
+    },
+    "Choose": {
+      "localizations": {}
+    },
     "As suggested": {
       "localizations": {
         "de": {
@@ -3831,6 +6869,12 @@
         }
       }
     },
+    "Found in it": {
+      "localizations": {}
+    },
+    "Why no matter": {
+      "localizations": {}
+    },
     "Open the original in Mail": {
       "localizations": {
         "de": {
@@ -3840,6 +6884,18 @@
           }
         }
       }
+    },
+    "  nothing open, no date": {
+      "localizations": {}
+    },
+    "Closed · %lld": {
+      "localizations": {}
+    },
+    "· 1 new mail": {
+      "localizations": {}
+    },
+    "· %lld new mails": {
+      "localizations": {}
     },
     "Take Photo": {
       "localizations": {
@@ -3871,6 +6927,48 @@
         }
       }
     },
+    "Add your mail account first, to open files from your mail.": {
+      "localizations": {}
+    },
+    "This file was added on another device, not attached to a mail — it is only there.": {
+      "localizations": {}
+    },
+    "No password saved for %@ on this %@.": {
+      "localizations": {}
+    },
+    "%lld · not read, never sent": {
+      "localizations": {}
+    },
+    "A letter, a scan, a PDF. Files in mail come by themselves.": {
+      "localizations": {}
+    },
+    "Add Document": {
+      "localizations": {}
+    },
+    "Hide the hidden ones": {
+      "localizations": {}
+    },
+    "%lld hidden · show": {
+      "localizations": {}
+    },
+    "Hide small images": {
+      "localizations": {}
+    },
+    "Show small images": {
+      "localizations": {}
+    },
+    "Causabee forgets what it read in it. The file itself stays where it is.": {
+      "localizations": {}
+    },
+    "Causabee forgets what it read in it, and %@ only it brought. The file itself stays where it is.": {
+      "localizations": {}
+    },
+    "Getting the file from iCloud Drive …": {
+      "localizations": {}
+    },
+    "Saved — shared with your Macs through iCloud Keychain": {
+      "localizations": {}
+    },
     "Add another account": {
       "localizations": {
         "de": {
@@ -3891,6 +6989,9 @@
         }
       }
     },
+    "Remove the password for %@?": {
+      "localizations": {}
+    },
     "Remove from all devices": {
       "localizations": {
         "de": {
@@ -3907,16 +7008,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Er geht aus dem iCloud-Schlüsselbund, also auch von deinen Macs. Um wieder Mail zu holen, verbindest du ihn neu."
-          }
-        }
-      }
-    },
-    "Icon": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zeichen"
           }
         }
       }
@@ -3941,6 +7032,12 @@
         }
       }
     },
+    "none": {
+      "localizations": {}
+    },
+    "%lld of %lld": {
+      "localizations": {}
+    },
     "Previous": {
       "localizations": {
         "de": {
@@ -3960,6 +7057,15 @@
           }
         }
       }
+    },
+    "Nothing new since.": {
+      "localizations": {}
+    },
+    "1 new mail came after it was closed.": {
+      "localizations": {}
+    },
+    "%lld new mails came after it was closed.": {
+      "localizations": {}
     },
     "Show in Files": {
       "localizations": {
@@ -3991,52 +7097,45 @@
         }
       }
     },
+    " in 1 conversation": {
+      "localizations": {}
+    },
+    " in %lld conversations": {
+      "localizations": {}
+    },
+    "Mail sorted into this matter shows here, newest first. It comes from your mailbox, not by hand.": {
+      "localizations": {}
+    },
+    "… and 1 older conversation": {
+      "localizations": {}
+    },
+    "… and %lld older conversations": {
+      "localizations": {}
+    },
+    "its turn now — done: %@": {
+      "localizations": {}
+    },
+    "only after: %@": {
+      "localizations": {}
+    },
+    "Save as link": {
+      "localizations": {}
+    },
+    "Save %lld links": {
+      "localizations": {}
+    },
+    "It goes from this matter; Undo brings it back.": {
+      "localizations": {}
+    },
+    "It goes from this matter, and its reminder from Reminders. Undo brings the task back, not the reminder.": {
+      "localizations": {}
+    },
     "Whose": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Wessen"
-          }
-        }
-      }
-    },
-    "Mine": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Meine"
-          }
-        }
-      }
-    },
-    "Ours": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unsere"
-          }
-        }
-      }
-    },
-    "Waiting for": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wartet auf"
-          }
-        }
-      }
-    },
-    "Unclear whose": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unklar, wessen"
           }
         }
       }
@@ -4060,6 +7159,24 @@
           }
         }
       }
+    },
+    "New task": {
+      "localizations": {}
+    },
+    "Change task": {
+      "localizations": {}
+    },
+    "It goes from this matter, and its entry from Calendar. Undo brings the date back, not the entry.": {
+      "localizations": {}
+    },
+    "Change appointment": {
+      "localizations": {}
+    },
+    "Change deadline": {
+      "localizations": {}
+    },
+    "This matter is gone": {
+      "localizations": {}
     },
     "It was merged or removed on another device.": {
       "localizations": {
@@ -4101,15 +7218,8 @@
         }
       }
     },
-    "Clear": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Leeren"
-          }
-        }
-      }
+    "Try the demo": {
+      "localizations": {}
     },
     "New Matter": {
       "localizations": {
@@ -4131,6 +7241,12 @@
         }
       }
     },
+    "Hides the closed matters": {
+      "localizations": {}
+    },
+    "Shows the closed matters": {
+      "localizations": {}
+    },
     "Looking for mail": {
       "localizations": {
         "de": {
@@ -4140,6 +7256,12 @@
           }
         }
       }
+    },
+    "today": {
+      "localizations": {}
+    },
+    "overdue": {
+      "localizations": {}
     },
     "Mail read, to take in": {
       "localizations": {
@@ -4151,6 +7273,18 @@
         }
       }
     },
+    "Using Pro": {
+      "localizations": {}
+    },
+    "Not using Pro": {
+      "localizations": {}
+    },
+    "Opens the chat. Hold to stop using Pro": {
+      "localizations": {}
+    },
+    "Opens the chat. Hold to use Pro": {
+      "localizations": {}
+    },
     "Pro": {
       "localizations": {
         "de": {
@@ -4160,6 +7294,12 @@
           }
         }
       }
+    },
+    "On": {
+      "localizations": {}
+    },
+    "Off": {
+      "localizations": {}
     },
     "Pro: the bigger AI reads what comes in at once. Without Pro: only when you say so": {
       "localizations": {
@@ -4171,6 +7311,12 @@
         }
       }
     },
+    "Looking at what was picked …": {
+      "localizations": {}
+    },
+    "A file in iCloud Drive is brought down first.": {
+      "localizations": {}
+    },
     "Stop": {
       "localizations": {
         "de": {
@@ -4180,6 +7326,45 @@
           }
         }
       }
+    },
+    "A Google Doc, a sheet — whatever belongs to this matter.": {
+      "localizations": {}
+    },
+    "Found in what came in · 1 suggestion": {
+      "localizations": {}
+    },
+    "Found in what came in · %lld suggestions": {
+      "localizations": {}
+    },
+    "Look for links in the mails": {
+      "localizations": {}
+    },
+    "Look in the mails again": {
+      "localizations": {}
+    },
+    "No mail account saved: add it in Settings (⋯ on the overview).": {
+      "localizations": {}
+    },
+    " · for: %@": {
+      "localizations": {}
+    },
+    "Add link": {
+      "localizations": {}
+    },
+    "Change link": {
+      "localizations": {}
+    },
+    " · from the mail of %@: %@": {
+      "localizations": {}
+    },
+    "the demo stays on this %@": {
+      "localizations": {}
+    },
+    "no iCloud account on this %@": {
+      "localizations": {}
+    },
+    "iCloud is restricted on this %@": {
+      "localizations": {}
     },
     "Settings …": {
       "localizations": {
@@ -4201,6 +7386,9 @@
         }
       }
     },
+    "Folder": {
+      "localizations": {}
+    },
     "Causabee's own folder in your iCloud Drive, with a folder per matter — the same on your Mac and here. A letter photographed here opens on the Mac, and the Mac's files open here. Causabee has no server.": {
       "localizations": {
         "de": {
@@ -4211,6 +7399,18 @@
         }
       }
     },
+    "None": {
+      "localizations": {}
+    },
+    "Choose a folder …": {
+      "localizations": {}
+    },
+    "Choose another …": {
+      "localizations": {}
+    },
+    "This folder cannot be used. Choose one in iCloud Drive or on this %@.": {
+      "localizations": {}
+    },
     "Use none": {
       "localizations": {
         "de": {
@@ -4220,6 +7420,33 @@
           }
         }
       }
+    },
+    "1 folder or file in it, such as “%@”.": {
+      "localizations": {}
+    },
+    "%lld folders and files in it, such as “%@”.": {
+      "localizations": {}
+    },
+    "Nothing can be seen in this folder — it is empty, or iCloud Drive has not loaded it yet. Open it once in the Files app.": {
+      "localizations": {}
+    },
+    "This is the folder above “Causabee”: its matters' folders are found inside it.": {
+      "localizations": {}
+    },
+    "No mail account yet: add it in Settings (⋯ above).": {
+      "localizations": {}
+    },
+    "The list of names cannot be written: %@": {
+      "localizations": {}
+    },
+    "Your Mac has not shared what it sorted yet. Open Causabee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again.": {
+      "localizations": {}
+    },
+    "Mail cannot be read.": {
+      "localizations": {}
+    },
+    "No password for %@ on this %@: add it in Settings (⋯ above).": {
+      "localizations": {}
     },
     "Review": {
       "localizations": {
@@ -4251,15 +7478,17 @@
         }
       }
     },
-    "Sorting it in …": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wird einsortiert …"
-          }
-        }
-      }
+    "Sort in": {
+      "localizations": {}
+    },
+    "Sort in %lld": {
+      "localizations": {}
+    },
+    "Take in %lld": {
+      "localizations": {}
+    },
+    "Files › On My %@ › Causabee": {
+      "localizations": {}
     },
     "Nothing to do or to note in it — it is kept with the matter, with its words.": {
       "localizations": {
@@ -4300,6 +7529,9 @@
           }
         }
       }
+    },
+    "Add or bring in": {
+      "localizations": {}
     },
     "Files or a folder": {
       "localizations": {
@@ -4361,6 +7593,42 @@
         }
       }
     },
+    "Read: Pro sorts each in, with its tasks and dates. Only import: kept with the matter, unread.": {
+      "localizations": {}
+    },
+    "Read: each is sorted in on this %@. Only import: kept with the matter, unread.": {
+      "localizations": {}
+    },
+    "Read “%@”, or only import it?": {
+      "localizations": {}
+    },
+    "Read %lld files, or only import them?": {
+      "localizations": {}
+    },
+    "Imported into “%@”, unread.": {
+      "localizations": {}
+    },
+    "Scan for which matter?": {
+      "localizations": {}
+    },
+    "Files for which matter?": {
+      "localizations": {}
+    },
+    "Contact for which matter?": {
+      "localizations": {}
+    },
+    "Detail for which matter?": {
+      "localizations": {}
+    },
+    "Link for which matter?": {
+      "localizations": {}
+    },
+    "Note for which matter?": {
+      "localizations": {}
+    },
+    "Task for which matter?": {
+      "localizations": {}
+    },
     "Recent": {
       "localizations": {
         "de": {
@@ -4370,6 +7638,21 @@
           }
         }
       }
+    },
+    "All matters": {
+      "localizations": {}
+    },
+    "Scan with the camera": {
+      "localizations": {}
+    },
+    "Scan again": {
+      "localizations": {}
+    },
+    "Choose a PDF or a photo": {
+      "localizations": {}
+    },
+    "Choose another file": {
+      "localizations": {}
     },
     "The document": {
       "localizations": {
@@ -4411,6 +7694,12 @@
         }
       }
     },
+    "The file cannot be read.": {
+      "localizations": {}
+    },
+    "It could not be saved on this %@. Is there space left?": {
+      "localizations": {}
+    },
     "Your own key": {
       "localizations": {
         "de": {
@@ -4420,6 +7709,15 @@
           }
         }
       }
+    },
+    "Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with this key. It gets only pseudonymised text, and is kept in iCloud Keychain like the mail password. Never in a file.": {
+      "localizations": {}
+    },
+    "with this key": {
+      "localizations": {}
+    },
+    " The key is kept in iCloud Keychain like the mail password. Never in a file.": {
+      "localizations": {}
     },
     "Pro's server": {
       "localizations": {
@@ -4451,15 +7749,14 @@
         }
       }
     },
-    "You": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Du"
-          }
-        }
-      }
+    "Add mail account …": {
+      "localizations": {}
+    },
+    "Change …": {
+      "localizations": {}
+    },
+    " A mail is sorted only once — here or on your Mac. The password comes from your Mac through iCloud Keychain, or is typed here once.": {
+      "localizations": {}
     },
     "Your name and the email addresses you use, one per line, and a nickname if people write to you by it. Causabee needs them to tell you apart from everyone else: you are never listed as a person in your own matters, and tasks for you are marked “Mine”.": {
       "localizations": {
@@ -4470,6 +7767,18 @@
           }
         }
       }
+    },
+    "Lists of names": {
+      "localizations": {}
+    },
+    "this %@": {
+      "localizations": {}
+    },
+    "a Mac": {
+      "localizations": {}
+    },
+    "Names · ": {
+      "localizations": {}
     },
     "No list of names here yet": {
       "localizations": {
@@ -4491,6 +7800,9 @@
         }
       }
     },
+    "Off in the demo": {
+      "localizations": {}
+    },
     "In the demo, iCloud stays off: the made-up matters never meet your iCloud.": {
       "localizations": {
         "de": {
@@ -4511,15 +7823,53 @@
         }
       }
     },
-    "Add to …": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hinzufügen zu …"
-          }
-        }
-      }
+    "The whole text": {
+      "localizations": {}
+    },
+    "Reading …": {
+      "localizations": {}
+    },
+    "Show the whole text": {
+      "localizations": {}
+    },
+    "1 earlier today": {
+      "localizations": {}
+    },
+    "%lld earlier today": {
+      "localizations": {}
+    },
+    "Hides the list": {
+      "localizations": {}
+    },
+    "Shows the list": {
+      "localizations": {}
+    },
+    ", nothing": {
+      "localizations": {}
+    },
+    ", 1 thing": {
+      "localizations": {}
+    },
+    ", %lld things": {
+      "localizations": {}
+    },
+    "Nothing today.": {
+      "localizations": {}
+    },
+    "Nothing on %@.": {
+      "localizations": {}
+    },
+    "Causabee's shared folder on this %@ cannot be reached.": {
+      "localizations": {}
+    },
+    "Causabee takes pictures and PDFs.": {
+      "localizations": {}
+    },
+    "Into “%@”": {
+      "localizations": {}
+    },
+    "Into a matter …": {
+      "localizations": {}
     },
     "INTO": {
       "localizations": {
@@ -4530,6 +7880,15 @@
           }
         }
       }
+    },
+    "Causabee decides": {
+      "localizations": {}
+    },
+    "it sorts it in by itself": {
+      "localizations": {}
+    },
+    "last mail %@": {
+      "localizations": {}
     },
     "Your open matters, the latest first.": {
       "localizations": {
@@ -4551,12 +7910,50 @@
         }
       }
     },
+    "1 picture": {
+      "localizations": {}
+    },
+    "%lld pictures": {
+      "localizations": {}
+    },
+    "1 PDF": {
+      "localizations": {}
+    },
+    "%lld PDFs": {
+      "localizations": {}
+    },
+    "In Causabee": {
+      "localizations": {}
+    },
+    "In “%@”": {
+      "localizations": {}
+    },
     "It is sorted in when Causabee opens.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Es wird einsortiert, wenn Causabee öffnet."
+          }
+        }
+      }
+    },
+    "Waiting for ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartet auf "
+          }
+        }
+      }
+    },
+    "Read. ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gelesen. "
           }
         }
       }

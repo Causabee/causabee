@@ -240,16 +240,18 @@ struct OverviewWeek: View {
     /// "Fri, Oct 2"
     static func heading(_ day: String) -> String { MatterStatus.date(of: day).map(dayHeading.string) ?? day }
 
-    private static func formatter(_ format: String) -> DateFormatter {
+    /// A day a person reads: the template says which parts are wanted, the device's language how
+    /// they are put together — "Fri, Oct 2" in English, "Fr., 2. Okt." in German (F009 AC-3).
+    private static func formatter(_ template: String) -> DateFormatter {
         let formatter = DateFormatter()
-                formatter.dateFormat = format
+        formatter.setLocalizedDateFormatFromTemplate(template)
         return formatter
     }
     private static let weekday = formatter("EEE")
     private static let weekdayWide = formatter("EEEE")
     private static let dayOfMonth = formatter("d")
-    private static let dayHeading = formatter("EEE, MMM d")
-    private static let spoken = formatter("EEEE, MMMM d")
+    private static let dayHeading = formatter("EEEMMMd")
+    private static let spoken = formatter("EEEEMMMMd")
 }
 
 /// Every other matter going on, one line each, in as many columns as fit: each opens with a click.
@@ -306,7 +308,7 @@ struct PinQuestion: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .confirmationDialogWhenAsked("Pin “\(navigation.pinning?.name ?? "")” instead of …",
+            .confirmationDialogWhenAsked(String(format: String(localized: "Pin “%@” instead of …"), navigation.pinning?.name ?? ""),
                                 isPresented: Binding(get: { navigation.pinning != nil }, set: { if !$0 { navigation.pinning = nil } })) {
                 ForEach(Pins.pinned(matters)) { pinned in
                     Button(pinned.name) {

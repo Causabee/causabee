@@ -49,13 +49,13 @@ struct MailSetupFlow: View {
 
     static let labelName = "Causabee"
     #if os(iOS)
-    static let tap = "Tap"
+    static let tap = String(localized: "Tap")
     #else
-    static let tap = "Click"
+    static let tap = String(localized: "Click")
     #endif
 
     private var page: Page { path.last ?? .intro }
-    private var name: String { provider?.name ?? (chosen == .gmail ? "Gmail" : chosen == .icloud ? "iCloud Mail" : "your provider") }
+    private var name: String { provider?.name ?? (chosen == .gmail ? "Gmail" : chosen == .icloud ? "iCloud Mail" : String(localized: "your provider")) }
     private var kind: MailProvider.Password { provider?.password ?? (chosen == .gmail ? .google : chosen == .icloud ? .apple : .usual) }
     private var isGmail: Bool { (provider?.kind ?? chosen) == .gmail }
     private var check: PasswordCheck { PasswordCheck.of(password, for: kind) }
@@ -162,35 +162,35 @@ struct MailSetupFlow: View {
     @ViewBuilder private func actions(_ page: Page) -> some View {
         VStack(spacing: 6) {
             switch page {
-            case .intro: primary("Connect my mail") { go(.provider) }
+            case .intro: primary(String(localized: "Connect my mail")) { go(.provider) }
             case .connecting: EmptyView()
-            case .address: primary(finding ? "Looking …" : "Continue", enabled: !finding && MailDiscovery.domain(of: address) != nil) { lookUp() }
-            case .outlook: primary("Choose another mail") { path = [.intro, .provider] }
+            case .address: primary(finding ? String(localized: "Looking …") : String(localized: "Continue"), enabled: !finding && MailDiscovery.domain(of: address) != nil) { lookUp() }
+            case .outlook: primary(String(localized: "Choose another mail")) { path = [.intro, .provider] }
             case .password:
-                if let catchURL = provider.flatMap(Self.settings) { secondary("Open \(name) settings") { openURL(catchURL) } }
+                if let catchURL = provider.flatMap(Self.settings) { secondary(String(format: String(localized: "Open %@ settings"), name)) { openURL(catchURL) } }
                 if kind == .google || kind == .apple || kind == .appPassword, check != .right {
-                    primary(kind == .apple ? "Open Apple Account" : kind == .google ? "Open Google" : "Open \(name)") { if let page = provider?.passwordPage ?? makePasswordURL { openURL(page) } }
-                    if kind == .google { secondary("Google says app passwords aren’t available") { go(.twoStep) } }
+                    primary(kind == .apple ? String(localized: "Open Apple Account") : kind == .google ? String(localized: "Open Google") : String(format: String(localized: "Open %@"), name)) { if let page = provider?.passwordPage ?? makePasswordURL { openURL(page) } }
+                    if kind == .google { secondary(String(localized: "Google says app passwords aren’t available")) { go(.twoStep) } }
                 } else {
-                    primary("Connect", enabled: check == .right && !working) { connect() }
+                    primary(String(localized: "Connect"), enabled: check == .right && !working) { connect() }
                 }
-            case .ownSettings: primary("Connect", enabled: !host.isEmpty && !password.isEmpty && !working) { connect() }
-            case .label: primary(working ? "Making it …" : "Make the label", enabled: !working) { makeLabel() }
-            case .labelFound: primary("Continue") { go(.done) }
-            case .done: primary("Done") { finished(account) }
+            case .ownSettings: primary(String(localized: "Connect"), enabled: !host.isEmpty && !password.isEmpty && !working) { connect() }
+            case .label: primary(working ? String(localized: "Making it …") : String(localized: "Make the label"), enabled: !working) { makeLabel() }
+            case .labelFound: primary(String(localized: "Continue")) { go(.done) }
+            case .done: primary(String(localized: "Done")) { finished(account) }
             case .notAccepted:
-                if kind == .google || kind == .apple || kind == .appPassword { primary("Make a new app password") { if let page = provider?.passwordPage ?? makePasswordURL { openURL(page) }; password = ""; path.removeLast() } }
-                else { primary("Type it again") { password = ""; path.removeLast() } }
-                secondary("Paste again") { password = ""; path.removeLast() }
+                if kind == .google || kind == .apple || kind == .appPassword { primary(String(localized: "Make a new app password")) { if let page = provider?.passwordPage ?? makePasswordURL { openURL(page) }; password = ""; path.removeLast() } }
+                else { primary(String(localized: "Type it again")) { password = ""; path.removeLast() } }
+                secondary(String(localized: "Paste again")) { password = ""; path.removeLast() }
             case .twoStep:
                 if checkedAtGoogle {
-                    primary("It’s on — continue") { toAppPassword() }
-                    secondary("Open Google again") { openTwoStep() }
+                    primary(String(localized: "It’s on — continue")) { toAppPassword() }
+                    secondary(String(localized: "Open Google again")) { openTwoStep() }
                 } else {
-                    primary("Check at Google") { openTwoStep() }
-                    secondary("It’s already on") { toAppPassword() }
+                    primary(String(localized: "Check at Google")) { openTwoStep() }
+                    secondary(String(localized: "It’s already on")) { toAppPassword() }
                 }
-            case .offline, .failed: primary("Try again now") { replaceTop(.connecting); connect() }; secondary("Check the settings") { path.removeLast() }
+            case .offline, .failed: primary(String(localized: "Try again now")) { replaceTop(.connecting); connect() }; secondary(String(localized: "Check the settings")) { path.removeLast() }
             default: EmptyView()
             }
         }
@@ -204,27 +204,27 @@ struct MailSetupFlow: View {
 
     @ViewBuilder private var intro: some View {
         BeeMark(size: 30).foregroundStyle(Theme.beeMark)
-        title("Let Causabee read the mail you choose")
-        lead("It sorts that mail into matters, with its tasks and dates. Three promises first:")
-        Promise(icon: "envelope", title: "Only the mail you choose", detail: "Causabee reads mail you give the label “\(Self.labelName)” — nothing else in your mailbox.")
-        Promise(icon: "checkmark.shield", title: "It only reads", detail: "It never sends, deletes or moves mail, and leaves it unread. The one thing it adds is its label, when you say so.")
-        Promise(icon: "key", title: "Your password stays yours", detail: "You make a password just for Causabee. It is kept in your iCloud Keychain and goes only to your mail provider.")
+        title(String(localized: "Let Causabee read the mail you choose"))
+        lead(String(localized: "It sorts that mail into matters, with its tasks and dates. Three promises first:"))
+        Promise(icon: "envelope", title: String(localized: "Only the mail you choose"), detail: String(format: String(localized: "Causabee reads mail you give the label “%@” — nothing else in your mailbox."), Self.labelName))
+        Promise(icon: "checkmark.shield", title: String(localized: "It only reads"), detail: String(localized: "It never sends, deletes or moves mail, and leaves it unread. The one thing it adds is its label, when you say so."))
+        Promise(icon: "key", title: String(localized: "Your password stays yours"), detail: String(localized: "You make a password just for Causabee. It is kept in your iCloud Keychain and goes only to your mail provider."))
     }
 
     @ViewBuilder private var providers: some View {
-        title("Which mail do you use?")
-        lead("Pick the one you want Causabee to read. You can add another later.")
-        ProviderTile(mark: "G", title: "Gmail", detail: "Also Google Workspace at work") { choose(.gmail) }
+        title(String(localized: "Which mail do you use?"))
+        lead(String(localized: "Pick the one you want Causabee to read. You can add another later."))
+        ProviderTile(mark: "G", title: "Gmail", detail: String(localized: "Also Google Workspace at work")) { choose(.gmail) }
         ProviderTile(mark: "iC", title: "iCloud Mail", detail: "@icloud.com, @me.com, @mac.com") { choose(.icloud) }
-        ProviderTile(mark: "@", title: "Another provider", detail: "GMX, Web.de, T-Online, Posteo, IONOS, Yahoo …") { choose(.other) }
-        note("Outlook and Hotmail can’t be read by apps like Causabee yet — Microsoft only lets its own apps in.", quiet: true)
+        ProviderTile(mark: "@", title: String(localized: "Another provider"), detail: "GMX, Web.de, T-Online, Posteo, IONOS, Yahoo …") { choose(.other) }
+        note(String(localized: "Outlook and Hotmail can’t be read by apps like Causabee yet — Microsoft only lets its own apps in."), quiet: true)
     }
 
     // MARK: 2 · The address
 
     @ViewBuilder private var addressPage: some View {
-        title(chosen == .gmail ? "Your Gmail address" : chosen == .icloud ? "Your iCloud address" : "Your mail address")
-        lead("The one whose mail Causabee should read.")
+        title(chosen == .gmail ? String(localized: "Your Gmail address") : chosen == .icloud ? String(localized: "Your iCloud address") : String(localized: "Your mail address"))
+        lead(String(localized: "The one whose mail Causabee should read."))
         TextField(chosen == .gmail ? "name@gmail.com" : chosen == .icloud ? "name@icloud.com" : "name@example.com", text: $address)
             .textContentType(.emailAddress)
             .autocorrectionDisabled()
@@ -242,7 +242,7 @@ struct MailSetupFlow: View {
         if let known {
             Label("\(known.name) — Causabee knows how to connect it.", systemImage: "checkmark").font(.footnote).foregroundStyle(Theme.done)
             if known.password == .google || known.password == .apple {
-                note("Next, \(known.password == .google ? "Google" : "Apple") makes a password just for Causabee. It takes about a minute.")
+                note(String(format: String(localized: "Next, %@ makes a password just for Causabee. It takes about a minute."), known.password == .google ? "Google" : "Apple"))
             }
         } else if MailProvider.isOutlook(address) {
             Label("Outlook can’t be connected yet — continue to see what works instead.", systemImage: "info.circle").font(.footnote).foregroundStyle(.secondary)
@@ -253,16 +253,16 @@ struct MailSetupFlow: View {
     private var known: MailProvider? { MailProvider.by(address: address.trimmingCharacters(in: .whitespaces)) }
 
     @ViewBuilder private var outlook: some View {
-        title("Outlook can’t be connected yet")
-        lead("Microsoft lets only its own apps read Outlook and Hotmail mail. That isn’t something Causabee can change.")
+        title(String(localized: "Outlook can’t be connected yet"))
+        lead(String(localized: "Microsoft lets only its own apps read Outlook and Hotmail mail. That isn’t something Causabee can change."))
         Text("What works instead:").font(.headline)
-        SetupHint(number: 1, text: "Forward the mails you want sorted to a Gmail or iCloud address, and connect that.")
-        SetupHint(number: 2, text: "Or drop a mail’s PDF or a screenshot into Causabee — it sorts those too.")
+        SetupHint(number: 1, text: String(localized: "Forward the mails you want sorted to a Gmail or iCloud address, and connect that."))
+        SetupHint(number: 2, text: String(localized: "Or drop a mail’s PDF or a screenshot into Causabee — it sorts those too."))
     }
 
     @ViewBuilder private var notFound: some View {
-        title("Which provider is it?")
-        lead("Causabee couldn’t find the settings for \(address) by itself. Pick your provider:")
+        title(String(localized: "Which provider is it?"))
+        lead(String(format: String(localized: "Causabee couldn’t find the settings for %@ by itself. Pick your provider:"), address))
         ForEach(MailProvider.others) { other in
             ProviderTile(mark: String(other.name.prefix(1)), title: other.name, detail: "") { provider = other; host = other.host; port = String(other.port); go(.password) }
         }
@@ -270,15 +270,15 @@ struct MailSetupFlow: View {
     }
 
     @ViewBuilder private var ownSettings: some View {
-        title("Your provider’s settings")
-        lead("Your provider’s help pages name them — look for “IMAP”. Causabee connects securely, usually on port 993.")
-        field("Incoming mail server", text: $host, prompt: "imap.example.com")
-        field("Port", text: $port, prompt: "993")
+        title(String(localized: "Your provider’s settings"))
+        lead(String(localized: "Your provider’s help pages name them — look for “IMAP”. Causabee connects securely, usually on port 993."))
+        field(String(localized: "Incoming mail server"), text: $host, prompt: "imap.example.com")
+        field(String(localized: "Port"), text: $port, prompt: "993")
         SecureField("Password", text: $password).textContentType(.password)
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.strongLine))
-        note("Many providers want a password made for apps rather than your usual one. Their settings say so.", quiet: true)
+        note(String(localized: "Many providers want a password made for apps rather than your usual one. Their settings say so."), quiet: true)
     }
 
     // MARK: 3 · The password
@@ -289,44 +289,48 @@ struct MailSetupFlow: View {
         switch kind {
         case .google:
             if check == .right || !password.isEmpty {
-                title("Paste the 16 letters")
-                lead(check == .right ? "That’s it — \(Self.tap.lowercased()) Connect." : clipboardHasText ? "Causabee noticed something on your clipboard — \(Self.tap.lowercased()) Paste to use it." : "Copy the 16 letters at Google, then \(Self.tap.lowercased()) Paste.")
+                title(String(localized: "Paste the 16 letters"))
+                lead(check == .right ? String(format: String(localized: "That’s it — %@ Connect."), Self.tap.lowercased())
+                     : clipboardHasText ? String(format: String(localized: "Causabee noticed something on your clipboard — %@ Paste to use it."), Self.tap.lowercased())
+                     : String(format: String(localized: "Copy the 16 letters at Google, then %@ Paste."), Self.tap.lowercased()))
             } else {
-                title("Make a password for Causabee")
-                lead("Google gives apps like Causabee their own password, so your real one is never shared.")
-                SetupHint(number: 1, text: "\(Self.tap) “Open Google” and sign in if asked.")
-                SetupHint(number: 2, text: "Type “Causabee” as the app name, then \(Self.tap.lowercased()) Create.")
-                SetupHint(number: 3, text: "Google shows 16 letters. Copy them and come back here.")
-                Sketch(url: "myaccount.google.com", heading: "App passwords", fieldLabel: "App name", button: "Create")
+                title(String(localized: "Make a password for Causabee"))
+                lead(String(localized: "Google gives apps like Causabee their own password, so your real one is never shared."))
+                SetupHint(number: 1, text: String(format: String(localized: "%@ “Open Google” and sign in if asked."), Self.tap))
+                SetupHint(number: 2, text: String(format: String(localized: "Type “Causabee” as the app name, then %@ Create."), Self.tap.lowercased()))
+                SetupHint(number: 3, text: String(localized: "Google shows 16 letters. Copy them and come back here."))
+                Sketch(url: "myaccount.google.com", heading: String(localized: "App passwords"), fieldLabel: String(localized: "App name"), button: String(localized: "Create"))
             }
         case .apple:
             if check == .right || !password.isEmpty {
-                title("Paste the code")
-                lead(check == .right ? "That’s it — \(Self.tap.lowercased()) Connect." : clipboardHasText ? "Causabee noticed something on your clipboard — \(Self.tap.lowercased()) Paste to use it." : "Copy the code at Apple, then \(Self.tap.lowercased()) Paste.")
+                title(String(localized: "Paste the code"))
+                lead(check == .right ? String(format: String(localized: "That’s it — %@ Connect."), Self.tap.lowercased())
+                     : clipboardHasText ? String(format: String(localized: "Causabee noticed something on your clipboard — %@ Paste to use it."), Self.tap.lowercased())
+                     : String(format: String(localized: "Copy the code at Apple, then %@ Paste."), Self.tap.lowercased()))
             } else {
-                title("Make a password for Causabee")
-                lead("Apple gives apps like Causabee their own password, so your Apple Account password is never shared.")
-                SetupHint(number: 1, text: "\(Self.tap) “Open Apple Account” and sign in.")
-                SetupHint(number: 2, text: "Choose Sign-In and Security, then App-Specific Passwords.")
-                SetupHint(number: 3, text: "Name it “Causabee”, \(Self.tap.lowercased()) Create, and copy the code.")
-                Sketch(url: "account.apple.com", heading: "App-Specific Passwords", fieldLabel: "Name", button: "Create")
+                title(String(localized: "Make a password for Causabee"))
+                lead(String(localized: "Apple gives apps like Causabee their own password, so your Apple Account password is never shared."))
+                SetupHint(number: 1, text: String(format: String(localized: "%@ “Open Apple Account” and sign in."), Self.tap))
+                SetupHint(number: 2, text: String(localized: "Choose Sign-In and Security, then App-Specific Passwords."))
+                SetupHint(number: 3, text: String(format: String(localized: "Name it “Causabee”, %@ Create, and copy the code."), Self.tap.lowercased()))
+                Sketch(url: "account.apple.com", heading: String(localized: "App-Specific Passwords"), fieldLabel: String(localized: "Name"), button: String(localized: "Create"))
             }
         case .appPassword:
-            title("A password for Causabee")
-            lead("\(name) wants a password made for apps. Make one named “Causabee”, copy it, and paste it here.")
+            title(String(localized: "A password for Causabee"))
+            lead(String(format: String(localized: "%@ wants a password made for apps. Make one named “Causabee”, copy it, and paste it here."), name))
         case .usual:
             if case .allowIMAP = provider?.catch {
-                title("One setting at \(name) first")
-                lead("\(name) only lets apps read mail once you allow it. It’s a single switch.")
-                SetupHint(number: 1, text: "\(Self.tap) “Open \(name) settings” and sign in.")
-                SetupHint(number: 2, text: "Under POP3 & IMAP, turn on “Allow access”.")
-                SetupHint(number: 3, text: "Come back and type your \(name) password here.")
+                title(String(format: String(localized: "One setting at %@ first"), name))
+                lead(String(format: String(localized: "%@ only lets apps read mail once you allow it. It’s a single switch."), name))
+                SetupHint(number: 1, text: String(format: String(localized: "%@ “Open %@ settings” and sign in."), Self.tap, name))
+                SetupHint(number: 2, text: String(localized: "Under POP3 & IMAP, turn on “Allow access”."))
+                SetupHint(number: 3, text: String(format: String(localized: "Come back and type your %@ password here."), name))
             } else if case .mailPassword = provider?.catch {
-                title("Your \(name) mail password")
-                lead("\(name) has a password just for mail, set in its mail settings — not the one you sign in to Telekom with.")
+                title(String(format: String(localized: "Your %@ mail password"), name))
+                lead(String(format: String(localized: "%@ has a password just for mail, set in its mail settings — not the one you sign in to Telekom with."), name))
             } else {
-                title("Your \(name) password")
-                lead("Causabee uses it only to read the mail you give it, and keeps it in your iCloud Keychain.")
+                title(String(format: String(localized: "Your %@ password"), name))
+                lead(String(localized: "Causabee uses it only to read the mail you give it, and keeps it in your iCloud Keychain."))
             }
         }
         if kind != .google && kind != .apple || check == .right || !password.isEmpty {
@@ -341,8 +345,8 @@ struct MailSetupFlow: View {
     // MARK: Connecting
 
     @ViewBuilder private var connecting: some View {
-        title("Connecting to \(name)")
-        lead("This takes a few seconds.")
+        title(String(format: String(localized: "Connecting to %@"), name))
+        lead(String(localized: "This takes a few seconds."))
         BeeLoader(size: 28)
         ForEach(Array(steps.enumerated()), id: \.offset) { _, step in StatusRow(text: step.text, state: step.state) }
     }
@@ -350,64 +354,71 @@ struct MailSetupFlow: View {
     // MARK: 4 · The label
 
     @ViewBuilder private var labelPage: some View {
-        title(isGmail ? "One label for Causabee" : "One folder for Causabee")
-        lead(isGmail ? "Causabee reads only mail with the label “\(Self.labelName)”. Shall it make the label in your Gmail now?"
-                     : "Causabee reads only mail in the folder “\(Self.labelName)”. Shall it make the folder in your mailbox now?")
+        title(isGmail ? String(localized: "One label for Causabee") : String(localized: "One folder for Causabee"))
+        lead(String(format: isGmail ? String(localized: "Causabee reads only mail with the label “%@”. Shall it make the label in your Gmail now?")
+                                    : String(localized: "Causabee reads only mail in the folder “%@”. Shall it make the folder in your mailbox now?"), Self.labelName))
         MailWithLabel(isGmail: isGmail)
-        note("Making this \(isGmail ? "label" : "folder") is the only change Causabee ever makes to your mailbox. You can rename or delete it there.")
+        note(isGmail ? String(localized: "Making this label is the only change Causabee ever makes to your mailbox. You can rename or delete it there.")
+                     : String(localized: "Making this folder is the only change Causabee ever makes to your mailbox. You can rename or delete it there."))
         if !failure.isEmpty { Label(failure, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.warning).font(.footnote) }
     }
 
     @ViewBuilder private var labelFound: some View {
-        title(isGmail ? "Your label is ready" : "Your folder is ready")
-        lead("Causabee found “\(Self.labelName)” in your mailbox, with \(mails) \(mails == 1 ? "mail" : "mails") in it.")
-        StatusRow(text: "Connected to \(account?.user ?? address)", state: .done)
-        StatusRow(text: "Found “\(Self.labelName)” · \(mails) \(mails == 1 ? "mail" : "mails")", state: .done)
+        title(isGmail ? String(localized: "Your label is ready") : String(localized: "Your folder is ready"))
+        lead(mails == 1 ? String(format: String(localized: "Causabee found “%@” in your mailbox, with 1 mail in it."), Self.labelName)
+                        : String(format: String(localized: "Causabee found “%@” in your mailbox, with %lld mails in it."), Self.labelName, mails))
+        StatusRow(text: String(format: String(localized: "Connected to %@"), account?.user ?? address), state: .done)
+        StatusRow(text: mails == 1 ? String(format: String(localized: "Found “%@” · 1 mail"), Self.labelName)
+                                   : String(format: String(localized: "Found “%@” · %lld mails"), Self.labelName, mails), state: .done)
     }
 
     @ViewBuilder private var done: some View {
         ZStack { Circle().fill(Theme.bee); Image(systemName: "checkmark").font(.system(size: 30, weight: .semibold)).foregroundStyle(.black) }
             .frame(width: 72, height: 72)
-        title("You’re all set")
-        lead(mails > 0 ? "Causabee reads the \(mails) \(mails == 1 ? "mail" : "mails") in “\(Self.labelName)” now. More come the same way:" : "Here is how Causabee gets its first mail:")
+        title(String(localized: "You’re all set"))
+        lead(mails == 0 ? String(localized: "Here is how Causabee gets its first mail:")
+             : mails == 1 ? String(format: String(localized: "Causabee reads the 1 mail in “%@” now. More come the same way:"), Self.labelName)
+             : String(format: String(localized: "Causabee reads the %lld mails in “%@” now. More come the same way:"), mails, Self.labelName))
         if isGmail {
-            SetupHint(number: 1, text: "In Gmail, open a mail about something you’re dealing with — a move, a claim, a parent’s care.")
-            SetupHint(number: 2, text: "\(Self.tap) the label button, and tick “\(Self.labelName)”.")
+            SetupHint(number: 1, text: String(localized: "In Gmail, open a mail about something you’re dealing with — a move, a claim, a parent’s care."))
+            SetupHint(number: 2, text: String(format: String(localized: "%@ the label button, and tick “%@”."), Self.tap, Self.labelName))
         } else {
-            SetupHint(number: 1, text: "In Mail, open a mail about something you’re dealing with — a move, a claim, a parent’s care.")
-            SetupHint(number: 2, text: "Move it to the folder “\(Self.labelName)”.")
+            SetupHint(number: 1, text: String(localized: "In Mail, open a mail about something you’re dealing with — a move, a claim, a parent’s care."))
+            SetupHint(number: 2, text: String(format: String(localized: "Move it to the folder “%@”."), Self.labelName))
         }
-        SetupHint(number: 3, text: "Come back here. Causabee reads it and sorts it into a matter.")
-        StatusRow(text: "Connected · \(account?.user ?? address)", state: .done)
-        StatusRow(text: "\(isGmail ? "Label" : "Folder") “\(Self.labelName)” \(mails > 0 ? "found" : "made")", state: .done)
-        StatusRow(text: "Password kept in iCloud Keychain — your other devices have it too", state: .done)
+        SetupHint(number: 3, text: String(localized: "Come back here. Causabee reads it and sorts it into a matter."))
+        StatusRow(text: String(format: String(localized: "Connected · %@"), account?.user ?? address), state: .done)
+        StatusRow(text: String(format: isGmail
+                                ? (mails > 0 ? String(localized: "Label “%@” found") : String(localized: "Label “%@” made"))
+                                : (mails > 0 ? String(localized: "Folder “%@” found") : String(localized: "Folder “%@” made")), Self.labelName), state: .done)
+        StatusRow(text: String(localized: "Password kept in iCloud Keychain — your other devices have it too"), state: .done)
     }
 
     // MARK: When something goes wrong
 
     @ViewBuilder private var notAccepted: some View {
-        title("\(kind == .google ? "Google" : kind == .apple ? "Apple" : name) didn’t take that password")
-        lead("Nothing is wrong with your account. Usually it’s one of these:")
+        title(String(format: String(localized: "%@ didn’t take that password"), kind == .google ? "Google" : kind == .apple ? "Apple" : name))
+        lead(String(localized: "Nothing is wrong with your account. Usually it’s one of these:"))
         switch kind {
         case .google, .apple, .appPassword:
-            ReasonTile(number: 1, title: "It was your usual password", detail: "Causabee needs the one made for apps", first: usualPasswordSent)
-            ReasonTile(number: 2, title: "Only part of it was copied", detail: "Copy all of it, then paste again", first: false)
-            ReasonTile(number: 3, title: "The app password was deleted", detail: "Make a new one — it takes a minute", first: false)
+            ReasonTile(number: 1, title: String(localized: "It was your usual password"), detail: String(localized: "Causabee needs the one made for apps"), first: usualPasswordSent)
+            ReasonTile(number: 2, title: String(localized: "Only part of it was copied"), detail: String(localized: "Copy all of it, then paste again"), first: false)
+            ReasonTile(number: 3, title: String(localized: "The app password was deleted"), detail: String(localized: "Make a new one — it takes a minute"), first: false)
         case .usual:
-            ReasonTile(number: 1, title: "A letter was typed wrong", detail: "Capitals count — type it again", first: true)
-            if case .allowIMAP = provider?.catch { ReasonTile(number: 2, title: "Access for apps is still off", detail: "Turn on POP3 & IMAP in \(name)’s settings", first: false) }
-            if case .mailPassword = provider?.catch { ReasonTile(number: 2, title: "It was the login password", detail: "\(name) wants its separate mail password", first: false) }
+            ReasonTile(number: 1, title: String(localized: "A letter was typed wrong"), detail: String(localized: "Capitals count — type it again"), first: true)
+            if case .allowIMAP = provider?.catch { ReasonTile(number: 2, title: String(localized: "Access for apps is still off"), detail: String(format: String(localized: "Turn on POP3 & IMAP in %@’s settings"), name), first: false) }
+            if case .mailPassword = provider?.catch { ReasonTile(number: 2, title: String(localized: "It was the login password"), detail: String(format: String(localized: "%@ wants its separate mail password"), name), first: false) }
         }
     }
 
     @ViewBuilder private var twoStep: some View {
-        title("First, one check at Google")
-        lead("Google makes a password for apps only when 2-Step Verification is on. Many accounts have it — but not always when you sign in with a passkey.")
-        SetupHint(number: 1, text: "\(Self.tap) “Check at Google” and sign in if asked.")
-        SetupHint(number: 2, text: "If Google offers to turn it on, do it and add your phone number. Your passkey stays as it is.")
-        SetupHint(number: 3, text: "Come back here — Causabee keeps your place.")
+        title(String(localized: "First, one check at Google"))
+        lead(String(localized: "Google makes a password for apps only when 2-Step Verification is on. Many accounts have it — but not always when you sign in with a passkey."))
+        SetupHint(number: 1, text: String(format: String(localized: "%@ “Check at Google” and sign in if asked."), Self.tap))
+        SetupHint(number: 2, text: String(localized: "If Google offers to turn it on, do it and add your phone number. Your passkey stays as it is."))
+        SetupHint(number: 3, text: String(localized: "Come back here — Causabee keeps your place."))
         if isWorkspace {
-            note("At work or on your own domain, whoever runs your Google account may have to allow 2-Step Verification first.", quiet: true)
+            note(String(localized: "At work or on your own domain, whoever runs your Google account may have to allow 2-Step Verification first."), quiet: true)
         }
     }
 
@@ -427,15 +438,15 @@ struct MailSetupFlow: View {
     }
 
     @ViewBuilder private var offline: some View {
-        title("No connection right now")
-        lead("This device is offline. Nothing was lost — try again as soon as you’re back online.")
-        StatusRow(text: "Can’t reach \(name) — no internet", state: .problem)
-        StatusRow(text: "Connecting, once you’re online", state: .waiting)
+        title(String(localized: "No connection right now"))
+        lead(String(localized: "This device is offline. Nothing was lost — try again as soon as you’re back online."))
+        StatusRow(text: String(format: String(localized: "Can’t reach %@ — no internet"), name), state: .problem)
+        StatusRow(text: String(localized: "Connecting, once you’re online"), state: .waiting)
     }
 
     @ViewBuilder private var failed: some View {
-        title("Couldn’t reach \(name)")
-        lead("The mail server didn’t answer as expected. Check the address and the settings, then try again.")
+        title(String(format: String(localized: "Couldn’t reach %@"), name))
+        lead(String(localized: "The mail server didn’t answer as expected. Check the address and the settings, then try again."))
         Text(failure).font(.footnote).foregroundStyle(.secondary).textSelection(.enabled)
     }
 
@@ -467,7 +478,7 @@ struct MailSetupFlow: View {
             finding = false
             if let found, let named = MailProvider.by(host: found.host) { use(named); return }
             if let found {
-                provider = MailProvider(id: "found", name: MailDiscovery.domain(of: typed) ?? "your provider", domains: [], host: found.host, port: found.port, kind: found.kind)
+                provider = MailProvider(id: "found", name: MailDiscovery.domain(of: typed) ?? String(localized: "your provider"), domains: [], host: found.host, port: found.port, kind: found.kind)
                 host = found.host; port = String(found.port); go(.password)
             } else {
                 go(.notFound)
@@ -497,18 +508,20 @@ struct MailSetupFlow: View {
         let typed = PasswordCheck.cleaned(password, for: kind)
         usualPasswordSent = false
         working = true
-        steps = [("Reaching \(name)", .working), ("Signing in as \(user)", .waiting), ("Looking for “\(Self.labelName)”", .waiting)]
+        steps = [(String(format: String(localized: "Reaching %@"), name), .working),
+                 (String(format: String(localized: "Signing in as %@"), user), .waiting),
+                 (String(format: String(localized: "Looking for “%@”"), Self.labelName), .waiting)]
         if page != .connecting { go(.connecting) }
         Task {
             do {
                 let client = try await IMAPClient.connect(to: trying, password: typed)
-                steps[0].state = .done; steps[1] = ("Signed in as \(user)", .done); steps[2].state = .working
+                steps[0].state = .done; steps[1] = (String(format: String(localized: "Signed in as %@"), user), .done); steps[2].state = .working
                 let folders = (try? await client.folders()) ?? []
                 let label = folders.first { $0.name == Self.labelName } ?? folders.first { $0.name.lowercased() == Self.labelName.lowercased() }
                 if let label { mails = (try? await client.examine(label.name))?.exists ?? 0 }
                 await client.logout()
                 try save(typed, trying)
-                steps[2] = (label == nil ? "No “\(Self.labelName)” yet — next" : "Found “\(Self.labelName)”", .done)
+                steps[2] = (String(format: label == nil ? String(localized: "No “%@” yet — next") : String(localized: "Found “%@”"), Self.labelName), .done)
                 account = trying
                 secret = typed
                 try? await Task.sleep(for: .milliseconds(500))
@@ -547,7 +560,8 @@ struct MailSetupFlow: View {
                 mails = 0
                 go(.done)
             } catch {
-                failure = "It couldn’t be made: \(plainWords(error)) Make it yourself in \(isGmail ? "Gmail" : "your mailbox"), then come back."
+                failure = String(format: isGmail ? String(localized: "It couldn’t be made: %@ Make it yourself in Gmail, then come back.")
+                                                : String(localized: "It couldn’t be made: %@ Make it yourself in your mailbox, then come back."), plainWords(error))
             }
             working = false
         }
@@ -714,22 +728,22 @@ private struct PasteField: View {
         switch kind {
         case .google: "abcd efgh ijkl mnop"
         case .apple: "abcd-efgh-ijkl-mnop"
-        case .appPassword: "The password for apps"
-        case .usual: "Your \(providerName) password"
+        case .appPassword: String(localized: "The password for apps")
+        case .usual: String(format: String(localized: "Your %@ password"), providerName)
         }
     }
 
     private var words: (String, Color) {
         switch (kind, check) {
-        case (.google, .right): ("✓ 16 letters — that’s the right kind.", Theme.done)
-        case (.apple, .right): ("✓ That’s an app-specific password — the right kind.", Theme.done)
-        case (.google, .partial): ("Only part of it — Google shows 16 letters.", Theme.warning)
-        case (.apple, .partial): ("Only part of it — Apple’s code has four groups of four letters.", Theme.warning)
-        case (.google, .wrongKind): ("That looks like your usual Google password. Causabee needs the 16-letter one made for it.", Theme.warning)
-        case (.apple, .wrongKind): ("That looks like your Apple Account password. Causabee needs the code made for it.", Theme.warning)
-        case (.google, _): ("Google shows 16 letters. Copy them, then paste.", .secondary)
-        case (.apple, _): ("Apple shows a code like abcd-efgh-ijkl-mnop. Copy it, then paste.", .secondary)
-        default: ("Kept in your iCloud Keychain. It goes only to \(providerName).", .secondary)
+        case (.google, .right): (String(localized: "✓ 16 letters — that’s the right kind."), Theme.done)
+        case (.apple, .right): (String(localized: "✓ That’s an app-specific password — the right kind."), Theme.done)
+        case (.google, .partial): (String(localized: "Only part of it — Google shows 16 letters."), Theme.warning)
+        case (.apple, .partial): (String(localized: "Only part of it — Apple’s code has four groups of four letters."), Theme.warning)
+        case (.google, .wrongKind): (String(localized: "That looks like your usual Google password. Causabee needs the 16-letter one made for it."), Theme.warning)
+        case (.apple, .wrongKind): (String(localized: "That looks like your Apple Account password. Causabee needs the code made for it."), Theme.warning)
+        case (.google, _): (String(localized: "Google shows 16 letters. Copy them, then paste."), .secondary)
+        case (.apple, _): (String(localized: "Apple shows a code like abcd-efgh-ijkl-mnop. Copy it, then paste."), .secondary)
+        default: (String(format: String(localized: "Kept in your iCloud Keychain. It goes only to %@."), providerName), .secondary)
         }
     }
 

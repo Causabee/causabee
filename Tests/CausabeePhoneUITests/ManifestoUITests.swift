@@ -14,7 +14,7 @@ final class ManifestoUITests: XCTestCase {
 
     /// The overview's list of matters.
     private func showMatters() {
-        let matters = app.buttons["part.Matters"]
+        let matters = app.buttons["overview.matters"]
         XCTAssertTrue(matters.waitForExistence(timeout: 40), "The overview did not come up.")
         matters.tap()
     }

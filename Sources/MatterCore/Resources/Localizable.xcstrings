@@ -1961,12 +1961,12 @@
         }
       }
     },
-    "Overdue since %@.": {
+    "Overdue since %@": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Überfällig seit %@."
+            "value": "Überfällig seit %@"
           }
         }
       }
@@ -1991,12 +1991,22 @@
         }
       }
     },
-    "Should have come by %@. A short follow-up helps.": {
+    "Should have come by %@": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sollte bis %@ da sein. Ein kurzes Nachfassen hilft."
+            "value": "Sollte bis %@ da sein"
+          }
+        }
+      }
+    },
+    "A short follow-up helps.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein kurzes Nachfassen hilft."
           }
         }
       }
@@ -2031,12 +2041,22 @@
         }
       }
     },
-    "Wait until %@. If nothing comes, follow up.": {
+    "Wait until %@": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Warte bis %@. Kommt nichts, fass nach."
+            "value": "Warte bis %@"
+          }
+        }
+      }
+    },
+    "If nothing comes, follow up.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommt nichts, fass nach."
           }
         }
       }

@@ -132,7 +132,7 @@ extension MatterStatus {
         }
 
         if let late = mine.filter({ ($0.due ?? "9999") < today }).min(by: byDay) {
-            return step(.overdue, late, String(format: String(localized: "Overdue since %@.", bundle: .module), Self.short(late.due ?? today)))
+            return step(.overdue, late, Self.sentence(String(format: String(localized: "Overdue since %@", bundle: .module), Self.short(late.due ?? today))))
         }
         let horizon = Self.day(Calendar.current.date(byAdding: .day, value: Self.soon, to: Self.date(today) ?? Date()) ?? Date())
         let appointment = String(localized: "Appointment", bundle: .module), deadline = String(localized: "Deadline", bundle: .module)
@@ -146,7 +146,8 @@ extension MatterStatus {
             return NextStep(kind: .date, text: near.what, why: Self.sentence("\(near.kind) \(when)\(at)"), todo: nil)
         }
         if let late = theirs.filter({ ($0.due ?? "9999") < today }).min(by: byDay) {
-            return step(.followUp, late, String(format: String(localized: "Should have come by %@. A short follow-up helps.", bundle: .module), Self.short(late.due ?? today)))
+            let due = Self.sentence(String(format: String(localized: "Should have come by %@", bundle: .module), Self.short(late.due ?? today)))
+            return step(.followUp, late, due + " " + String(localized: "A short follow-up helps.", bundle: .module))
         }
         if let first = mine.min(by: byDay) {
             let why = first.isFreed ? String(localized: "What it waited for is done.", bundle: .module)
@@ -155,8 +156,12 @@ extension MatterStatus {
             return step(.doIt, first, why)
         }
         if let first = theirs.min(by: byDay) {
-            let why = first.due.map { String(format: String(localized: "Wait until %@. If nothing comes, follow up.", bundle: .module), Self.short($0)) }
-                ?? String(localized: "Nothing for you to do until it comes.", bundle: .module)
+            // A day of its own carries a full stop in German — "12. Nov." — so the sentence is
+            // closed by `sentence`, which adds one only where there is none (F009).
+            let why = first.due.map {
+                Self.sentence(String(format: String(localized: "Wait until %@", bundle: .module), Self.short($0)))
+                    + " " + String(localized: "If nothing comes, follow up.", bundle: .module)
+            } ?? String(localized: "Nothing for you to do until it comes.", bundle: .module)
             return step(.wait, first, why)
         }
         if let later = upcoming.first {

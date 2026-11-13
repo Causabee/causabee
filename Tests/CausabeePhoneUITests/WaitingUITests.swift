@@ -10,7 +10,7 @@ final class WaitingUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["--demo", "-demo.filled", "anew", "-mail.auto", "NO", "--open", "lisbon-october"]
         app.launch()
-        let plan = app.buttons["part.Plan"]
+        let plan = app.buttons["part.plan"]
         XCTAssertTrue(plan.waitForExistence(timeout: 40), "No Plan tab.")
         plan.tap()
         let section = app.staticTexts["WAITING FOR OTHERS"]

@@ -367,7 +367,7 @@ struct MatterScreen: View {
                         Button(Say.exportRTF, systemImage: "square.and.arrow.up", action: export)
                         // Reading mode: no button of its own in the bar any more, the owner seldom used it;
                         // here, as in the Mac's View menu, and kept for what is shared later.
-                        Button(navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode", systemImage: "eyeglasses") {
+                        Button(navigation.reading ? String(localized: "Deactivate Reading Mode") : String(localized: "Activate Reading Mode"), systemImage: "eyeglasses") {
                             withAnimation(.easeInOut(duration: 0.2)) { navigation.reading.toggle() }
                         }
                         Divider()
@@ -404,8 +404,9 @@ struct MatterScreen: View {
 
     private var closeQuestion: String {
         let open = matter.openTodos.count
-        return open == 0 ? "Close “\(matter.name)”?"
-            : "Close “\(matter.name)”? \(open) \(open == 1 ? "task is" : "tasks are") still open."
+        return open == 0 ? String(format: String(localized: "Close “%@”?"), matter.name)
+            : open == 1 ? String(format: String(localized: "Close “%@”? 1 task is still open."), matter.name)
+            : String(format: String(localized: "Close “%@”? %lld tasks are still open."), matter.name, open)
     }
 
     /// Copied in the background — a file in iCloud Drive is brought down first, and a folder of
@@ -570,7 +571,7 @@ struct MatterScreen: View {
                         .onSubmit { find.next(); findFocused = true }
                         .autocorrectionDisabled()
                     if find.isActive {
-                        Text(find.matches.isEmpty ? "none" : "\(find.index + 1) of \(find.matches.count)")
+                        Text(find.matches.isEmpty ? String(localized: "none") : String(format: String(localized: "%lld of %lld"), find.index + 1, find.matches.count))
                             .font(.footnote.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
                     }
                 }
@@ -609,7 +610,9 @@ struct MatterScreen: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Closed on \(matter.closedAt.map(Dates.short) ?? "")").font(Theme.rowTitleFont)
             let new = StoredChanges.shared.summary(matter).newMailsSinceClosed
-            Text(new == 0 ? "Nothing new since." : "\(new) new \(new == 1 ? "mail" : "mails") came after it was closed.")
+            Text(new == 0 ? String(localized: "Nothing new since.")
+                 : new == 1 ? String(localized: "1 new mail came after it was closed.")
+                 : String(format: String(localized: "%lld new mails came after it was closed."), new))
                 .foregroundStyle(new == 0 ? Color.secondary : Theme.warning)
             HStack(spacing: 10) {
                 if new > 0 {
@@ -697,7 +700,7 @@ struct MatterScreen: View {
                     BeeLoader(size: 12)
                     Text("Causabee is on it …").font(.caption).foregroundStyle(.secondary)
                 } else if coming {
-                    AutoWaitLine(matter: matter, writing: "Causabee is on it …")
+                    AutoWaitLine(matter: matter, writing: String(localized: "Causabee is on it …"))
                 } else if auto {
                     // Auto asks: no link to ask with.
                     AutoLine(matter: matter, size: 11)
@@ -863,7 +866,7 @@ struct MatterScreen: View {
                     Text("Writing the brief …").font(.caption).foregroundStyle(.secondary)
                     Spacer()
                 } else if AutoUpdate.shared.updating(matter) {
-                    AutoWaitLine(matter: matter, writing: "Writing the brief …")
+                    AutoWaitLine(matter: matter, writing: String(localized: "Writing the brief …"))
                 } else if matter.summaryAt != nil, auto {
                     AutoLine(matter: matter, size: 11)
                     Spacer()
@@ -957,8 +960,8 @@ struct MatterScreen: View {
                     .findable(row.findID, row.what, row.place)
             }
         } empty: {
-            PhoneEmptyBox(text: "What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in.",
-                          action: "Add Task", symbol: "checklist", run: addTodo)
+            PhoneEmptyBox(text: String(localized: "What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in."),
+                          action: String(localized: "Add Task"), symbol: "checklist", run: addTodo)
         }
     }
 
@@ -1029,8 +1032,8 @@ struct MatterScreen: View {
                 .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small).tint(.primary)
         }
         if lines.isEmpty {
-            PhoneEmptyBox(text: party != nil ? "Nothing here was written by \(party?.name ?? "them") or names them."
-                              : "Mail sorted into this matter, its files, links and notes show here, a day at a time.")
+            PhoneEmptyBox(text: party != nil ? String(format: String(localized: "Nothing here was written by %@ or names them."), party?.name ?? String(localized: "them"))
+                              : String(localized: "Mail sorted into this matter, its files, links and notes show here, a day at a time."))
         }
         // Only what is near the screen is drawn.
         LazyVStack(alignment: .leading, spacing: Theme.cardGap) {
@@ -1087,7 +1090,7 @@ struct MatterScreen: View {
             FilesSection(matter: matter, only: document, made: made.made(from: document))
         case .link(let link):
             PhoneLinkRow(link: link, todos: matter.openTodos) {
-                withAnimation { context.deleteByHand([link], undo: undoManager, named: "Remove Link") }
+                withAnimation { context.deleteByHand([link], undo: undoManager, named: String(localized: "Remove Link")) }
             }
             .findable(.model(link.persistentModelID), link.shownName, link.address)
             .journalRows()
@@ -1147,12 +1150,13 @@ struct MatterScreen: View {
         let visible = showsAllHistory || sort == .byPerson || sort == .byKind ? ordered : Array(ordered.prefix(60))
         let groups = RecordBrowse.groups(visible, sort: sort) { item in NamedPeople.of(item, in: matter).map(\.name) }
         if all.isEmpty {
-            PhoneEmptyBox(text: show != .all ? "Nothing here is \(show.label.lowercased())."
-                              : "Mail sorted into this matter shows here, newest first.")
+            PhoneEmptyBox(text: show != .all ? String(format: String(localized: "Nothing here is %@."), show.label.lowercased())
+                              : String(localized: "Mail sorted into this matter shows here, newest first."))
         }
         ForEach(groups) { group in
             VStack(alignment: .leading, spacing: Theme.cardGap) {
-                JournalHeading(title: group.title.uppercased(), detail: group.items.count == 1 ? "1 entry" : "\(group.items.count) entries")
+                JournalHeading(title: group.title.uppercased(), detail: group.items.count == 1 ? String(localized: "1 entry")
+                               : String(format: String(localized: "%lld entries"), group.items.count))
                 ForEach(group.items) { item in
                     AlsoUnder(names: group.also[item.id] ?? [])
                     recordItem(item, picked: picked, made: made)
@@ -1177,16 +1181,19 @@ struct MatterScreen: View {
         let hidden = threads.count - visible.count
         let made = StoredChanges.shared.record(matter).made
         return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "History", detail: Self.count(status.mailEntries)
-                          + (threads.count == status.mailEntries.count ? "" : " in \(threads.count) \(threads.count == 1 ? "conversation" : "conversations")"))
+            SectionHeader(title: String(localized: "History"), detail: Self.count(status.mailEntries)
+                          + (threads.count == status.mailEntries.count ? ""
+                             : threads.count == 1 ? String(localized: " in 1 conversation")
+                             : String(format: String(localized: " in %lld conversations"), threads.count)))
             if status.mailEntries.isEmpty {
-                PhoneEmptyBox(text: "Mail sorted into this matter shows here, newest first. It comes from your mailbox, not by hand.")
+                PhoneEmptyBox(text: String(localized: "Mail sorted into this matter shows here, newest first. It comes from your mailbox, not by hand."))
             }
             ForEach(visible) { thread in
                 ThreadCard(thread: thread, links: made) { navigation.talk($0.title, kind: "Mail", in: matter) }
             }
             if hidden > 0 {
-                Text("… and \(hidden) older \(hidden == 1 ? "conversation" : "conversations")").font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
+                Text(hidden == 1 ? String(localized: "… and 1 older conversation")
+                     : String(format: String(localized: "… and %lld older conversations"), hidden)).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4)
             }
         }
     }
@@ -1196,7 +1203,10 @@ struct MatterScreen: View {
 
     /// Worked out only while it is asked: read every time the page drew, it made the page draw
     /// again after every change to the store.
-    static func splitTitle(_ new: Int) -> String { "A new matter with the \(new) new \(new == 1 ? "mail" : "mails")" }
+    static func splitTitle(_ new: Int) -> String {
+        new == 1 ? String(localized: "A new matter with the 1 new mail")
+            : String(format: String(localized: "A new matter with the %lld new mails"), new)
+    }
 }
 
 /// A task with its box to tick: whose it is, by when, and where it came from.
@@ -1234,7 +1244,7 @@ struct PhoneTodoRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 // Someone else's to do: who, first — the owner only waits.
                 if waiting {
-                    Text("Waiting for " + (Journal.whom(todo) ?? "someone else"))
+                    Text(String(format: String(localized: "Waiting for %@"), Journal.whom(todo) ?? String(localized: "someone else")))
                         .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, Theme.planTop)
@@ -1255,7 +1265,8 @@ struct PhoneTodoRow: View {
                     }
                 }
                 if !todo.isDone, let other = todo.waitsFor {
-                    Label(other.isDone ? "its turn now — done: \(other.text)" : "only after: \(other.text)",
+                    Label(other.isDone ? String(format: String(localized: "its turn now — done: %@"), other.text)
+                              : String(format: String(localized: "only after: %@"), other.text),
                           systemImage: other.isDone ? "arrow.right.circle.fill" : "hourglass")
                         .font(.footnote).foregroundStyle(other.isDone ? Theme.done : .secondary)
                 }
@@ -1267,7 +1278,7 @@ struct PhoneTodoRow: View {
                 if let note = todo.note, !note.isEmpty {
                     let loose = WebLink.split(note: note).links.filter { found in !(todo.links ?? []).shown.contains { $0.address == found.address } }
                     if !loose.isEmpty {
-                        Button(loose.count == 1 ? "Save as link" : "Save \(loose.count) links") { keepLinks(from: note) }
+                        Button(loose.count == 1 ? String(localized: "Save as link") : String(format: String(localized: "Save %lld links"), loose.count)) { keepLinks(from: note) }
                             .font(.caption).foregroundStyle(Theme.gold)
                     }
                 }
@@ -1279,7 +1290,8 @@ struct PhoneTodoRow: View {
                 // Whose, when that is not the owner; where it came from is in the ⋯. Done, what showed it done.
                 if todo.isDone {
                     SourceJump(sources: todo.doneSource.map { [$0] } ?? [],
-                               label: todo.doneSource == nil ? "done by you" : "done, says the mail of \(todo.doneSource?.date.map(Dates.short) ?? "?")",
+                               label: todo.doneSource == nil ? String(localized: "done by you")
+                                   : String(format: String(localized: "done, says the mail of %@"), todo.doneSource?.date.map(Dates.short) ?? "?"),
                                matter: todo.matter, color: Theme.done, before: line, beforeColor: lineColor)
                 } else if !line.isEmpty {
                     Text(line).font(.caption).foregroundStyle(lineColor)
@@ -1294,16 +1306,16 @@ struct PhoneTodoRow: View {
         .contextMenu { Group { moreItems }.menuSigns() }
         .sheetWhenAsked(isPresented: $editing) { PhoneTodoEditor(todo: todo) }
         .sheetWhenAsked(isPresented: $choosingWait) { WaitsForChooser(todo: todo) }
-        .confirmationDialogWhenAsked("Delete “\(todo.text)”?", isPresented: $deleting, titleVisibility: .visible) {
+        .confirmationDialogWhenAsked(String(format: String(localized: "Delete “%@”?"), todo.text), isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 // The reminder it is connected with goes too: a task that is gone reminds of nothing.
                 Calendars.shared.removeReminder(todo.reminderID)
-                withAnimation { context.deleteByHand([todo], undo: undoManager, named: "Delete Task") }
+                withAnimation { context.deleteByHand([todo], undo: undoManager, named: String(localized: "Delete Task")) }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(todo.reminderID == nil ? "It goes from this matter; Undo brings it back."
-                 : "It goes from this matter, and its reminder from Reminders. Undo brings the task back, not the reminder.")
+            Text(todo.reminderID == nil ? String(localized: "It goes from this matter; Undo brings it back.")
+                 : String(localized: "It goes from this matter, and its reminder from Reminders. Undo brings the task back, not the reminder."))
         }
     }
 
@@ -1360,11 +1372,15 @@ struct PhoneTodoRow: View {
         if todo.owner == .other, Journal.whom(todo) != nil {
             // Whom it waits for is said above it, when it is still open.
             if todo.isDone, let whom = Journal.whom(todo) { parts.append(whom) }
-        } else if showsOwner, todo.owner != .me, !waiting { parts.append(["we": "Ours", "other": "Waiting for"][todo.owner.rawValue] ?? "Unclear whose") }
+        } else if showsOwner, todo.owner != .me, !waiting {
+            // The owner's raw value is stored; the word is looked up from it (F009).
+            parts.append(["we": String(localized: "Ours"), "other": String(localized: "Waiting for")][todo.owner.rawValue] ?? String(localized: "Unclear whose"))
+        }
         if showsDue, let due = todo.due {
-            parts.append("by " + Dates.short(due) + (todo.dueTime.map { " at \($0)" } ?? ""))
+            let at = todo.dueTime.map { String(format: String(localized: " at %@"), $0) } ?? ""
+            parts.append(String(format: String(localized: "by %@"), Dates.short(due)) + at)
         } else if let time = todo.dueTime, todo.due != nil {
-            parts.append("at \(time)")
+            parts.append(String(format: String(localized: "at %@"), time))
         }
         return parts.joined(separator: " · ")
     }
@@ -1441,19 +1457,19 @@ struct PhoneTodoEditor: View {
                 Section {
                     Toggle("By a day", isOn: $hasDay)
                     if hasDay {
-                        DatePicker("Day", selection: $day, displayedComponents: .date)
+                        DatePicker(String(localized: "Day"), selection: $day, displayedComponents: .date)
                         Toggle("Time", isOn: $hasTime)
-                        if hasTime { DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute) }
+                        if hasTime { DatePicker(String(localized: "Time"), selection: $time, displayedComponents: .hourAndMinute) }
                     }
                 }
             }
-            .navigationTitle(isNew ? "New task" : "Change task")
+            .navigationTitle(isNew ? String(localized: "New task") : String(localized: "Change task"))
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([text, note, owner, hasDay, day, hasTime, time, after, circle, newLink])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    SheetConfirm(isNew ? "Add" : "Save", action: save)
+                    SheetConfirm(isNew ? String(localized: "Add") : String(localized: "Save"), action: save)
                         .disabled(isNew && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
@@ -1603,16 +1619,16 @@ struct PhoneDateRow: View {
         .contentShape(Rectangle())
         .contextMenu { Group { moreItems }.menuSigns() }
         .sheetWhenAsked(isPresented: $editing) { PhoneDateEditor(item: item) }
-        .confirmationDialogWhenAsked("Delete “\(item.what)”?", isPresented: $deleting, titleVisibility: .visible) {
+        .confirmationDialogWhenAsked(String(format: String(localized: "Delete “%@”?"), item.what), isPresented: $deleting, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 // The entry in Calendar it is connected with goes too.
                 Calendars.shared.removeEvent(item.calendarID)
-                context.deleteByHand(([item.appointment, item.deadline] as [(any PersistentModel)?]).compactMap { $0 }, undo: undoManager, named: "Delete Date")
+                context.deleteByHand(([item.appointment, item.deadline] as [(any PersistentModel)?]).compactMap { $0 }, undo: undoManager, named: String(localized: "Delete Date"))
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(item.calendarID == nil ? "It goes from this matter; Undo brings it back."
-                 : "It goes from this matter, and its entry from Calendar. Undo brings the date back, not the entry.")
+            Text(item.calendarID == nil ? String(localized: "It goes from this matter; Undo brings it back.")
+                 : String(localized: "It goes from this matter, and its entry from Calendar. Undo brings the date back, not the entry."))
         }
     }
 
@@ -1655,11 +1671,11 @@ struct PhoneDateEditor: View {
             Form {
                 TextField("What", text: $what, axis: .vertical).lineLimit(1...4)
                     .accessibilityIdentifier("date.what")
-                DatePicker("Day", selection: $day, displayedComponents: .date)
+                DatePicker(String(localized: "Day"), selection: $day, displayedComponents: .date)
                 if isAppointment {
                     Toggle("Time", isOn: $hasTime)
                     if hasTime {
-                        DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute)
+                        DatePicker(String(localized: "Time"), selection: $time, displayedComponents: .hourAndMinute)
                         Picker("Duration", selection: $duration) {
                             ForEach(Durations.choices(with: duration), id: \.self) { Text(Durations.label($0)).tag($0) }
                         }
@@ -1668,13 +1684,13 @@ struct PhoneDateEditor: View {
                     TextField("Place", text: $place)
                 }
             }
-            .navigationTitle(isAppointment ? "Change appointment" : "Change deadline")
+            .navigationTitle(isAppointment ? String(localized: "Change appointment") : String(localized: "Change deadline"))
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([what, day, hasTime, time, duration, place])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    SheetConfirm("Save", action: saveChanges).disabled(what.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    SheetConfirm(String(localized: "Save"), action: saveChanges).disabled(what.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .onAppear(perform: load)
@@ -1766,8 +1782,9 @@ private struct PhoneCountLine: View {
         if !(matter.entries ?? []).isEmpty {
             let total = (matter.entries ?? []).count
             // The day of its first mail, as the overview's summary has it: not every mail read again.
-            let since = StoredChanges.shared.summary(matter).firstDate.map { " · since \(Dates.short($0))" } ?? ""
-            Text((counted?.line ?? (total == 1 ? "1 mail" : "\(total) mails")) + since)
+            let since = StoredChanges.shared.summary(matter).firstDate.map { String(format: String(localized: " · since %@"), Dates.short($0)) } ?? ""
+            let counts = total == 1 ? String(localized: "1 mail") : String(format: String(localized: "%lld mails"), total)
+            Text((counted?.line ?? counts) + since)
                 .task(id: StoredChanges.shared.count) {
                     let id = matter.persistentModelID
                     guard counted?.version != StoredChanges.shared.count else { return }
