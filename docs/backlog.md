@@ -24,6 +24,7 @@ Seen while building something else. Not built now: each becomes a feature, joins
 11. **Not planned:** reading on Claude Haiku (OpenAI only, the owner's decision); pinning files (needs a schema change); sharing with the family (after the release).
 
 
+- The start credit on iPhones and Macs older than iOS 18.4 / macOS 15.4: their download record has no appTransactionId, so today they get no credit and nothing is said — the owner, 13 November: "we handle this later" (2026-11-13)
 - A free start credit: every new user gets one top-up (about 3 euros) at first launch, usable in Light, Light plus or Pro; they start in Light; when it runs out, Causabee falls back to the device and asks for a top-up — so they see what the product can really do, for conversion (2026-11-13)
 - The device reader's digest mixes languages: 'Muttis Reha startet am 24.11. No weiteren Details.' — one language per line, the line's own (2026-11-13)
 - The bare Mac binary from scripts/build.sh stops at start: NewsNotice.listen calls UNUserNotificationCenter, which needs an app bundle — guard it or drop the bare-binary way (2026-11-13)
