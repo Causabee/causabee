@@ -36,7 +36,8 @@ The app's voice in German: **du**, short sentences, few words, no jargon — the
 | Latest updates | **Letzte Änderungen** | |
 | Overview | **Übersicht** | The page; "Überblick" is the tab inside a matter. |
 | Deadline | **Frist** | |
-| Top-up | **Aufladung** | What it is: Pro, topped up. |
+| top up (the act, the button) | **Aufladen** | The owner's word, 13 November. |
+| a top-up, what is left of it | **Guthaben** | German splits what English says with one word: you *lade auf*, and you have *Guthaben*. It is the family "Startguthaben" is already in. |
 | Start credit | **Startguthaben** | |
 | Use Pro | **Pro nutzen** | |
 | Waiting for | **Wartet auf** | |
@@ -59,7 +60,9 @@ The app's voice in German: **du**, short sentences, few words, no jargon — the
 | The demo | Not sure yet? Look around in an example. | Noch unsicher? Sieh dich in einem Beispiel um. |
 | Reading | Reading … | Wird gelesen … |
 | The start credit | A start credit is yours: Pro reads your first things, names disguised. | Du hast ein Startguthaben: Pro liest deine ersten Dinge, Namen unkenntlich. |
-| Used | Your start credit is used. · Apple's model on this device reads from now on. A top-up lets Pro read again. | Dein Startguthaben ist aufgebraucht. · Ab jetzt liest Apples Modell auf diesem Gerät. Mit einer Aufladung liest Pro wieder. |
+| Used | Your start credit is used. · Apple's model on this device reads from now on. A top-up lets Pro read again. | Dein Startguthaben ist aufgebraucht. · Ab jetzt liest Apples Modell auf diesem Gerät. Mit neuem Guthaben liest Pro wieder. |
+| The plan's bar | of a Pro month in top-ups · Top-ups carry over from month to month. | von einem Pro-Monat als Guthaben · Guthaben bleibt von Monat zu Monat. |
+| The plan's row | Pro, now and then · Add a top-up | Pro, ab und zu · Guthaben aufladen |
 | The mail card | Also what comes by mail? · Causabee reads one label or folder you choose — nothing else in your mailbox. | Auch, was per Mail kommt? · Causabee liest ein Label oder einen Ordner deiner Wahl — sonst nichts in deinem Postfach. |
 | The name | Your name, so your tasks show as yours. · This is you: Alex? | Dein Name, damit deine Aufgaben als deine erscheinen. · Das bist du: Alex? |
 | Empty, nothing today | Nothing today. | Heute nichts. |
