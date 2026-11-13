@@ -12,3 +12,4 @@ Every feature built through the pipeline ([how](../pipeline.md)). Written by `sc
 | [F006](006-the-top-up-in-the-bar/README.md) | The top-up in the bar | feature | Done |
 | [F007](007-plan-and-usage-the-same-on-every-device/README.md) | Plan and usage, the same on every device | feature | Done |
 | [F008](008-the-welcome-page/README.md) | The welcome page | feature | Done |
+| [F009](009-causabee-in-german/README.md) | Causabee in German | feature | 1 · Why |
