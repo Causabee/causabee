@@ -11,9 +11,11 @@ public enum Durations {
 
     /// "Not set", "45 min", "1 h", "1 h 30 min".
     public static func label(_ minutes: Int) -> String {
-        guard minutes > 0 else { return "Not set" }
-        if minutes < 60 { return "\(minutes) min" }
-        return minutes % 60 == 0 ? "\(minutes / 60) h" : "\(minutes / 60) h \(minutes % 60) min"
+        guard minutes > 0 else { return String(localized: "Not set", bundle: .module) }
+        if minutes < 60 { return String(format: String(localized: "%lld min", bundle: .module), minutes) }
+        return minutes % 60 == 0
+            ? String(format: String(localized: "%lld h", bundle: .module), minutes / 60)
+            : String(format: String(localized: "%lld h %lld min", bundle: .module), minutes / 60, minutes % 60)
     }
 
     /// From a start and an end on the same day; 0 when there is none, or it makes no sense.

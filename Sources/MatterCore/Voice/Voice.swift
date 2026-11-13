@@ -101,7 +101,7 @@ public final class Transcriber {
             state = .cold
             await warmUp()
         } catch {
-            state = .failed("The speech model could not be loaded: \(error.localizedDescription)")
+            state = .failed(String(format: String(localized: "The speech model could not be loaded: %@", bundle: .module), error.localizedDescription))
         }
     }
 
@@ -122,7 +122,7 @@ public final class Transcriber {
             UserDefaults.standard.set(Self.fitting, forKey: Self.fittedKey)
             state = .ready
         } catch {
-            state = .failed("The speech model could not be started: \(String(describing: error))")
+            state = .failed(String(format: String(localized: "The speech model could not be started: %@", bundle: .module), String(describing: error)))
         }
     }
 
@@ -141,9 +141,9 @@ public enum VoiceError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .noMicrophone: "Causabee may not use the microphone. Allow it in the system's privacy settings."
-        case .noModel: "The speech model is not ready."
-        case .heardNothing: "Nothing was heard."
+        case .noMicrophone: String(localized: "Causabee may not use the microphone. Allow it in the system's privacy settings.", bundle: .module)
+        case .noModel: String(localized: "The speech model is not ready.", bundle: .module)
+        case .heardNothing: String(localized: "Nothing was heard.", bundle: .module)
         }
     }
 }

@@ -199,7 +199,7 @@ struct NotesPart: View {
               if voice.phase == .listening {
                 ListeningBar(voice: voice)
               } else {
-                TextField(voice.phase == .writing ? voice.writingWords : "A thought, what was agreed, what to remember …", text: $draft, selection: $cursor, axis: .vertical)
+                TextField(voice.phase == .writing ? voice.writingWords : String(localized: "A thought, what was agreed, what to remember …"), text: $draft, selection: $cursor, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     .frame(minHeight: 34)
@@ -228,14 +228,14 @@ struct NotesPart: View {
                 .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 4).padding(.bottom, 4)
 
             ForEach(matter.sortedNotes) { note in
-                block(Self.label(note.createdAt) + (note.fromAssistant ? " · from the assistant" : ""), note.text, note: note, isEditing: editing == note.persistentModelID,
+                block(Self.label(note.createdAt) + (note.fromAssistant ? String(localized: " · from the assistant") : ""), note.text, note: note, isEditing: editing == note.persistentModelID,
                       edit: { edited = note.text; editing = note.persistentModelID; editingEarlier = false },
                       save: { text in if text.isEmpty { context.delete(note) } else { note.text = text } },
-                      delete: { context.deleteByHand([note], undo: undoManager, named: "Delete Note") })
+                      delete: { context.deleteByHand([note], undo: undoManager, named: String(localized: "Delete Note")) })
                     .findable(.model(note.persistentModelID), note.text)
             }
             if let earlier = matter.earlierNote {
-                block("Earlier", earlier, isEditing: editingEarlier,
+                block(String(localized: "Earlier"), earlier, isEditing: editingEarlier,
                       edit: { edited = earlier; editingEarlier = true; editing = nil },
                       save: { text in matter.notes = text.isEmpty ? nil : text },
                       delete: { matter.notes = nil })
@@ -333,8 +333,8 @@ struct NotesPart: View {
     /// "Today, 14:05", "Yesterday", or the day.
     static func label(_ date: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "Today, " + date.formatted(date: .omitted, time: .shortened) }
-        if calendar.isDateInYesterday(date) { return "Yesterday" }
+        if calendar.isDateInToday(date) { return String(format: String(localized: "Today, %@"), date.formatted(date: .omitted, time: .shortened)) }
+        if calendar.isDateInYesterday(date) { return String(localized: "Yesterday") }
         return Dates.short(date)
     }
 
@@ -401,7 +401,7 @@ struct ContactEditor: View {
             .keepsWhatWasTyped([name, role, address, phone])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Add", action: add).disabled(!canAdd) }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Add"), action: add).disabled(!canAdd) }
             }
         }
         #else
@@ -475,7 +475,7 @@ struct DetailEditor: View {
                 .keepsWhatWasTyped([label, value, party])
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
-                    ToolbarItem(placement: .confirmationAction) { SheetConfirm(detail == nil ? "Add" : "Save", action: save).disabled(!canSave) }
+                    ToolbarItem(placement: .confirmationAction) { SheetConfirm(detail == nil ? String(localized: "Add") : String(localized: "Save"), action: save).disabled(!canSave) }
                 }
             }
             #else
@@ -517,7 +517,7 @@ struct DetailEditor: View {
     }
 
     private func delete() {
-        if let detail { context.deleteByHand([detail], undo: undoManager, named: "Delete Detail") }
+        if let detail { context.deleteByHand([detail], undo: undoManager, named: String(localized: "Delete Detail")) }
         dismiss()
     }
 }
@@ -560,7 +560,7 @@ struct DetailsSection: View {
         } else if !details.isEmpty || showsEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    SectionHeader(title: "Details", detail: details.isEmpty ? nil : "\(details.count)")
+                    SectionHeader(title: String(localized: "Details"), detail: details.isEmpty ? nil : "\(details.count)")
                 }
                 if details.isEmpty {
                     Text("A membership number, a file number, a ward and room: what you need on the phone with them.")
@@ -618,7 +618,7 @@ struct DetailsSection: View {
             if let party = detail.party { ContactItems(party: party) }
             Button("Edit", systemImage: "pencil") { editing = detail }
             Divider()
-            Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { context.deleteByHand([detail], undo: undoManager, named: "Delete Detail") } }
+            Button("Delete", systemImage: "trash", role: .destructive) { withAnimation { context.deleteByHand([detail], undo: undoManager, named: String(localized: "Delete Detail")) } }
         }
         .dropsOn(.detail(detail), in: detail.matter)
     }

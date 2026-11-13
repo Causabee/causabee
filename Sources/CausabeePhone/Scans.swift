@@ -43,9 +43,9 @@ struct ScanSheet: View {
                               systemImage: file.isPDF ? "doc.richtext" : "photo")
                     }
                     if VNDocumentCameraViewController.isSupported {
-                        Button(file == nil ? "Scan with the camera" : "Scan again", systemImage: "doc.viewfinder") { scanning = true }
+                        Button(file == nil ? String(localized: "Scan with the camera") : String(localized: "Scan again"), systemImage: "doc.viewfinder") { scanning = true }
                     }
-                    Button(file == nil ? "Choose a PDF or a photo" : "Choose another file", systemImage: "folder") { picking = true }
+                    Button(file == nil ? String(localized: "Choose a PDF or a photo") : String(localized: "Choose another file"), systemImage: "folder") { picking = true }
                 } header: {
                     Text("The document")
                 }
@@ -64,7 +64,7 @@ struct ScanSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    SheetConfirm("Add", action: add).disabled(file == nil)
+                    SheetConfirm(String(localized: "Add"), action: add).disabled(file == nil)
                 }
             }
             .fullScreenCover(isPresented: $scanning) {
@@ -78,7 +78,7 @@ struct ScanSheet: View {
                 guard case .success(let url) = result else { return }
                 let access = url.startAccessingSecurityScopedResource()
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
-                guard let data = try? Data(contentsOf: url) else { failure = "The file cannot be read."; return }
+                guard let data = try? Data(contentsOf: url) else { failure = String(localized: "The file cannot be read."); return }
                 file = (name: url.lastPathComponent, data: data, isPDF: url.pathExtension.lowercased() == "pdf")
             }
         }
@@ -97,7 +97,7 @@ struct ScanSheet: View {
     private func add() {
         guard let file, let name = keptName else { return }
         guard let kept = PhoneShots.shared.keep(file.data, named: name) else {
-            failure = "It could not be saved on this \(ThisDevice.name). Is there space left?"
+            failure = String(format: String(localized: "It could not be saved on this %@. Is there space left?"), ThisDevice.name)
             return
         }
         PhoneShots.shared.bring(kept, matter: matter.persistentModelID, context: context, owner: profiles.first?.names.first)

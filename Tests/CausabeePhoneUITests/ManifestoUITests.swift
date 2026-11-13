@@ -14,7 +14,7 @@ final class ManifestoUITests: XCTestCase {
 
     /// The overview's list of matters.
     private func showMatters() {
-        let matters = app.buttons["part.Matters"]
+        let matters = app.buttons["overview.matters"]
         XCTAssertTrue(matters.waitForExistence(timeout: 40), "The overview did not come up.")
         matters.tap()
     }
@@ -56,6 +56,8 @@ final class ManifestoUITests: XCTestCase {
         app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", words)).firstMatch
     }
 
+    /// By the part's own name — "plan", "files" — never by the word on the pill: that word is the
+    /// device's language (F009).
     private func tab(_ name: String) {
         let part = app.buttons["part." + name]
         XCTAssertTrue(part.waitForExistence(timeout: 20), "No \(name) tab.")
@@ -105,7 +107,7 @@ final class ManifestoUITests: XCTestCase {
         let name = "Garden planner app (side project)"
         XCTAssertTrue(hasDot(name))
         open(name)
-        tab("Plan")
+        tab("plan")
         sleep(1)
         back(); showMatters()
         XCTAssertFalse(hasDot(name), "Opened on Plan, the dot is still there.")
@@ -167,44 +169,44 @@ final class ManifestoUITests: XCTestCase {
 
     func testAMatterOfFilesOnlyHasItsTasks() {
         launch(open: "Mortgage refinancing 2027")
-        tab("Plan")
+        tab("plan")
         XCTAssertTrue(any("Compare Nordbank and Sparkasse").waitForExistence(timeout: 20), "Tasks from the bank's files are not in Plan.")
     }
 
     func testAMatterOfFilesOnlyShowsItsFiles() {
         launch(open: "Mortgage refinancing 2027")
-        tab("Files")
+        tab("files")
         XCTAssertTrue(any("Nordbank offer").waitForExistence(timeout: 20), "The bank's offer is not in Files.")
         XCTAssertTrue(any("Sparkasse offer").exists)
     }
 
     func testAPhotographedLetterGivesItsTask() {
         launch(open: "mums-gym")
-        tab("Plan")
+        tab("plan")
         XCTAssertTrue(any("Send the cancellation to FitPark").waitForExistence(timeout: 20), "The photographed letter's task is not in Plan.")
     }
 
     func testAPhotographedLetterGivesItsDeadline() {
         launch(open: "mums-gym")
-        tab("Plan")
+        tab("plan")
         XCTAssertTrue(any("Last day to cancel").waitForExistence(timeout: 20), "The letter's deadline is not in Plan.")
     }
 
     func testAChatScreenshotGivesItsTask() {
         launch(open: "Application: Head of Design, Brightwave")
-        tab("Plan")
+        tab("plan")
         XCTAssertTrue(any("Decide the salary expectation").waitForExistence(timeout: 20), "The LinkedIn screenshot's task is not in Plan.")
     }
 
     func testOwnNotesAreInNotes() {
         launch(open: "Garden planner app (side project)")
-        tab("Notes")
+        tab("notes")
         XCTAssertTrue(any("Keep it to one screen").waitForExistence(timeout: 20), "The owner's note is not in Notes.")
     }
 
     func testOwnNotesAreInNotesWithMail() {
         launch(open: "New property manager for Elm Court 51")
-        tab("Notes")
+        tab("notes")
         XCTAssertTrue(any("Boiler room keys").waitForExistence(timeout: 20), "The owner's note is not in Notes.")
     }
 
@@ -215,7 +217,7 @@ final class ManifestoUITests: XCTestCase {
 
     func testDatesFromEverySourceAreInPlan() {
         launch(open: "Volvo or VW — next car")
-        tab("Plan")
+        tab("plan")
         XCTAssertTrue(any("Test drive VW ID.3").waitForExistence(timeout: 20), "The dealer's date is not in Plan.")
     }
 

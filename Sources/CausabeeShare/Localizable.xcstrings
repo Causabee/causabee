@@ -1,0 +1,206 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Causabee's shared folder on this %@ cannot be reached.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabees geteilter Ordner auf diesem %@ ist nicht erreichbar."
+          }
+        }
+      }
+    },
+    "Causabee takes pictures and PDFs.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee nimmt Bilder und PDFs entgegen."
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließen"
+          }
+        }
+      }
+    },
+    "Into “%@”": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In „%@“"
+          }
+        }
+      }
+    },
+    "Into a matter …": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In ein Anliegen …"
+          }
+        }
+      }
+    },
+    "INTO": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IN"
+          }
+        }
+      }
+    },
+    "Causabee decides": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee entscheidet"
+          }
+        }
+      }
+    },
+    "it sorts it in by itself": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sie sortiert es selbst ein"
+          }
+        }
+      }
+    },
+    "last mail %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "letzte Mail %@"
+          }
+        }
+      }
+    },
+    "Your open matters, the latest first.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine offenen Anliegen, das neueste zuerst."
+          }
+        }
+      }
+    },
+    "Causabee": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee"
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinzufügen"
+          }
+        }
+      }
+    },
+    "Causabee sorts it in when it next opens, and says where it went.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee sortiert es ein, wenn sie das nächste Mal geöffnet wird, und sagt, wohin es ging."
+          }
+        }
+      }
+    },
+    "1 picture": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Bild"
+          }
+        }
+      }
+    },
+    "%lld pictures": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Bilder"
+          }
+        }
+      }
+    },
+    "1 PDF": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 PDF"
+          }
+        }
+      }
+    },
+    "%lld PDFs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld PDFs"
+          }
+        }
+      }
+    },
+    "In Causabee": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Causabee"
+          }
+        }
+      }
+    },
+    "In “%@”": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In „%@“"
+          }
+        }
+      }
+    },
+    "It is sorted in when Causabee opens.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es wird einsortiert, wenn Causabee geöffnet wird."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

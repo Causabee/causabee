@@ -39,7 +39,8 @@ final class ChatAddTests: XCTestCase {
         // In the matter too, as written: in its plan — the matter opens on its digest, which has
         // only the days ahead.
         app.buttons["Close"].firstMatch.tap()
-        let plan = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Plan")).firstMatch
+        // By the part's own name, not by the word on the pill (F009).
+        let plan = app.buttons["part.plan"]
         XCTAssertTrue(plan.waitForExistence(timeout: 10), "The matter has no Plan.")
         plan.tap()
         let task = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", words)).firstMatch

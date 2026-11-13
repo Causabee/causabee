@@ -122,14 +122,14 @@ final class PhoneMailCheck {
     /// person's address: on the screen's thread it held the screen up.
     private func door(context: ModelContext) async -> (door: DailyDoor?, why: String?) {
         guard let account = Keychain.accounts().first(where: { !$0.usesGoogle }) else {
-            return (nil, "No mail account yet: add it in Settings (⋯ above).")
+            return (nil, String(localized: "No mail account yet: add it in Settings (⋯ above)."))
         }
         var door = DailyDoor(account: account, besides: PhoneCloud.storeLocation())
         door.model = ModelChoice.mail
         door.strict = ModelChoice.strict
         // This iPhone's own list, started from the Mac's, with the other devices' names in it.
         do { try await StoreWorker.for(context.container).adoptNames(into: door.mapping, device: PhoneNames.device) } catch {
-            return (nil, "The list of names cannot be written: \(error.localizedDescription)")
+            return (nil, String(format: String(localized: "The list of names cannot be written: %@"), error.localizedDescription))
         }
         // Left out here or on another device; what this one left out before it was shared, shared now.
         let known = await StoreWorker.for(context.container)
@@ -146,7 +146,7 @@ final class PhoneMailCheck {
         // Until it has, every mail it answered would look new here — read again, and offered to
         // be sent again.
         if door.earlier.isEmpty, known.hasMail {
-            return (nil, "Your Mac has not shared what it sorted yet. Open Causabee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again.")
+            return (nil, String(localized: "Your Mac has not shared what it sorted yet. Open Causabee on your Mac once and wait a minute for iCloud — otherwise every mail would be read and sorted again."))
         }
         return (door, nil)
     }
@@ -289,7 +289,7 @@ final class PhoneMailCheck {
         // A round that was read waits for its answer first.
         if case .answered = state { return }
         if DemoData.isRequested { lookInDemo(context: context); return }
-        state = .reading("Fetching mail …")
+        state = .reading(String(localized: "Fetching mail …"))
         // Locked or left while it reads: iOS gives it time to finish rather than cutting the connection.
         let keep = UIApplication.shared.beginBackgroundTask(withName: "Fetching mail")
         running = Task {
@@ -297,11 +297,11 @@ final class PhoneMailCheck {
             // What the other devices sorted meanwhile, in from iCloud first — a short wait, asked for by hand.
             await CloudCatchUp.shared.caughtUp(limit: .seconds(8))
             let (found, why) = await door(context: context)
-            guard let door = found else { state = .failed(why ?? "Mail cannot be read."); return }
+            guard let door = found else { state = .failed(why ?? String(localized: "Mail cannot be read.")); return }
             let account = door.account
             do {
                 guard let password = try Keychain.password(for: account.user) else {
-                    state = .failed("No password for \(account.user) on this \(ThisDevice.name): add it in Settings (⋯ above).")
+                    state = .failed(String(format: String(localized: "No password for %@ on this %@: add it in Settings (⋯ above)."), account.user, ThisDevice.name))
                     return
                 }
                 let look = try await door.look(password: password)
@@ -325,7 +325,7 @@ final class PhoneMailCheck {
     /// The demo's round, at the pace of a real one: fetching, three new mails, sorting, and what
     /// came of it — the mails, a task and two dates in three matters. Nothing is read or sent.
     private func lookInDemo(context: ModelContext) {
-        state = .reading("Fetching mail …")
+        state = .reading(String(localized: "Fetching mail …"))
         running = Task {
             try? await Task.sleep(for: .seconds(1.8))
             guard !Task.isCancelled else { return }
@@ -335,7 +335,8 @@ final class PhoneMailCheck {
     }
 
     func sortInDemo(context: ModelContext, only chosen: Set<Int> = Set(DemoData.newMail.indices)) {
-        state = .sending("Sorting \(chosen.count) \(chosen.count == 1 ? "mail" : "mails") …")
+        state = .sending(chosen.count == 1 ? String(localized: "Sorting 1 mail …")
+                         : String(format: String(localized: "Sorting %lld mails …"), chosen.count))
         running = Task {
             try? await Task.sleep(for: .seconds(2.4))
             guard !Task.isCancelled else { return }
@@ -345,9 +346,9 @@ final class PhoneMailCheck {
             encoder.outputFormatting = .sortedKeys
             for (index, matter) in taken {
                 let mail = DemoData.newMail[index]
-                let brought = index == 0 ? " · 1 new task" : " · 1 date"
+                let brought = index == 0 ? String(localized: " · 1 new task") : String(localized: " · 1 date")
                 var turn = Navigation.Turn(question: "", scope: "Mail", inHand: nil, seen: "", refs: [:], matter: matter.persistentModelID)
-                turn.note = "1 mail taken in" + brought + " · \(DemoData.demoIntakeMark)\n• " + mail.subject
+                turn.note = String(localized: "1 mail taken in") + brought + " · \(DemoData.demoIntakeMark)\n• " + mail.subject
                 guard let payload = try? encoder.encode(turn) else { continue }
                 let record = ThreadTurn(id: turn.id, date: turn.date, payload: payload)
                 context.insert(record)
@@ -377,14 +378,16 @@ final class PhoneMailCheck {
         let reader = ModelChoice.mailReader(for: door.model)
         if case .none(let why) = reader { state = .failed(why); return }
         let claude = reader.client
-        state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
+        state = .sending(look.pending == 1 ? String(localized: "Reading 1 mail …")
+                         : String(format: String(localized: "Reading %lld mails …"), look.pending))
         // Paid for once: switching away from Causabee meanwhile does not stop it halfway.
         let background = UIApplication.shared.beginBackgroundTask(withName: "Reading mail")
         Task {
             defer { UIApplication.shared.endBackgroundTask(background) }
             let look = look.without(await StoreWorker.for(context.container).dealtWith())
             guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
-            state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
+            state = .sending(look.pending == 1 ? String(localized: "Reading 1 mail …")
+                         : String(format: String(localized: "Reading %lld mails …"), look.pending))
             do {
                 let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), closed: Unplaced.closed(in: context), placed: Unplaced.placed(in: context), onFile: Unplaced.onFile(in: context))
                 let answered = Answered(judgements: judgements, cost: summary.cost, failed: summary.failed.count, look: look, door: door)
@@ -438,7 +441,8 @@ final class PhoneMailCheck {
             Task { await StoreWorker.for(context.container).shareKeptTexts(besides: door.log) }
             PhoneNames.publish(in: context)
             let matters = try context.fetch(FetchDescriptor<Matter>())
-            Self.logIntake(judgements, matters: matters, model: judgements.contains { $0.decidedBy == .onDevice } ? "Apple's model on this device" : door.model.label, in: context)
+            Self.logIntake(judgements, matters: matters, model: judgements.contains { $0.decidedBy == .onDevice }
+                               ? String(localized: "Apple's model on this device") : door.model.label, in: context)
             // Their important links, offered in their matters.
             let takenIDs = Set(judgements.map(\.emailID))
             for outcome in look.report.outcomes where takenIDs.contains(outcome.judgement.emailID) { _ = MailLinks.suggest(outcome.email, in: context) }
@@ -451,7 +455,10 @@ final class PhoneMailCheck {
             let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
             var text = IntakeSummary.line(mails: imported.mails, matters: names, tasks: imported.todosNew,
                                           dates: imported.appointments + imported.deadlines, unplaced: unplaced, failed: answered.failed)
-            if !held.isEmpty { text += " · \(held.count) \(held.count == 1 ? "waits" : "wait") for room for a new matter" }
+            if !held.isEmpty {
+                text += held.count == 1 ? String(localized: " · 1 waits for room for a new matter")
+                    : String(format: String(localized: " · %lld wait for room for a new matter"), held.count)
+            }
             // Each mail with the matter it went into: a wrong one is moved from here.
             let mails = IntakeSummary.mails(judgements) { key in matters.first { $0.answers(to: key) }?.name }
             Haptics.success()
@@ -477,13 +484,19 @@ final class PhoneMailCheck {
             let tasks = mails.reduce(0) { $0 + $1.todos.filter { $0.sameAs == nil }.count }
             let dates = mails.reduce(0) { $0 + $1.appointments.count + $1.deadlines.count }
             let done = mails.reduce(0) { $0 + $1.done.count }
-            var head = "\(mails.count) \(mails.count == 1 ? "mail" : "mails") taken in"
-            if tasks > 0 { head += " · \(tasks) new \(tasks == 1 ? "task" : "tasks")" }
-            if dates > 0 { head += " · \(dates) \(dates == 1 ? "date" : "dates")" }
-            if done > 0 { head += " · \(done) shown done" }
-            head += " · sorted by \(model)"
-            let lines = mails.prefix(5).map { "• " + ($0.subject.isEmpty ? "(no subject)" : $0.subject) }
-                + (mails.count > 5 ? ["• … and \(mails.count - 5) more"] : [])
+            // A whole phrase for each count, not a word put beside a number (F009).
+            var head = mails.count == 1 ? String(localized: "1 mail taken in")
+                : String(format: String(localized: "%lld mails taken in"), mails.count)
+            if tasks > 0 {
+                head += tasks == 1 ? String(localized: " · 1 new task") : String(format: String(localized: " · %lld new tasks"), tasks)
+            }
+            if dates > 0 {
+                head += dates == 1 ? String(localized: " · 1 date") : String(format: String(localized: " · %lld dates"), dates)
+            }
+            if done > 0 { head += String(format: String(localized: " · %lld shown done"), done) }
+            head += String(format: String(localized: " · sorted by %@"), model)
+            let lines = mails.prefix(5).map { "• " + ($0.subject.isEmpty ? String(localized: "(no subject)") : $0.subject) }
+                + (mails.count > 5 ? [String(format: String(localized: "• … and %lld more"), mails.count - 5)] : [])
             var turn = Navigation.Turn(question: "", scope: "Mail", inHand: nil, seen: "", refs: [:], matter: matter.persistentModelID)
             turn.note = ([head] + lines).joined(separator: "\n")
             guard let payload = try? encoder.encode(turn) else { continue }
@@ -570,7 +583,7 @@ struct PhoneMailCheckView: View {
             Button(action: open) {
                 HStack(spacing: 8) {
                     Circle().fill(Theme.bee).frame(width: 8, height: 8)
-                    Text("\(count) new \(count == 1 ? "mail" : "mails")").font(.subheadline.weight(.medium)).foregroundStyle(.primary)
+                    Text(count == 1 ? String(localized: "1 new mail") : String(format: String(localized: "%lld new mails"), count)).font(.subheadline.weight(.medium)).foregroundStyle(.primary)
                     Text("Review").font(.subheadline).foregroundStyle(Theme.gold)
                 }
                 .padding(.horizontal, 14).padding(.vertical, 8)
@@ -724,7 +737,7 @@ struct PhoneMailCheckView: View {
                             .accessibilityHint("Shows what is in it")
                             .accessibilityIdentifier("unplaced.row")
                             HStack(spacing: 16) {
-                                Menu("Add to …") {
+                                Menu(String(localized: "Add to …")) {
                                     Button("A new matter", systemImage: "plus.circle") { newName = Matter.cleanSubject(mail.subject); starting = mail }
                                     Divider()
                                     ForEach(matters.filter { !$0.isClosed }.sorted { $0.name < $1.name }) { matter in
@@ -754,7 +767,7 @@ struct PhoneMailCheckView: View {
                               startNew: { newName = Matter.cleanSubject(mail.subject); starting = mail },
                               setAside: { putAside(mail) })
             }
-            .alertWhenAsked("A new matter", isPresented: Binding(get: { starting != nil }, set: { if !$0 { starting = nil } })) {
+            .alertWhenAsked(String(localized: "A new matter"), isPresented: Binding(get: { starting != nil }, set: { if !$0 { starting = nil } })) {
                 TextField("Name", text: $newName)
                 Button("Cancel", role: .cancel) {}
                 Button("Start") {
@@ -790,7 +803,7 @@ struct PhoneMailReview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("\(look.pending) new \(look.pending == 1 ? "mail" : "mails")").font(.headline)
+            Text(look.pending == 1 ? String(localized: "1 new mail") : String(format: String(localized: "%lld new mails"), look.pending)).font(.headline)
             ForEach(look.newMails, id: \.judgement.emailID) { outcome in
                 let id = outcome.judgement.emailID, on = chosen.contains(id)
                 Button {
@@ -800,7 +813,7 @@ struct PhoneMailReview: View {
                         Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.title3)
                             .foregroundStyle(on ? Theme.gold : .secondary)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(outcome.email.subject.isEmpty ? "(no subject)" : outcome.email.subject).font(.subheadline)
+                            Text(outcome.email.subject.isEmpty ? String(localized: "(no subject)") : outcome.email.subject).font(.subheadline)
                                 .strikethrough(!on).foregroundStyle(on ? .primary : .secondary)
                                 .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                             Text(Self.from(outcome.email) + look.intake.way(outcome.judgement.emailID)).font(.caption).foregroundStyle(.tertiary)
@@ -812,13 +825,16 @@ struct PhoneMailReview: View {
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
-            Text(chosen.isEmpty ? "None ticked: “Leave out” puts \(look.pending == 1 ? "it" : "them") aside, and \(look.pending == 1 ? "it is" : "they are") not offered again. “Later” keeps \(look.pending == 1 ? "it" : "them") for the next time."
-                 : ModelChoice.sortingWords(chosen.count, model: door.model))
+            let noneTicked = look.pending == 1
+                ? String(localized: "None ticked: “Leave out” puts it aside, and it is not offered again. “Later” keeps it for the next time.")
+                : String(localized: "None ticked: “Leave out” puts them aside, and they are not offered again. “Later” keeps them for the next time.")
+            Text(chosen.isEmpty ? noneTicked : ModelChoice.sortingWords(chosen.count, model: door.model))
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 Button("Later", action: later).buttonStyle(.phone)
                 // With none ticked the button leaves them out — "Later" alone would only bring them back.
-                Button(chosen.isEmpty ? "Leave out" : chosen.count == look.pending ? "Sort in" : "Sort in \(chosen.count)") { sortIn(chosen) }
+                Button(chosen.isEmpty ? String(localized: "Leave out") : chosen.count == look.pending ? String(localized: "Sort in")
+                       : String(format: String(localized: "Sort in %lld"), chosen.count)) { sortIn(chosen) }
                     .buttonStyle(.phoneFilled)
             }
         }
@@ -856,12 +872,14 @@ struct PhoneMailVerdict: View {
         let offers = IntakeSummary.offers(answered.judgements) { key in matters.first { $0.answers(to: key) }?.name }
         let bulk = answered.judgements.count - offers.count
         VStack(alignment: .leading, spacing: 10) {
-            Text("\(offers.count) \(offers.count == 1 ? "mail" : "mails") read").font(.headline)
+            Text(offers.count == 1 ? String(localized: "1 mail read") : String(format: String(localized: "%lld mails read"), offers.count)).font(.headline)
             MailOffers(offers: offers, chosen: $chosen, moved: $moved, named: $named, skipped: $skipped)
-            Text("Read. " + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
-                 + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
+            let left = bulk == 0 ? "" : bulk == 1 ? String(localized: " 1 left out as a newsletter.")
+                : String(format: String(localized: " %lld left out as newsletters."), bulk)
+            Text(String(localized: "Read. Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside.") + left)
                 .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, named, skipped) }
+            Button(chosen.isEmpty ? String(localized: "Leave out") : chosen.count == offers.count ? String(localized: "Take in")
+                   : String(format: String(localized: "Take in %lld"), chosen.count)) { take(chosen, moved, named, skipped) }
                 .buttonStyle(.phoneFilled)
                 .accessibilityIdentifier("mail.takeIn")
         }
@@ -898,7 +916,8 @@ struct PhoneDemoMailReview: View {
             Text("In the demo, sorting in sends nothing.").font(.footnote).foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 Button("Later", action: later).buttonStyle(.phone)
-                Button(chosen.count == DemoData.newMail.count ? "Sort in" : "Sort in \(chosen.count)") { sortIn(chosen) }
+                Button(chosen.count == DemoData.newMail.count ? String(localized: "Sort in")
+                       : String(format: String(localized: "Sort in %lld"), chosen.count)) { sortIn(chosen) }
                     .buttonStyle(.phoneFilled).disabled(chosen.isEmpty)
             }
         }
@@ -934,7 +953,7 @@ struct PhoneIntakeMailRow: View {
             HStack(spacing: 6) {
                 Text("→ " + mail.matter).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 4)
-                Menu("Move") {
+                Menu(String(localized: "Move")) {
                     Button("A new matter", systemImage: "plus.circle") { newName = Matter.cleanSubject(mail.subject); naming = true }
                     Divider()
                     ForEach(PhoneMoveMail.order(matters, current: nil).filter { $0.name != mail.matter }) { matter in
@@ -950,7 +969,7 @@ struct PhoneIntakeMailRow: View {
             }
             .padding(.leading, 28)
         }
-        .alertWhenAsked("Move to a new matter", isPresented: $naming) {
+        .alertWhenAsked(String(localized: "Move to a new matter"), isPresented: $naming) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}
             Button("Move") {

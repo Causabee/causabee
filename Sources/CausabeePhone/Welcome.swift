@@ -28,7 +28,7 @@ struct WelcomeSheet: View {
             // The dots and the buttons stay at the foot, whatever the page.
             .safeAreaInset(edge: .bottom) { foot }
             .background(Theme.canvas)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { finish() } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Done")) { finish() } } }
         }
     }
 
@@ -63,7 +63,7 @@ struct WelcomeSheet: View {
     /// One matter as the overview shows it — a picture of what is to come, not a real one.
     private var sample: some View {
         VStack(alignment: .leading, spacing: 8) {
-            BeeChip(text: "1 for you · waiting for 1")
+            BeeChip(text: String(localized: "1 for you · waiting for 1"))
             Text("Care for Mum (Helga) after her fall").font(Theme.phoneCardTitleFont).fixedSize(horizontal: false, vertical: true)
             Text("Next, on Oct 6: The medical service visits").font(.subheadline).foregroundStyle(.secondary)
         }

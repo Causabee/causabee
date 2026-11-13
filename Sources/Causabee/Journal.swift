@@ -77,6 +77,9 @@ extension View {
 struct JournalPills<Part: Hashable>: View {
     let parts: [Part]
     let label: (Part) -> String
+    /// What a test finds the pill by: the part's own name, never the word on it — that word is the
+    /// device's language, and an identifier must be the same in every language (F009).
+    var handle: (Part) -> String = { "\($0)" }
     @Binding var selection: Part
     /// Onto a second line where they do not fit, not scrolled: in a sheet, whose edge hid the rest.
     var wraps = false
@@ -108,7 +111,7 @@ struct JournalPills<Part: Hashable>: View {
                 .fixedSize()
                 .accessibilityLabel(label(part))
                 .accessibilityAddTraits(chosen ? .isSelected : [])
-                .accessibilityIdentifier("part." + label(part))
+                .accessibilityIdentifier(handle(part))
             }
     }
 
@@ -130,7 +133,7 @@ struct JournalPills<Part: Hashable>: View {
 
 extension JournalPills where Part == Journal.Part {
     init(parts: [Journal.Part], selection: Binding<Journal.Part>) {
-        self.init(parts: parts, label: \.label, selection: selection)
+        self.init(parts: parts, label: \.label, handle: { "part." + $0.rawValue }, selection: selection)
     }
 }
 
@@ -238,7 +241,7 @@ struct DaySheet: View {
         }
     }
 
-    private var title: String { Self.current(item) == nil ? "Set day" : "Change day" }
+    private var title: String { Self.current(item) == nil ? String(localized: "Set day") : String(localized: "Change day") }
 
     private func set() {
         let text = MatterStatus.day(day)
@@ -270,7 +273,7 @@ struct DaySheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel(action: close) }
-                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Set", action: set) }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Set"), action: set) }
             }
         }
         #else
@@ -315,7 +318,7 @@ struct OutOfDateStep: View {
 
     var body: some View {
         let done = matter.nextStepTodo.flatMap { origin in (matter.todos ?? []).shown.first { $0.origin == origin } }?.isDone == true
-        BeeChip(text: "OUT OF DATE", tone: .quiet)
+        BeeChip(text: String(localized: "OUT OF DATE"), tone: .quiet)
         Text(matter.nextStep ?? "").font(Theme.rowTitleFont).foregroundStyle(.secondary)
             .strikethrough(done, color: .secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -565,7 +568,8 @@ struct AheadCard: View {
                         VStack(alignment: .leading, spacing: 6) {
                             task(todo)
                             HStack(spacing: 8) {
-                                Text(([Journal.whom(todo)].compactMap { $0 } + ["since \(Dates.short(MatterStatus.day(todo.createdAt)))"]).joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary)
+                                let since = String(format: String(localized: "since %@"), Dates.short(MatterStatus.day(todo.createdAt)))
+                                Text(([Journal.whom(todo)].compactMap { $0 } + [since]).joined(separator: " · ")).font(.footnote).foregroundStyle(.secondary)
                                 Button("Wait a week") {
                                     Planning.waitAWeek(todo, today: MatterStatus.day(Date()))
                                     try? context.save()
@@ -607,8 +611,8 @@ struct AheadCard: View {
 
     /// "7 tasks open · 2 more dates".
     private static func left(tasks: Int, dates: Int) -> String {
-        var words = ["\(tasks) \(tasks == 1 ? "task" : "tasks") open"]
-        if dates > 0 { words.append("\(dates) more \(dates == 1 ? "date" : "dates")") }
+        var words = [tasks == 1 ? String(localized: "1 task open") : String(format: String(localized: "%lld tasks open"), tasks)]
+        if dates > 0 { words.append(dates == 1 ? String(localized: "1 more date") : String(format: String(localized: "%lld more dates"), dates)) }
         return words.joined(separator: " · ")
     }
 }
@@ -675,7 +679,7 @@ struct AtHandCard<SummaryFoot: View>: View {
         if !closedWithout || !details.isEmpty || !infos.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
                 if written {
-                    fold(.summary, "Summary", count: nil, line: summaryLines.first ?? "The brief · what Causabee understands") {
+                    fold(.summary, "Summary", count: nil, line: summaryLines.first ?? String(localized: "The brief · what Causabee understands")) {
                         VStack(alignment: .leading, spacing: 10) {
                             ForEach(Array(summaryLines.enumerated()), id: \.offset) { index, line in
                                 Text(line).fixedSize(horizontal: false, vertical: true)
@@ -725,6 +729,15 @@ struct AtHandCard<SummaryFoot: View>: View {
         }
     }
 
+    /// The row's word on screen. Its English name stays in the row's identifier, which a test finds it by.
+    private static func word(_ row: AtHandRow) -> String {
+        switch row {
+        case .summary: String(localized: "Summary")
+        case .details: String(localized: "Details")
+        case .info: String(localized: "Good to know")
+        }
+    }
+
     @ViewBuilder
     private func fold<Content: View>(_ row: AtHandRow, _ title: String, count: Int?, line: String, @ViewBuilder content: () -> Content) -> some View {
         let isOpen = opened.contains(row) || find.isActive
@@ -734,7 +747,7 @@ struct AtHandCard<SummaryFoot: View>: View {
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
-                        Text(title).font(Theme.rowTitleFont).foregroundStyle(.primary)
+                        Text(Self.word(row)).font(Theme.rowTitleFont).foregroundStyle(.primary)
                         Spacer(minLength: 8)
                         if let count { Text("\(count)").font(.footnote).foregroundStyle(.secondary) }
                         Image(systemName: isOpen ? "chevron.up" : "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
@@ -833,7 +846,7 @@ struct JournalThreadCard<Attached: View>: View {
         let me = OwnerMe.current
         var names: [String] = []
         for entry in thread.rows.map(\.entry) {
-            let name = me.sent(entry.from) ? "you" : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from)
+            let name = me.sent(entry.from) ? String(localized: "you") : entry.matter?.writerName(entry.from) ?? Email.address(in: entry.from)
             if !names.contains(name) { names.append(name) }
         }
         return names.prefix(2).joined(separator: " · ") + (names.count > 2 ? " · +\(names.count - 2)" : "")
@@ -844,12 +857,14 @@ struct JournalThreadCard<Attached: View>: View {
     /// "NEW", or how many answers are new.
     private var new: String? {
         guard unread > 0 else { return nil }
-        return thread.count == 1 ? "NEW" : "\(unread) NEW \(unread == 1 ? "ANSWER" : "ANSWERS")"
+        if thread.count == 1 { return String(localized: "NEW") }
+        return unread == 1 ? String(localized: "1 NEW ANSWER") : String(format: String(localized: "%lld NEW ANSWERS"), unread)
     }
 
     /// "1 mail", "3 answers".
     private var told: String {
-        thread.count == 1 ? "1 mail" : "\(thread.count - 1) \(thread.count == 2 ? "answer" : "answers")"
+        thread.count == 1 ? String(localized: "1 mail")
+            : thread.count == 2 ? String(localized: "1 answer") : String(format: String(localized: "%lld answers"), thread.count - 1)
     }
 
     private var day: String { (thread.last ?? thread.first).map(Dates.short) ?? "" }
@@ -863,7 +878,7 @@ struct JournalThreadCard<Attached: View>: View {
                         Spacer(minLength: 8)
                         if let new { BeeChip(text: new) }
                     }
-                    Text(thread.subject.isEmpty ? "(no subject)" : thread.subject)
+                    Text(thread.subject.isEmpty ? String(localized: "(no subject)") : thread.subject)
                         .font(Theme.rowTitleFont).foregroundStyle(.primary).lineLimit(2).multilineTextAlignment(.leading)
                     if !isOpen, let digest = newest?.digest, !digest.isEmpty {
                         Text(digest)
@@ -1010,7 +1025,7 @@ struct JournalDoneLine: View {
 
     var body: some View {
         if !todo.isDeleted, todo.modelContext != nil {
-            Label { Text("Done: " + todo.text).lineLimit(2) } icon: { Image(systemName: "checkmark.circle") }
+            Label { Text(String(format: String(localized: "Done: %@"), todo.text)).lineLimit(2) } icon: { Image(systemName: "checkmark.circle") }
                 .font(.footnote).foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
         }
@@ -1085,7 +1100,7 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
         VStack(alignment: .leading, spacing: Theme.cardGap) {
             if plan.isEmpty { empty }
             if !plan.overdue.isEmpty {
-                JournalHeading(title: "OVERDUE")
+                JournalHeading(title: String(localized: "OVERDUE"))
                 card(plan.overdue, owner: true, late: true)
             }
             ForEach(plan.stretches) { stretch in
@@ -1101,7 +1116,7 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
                 .journalRows()
             }
             if !plan.noDay.isEmpty {
-                JournalHeading(title: "NO DAY YET")
+                JournalHeading(title: String(localized: "NO DAY YET"))
                 // A task at a time, each with "Set day" where its day would stand: the empty
                 // column was where to give it one.
                 VStack(alignment: .leading, spacing: 0) {
@@ -1117,7 +1132,7 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
                 .journalRows()
             }
             if !plan.waiting.isEmpty {
-                JournalHeading(title: "WAITING FOR OTHERS")
+                JournalHeading(title: String(localized: "WAITING FOR OTHERS"))
                 // Not the owner's to do: no card, no empty day column; a day only when one was given.
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(plan.waiting.enumerated()), id: \.element.persistentModelID) { index, todo in
@@ -1135,16 +1150,16 @@ struct PlanList<TaskRow: View, DateRow: View, Empty: View>: View {
                 .accessibilityIdentifier("plan.waiting")
             }
             if !plan.blocked.isEmpty {
-                JournalHeading(title: "ONLY AFTER")
+                JournalHeading(title: String(localized: "ONLY AFTER"))
                 card(plan.blocked, owner: true)
             }
             if !plan.done.isEmpty {
-                folded("Done · \(plan.done.count)", open: $showsDone) {
+                folded(String(format: String(localized: "Done · %lld"), plan.done.count), open: $showsDone) {
                     onDay(nil) { ForEach(plan.done, id: \.persistentModelID) { task($0, false) } }.journalRows()
                 }
             }
             if !plan.past.isEmpty {
-                folded("Past · \(plan.past.count)", open: $showsPast) {
+                folded(String(format: String(localized: "Past · %lld"), plan.past.count), open: $showsPast) {
                     let days = Journal.Plan.days(of: plan.past) { $0.day }
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(days.enumerated()), id: \.offset) { index, day in
@@ -1228,7 +1243,7 @@ struct PlanDateLine: View {
     let place: String?
 
     static func words(hours: String?, last: String?, place: String?) -> String? {
-        let words = [hours, last.map { "until " + Dates.short($0) }, place].compactMap { $0 }
+        let words = [hours, last.map { String(format: String(localized: "until %@"), Dates.short($0)) }, place].compactMap { $0 }
         return words.isEmpty ? nil : words.joined(separator: " · ")
     }
 
@@ -1248,13 +1263,13 @@ struct BallTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let waits = ball.waitsForYou {
-                Text("Waits for you: " + waits).font(.footnote).lineLimit(2)
+                Text(String(format: String(localized: "Waits for you: %@"), waits)).font(.footnote).lineLimit(2)
                     .padding(.horizontal, 12).padding(.vertical, 9)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.beeSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             if let wait = ball.youWaitFor {
-                Text("You wait for: " + wait).font(.footnote).lineLimit(2)
+                Text(String(format: String(localized: "You wait for: %@"), wait)).font(.footnote).lineLimit(2)
                     .padding(.horizontal, 12).padding(.vertical, 9)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.box, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -1286,7 +1301,7 @@ struct BallCard: View {
 enum OverviewPart: String, CaseIterable {
     case all, matters
 
-    var label: String { self == .all ? "Latest updates" : "Matters" }
+    var label: String { self == .all ? String(localized: "Latest updates") : String(localized: "Matters") }
 }
 
 /// The journal across all matters: a day at a time, each matter once, with what its newest mail says.
@@ -1344,8 +1359,11 @@ private struct OverviewDayCard: View {
 
     /// "4 mails · 2 files": what is not there is not said.
     private static func came(_ latest: MatterSummary.Latest) -> String {
-        func say(_ count: Int, _ one: String) -> String? { count == 0 ? nil : "\(count) \(one)\(count == 1 ? "" : "s")" }
-        return [say(latest.mails, "mail"), say(latest.files, "file")].compactMap { $0 }.joined(separator: " · ")
+        let mails = latest.mails == 0 ? nil
+            : latest.mails == 1 ? String(localized: "1 mail") : String(format: String(localized: "%lld mails"), latest.mails)
+        let files = latest.files == 0 ? nil
+            : latest.files == 1 ? String(localized: "1 file") : String(format: String(localized: "%lld files"), latest.files)
+        return [mails, files].compactMap { $0 }.joined(separator: " · ")
     }
 
     var body: some View {
@@ -1364,7 +1382,7 @@ private struct OverviewDayCard: View {
                             // NEW says it came to the owner and is not seen yet; what the owner made is grey.
                             // With a step to lead, what happened is this small line alone.
                             HStack(spacing: 5) {
-                                if summary.tellsNew { BeeChip(text: "NEW") }
+                                if summary.tellsNew { BeeChip(text: String(localized: "NEW")) }
                                 if let symbol = summary.symbol {
                                     Image(systemName: symbol).imageScale(.small).accessibilityHidden(true)
                                         .foregroundStyle(summary.tellsNew ? AnyShapeStyle(Theme.gold) : AnyShapeStyle(.secondary))
@@ -1394,7 +1412,8 @@ private struct OverviewDayCard: View {
                     Divider().padding(.top, 4)
                     HStack(spacing: 8) {
                         // What comes next says more than what came; without one, what came.
-                        Text(summary.ahead ?? [Self.came(latest), summary.newCount > 0 ? "\(summary.newCount) new" : ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                        let areNew = summary.newCount > 0 ? String(format: String(localized: "%lld new"), summary.newCount) : ""
+                        Text(summary.ahead ?? [Self.came(latest), areNew].filter { !$0.isEmpty }.joined(separator: " · "))
                             .lineLimit(1)
                         Spacer(minLength: 8)
                         if summary.openCount > 0 { Text("\(summary.openCount) open").fixedSize() }
@@ -1561,6 +1580,21 @@ extension JournalItem {
         }
     }
 
+    /// The kind's word on screen. `kindName` is what the filter compares, so it stays English.
+    static func kindWord(_ name: String) -> String {
+        switch name {
+        case "Mail": String(localized: "Mail")
+        case "Files": String(localized: "Files")
+        case "Tasks": String(localized: "Tasks")
+        case "Dates": String(localized: "Dates")
+        case "Notes": String(localized: "Notes")
+        case "Links": String(localized: "Links")
+        case "People": String(localized: "People")
+        case "Details": String(localized: "Details")
+        default: String(localized: "All")
+        }
+    }
+
     /// The matter it is in. A person can be in several: theirs is given where it is shown.
     var matter: Matter? {
         switch self {
@@ -1682,7 +1716,7 @@ struct HiddenItemsSheet: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Done")) { dismiss() } } }
         }
         #if os(macOS)
         .frame(width: 440, height: 360)
@@ -1874,7 +1908,7 @@ struct ConnectSheet: View {
                 }
             }
             .listStyle(.plain)
-            .kindPills { JournalPills(parts: kinds, label: { $0 }, selection: $kind) }
+            .kindPills { JournalPills(parts: kinds, label: JournalItem.kindWord, handle: { "kind." + $0 }, selection: $kind) }
             .searchable(text: $query, prompt: "Search this matter")
             .navigationTitle("Connect to …")
             #if os(iOS)
@@ -1887,7 +1921,7 @@ struct ConnectSheet: View {
                 ToolbarItem(placement: .primaryAction) { newMenu }
                 #endif
                 ToolbarItem(placement: .confirmationAction) {
-                    SheetConfirm("Done") { dismiss() }
+                    SheetConfirm(String(localized: "Done")) { dismiss() }
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -1982,7 +2016,7 @@ enum ItemFiles {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let file = folder.appendingPathComponent(name)
-        guard (try? data.write(to: file)) != nil else { return "It could not be added." }
+        guard (try? data.write(to: file)) != nil else { return String(localized: "It could not be added.") }
         return add([file], to: item, in: matter, context: context, store: store)
     }
 
@@ -2012,7 +2046,7 @@ enum ItemFiles {
         #else
         FolderSaver.shared.save([matter])
         #endif
-        return added.isEmpty ? (result.said ?? "It is in the matter already.") : result.said
+        return added.isEmpty ? (result.said ?? String(localized: "It is in the matter already.")) : result.said
     }
 
     /// A page dragged from the browser: a link of the matter, connected to the item.

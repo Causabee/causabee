@@ -13,8 +13,8 @@ public enum NameLists {
         case none, unreadable
         public var errorDescription: String? {
             switch self {
-            case .none: "No list of names yet, so nothing can be sent: get new mail on this iPhone once, or open Causabee on your Mac and wait until it has synced. Settings (⋯ on the overview) shows when it is here."
-            case .unreadable: "The list of names from your Mac cannot be read, so nothing was sent."
+            case .none: String(localized: "No list of names yet, so nothing can be sent: get new mail on this iPhone once, or open Causabee on your Mac and wait until it has synced. Settings (⋯ on the overview) shows when it is here.", bundle: .module)
+            case .unreadable: String(localized: "The list of names from your Mac cannot be read, so nothing was sent.", bundle: .module)
             }
         }
     }

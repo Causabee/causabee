@@ -4,6 +4,7 @@ Causabee turns what comes in — mail, screenshots, photos, files and scans, not
 
 ## New in this beta
 
+- **Causabee spricht Deutsch:** on a German Mac, iPhone or iPad every word of the app is German, with its days and its numbers written as your device writes them. Your matters keep their own language — a German one reads German, an English one English — and nothing already in them changes either way.
 - **A calmer first start:** four short pages, then your own Causabee — type what is on your mind, or add a screenshot, a photo or a file, and it becomes your first matter. Mail, your name and notifications come later, when they help.
 - **A start credit:** a new Causabee comes with one top-up's worth of Pro, so your first things are read with the bigger AI — names disguised. When it is used, Apple's model on your device reads again, and a top-up is there when you want it.
 - **Plan and usage, in one row:** Settings opens with your own settings; your plan is one row, its page says what you have, and "Use Pro" decides whether it is used — off takes nothing away, and running out does not turn it off.

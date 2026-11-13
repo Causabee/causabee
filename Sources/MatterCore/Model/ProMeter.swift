@@ -25,13 +25,13 @@ public struct ProMeter: Equatable, Sendable {
         /// "40 %", "133 %".
         public var number: String { counted ? "\(percent) %" : "–" }
         public var words: String {
-            guard counted else { return "not counted yet" }
-            return (kind == .month ? "left" : start ? "of a Pro month in your start credit" : "of a Pro month in top-ups") + (inUse ? "" : " · not in use")
+            guard counted else { return String(localized: "not counted yet", bundle: .module) }
+            return (kind == .month ? String(localized: "left", bundle: .module) : start ? String(localized: "of a Pro month in your start credit", bundle: .module) : String(localized: "of a Pro month in top-ups", bundle: .module)) + (inUse ? "" : String(localized: " · not in use", bundle: .module))
         }
         public var spoken: String {
-            let name = kind == .month ? "This month's Pro" : start ? Welcome.startName : "Top-ups"
-            guard counted else { return "\(name): not counted yet" }
-            return (kind == .month ? "\(name): \(percent) percent left" : "\(name): \(percent) percent of a Pro month left") + (inUse ? "" : ", not in use")
+            let name = kind == .month ? String(localized: "This month's Pro", bundle: .module) : start ? Welcome.startName : String(localized: "Top-ups", bundle: .module)
+            guard counted else { return "\(name): " + String(localized: "not counted yet", bundle: .module) }
+            return (kind == .month ? "\(name): \(percent) " + String(localized: "percent left", bundle: .module) : "\(name): \(percent) " + String(localized: "percent of a Pro month left", bundle: .module)) + (inUse ? "" : String(localized: ", not in use", bundle: .module))
         }
     }
 
@@ -63,31 +63,33 @@ public struct ProMeter: Equatable, Sendable {
         if !counted {
             if pro { bars = [Bar(kind: .month, left: 0, low: false, inUse: inUse, counted: false)] }
             else if kind == "credit" { bars = [Bar(kind: .topUps, left: 0, low: false, inUse: inUse, counted: false)] }
-            line = bars.isEmpty ? nil : "Shown once Causabee reaches its server."
+            line = bars.isEmpty ? nil : String(localized: "Shown once Causabee reaches its server.", bundle: .module)
             return
         }
         if kind == "credit" || (!pro && (monthUsed != nil || extra > 0)) {
             bars = [Bar(kind: .topUps, left: extra, low: false)]
             using = .topUps
             runsLow = extra <= Self.lowShare
-            line = extra > 0 ? (startCredit ? "Kept until it is used." : "Top-ups carry over from month to month.") : nil
-            note = extra > 0 ? nil : startCredit ? "Used. Apple's model on this device reads what comes in — or buy a top-up."
-                : "Used. Apple's model on this device reads what comes in — or buy another top-up."
+            line = extra > 0 ? (startCredit ? String(localized: "Kept until it is used.", bundle: .module) : String(localized: "Top-ups carry over from month to month.", bundle: .module)) : nil
+            note = extra > 0 ? nil : startCredit ? String(localized: "Used. Apple's model on this device reads what comes in — or buy a top-up.", bundle: .module)
+                : String(localized: "Used. Apple's model on this device reads what comes in — or buy another top-up.", bundle: .module)
         } else if pro, let monthUsed {
             let month = max(0, 1 - monthUsed)
             bars = [Bar(kind: .month, left: month, low: false)]
             if extra > 0 { bars.append(Bar(kind: .topUps, left: extra, low: false)) }
             using = month > 0 || extra <= 0 ? .month : .topUps
             runsLow = month + extra <= Self.lowShare
-            let anew = renewsOn.flatMap(MatterStatus.date(of:)).map { "Starts anew on " + Self.long($0) }
-            let carries = extra > 0 ? "top-ups carry over" : nil
+            let anew = renewsOn.flatMap(MatterStatus.date(of:))
+                .map { String(format: String(localized: "Starts anew on %@", bundle: .module), Self.long($0)) }
+            let carries = extra > 0 ? String(localized: "top-ups carry over", bundle: .module) : nil
             line = anew.map { [$0, carries].compactMap { $0 }.joined(separator: " · ") } ?? carries.map { $0.prefix(1).uppercased() + $0.dropFirst() }
-            note = month + extra > 0 ? nil : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up."
+            note = month + extra > 0 ? nil
+                : String(localized: "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.", bundle: .module)
         }
         if runsLow { for index in bars.indices where bars[index].kind == using { bars[index].low = true } }
         for index in bars.indices { bars[index].inUse = inUse }
     }
 
-    /// "1 December", as the plan's other dates.
-    static func long(_ date: Date) -> String { date.formatted(.dateTime.day().month(.wide).locale(Locale(identifier: "en_GB"))) }
+    /// "1 December", "1. Dezember": the day as the device writes it (F009 AC-3).
+    static func long(_ date: Date) -> String { date.formatted(.dateTime.day().month(.wide)) }
 }

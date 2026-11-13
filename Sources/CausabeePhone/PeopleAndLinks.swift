@@ -25,9 +25,9 @@ struct PeopleSection: View {
         let memberships = MatterStatus(matter).memberships
         if memberships.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "People")
-                PhoneEmptyBox(text: "Who writes and who is named come in with mail and screenshots — or add a contact yourself.",
-                              action: "Add Contact", symbol: "person.badge.plus") { adding = true }
+                SectionHeader(title: String(localized: "People"))
+                PhoneEmptyBox(text: String(localized: "Who writes and who is named come in with mail and screenshots — or add a contact yourself."),
+                              action: String(localized: "Add Contact"), symbol: "person.badge.plus") { adding = true }
             }
         } else {
             VStack(alignment: .leading, spacing: Theme.cardGap) {
@@ -74,7 +74,7 @@ struct PeopleSection: View {
 
     private var mergeQuestion: String {
         guard let (party, other) = merging else { return "" }
-        return "Is “\(party.name)” the same as “\(other.name)”?"
+        return String(format: String(localized: "Is “%@” the same as “%@”?"), party.name, other.name)
     }
 
     /// By hand, and free: nothing is sent. A new name is kept as a rule, like one from the assistant.
@@ -130,18 +130,18 @@ struct PhonePartyRow: View {
                 }
                 // How much they are in the matter — the one named most in gold.
                 if let share = membership.share {
-                    Text(share.isMost ? share.text + " · the most" : share.text).font(.caption)
+                    Text(share.isMost ? share.text + String(localized: " · the most") : share.text).font(.caption)
                         .foregroundStyle(share.isMost ? Theme.gold : .secondary)
                 }
                 MailAddressLine(addresses: CardActions.addresses(of: party))
                 ContactActions(party: party)
                 let also = party.otherSpellings
                 if !also.isEmpty {
-                    Text("also written: " + also.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    Text(String(format: String(localized: "also written: %@"), also.joined(separator: " · "))).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
                 let elsewhere = party.matters.filter { $0 !== matter }.map(\.name)
                 if !elsewhere.isEmpty {
-                    Text("also in: " + elsewhere.joined(separator: ", ")).font(.caption).foregroundStyle(.secondary)
+                    Text(String(format: String(localized: "also in: %@"), elsewhere.joined(separator: ", "))).font(.caption).foregroundStyle(.secondary)
                 }
             }
             Spacer(minLength: 0)
@@ -222,7 +222,7 @@ struct PartyEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    SheetConfirm("Save") {
+                    SheetConfirm(String(localized: "Save")) {
                         save(name, role)
                         let mail = address.trimmingCharacters(in: .whitespacesAndNewlines), number = phone.trimmingCharacters(in: .whitespacesAndNewlines)
                         party.address = mail.isEmpty ? nil : mail
@@ -276,7 +276,7 @@ struct LinksSection: View {
     @Environment(\.undoManager) private var undoManager
     @State private var adding = false
     @State private var showsSuggestions = true
-    @State private var searching: String?
+    @State private var searching: Fetching?
 
     private func newestFirst(_ a: WebLink, _ b: WebLink) -> Bool { a.createdAt > b.createdAt }
 
@@ -284,20 +284,20 @@ struct LinksSection: View {
         let all = (matter.links ?? []).shown.filter(\.isKept).sorted(by: newestFirst)
         let offered = (matter.links ?? []).shown.filter { $0.isSuggestion && !$0.isDismissed }.sorted(by: newestFirst)
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Links", detail: all.isEmpty ? nil : "\(all.count)")
+            SectionHeader(title: String(localized: "Links"), detail: all.isEmpty ? nil : "\(all.count)")
             if !all.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(all.enumerated()), id: \.element.persistentModelID) { index, link in
                         if index > 0 { Divider().padding(.leading, 50) }
                         PhoneLinkRow(link: link, todos: matter.openTodos) {
-                            withAnimation { context.deleteByHand([link], undo: undoManager, named: "Remove Link") }
+                            withAnimation { context.deleteByHand([link], undo: undoManager, named: String(localized: "Remove Link")) }
                         }
                     }
                 }
                 .journalRows()
             } else if offered.isEmpty {
-                PhoneEmptyBox(text: "A Google Doc, a sheet — whatever belongs to this matter.",
-                              action: "Add Link", symbol: "link.badge.plus") { adding = true }
+                PhoneEmptyBox(text: String(localized: "A Google Doc, a sheet — whatever belongs to this matter."),
+                              action: String(localized: "Add Link"), symbol: "link.badge.plus") { adding = true }
             }
             if !offered.isEmpty {
                 DisclosureGroup(isExpanded: $showsSuggestions) {
@@ -315,17 +315,18 @@ struct LinksSection: View {
                     }
                     .journalRows().padding(.top, 6)
                 } label: {
-                    Text("Found in what came in · \(offered.count) \(offered.count == 1 ? "suggestion" : "suggestions")").font(.subheadline.weight(.semibold))
+                    Text(offered.count == 1 ? String(localized: "Found in what came in · 1 suggestion")
+                        : String(format: String(localized: "Found in what came in · %lld suggestions"), offered.count)).font(.subheadline.weight(.semibold))
                 }
                 .padding(.horizontal, 4)
             }
             HStack(spacing: 8) {
                 if let searching {
-                    if searching.hasSuffix("…") { ProgressView() }
-                    Text(searching).font(.caption).foregroundStyle(.secondary)
+                    if searching.isOnTheWay { ProgressView() }
+                    Text(searching.words).font(.caption).foregroundStyle(.secondary)
                 }
-                if searching?.hasSuffix("…") != true, !(matter.entries ?? []).isEmpty {
-                    Button(matter.linksSearchedAt == nil ? "Look for links in the mails" : "Look in the mails again", action: search)
+                if searching?.isOnTheWay != true, !(matter.entries ?? []).isEmpty {
+                    Button(matter.linksSearchedAt == nil ? String(localized: "Look for links in the mails") : String(localized: "Look in the mails again"), action: search)
                         .font(.caption).foregroundStyle(Theme.gold)
                         .tool()
                     if let at = matter.linksSearchedAt, searching == nil {
@@ -351,19 +352,19 @@ struct LinksSection: View {
     /// in them that matter. Free: nothing is sent but the reading itself.
     private func search() {
         guard let account = Keychain.accounts().first(where: { !$0.usesGoogle }) else {
-            searching = "No mail account saved: add it in Settings (⋯ on the overview)."
+            searching = .failed(String(localized: "No mail account saved: add it in Settings (⋯ on the overview)."))
             return
         }
         let mails = (matter.entries ?? []).filter { $0.source.pointer.hasPrefix("imap://") && !$0.messageID.isEmpty }
             .map { (pointer: $0.source.pointer, id: $0.messageID) }
-        searching = "Reading 0 of \(mails.count) mails …"
+        searching = .onTheWay(String(format: String(localized: "Reading %lld of %lld mails …"), 0, mails.count))
         Task {
             var found = 0, missing = 0
             do {
                 guard let password = try Keychain.password(for: account.user) else { throw MailFetch.Failure.gone(account.user) }
                 let client = try await IMAPClient.connect(to: account, password: password)
                 for (index, mail) in mails.enumerated() {
-                    searching = "Reading \(index + 1) of \(mails.count) mails …"
+                    searching = .onTheWay(String(format: String(localized: "Reading %lld of %lld mails …"), index + 1, mails.count))
                     guard let data = try? await MailFetch.message(pointer: mail.pointer, messageID: mail.id, from: client) else { missing += 1; continue }
                     let email = EMLParser.parse(data: data, url: URL(string: mail.pointer) ?? URL(fileURLWithPath: "/"))
                     found += MailLinks.suggest(email.links, messageID: mail.id, to: matter, in: context)
@@ -371,10 +372,16 @@ struct LinksSection: View {
                 await client.logout()
                 matter.linksSearchedAt = Date()
                 try? context.save()
-                searching = (found == 0 ? "No new important links found." : "\(found) \(found == 1 ? "link" : "links") suggested.")
-                    + (missing > 0 ? " \(missing) \(missing == 1 ? "mail is" : "mails are") no longer in the mailbox." : "")
+                // Whole sentences: one for each count, so German can put the words its own way (F009).
+                let said = found == 0 ? String(localized: "No new important links found.")
+                    : found == 1 ? String(localized: "1 link suggested.")
+                    : String(format: String(localized: "%lld links suggested."), found)
+                let gone = missing == 0 ? ""
+                    : missing == 1 ? String(localized: " 1 mail is no longer in the mailbox.")
+                    : String(format: String(localized: " %lld mails are no longer in the mailbox."), missing)
+                searching = .done(said + gone)
             } catch {
-                searching = plainWords(error)
+                searching = .failed(plainWords(error))
             }
         }
     }
@@ -416,7 +423,7 @@ struct PhoneLinkRow: View {
                     Text(link.shownName).multilineTextAlignment(.leading)
                 }
                 .foregroundStyle(Theme.gold)
-                Text("\(link.kind)\(link.todo.map { " · for: \($0.text)" } ?? "") · \(Dates.short(link.createdAt))")
+                Text("\(link.kind)\(link.todo.map { String(format: String(localized: " · for: %@"), $0.text) } ?? "") · \(Dates.short(link.createdAt))")
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 ConnectionChips(item: .link(link))
             }
@@ -476,7 +483,7 @@ struct PhoneLinkEditor: View {
                     TextField("https://docs.google.com/…", text: $address)
                         .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     if !address.isEmpty {
-                        Text(valid.map { WebLink.kind(of: URL(string: $0)) } ?? "This is not a web address.")
+                        Text(valid.map { WebLink.kind(of: URL(string: $0)) } ?? String(localized: "This is not a web address."))
                             .font(.caption).foregroundStyle(valid == nil ? Theme.warning : .secondary)
                     }
                     TextField("Name, e.g. Cost list", text: $title)
@@ -492,13 +499,13 @@ struct PhoneLinkEditor: View {
                     }
                 }
             }
-            .navigationTitle(link == nil ? "Add link" : "Change link")
+            .navigationTitle(link == nil ? String(localized: "Add link") : String(localized: "Change link"))
             .navigationBarTitleDisplayMode(.inline)
             .keepsWhatWasTyped([address, title, todo])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    SheetConfirm("Save") {
+                    SheetConfirm(String(localized: "Save")) {
                         guard let valid else { return }
                         save(valid, title.trimmingCharacters(in: .whitespacesAndNewlines), todos.first { $0.persistentModelID == todo })
                         dismiss()
@@ -537,7 +544,7 @@ struct PhoneSuggestedLinkRow: View {
                         Text(link.shownName).multilineTextAlignment(.leading)
                     }
                     .foregroundStyle(Theme.gold)
-                    Text("\(link.kind)\(mail.map { " · from the mail of \($0.date.map(Dates.short) ?? "?"): \($0.title)" } ?? "")")
+                    Text("\(link.kind)\(mail.map { String(format: String(localized: " · from the mail of %@: %@"), $0.date.map(Dates.short) ?? "?", $0.title) } ?? "")")
                         .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
             }

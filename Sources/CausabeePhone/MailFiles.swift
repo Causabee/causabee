@@ -16,9 +16,9 @@ enum MailFiles {
         case noAccount, notInMail, noPassword(String)
         var description: String {
             switch self {
-            case .noAccount: "Add your mail account first, to open files from your mail."
-            case .notInMail: "This file was added on another device, not attached to a mail — it is only there."
-            case .noPassword(let user): "No password saved for \(user) on this \(ThisDevice.name)."
+            case .noAccount: String(localized: "Add your mail account first, to open files from your mail.")
+            case .notInMail: String(localized: "This file was added on another device, not attached to a mail — it is only there.")
+            case .noPassword(let user): String(format: String(localized: "No password saved for %@ on this %@."), user, ThisDevice.name)
             }
         }
     }
@@ -67,7 +67,7 @@ struct FilesSection: View {
     @Environment(\.modelContext) private var context
     @Environment(Navigation.self) private var navigation
     @Query private var profiles: [Profile]
-    @State private var state: [PersistentIdentifier: String] = [:]
+    @State private var state: [PersistentIdentifier: Fetching] = [:]
     @State private var preview: URL?
     @State private var addsAccount = false
     @State private var addsScan = false
@@ -115,7 +115,7 @@ struct FilesSection: View {
                 let kept = matter.keptFiles
                 let readable = kept.filter { $0.reading == .kept }
                 HStack {
-                    SectionHeader(title: "Kept only", detail: kept.isEmpty ? nil : "\(kept.count) · not read, never sent")
+                    SectionHeader(title: String(localized: "Kept only"), detail: kept.isEmpty ? nil : String(format: String(localized: "%lld · not read, never sent"), kept.count))
                     if chosen == nil, readable.count > 1 {
                         Button("Choose …") { chosen = [] }.font(.caption).foregroundStyle(Theme.gold)
                     }
@@ -127,7 +127,7 @@ struct FilesSection: View {
                               cancel: { chosen = nil })
                 }
                 if kept.isEmpty {
-                    PhoneEmptyBox(text: "Every file of this matter has been read. Files from a folder and files in mail are kept only until you have them read.")
+                    PhoneEmptyBox(text: String(localized: "Every file of this matter has been read. Files from a folder and files in mail are kept only until you have them read."))
                 }
                 ForEach(kept, id: \.persistentModelID) { document in
                     row(document).findable(.model(document.persistentModelID), document.shownName, document.name)
@@ -135,13 +135,14 @@ struct FilesSection: View {
                 }
             } else {
             HStack {
-                SectionHeader(title: "Files", detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
-                              + (hidden.isEmpty ? "" : " · \(hidden.count) hidden")
-                              + (small.isEmpty ? "" : " · \(small.count) small \(small.count == 1 ? "image" : "images")"))
+                SectionHeader(title: String(localized: "Files"), detail: all.isEmpty ? nil : "\(all.count - small.count - hidden.count)"
+                              + (hidden.isEmpty ? "" : String(format: String(localized: " · %lld hidden"), hidden.count))
+                              + (small.isEmpty ? "" : small.count == 1 ? String(localized: " · 1 small image")
+                                 : String(format: String(localized: " · %lld small images"), small.count)))
             }
             if all.isEmpty {
-                PhoneEmptyBox(text: "A letter, a scan, a PDF. Files in mail come by themselves.",
-                              action: "Add Document", symbol: "doc.badge.plus") { addsScan = true }
+                PhoneEmptyBox(text: String(localized: "A letter, a scan, a PDF. Files in mail come by themselves."),
+                              action: String(localized: "Add Document"), symbol: "doc.badge.plus") { addsScan = true }
             }
             if !shown.isEmpty {
                 // A mosaic, read at a glance: two across, more where there is room.
@@ -155,10 +156,10 @@ struct FilesSection: View {
             if !hidden.isEmpty || !small.isEmpty {
                 HStack(spacing: 14) {
                     if !hidden.isEmpty {
-                        Button(showsHidden ? "Hide the hidden ones" : "\(hidden.count) hidden · show") { showsHidden.toggle() }
+                        Button(showsHidden ? String(localized: "Hide the hidden ones") : String(format: String(localized: "%lld hidden · show"), hidden.count)) { showsHidden.toggle() }
                     }
                     if !small.isEmpty {
-                        Button(showsSmallImages ? "Hide small images" : "Show small images") { showsSmallImages.toggle() }
+                        Button(showsSmallImages ? String(localized: "Hide small images") : String(localized: "Show small images")) { showsSmallImages.toggle() }
                     }
                 }
                 .font(.caption).foregroundStyle(Theme.gold).padding(.horizontal, 4)
@@ -168,7 +169,7 @@ struct FilesSection: View {
         .quickLookPreview($preview)
         .sheetWhenAsked(isPresented: $addsAccount) { MailAccountSheet() }
         .sheetWhenAsked(isPresented: $addsScan) { ScanSheet(matter: matter) }
-        .confirmationDialogWhenAsked(deleting.map { "Delete “\($0.shownName)”?" } ?? "", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+        .confirmationDialogWhenAsked(deleting.map { String(format: String(localized: "Delete “%@”?"), $0.shownName) } ?? "", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
                             titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 if let document = deleting { withAnimation { _ = matter.forget(document, besides: PhoneCloud.storeLocation(), in: context); try? context.save() } }
@@ -236,8 +237,12 @@ struct FilesSection: View {
         guard let matter = document.matter else { return "" }
         let found = matter.brought(by: document)
         let tasks = found.todos.count, dates = found.appointments.count + found.deadlines.count
-        let parts = [tasks == 0 ? nil : tasks == 1 ? "1 task" : "\(tasks) tasks", dates == 0 ? nil : dates == 1 ? "1 date" : "\(dates) dates"].compactMap { $0 }
-        return "Causabee forgets what it read in it" + (parts.isEmpty ? "" : ", and " + parts.joined(separator: " and ") + " only it brought") + ". The file itself stays where it is."
+        // Whole sentences, not pieces put together: the one without a count, and the one with it (F009).
+        let parts = [tasks == 0 ? nil : tasks == 1 ? String(localized: "1 task") : String(format: String(localized: "%lld tasks"), tasks),
+                     dates == 0 ? nil : dates == 1 ? String(localized: "1 date") : String(format: String(localized: "%lld dates"), dates)].compactMap { $0 }
+        guard !parts.isEmpty else { return String(localized: "Causabee forgets what it read in it. The file itself stays where it is.") }
+        return String(format: String(localized: "Causabee forgets what it read in it, and %@ only it brought. The file itself stays where it is."),
+                      parts.joined(separator: String(localized: " and ")))
     }
 
     @ViewBuilder
@@ -272,21 +277,21 @@ struct FilesSection: View {
         if document.isOwnFile, let file = document.source.fileURL { use(file); return }
         // In its matter's folder in iCloud Drive: from there, whichever device put it in — no mail needed.
         if let kept = MatterFolders.kept(document) {
-            state[id] = "Getting the file from iCloud Drive …"
+            state[id] = .onTheWay(String(localized: "Getting the file from iCloud Drive …"))
             Task {
-                do { let url = try await MatterFolders.fetched(kept); state[id] = nil; use(url) } catch { state[id] = plainWords(error) }
+                do { let url = try await MatterFolders.fetched(kept); state[id] = nil; use(url) } catch { state[id] = .failed(plainWords(error)) }
             }
             return
         }
         if MailFiles.account(for: document) == nil, !document.isOwnFile { addsAccount = true; return }
-        state[id] = "Getting the file from the mail …"
+        state[id] = .onTheWay(String(localized: "Getting the file from the mail …"))
         Task {
             do {
                 let url = try await MailFiles.open(document)
                 state[id] = nil
                 use(url)
             } catch {
-                state[id] = plainWords(error)
+                state[id] = .failed(plainWords(error))
             }
         }
     }
@@ -310,7 +315,7 @@ struct FilesSection: View {
                 withAnimation { document.title = title }
                 try? context.save()
             } else {
-                state[id] = "No heading found in it — give it a name with ⋯ → Rename."
+                state[id] = .failed(String(localized: "No heading found in it — give it a name with ⋯ → Rename."))
             }
         }
     }
@@ -337,7 +342,7 @@ struct MailAccountSheet: View {
             NavigationStack {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
-                        SettingsPart("Saved — shared with your Macs through iCloud Keychain")
+                        SettingsPart(String(localized: "Saved — shared with your Macs through iCloud Keychain"))
                         ForEach(saved, id: \.user) { account in
                             HStack {
                                 VStack(alignment: .leading) {
@@ -357,9 +362,9 @@ struct MailAccountSheet: View {
                 }
                 .navigationTitle("Mail account")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { dismiss() } } }
+                .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Done")) { dismiss() } } }
                 // Asked first: the password goes from the Macs too, and cannot be brought back.
-                .confirmationDialogWhenAsked("Remove the password for \(removing ?? "")?",
+                .confirmationDialogWhenAsked(String(format: String(localized: "Remove the password for %@?"), removing ?? ""),
                                     isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
                                     titleVisibility: .visible) {
                     Button("Remove from all devices", role: .destructive) {

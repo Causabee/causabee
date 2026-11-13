@@ -194,18 +194,18 @@ final class MailCheck {
         if case .answered = state { return }
         if DemoData.isRequested { lookInDemo(context: context); return }
         guard let account = Keychain.accounts().first else {
-            state = .failed("No mail account yet. Choose Causabee → Set Up Causabee … to log in.")
+            state = .failed(String(localized: "No mail account yet. Choose Causabee → Set Up Causabee … to log in."))
             return
         }
         // Only that it is at it: how many mails the label holds is nothing to worry about.
-        state = .reading("Fetching mail …")
+        state = .reading(String(localized: "Fetching mail …"))
         Task {
             // What the other devices sorted meanwhile, in from iCloud first — a short wait, asked for by hand.
             await CloudCatchUp.shared.caughtUp(limit: .seconds(8))
             let door = await door(for: account, store: store, context: context)
             do {
                 guard let password = try await MailSecret.secret(for: account) else {
-                    state = .failed("No password for \(account.user) in the Keychain. Choose Causabee → Set Up Causabee … to log in again.")
+                    state = .failed(String(format: String(localized: "No password for %@ in the Keychain. Choose Causabee → Set Up Causabee … to log in again."), account.user))
                     return
                 }
                 let look = try await door.look(password: password)
@@ -222,6 +222,11 @@ final class MailCheck {
         }
     }
 
+    /// One mail or many: two words, so each is looked up on its own.
+    static func readingWords(_ count: Int) -> String {
+        count == 1 ? String(localized: "Reading 1 mail …") : String(format: String(localized: "Reading %lld mails …"), count)
+    }
+
     /// Sends what is new, pseudonymised, and takes it in at once: the label was the yes, and the
     /// receipt says where each went (docs/digest-and-chat.md).
     func classify(_ look: DailyDoor.Look, with door: DailyDoor, context: ModelContext, owner: [String]) {
@@ -230,11 +235,11 @@ final class MailCheck {
         let reader = ModelChoice.mailReader(for: door.model)
         if case .none(let why) = reader { state = .failed(why); return }
         let claude = reader.client
-        state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
+        state = .sending(Self.readingWords(look.pending))
         Task {
             let look = look.without(await StoreWorker.for(context.container).dealtWith())
             guard look.pending > 0 else { state = .nothingNew(known: look.intake.alreadyKnown); return }
-            state = .sending("Reading \(look.pending) \(look.pending == 1 ? "mail" : "mails") …")
+            state = .sending(Self.readingWords(look.pending))
             do {
                 let (judgements, summary) = try await door.classify(look, claude: claude, owner: owner, matters: Unplaced.matters(in: context), closed: Unplaced.closed(in: context), placed: Unplaced.placed(in: context), onFile: Unplaced.onFile(in: context))
                 let answered = Answered(judgements: judgements, cost: summary.cost, failed: summary.failed.count, look: look, door: door)
@@ -281,7 +286,8 @@ final class MailCheck {
             // Into the record the other devices read, and the names it learned into the store.
             try SortedMails.record(answered.judgements.map { held.contains($0.emailID) ? $0.waitingForRoom() : $0 }, device: NameListPublisher.device, in: context)
             NameListPublisher.publish()
-            taken?(judgements, judgements.contains { $0.decidedBy == .onDevice } ? "Apple's model on this device" : door.model.label)
+            taken?(judgements, judgements.contains { $0.decidedBy == .onDevice }
+                   ? String(localized: "Apple's model on this device") : door.model.label)
             // Their attachments into the matters' folders, by themselves.
             let withFiles = Set(judgements.filter { !$0.attachments.isEmpty }.compactMap(\.matter))
             FolderSaver.shared.save(try context.fetch(FetchDescriptor<Matter>()).filter { matter in withFiles.contains { matter.answers(to: $0) } })
@@ -300,7 +306,10 @@ final class MailCheck {
             let unplaced = judgements.filter { $0.matter == nil && !$0.isBulk }.count
             var text = IntakeSummary.line(mails: imported.mails, matters: names, tasks: imported.todosNew,
                                           dates: imported.appointments + imported.deadlines, unplaced: unplaced, failed: answered.failed)
-            if !held.isEmpty { text += " · \(held.count) \(held.count == 1 ? "waits" : "wait") for room for a new matter" }
+            if !held.isEmpty {
+                text += held.count == 1 ? String(localized: " · 1 waits for room for a new matter")
+                                        : String(format: String(localized: " · %lld wait for room for a new matter"), held.count)
+            }
             // Each mail with the matter it went into: a wrong one is moved from here.
             let mails = IntakeSummary.mails(judgements) { key in after.first { $0.answers(to: key) }?.name }
             state = .done(text, IntakeSummary.items(judgements), mails)
@@ -314,7 +323,7 @@ extension MailCheck {
     /// The demo's round, at the pace of a real one: fetching, three new mails, sorting, and what
     /// came of it — the mails, a task and two dates in three matters. Nothing is read or sent.
     private func lookInDemo(context: ModelContext) {
-        state = .reading("Fetching mail …")
+        state = .reading(String(localized: "Fetching mail …"))
         Task {
             try? await Task.sleep(for: .seconds(1.8))
             guard case .reading = state else { return }
@@ -325,7 +334,8 @@ extension MailCheck {
     }
 
     func sortInDemo(context: ModelContext, only chosen: Set<Int> = Set(DemoData.newMail.indices)) {
-        state = .sending("Sorting \(chosen.count) \(chosen.count == 1 ? "mail" : "mails") …")
+        state = .sending(chosen.count == 1 ? String(localized: "Sorting 1 mail …")
+                                           : String(format: String(localized: "Sorting %lld mails …"), chosen.count))
         Task {
             try? await Task.sleep(for: .seconds(2.4))
             guard case .sending = state else { return }
@@ -436,7 +446,7 @@ struct MailCheckView: View {
             } label: {
                 Text("No matter found · \(unplaced.count)").font(.caption.weight(.semibold))
             }
-            .alertWhenAsked("A new matter", isPresented: Binding(get: { starting != nil }, set: { if !$0 { starting = nil } })) {
+            .alertWhenAsked(String(localized: "A new matter"), isPresented: Binding(get: { starting != nil }, set: { if !$0 { starting = nil } })) {
                 TextField("Name", text: $newName)
                 Button("Cancel", role: .cancel) {}
                 Button("Start") {
@@ -486,7 +496,7 @@ struct MailCheckView: View {
                 Button { check.state = .ready(look, door) } label: {
                     HStack(spacing: 8) {
                         Circle().fill(Theme.bee).frame(width: 7, height: 7)
-                        Text("\(look.pending) new \(look.pending == 1 ? "mail" : "mails")").font(.callout.weight(.semibold))
+                        Text(MailReview.newWords(look.pending)).font(.callout.weight(.semibold))
                         Spacer(minLength: 4)
                         Text("Review ›").font(.caption).foregroundStyle(Theme.gold)
                     }
@@ -559,7 +569,9 @@ struct MailCheckView: View {
     private var checkedLine: some View {
         if let at = check.lastChecked {
             TimelineView(.periodic(from: .now, by: 60)) { _ in
-                Text("Checked \(MailReview.ago(at)) · " + (LabelledMail.sortsItself ? "mail with the label sorts itself in" : "nothing is sent until Sort in")).font(.caption).foregroundStyle(.tertiary)
+                Text(String(format: String(localized: "Checked %@ · %@"), MailReview.ago(at),
+                            LabelledMail.sortsItself ? String(localized: "mail with the label sorts itself in") : String(localized: "nothing is sent until Sort in")))
+                    .font(.caption).foregroundStyle(.tertiary)
             }
         }
     }
@@ -595,7 +607,7 @@ struct MailReview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("\(look.pending) new \(look.pending == 1 ? "mail" : "mails")").font(.callout.weight(.semibold))
+            Text(Self.newWords(look.pending)).font(.callout.weight(.semibold))
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(look.newMails, id: \.judgement.emailID) { outcome in
@@ -606,7 +618,7 @@ struct MailReview: View {
                             HStack(alignment: .firstTextBaseline, spacing: 8) {
                                 Image(systemName: on ? "checkmark.circle.fill" : "circle").foregroundStyle(on ? Theme.gold : .secondary)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(outcome.email.subject.isEmpty ? "(no subject)" : outcome.email.subject)
+                                    Text(outcome.email.subject.isEmpty ? String(localized: "(no subject)") : outcome.email.subject)
                                         .strikethrough(!on).foregroundStyle(on ? .primary : .secondary).lineLimit(2)
                                     Text(Self.from(outcome.email) + look.intake.way(id)).foregroundStyle(.tertiary).lineLimit(1)
                                 }
@@ -622,7 +634,9 @@ struct MailReview: View {
             }
             .frame(maxHeight: 260)
             .fixedSize(horizontal: false, vertical: true)
-            Text(chosen.isEmpty ? "None ticked: “Leave out” puts \(look.pending == 1 ? "it" : "them") aside, and \(look.pending == 1 ? "it is" : "they are") not offered again. “Later” keeps \(look.pending == 1 ? "it" : "them") for the next time."
+            Text(chosen.isEmpty ? (look.pending == 1
+                    ? String(localized: "None ticked: “Leave out” puts it aside, and it is not offered again. “Later” keeps it for the next time.")
+                    : String(localized: "None ticked: “Leave out” puts them aside, and they are not offered again. “Later” keeps them for the next time."))
                  : ModelChoice.sortingWords(chosen.count, model: door.model))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
@@ -641,9 +655,17 @@ struct MailReview: View {
         return who + " · " + time
     }
 
+    /// One new mail or many: two words, so each is looked up on its own.
+    static func newWords(_ count: Int) -> String {
+        count == 1 ? String(localized: "1 new mail") : String(format: String(localized: "%lld new mails"), count)
+    }
+
     static func ago(_ date: Date) -> String {
         let minutes = Int(Date().timeIntervalSince(date) / 60)
-        return minutes < 1 ? "just now" : minutes == 1 ? "a minute ago" : minutes < 60 ? "\(minutes) min ago" : "at " + date.formatted(.dateTime.hour().minute())
+        return minutes < 1 ? String(localized: "just now")
+            : minutes == 1 ? String(localized: "a minute ago")
+            : minutes < 60 ? String(format: String(localized: "%lld min ago"), minutes)
+            : String(format: String(localized: "at %@"), date.formatted(.dateTime.hour().minute()))
     }
 }
 
@@ -669,12 +691,13 @@ struct MailVerdict: View {
         let offers = IntakeSummary.offers(answered.judgements) { key in matters.first { $0.answers(to: key) }?.name }
         let bulk = answered.judgements.count - offers.count
         VStack(alignment: .leading, spacing: 8) {
-            Text("\(offers.count) \(offers.count == 1 ? "mail" : "mails") read").font(.callout.weight(.semibold))
+            Text(offers.count == 1 ? String(localized: "1 mail read") : String(format: String(localized: "%lld mails read"), offers.count)).font(.callout.weight(.semibold))
             ScrollView { MailOffers(offers: offers, chosen: $chosen, moved: $moved, named: $named, skipped: $skipped, small: true) }
                 .frame(maxHeight: 320)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Read. " + "Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside."
-                 + (bulk > 0 ? " \(bulk) left out as \(bulk == 1 ? "a newsletter" : "newsletters")." : ""))
+            Text(String(localized: "Read. Nothing is in a matter yet: tick what you want of it — the mails, and each task and date. The rest is put aside.")
+                 + (bulk > 0 ? (bulk == 1 ? String(localized: " 1 left out as a newsletter.")
+                                          : String(format: String(localized: " %lld left out as newsletters."), bulk)) : ""))
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Button(chosen.isEmpty ? "Leave out" : chosen.count == offers.count ? "Take in" : "Take in \(chosen.count)") { take(chosen, moved, named, skipped) }
                 .inkButton()
@@ -759,7 +782,7 @@ struct IntakeMailRow: View {
             }
             .padding(.leading, 20)
         }
-        .alertWhenAsked("Move to a new matter", isPresented: $naming) {
+        .alertWhenAsked(String(localized: "Move to a new matter"), isPresented: $naming) {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) {}
             Button("Move") {

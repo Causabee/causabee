@@ -116,6 +116,20 @@ enum DemoData {
         guard ((try? context.fetchCount(FetchDescriptor<Matter>())) ?? 0) == 0 else { return }
         context.insert(Profile(names: ["Mara Voss", "mara.voss@mail.example"]))
         var book: [String: Party] = [:]
+        // F009: one German matter, only for the welcome's pictures (`--demo-de`). The demo itself
+        // stays as it is: its matters keep their own language.
+        if CommandLine.arguments.contains("--demo-de") {
+            let made = umzug(context, &book)
+            var brief = made.matter.shownBrief ?? Brief()
+            brief.newLookedAt = date(-1, hour: 21)
+            made.matter.shownBrief = brief
+            try? context.save()
+            made.talk()
+            try? context.save()
+            made.matter.sealBrief()
+            try? context.save()
+            return
+        }
         let cases = [scienceFair(context, &book), lisbon(context, &book), care(context, &book), flat(context, &book),
                      wedding(context, &book), moving(context, &book), tax(context, &book), accident(context, &book),
                      renovation(context, &book), propertyManager(context, &book), application(context, &book),
@@ -801,6 +815,49 @@ enum DemoData {
     }
 
     /// A dinner with friends: arranged in WhatsApp, one mail from the restaurant.
+    /// F009: a German matter, made up like the others, only for the welcome's three pictures — so a
+    /// German person sees German words in them. Never in the demo the owner or a user opens.
+    private static func umzug(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
+        let c = Case(context, key: "umzug-birkenweg", name: "Umzug in den Birkenweg 12")
+        let makler = "Carola Lindt <c.lindt@hausverwaltung-lindt.example>"
+        let spedition = "Jonas Reich <dispo@carry-und-co.example>"
+        let netz = "FaserNetz Service <service@fasernetz.example>"
+        let marta = "Marta Weiß <marta.weiss@mail.example>"
+
+        let zusage = c.mail(-21, makler, "Wohnung Birkenweg 12: Zusage",
+            "Die Wohnung ist deine. Der Mietvertrag kommt diese Woche, die Übergabe ist für den 9. November geplant. Die Kaution sind drei Kaltmieten.")
+        let vertrag = c.mail(-14, makler, "Mietvertrag Birkenweg 12 zur Unterschrift",
+            "Der Mietvertrag liegt bei. Bitte unterschrieben bis zum 29. Oktober zurücksenden, dann sind die Schlüssel am 9. November bereit.",
+            files: [("Mietvertrag-Birkenweg-12.pdf", "application/pdf", 184_000)])
+        let angebot = c.mail(-11, spedition, "Angebot für den Umzug am 9. November",
+            "Carry & Co kommt am 9. November um 08:00 mit dem Wagen und zwei Trägern. Kartons bringen wir mit. Die Zusage brauchen wir eine Woche vorher.")
+        let internet = c.mail(-6, netz, "Dein Anschluss im Birkenweg 12",
+            "Der Anschluss wird zum 9. November umgezogen. Ein Techniker kommt am 14. November zwischen 08:00 und 12:00.")
+        let schluessel = c.mail(-2, marta, "Schlüssel und Kartons",
+            "Marta hat den Schlüsselkasten-Code noch nicht und fragt, ob sie am Samstag beim Packen helfen soll.")
+
+        c.todo("vertrag", "Mietvertrag unterschrieben zurücksenden", .me, due: -1, from: vertrag, quote: "bis zum 29. Oktober zurücksenden")
+        c.todo("code", "Marta nach dem Schlüsselkasten-Code fragen", .me, from: schluessel, quote: "den Schlüsselkasten-Code noch nicht")
+        c.todo("kartons", "Kartons für das Arbeitszimmer bestellen", .me, from: angebot, quote: "Kartons bringen wir mit")
+        c.todo("strom", "Strom ummelden", .me, due: 6, from: zusage, quote: "Übergabe ist für den 9. November")
+
+        c.appointment("Carry & Co kommen mit dem Wagen", 2, "08:00", at: "Birkenweg 12", from: angebot, quote: "am 9. November um 08:00")
+        c.appointment("Techniker für den Anschluss", 7, "08:00", at: "Birkenweg 12", from: internet, quote: "am 14. November zwischen 08:00 und 12:00")
+        c.deadline("Zusage für die Spedition", 1, from: angebot, quote: "Die Zusage brauchen wir eine Woche vorher")
+
+        c.brief([(.about, "Der Umzug in den Birkenweg 12 ist für den 9. November geplant: Vertrag, Spedition und Anschluss stehen."),
+                 (.open, "Die Zusage für Carry & Co fehlt noch, und der Schlüsselkasten-Code.")],
+                said: [],
+                proposals: [],
+                news: ["Der Mietvertrag muss unterschrieben zurück — die Schlüssel gibt es erst dann.",
+                       "Carry & Co wollen die Zusage eine Woche vorher: sie fehlt noch."])
+        c.ask(-1, "Was muss ich vor dem Umzug noch erledigen?",
+              lines: [("Den Mietvertrag unterschrieben zurücksenden; ohne ihn gibt es die Schlüssel am 9. November nicht.", ["M2"]),
+                      ("Carry & Co die Zusage geben — sie brauchen sie eine Woche vorher.", ["M3"]),
+                      ("Offen ist noch der Schlüsselkasten-Code von Marta.", ["M5"])])
+        return c
+    }
+
     private static func dinner(_ context: ModelContext, _ book: inout [String: Party]) -> Case {
         let c = Case(context, key: "christmas-dinner", name: "Christmas dinner with friends")
         let group = c.came(.screenshot, -4, "WhatsApp: Dinner crew", "Who comes", "Anna, Ben, Chiara and Dev are in. Ben is vegetarian. Chiara might bring her sister.")

@@ -236,7 +236,7 @@ struct RootView: View {
             // not make the page work everything out again.
             MatterScreen(matter: matter).equatable()
         } else {
-            ContentUnavailableView("This matter is gone", systemImage: "folder.badge.questionmark",
+            ContentUnavailableView(String(localized: "This matter is gone"), systemImage: "folder.badge.questionmark",
                                    description: Text("It was merged or removed on another device."))
         }
     }
@@ -271,7 +271,7 @@ struct OverviewScreen: View {
                 // F008: with no matters, the first step alone, as on the Mac — no title, nothing to find.
                 if !matters.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))).uppercased())
+                        Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)).uppercased())
                             .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         Text("Overview").font(Theme.phoneTitleFont)
                     }
@@ -289,7 +289,7 @@ struct OverviewScreen: View {
                 }
                 UnreadMatters(matters: matters) { matter, mail in navigation.open(matter, showing: mail) }
                 // Under what stands on both, right over what they change.
-                if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, selection: $part) }
+                if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, handle: { "overview." + $0.rawValue }, selection: $part) }
                 if hasJournal, part == .all {
                     OverviewJournal(matters: matters) { matter, mail in
                         if mail == nil { navigation.showsNews = true }
@@ -298,7 +298,7 @@ struct OverviewScreen: View {
                 } else {
                 let pinned = Pins.pinned(matters)
                 if !pinned.isEmpty {
-                    SectionHeader(title: "Pinned", detail: nil).padding(.top, 4)
+                    SectionHeader(title: String(localized: "Pinned"), detail: nil).padding(.top, 4)
                     // Side by side where there is room for two, as on the Mac.
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: columns), alignment: .leading, spacing: 12) {
                         ForEach(pinned) { matter in
@@ -310,7 +310,7 @@ struct OverviewScreen: View {
                 }
                 let rest = ordered.filter { !$0.isPinned }
                 if !rest.isEmpty {
-                    SectionHeader(title: pinned.isEmpty ? "Matters" : "Everything else",
+                    SectionHeader(title: pinned.isEmpty ? String(localized: "Matters") : String(localized: "Everything else"),
                                   detail: nil)
                         .padding(.top, 4)
                     if columns == 1 {
@@ -364,7 +364,7 @@ struct OverviewScreen: View {
                     Group {
                         Button("Settings", systemImage: "gearshape") { NotificationCenter.default.post(name: .phoneSettings, object: nil) }
                         Button("Introduction", systemImage: "info.circle") { showsWelcome = true }
-                        Button(store.isDemo ? "Leave the demo" : "Try the demo", systemImage: store.isDemo ? "arrow.uturn.backward" : "sparkles") { store.switchDemo(!store.isDemo) }
+                        Button(store.isDemo ? String(localized: "Leave the demo") : String(localized: "Try the demo"), systemImage: store.isDemo ? "arrow.uturn.backward" : "sparkles") { store.switchDemo(!store.isDemo) }
                     }
                     .menuSigns()
                 } label: { Image(systemName: "ellipsis") }
@@ -421,7 +421,7 @@ struct OverviewScreen: View {
                         if index > 0 { Divider().padding(.leading, 14) }
                         Button { searching = false; navigation.open(matter) } label: {
                             Label {
-                                Text(matter.name + (matter.isClosed ? " · closed" : "")).foregroundStyle(.primary).lineLimit(1)
+                                Text(matter.name + (matter.isClosed ? String(localized: " · closed") : "")).foregroundStyle(.primary).lineLimit(1)
                             } icon: {
                                 Image(systemName: "clock.arrow.circlepath").foregroundStyle(.secondary)
                             }
@@ -442,7 +442,7 @@ struct OverviewScreen: View {
                         if index > 0 { Divider().padding(.leading, 14) }
                         Button { search = ""; navigation.open(hit.matter) } label: {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(hit.matter.name + (hit.matter.isClosed ? " · closed" : "")).foregroundStyle(.primary)
+                                Text(hit.matter.name + (hit.matter.isClosed ? String(localized: " · closed") : "")).foregroundStyle(.primary)
                                 if let because = hit.because { Text(because).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
                             }
                             .padding(.horizontal, 14).padding(.vertical, 10)

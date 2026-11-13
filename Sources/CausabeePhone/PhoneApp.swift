@@ -44,7 +44,7 @@ struct CausabeePhoneApp: App {
                     // Another store is another app: nothing of the last one's screens is kept.
                     .id(store.url)
             case .failure(let error):
-                ContentUnavailableView("The store cannot be opened", systemImage: "externaldrive.badge.exclamationmark",
+                ContentUnavailableView(String(localized: "The store cannot be opened"), systemImage: "externaldrive.badge.exclamationmark",
                                        description: Text("\(store.url.path)\n\(error.localizedDescription)"))
             }
         }
@@ -210,15 +210,15 @@ final class PhoneCloudStatus {
             }
         }
         // The demo has no iCloud, and CausabeeDemo is not signed for the container: asking would stop it.
-        guard PhoneCloud.container != nil else { account = "the demo stays on this \(ThisDevice.name)"; return }
+        guard PhoneCloud.container != nil else { account = String(format: String(localized: "the demo stays on this %@"), ThisDevice.name); return }
         Task {
             let status = try? await CKContainer(identifier: PhoneCloud.ownContainer).accountStatus()
             account = switch status {
-            case .available: "signed in to iCloud"
-            case .noAccount: "no iCloud account on this \(ThisDevice.name)"
-            case .restricted: "iCloud is restricted on this \(ThisDevice.name)"
-            case .temporarilyUnavailable: "iCloud is not available right now"
-            default: "iCloud status unknown"
+            case .available: String(localized: "signed in to iCloud")
+            case .noAccount: String(format: String(localized: "no iCloud account on this %@"), ThisDevice.name)
+            case .restricted: String(format: String(localized: "iCloud is restricted on this %@"), ThisDevice.name)
+            case .temporarilyUnavailable: String(localized: "iCloud is not available right now")
+            default: String(localized: "iCloud status unknown")
             }
         }
     }
@@ -236,7 +236,7 @@ struct PhoneCommands: Commands {
             Button("Get New Mail") { post(.phoneGetMail) }
         }
         // The Mac's Matter menu: the same six, in the same words, for the matter that is open.
-        CommandMenu("Matter") {
+        CommandMenu(String(localized: "Matter")) {
             ForEach(MatterAction.allCases, id: \.self) { action in
                 if action == .newTask {
                     Button(action.title) { post(.phoneMatterAction, action.rawValue) }.keyboardShortcut("t", modifiers: [.command, .shift])
@@ -255,12 +255,12 @@ struct PhoneCommands: Commands {
         }
         CommandGroup(replacing: .sidebar) {
             if window?.isPad != false {
-                Button(window?.showsSidebar == false ? "Show Sidebar" : "Hide Sidebar") { post(.phoneSidebar) }
+                Button(window?.showsSidebar == false ? String(localized: "Show Sidebar") : String(localized: "Hide Sidebar")) { post(.phoneSidebar) }
                     .keyboardShortcut("s", modifiers: [.command, .control])
             }
-            Button(window?.showsAssistant == true ? "Hide Assistant" : "Show Assistant") { post(.phoneAssistant) }
+            Button(window?.showsAssistant == true ? String(localized: "Hide Assistant") : String(localized: "Show Assistant")) { post(.phoneAssistant) }
                 .keyboardShortcut("k", modifiers: .command)
-            Button(window?.reading == true ? "Deactivate Reading Mode" : "Activate Reading Mode") { post(.phoneReading) }
+            Button(window?.reading == true ? String(localized: "Deactivate Reading Mode") : String(localized: "Activate Reading Mode")) { post(.phoneReading) }
         }
     }
 

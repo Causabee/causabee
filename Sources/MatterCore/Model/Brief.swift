@@ -100,8 +100,9 @@ public struct Brief: Codable, Equatable, Sendable {
         /// "1 new mail", "2 new mails" — and "New info" once a screenshot or a file is among it: one
         /// word for all of it, not a count of each kind.
         public var came: String {
-            if (screenshots ?? 0) + (files ?? 0) > 0 || mails == 0 { return "New info" }
-            return mails == 1 ? "1 new mail" : "\(mails) new mails"
+            if (screenshots ?? 0) + (files ?? 0) > 0 || mails == 0 { return String(localized: "New info", bundle: .module) }
+            return mails == 1 ? String(localized: "1 new mail", bundle: .module)
+                : String(format: String(localized: "%lld new mails", bundle: .module), mails)
         }
 
         /// The news of what came since the brief before: mails, screenshots and files counted apart.

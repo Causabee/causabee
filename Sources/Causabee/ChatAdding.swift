@@ -26,8 +26,8 @@ struct MacAddPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                card("Screenshot, Mail or PDF", "doc.viewfinder", id: "read", help: "Causabee reads it, and offers its tasks and dates", action: read)
-                card("Files or a Folder", "folder", id: "files", help: "Kept with the matter, unread", action: keep)
+                card(String(localized: "Screenshot, Mail or PDF"), "doc.viewfinder", id: "read", help: String(localized: "Causabee reads it, and offers its tasks and dates"), action: read)
+                card(String(localized: "Files or a Folder"), "folder", id: "files", help: String(localized: "Kept with the matter, unread"), action: keep)
             }
             .padding(.horizontal, 12)
             ScrollView(.horizontal, showsIndicators: false) {
@@ -74,7 +74,7 @@ struct MacAddPanel: View {
 
     private func pill(_ title: String, _ symbol: String, _ add: AssistantAdd) -> some View {
         Button { if !justDragged { pick(add) } } label: {
-            Label(title, systemImage: symbol).font(.callout)
+            Label(add.title, systemImage: symbol).font(.callout)
                 .padding(.vertical, 5).padding(.leading, 9).padding(.trailing, 11)
                 .background(Color.primary.opacity(0.06), in: Capsule())
                 .contentShape(Capsule())
@@ -188,7 +188,7 @@ struct AttachList: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     if files.isEmpty {
-                        Text(query.isEmpty ? "This matter has no files yet." : "No file is called that.")
+                        Text(query.isEmpty ? String(localized: "This matter has no files yet.") : String(localized: "No file is called that."))
                             .foregroundStyle(.secondary).padding(.vertical, 8)
                     }
                     ForEach(files) { row($0) }
@@ -219,7 +219,7 @@ struct AttachList: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(document.shownName).lineLimit(2)
                     if isNamed {
-                        Text(on ? "Named in the draft" : "Named in the draft · left out").font(.caption).foregroundStyle(.secondary)
+                        Text(on ? String(localized: "Named in the draft") : String(localized: "Named in the draft · left out")).font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 Spacer(minLength: 8)

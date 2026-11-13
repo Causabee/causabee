@@ -66,7 +66,7 @@ final class PhoneShots {
         return DemoData.isRequested ? documents.appendingPathComponent("Demo", isDirectory: true) : documents
     }
     /// The same, in the words Files uses.
-    static let place = "Files › On My \(ThisDevice.name) › Causabee"
+    static let place = String(format: String(localized: "Files › On My %@ › Causabee"), ThisDevice.name)
 
     static func isKept(_ file: URL) -> Bool {
         file.resolvingSymlinksInPath().path.hasPrefix(folder.resolvingSymlinksInPath().path)
@@ -99,7 +99,7 @@ final class PhoneShots {
         // This iPhone's own list of names, started from the Mac's, with the other devices' names in it.
         if !DemoData.isRequested {
             do { try NameLists.adopt(into: PhoneNames.mapping, device: PhoneNames.device, in: context) } catch {
-                shot.stage = .failed("The list of names cannot be written: \(error.localizedDescription)")
+                shot.stage = .failed(String(format: String(localized: "The list of names cannot be written: %@"), error.localizedDescription))
             }
         }
         shots.append(shot)
@@ -202,7 +202,7 @@ final class PhoneShots {
                         return new
                     }()
                     membership.mentions += look.transcript.messages.filter { $0.speaker == name }.count
-                    if membership.roles.isEmpty { membership.roles = ["in the chat"] }
+                    if membership.roles.isEmpty { membership.roles = [String(localized: "in the chat")] }
                 }
             }
             // Typed words (F008): kept on the matter as the owner's own note, too.
@@ -350,7 +350,7 @@ struct PhoneShotCard: View {
         // kept with the matter either way.
         let lines: [(id: String, text: String)] = judgement.todos.enumerated().map { ("t\($0.offset)", $0.element.text) }
             + judgement.appointments.enumerated().map { ("a\($0.offset)", "\(Dates.short($0.element.date))\($0.element.time.map { " \($0)" } ?? "") \($0.element.what)") }
-            + judgement.deadlines.enumerated().map { ("d\($0.offset)", "by \(Dates.short($0.element.date)) \($0.element.what)") }
+            + judgement.deadlines.enumerated().map { ("d\($0.offset)", String(format: String(localized: "by %@ %@"), Dates.short($0.element.date), $0.element.what)) }
             + offers.lines
         if lines.isEmpty {
             Text("Nothing to do or to note in it — it is kept with the matter, with its words.").font(.subheadline).foregroundStyle(.secondary)
@@ -474,7 +474,7 @@ struct AttachButton: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(panel.wrappedValue ? "Close" : "Add or bring in")
+            .accessibilityLabel(panel.wrappedValue ? String(localized: "Close") : String(localized: "Add or bring in"))
         } else {
             Menu {
                 Button("Files or a folder", systemImage: "folder") { picksFiles = true }
@@ -550,8 +550,8 @@ struct AttachButton: View {
             if matter != nil { Button("Only import") { importOnly() } }
             Button("Cancel", role: .cancel) { waiting = [] }
         } message: {
-            Text(pro ? "Read: Pro sorts each in, with its tasks and dates. Only import: kept with the matter, unread."
-                     : "Read: each is sorted in on this \(ThisDevice.name). Only import: kept with the matter, unread.")
+            Text(pro ? String(localized: "Read: Pro sorts each in, with its tasks and dates. Only import: kept with the matter, unread.")
+                     : String(format: String(localized: "Read: each is sorted in on this %@. Only import: kept with the matter, unread."), ThisDevice.name))
         }
         .alert(said ?? "", isPresented: Binding(get: { said != nil }, set: { if !$0 { said = nil } })) {
             Button("OK", role: .cancel) { }
@@ -569,7 +569,8 @@ struct AttachButton: View {
     /// With Pro the choice; without it, only importing is offered, and asked as that.
     private var question: String {
         let one = waiting.count == 1, name = waiting.first?.name ?? ""
-        return one ? "Read “\(name)”, or only import it?" : "Read \(waiting.count) files, or only import them?"
+        return one ? String(format: String(localized: "Read “%@”, or only import it?"), name)
+                   : String(format: String(localized: "Read %lld files, or only import them?"), waiting.count)
     }
 
     /// Picked is the yes: a photo, a scan or a few files are read and sorted in at once. Only a
@@ -622,7 +623,7 @@ struct AttachButton: View {
         try? context.save()
         PhoneFolderSaver.save([matter])
         Haptics.success()
-        said = result.said ?? (files.count == 1 ? "Imported into “\(matter.name)”, unread." : nil)
+        said = result.said ?? (files.count == 1 ? String(format: String(localized: "Imported into “%@”, unread."), matter.name) : nil)
     }
 }
 
@@ -637,13 +638,13 @@ struct MatterChooser: View {
 
     private var title: String {
         switch plus {
-        case .scan: "Scan for which matter?"
-        case .files: "Files for which matter?"
-        case .contact: "Contact for which matter?"
-        case .detail: "Detail for which matter?"
-        case .link: "Link for which matter?"
-        case .note: "Note for which matter?"
-        case .task: "Task for which matter?"
+        case .scan: String(localized: "Scan for which matter?")
+        case .files: String(localized: "Files for which matter?")
+        case .contact: String(localized: "Contact for which matter?")
+        case .detail: String(localized: "Detail for which matter?")
+        case .link: String(localized: "Link for which matter?")
+        case .note: String(localized: "Note for which matter?")
+        case .task: String(localized: "Task for which matter?")
         }
     }
 
@@ -656,9 +657,9 @@ struct MatterChooser: View {
         NavigationStack {
             List {
                 if !recent.isEmpty { Section("Recent") { rows(recent) } }
-                Section(recent.isEmpty ? "" : "All matters") { rows(rest) }
+                Section(recent.isEmpty ? "" : String(localized: "All matters")) { rows(rest) }
             }
-            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Find a matter")
+            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: String(localized: "Find a matter"))
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { SheetCancel { dismiss() } } }
@@ -814,7 +815,7 @@ struct TakenLine: View {
                 // Its tasks with no day: given one here, where it came in, they are a plan.
                 if !undated.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(undated.count == 1 ? "When?" : "When, for its \(undated.count) tasks?").font(.footnote.weight(.medium))
+                        Text(undated.count == 1 ? String(localized: "When?") : String(format: String(localized: "When, for its %lld tasks?"), undated.count)).font(.footnote.weight(.medium))
                         WhenChips { when in
                             let day = Planning.day(when, today: MatterStatus.day(Date()))
                             for todo in undated { todo.due = day }
@@ -828,7 +829,7 @@ struct TakenLine: View {
                     Menu {
                         if let matter { Button("Open \(matter.name)", systemImage: "arrow.right") { navigation.open(matter) } }
                         if document != nil {
-                            Menu("Move to …") {
+                            Menu(String(localized: "Move to …")) {
                                 ForEach(matters.filter { !$0.isClosed && $0 !== matter }.sorted { $0.name < $1.name }) { other in
                                     Button(other.name) { move(to: other) }
                                 }

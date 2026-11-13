@@ -132,7 +132,7 @@ struct CausabeeApp: App {
             case .success(let container):
                 RootView().modifier(ModelChoiceSync()).screenMeter().modelContainer(container).frame(minWidth: 960, minHeight: 640)
             case .failure(let error):
-                ContentUnavailableView("The store cannot be opened",
+                ContentUnavailableView(String(localized: "The store cannot be opened"),
                                        systemImage: "externaldrive.badge.exclamationmark",
                                        description: Text("\(storeURL.path)\n\(error.localizedDescription)"))
                     .frame(minWidth: 600, minHeight: 400)
@@ -162,7 +162,7 @@ struct CausabeeApp: App {
             }
             CommandGroup(after: .appSettings) {
                 Button("Set Up Causabee …") { NotificationCenter.default.post(name: .showSetup, object: nil) }
-                Button(DemoData.isRequested ? "Leave the Demo" : "Try the Demo") { DemoData.restart(demo: !DemoData.isRequested) }
+                Button(DemoData.isRequested ? String(localized: "Leave the Demo") : String(localized: "Try the Demo")) { DemoData.restart(demo: !DemoData.isRequested) }
             }
             CommandGroup(replacing: .help) {
                 Button("Introduction to Causabee") { NotificationCenter.default.post(name: .showIntro, object: nil) }
@@ -523,13 +523,13 @@ final class Navigation {
             let tasks = mails.reduce(0) { $0 + $1.todos.filter { $0.sameAs == nil }.count }
             let dates = mails.reduce(0) { $0 + $1.appointments.count + $1.deadlines.count }
             let done = mails.reduce(0) { $0 + $1.done.count }
-            var head = "\(mails.count) \(mails.count == 1 ? "mail" : "mails") taken in"
-            if tasks > 0 { head += " · \(tasks) new \(tasks == 1 ? "task" : "tasks")" }
-            if dates > 0 { head += " · \(dates) \(dates == 1 ? "date" : "dates")" }
-            if done > 0 { head += " · \(done) shown done" }
-            head += " · sorted by \(model)"
-            let lines = mails.prefix(5).map { "• " + ($0.subject.isEmpty ? "(no subject)" : $0.subject) }
-                + (mails.count > 5 ? ["• … and \(mails.count - 5) more"] : [])
+            var head = mails.count == 1 ? String(localized: "1 mail taken in") : String(format: String(localized: "%lld mails taken in"), mails.count)
+            if tasks > 0 { head += tasks == 1 ? String(localized: " · 1 new task") : String(format: String(localized: " · %lld new tasks"), tasks) }
+            if dates > 0 { head += dates == 1 ? String(localized: " · 1 date") : String(format: String(localized: " · %lld dates"), dates) }
+            if done > 0 { head += String(format: String(localized: " · %lld shown done"), done) }
+            head += String(format: String(localized: " · sorted by %@"), model)
+            let lines = mails.prefix(5).map { "• " + ($0.subject.isEmpty ? String(localized: "(no subject)") : $0.subject) }
+                + (mails.count > 5 ? [String(format: String(localized: "• … and %lld more"), mails.count - 5)] : [])
             var turn = Turn(question: "", scope: "Mail", inHand: nil, seen: "", refs: [:], matter: id)
             turn.note = ([head] + lines).joined(separator: "\n")
             turn.state = .failed("")
@@ -550,9 +550,9 @@ final class Navigation {
         turns.removeAll { $0.note?.contains(mark) == true }
         for (index, matter) in taken {
             let mail = DemoData.newMail[index]
-            let brought = index == 0 ? " · 1 new task" : " · 1 date"
+            let brought = index == 0 ? String(localized: " · 1 new task") : String(localized: " · 1 date")
             var turn = Turn(question: "", scope: "Mail", inHand: nil, seen: "", refs: [:], matter: matter.persistentModelID)
-            turn.note = "1 mail taken in" + brought + " · \(mark)\n• " + mail.subject
+            turn.note = String(localized: "1 mail taken in") + brought + " · \(mark)\n• " + mail.subject
             turn.state = .failed("")
             turns.append(turn)
         }
@@ -621,7 +621,7 @@ struct RootView: View {
 
     private var mergeQuestion: String {
         guard let (from, into) = navigation.merging else { return "" }
-        return "Merge “\(from.name)” into “\(into.name)”?"
+        return String(format: String(localized: "Merge “%@” into “%@”?"), from.name, into.name)
     }
 
     /// The keyboard is in the sidebar: ↑ and ↓ move through its rows.
@@ -1016,7 +1016,7 @@ extension Navigation.Turn: Codable {
             } else if try c.decodeIfPresent(Bool.self, forKey: .shotDismissed) == true {
                 shot.stage = .dismissed
             } else {
-                shot.stage = .failed("Not finished before the app was closed. Please attach it again.")
+                shot.stage = .failed(String(localized: "Not finished before the app was closed. Please attach it again."))
             }
             self.shot = shot
         }
@@ -1111,11 +1111,11 @@ struct WindowCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .sidebar) {
-            Button(window?.sidebarHidden == true ? "Show Sidebar" : "Hide Sidebar") { post(.toggleSidebar) }
+            Button(window?.sidebarHidden == true ? String(localized: "Show Sidebar") : String(localized: "Hide Sidebar")) { post(.toggleSidebar) }
                 .keyboardShortcut("s", modifiers: [.command, .control]).disabled(window == nil)
-            Button(window?.showsAssistant == true ? "Hide Assistant" : "Show Assistant") { post(.toggleAssistant) }
+            Button(window?.showsAssistant == true ? String(localized: "Hide Assistant") : String(localized: "Show Assistant")) { post(.toggleAssistant) }
                 .keyboardShortcut("k", modifiers: .command).disabled(window == nil)
-            Button(window?.reading == true ? "Deactivate Reading Mode" : "Activate Reading Mode") { post(.toggleReading) }
+            Button(window?.reading == true ? String(localized: "Deactivate Reading Mode") : String(localized: "Activate Reading Mode")) { post(.toggleReading) }
                 .disabled(window == nil)
             Divider()
             // Through the sidebar's rows without the mouse, wherever the keys are.
@@ -1142,7 +1142,7 @@ struct FindCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .pasteboard) {
             Divider()
-            Menu("Find") {
+            Menu(String(localized: "Find")) {
                 Button("Find …") { post(.find) }.keyboardShortcut("f", modifiers: .command)
                     .disabled(window == nil)
                 Button("Find Next") { post(.findNext) }.keyboardShortcut("g", modifiers: .command)
@@ -1228,9 +1228,14 @@ enum MenuOrder {
     }
 
     private static func place() {
+        // Each menu is found by something that does not change with the language: ours by the word
+        // it carries in this language, AppKit's Edit — "Bearbeiten" in German — by what is in it
+        // (F009: both were found by their English titles, so on a German Mac neither was found).
         guard let menu = NSApp.mainMenu,
-              let matter = menu.items.first(where: { $0.title == "Matter" }),
-              let edit = menu.items.firstIndex(where: { $0.title == "Edit" }) else { return }
+              let matter = menu.items.first(where: { $0.title == String(localized: "Matter") }),
+              let edit = menu.items.firstIndex(where: { item in
+                  item.submenu?.items.contains { $0.action == NSSelectorFromString("selectAll:") } ?? false
+              }) else { return }
         let at = menu.index(of: matter)
         guard at != edit + 1 else { return }
         menu.removeItem(matter)

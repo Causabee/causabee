@@ -20,9 +20,9 @@ final class CloudSync {
         }
         var label: String {
             switch self {
-            case .off: "Off — on this Mac only"
-            case .test: "Test — made-up data, its own container"
-            case .on: "On — your matters, in your private iCloud"
+            case .off: String(localized: "Off — on this Mac only")
+            case .test: String(localized: "Test — made-up data, its own container")
+            case .on: String(localized: "On — your matters, in your private iCloud")
             }
         }
     }
@@ -135,16 +135,16 @@ final class CloudSync {
     }
 
     func checkAccount() async {
-        guard Self.isEntitled else { account = "not available in this build"; return }
+        guard Self.isEntitled else { account = String(localized: "not available in this build"); return }
         // Off, the account is still worth knowing: asked through a container this build may use.
         guard let id = Self.mode.container ?? Self.available.compactMap(\.container).first else { return }
         let status = try? await CKContainer(identifier: id).accountStatus()
         account = switch status {
-        case .available: "signed in to iCloud"
-        case .noAccount: "no iCloud account on this Mac"
-        case .restricted: "iCloud is restricted on this Mac"
-        case .temporarilyUnavailable: "iCloud is not available right now"
-        default: "iCloud status unknown"
+        case .available: String(localized: "signed in to iCloud")
+        case .noAccount: String(localized: "no iCloud account on this Mac")
+        case .restricted: String(localized: "iCloud is restricted on this Mac")
+        case .temporarilyUnavailable: String(localized: "iCloud is not available right now")
+        default: String(localized: "iCloud status unknown")
         }
     }
 
@@ -175,7 +175,7 @@ struct CloudSettings: View {
         // A build without the entitlement — the downloaded beta — never syncs, whatever is chosen:
         // it says so instead of offering a choice that does nothing.
         if !CloudSync.isEntitled {
-            LabeledContent("iCloud", value: "Not in this version")
+            LabeledContent("iCloud", value: String(localized: "Not in this version"))
             Text("This version of Causabee has no iCloud: your matters stay on this Mac.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         } else {
@@ -203,7 +203,7 @@ struct CloudSettings: View {
         if started != .off {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Now: \(started.label) · \(sync.account)").font(.caption)
-                Text("Last sent: \(sync.lastExport.map { $0.formatted(date: .omitted, time: .shortened) } ?? "not yet") · last received: \(sync.lastImport.map { $0.formatted(date: .omitted, time: .shortened) } ?? "not yet")")
+                Text("Last sent: \(sync.lastExport.map { $0.formatted(date: .omitted, time: .shortened) } ?? String(localized: "not yet")) · last received: \(sync.lastImport.map { $0.formatted(date: .omitted, time: .shortened) } ?? String(localized: "not yet"))")
                     .font(.caption).foregroundStyle(.secondary)
                 if let error = sync.lastError { Text(error).font(.caption).foregroundStyle(Theme.warning).textSelection(.enabled) }
             }

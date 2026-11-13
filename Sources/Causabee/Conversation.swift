@@ -31,7 +31,8 @@ struct Conversation {
         }
         var turn = Navigation.Turn(question: question, scope: pinnedMatter.map { "about \($0.name)" } ?? "about all matters",
                                    inHand: navigation.pinned, seen: "", refs: [:], matter: pinnedMatter?.persistentModelID)
-        turn.readAs = readAs.map { "read “\($0.typed)” as “\($0.known)”" }
+        let readAsWord = String(localized: "read “%@” as “%@”")
+        turn.readAs = readAs.map { String(format: readAsWord, $0.typed, $0.known) }
         // A link, a detail and a contact are kept as typed; a task and a note too without Pro or a
         // key to ask with. Nothing is sent, and it is in the matter at once.
         if let add, !add.asksAssistant || !pro || ModelChoice.client(for: ModelChoice.assistant) == nil {
@@ -332,7 +333,7 @@ struct Conversation {
                         return new
                     }()
                     membership.mentions += look.transcript.messages.filter { $0.speaker == name }.count
-                    if membership.roles.isEmpty { membership.roles = ["in the chat"] }
+                    if membership.roles.isEmpty { membership.roles = [String(localized: "in the chat")] }
                 }
                 try context.save()
             }
@@ -561,7 +562,7 @@ struct Composer: View {
                     Button(matter.name) { addTo(matter, action) }
                 }
                 Divider()
-                Menu("All Matters") {
+                Menu(String(localized: "All Matters")) {
                     ForEach(open) { matter in
                         Button(matter.name) { addTo(matter, action) }
                     }
@@ -596,7 +597,7 @@ struct Composer: View {
                     Image(systemName: AssistantAdd(rawValue: pinned.kind) == nil ? "pin.fill" : "plus").font(.caption).foregroundStyle(Theme.gold)
                     VStack(alignment: .leading, spacing: 1) {
                         // The matter is in the field's placeholder below; the chip says only what it is.
-                        Text(pinned.kind.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(Theme.gold)
+                        Text(InHand.word(pinned.kind).uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(Theme.gold)
                         Text(pinned.text).lineLimit(2).foregroundStyle(.primary)
                     }
                     Spacer()
@@ -636,8 +637,8 @@ struct Composer: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    .help(panelOpen ? "Close" : "Add to this matter: a task, a note, a link, a detail, a contact, a file — or something for Causabee to read")
-                    .accessibilityLabel(panelOpen ? "Close" : "Add to this matter")
+                    .help(panelOpen ? String(localized: "Close") : String(localized: "Add to this matter: a task, a note, a link, a detail, a contact, a file — or something for Causabee to read"))
+                    .accessibilityLabel(panelOpen ? String(localized: "Close") : String(localized: "Add to this matter"))
                     .accessibilityIdentifier("assistant.plus")
                 } else if let attach, addTo != nil {
                     // The one place things are added, in three parts, the same as the bee held on the
@@ -647,12 +648,12 @@ struct Composer: View {
                         // In a matter these are the chips over the field; on the overview each asks
                         // which matter it is for.
                         if add == nil {
-                            addItem("Task", "checklist", .newTask)
-                            addItem("Note", "note.text", .writeNote)
+                            addItem(String(localized: "Task"), "checklist", .newTask)
+                            addItem(String(localized: "Note"), "note.text", .writeNote)
                             Divider()
-                            addItem("Link", "link", .addLink)
-                            addItem("Detail", "info.circle", .addDetail)
-                            addItem("Contact", "person.badge.plus", .addContact)
+                            addItem(String(localized: "Link"), "link", .addLink)
+                            addItem(String(localized: "Detail"), "info.circle", .addDetail)
+                            addItem(String(localized: "Contact"), "person.badge.plus", .addContact)
                         }
                         // What is brought in, under what becomes of it — said once, over the part.
                         // What is read finds its matter itself.
@@ -660,15 +661,15 @@ struct Composer: View {
                             Button("Screenshot, Mail or PDF …", systemImage: "doc.viewfinder", action: attach)
                         }
                         Section("Kept only, not read") {
-                            addItem("Files or a Folder …", "folder", .addFile)
+                            addItem(String(localized: "Files or a Folder …"), "folder", .addFile)
                         }
                     } label: {
                         Image(systemName: "plus").font(.system(size: 15)).frame(width: 34, height: 34).contentShape(Rectangle())
                     }
                     .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
                     .foregroundStyle(.secondary)
-                    .help(add != nil ? "Add to this matter: a task, a note, a link, a detail, a contact, a file — or something for Causabee to read"
-                                     : "Add to a matter: a task, a note, a link, a detail, a contact, files — or something for Causabee to read")
+                    .help(add != nil ? String(localized: "Add to this matter: a task, a note, a link, a detail, a contact, a file — or something for Causabee to read")
+                                     : String(localized: "Add to a matter: a task, a note, a link, a detail, a contact, files — or something for Causabee to read"))
                     .accessibilityLabel("Add to this matter")
                     .accessibilityIdentifier("assistant.plus")
                 } else if let attach {
@@ -711,7 +712,7 @@ struct Composer: View {
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(stop == nil ? KeyboardShortcut(.return, modifiers: .command) : KeyboardShortcut(".", modifiers: .command))
-                .help(stop == nil ? "Send (↩) · new line with ⇧↩" : "Stop (⌘.)")
+                .help(stop == nil ? String(localized: "Send (↩) · new line with ⇧↩") : String(localized: "Stop (⌘.)"))
               }
             }
             .padding(7)
@@ -719,10 +720,10 @@ struct Composer: View {
             .glassBehind(RoundedRectangle(cornerRadius: 24))
             }
             // "more" and "less" are links inside the line, so the full one wraps like a sentence.
-            Text(LocalizedStringKey(!pro || ModelChoice.reach != .pro ? "Stays on this device. Asking needs Pro."
+            Text(LocalizedStringKey(!pro || ModelChoice.reach != .pro ? String(localized: "Stays on this device. Asking needs Pro.")
                 : showsMore
-                ? "Always pseudonymised sent to \(AIJob.chatSentTo) • Sees: \(seen()) • [less](causabee://footer)"
-                : "Always pseudonymised sent • [more](causabee://footer)"))
+                ? String(format: String(localized: "Always pseudonymised sent to %@ • Sees: %@ • [less](causabee://footer)"), AIJob.chatSentTo, seen())
+                : String(localized: "Always pseudonymised sent • [more](causabee://footer)")))
                 .font(.caption2).foregroundStyle(.secondary).tint(Theme.gold)
                 .environment(\.openURL, OpenURLAction { _ in showsMore.toggle(); return .handled })
                 .padding(.horizontal, 8)

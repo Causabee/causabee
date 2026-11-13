@@ -127,7 +127,13 @@ struct JournalTests {
                        mail("Long ago", on: day("2026-03-02"), id: "3", in: matter, context)]
         let items = MailThreads.build(entries).map(RecordBrowse.Item.thread)
         let titles: [String] = Journal.lines(items: items, today: today).compactMap { if case .day(_, let title) = $0 { title } else { nil } }
-        #expect(titles == ["TODAY · WED, SEP 30", "YESTERDAY · SEP 29", "MONDAY · MAR 2"])
+        // The words are the app's own; the day inside them is written as the device writes it —
+        // "SEP 30" in English, "30. SEP" where the region says so (F009 AC-3). So the test says
+        // what the app writes around the day, and that the day itself is in there.
+        #expect(titles.count == 3)
+        #expect(titles[0].hasPrefix("TODAY · WED, ") && titles[0].contains("SEP") && titles[0].contains("30"))
+        #expect(titles[1].hasPrefix("YESTERDAY · ") && titles[1].contains("SEP") && titles[1].contains("29"))
+        #expect(titles[2].hasPrefix("MONDAY · ") && titles[2].contains("MAR") && titles[2].contains("2"))
     }
 
     @Test("A long journal folds what is older than a month into its months, each with what it held; opened, a month shows its days")

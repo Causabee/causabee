@@ -41,7 +41,7 @@ struct NextStepTests {
         let step = try #require(status.nextStep)
         #expect(step.kind == .wait)
         #expect(step.text == answer.text)
-        #expect(step.why.contains("Sep 30") && step.why.contains("Then this can go ahead: Nachweis"))
+        #expect(step.why.contains(MatterStatus.short("2026-09-30")) && step.why.contains("Then this can go ahead: Nachweis"))
         #expect(step.heading == "Wait · from your tasks")
 
         answer.isDone = true
@@ -89,7 +89,7 @@ struct NextStepTests {
         #expect(Todo.isMessage("Email Maike the dial-in details"))
         #expect(!Todo.isMessage("Check the email settings"))
         let why = try #require(MatterStatus(matter, today: today).nextStep?.why)
-        #expect(why.hasPrefix("Due on Sep 30") && !why.contains(".."))
+        #expect(why.hasPrefix("Due on \(MatterStatus.short("2026-09-30"))") && !why.contains(".."))
     }
 
     @Test("No to-do waits for itself, nor round in a circle")

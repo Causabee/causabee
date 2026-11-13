@@ -152,12 +152,12 @@ public actor CalendarWorker: CalendarAsking {
                 // The end too, when this one knows it: a different length there is said as well.
                 let endDiffers = endTime != nil && theirEnd != endTime
                 if let day, MatterStatus.day(found.startDate) != day || theirs != time || endDiffers {
-                    let when = found.isAllDay ? "all day" : "\(Mirror.time(of: found.startDate))–\(Mirror.time(of: found.endDate))"
-                    said += " · there " + (MatterStatus.day(found.startDate) == day ? when : found.startDate.formatted(.dateTime.day().month(.abbreviated)) + ", " + when)
+                    let when = found.isAllDay ? String(localized: "all day", bundle: .module) : "\(Mirror.time(of: found.startDate))–\(Mirror.time(of: found.endDate))"
+                    said += String(localized: " · there ", bundle: .module) + (MatterStatus.day(found.startDate) == day ? when : found.startDate.formatted(.dateTime.day().month(.abbreviated)) + ", " + when)
                 }
                 return .linked(said)
             }
-            if let known = reminders.first(where: { $0.id == id }) { return .linked(known.list + (known.isDone ? " · done" : "")) }
+            if let known = reminders.first(where: { $0.id == id }) { return .linked(known.list + (known.isDone ? String(localized: " · done", bundle: .module) : "")) }
             return reminder(id).map { .linked($0.calendar?.title ?? "") } ?? .gone
         }
         if isEvent {

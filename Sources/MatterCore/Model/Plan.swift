@@ -57,7 +57,7 @@ extension Judgement {
         let name = matterTitle ?? matter.map(Matter.readable) ?? ""
         waiting.matter = nil
         waiting.matterTitle = nil
-        waiting.matterReason = "Would start the matter “\(name)” — Causabee holds \(Plan.freeMatters) open matters for free"
+        waiting.matterReason = String(format: String(localized: "Would start the matter “%@” — Causabee holds %lld open matters for free", bundle: .module), name, Plan.freeMatters)
         return waiting
     }
 }

@@ -12,28 +12,31 @@ public enum Welcome {
         public let line: String
     }
 
-    public static let promise = "Every matter.\nIn its place."
-    public static let promiseLine = "Mum’s care, a claim, a move: each in its own place — with what comes next, and who does what by when."
+    public static var promise: String { String(localized: "Every matter.\nIn its place.", bundle: .module) }
+    public static var promiseLine: String { String(localized: "Mum’s care, a claim, a move: each in its own place — with what comes next, and who does what by when.", bundle: .module) }
     /// Said once, on the first page.
-    public static let privacy = "Names are disguised before anything is sent."
+    public static var privacy: String { String(localized: "Names are disguised before anything is sent.", bundle: .module) }
 
-    public static let pages = [
-        Page(image: "welcome-1", title: "One page for each matter", line: "What comes next, and who does what by when."),
-        Page(image: "welcome-2", title: "From whatever you have", line: "A screenshot, a photo, a letter, a few words: the bee finds the dates and the tasks."),
-        Page(image: "welcome-3", title: "Ask about it", line: "Ask, and get an answer with where it came from."),
-    ]
+    public static var pages: [Page] { [
+        Page(image: "welcome-1", title: String(localized: "One page for each matter", bundle: .module),
+             line: String(localized: "What comes next, and who does what by when.", bundle: .module)),
+        Page(image: "welcome-2", title: String(localized: "From whatever you have", bundle: .module),
+             line: String(localized: "A screenshot, a photo, a letter, a few words: the bee finds the dates and the tasks.", bundle: .module)),
+        Page(image: "welcome-3", title: String(localized: "Ask about it", bundle: .module),
+             line: String(localized: "Ask, and get an answer with where it came from.", bundle: .module)),
+    ] }
 
     // MARK: The first step
 
-    public static let firstTitle = "What’s on your mind?"
-    public static let firstLine = "Type it in a few words, or add what you have."
-    public static let placeholder = "Mum’s care, a claim, a move …"
-    public static let demoAsk = "Not sure yet?"
-    public static let demo = "Look around in an example."
-    public static let reading = "Reading …"
-    public static let cloudLine = "Looking in iCloud for your matters …"
-    public static let unreadable = "Causabee can't read this file."
-    public static let notRead = "Not read yet — your words are kept."
+    public static var firstTitle: String { String(localized: "What’s on your mind?", bundle: .module) }
+    public static var firstLine: String { String(localized: "Type it in a few words, or add what you have.", bundle: .module) }
+    public static var placeholder: String { String(localized: "Mum’s care, a claim, a move …", bundle: .module) }
+    public static var demoAsk: String { String(localized: "Not sure yet?", bundle: .module) }
+    public static var demo: String { String(localized: "Look around in an example.", bundle: .module) }
+    public static var reading: String { String(localized: "Reading …", bundle: .module) }
+    public static var cloudLine: String { String(localized: "Looking in iCloud for your matters …", bundle: .module) }
+    public static var unreadable: String { String(localized: "Causabee can't read this file.", bundle: .module) }
+    public static var notRead: String { String(localized: "Not read yet — your words are kept.", bundle: .module) }
 
     /// With no matters at all there is nothing to choose: what is added goes into a new matter at
     /// once, named as the bee proposes, and opens.
@@ -45,7 +48,7 @@ public enum Welcome {
         if let proposed = proposed?.trimmingCharacters(in: .whitespacesAndNewlines), !proposed.isEmpty,
            grounded(proposed, in: within ?? typed) { return proposed }
         let first = typed.split(whereSeparator: \.isNewline).first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
-        guard !first.isEmpty else { return "A new matter" }
+        guard !first.isEmpty else { return String(localized: "A new matter", bundle: .module) }
         let line = beforeDate(first)
         guard line.count > 60 else { return line }
         // Cut at a word, never in one.
@@ -121,12 +124,12 @@ public enum Welcome {
     // MARK: The start credit (AC-14 – AC-17)
 
     /// Under the first step, while the start credit is there and unused (AC-15).
-    public static let startLine = "A start credit is yours: Pro reads your first things, names disguised."
+    public static var startLine: String { String(localized: "A start credit is yours: Pro reads your first things, names disguised.", bundle: .module) }
     /// Pro's use names it so while it is all there is beyond the month (AC-15).
-    public static let startName = "Start credit"
+    public static var startName: String { String(localized: "Start credit", bundle: .module) }
     /// The card once it is used (AC-17), and its "Not now".
-    public static let startUsedTitle = "Your start credit is used."
-    public static let startUsedLine = "Apple's model on this device reads from now on. A top-up lets Pro read again."
+    public static var startUsedTitle: String { String(localized: "Your start credit is used.", bundle: .module) }
+    public static var startUsedLine: String { String(localized: "Apple's model on this device reads from now on. A top-up lets Pro read again.", bundle: .module) }
     public static let startUsedLaterKey = "start.used.later"
     /// Asked once on this device; `--fresh-start` forgets it, for the owner's tries.
     public static let startAskedKey = "start.asked"
@@ -193,21 +196,22 @@ public enum Welcome {
     public static func asksName(names: [String]) -> Bool {
         names.allSatisfy { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
-    public static let nameAskMac = "This is you:"
-    public static let nameAsk = "Your name, so your tasks show as yours."
+    public static var nameAskMac: String { String(localized: "This is you:", bundle: .module) }
+    public static var nameAsk: String { String(localized: "Your name, so your tasks show as yours.", bundle: .module) }
 
     /// Mail is offered once a matter exists, while no mailbox is set up, until Not now.
     public static let mailLaterKey = "mail.offer.later"
     public static func offersMail(matters: Int, hasMailbox: Bool, later: Bool) -> Bool {
         matters > 0 && !hasMailbox && !later
     }
-    public static let mailTitle = "Also what comes by mail?"
-    public static let mailLine = "Causabee reads one label or folder you choose — nothing else in your mailbox."
+    public static var mailTitle: String { String(localized: "Also what comes by mail?", bundle: .module) }
+    public static var mailLine: String { String(localized: "Causabee reads one label or folder you choose — nothing else in your mailbox.", bundle: .module) }
 }
 
 extension Source {
     /// The owner's own typed words (F008): kept as the kind every build knows, with "you" as where
-    /// they came from — so they read as the owner's, never as the assistant's.
+    /// they came from — so they read as the owner's, never as the assistant's. Stored and compared,
+    /// on every device and in every language, so it is never looked up (F009).
     public static let ownWords = "you"
     public var isOwnWords: Bool { kind == .conversation && pointer == Self.ownWords }
 }

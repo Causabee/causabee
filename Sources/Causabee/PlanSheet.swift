@@ -15,19 +15,19 @@ struct PlanSheet: View {
 
     private var title: String {
         switch reason {
-        case .matters: "Room for a fourth matter"
+        case .matters: String(localized: "Room for a fourth matter")
         case .pro: "Causabee Pro"
-        case .choose: "Your plan"
-        case .topUp: "Pro, now and then"
+        case .choose: String(localized: "Your plan")
+        case .topUp: String(localized: "Pro, now and then")
         }
     }
 
     private var lead: String {
         switch reason {
-        case .matters: "Causabee holds \(Plan.freeMatters) open matters for free. Close one — or make room for all of them. Nothing you have is ever locked."
-        case .pro: "The bigger AI reads what comes in, as it comes, writes each matter's brief and answers about everything — names always disguised."
-        case .choose: "Free stays on your device. Plus for every matter, Pro for the bigger AI."
-        case .topUp: "A top-up lets Pro read again: \(Self.topUpWords.prefix(1).lowercased() + Self.topUpWords.dropFirst())"
+        case .matters: String(format: String(localized: "Causabee holds %lld open matters for free. Close one — or make room for all of them. Nothing you have is ever locked."), Plan.freeMatters)
+        case .pro: String(localized: "The bigger AI reads what comes in, as it comes, writes each matter's brief and answers about everything — names always disguised.")
+        case .choose: String(localized: "Free stays on your device. Plus for every matter, Pro for the bigger AI.")
+        case .topUp: String(format: String(localized: "A top-up lets Pro read again: %@"), Self.topUpWords.prefix(1).lowercased() + Self.topUpWords.dropFirst())
         }
     }
 
@@ -48,17 +48,17 @@ struct PlanSheet: View {
         let yearly = store.products.first { $0.id.hasSuffix(".yearly") }
         let monthly = store.products.first { Store.mattersIDs.contains($0.id) && $0 != yearly }
         let pro = price(Store.proIDs), topUp = price(Store.topUpIDs)
-        var all = [Choice(id: "free", name: "Causabee", holds: "\(Plan.freeMatters) open matters", price: "Free", yours: store.plan == .free)]
-        all.append(Choice(id: "plus", name: "Causabee Plus", holds: "Every matter, on your device",
+        var all = [Choice(id: "free", name: "Causabee", holds: String(format: String(localized: "%lld open matters"), Plan.freeMatters), price: String(localized: "Free"), yours: store.plan == .free)]
+        all.append(Choice(id: "plus", name: "Causabee Plus", holds: String(localized: "Every matter, on your device"),
                           price: monthly.map(Store.price) ?? PlanShot.current?.price("plus"), product: monthly, yours: store.plan == .matters))
         if store.plan != .matters, yearly != nil || PlanShot.current != nil {
-            all.append(Choice(id: "yearly", name: "Causabee Plus yearly", holds: "Every matter, on your device",
+            all.append(Choice(id: "yearly", name: String(localized: "Causabee Plus yearly"), holds: String(localized: "Every matter, on your device"),
                               price: yearly.map(Store.price) ?? PlanShot.current?.price("yearly"), product: yearly))
         }
-        all.append(Choice(id: "pro", name: "Causabee Pro", holds: "The bigger AI, up to a monthly limit, names always disguised",
+        all.append(Choice(id: "pro", name: "Causabee Pro", holds: String(localized: "The bigger AI, up to a monthly limit, names always disguised"),
                           price: pro.map(Store.price) ?? PlanShot.current?.price("pro"), product: pro, yours: store.plan == .pro))
         if topUp != nil || PlanShot.current != nil {
-            all.append(Choice(id: "topup", name: store.plan == .pro ? "Add a top-up" : "Pro, now and then",
+            all.append(Choice(id: "topup", name: store.plan == .pro ? String(localized: "Add a top-up") : String(localized: "Pro, now and then"),
                               holds: Self.topUpWords, price: topUp?.displayPrice ?? PlanShot.current?.price("topup"), product: topUp))
         }
         return all
@@ -74,7 +74,7 @@ struct PlanSheet: View {
             ?? open.first { $0.id == (store.plan == .pro || reason == .topUp ? "topup" : reason == .matters ? "plus" : "pro") } ?? open.first
     }
 
-    static let topUpWords = "Adds a third of a month's Pro use, kept until it is used."
+    static let topUpWords = String(localized: "Adds a third of a month's Pro use, kept until it is used.")
 
     var body: some View {
         #if os(iOS)
@@ -152,16 +152,16 @@ struct PlanSheet: View {
     }
 
     private func words(for choice: Choice) -> String {
-        guard let product = choice.product else { return "Continue with \(choice.short) · \(choice.price ?? "")" }
+        guard let product = choice.product else { return String(format: String(localized: "Continue with %@ · %@"), choice.short, choice.price ?? "") }
         let offer = store.offer(of: product)
         // A free week says so by itself, and a name in front would not fit.
-        return offer == Store.price(of: product) ? "Continue with \(choice.short) · \(offer)" : offer
+        return offer == Store.price(of: product) ? String(format: String(localized: "Continue with %@ · %@"), choice.short, offer) : offer
     }
 
     #if os(macOS)
-    private static let noStoreWords = "This Mac's Causabee comes from the website, where the App Store cannot sell. Choose a plan on your iPhone or iPad: this Mac follows through iCloud."
+    private static let noStoreWords = String(localized: "This Mac's Causabee comes from the website, where the App Store cannot sell. Choose a plan on your iPhone or iPad: this Mac follows through iCloud.")
     #else
-    private static let noStoreWords = "The App Store does not answer right now. Try again in a moment."
+    private static let noStoreWords = String(localized: "The App Store does not answer right now. Try again in a moment.")
     #endif
 
     /// One line: grey, for it waits for a choice; the one chosen in the bee's colour. Nothing to
@@ -183,7 +183,7 @@ struct PlanSheet: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
                         Text(choice.name).fontWeight(.medium).foregroundStyle(.primary)
-                        if choice.yours { BeeChip(text: "YOURS") }
+                        if choice.yours { BeeChip(text: String(localized: "YOURS")) }
                     }
                     Text(choice.holds).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
@@ -303,9 +303,9 @@ struct PlanSettings: View {
 
     private var holds: String {
         switch store.plan {
-        case .free: "\(Plan.freeMatters) open matters. Apple's model on this device reads what comes in — nothing leaves it."
-        case .matters: "Every matter you need. Apple's model on this device reads what comes in — nothing leaves it."
-        case .pro: "Every matter, and the bigger AI up to a monthly limit."
+        case .free: String(format: String(localized: "%lld open matters. Apple's model on this device reads what comes in — nothing leaves it."), Plan.freeMatters)
+        case .matters: String(localized: "Every matter you need. Apple's model on this device reads what comes in — nothing leaves it.")
+        case .pro: String(localized: "Every matter, and the bigger AI up to a monthly limit.")
         }
     }
 
@@ -322,8 +322,8 @@ struct PlanSettings: View {
                 }
                 if meter.bars.isEmpty { Text(holds).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
                 if case .billingProblem(let until) = store.renewal {
-                    Text("Apple could not charge your payment method. " + (until.map { "The plan goes on until \(Dates.long($0)); " } ?? "")
-                         + "update it in your Apple Account, and it renews as before.")
+                    Text(until.map { String(format: String(localized: "Apple could not charge your payment method. The plan goes on until %@; update it in your Apple Account, and it renews as before."), Dates.long($0)) }
+                         ?? String(localized: "Apple could not charge your payment method. update it in your Apple Account, and it renews as before."))
                         .font(.footnote).foregroundStyle(Theme.warning).fixedSize(horizontal: false, vertical: true)
                 }
                 ProBar(meter: meter)
@@ -353,9 +353,9 @@ struct PlanSettings: View {
         Section { UseProToggle() }
         if store.plan != .free {
             Section {
-                PlanRow("Change plan") { choosing = true }
+                PlanRow(String(localized: "Change plan")) { choosing = true }
                 #if os(iOS)
-                if store.bought.plan != .free || PlanShot.current != nil { PlanRow("Manage subscription") { managing = true } }
+                if store.bought.plan != .free || PlanShot.current != nil { PlanRow(String(localized: "Manage subscription")) { managing = true } }
                 #endif
             } footer: {
                 VStack(alignment: .leading, spacing: 4) {

@@ -39,6 +39,10 @@ public struct ScreenshotDoor: Sendable {
     public static let chatTypes: Set<String> = ["png", "jpg", "jpeg", "heic", "tiff", "gif"]
     public static let readable: Set<String> = chatTypes.union(["eml", "emlx", "pdf", "txt"])
 
+    /// Said of a page that could not be read at all. One word, so the warnings are found by it
+    /// whatever language it is said in (F009).
+    static var nothingReadable: String { String(localized: "nothing readable", bundle: .module) }
+
     public struct Look: Sendable {
         public var file: URL
         public var kind: Kind
@@ -48,12 +52,15 @@ public struct ScreenshotDoor: Sendable {
         public var heading: String
         /// Who and when: "Frau Behrend · 22. Juni", "PDF · 3 Seiten".
         public var byline: String
+        /// A picture of something on paper — a photographed letter, a scan — not a phone's screen.
+        /// Said here and not read back out of `byline`, which is in the device's language (F009).
+        public var isPhoto = false
         /// The start of what was read.
         public var preview: String
         /// What could not be read as text, page by page, and how it was read instead.
         public var notes: [String]
         /// The pages that could not be read at all: the only notes worth showing.
-        public var warnings: [String] { notes.filter { $0.contains("nothing readable") } }
+        public var warnings: [String] { notes.filter { $0.contains(ScreenshotDoor.nothingReadable) } }
         public var report: Spike.Report
         public var answered: [String: Judgement]
         /// This very image was read and answered before.
@@ -157,13 +164,16 @@ public struct ScreenshotDoor: Sendable {
         let when = email.date.map { MatterStatus.day($0) } ?? ""
         let pages = max(notes.count, email.body.components(separatedBy: "— Seite ").count - 1)
         let byline = switch kind {
-        case .chat: picture != nil ? (phoneShaped ? "Screenshot · text" : "Photo · text read on this device") : (transcript.subtitle ?? "Chat")
+        case .chat: picture != nil ? (phoneShaped ? String(localized: "Screenshot · text", bundle: .module) : String(localized: "Photo · text read on this device", bundle: .module))
+                                  : (transcript.subtitle ?? String(localized: "Chat", bundle: .module))
         case .mail: [Email.displayName(in: email.from) ?? email.fromAddress, when].filter { !$0.isEmpty }.joined(separator: " · ")
-        case .document: file.pathExtension.lowercased() == "txt" ? "Your words" : pages == 1 ? "PDF · 1 page" : "PDF · \(pages) pages"
+        case .document: file.pathExtension.lowercased() == "txt" ? String(localized: "Your words", bundle: .module)
+            : pages == 1 ? String(localized: "PDF · 1 page", bundle: .module) : String(format: String(localized: "PDF · %lld pages", bundle: .module), pages)
         }
         return Look(file: file, kind: kind, transcript: transcript,
-                    heading: picture?.heading ?? (kind == .chat ? (transcript.title ?? "Chat without a name") : (email.subject.isEmpty ? file.lastPathComponent : email.subject)),
-                    byline: byline, preview: String(email.body.prefix(600)), notes: notes,
+                    heading: picture?.heading ?? (kind == .chat ? (transcript.title ?? String(localized: "Chat without a name", bundle: .module)) : (email.subject.isEmpty ? file.lastPathComponent : email.subject)),
+                    byline: byline, isPhoto: kind == .chat && picture != nil && !phoneShaped,
+                    preview: String(email.body.prefix(600)), notes: notes,
                     report: report, answered: answered,
                     earlier: answered[id].flatMap { Extractor.isSettled($0) ? $0 : nil },
                     estimate: DailyDoor.costPerMail(model), sent: sent)
@@ -193,8 +203,9 @@ public struct ScreenshotDoor: Sendable {
                         text = lines.map(\.text).joined(separator: "\n")
                     }
                 }
-                notes.append(text.isEmpty ? "Page \(index + 1): nothing readable — not even with text recognition"
-                                          : "Page \(index + 1): scanned, no text layer — read with text recognition on this device")
+                notes.append(text.isEmpty
+                    ? String(format: String(localized: "Page %lld: %@ — not even with text recognition", bundle: .module), index + 1, Self.nothingReadable)
+                    : String(format: String(localized: "Page %lld: scanned, no text layer — read with text recognition on this device", bundle: .module), index + 1))
             }
             parts.append("— Seite \(index + 1) —\n" + (text.isEmpty ? "[nicht lesbar]" : text))
         }

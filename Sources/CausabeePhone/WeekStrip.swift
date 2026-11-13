@@ -36,8 +36,9 @@ struct PhoneWeek: View {
                          count: Week.asTheDayGoes(StoredChanges.shared.things(on: each, in: matters), on: each, now: now).ahead.count, late: each == today && late)
                 }
             }
-            SectionHeader(title: day == today ? "Today · " + Self.heading(day) : Self.heading(day),
-                          detail: things.isEmpty ? (over.isEmpty ? "nothing" : "nothing left") : things.count == 1 ? "1 thing" : "\(things.count) things")
+            SectionHeader(title: day == today ? String(format: String(localized: "Today · %@"), Self.heading(day)) : Self.heading(day),
+                          detail: things.isEmpty ? (over.isEmpty ? String(localized: "nothing") : String(localized: "nothing left"))
+                              : things.count == 1 ? String(localized: "1 thing") : String(format: String(localized: "%lld things"), things.count))
                 .padding(.top, 4)
             // Today first says what is overdue, as the Mac's first tile does; "Nothing today" only
             // when nothing is late either.
@@ -51,7 +52,7 @@ struct PhoneWeek: View {
             if !over.isEmpty {
                 Button { withAnimation(.snappy) { showsEarlier.toggle() } } label: {
                     HStack(spacing: 4) {
-                        Text(over.count == 1 ? "1 earlier today" : "\(over.count) earlier today")
+                        Text(over.count == 1 ? String(localized: "1 earlier today") : String(format: String(localized: "%lld earlier today"), over.count))
                         Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).rotationEffect(.degrees(showsEarlier ? 180 : 0))
                     }
                     .font(.caption).foregroundStyle(.secondary)
@@ -90,7 +91,7 @@ struct PhoneWeek: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityHint(showsOverdue ? "Hides the list" : "Shows the list")
+            .accessibilityHint(showsOverdue ? String(localized: "Hides the list") : String(localized: "Shows the list"))
             if showsOverdue {
                 ForEach(late) { todo in
                     Divider().padding(.leading, 14)
@@ -139,7 +140,7 @@ struct PhoneWeek: View {
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Self.spoken.string(from: date) + (count == 0 ? ", nothing" : count == 1 ? ", 1 thing" : ", \(count) things"))
+        .accessibilityLabel(Self.spoken.string(from: date) + (count == 0 ? String(localized: ", nothing") : count == 1 ? String(localized: ", 1 thing") : String(format: String(localized: ", %lld things"), count)))
         .accessibilityAddTraits(isChosen ? .isSelected : [])
     }
 
@@ -174,7 +175,7 @@ struct PhoneWeek: View {
     /// A day without anything says so, and what comes next — a tap is never a dead end.
     private func nothing(on day: String, isToday: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(isToday ? "Nothing today." : "Nothing on \(Self.weekdayWide.string(from: MatterStatus.date(of: day) ?? Date())).")
+            Text(isToday ? String(localized: "Nothing today.") : String(format: String(localized: "Nothing on %@."), Self.weekdayWide.string(from: MatterStatus.date(of: day) ?? Date())))
                 .font(.subheadline).foregroundStyle(.secondary)
             if let next = StoredChanges.shared.next(after: day, in: matters) {
                 Button { navigation.open(next.thing.matter, showing: next.thing.todo?.persistentModelID) } label: {
@@ -193,15 +194,16 @@ struct PhoneWeek: View {
     /// "Thu, Oct 8"
     static func heading(_ day: String) -> String { MatterStatus.date(of: day).map(dayHeading.string) ?? day }
 
-    private static func formatter(_ format: String) -> DateFormatter {
+    /// A day a person reads: the template says which parts are wanted, the device's language how
+    /// they are put together — "Thu, Nov 13" in English, "Do., 13. Nov." in German (F009 AC-3).
+    private static func formatter(_ template: String) -> DateFormatter {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = format
+        formatter.setLocalizedDateFormatFromTemplate(template)
         return formatter
     }
     private static let weekday = formatter("EEE")
     private static let weekdayWide = formatter("EEEE")
     private static let dayOfMonth = formatter("d")
-    private static let dayHeading = formatter("EEE, MMM d")
-    private static let spoken = formatter("EEEE, MMMM d")
+    private static let dayHeading = formatter("EEEMMMd")
+    private static let spoken = formatter("EEEEMMMMd")
 }

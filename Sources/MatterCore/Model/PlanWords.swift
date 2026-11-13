@@ -81,47 +81,52 @@ public struct PlanWords: Equatable, Sendable {
         case .pro: "Causabee Pro"
         }
         corner = switch renewal {
-        case .renews(let date): "renews " + Self.long(date)
-        case .ends(let date): "ends " + Self.long(date)
-        case .changes(let to, let date): (to == .pro ? "Pro" : "Plus") + " from " + Self.long(date)
-        case .billingProblem: "payment problem"
+        case .renews(let date): String(format: String(localized: "renews %@", bundle: .module), Self.long(date))
+        case .ends(let date): String(format: String(localized: "ends %@", bundle: .module), Self.long(date))
+        case .changes(let to, let date):
+            String(format: String(localized: "%@ from %@", bundle: .module), to == .pro ? "Pro" : "Plus", Self.long(date))
+        case .billingProblem: String(localized: "payment problem", bundle: .module)
         case nil:
-            if plan != .pro, credit, let proEnded { "Pro ended " + Self.long(proEnded) }
-            else if plan == .free { "Free" }
-            else { until.flatMap { $0 > now ? "until " + Self.long($0) : nil } ?? "" }
+            if plan != .pro, credit, let proEnded { String(format: String(localized: "Pro ended %@", bundle: .module), Self.long(proEnded)) }
+            else if plan == .free { String(localized: "Free", bundle: .module) }
+            else { until.flatMap { $0 > now ? String(format: String(localized: "until %@", bundle: .module), Self.long($0)) : nil } ?? "" }
         }
 
         canUse = plan == .pro || credit
         let waiting = useOn && wait.holds(now: now)
         switchShownOn = useOn && (canUse || waiting)
-        topUp = plan == .pro ? "Add a top-up" : plan == .matters || credit ? "Pro, now and then" : nil
+        topUp = plan == .pro ? String(localized: "Add a top-up", bundle: .module)
+            : plan == .matters || credit ? String(localized: "Pro, now and then", bundle: .module) : nil
         seesPlans = topUp == nil
 
         if !canUse {
-            row = plan == .free ? "Causabee · Free" : name
+            row = plan == .free ? String(localized: "Causabee · Free", bundle: .module) : name
         } else if meter.bars.contains(where: { !$0.counted }) {
-            row = name + " · not counted yet"
+            row = name + String(localized: " · not counted yet", bundle: .module)
         } else {
             var parts = [name]
             for bar in meter.bars {
                 switch bar.kind {
-                case .month: parts.append(bar.left <= 0 ? "used for this month" : "\(bar.number) left")
-                case .topUps: parts.append("\(bar.number) in top-ups")
+                case .month: parts.append(bar.left <= 0 ? String(localized: "used for this month", bundle: .module)
+                                          : String(format: String(localized: "%@ left", bundle: .module), bar.number))
+                case .topUps: parts.append(String(format: String(localized: "%@ in top-ups", bundle: .module), bar.number))
                 }
             }
-            if !useOn { parts.append("not in use") }
+            if !useOn { parts.append(String(localized: "not in use", bundle: .module)) }
             row = parts.joined(separator: " · ")
         }
 
         if waiting {
-            switchLine = wait.ended ? "On, waiting: Pro has ended. A top-up goes on at once."
-                : "On, waiting: nothing left to use until \(wait.until.map(Self.long) ?? "it starts anew")."
+            switchLine = wait.ended
+                ? String(localized: "On, waiting: Pro has ended. A top-up goes on at once.", bundle: .module)
+                : String(format: String(localized: "On, waiting: nothing left to use until %@.", bundle: .module),
+                         wait.until.map(Self.long) ?? String(localized: "it starts anew", bundle: .module))
         } else if !canUse {
-            switchLine = "Needs Pro or a top-up."
+            switchLine = String(localized: "Needs Pro or a top-up.", bundle: .module)
         } else if useOn {
-            switchLine = "\(reader) reads what comes in, as it comes, names disguised first."
+            switchLine = String(format: String(localized: "%@ reads what comes in, as it comes, names disguised first.", bundle: .module), reader)
         } else {
-            switchLine = "Off: Apple's model on this device reads what comes in. Nothing leaves it."
+            switchLine = String(localized: "Off: Apple's model on this device reads what comes in. Nothing leaves it.", bundle: .module)
         }
     }
 

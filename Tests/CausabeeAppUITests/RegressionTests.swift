@@ -44,8 +44,9 @@ final class RegressionTests: XCTestCase {
     }
 
     private func tab(_ name: String) {
-        // By its name for VoiceOver: only the open part shows its word.
-        let segment = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ OR title BEGINSWITH %@", name, name)).firstMatch
+        // By the part's own name — "plan", "notes" — never by the word on it: that word is the
+        // device's language (F009).
+        let segment = app.buttons["part." + name]
         XCTAssertTrue(segment.waitForExistence(timeout: 5), "No tab \(name).")
         segment.click()
     }
@@ -110,7 +111,7 @@ final class RegressionTests: XCTestCase {
     }
 
     func testTheFilters() {
-        for name in ["Digest", "Mail", "Files", "People", "Notes", "Plan"] { tab(name) }
+        for name in ["all", "mail", "files", "people", "notes", "plan"] { tab(name) }
         shows("Get the bath seat", "Back on Plan, the plan is not shown.")
     }
 
@@ -118,7 +119,7 @@ final class RegressionTests: XCTestCase {
     func testATaskAddedStays() {
         let words = "Call the pharmacy \(stamp)"
         card("task", words)
-        tab("Plan")
+        tab("plan")
         shows(words, "The task was added and is not in the plan.")
     }
 
@@ -126,7 +127,7 @@ final class RegressionTests: XCTestCase {
     func testANoteAdded() {
         let words = "Mum prefers mornings \(stamp)"
         card("note", words)
-        tab("Notes")
+        tab("notes")
         shows(words, "The note was added and is not among the notes.")
     }
 
@@ -143,7 +144,7 @@ final class RegressionTests: XCTestCase {
         let letters = String(stamp.compactMap { $0.wholeNumberValue.map { Character(UnicodeScalar(UInt8(97 + $0))) } })
         let name = "Kasse " + letters
         card("contact", name, "Insurer " + letters)
-        tab("People")
+        tab("people")
         shows(name, "The contact was added and is not under People.")
     }
 

@@ -99,9 +99,9 @@ public struct LabelIntake: Sendable {
 
         /// How a mail without the label came in, said after its sender in the list: "" for one labelled.
         public func way(_ id: String) -> String {
-            if fromDraft[id] != nil { return " · written from Causabee" }
-            if toKnown[id] != nil { return " · sent by you, no label" }
-            if bySender[id] != nil { return " · no label" }
+            if fromDraft[id] != nil { return String(localized: " · written from Causabee", bundle: .module) }
+            if toKnown[id] != nil { return String(localized: " · sent by you, no label", bundle: .module) }
+            if bySender[id] != nil { return String(localized: " · no label", bundle: .module) }
             return ""
         }
     }

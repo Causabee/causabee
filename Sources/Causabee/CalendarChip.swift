@@ -34,7 +34,7 @@ struct CalendarChip: View {
 
     private var calendars: Calendars { Calendars.shared }
     private var allowed: Bool { kind == .event ? calendars.canReadEvents : calendars.canReadReminders }
-    private var where_: String { kind == .event ? "Calendar" : "Reminders" }
+    private var where_: String { kind == .event ? String(localized: "Calendar") : String(localized: "Reminders") }
 
     @Environment(\.reading) private var reading
 
@@ -55,7 +55,7 @@ struct CalendarChip: View {
                 case .linked(let found)?:
                     if let id = linkedID {
                         Button { open(id) } label: {
-                            Label("in \(where_)" + (found.isEmpty ? "" : " · \(found)"), systemImage: kind == .event ? "calendar.badge.checkmark" : "checklist.checked")
+                            Label(String(format: String(localized: "in %@"), where_) + (found.isEmpty ? "" : " · \(found)"), systemImage: kind == .event ? "calendar.badge.checkmark" : "checklist.checked")
                                 .font(.caption).foregroundStyle(Theme.done)
                         }
                         .buttonStyle(.plain)
@@ -127,7 +127,7 @@ struct CalendarChip: View {
             error = nil
             connect(id)
         } catch {
-            self.error = "Not added: \(error.localizedDescription)"
+            self.error = String(format: String(localized: "Not added: %@"), error.localizedDescription)
         }
     }
 }
@@ -167,9 +167,9 @@ struct CalendarAccessBanner: View {
 /// ⌘, · where new appointments and tasks go.
 struct CalendarSettings: View {
     #if os(iOS)
-    static let press = "tap"
+    static let press = String(localized: "you tap")
     #else
-    static let press = "click"
+    static let press = String(localized: "you click")
     #endif
     @AppStorage(Calendars.calendarKey) private var calendar = ""
     @AppStorage(Calendars.listKey) private var list = ""
@@ -197,9 +197,9 @@ struct CalendarSettings: View {
         } else {
             HStack {
                 #if os(iOS)
-                let settings = "Settings → Privacy & Security → Calendars / Reminders"
+                let settings = String(localized: "Settings → Privacy & Security → Calendars / Reminders")
                 #else
-                let settings = "System Settings → Privacy & Security → Calendars / Reminders"
+                let settings = String(localized: "System Settings → Privacy & Security → Calendars / Reminders")
                 #endif
                 Text(Calendars.shared.asked ? "No access. Allow it in \(settings)." : "Not connected yet.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -214,7 +214,7 @@ struct CalendarSettings: View {
             Text("Last kept in step at \(at.formatted(date: .omitted, time: .shortened)): \(last.pulled) taken in, \(last.pushed) written out.")
                 .font(.caption).foregroundStyle(.secondary)
         }
-        Text("Causabee reads your calendars and reminders to show what is there already. It adds only when you \(Self.press) “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.")
+        Text("Causabee reads your calendars and reminders to show what is there already. It adds only when \(Self.press) “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.")
             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
     }
 }

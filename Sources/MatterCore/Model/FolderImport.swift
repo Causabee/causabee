@@ -72,7 +72,9 @@ public enum FolderImport {
         public var stopped = false
         public var said: String? {
             let said = FolderImport.said(added: added, already: already, failed: failed)
-            return stopped ? "Stopped · " + (said ?? (added == 1 ? "1 file added" : "Nothing new")) : said
+            guard stopped else { return said }
+            return String(localized: "Stopped · ", bundle: .module)
+                + (said ?? (added == 1 ? String(localized: "1 file added", bundle: .module) : String(localized: "Nothing new", bundle: .module)))
         }
     }
 
@@ -154,9 +156,11 @@ public enum FolderImport {
     /// What is said once it is done; nil when there is nothing to say — one file added, as before.
     public static func said(added: Int, already: Int, failed: Int) -> String? {
         guard added + already + failed > 1 || already > 0 || failed > 0 else { return nil }
-        var parts = [added == 0 ? "Nothing new" : "\(added) \(added == 1 ? "file" : "files") added"]
-        if already > 0 { parts.append("\(already) already here") }
-        if failed > 0 { parts.append("\(failed) could not be read") }
+        var parts = [added == 0 ? String(localized: "Nothing new", bundle: .module)
+                     : added == 1 ? String(localized: "1 file added", bundle: .module)
+                     : String(format: String(localized: "%lld files added", bundle: .module), added)]
+        if already > 0 { parts.append(String(format: String(localized: "%lld already here", bundle: .module), already)) }
+        if failed > 0 { parts.append(String(format: String(localized: "%lld could not be read", bundle: .module), failed)) }
         return parts.joined(separator: " · ")
     }
 }

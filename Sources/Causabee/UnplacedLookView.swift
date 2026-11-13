@@ -33,10 +33,10 @@ struct UnplacedLookView: View {
                             .font(.callout).foregroundStyle(.secondary)
                     }
                     if let about = look.about {
-                        section("What it says") { Text(about).fixedSize(horizontal: false, vertical: true).textSelection(.enabled) }
+                        section(String(localized: "What it says")) { Text(about).fixedSize(horizontal: false, vertical: true).textSelection(.enabled) }
                     }
                     if !look.found.isEmpty {
-                        section("Found in it") {
+                        section(String(localized: "Found in it")) {
                             VStack(alignment: .leading, spacing: 6) {
                                 ForEach(look.found) { line in
                                     Label(line.text, systemImage: line.symbol).fixedSize(horizontal: false, vertical: true)
@@ -45,7 +45,7 @@ struct UnplacedLookView: View {
                         }
                     }
                     if let why = look.why {
-                        section("Why no matter") { Text(why).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                        section(String(localized: "Why no matter")) { Text(RuleReason.word(why)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
                     }
                     if let original {
                         Button("Open the original in Mail") { NSWorkspace.shared.open(original) }

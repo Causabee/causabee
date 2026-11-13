@@ -19,7 +19,7 @@ final class NoMatterUITests: XCTestCase {
     /// The row of an item, scrolled to.
     private func row(_ title: String) -> XCUIElement {
         let row = app.buttons.matching(NSPredicate(format: "identifier == 'unplaced.row' AND label CONTAINS %@", title)).firstMatch
-        XCTAssertTrue(app.buttons["part.Matters"].waitForExistence(timeout: 40), "The overview did not come up.")
+        XCTAssertTrue(app.buttons["overview.matters"].waitForExistence(timeout: 40), "The overview did not come up.")
         for _ in 0..<8 where !row.isHittable { app.swipeUp() }
         XCTAssertTrue(row.waitForExistence(timeout: 10), "\(title) is not under No matter found.")
         return row

@@ -94,16 +94,18 @@ public struct NextStep: Sendable, Equatable {
     /// The label over it, in the app's words.
     public var label: String {
         switch kind {
-        case .overdue: "Overdue"
-        case .date: "Soon"
-        case .doIt: "Next"
-        case .followUp: "Follow up"
-        case .wait: "Wait"
+        case .overdue: String(localized: "Overdue", bundle: .module)
+        case .date: String(localized: "Soon", bundle: .module)
+        case .doIt: String(localized: "Next", bundle: .module)
+        case .followUp: String(localized: "Follow up", bundle: .module)
+        case .wait: String(localized: "Wait", bundle: .module)
         }
     }
 
     /// The label, and where a step that is one of the owner's tasks comes from.
-    public var heading: String { todo == nil ? label : "\(label) · from your tasks" }
+    public var heading: String {
+        todo == nil ? label : String(format: String(localized: "%@ · from your tasks", bundle: .module), label)
+    }
 }
 
 extension MatterStatus {
@@ -121,39 +123,50 @@ extension MatterStatus {
         func then(_ todo: Todo) -> String {
             let waiting = todo.waiting
             guard let first = waiting.first else { return "" }
-            return waiting.count == 1 ? " Then this can go ahead: " + Self.sentence(first.text) : " Then \(waiting.count) more tasks can go ahead."
+            return waiting.count == 1
+                ? String(localized: " Then this can go ahead: ", bundle: .module) + Self.sentence(first.text)
+                : String(format: String(localized: " Then %lld more tasks can go ahead.", bundle: .module), waiting.count)
         }
         func step(_ kind: NextStep.Kind, _ todo: Todo, _ why: String) -> NextStep {
             NextStep(kind: kind, text: todo.text, why: (why + then(todo)).trimmingCharacters(in: .whitespaces), todo: todo.persistentModelID)
         }
 
         if let late = mine.filter({ ($0.due ?? "9999") < today }).min(by: byDay) {
-            return step(.overdue, late, "Overdue since \(Self.short(late.due ?? today)).")
+            return step(.overdue, late, Self.sentence(String(format: String(localized: "Overdue since %@", bundle: .module), Self.short(late.due ?? today))))
         }
         let horizon = Self.day(Calendar.current.date(byAdding: .day, value: Self.soon, to: Self.date(today) ?? Date()) ?? Date())
-        var dates: [(day: String, time: String?, what: String, kind: String)] = (matter.appointments ?? []).shown.map { ($0.day, $0.time, $0.what, "Appointment") }
-        dates += (matter.deadlines ?? []).shown.map { ($0.day, nil, $0.what, "Deadline") }
+        let appointment = String(localized: "Appointment", bundle: .module), deadline = String(localized: "Deadline", bundle: .module)
+        var dates: [(day: String, time: String?, what: String, kind: String)] = (matter.appointments ?? []).shown.map { ($0.day, $0.time, $0.what, appointment) }
+        dates += (matter.deadlines ?? []).shown.map { ($0.day, nil, $0.what, deadline) }
         let upcoming = dates.filter { $0.day >= today }.sorted { ($0.day, $0.time ?? "") < ($1.day, $1.time ?? "") }
         if let near = upcoming.first(where: { $0.day <= horizon }) {
-            let when = near.day == today ? "today" : "on \(Self.short(near.day))"
-            return NextStep(kind: .date, text: near.what,
-                            why: Self.sentence("\(near.kind) \(when)\(near.time.map { " at \($0)" } ?? "")"), todo: nil)
+            let when = near.day == today ? String(localized: "today", bundle: .module)
+                : String(format: String(localized: "on %@", bundle: .module), Self.short(near.day))
+            let at = near.time.map { String(format: String(localized: " at %@", bundle: .module), $0) } ?? ""
+            return NextStep(kind: .date, text: near.what, why: Self.sentence("\(near.kind) \(when)\(at)"), todo: nil)
         }
         if let late = theirs.filter({ ($0.due ?? "9999") < today }).min(by: byDay) {
-            return step(.followUp, late, "Should have come by \(Self.short(late.due ?? today)). A short follow-up helps.")
+            let due = Self.sentence(String(format: String(localized: "Should have come by %@", bundle: .module), Self.short(late.due ?? today)))
+            return step(.followUp, late, due + " " + String(localized: "A short follow-up helps.", bundle: .module))
         }
         if let first = mine.min(by: byDay) {
-            let why = first.isFreed ? "What it waited for is done."
-                : first.due.map { Self.sentence("Due on \(Self.short($0))") }
-                ?? Self.sentence("The oldest open task, since \(Self.short(first.createdAt))")
+            let why = first.isFreed ? String(localized: "What it waited for is done.", bundle: .module)
+                : first.due.map { Self.sentence(String(format: String(localized: "Due on %@", bundle: .module), Self.short($0))) }
+                ?? Self.sentence(String(format: String(localized: "The oldest open task, since %@", bundle: .module), Self.short(first.createdAt)))
             return step(.doIt, first, why)
         }
         if let first = theirs.min(by: byDay) {
-            let why = first.due.map { "Wait until \(Self.short($0)). If nothing comes, follow up." } ?? "Nothing for you to do until it comes."
+            // A day of its own carries a full stop in German — "12. Nov." — so the sentence is
+            // closed by `sentence`, which adds one only where there is none (F009).
+            let why = first.due.map {
+                Self.sentence(String(format: String(localized: "Wait until %@", bundle: .module), Self.short($0)))
+                    + " " + String(localized: "If nothing comes, follow up.", bundle: .module)
+            } ?? String(localized: "Nothing for you to do until it comes.", bundle: .module)
             return step(.wait, first, why)
         }
         if let later = upcoming.first {
-            return NextStep(kind: .date, text: later.what, why: Self.sentence("\(later.kind) on \(Self.short(later.day))"), todo: nil)
+            let when = String(format: String(localized: "on %@", bundle: .module), Self.short(later.day))
+            return NextStep(kind: .date, text: later.what, why: Self.sentence("\(later.kind) \(when)"), todo: nil)
         }
         return nil
     }
@@ -164,10 +177,9 @@ extension MatterStatus {
     /// `2026-10-13` → `13. Okt.`, as the app writes a day.
     static func short(_ day: String) -> String { date(day).map(short) ?? day }
     static func short(_ date: Date) -> String {
-        let english = Locale(identifier: "en_US")
         let sameYear = Calendar.current.isDate(date, equalTo: Date(), toGranularity: .year)
-        return sameYear ? date.formatted(.dateTime.day().month(.abbreviated).locale(english))
-                        : date.formatted(.dateTime.day().month(.abbreviated).year().locale(english))
+        return sameYear ? date.formatted(.dateTime.day().month(.abbreviated))
+                        : date.formatted(.dateTime.day().month(.abbreviated).year())
     }
 
     static func date(_ day: String) -> Date? { MatterStatus.date(of: day) }

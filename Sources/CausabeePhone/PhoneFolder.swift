@@ -47,15 +47,15 @@ struct FolderSetting: View {
         if DemoData.isRequested {
             Text("In the demo, files stay in the demo.").font(.footnote).foregroundStyle(.secondary)
         } else if MatterFolders.container != nil {
-            LabeledContent("Folder", value: "iCloud Drive › Causabee")
+            LabeledContent(String(localized: "Folder"), value: "iCloud Drive › Causabee")
             Text("Causabee's own folder in your iCloud Drive, with a folder per matter — the same on your Mac and here. A letter photographed here opens on the Mac, and the Mac's files open here. Causabee has no server.")
                 .font(.footnote).foregroundStyle(.secondary)
         } else {
-            LabeledContent("Folder", value: name ?? "None")
-            Button(name == nil ? "Choose a folder …" : "Choose another …") { picks = true }
+            LabeledContent(String(localized: "Folder"), value: name ?? String(localized: "No folder"))
+            Button(name == nil ? String(localized: "Choose a folder …") : String(localized: "Choose another …")) { picks = true }
                 .fileImporter(isPresented: $picks, allowedContentTypes: [.folder]) { result in
                     guard case .success(let url) = result else { return }
-                    if PhoneFolder.choose(url) { name = url.lastPathComponent; failure = nil } else { failure = "This folder cannot be used. Choose one in iCloud Drive or on this \(ThisDevice.name)." }
+                    if PhoneFolder.choose(url) { name = url.lastPathComponent; failure = nil } else { failure = String(format: String(localized: "This folder cannot be used. Choose one in iCloud Drive or on this %@."), ThisDevice.name) }
                 }
             if name != nil { Button("Use none", role: .destructive) { PhoneFolder.forget(); name = nil } }
             if let failure { Text(failure).font(.footnote).foregroundStyle(Theme.warning) }
@@ -63,9 +63,13 @@ struct FolderSetting: View {
             if let root = MatterFolders.picked, name != nil {
                 let inside = MatterFolders.names(in: root).keys.filter { !$0.hasPrefix(".") }
                 let nested = inside.contains("Causabee")
-                Text(inside.isEmpty ? "Nothing can be seen in this folder — it is empty, or iCloud Drive has not loaded it yet. Open it once in the Files app."
-                     : nested ? "This is the folder above “Causabee”: its matters' folders are found inside it."
-                     : "\(inside.count) \(inside.count == 1 ? "folder or file" : "folders and files") in it, such as “\(inside.sorted().first ?? "")”.")
+                let first = inside.sorted().first ?? ""
+                let counted = inside.count == 1
+                    ? String(format: String(localized: "1 folder or file in it, such as “%@”."), first)
+                    : String(format: String(localized: "%lld folders and files in it, such as “%@”."), inside.count, first)
+                Text(inside.isEmpty ? String(localized: "Nothing can be seen in this folder — it is empty, or iCloud Drive has not loaded it yet. Open it once in the Files app.")
+                     : nested ? String(localized: "This is the folder above “Causabee”: its matters' folders are found inside it.")
+                     : counted)
                     .font(.footnote).foregroundStyle(inside.isEmpty ? Theme.warning : Color.secondary)
             }
             Text("iCloud Drive is off for Causabee on this \(ThisDevice.name), so its own folder is not found. Switch it on in the \(ThisDevice.name)'s Settings › your name › iCloud › Drive — or choose a folder here. Then a letter photographed here opens on the Mac, and the Mac's files open here. The files are in your own iCloud Drive; Causabee has no server.")

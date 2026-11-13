@@ -314,3 +314,24 @@ extension Judgement {
         stages = try c.decodeIfPresent([String].self, forKey: .stages) ?? []
     }
 }
+
+/// Why a mail went where it did, in the device's language. The reason itself is stored as it was
+/// written and never changes — Causabee's own rules write it in English, the model writes it in the
+/// matter's own language — so the word a person reads is looked up from it, and anything the model
+/// wrote is shown as it came (F009 AC-2, AC-8).
+public enum RuleReason {
+    public static func word(_ reason: String) -> String {
+        switch reason {
+        case "A closed matter takes no new subject": String(localized: "A closed matter takes no new subject", bundle: .module)
+        case "Written from this matter in Causabee": String(localized: "Written from this matter in Causabee", bundle: .module)
+        case "Follows its thread": String(localized: "Follows its thread", bundle: .module)
+        case "Yours to place": String(localized: "Yours to place", bundle: .module)
+        case "Read on this device": String(localized: "Read on this device", bundle: .module)
+        default:
+            // "not sent: …" — the rule's words, then what the mail itself said.
+            reason.hasPrefix("not sent: ")
+                ? String(localized: "not sent: ", bundle: .module) + reason.dropFirst("not sent: ".count)
+                : reason
+        }
+    }
+}

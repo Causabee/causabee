@@ -10,12 +10,12 @@ public enum Journal {
 
         public var label: String {
             switch self {
-            case .all: "Digest"
-            case .plan: "Plan"
-            case .mail: "Mail"
-            case .files: "Files"
-            case .people: "People"
-            case .notes: "Notes"
+            case .all: String(localized: "Digest", bundle: .module)
+            case .plan: String(localized: "Plan", bundle: .module)
+            case .mail: String(localized: "Mail", bundle: .module)
+            case .files: String(localized: "Files", bundle: .module)
+            case .people: String(localized: "People", bundle: .module)
+            case .notes: String(localized: "Notes", bundle: .module)
             }
         }
 
@@ -180,14 +180,14 @@ public enum Journal {
 
     /// Which part of the plan a day stands in. The week begins on Monday.
     static func stretch(of day: String, today: String) -> String {
-        guard let date = MatterStatus.date(of: day), let now = MatterStatus.date(of: today) else { return "Later" }
+        guard let date = MatterStatus.date(of: day), let now = MatterStatus.date(of: today) else { return String(localized: "Later", bundle: .module) }
         let weekday = monday.component(.weekday, from: now)
         let sinceMonday = (weekday + 5) % 7
         if let start = monday.date(byAdding: .day, value: -sinceMonday, to: now),
            let next = monday.date(byAdding: .day, value: 7, to: start),
            let after = monday.date(byAdding: .day, value: 14, to: start) {
-            if date < next { return "This week" }
-            if date < after { return "Next week" }
+            if date < next { return String(localized: "This week", bundle: .module) }
+            if date < after { return String(localized: "Next week", bundle: .module) }
         }
         return monthTitle(date, today: now)
     }
@@ -316,7 +316,9 @@ public enum Journal {
             let isOpen = opened.contains(month.key)
             let date = month.lines.first?.date ?? .distantPast
             let partly = monday.isDate(date, equalTo: limit, toGranularity: .month) && monday.isDate(date, equalTo: recent.last?.date ?? .distantPast, toGranularity: .month)
-            let title = date == .distantPast ? "Without a day" : (partly ? "Earlier in " + monthName.string(from: date) : monthTitle(date, today: today))
+            let title = date == .distantPast ? String(localized: "Without a day", bundle: .module)
+                : (partly ? String(format: String(localized: "Earlier in %@", bundle: .module), monthName.string(from: date))
+                          : monthTitle(date, today: today))
             lines.append(.fold(Fold(id: month.key, title: title, count: counted(month.lines), about: about(month.lines), isOpen: isOpen)))
             if isOpen { lines += withDays(month.lines, today: today) }
         }
@@ -342,8 +344,12 @@ public enum Journal {
     public static func dayTitle(_ date: Date, today: Date = Date()) -> String {
         let same = monday.isDate(date, equalTo: today, toGranularity: .year)
         let day = (same ? monthDay : monthDayYear).string(from: date).uppercased()
-        if monday.isDate(date, inSameDayAs: today) { return "TODAY · " + weekdayShort.string(from: date).uppercased() + ", " + day }
-        if let yesterday = monday.date(byAdding: .day, value: -1, to: today), monday.isDate(date, inSameDayAs: yesterday) { return "YESTERDAY · " + day }
+        if monday.isDate(date, inSameDayAs: today) {
+            return String(format: String(localized: "TODAY · %@, %@", bundle: .module), weekdayShort.string(from: date).uppercased(), day)
+        }
+        if let yesterday = monday.date(byAdding: .day, value: -1, to: today), monday.isDate(date, inSameDayAs: yesterday) {
+            return String(format: String(localized: "YESTERDAY · %@", bundle: .module), day)
+        }
         return weekdayLong.string(from: date).uppercased() + " · " + day
     }
 
@@ -424,11 +430,23 @@ public enum Journal {
         return calendar
     }()
 
-    private static func formatter(_ pattern: String) -> DateFormatter {
+    /// A day a person reads: the template says which parts are wanted, the device's language says
+    /// how they are put together — `Sep 30` in English, `30. Sep.` in German (F009 AC-3).
+    private static func formatter(_ template: String) -> DateFormatter {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
         formatter.calendar = monday
         formatter.timeZone = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate(template)
+        return formatter
+    }
+
+    /// A day nobody reads: the key the lines are grouped under. It must not move with the language.
+    private static func key(_ pattern: String) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.calendar = monday
+        formatter.timeZone = .autoupdatingCurrent
+        // for the store:
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = pattern
         return formatter
     }
@@ -436,9 +454,9 @@ public enum Journal {
     private static let weekdayShort = formatter("EEE")
     private static let monthShort = formatter("MMM")
     private static let weekdayLong = formatter("EEEE")
-    private static let monthDay = formatter("MMM d")
-    private static let monthDayYear = formatter("MMM d, yyyy")
+    private static let monthDay = formatter("MMMd")
+    private static let monthDayYear = formatter("MMMdyyyy")
     private static let monthName = formatter("LLLL")
-    private static let monthYear = formatter("LLLL yyyy")
-    private static let yearMonth = formatter("yyyy-MM")
+    private static let monthYear = formatter("LLLLyyyy")
+    private static let yearMonth = key("yyyy-MM")
 }

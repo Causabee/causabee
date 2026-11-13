@@ -64,6 +64,7 @@
 - Given a device in English, or any language that is not German
 - When the app is used
 - Then every word is exactly as today, to the letter — the words' tests pass unchanged
+- And where a test asserts a **formatted day** ("1 December", "Sep 30"), it says which language it is asking about, because a day now follows the device and this Mac's region is German; the words around the day do not change
 - Holds for: iPhone, iPad, Mac · all
 
 ### AC-10 · German for whoever listens

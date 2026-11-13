@@ -60,7 +60,7 @@ struct MergeChooser: View {
                 }
                 .buttonStyle(.plain)
             }
-            .searchable(text: $search, prompt: "Find a matter")
+            .searchable(text: $search, prompt: String(localized: "Find a matter"))
             .navigationTitle("Merge “\(matter.name)” with")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -102,36 +102,36 @@ private struct MatterChoosers: ViewModifier {
 /// "…" where it asks something more before it does it.
 enum Say {
     // A task or a date
-    static let addToCalendar = "Add to Calendar"
-    static let addToReminders = "Add to Reminders"
+    static let addToCalendar = String(localized: "Add to Calendar")
+    static let addToReminders = String(localized: "Add to Reminders")
     // A matter
-    static let pinToTop = "Pin to Top"
-    static let unpin = "Unpin"
-    static let rename = "Rename …"
-    static let mergeWith = "Merge With …"
-    static let icon = "Icon …"
-    static let openAgain = "Open Again"
-    static let ignoreNewMail = "Ignore New Mail"
-    static let updateNow = "Update now"
-    static let startNewMatter = "Start a New Matter"
-    static let closeMatter = "Close Matter …"
-    static let exportRTF = "Export as RTF"
+    static let pinToTop = String(localized: "Pin to Top")
+    static let unpin = String(localized: "Unpin")
+    static let rename = String(localized: "Rename …")
+    static let mergeWith = String(localized: "Merge With …")
+    static let icon = String(localized: "Icon …")
+    static let openAgain = String(localized: "Open Again")
+    static let ignoreNewMail = String(localized: "Ignore New Mail")
+    static let updateNow = String(localized: "Update now")
+    static let startNewMatter = String(localized: "Start a New Matter")
+    static let closeMatter = String(localized: "Close Matter …")
+    static let exportRTF = String(localized: "Export as RTF")
     // A task, a date, a person, a link, a file
-    static let edit = "Edit …"
-    static let delete = "Delete …"
-    static let notNeeded = "Not Needed"
-    static let waitsFor = "Waits For"
-    static let waitsForChoose = "Waits For …"
-    static let stopWaiting = "Stop Waiting"
-    static let removeFromMatter = "Remove"
-    static let removeLink = "Remove Link"
-    static let nameFromContent = "Name From Content"
-    static let useFileName = "Use File Name"
-    static let showAgain = "Show Again"
-    static let hide = "Hide"
-    static let moveToMatter = "Move to Matter …"
-    static let connect = "Connect …"
-    static let useInChat = "Use in Chat"
+    static let edit = String(localized: "Edit …")
+    static let delete = String(localized: "Delete …")
+    static let notNeeded = String(localized: "Not Needed")
+    static let waitsFor = String(localized: "Waits For")
+    static let waitsForChoose = String(localized: "Waits For …")
+    static let stopWaiting = String(localized: "Stop Waiting")
+    static let removeFromMatter = String(localized: "Remove")
+    static let removeLink = String(localized: "Remove Link")
+    static let nameFromContent = String(localized: "Name From Content")
+    static let useFileName = String(localized: "Use File Name")
+    static let showAgain = String(localized: "Show Again")
+    static let hide = String(localized: "Hide")
+    static let moveToMatter = String(localized: "Move to Matter …")
+    static let connect = String(localized: "Connect …")
+    static let useInChat = String(localized: "Use in Chat")
 }
 
 /// "Waits For …": the matter's other open tasks, to choose the one this one can only follow. A
@@ -181,7 +181,7 @@ struct WaitsForChooser: View {
 enum NotNeeded {
     static func drop(_ todo: Todo, in context: ModelContext, undo: UndoManager?) {
         Calendars.shared.removeReminder(todo.reminderID)
-        withAnimation { context.deleteByHand([todo], undo: undo, named: "Not Needed") }
+        withAnimation { context.deleteByHand([todo], undo: undo, named: String(localized: "Not Needed")) }
     }
 
     /// In a task's menu, above Delete.

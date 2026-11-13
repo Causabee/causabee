@@ -21,7 +21,7 @@ public enum MatterExport {
     public static func fileName(for matter: Matter) -> String {
         let name = matter.name.components(separatedBy: CharacterSet(charactersIn: "/\\:?%*|\"<>")).joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        return (name.isEmpty ? "Matter" : name) + ".rtf"
+        return (name.isEmpty ? String(localized: "Matter", bundle: .module) : name) + ".rtf"
     }
 
     /// Everything the matter holds, in the order of its page; a part with nothing in it is left out.
@@ -30,51 +30,58 @@ public enum MatterExport {
         let status = MatterStatus(matter)
         var sections: [Section] = []
         func add(_ title: String, _ lines: [Line]) { if !lines.isEmpty { sections.append(Section(title: title, lines: lines)) } }
-        func when(_ day: String?, _ time: String?) -> String? { day.map { MatterStatus.short($0) + (time.map { " at \($0)" } ?? "") } }
+        func when(_ day: String?, _ time: String?) -> String? {
+            day.map { MatterStatus.short($0) + (time.map { String(format: String(localized: " at %@", bundle: .module), $0) } ?? "") }
+        }
         func joined(_ parts: [String?]) -> String? {
             let kept = parts.compactMap { $0 }.filter { !$0.isEmpty }
             return kept.isEmpty ? nil : kept.joined(separator: " · ")
         }
         func whose(_ todo: Todo) -> String {
-            switch todo.owner { case .me: "Mine"; case .we: "Ours"; case .other: "Waiting for"; case .unknown: "Unclear" }
+            switch todo.owner {
+            case .me: String(localized: "Mine", bundle: .module)
+            case .we: String(localized: "Ours", bundle: .module)
+            case .other: String(localized: "Waiting for", bundle: .module)
+            case .unknown: String(localized: "Unclear", bundle: .module)
+            }
         }
 
         var top: [Line] = []
         if let summary = matter.summary, !summary.isEmpty { top.append(Line(summary)) }
-        if !matter.isClosed, let next = matter.nextStep, !next.isEmpty { top.append(Line("Next: " + next, matter.nextStepWhy)) }
-        add("Summary", top)
+        if !matter.isClosed, let next = matter.nextStep, !next.isEmpty { top.append(Line(String(localized: "Next: ", bundle: .module) + next, matter.nextStepWhy)) }
+        add(String(localized: "Summary", bundle: .module), top)
 
         let open = matter.openTodos.sorted { ($0.due ?? "9999", $0.createdAt) < ($1.due ?? "9999", $1.createdAt) }
-        add("Tasks", open.map { todo in
-            Line(todo.text, joined([whose(todo), when(todo.due, todo.dueTime).map { "by " + $0 },
-                                    todo.waitsFor.map { "only after: " + $0.text }, todo.note]))
+        add(String(localized: "Tasks", bundle: .module), open.map { todo in
+            Line(todo.text, joined([whose(todo), when(todo.due, todo.dueTime).map { String(localized: "by ", bundle: .module) + $0 },
+                                    todo.waitsFor.map { String(localized: "only after: ", bundle: .module) + $0.text }, todo.note]))
         })
-        add("Done", status.done.map { Line($0.text, joined([whose($0), $0.doneAt.map { "done " + MatterStatus.short($0) }, $0.note])) })
-        add("Good to know", matter.infos.map { Line($0.text, $0.note) })
+        add(String(localized: "Done", bundle: .module), status.done.map { Line($0.text, joined([whose($0), $0.doneAt.map { String(localized: "done ", bundle: .module) + MatterStatus.short($0) }, $0.note])) })
+        add(String(localized: "Good to know", bundle: .module), matter.infos.map { Line($0.text, $0.note) })
 
         let appointments = (matter.appointments ?? []).shown.sorted { ($0.day, $0.time ?? "") < ($1.day, $1.time ?? "") }
-        add("Appointments", appointments.map { Line($0.what, joined([when($0.day, $0.time), $0.place])) })
-        add("Deadlines", (matter.deadlines ?? []).shown.sorted { $0.day < $1.day }.map { (deadline: Deadline) in Line(deadline.what, "by " + MatterStatus.short(deadline.day)) })
-        add("Decisions", (matter.decisions ?? []).sorted { $0.decidedAt < $1.decidedAt }.map {
+        add(String(localized: "Appointments", bundle: .module), appointments.map { Line($0.what, joined([when($0.day, $0.time), $0.place])) })
+        add(String(localized: "Deadlines", bundle: .module), (matter.deadlines ?? []).shown.sorted { $0.day < $1.day }.map { (deadline: Deadline) in Line(deadline.what, String(localized: "by ", bundle: .module) + MatterStatus.short(deadline.day)) })
+        add(String(localized: "Decisions", bundle: .module), (matter.decisions ?? []).sorted { $0.decidedAt < $1.decidedAt }.map {
             Line($0.what, joined([MatterStatus.short($0.decidedAt), $0.why]))
         })
 
-        add("People", status.memberships.compactMap { membership in
+        add(String(localized: "People", bundle: .module), status.memberships.compactMap { membership in
             guard let party = membership.party else { return nil }
             return Line(party.name, joined([membership.role, party.address, party.phone]))
         })
-        add("Details", matter.sortedDetails.reversed().map { Line("\($0.label): \($0.value)", $0.party?.name) })
+        add(String(localized: "Details", bundle: .module), matter.sortedDetails.reversed().map { Line("\($0.label): \($0.value)", $0.party?.name) })
 
         var notes: [Line] = []
         if let earlier = matter.earlierNote { notes.append(Line(earlier)) }
         notes += matter.sortedNotes.reversed().filter { !$0.text.isEmpty }.map { Line($0.text, MatterStatus.short($0.createdAt)) }
-        add("Notes", notes)
+        add(String(localized: "Notes", bundle: .module), notes)
 
-        add("Links", (matter.links ?? []).shown.filter(\.isKept).sorted { $0.createdAt < $1.createdAt }.map { Line($0.shownName, $0.address) })
-        add("Files", (matter.documents ?? []).filter { !$0.isHidden && !$0.isSmallImage }.sorted { ($0.source.date ?? .distantPast) < ($1.source.date ?? .distantPast) }.map {
+        add(String(localized: "Links", bundle: .module), (matter.links ?? []).shown.filter(\.isKept).sorted { $0.createdAt < $1.createdAt }.map { Line($0.shownName, $0.address) })
+        add(String(localized: "Files", bundle: .module), (matter.documents ?? []).filter { !$0.isHidden && !$0.isSmallImage }.sorted { ($0.source.date ?? .distantPast) < ($1.source.date ?? .distantPast) }.map {
             Line($0.shownName, joined([$0.source.date.map { MatterStatus.short($0) }, $0.says]))
         })
-        add("History", status.mailEntries.sorted { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }.map { entry in
+        add(String(localized: "History", bundle: .module), status.mailEntries.sorted { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }.map { entry in
             Line(joined([entry.date.map { MatterStatus.short($0) }, entry.title]) ?? entry.title, joined([entry.from, entry.digest]))
         })
         return sections
@@ -105,9 +112,9 @@ public enum MatterExport {
         let status = MatterStatus(matter)
         var body = #"{\rtf1\ansi\ansicpg1252\deff0{\fonttbl{\f0\fswiss Helvetica;}}{\colortbl;\red110\green110\blue110;}\paperw11906\paperh16838\margl1417\margr1417\margt1417\margb1417"# + "\n"
         body += #"\pard\sa120\f0\b\fs40 "# + escaped(matter.name) + #"\b0\par"# + "\n"
-        var under = ["From Causabee, " + MatterStatus.short(date)]
-        if matter.isClosed { under.append("closed") }
-        if let first = status.firstDate { under.append("since " + MatterStatus.short(first)) }
+        var under = [String(format: String(localized: "From Causabee, %@", bundle: .module), MatterStatus.short(date))]
+        if matter.isClosed { under.append(String(localized: "closed", bundle: .module)) }
+        if let first = status.firstDate { under.append(String(format: String(localized: "since %@", bundle: .module), MatterStatus.short(first))) }
         body += #"\pard\sa360\fs20\cf1 "# + escaped(under.joined(separator: " · ")) + #"\cf0\par"# + "\n"
         for section in sections(of: matter) {
             body += #"\pard\sb240\sa120\b\fs26 "# + escaped(section.title) + #"\b0\par"# + "\n"

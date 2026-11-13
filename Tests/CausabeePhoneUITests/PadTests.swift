@@ -17,7 +17,7 @@ final class PadTests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["--demo", "--open", "Care for Mum (Helga) after her fall", "--part", "all", "-mail.auto", "YES"]
         app.launch()
-        XCTAssertTrue(app.buttons["part.Digest"].waitForExistence(timeout: 40), "The matter's page did not open.")
+        XCTAssertTrue(app.buttons["part.all"].waitForExistence(timeout: 40), "The matter's page did not open.")
     }
 
     override func tearDown() { XCUIDevice.shared.orientation = .portrait }
@@ -26,12 +26,12 @@ final class PadTests: XCTestCase {
     /// what is ahead is in it, not in a column of its own.
     func testOnItsSideThePageIsOneColumn() {
         let window = app.windows.firstMatch.frame
-        for part in ["Digest", "Plan", "Mail", "Files", "People", "Notes"] {
+        for part in ["all", "plan", "mail", "files", "people", "notes"] {
             let filter = app.buttons["part.\(part)"]
             XCTAssertTrue(filter.waitForExistence(timeout: 10), "\(part) is not among the filters.")
             filter.tap()
             picture(part)
-            let digest = app.buttons["part.Digest"].frame
+            let digest = app.buttons["part.all"].frame
             XCTAssertGreaterThan(digest.minX, sidebar, "On \(part) the journal slid under the sidebar.")
             let summary = app.buttons["athand.Summary"]
             if summary.exists {
@@ -44,13 +44,13 @@ final class PadTests: XCTestCase {
     /// The overview on its side: beside the sidebar, its journal and its matters whole.
     func testTheOverviewStandsBesideTheSidebar() {
         app.staticTexts["Overview"].firstMatch.tap()
-        let matters = app.buttons["part.Matters"]
+        let matters = app.buttons["overview.matters"]
         XCTAssertTrue(matters.waitForExistence(timeout: 10), "The overview did not open.")
         picture("Overview")
-        XCTAssertGreaterThan(app.buttons["part.Latest updates"].frame.minX, sidebar, "The overview slid under the sidebar.")
+        XCTAssertGreaterThan(app.buttons["overview.all"].frame.minX, sidebar, "The overview slid under the sidebar.")
         matters.tap()
         picture("Overview's matters")
-        XCTAssertGreaterThan(app.buttons["part.Latest updates"].frame.minX, sidebar, "The overview slid under the sidebar.")
+        XCTAssertGreaterThan(app.buttons["overview.all"].frame.minX, sidebar, "The overview slid under the sidebar.")
     }
 
     /// What is ahead reads as the plan does: a task has its box, a date its block, and the box
@@ -73,26 +73,26 @@ final class PadTests: XCTestCase {
         app.terminate()
         app.launchArguments += ["-demo.filled", "anew"]
         app.launch()
-        XCTAssertTrue(app.buttons["part.Digest"].waitForExistence(timeout: 40), "The demo did not come back.")
+        XCTAssertTrue(app.buttons["part.all"].waitForExistence(timeout: 40), "The demo did not come back.")
     }
 
     /// With the assistant beside it the journal keeps its room between the sidebar and the chat.
     func testTheAssistantStandsBesideThePage() {
-        app.buttons["part.Mail"].tap()
+        app.buttons["part.mail"].tap()
         app.buttons["bee"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["part.Digest"].waitForExistence(timeout: 10), "The page went when the assistant came.")
+        XCTAssertTrue(app.buttons["part.all"].waitForExistence(timeout: 10), "The page went when the assistant came.")
         picture("Assistant")
-        XCTAssertGreaterThan(app.buttons["part.Digest"].frame.minX, sidebar, "The journal slid under the sidebar.")
+        XCTAssertGreaterThan(app.buttons["part.all"].frame.minX, sidebar, "The journal slid under the sidebar.")
     }
 
     /// Turned upright the sidebar steps aside, and the page has the whole window.
     func testUprightThePageIsWhole() {
-        app.buttons["part.Mail"].tap()
+        app.buttons["part.mail"].tap()
         XCUIDevice.shared.orientation = .portrait
         let end = Date().addingTimeInterval(10)
-        while app.buttons["part.Digest"].frame.minX > sidebar, Date() < end { RunLoop.current.run(until: Date().addingTimeInterval(0.2)) }
+        while app.buttons["part.all"].frame.minX > sidebar, Date() < end { RunLoop.current.run(until: Date().addingTimeInterval(0.2)) }
         picture("Upright")
-        XCTAssertGreaterThanOrEqual(app.buttons["part.Digest"].frame.minX, 0, "The journal is cut off on the left.")
+        XCTAssertGreaterThanOrEqual(app.buttons["part.all"].frame.minX, 0, "The journal is cut off on the left.")
     }
 
     private func picture(_ name: String) {

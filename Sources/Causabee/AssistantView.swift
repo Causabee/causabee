@@ -169,7 +169,7 @@ struct AssistantColumn: View {
                          }
                      },
                      // A long name does not fit the field, and a placeholder is cut off without a sign.
-                     placeholder: scope.map { $0.name.count > 22 ? "Ask about this matter" : "Ask about \($0.name)" } ?? "Ask about your matters",
+                     placeholder: scope.map { $0.name.count > 22 ? String(localized: "Ask about this matter") : String(format: String(localized: "Ask about %@"), $0.name) } ?? String(localized: "Ask about your matters"),
                      unpin: { navigation.pinned = nil },
                      attach: chooseScreenshot,
                      // Said before it is typed: the chip over the field, and the cursor in the field.
@@ -199,8 +199,8 @@ struct AssistantColumn: View {
                     VStack(alignment: .leading, spacing: 12) {
                         if shown.isEmpty {
                             Text(openMatter != nil
-                                 ? "No talk about this matter yet. Ask something — or click “talk” on a line on the right."
-                                 : "Find a matter below, or start a new one — then ask about it. Screenshots, mails and PDFs can be dropped here too.")
+                                 ? String(localized: "No talk about this matter yet. Ask something — or click “talk” on a line on the right.")
+                                 : String(localized: "Find a matter below, or start a new one — then ask about it. Screenshots, mails and PDFs can be dropped here too."))
                                 .font(.callout).foregroundStyle(.secondary)
                                 .padding(.top, 20)
                         }
@@ -219,7 +219,7 @@ struct AssistantColumn: View {
                         ForEach(Array(turns.enumerated()), id: \.element.id) { index, turn in
                             // The day, where it changes: one thread since the first question.
                             if index == 0 || !Calendar.current.isDate(turns[index - 1].date, inSameDayAs: turn.date) {
-                                Text(turn.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
+                                Text(turn.date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                                     .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, index == 0 ? 16 : 24)
                             }
                             Group {
@@ -344,7 +344,7 @@ struct AssistantColumn: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.png, .jpeg, .heic, .tiff, .pdf, UTType(filenameExtension: "eml") ?? .emailMessage]
         panel.allowsMultipleSelection = true
-        panel.message = "Choose a screenshot, a mail (.eml) or a PDF — it is read on the Mac and sorts itself in."
+        panel.message = String(localized: "Choose a screenshot, a mail (.eml) or a PDF — it is read on the Mac and sorts itself in.")
         guard panel.runModal() == .OK else { return }
         for url in panel.urls { conversation.bring(url) }
     }
@@ -502,7 +502,7 @@ struct OverviewView: View {
                             HStack(alignment: .firstTextBaseline) {
                                 Image(systemName: index == picked ? "return" : "folder").font(.caption).foregroundStyle(.secondary).frame(width: 18)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(hit.matter.name + (hit.matter.isClosed ? " · closed" : ""))
+                                    Text(hit.matter.name + (hit.matter.isClosed ? String(localized: " · closed") : ""))
                                     if let because = hit.because { Text(because).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
                                 }
                                 Spacer()
@@ -548,7 +548,7 @@ struct OverviewView: View {
                 // The day and the search: one block in the middle, as wide as a search needs — not
                 // the page — with room above it, so the page does not begin tight under the top.
                 VStack(spacing: 10) {
-                    Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_US"))))
+                    Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)))
                         .font(.caption).foregroundStyle(.secondary)
                     searchField.padding(.top, 4)
                     // The assistant about every matter, beside the overview.
@@ -576,7 +576,7 @@ struct OverviewView: View {
                 if !matters.isEmpty { OverviewWeek(matters: matters).journalCard(inset: 16) }
                 UnreadMatters(matters: matters) { matter, mail in navigation.open(matter, showing: mail) }
                 // Under what stands on both, right over what they change.
-                if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, selection: $part) }
+                if hasJournal { JournalPills(parts: OverviewPart.allCases, label: \.label, handle: { "overview." + $0.rawValue }, selection: $part) }
                 if hasJournal, part == .all {
                     OverviewJournal(matters: matters) { matter, mail in
                         if mail == nil { navigation.showsNews = true }
@@ -587,8 +587,8 @@ struct OverviewView: View {
                 if !pinned.isEmpty { pinnedCards(pinned).padding(.top, 6) }
                 let rest = ordered.filter { !$0.isPinned }
                 if !rest.isEmpty {
-                    SectionHeader(title: pinned.isEmpty ? "Matters" : "Everything else",
-                                  detail: pinned.isEmpty ? "right-click one to pin it" : nil)
+                    SectionHeader(title: pinned.isEmpty ? String(localized: "Matters") : String(localized: "Everything else"),
+                                  detail: pinned.isEmpty ? String(localized: "right-click one to pin it") : nil)
                         .padding(.top, 6)
                     OverviewRows(matters: rest, all: matters)
                 }
@@ -621,7 +621,7 @@ struct OverviewView: View {
         let fit = width >= 1100 ? 3 : width >= 720 ? 2 : 1
         let columns = Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: max(1, min(pinned.count, fit)))
         return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Pinned", detail: nil)
+            SectionHeader(title: String(localized: "Pinned"), detail: nil)
             LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
                 ForEach(pinned) { matter in
                     MatterCard(matter: matter, open: { navigation.open(matter) }, openTodo: { navigation.open(matter, showing: $0) })
@@ -778,9 +778,9 @@ struct TurnView: View {
                     sayDone($copyOpen, $copyShown, hold: 1.6) { copied = false }
                 } label: {
                     // Done says so, as on the iPhone: a gold tick and the word, for a moment.
-                    answerAction(copied ? "checkmark" : "doc.on.doc", done: copied, word: "Copied", open: copyOpen, shown: copyShown)
+                    answerAction(copied ? "checkmark" : "doc.on.doc", done: copied, word: String(localized: "Copied"), open: copyOpen, shown: copyShown)
                 }
-                .help(copied ? "Copied" : "Copy the answer")
+                .help(copied ? String(localized: "Copied") : String(localized: "Copy the answer"))
                 .accessibilityLabel("Copy the answer")
                 // An answer about one matter can be kept with it, as a note.
                 if let kept = turn.matter.flatMap({ context.model(for: $0) as? Matter }) {
@@ -789,10 +789,10 @@ struct TurnView: View {
                         savedNote = true
                         sayDone($noteOpen, $noteShown, hold: 2)
                     } label: {
-                        answerAction(savedNote ? "checkmark" : "note.text.badge.plus", done: savedNote, word: "Added to notes", open: noteOpen, shown: noteShown)
+                        answerAction(savedNote ? "checkmark" : "note.text.badge.plus", done: savedNote, word: String(localized: "Added to notes"), open: noteOpen, shown: noteShown)
                     }
                     .disabled(savedNote)
-                    .help(savedNote ? "Saved in the notes of \(kept.name)" : "Save as a note in \(kept.name)")
+                    .help(savedNote ? String(format: String(localized: "Saved in the notes of %@"), kept.name) : String(format: String(localized: "Save as a note in %@"), kept.name))
                     .accessibilityLabel("Save as note")
                 }
                 // Another answer would take the place of this one: not once a card of it is taken in,
@@ -815,7 +815,7 @@ struct TurnView: View {
                         }
                         .contentShape(Rectangle())
                     }
-                    .help(showsSources ? "Hide the sources" : "What this rests on: mails, tasks, dates")
+                    .help(showsSources ? String(localized: "Hide the sources") : String(localized: "What this rests on: mails, tasks, dates"))
                 }
                 Spacer(minLength: 8)
                 // Read on this Mac or kept as typed: no AI answered, and none is named — as on the iPhone.
@@ -829,7 +829,7 @@ struct TurnView: View {
                     // What the disguise found in the question — so it is seen that it looked.
                     Text(answer.disguiseLine ?? (BeeServer.isSetUp ? "Pro" : answer.modelLabel)).font(.caption2).contentShape(Rectangle())
                 }
-                .help(showsSent ? "Hide what was sent" : (answer.disguiseSentence.map { $0 + " " } ?? "") + "\(answer.modelLabel) — shows what was sent, pseudonymised")
+                .help(showsSent ? String(localized: "Hide what was sent") : (answer.disguiseSentence.map { $0 + " " } ?? "") + String(format: String(localized: "%@ — shows what was sent, pseudonymised"), answer.modelLabel))
                 }
             }
             .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
@@ -959,7 +959,7 @@ struct ActionCard: View {
             .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
         } else {
             let draft = card.kind == .draftMessage
-            CardFace(label: draft ? "Draft · Mail" : title,
+            CardFace(label: draft ? String(localized: "Draft · Mail") : title,
                      subject: draft ? $subject : nil,
                      headline: draft || editable ? nil : what,
                      sub: draft ? recipient.map(CardActions.toLine) : editable ? what : nil,
@@ -968,7 +968,7 @@ struct ActionCard: View {
                      notes: notes,
                      attach: draft && scope != nil ? { attaching = true } : nil,
                      verb: verb,
-                     closeLabel: quiet ? "Cancel" : "Dismiss",
+                     closeLabel: quiet ? String(localized: "Cancel") : String(localized: "Dismiss"),
                      close: {
                          // A draft opened in Mail before and unfolded to change: the × folds it again.
                          if quiet { step { editingDraft = false } } else { withAnimation { setDismissed(true) } }
@@ -1010,7 +1010,7 @@ struct ActionCard: View {
             return line.map { [($0, "paperclip")] } ?? []
         }
         var notes: [(text: String, symbol: String?)] = card.reason.isEmpty ? [] : [(card.reason, nil)]
-        if card.kind == .sameParty { notes.append(("Later you can only turn merging off for new mail; you cannot split it again.", nil)) }
+        if card.kind == .sameParty { notes.append((String(localized: "Later you can only turn merging off for new mail; you cannot split it again."), nil)) }
         if let failureKey, let failed = CardFailures.shared.said[failureKey] { notes.insert((failed, "exclamationmark.circle"), at: 0) }
         return notes
     }
@@ -1035,7 +1035,7 @@ struct ActionCard: View {
             } else if let undo {
                 Button("Undo") { undo() }
                     .buttonStyle(.gold).font(.caption)
-                    .help(card.kind == .sameParty ? "Turns the rule off: the next mail is not merged any more" : "Puts it back the way it was")
+                    .help(card.kind == .sameParty ? String(localized: "Turns the rule off: the next mail is not merged any more") : String(localized: "Puts it back the way it was"))
             }
         }
         .opacity(showsContent ? 1 : 0)
@@ -1057,30 +1057,30 @@ struct ActionCard: View {
 
     private var takenKind: String {
         switch card.kind {
-        case .newTodo: return "Task added · " + whose + (card.due.map { " · by \(Dates.short($0))" + (card.time.map { " at \($0)" } ?? "") } ?? "")
-        case .markDone: return "Marked done"
-        case .sameParty: return "Merged into one person"
-        case .renameParty: return "Name changed"
-        case .changeRole: return "Role changed · " + name(card.party)
-        case .addNote: return card.todo == nil ? "Note added" : "Note added · " + name(card.todo)
-        case .correctBrief: return "Brief corrected"
-        case .lookUp: return "Looked up"
+        case .newTodo: return String(format: String(localized: "Task added · %@"), whose) + CardWords.when(due: card.due, time: card.time)
+        case .markDone: return String(localized: "Marked done")
+        case .sameParty: return String(localized: "Merged into one person")
+        case .renameParty: return String(localized: "Name changed")
+        case .changeRole: return String(format: String(localized: "Role changed · %@"), name(card.party))
+        case .addNote: return card.todo == nil ? String(localized: "Note added") : String(format: String(localized: "Note added · %@"), name(card.todo))
+        case .correctBrief: return String(localized: "Brief corrected")
+        case .lookUp: return String(localized: "Looked up")
         case .changeDate:
-            guard let date = CardActions.dateNow(card, refs: refs, in: context) else { return "Date changed" }
-            return date.holds ? "Date changed · " + date.now : "Changed back since · now " + date.now
-        case .newMatter: return "Matter started"
-        case .waitsFor: return "Now waits for " + name(card.into)
-        case .addLink: return "Link saved"
-        case .addContact: return "Contact saved"
-        case .newAppointment: return "Appointment added"
-        case .newDeadline: return "Deadline added"
-        case .addDetail: return "Detail saved"
-        case .correctText: return "Text corrected"
+            guard let date = CardActions.dateNow(card, refs: refs, in: context) else { return String(localized: "Date changed") }
+            return date.holds ? String(format: String(localized: "Date changed · %@"), date.now) : String(format: String(localized: "Changed back since · now %@"), date.now)
+        case .newMatter: return String(localized: "Matter started")
+        case .waitsFor: return String(format: String(localized: "Now waits for %@"), name(card.into))
+        case .addLink: return String(localized: "Link saved")
+        case .addContact: return String(localized: "Contact saved")
+        case .newAppointment: return String(localized: "Appointment added")
+        case .newDeadline: return String(localized: "Deadline added")
+        case .addDetail: return String(localized: "Detail saved")
+        case .correctText: return String(localized: "Text corrected")
         case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision:
             return CardActions.controlWords(card, name: { name($0) })?.taken ?? ""
-        case .changeOwner: return "Now " + whose.lowercased()
-        case .draftMessage: return "Opened in Mail"
-        case .shortMessage: return "Copied"
+        case .changeOwner: return String(format: String(localized: "Now %@"), whose.lowercased())
+        case .draftMessage: return String(localized: "Opened in Mail")
+        case .shortMessage: return String(localized: "Copied")
         }
     }
 
@@ -1128,54 +1128,68 @@ struct ActionCard: View {
 
     private func name(_ id: String?) -> String { id.flatMap { refs[$0] }.map(label) ?? "?" }
 
-    private var whose: String { ["me": "Mine", "we": "Ours", "other": "Waiting for"][card.owner] ?? "Unclear whose" }
+    /// The day and the time a card carries, as a card's line says them: looked up as two words,
+    /// so a language can put the day and the time its own way.
+    private enum CardWords {
+        static func at(_ time: String) -> String { String(format: String(localized: " at %@"), time) }
+        static func when(due: String?, time: String?) -> String {
+            guard let due else { return "" }
+            return String(format: String(localized: " · by %@"), Dates.short(due)) + (time.map(at) ?? "")
+        }
+    }
+
+    /// The owner is stored as "me", "we", "other": English, so only the word is looked up.
+    private var whose: String {
+        ["me": String(localized: "Mine"), "we": String(localized: "Ours"), "other": String(localized: "Waiting for")][card.owner] ?? String(localized: "Unclear whose")
+    }
 
     /// What the button does, in a word or two.
     private var verb: String {
         switch card.kind {
-        case .markDone: "Done"
-        case .newTodo: "Add"
-        case .sameParty: "Merge"
-        case .addNote: "Save note"
-        case .correctBrief: "Correct the brief"
-        case .lookUp: "Look up"
-        case .draftMessage: "Open in Mail"
-        case .shortMessage: "Copy"
-        case .changeDate: "Change date"
-        case .newMatter: "Create"
-        case .waitsFor: "Link"
-        case .addLink: "Save link"
-        case .addContact: "Save contact"
-        case .newAppointment, .newDeadline: "Add"
-        case .addDetail: "Save detail"
-        case .renameParty, .changeRole, .correctText, .changeOwner: "Change"
-        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: CardActions.controlWords(card, name: { name($0) })?.verb ?? "Do"
+        case .markDone: String(localized: "Done")
+        case .newTodo: String(localized: "Add")
+        case .sameParty: String(localized: "Merge")
+        case .addNote: String(localized: "Save note")
+        case .correctBrief: String(localized: "Correct the brief")
+        case .lookUp: String(localized: "Look up")
+        case .draftMessage: String(localized: "Open in Mail")
+        case .shortMessage: String(localized: "Copy")
+        case .changeDate: String(localized: "Change date")
+        case .newMatter: String(localized: "Create")
+        case .waitsFor: String(localized: "Link")
+        case .addLink: String(localized: "Save link")
+        case .addContact: String(localized: "Save contact")
+        case .newAppointment, .newDeadline: String(localized: "Add")
+        case .addDetail: String(localized: "Save detail")
+        case .renameParty, .changeRole, .correctText, .changeOwner: String(localized: "Change")
+        case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: CardActions.controlWords(card, name: { name($0) })?.verb ?? String(localized: "Do")
         }
     }
 
     private var title: String {
         switch card.kind {
-        case .markDone: return "Done?"
-        case .newTodo: return "New task? · " + whose + (card.due.map { " · by \(Dates.short($0))" + (card.time.map { " at \($0)" } ?? "") } ?? "")
-        case .sameParty: return "Same person?"
-        case .renameParty: return "Change name?"
-        case .changeRole: return "Change role?"
-        case .addNote: return card.todo == nil ? "Note for the matter?" : "Note for the task?"
-        case .correctBrief: return "Correct the brief?"
-        case .lookUp: return "Look up on the web?"
-        case .draftMessage: return "Draft"
-        case .shortMessage: return "Message"
-        case .changeDate: return "Change date?"
-        case .newMatter: return "New matter?"
-        case .waitsFor: return "Waits for another task?"
-        case .addLink: return "Save link? · Name:"
-        case .addContact: return "Contact? · Name:"
-        case .newAppointment: return "New appointment? · " + (card.due.map(Dates.short) ?? "?") + (card.time.map { " at \($0)" + (card.endTime.map { "–" + $0 } ?? "") } ?? "")
-            + (card.endDay.map { " until " + Dates.short($0) } ?? "")
-        case .newDeadline: return "New deadline? · by " + (card.due.map(Dates.short) ?? "?")
-        case .addDetail: return "Detail? · " + (card.subject ?? "")
-        case .correctText: return "Replace in the text?"
-        case .changeOwner: return "Whose task? → " + whose
+        case .markDone: return String(localized: "Done?")
+        case .newTodo: return String(format: String(localized: "New task? · %@"), whose) + CardWords.when(due: card.due, time: card.time)
+        case .sameParty: return String(localized: "Same person?")
+        case .renameParty: return String(localized: "Change name?")
+        case .changeRole: return String(localized: "Change role?")
+        case .addNote: return card.todo == nil ? String(localized: "Note for the matter?") : String(localized: "Note for the task?")
+        case .correctBrief: return String(localized: "Correct the brief?")
+        case .lookUp: return String(localized: "Look up on the web?")
+        case .draftMessage: return String(localized: "Draft")
+        case .shortMessage: return String(localized: "Message")
+        case .changeDate: return String(localized: "Change date?")
+        case .newMatter: return String(localized: "New matter?")
+        case .waitsFor: return String(localized: "Waits for another task?")
+        case .addLink: return String(localized: "Save link? · Name:")
+        case .addContact: return String(localized: "Contact? · Name:")
+        case .newAppointment: return String(format: String(localized: "New appointment? · %@"), card.due.map(Dates.short) ?? "?")
+            + (card.time.map { CardWords.at($0) + (card.endTime.map { "–" + $0 } ?? "") } ?? "")
+            + (card.endDay.map { String(format: String(localized: " until %@"), Dates.short($0)) } ?? "")
+        case .newDeadline: return String(format: String(localized: "New deadline? · by %@"), card.due.map(Dates.short) ?? "?")
+        case .addDetail: return String(format: String(localized: "Detail? · %@"), card.subject ?? "")
+        case .correctText: return String(localized: "Replace in the text?")
+        case .changeOwner: return String(format: String(localized: "Whose task? → %@"), whose)
         case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: return CardActions.controlWords(card, name: { name($0) })?.title ?? ""
         }
     }
@@ -1186,25 +1200,27 @@ struct ActionCard: View {
         case .markDone: return card.text
         case .newTodo: return nil
         case .sameParty: return "\(name(card.party))  →  \(name(card.into))"
-        case .renameParty: return "\(name(card.party))  is called:"
-        case .changeRole: return "\(name(card.party))  is here:"
+        case .renameParty: return String(format: String(localized: "%@  is called:"), name(card.party))
+        case .changeRole: return String(format: String(localized: "%@  is here:"), name(card.party))
         case .addNote: return card.todo == nil ? nil : name(card.todo)
         case .correctBrief: return nil
         case .lookUp: return nil
         case .shortMessage: return nil
         case .draftMessage:
-            guard let recipient else { return "To: (fill in in Mail)" }
-            return "To: \(recipient.name)" + (recipient.address.map { " <\($0)>" } ?? " — address not known, fill it in in Mail")
-        case .correctText: return "“\(card.from ?? "")”  becomes:"
+            guard let recipient else { return String(localized: "To: (fill in in Mail)") }
+            return String(format: String(localized: "To: %@"), recipient.name)
+                + (recipient.address.map { " <\($0)>" } ?? String(localized: " — address not known, fill it in in Mail"))
+        case .correctText: return String(format: String(localized: "“%@”  becomes:"), card.from ?? "")
         case .putAway, .reopen, .changeField, .closeMatter, .moveTo, .addDecision: return CardActions.controlWords(card, name: { name($0) })?.what
         case .newMatter: return nil
-        case .waitsFor: return "\(name(card.todo))  →  only after: \(name(card.into))"
-        case .addLink: return card.todo == nil ? "to the matter" : "to: \(name(card.todo))"
+        case .waitsFor: return String(format: String(localized: "%@  →  only after: %@"), name(card.todo), name(card.into))
+        case .addLink: return card.todo == nil ? String(localized: "to the matter") : String(format: String(localized: "to: %@"), name(card.todo))
         case .newAppointment, .newDeadline: return nil
-        case .addDetail: return card.party == nil ? "its value is never among the facts sent" : "of \(name(card.party)) · its value is never among the facts sent"
+        case .addDetail: return card.party == nil ? String(localized: "its value is never among the facts sent")
+            : String(format: String(localized: "of %@ · its value is never among the facts sent"), name(card.party))
         case .addContact: return [card.subject, card.from, card.time].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: " · ")
         case .changeDate:
-            let when = (card.due.map(Dates.short) ?? "?") + (card.time.map { " at \($0)" } ?? "")
+            let when = (card.due.map(Dates.short) ?? "?") + (card.time.map(CardWords.at) ?? "")
             return "\(name(card.todo))  →  \(when)"
         case .changeOwner: return name(card.todo)
         }
@@ -1232,7 +1248,7 @@ struct MatterCard: View {
                     Text(matter.name).font(Theme.cardTitleFont).foregroundStyle(.primary)
                     // All that is open, as the other matters' rows say it — the chip counts only the owner's.
                     if summary.openCount > 0 || summary.next != nil {
-                        Text(["\(summary.openCount) open", summary.next.map { Dates.short($0.day) }].compactMap { $0 }.joined(separator: " · "))
+                        Text([String(format: String(localized: "%lld open"), summary.openCount), summary.next.map { Dates.short($0.day) }].compactMap { $0 }.joined(separator: " · "))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -1277,10 +1293,10 @@ struct MatterCard: View {
 
     private func line(mine: Int, ours: Int, waiting: Int) -> String {
         var parts: [String] = []
-        if mine > 0 { parts.append("\(mine) for you") }
-        if ours > 0 { parts.append("\(ours) together") }
-        if waiting > 0 { parts.append("waiting for \(waiting)") }
-        return parts.isEmpty ? "Nothing open." : parts.joined(separator: " · ")
+        if mine > 0 { parts.append(String(format: String(localized: "%lld for you"), mine)) }
+        if ours > 0 { parts.append(String(format: String(localized: "%lld together"), ours)) }
+        if waiting > 0 { parts.append(String(format: String(localized: "waiting for %lld"), waiting)) }
+        return parts.isEmpty ? String(localized: "Nothing open.") : parts.joined(separator: " · ")
     }
 }
 
@@ -1328,7 +1344,7 @@ private struct ToNewestButton: View {
                 let newAnswer = placement.newAnswer != nil
                 Button { placement.button(newest, with: scroller) } label: { ToNewestLabel(newAnswer: newAnswer) }
                     .buttonStyle(.plain)
-                    .help(newAnswer ? "To the new answer" : "To the newest")
+                    .help(newAnswer ? String(localized: "To the new answer") : String(localized: "To the newest"))
                     .accessibilityIdentifier("thread.toNewest")
                     .padding(.bottom, 10)
                     .transition(.opacity)

@@ -69,8 +69,8 @@ struct PadSidebar: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 2) {
                 PadOverviewCard(matters: matters)
-                if !pinned.isEmpty { heading("Pinned"); rows(pinned, all: sorted) }
-                heading("Matters", adds: true)
+                if !pinned.isEmpty { heading(String(localized: "Pinned")); rows(pinned, all: sorted) }
+                heading(String(localized: "Matters"), adds: true)
                 rows(rest, all: sorted)
                 if !closed.isEmpty {
                     Button { withAnimation(.snappy(duration: 0.2)) { showsClosed.toggle() } } label: {
@@ -89,7 +89,7 @@ struct PadSidebar: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("sidebar.closed")
-                    .accessibilityHint(showsClosed ? "Hides the closed matters" : "Shows the closed matters")
+                    .accessibilityHint(showsClosed ? String(localized: "Hides the closed matters") : String(localized: "Shows the closed matters"))
                     if showsClosed { rows(closed, all: sorted) }
                 }
             }
@@ -155,8 +155,8 @@ struct PadOverviewCard: View {
                     if case .reading = PhoneMailCheck.shared.state { BeeLoader(size: 13).accessibilityLabel("Looking for mail") }
                 }
                 HStack(alignment: .top, spacing: 12) {
-                    figure(today, "today")
-                    figure(late, "overdue")
+                    figure(today, String(localized: "today"))
+                    figure(late, String(localized: "overdue"))
                 }
             }
             .padding(16)
@@ -222,7 +222,7 @@ struct PadSidebarRow: View {
                 Text("\(late)").monospacedDigit().foregroundStyle(.secondary).accessibilityLabel("\(late) overdue")
             } else if new > 0 {
                 Text("\(new)").monospacedDigit().foregroundStyle(.secondary)
-                    .accessibilityLabel("\(new) new \(new == 1 ? "mail" : "mails")")
+                    .accessibilityLabel(new == 1 ? String(localized: "1 new mail") : String(format: String(localized: "%lld new mails"), new))
             }
         }
     }
@@ -272,7 +272,7 @@ struct PadSidebarButton: View {
                 .frame(width: 38, height: 38).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(navigation.showsSidebar ? "Hide Sidebar" : "Show Sidebar")
+        .accessibilityLabel(navigation.showsSidebar ? String(localized: "Hide Sidebar") : String(localized: "Show Sidebar"))
         .accessibilityIdentifier("sidebar.toggle")
     }
 }
@@ -321,6 +321,6 @@ struct PadMailSign: View {
 
     private func count(_ number: Int) -> some View {
         Text("\(number)").monospacedDigit().foregroundStyle(.secondary)
-            .accessibilityLabel("\(number) new \(number == 1 ? "mail" : "mails")")
+            .accessibilityLabel(number == 1 ? String(localized: "1 new mail") : String(format: String(localized: "%lld new mails"), number))
     }
 }
