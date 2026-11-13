@@ -181,6 +181,66 @@
         }
       }
     },
+    "One page for each matter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine Seite für jedes Anliegen"
+          }
+        }
+      }
+    },
+    "What comes next, and who does what by when.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was als Nächstes kommt, und wer was bis wann tut."
+          }
+        }
+      }
+    },
+    "From whatever you have": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus dem, was du hast"
+          }
+        }
+      }
+    },
+    "A screenshot, a photo, a letter, a few words: the bee finds the dates and the tasks.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Screenshot, ein Foto, ein Brief, ein paar Worte: die Biene findet die Termine und die Aufgaben."
+          }
+        }
+      }
+    },
+    "Ask about it": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frag danach"
+          }
+        }
+      }
+    },
+    "Ask, and get an answer with where it came from.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frag, und du bekommst eine Antwort mit ihrer Quelle."
+          }
+        }
+      }
+    },
     "What’s on your mind?": {
       "localizations": {
         "de": {

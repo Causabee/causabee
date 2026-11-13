@@ -17,11 +17,14 @@ public enum Welcome {
     /// Said once, on the first page.
     public static var privacy: String { String(localized: "Names are disguised before anything is sent.", bundle: .module) }
 
-    public static let pages = [
-        Page(image: "welcome-1", title: "One page for each matter", line: "What comes next, and who does what by when."),
-        Page(image: "welcome-2", title: "From whatever you have", line: "A screenshot, a photo, a letter, a few words: the bee finds the dates and the tasks."),
-        Page(image: "welcome-3", title: "Ask about it", line: "Ask, and get an answer with where it came from."),
-    ]
+    public static var pages: [Page] { [
+        Page(image: "welcome-1", title: String(localized: "One page for each matter", bundle: .module),
+             line: String(localized: "What comes next, and who does what by when.", bundle: .module)),
+        Page(image: "welcome-2", title: String(localized: "From whatever you have", bundle: .module),
+             line: String(localized: "A screenshot, a photo, a letter, a few words: the bee finds the dates and the tasks.", bundle: .module)),
+        Page(image: "welcome-3", title: String(localized: "Ask about it", bundle: .module),
+             line: String(localized: "Ask, and get an answer with where it came from.", bundle: .module)),
+    ] }
 
     // MARK: The first step
 
