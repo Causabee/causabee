@@ -18,6 +18,9 @@ export interface Env {
   OPENAI_API_KEY: string;
   ANTHROPIC_API_KEY: string;
   ADMIN_SECRET: string;
+  /// F008: the first day a download from the App Store gets a start credit, "2026-12-01". Unset:
+  /// none there — TestFlight's are given all the same.
+  START_CREDIT_FROM?: string;
 }
 
 /// No answer may run away: the app asks for at most 8,000 tokens today.
@@ -55,6 +58,7 @@ export default {
       if (request.method === "POST" && url.pathname === "/v1/apple/notifications") return await notification(request, env);
       if (request.method === "POST" && url.pathname === "/v1/subscribe") return await subscribe(request, env);
       if (request.method === "POST" && url.pathname === "/v1/topup") return await topUp(request, env);
+      if (request.method === "POST" && url.pathname === "/v1/start") return await start(request, env);
       if (request.method === "POST" && url.pathname === "/v1/ai/openai") return await relay(request, env, "openai");
       if (request.method === "POST" && url.pathname === "/v1/ai/anthropic") return await relay(request, env, "anthropic");
       if (url.pathname === "/") return new Response("beeserver\n");
@@ -139,7 +143,16 @@ async function allowance(env: Env, id: string) {
     extra: r.extraLeft > 0,
     extraShare: Math.round((Math.max(0, r.extraLeft) / allowanceMicros) * 1000) / 1000,
     kind: a?.kind ?? "hand",
+    // F008: what is left beyond the month is only the start credit — no top-up bought yet.
+    startCredit: await onlyStartCredit(env, id),
   };
+}
+
+async function onlyStartCredit(env: Env, id: string): Promise<boolean> {
+  const row = await env.DB.prepare(
+    "SELECT SUM(CASE WHEN kind = 'topup' THEN 1 ELSE 0 END) AS bought, SUM(CASE WHEN kind = 'grant' AND ref LIKE 'start:%' THEN 1 ELSE 0 END) AS given FROM ledger WHERE account = ?",
+  ).bind(id).first<{ bought: number | null; given: number | null }>();
+  return (row?.given ?? 0) > 0 && (row?.bought ?? 0) === 0;
 }
 
 // MARK: Passing a request on
@@ -302,6 +315,63 @@ async function topUp(request: Request, env: Env): Promise<Response> {
   return json({ token, ...(await allowance(env, id)) });
 }
 
+// MARK: The start credit (F008)
+
+/// Apple's signed record of a download (`AppTransaction`), as the server reads it.
+export interface AppDownload {
+  bundleId: string;
+  /// One per Apple account and app: the same on every device, after every new install.
+  appTransactionId?: string;
+  originalPurchaseDate?: number;
+  /// "Production", "Sandbox" (TestFlight) or "Xcode".
+  receiptType?: string;
+}
+
+/// One top-up's worth, given once per Apple account at its first start: in the App Store only for
+/// downloads from `START_CREDIT_FROM` on; in TestFlight always. Given again only after
+/// `/admin/start-forget`, which TestFlight's alone allows. The account is the app's own id for the
+/// Apple account — where a later top-up or Pro lands.
+export async function giveStart(env: Env, d: AppDownload, appAccount: string): Promise<{ account: string | null; given: boolean; why?: string }> {
+  if (d.bundleId !== bundleId) return { account: null, given: false, why: "not_this_app" };
+  if (!d.appTransactionId) return { account: null, given: false, why: "no_download_id" };
+  if (!/^[0-9a-f-]{36}$/i.test(appAccount)) return { account: null, given: false, why: "no_account" };
+  const sandbox = d.receiptType === "Sandbox";
+  if (!sandbox) {
+    const from = Date.parse(env.START_CREDIT_FROM ?? "");
+    if (d.receiptType !== "Production" || !from || (d.originalPurchaseDate ?? 0) < from) return { account: null, given: false, why: "not_new" };
+  }
+  const ref = `start:${sandbox ? "sandbox:" : ""}${d.appTransactionId}`;
+  // The same Apple account again — another device, a new install: the account that has it.
+  const earlier = await env.DB.prepare("SELECT account FROM ledger WHERE ref = ?").bind(ref).first<{ account: string }>();
+  if (earlier) return { account: earlier.account, given: false, why: "given_before" };
+  const account = "app:" + appAccount.toLowerCase();
+  const now = new Date().toISOString();
+  await env.DB.prepare("INSERT OR IGNORE INTO accounts (id, created, allowance_micros, kind) VALUES (?, ?, 0, 'credit')").bind(account, now).run();
+  await env.DB.prepare("INSERT OR IGNORE INTO ledger (account, period, kind, micros, ref, time) VALUES (?, ?, 'grant', ?, ?, ?)")
+    .bind(account, await period(env, account), topUps["de.chille.causabee.pro.topup"], ref, now).run();
+  return { account, given: true };
+}
+
+/// The first start's ask: Apple's record of this download and the app's account id. A token comes
+/// back for the account the credit is in; nothing given, the answer says why — and the app says
+/// nothing of it.
+async function start(request: Request, env: Env): Promise<Response> {
+  const known = await who(request, env);
+  const { download, account: appAccount } = (await request.json()) as { download?: string; account?: string };
+  if (!download || !appAccount) return json({ error: "no_download" }, 400);
+  let d: AppDownload;
+  try {
+    d = await verifySigned<AppDownload>(download);
+  } catch (error) {
+    if (error instanceof NotApple) return json({ given: false, why: "not_signed_by_apple" });
+    throw error;
+  }
+  const result = await giveStart(env, d, appAccount);
+  if (!result.account) return json({ given: false, why: result.why });
+  const token = known === result.account ? null : await newToken(env, result.account, "Start credit · " + (d.receiptType ?? "?"));
+  return json({ token, given: result.given, ...(await allowance(env, result.account)) });
+}
+
 // MARK: Told by the App Store
 
 /// App Store Server Notifications, version 2: renewals, ends, refunds — signed by Apple like a
@@ -378,6 +448,12 @@ async function admin(request: Request, url: URL, env: Env): Promise<Response> {
     await env.DB.prepare("INSERT OR IGNORE INTO ledger (account, period, kind, micros, ref, time) VALUES (?, ?, 'grant', ?, ?, ?)")
       .bind(account, await period(env, account), micros, ref, now).run();
     return json({ account, micros, ref });
+  }
+  if (request.method === "POST" && url.pathname === "/admin/start-forget") {
+    // F008: the owner tries the start credit again — TestFlight's only; the App Store's stay once.
+    const { account } = (await request.json()) as { account: string };
+    const done = await env.DB.prepare("DELETE FROM ledger WHERE account = ? AND kind = 'grant' AND ref LIKE 'start:sandbox:%'").bind(account).run();
+    return json({ account, forgotten: done.meta.changes });
   }
   if (request.method === "GET" && url.pathname === "/admin/ledger") {
     // What a month cost, by model: to set beside the provider's invoice.
