@@ -329,7 +329,10 @@ struct OverviewScreen: View {
                 OtherMattersList(matters: matters)
                 }
                 // F008 AC-8: once there is a matter, mail offered once, quietly.
-                if !store.isDemo { MailOffer(matters: matters.count) { addsMail = true }.padding(.top, 8) }
+                if !store.isDemo {
+                    StartCreditUsed(matters: matters.count).padding(.top, 8)
+                    MailOffer(matters: matters.count) { addsMail = true }.padding(.top, 8)
+                }
                 if store.isDemo {
                     Button("Leave the demo") { store.switchDemo(false) }
                         .font(.footnote).foregroundStyle(Theme.gold).padding(.top, 8)

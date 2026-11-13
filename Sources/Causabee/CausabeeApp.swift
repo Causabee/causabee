@@ -17,6 +17,8 @@ struct CausabeeApp: App {
     init() {
         // F008 AC-13: notifications are asked for from the second start on.
         Welcome.countStart()
+        // F008 AC-14: the start credit, asked once at the first start.
+        Task { @MainActor in await BeeServer.shared.askStart() }
         // The demo never touches the Keychain: no password or key of the owner's is read, so macOS
         // asks for none, and none is used from it.
         if DemoData.isRequested { Keychain.isSealed = true }

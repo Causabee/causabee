@@ -29,6 +29,8 @@ struct CausabeePhoneApp: App {
         BeeServer.listen()
         // F008 AC-13: notifications are asked for from the second start on.
         Welcome.countStart()
+        // F008 AC-14: the start credit, asked once at the first start.
+        Task { @MainActor in await BeeServer.shared.askStart() }
     }
 
     var body: some Scene {

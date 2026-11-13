@@ -223,4 +223,53 @@ struct WelcomeTests {
         #expect(try Self.source("Sources/CausabeePhone/PhoneApp.swift").contains("Welcome.countStart()"))
         #expect(try Self.source(Self.macApp).contains("Welcome.countStart()"))
     }
+
+    @Test("F008 AC-14 · The start credit, asked for at the first start on every device")
+    func startAsked() throws {
+        for path in [Self.macApp, "Sources/CausabeePhone/PhoneApp.swift"] {
+            #expect(try Self.source(path).contains("BeeServer.shared.askStart()"), "\(path)")
+        }
+        let bee = try Self.source("Sources/Causabee/BeeServer.swift")
+        #expect(bee.contains("AppTransaction.shared") && bee.contains("v1/start") && bee.contains("!DemoData.isRequested"))
+    }
+
+    @Test("F008 AC-15 · Said once, plainly, and named in Pro's use")
+    func startSaid() {
+        #expect(Welcome.startLine == "A start credit is yours: Pro reads your first things, names disguised.")
+        #expect(Welcome.showsStartLine(startCredit: true, extraShare: 0.333))
+        #expect(!Welcome.showsStartLine(startCredit: true, extraShare: 0.2), "partly used: no longer said")
+        #expect(!Welcome.showsStartLine(startCredit: false, extraShare: 0.333), "a bought top-up is no start credit")
+        let meter = ProMeter(monthUsed: nil, extraShare: 0.333, kind: "credit", renewsOn: nil, pro: false, startCredit: true)
+        #expect(meter.bars.first?.words == "of a Pro month in your start credit")
+        #expect(meter.bars.first?.spoken == "Start credit: 33 percent of a Pro month left")
+        #expect(meter.line == "Kept until it is used.")
+        let bought = ProMeter(monthUsed: nil, extraShare: 0.333, kind: "credit", renewsOn: nil, pro: false)
+        #expect(bought.bars.first?.words == "of a Pro month in top-ups")
+    }
+
+    @Test("F008 AC-16 · It works as a top-up does, on every plan")
+    func startWorks() {
+        // Pro's reader is on with credit alone, whatever the plan: the start credit is credit.
+        #expect(Plan.proIsOn(switched: true, plan: .free, credit: true))
+        #expect(Plan.proIsOn(switched: true, plan: .matters, credit: true))
+    }
+
+    @Test("F008 AC-17 · Used: back to the device, and a top-up offered once")
+    func startUsed() throws {
+        #expect(Welcome.offersTopUp(matters: 1, startCredit: true, extraShare: 0, pro: false, counted: true, later: false))
+        #expect(!Welcome.offersTopUp(matters: 1, startCredit: true, extraShare: 0.1, pro: false, counted: true, later: false), "still some left")
+        #expect(!Welcome.offersTopUp(matters: 1, startCredit: true, extraShare: 0, pro: true, counted: true, later: false), "Pro has its own words")
+        #expect(!Welcome.offersTopUp(matters: 1, startCredit: true, extraShare: 0, pro: false, counted: true, later: true), "Not now is for good")
+        #expect(!Welcome.offersTopUp(matters: 1, startCredit: false, extraShare: 0, pro: false, counted: true, later: false), "a bought top-up used: as today")
+        #expect(!Welcome.offersTopUp(matters: 0, startCredit: true, extraShare: 0, pro: false, counted: true, later: false))
+        #expect(Welcome.startUsedTitle == "Your start credit is used.")
+        // On both overviews, before the mail card; Top up opens "Pro, now and then".
+        for path in ["Sources/Causabee/AssistantView.swift", Self.phoneOverview] {
+            let text = try Self.source(path)
+            let card = try #require(text.range(of: "StartCreditUsed(matters:"))
+            let mail = try #require(text.range(of: "MailOffer(matters:"))
+            #expect(card.lowerBound < mail.lowerBound, "\(path)")
+        }
+        #expect(try Self.source(Self.firstStep).contains("Store.shared.asks = .topUp"))
+    }
 }

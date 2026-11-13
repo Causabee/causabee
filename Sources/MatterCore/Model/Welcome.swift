@@ -118,6 +118,30 @@ public enum Welcome {
     /// Typed words as a file that comes in like any other: a `.txt`, read by `ScreenshotDoor` as the
     /// owner's own note. Named by its words, so the same words twice are one file.
     /// The file the first step wrote: shown as the owner's words, never by its file name.
+    // MARK: The start credit (AC-14 – AC-17)
+
+    /// Under the first step, while the start credit is there and unused (AC-15).
+    public static let startLine = "A start credit is yours: Pro reads your first things, names disguised."
+    /// Pro's use names it so while it is all there is beyond the month (AC-15).
+    public static let startName = "Start credit"
+    /// The card once it is used (AC-17), and its "Not now".
+    public static let startUsedTitle = "Your start credit is used."
+    public static let startUsedLine = "Apple's model on this device reads from now on. A top-up lets Pro read again."
+    public static let startUsedLaterKey = "start.used.later"
+    /// Asked once on this device; `--fresh-start` forgets it, for the owner's tries.
+    public static let startAskedKey = "start.asked"
+
+    /// The line under the first step: the credit is there, and nothing of it is used yet.
+    public static func showsStartLine(startCredit: Bool, extraShare: Double) -> Bool {
+        startCredit && extraShare >= 0.33
+    }
+
+    /// The card: a matter exists, the start credit is all there was and is used, no Pro month,
+    /// not put away — counted by the beeserver since this launch.
+    public static func offersTopUp(matters: Int, startCredit: Bool, extraShare: Double, pro: Bool, counted: Bool, later: Bool) -> Bool {
+        matters > 0 && startCredit && extraShare <= 0 && !pro && counted && !later
+    }
+
     /// All the words read from what came in, to check a name or a date against.
     public static func words(of look: ScreenshotDoor.Look) -> String {
         look.heading + "\n" + (look.report.outcomes.first?.email.body ?? "")

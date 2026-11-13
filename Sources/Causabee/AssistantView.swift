@@ -599,6 +599,7 @@ struct OverviewView: View {
                 }
                 // F008 AC-8: once there is a matter, mail offered once, quietly.
                 if !DemoData.isRequested {
+                    StartCreditUsed(matters: matters.count)
                     MailOffer(matters: matters.count) { NotificationCenter.default.post(name: .showSetup, object: nil) }
                         .padding(.top, 8)
                 }

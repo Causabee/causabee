@@ -70,6 +70,12 @@ struct FirstStep: View {
                 .font(.subheadline)
                 .padding(.top, 10)
             }
+            // F008 AC-15: said once, plainly — while the start credit is there and unused.
+            if Welcome.showsStartLine(startCredit: BeeServer.shared.startCredit, extraShare: BeeServer.shared.extraShare) {
+                Label(Welcome.startLine, systemImage: "bolt")
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .frame(maxWidth: 520, alignment: .leading)
         .frame(maxWidth: .infinity)
@@ -251,7 +257,8 @@ struct MailOffer: View {
     @AppStorage(Welcome.mailLaterKey) private var later = false
 
     var body: some View {
-        if Welcome.offersMail(matters: matters, hasMailbox: !Keychain.accounts().isEmpty, later: later) {
+        // One offer at a time: the start credit's card first (F008 AC-17).
+        if Welcome.offersMail(matters: matters, hasMailbox: !Keychain.accounts().isEmpty, later: later), !StartCreditUsed.shows(matters: matters) {
             VStack(alignment: .leading, spacing: 8) {
                 Label(Welcome.mailTitle, systemImage: "envelope").fontWeight(.semibold)
                 Text(Welcome.mailLine).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -263,6 +270,37 @@ struct MailOffer: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .offerCard()
+        }
+    }
+}
+
+/// F008 AC-17: the start credit used, nothing else left — Apple's model reads again, and a top-up
+/// is offered once, quietly, under the matters. An offer, as the mail card: no yellow, no count.
+struct StartCreditUsed: View {
+    let matters: Int
+    @AppStorage(Welcome.startUsedLaterKey) private var later = false
+
+    static func shows(matters: Int) -> Bool {
+        let bee = BeeServer.shared
+        return Welcome.offersTopUp(matters: matters, startCredit: bee.startCredit, extraShare: bee.extraShare,
+                                   pro: Store.shared.plan == .pro, counted: bee.counted,
+                                   later: UserDefaults.standard.bool(forKey: Welcome.startUsedLaterKey))
+    }
+
+    var body: some View {
+        if !later, Self.shows(matters: matters) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(Welcome.startUsedTitle, systemImage: "bolt").fontWeight(.semibold)
+                Text(Welcome.startUsedLine).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 14) {
+                    Button("Top up") { Store.shared.asks = .topUp }.quietButton()
+                    Button("Not now") { later = true }.buttonStyle(.gold)
+                }
+                .padding(.top, 2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .offerCard()
+            .accessibilityElement(children: .contain)
         }
     }
 }
