@@ -238,12 +238,12 @@ struct Conversation {
             return
         }
         let matters = Unplaced.matters(in: context)
-        let claude = Welcome.readsOnDevice(look.file, matters: matters.count) ? nil : reader.client
+        let claude = reader.client
         Self.set(shot: id, .sending(look), in: navigation)
         let navigation = self.navigation
         Task {
             do {
-                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context))
+                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context), first: matters.isEmpty)
                 Conversation.set(shot: id, .answered(look, judgement), in: navigation)
                 settle(shot: id, owner: owner)
             } catch {
@@ -257,7 +257,7 @@ struct Conversation {
         guard let turn = navigation.turns.first(where: { $0.id == id }), case .answered(let look, let judgement) = turn.shot?.stage else { return }
         // No matters at all (F008 AC-4, AC-5): nothing to choose — a new matter at once, the bee's name.
         if turn.matter == nil, Welcome.takesAtOnce(matters: (try? context.fetchCount(FetchDescriptor<Matter>())) ?? 1) {
-            take(shot: id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading), owner: owner, opens: true)
+            take(shot: id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading, within: Welcome.words(of: look)), owner: owner, opens: true)
             return
         }
         guard let matter = SortsIn.matter(for: judgement, from: turn.matter, in: context) else { return }
@@ -289,7 +289,7 @@ struct Conversation {
                 judgement.matter = key
             }
             judgement.matterTitle = name.isEmpty ? nil : name
-            if opens, !name.isEmpty { Welcome.nameDates(&judgement, name: name) }
+            if opens, !name.isEmpty { Welcome.nameDates(&judgement, name: name, line: Welcome.words(of: look)) }
         }
         judgement.decidedBy = .claude
         // A mail file is kept inside Causabee once taken in: its attachments are read from it,

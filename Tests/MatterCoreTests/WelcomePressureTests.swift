@@ -19,21 +19,29 @@ struct WelcomePressureTests {
         "Bathroom renovation: the tiler comes on 3 December, the plumber before that, and we still need to choose the tiles and ask the landlord for permission.",
         "Science fair project with Lena, due 20 November",
         "Kita-Platz für Emil suchen",
+        // Typos, as people type at a first start (13 November).
+        "Der umzug ist für dne 1.2.2027 geplant",
+        "Muttis Reha startet am 23.11.",
+        "Steuererklrung bis 31. Juli",
     ]
 
     @Test("F008 · Ten typed lines become matters, read on this Mac")
     func tenLines() async throws {
-        print("PRESSURE on device: \(DeviceReader.isAvailable)")
+        // CAUSABEE_PRESSURE_CLOUD=1: Pro's reader (Sol), with the key in .env — made-up lines only.
+        let cloud = ProcessInfo.processInfo.environment["CAUSABEE_PRESSURE_CLOUD"] == "1"
+        let claude = cloud ? Claude.key(for: .gptSol).map { Claude(key: $0) } : nil
+        print("PRESSURE reader: \(claude != nil ? "Sol" : "on device \(DeviceReader.isAvailable)")")
         let one = ProcessInfo.processInfo.environment["CAUSABEE_PRESSURE_LINE"]
         for line in one.map({ [$0] }) ?? Self.lines {
             // Each line a first start of its own: an empty store, nothing read before.
             let folder = FileManager.default.temporaryDirectory.appendingPathComponent("pressure-\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: folder) }
-            let door = ScreenshotDoor(besides: folder.appendingPathComponent("store.sqlite"))
+            let door = ScreenshotDoor(besides: folder.appendingPathComponent("store.sqlite"), model: .gptSol)
             let look = try door.look(at: Welcome.typedFile(line, in: folder), owner: "Alex")
-            let judgement = try await door.classify(look, claude: nil, owner: ["Alex"])
-            let name = Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading)
+            var judgement = try await door.classify(look, claude: claude, owner: ["Alex"], first: true)
+            let name = Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading, within: Welcome.words(of: look))
+            Welcome.nameDates(&judgement, name: name, line: Welcome.words(of: look))
             let todos = judgement.todos.map { $0.text + ($0.due.map { " · \($0)" } ?? "") }
             let dates = judgement.appointments.map { "\($0.what) · \($0.date) \($0.time ?? "")" } + judgement.deadlines.map { "\($0.what) · by \($0.date)" }
             print("PRESSURE \"\(line)\"\n   → \(name)   [key \(judgement.matter ?? "nil"), \(judgement.matterReason ?? "")]\n   tasks: \(todos)\n   dates: \(dates)")

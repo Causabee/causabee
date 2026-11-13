@@ -40,8 +40,10 @@ public enum Welcome {
     public static func takesAtOnce(matters: Int) -> Bool { matters == 0 }
 
     /// The first matter's name: the bee's, or the typed words' first line when it gives none.
-    public static func matterName(proposed: String?, typed: String) -> String {
-        if let proposed = proposed?.trimmingCharacters(in: .whitespacesAndNewlines), !proposed.isEmpty { return proposed }
+    /// `within`: all the words read — a screenshot's or a file's whole text; the typed line by default.
+    public static func matterName(proposed: String?, typed: String, within: String? = nil) -> String {
+        if let proposed = proposed?.trimmingCharacters(in: .whitespacesAndNewlines), !proposed.isEmpty,
+           grounded(proposed, in: within ?? typed) { return proposed }
         let first = typed.split(whereSeparator: \.isNewline).first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
         guard !first.isEmpty else { return "A new matter" }
         let line = beforeDate(first)
@@ -52,12 +54,52 @@ public enum Welcome {
         return (words.isEmpty ? cut : words.joined(separator: " ")).trimmingCharacters(in: CharacterSet(charactersIn: " ,;:—-"))
     }
 
-    /// A first matter's dates named by the matter when the reader gave only the date itself
-    /// ("2.12.2026 · Deadline" reads "Muttis Reha · Deadline").
-    public static func nameDates(_ judgement: inout Judgement, name: String) {
-        func bare(_ what: String) -> Bool { !what.contains { $0.isLetter } }
-        for index in judgement.appointments.indices where bare(judgement.appointments[index].what) { judgement.appointments[index].what = name }
-        for index in judgement.deadlines.indices where bare(judgement.deadlines[index].what) { judgement.deadlines[index].what = name }
+    /// A first matter's dates: one made up — a "what" with no word of the line, or only the date —
+    /// takes the matter's name; two on one day from one line are one, the appointment kept
+    /// ("die Verteilung" and "den Tag" on 1 February are "Umzug" on 1 February).
+    public static func nameDates(_ judgement: inout Judgement, name: String, line: String) {
+        for index in judgement.appointments.indices where !grounded(judgement.appointments[index].what, in: line) {
+            judgement.appointments[index].what = name
+        }
+        for index in judgement.deadlines.indices where !grounded(judgement.deadlines[index].what, in: line) {
+            judgement.deadlines[index].what = name
+        }
+        let days = Set(judgement.appointments.map(\.date))
+        judgement.deadlines.removeAll { days.contains($0.date) }
+        var seen = Set<String>()
+        judgement.appointments.removeAll { !seen.insert($0.date).inserted }
+        seen = []
+        judgement.deadlines.removeAll { !seen.insert($0.date).inserted }
+    }
+
+    /// Whether a name or a label is the line's own: one of its words — three letters or more, not a
+    /// little word as "the" or "die" — is in the line; a word of five or more also with one letter
+    /// more, less or other, as a typo fixed is.
+    public static func grounded(_ text: String, in line: String) -> Bool {
+        func words(_ s: String) -> [String] {
+            s.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init)
+                .filter { $0.count >= 3 && $0.contains { $0.isLetter } && !little.contains($0) }
+        }
+        let theirs = words(line)
+        return words(text).contains { word in theirs.contains { $0 == word || (word.count >= 5 && close($0, word)) } }
+    }
+
+    static let little: Set<String> = ["the", "and", "for", "are", "was", "has", "not", "but", "you", "our", "with", "from",
+                                      "der", "die", "das", "den", "dem", "des", "und", "ist", "mit", "von", "für", "auf", "aus",
+                                      "bei", "ein", "eine", "einen", "zum", "zur", "sie", "wir", "ich"]
+
+    /// One letter more, less or other.
+    static func close(_ a: String, _ b: String) -> Bool {
+        let a = Array(a), b = Array(b)
+        guard abs(a.count - b.count) <= 1 else { return false }
+        var i = 0, j = 0, edits = 0
+        while i < a.count, j < b.count {
+            if a[i] == b[j] { i += 1; j += 1; continue }
+            edits += 1
+            if edits > 1 { return false }
+            if a.count > b.count { i += 1 } else if b.count > a.count { j += 1 } else { i += 1; j += 1 }
+        }
+        return edits + (a.count - i) + (b.count - j) <= 1
     }
 
     /// The line before its first date, without the words that lead to it: "Muttis Reha started am
@@ -76,15 +118,13 @@ public enum Welcome {
     /// Typed words as a file that comes in like any other: a `.txt`, read by `ScreenshotDoor` as the
     /// owner's own note. Named by its words, so the same words twice are one file.
     /// The file the first step wrote: shown as the owner's words, never by its file name.
-    public static func isTyped(_ file: URL) -> Bool {
-        file.pathExtension.lowercased() == "txt" && file.lastPathComponent.contains("typed-")
+    /// All the words read from what came in, to check a name or a date against.
+    public static func words(of look: ScreenshotDoor.Look) -> String {
+        look.heading + "\n" + (look.report.outcomes.first?.email.body ?? "")
     }
 
-    /// The first step's own words are read on this device, with Pro too (the owner, 13 November):
-    /// Apple's model names the first matter and finds its dates, and nothing leaves the device at
-    /// the door. What is added there, and every word after, is read as anything that comes in.
-    public static func readsOnDevice(_ file: URL, matters: Int) -> Bool {
-        isTyped(file) && matters == 0
+    public static func isTyped(_ file: URL) -> Bool {
+        file.pathExtension.lowercased() == "txt" && file.lastPathComponent.contains("typed-")
     }
 
     public static func typedFile(_ text: String, in folder: URL) throws -> URL {

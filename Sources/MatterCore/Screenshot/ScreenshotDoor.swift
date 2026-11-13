@@ -205,8 +205,9 @@ public struct ScreenshotDoor: Sendable {
     /// Sends it, pseudonymised, with the matters and open to-dos as context, and keeps the answer in
     /// the record. What comes back is a judgement for the owner to look at before it goes in.
     /// `claude` nil: read on this device, by Apple's model or by the rules.
+    /// `first`: brought in at the first start, with no matters yet (F008) — always the first matter.
     public func classify(_ look: Look, claude: Claude?, owner: [String], matters: [(key: String, about: String)] = [],
-                         onFile: [String: Extractor.OnFile] = [:]) async throws -> Judgement {
+                         onFile: [String: Extractor.OnFile] = [:], first: Bool = false) async throws -> Judgement {
         if let earlier = look.earlier { return earlier }
         var outcomes = look.report.outcomes
         guard let pseudonymizer = look.report.pseudonymizer else { throw Claude.Failure.unreadable("nothing to send") }
@@ -216,6 +217,7 @@ public struct ScreenshotDoor: Sendable {
         extractor.onDevice = claude == nil
         extractor.storeMatters = matters
         extractor.onFile = onFile
+        extractor.firstMatter = first && matters.isEmpty
         let summary = try await extractor
             .run(&outcomes, pseudonymizer: pseudonymizer, owner: owner, known: look.answered)
         if let failure = summary.failed.first { throw Claude.Failure.unreadable(failure.error) }

@@ -137,11 +137,11 @@ final class PhoneShots {
             return
         }
         let matters = Unplaced.matters(in: context)
-        let claude = Welcome.readsOnDevice(look.file, matters: matters.count) ? nil : reader.client
+        let claude = reader.client
         set(id, .sending(look))
         Task {
             do {
-                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context))
+                let judgement = try await door.classify(look, claude: claude, owner: owner, matters: matters, onFile: Unplaced.onFile(in: context), first: matters.isEmpty)
                 set(id, .answered(look, judgement))
                 settle(id, owner: owner, context: context)
             } catch {
@@ -156,7 +156,7 @@ final class PhoneShots {
         guard let shot = shots.first(where: { $0.id == id }), case .answered(let look, let judgement) = shot.stage else { return }
         // No matters at all (F008 AC-4, AC-5): nothing to choose — a new matter at once, the bee's name.
         if shot.matter == nil, Welcome.takesAtOnce(matters: (try? context.fetchCount(FetchDescriptor<Matter>())) ?? 1) {
-            take(id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading), owner: owner, opens: true, context: context)
+            take(id, into: nil, newName: Welcome.matterName(proposed: judgement.matterTitle, typed: look.heading, within: Welcome.words(of: look)), owner: owner, opens: true, context: context)
             return
         }
         guard let matter = SortsIn.matter(for: judgement, from: shot.matter, in: context) else { return }
@@ -180,7 +180,7 @@ final class PhoneShots {
             let taken = ((try? context.fetch(FetchDescriptor<Matter>())) ?? []).contains { $0.answers(to: key) }
             judgement.matter = taken ? key + "-" + String(id.uuidString.prefix(4)).lowercased() : key
             judgement.matterTitle = name.isEmpty ? nil : name
-            if opens, !name.isEmpty { Welcome.nameDates(&judgement, name: name) }
+            if opens, !name.isEmpty { Welcome.nameDates(&judgement, name: name, line: Welcome.words(of: look)) }
         }
         judgement.decidedBy = .claude
         do {

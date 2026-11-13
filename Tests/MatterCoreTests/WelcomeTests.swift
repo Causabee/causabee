@@ -80,7 +80,7 @@ struct WelcomeTests {
         // A date the reader gave only as itself takes the matter's name.
         var judgement = try #require(look.report.outcomes.first?.judgement)
         judgement.deadlines = [Judgement.Deadline(what: "2.12.2026", date: "2026-12-02", sourceQuote: "")]
-        Welcome.nameDates(&judgement, name: "Muttis Reha")
+        Welcome.nameDates(&judgement, name: "Muttis Reha", line: "Muttis Reha started am 2.12.2026")
         #expect(judgement.deadlines.first?.what == "Muttis Reha")
         // A long line is cut at a word, never in one (the pressure test, 12 November).
         #expect(Welcome.matterName(proposed: nil, typed: "Car insurance claim after the parking-lot accident, the assessor calls next week")
@@ -106,15 +106,40 @@ struct WelcomeTests {
         #expect(picked.items.map(\.id) == ["thread-<1@x>"], "the typed words are the note already")
     }
 
-    @Test("F008 AC-4 · The first words are read on the device, with Pro too")
-    func firstWordsOnDevice() throws {
-        let typed = URL(fileURLWithPath: "/x/B8EC6F27-typed-726fc2c7af88.txt")
-        #expect(Welcome.readsOnDevice(typed, matters: 0))
-        #expect(!Welcome.readsOnDevice(typed, matters: 1), "later words are read as anything that comes in")
-        #expect(!Welcome.readsOnDevice(URL(fileURLWithPath: "/x/IMG_0001.png"), matters: 0), "an added file is read as any file")
+    @Test("F008 AC-4 · The first matter read by the best reader, told it is the first")
+    func firstMatterPrompts() throws {
+        // Both readers are told, and only for what is brought in at the first start.
+        #expect(ExtractionPrompt.version == "extract-v18" && DeviceReader.version == "device-2")
+        let first = ExtractionPrompt.user(mail: "Der umzug ist für dne 1.2.2027 geplant", sent: nil, owner: [], matters: [], first: true)
+        #expect(first.contains(ExtractionPrompt.firstMatter))
+        #expect(!ExtractionPrompt.user(mail: "x", sent: nil, owner: [], matters: []).contains(ExtractionPrompt.firstMatter), "a first mail is no first step")
+        #expect(!ExtractionPrompt.user(mail: "x", sent: nil, owner: [], matters: [("Umzug", "")], first: true).contains(ExtractionPrompt.firstMatter))
+        // No shortcut past the best reader any more; both apps say what is first.
         for path in ["Sources/Causabee/Conversation.swift", "Sources/CausabeePhone/PhoneShots.swift"] {
-            #expect(try Self.source(path).contains("Welcome.readsOnDevice("), "\(path) asks before it sends")
+            let text = try Self.source(path)
+            #expect(!text.contains("readsOnDevice") && text.contains("first: matters.isEmpty"), "\(path)")
         }
+    }
+
+    @Test("F008 AC-4 · Nothing made up: a name and dates only from the line's own words")
+    func grounded() throws {
+        let line = "Der umzug ist für dne 1.2.2027 geplant"
+        #expect(!Welcome.grounded("move", in: line) && !Welcome.grounded("die Verteilung", in: line) && !Welcome.grounded("den Tag", in: line))
+        #expect(Welcome.grounded("Umzug", in: line))
+        #expect(Welcome.grounded("Steuererklärung", in: "Steuererklrung bis 31. Juli"), "a typo fixed is the line's word")
+        #expect(Welcome.grounded("Care for Mum", in: "Mum fell. The care service visits on Thursday."))
+        #expect(Welcome.matterName(proposed: "move", typed: line) != "move")
+        #expect(Welcome.matterName(proposed: "Umzug", typed: line) == "Umzug")
+        // A made-up date label takes the matter's name; two dates on one day from one line are one.
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("grounded-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let look = try ScreenshotDoor(besides: folder.appendingPathComponent("store.sqlite")).look(at: Welcome.typedFile(line, in: folder), owner: "Alex")
+        var judgement = try #require(look.report.outcomes.first?.judgement)
+        judgement.appointments = [Judgement.Appointment(what: "die Verteilung", date: "2027-02-01", time: nil, place: nil, sourceQuote: "")]
+        judgement.deadlines = [Judgement.Deadline(what: "den Tag", date: "2027-02-01", sourceQuote: "")]
+        Welcome.nameDates(&judgement, name: "Umzug", line: line)
+        #expect(judgement.appointments.map(\.what) == ["Umzug"] && judgement.deadlines.isEmpty)
     }
 
     @Test("F008 AC-5 · Added, it becomes the first matter")

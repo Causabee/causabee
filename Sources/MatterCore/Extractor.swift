@@ -28,6 +28,9 @@ public struct Extractor: Sendable {
     /// The owner's matters as the store has them — also those made in the app, which no mail
     /// named yet: by the key a mail is filed under, and a line on what each is about.
     public var storeMatters: [(key: String, about: String)] = []
+    /// F008: what is read was brought in at the first start, with no matters yet — both prompts say
+    /// it is always the first matter.
+    public var firstMatter = false
     /// What the closed matters answer to, lowercased: they are finished, and are not on the list a
     /// mail is sorted from, however often the mails before it went there.
     public var closedMatters: Set<String> = []
@@ -262,7 +265,7 @@ public struct Extractor: Sendable {
                                              thread: thread, threadClosed: thread.map { closedMatters.contains(restorer.apply($0).text.lowercased()) } ?? false,
                                              open: book.open(for: thread, matters: matters.map(\.name)),
                                              onFile: Self.shown(files, for: thread, from: outcomes[index].email.date),
-                                             language: AssistantAsk.language(of: [history.newest]))
+                                             language: AssistantAsk.language(of: [history.newest]), first: firstMatter)
             let body = Claude.body(model: model, system: system, user: user,
                                    schema: ExtractionPrompt.schema, effort: effort ?? AIJob.read.effort)
 
@@ -443,7 +446,7 @@ public struct Extractor: Sendable {
         do {
             let text = "Subject: \(email.subject)\nFrom: \(email.from)\n\n" + newest.newest
             guard let read = try await DeviceReader.read(mail: text, sent: email.date, owner: owner, matters: shown,
-                                                         thread: assignedTo ?? thread.map(real)) else {
+                                                         thread: assignedTo ?? thread.map(real), first: firstMatter) else {
                 throw DeviceReader.Unavailable()
             }
             var decision = outcome.judgement
