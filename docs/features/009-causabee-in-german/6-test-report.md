@@ -33,7 +33,11 @@
   - nine `ManifestoUITests` could not find a tab: they do not write `"part.Plan"`, they build it
     (`"part." + name`), so the rename to the part's own name missed them. `RegressionTests` and
     `ChatAddTests` looked a tab up by the word on it, which is the thing this feature changes.
-  The suite is running again on the fixed tests. **Its result is not in this report yet.**
+  A second full run: **87 tests, 7 skipped, 1 failure** — `RegressionTests.testTheFilters`, which
+  loops over `["Digest", "Mail", …]` and so was a third place building the handle out of a word.
+  Reading for that shape turned up the same in `ScrollTests`, `PadTests` and both of the Mac's
+  suites, which had not run yet; the Mac's two helpers looked a tab up by its label outright. All
+  of them pass the part's own name now. **The runs that prove this are still going.**
 - Nine of those test files were changed by this feature: a pill's accessibility identifier is the
   part's own name now ("part.plan", "overview.matters"), not the word on it, because the word is
   German on a German device and a test must find the same button in every language. The suites that
