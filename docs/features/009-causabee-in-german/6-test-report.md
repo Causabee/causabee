@@ -14,7 +14,8 @@
 | AC-3 | By hand: "5 Mails · seit 23. Okt.", "HEUTE · FR. 13. NOV.", "Überfällig seit 12. Nov." — the device's order, and one full stop, not two | pass |
 | AC-4 · One word for one thing | `GermanTests` "F009 AC-4" — no German word serves two English ones, no English one has two Germans, each catalogue on its own | pass |
 | AC-5 · German fits | By hand on the iPhone (iOS 27.2, German) and the Mac: the welcome, the overview with its week strip, a matter's Überblick, Plan and Dateien, the assistant. Nothing cut off, no button without its words | pass |
-| AC-5 | The largest text size, and German on the iPad | running |
+| AC-5 | By hand: the largest text size (accessibility XXXL) on the German iPhone — the title wraps over three lines, the NEU chip grows to two, German's long words hyphenate, nothing is cut or overlapped | pass |
+| AC-5 | By hand: the iPad in German — the sidebar ("Übersicht", "0 heute · 1 überfällig", "Anliegen"), the matter page with its four tabs, the dated rows, the when-chips and the counts | pass |
 | AC-6 · Causabee alone in German | By hand on the owner's own English device: the app set to German while the device stays English | not run — the owner's device |
 | AC-7 · The App Store page in German | By hand in App Store Connect, with the release | not run — at release |
 | AC-8 · Nothing already there is rewritten | `GermanTests` "F009 AC-8" — a matter, its brief and its next step read the same with the language changed | pass |
@@ -24,7 +25,9 @@
 
 ## Everything else still works
 
-- **The unit tests:** 720 in 149 suites, all green (`scripts/test.sh`). 14 of them are F009's.
+- **The unit tests:** 720 in 149 suites, all green (`scripts/test.sh`). 19 of them are F009's. One
+  run while three simulators were building failed `SpeedTests` "What the screens work out,
+  measured"; it passes on an idle machine, as it always has — it measures the Mac, not the code.
 - **The screen tests:** `CausabeePhoneUITests` on the iPhone, 87 of them. A first run found two
   things this feature broke, and both are fixed:
   - `DigestNewUITests.testAPinnedCardSaysItsNextDayByItsCount` asked for "4 open · Nov 14" by a
@@ -54,8 +57,9 @@
 - **The net:** `python3 -I scripts/words.py --escaped` names nothing. `scripts/words-machine.txt`
   holds the 344 literals that are not words a person reads, each looked at once;
   `scripts/words-values.txt` the 409 keys only the compiler can name.
-- **Not run:** the Mac's and the iPad's screen tests; the largest text size; a German VoiceOver
-  pass by ear (the words are in the catalogue, which is what AC-10 asks, but nobody listened yet).
+- **Not run:** a German VoiceOver pass by ear — the words are in the catalogue, which is what AC-10
+  asks, but nobody has listened yet. And AC-6 (Causabee in German on an English device) and AC-7
+  (the German App Store page), which are the owner's and the release's.
 
 ## The AI's answers
 
