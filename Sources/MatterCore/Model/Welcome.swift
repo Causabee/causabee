@@ -53,6 +53,11 @@ public enum Welcome {
 
     /// Typed words as a file that comes in like any other: a `.txt`, read by `ScreenshotDoor` as the
     /// owner's own note. Named by its words, so the same words twice are one file.
+    /// The file the first step wrote: shown as the owner's words, never by its file name.
+    public static func isTyped(_ file: URL) -> Bool {
+        file.pathExtension.lowercased() == "txt" && file.lastPathComponent.contains("typed-")
+    }
+
     public static func typedFile(_ text: String, in folder: URL) throws -> URL {
         let words = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let hash = SHA256.hash(data: Data(words.utf8)).prefix(6).map { String(format: "%02x", $0) }.joined()

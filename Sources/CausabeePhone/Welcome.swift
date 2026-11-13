@@ -86,18 +86,20 @@ struct WelcomeSheet: View {
         .padding(.top, 24)
     }
 
-    /// One part of a matter, cut out — never the whole screen: rounded, framed, 240 points high.
+    /// One part of a matter, cut out — never the whole screen: rounded and framed, the frame on the
+    /// picture's own edge, so nothing is cut and no empty band shows; at most 280 points high.
     private func picture(_ name: String) -> some View {
         Group {
             if let image = UIImage(named: name) {
-                Image(uiImage: image).resizable().aspectRatio(contentMode: .fit)
+                Image(uiImage: image).resizable()
+                    .aspectRatio(image.size.width / max(image.size.height, 1), contentMode: .fit)
             } else {
                 Theme.box.aspectRatio(1.4, contentMode: .fit)
             }
         }
-        .frame(height: 240)
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .overlay(RoundedRectangle(cornerRadius: 22).stroke(Theme.line))
+        .frame(maxHeight: 280)
         .shadow(color: .black.opacity(0.10), radius: 12, y: 4)
         .accessibilityHidden(true)
     }

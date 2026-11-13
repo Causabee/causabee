@@ -89,7 +89,7 @@ struct ShotView: View {
                     Text(line).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if lines.count > 4 { Text("and \(lines.count - 4) more").font(.callout).foregroundStyle(.secondary) }
-                Text(Document.ownName(of: shot.file)).font(.caption).foregroundStyle(.tertiary).lineLimit(1)
+                Text(Welcome.isTyped(shot.file) ? "Your words" : Document.ownName(of: shot.file)).font(.caption).foregroundStyle(.tertiary).lineLimit(1)
                 // Its tasks with no day: given one here, where it came in, they are a plan.
                 let undated = undated(in: id)
                 if !undated.isEmpty {

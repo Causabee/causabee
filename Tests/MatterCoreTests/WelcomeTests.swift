@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import MatterCore
 
@@ -50,6 +51,9 @@ struct WelcomeTests {
         defer { try? FileManager.default.removeItem(at: folder) }
         let file = try Welcome.typedFile("Mum fell. The care service visits on Thursday.\nAsk about the stairs.", in: folder)
         #expect(file.pathExtension == "txt")
+        // Shown as the owner's words, never by its file name.
+        #expect(Welcome.isTyped(file) && Welcome.isTyped(URL(fileURLWithPath: "/x/B8EC6F27-\(file.lastPathComponent)")))
+        #expect(!Welcome.isTyped(URL(fileURLWithPath: "/x/notes.txt")))
         let look = try ScreenshotDoor(besides: folder.appendingPathComponent("store.sqlite")).look(at: file, owner: "Alex")
         let id = try #require(look.report.outcomes.first?.judgement.emailID)
         #expect(id.hasPrefix("typed:"))
@@ -65,6 +69,25 @@ struct WelcomeTests {
         // A long line is cut at a word, never in one (the pressure test, 12 November).
         #expect(Welcome.matterName(proposed: nil, typed: "Car insurance claim after the parking-lot accident, the assessor calls next week")
                 == "Car insurance claim after the parking-lot accident, the")
+    }
+
+    @Test("F008 AC-4 · Typed words show once: as the owner's note, never as a mail")
+    @MainActor
+    func typedOnce() throws {
+        let context = ModelContext(try MatterSchema.container(at: nil))
+        let matter = Matter(key: "reha")
+        context.insert(matter)
+        let typed = Source(kind: .conversation, pointer: Source.ownWords, messageID: "typed:726fc2c7af880022", date: Date())
+        let words = Entry(title: "Mum's rehab starts on 23 November", from: "Notiz", date: typed.date, source: typed)
+        words.matter = matter
+        context.insert(words)
+        let mail = Source(kind: .mail, pointer: "imap://x;UID=1", messageID: "<1@x>", date: Date())
+        let letter = Entry(title: "Rehab clinic: your arrival", from: "clinic@example.com", date: mail.date, source: mail)
+        letter.matter = matter
+        context.insert(letter)
+        try context.save()
+        let picked = RecordBrowse.pick(threads: MailThreads.build([words, letter]), documents: [], links: [], kind: .everything, show: .all, made: RecordLinks(matter))
+        #expect(picked.items.map(\.id) == ["thread-<1@x>"], "the typed words are the note already")
     }
 
     @Test("F008 AC-5 · Added, it becomes the first matter")

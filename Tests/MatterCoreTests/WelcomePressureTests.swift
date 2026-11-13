@@ -24,7 +24,8 @@ struct WelcomePressureTests {
     @Test("F008 · Ten typed lines become matters, read on this Mac")
     func tenLines() async throws {
         print("PRESSURE on device: \(DeviceReader.isAvailable)")
-        for line in Self.lines {
+        let one = ProcessInfo.processInfo.environment["CAUSABEE_PRESSURE_LINE"]
+        for line in one.map({ [$0] }) ?? Self.lines {
             // Each line a first start of its own: an empty store, nothing read before.
             let folder = FileManager.default.temporaryDirectory.appendingPathComponent("pressure-\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

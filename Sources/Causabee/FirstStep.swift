@@ -253,7 +253,7 @@ struct MailOffer: View {
     var body: some View {
         if Welcome.offersMail(matters: matters, hasMailbox: !Keychain.accounts().isEmpty, later: later) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(Welcome.mailTitle).fontWeight(.semibold)
+                Label(Welcome.mailTitle, systemImage: "envelope").fontWeight(.semibold)
                 Text(Welcome.mailLine).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 14) {
                     Button("Set up", action: setUp).quietButton()
@@ -262,12 +262,17 @@ struct MailOffer: View {
                 .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            #if os(iOS)
-            .padding(16)
-            .phoneCard()
-            #else
-            .journalCard()
-            #endif
+            .offerCard()
         }
+    }
+}
+
+extension View {
+    /// An offer, not a matter's content (F008's mail card): the cards' radius and room, no white,
+    /// only a plain line round it — so it stands apart from the white cards and asks for nothing.
+    func offerCard() -> some View {
+        padding(Theme.cardInset)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous).stroke(Theme.line))
     }
 }
