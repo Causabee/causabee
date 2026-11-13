@@ -57,7 +57,7 @@ final class ManifestoMacTests: XCTestCase {
     }
 
     private func tab(_ name: String) {
-        let segment = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ OR title BEGINSWITH %@", name, name)).firstMatch
+        let segment = app.buttons["part." + name]
         XCTAssertTrue(segment.waitForExistence(timeout: 5), "No tab \(name).")
         segment.click()
     }
@@ -92,19 +92,19 @@ final class ManifestoMacTests: XCTestCase {
 
     func testAMatterOfFilesOnlyHasItsTasks() {
         open("Mortgage refinancing 2027")
-        tab("Plan")
+        tab("plan")
         XCTAssertTrue(any("Compare Nordbank and Sparkasse").waitForExistence(timeout: 20), "Tasks from the bank's files are not in Plan.")
     }
 
     func testAPhotographedLetterGivesItsTask() {
         open("Cancel Mum's gym membership")
-        tab("Plan")
+        tab("plan")
         XCTAssertTrue(any("Send the cancellation to FitPark").waitForExistence(timeout: 20))
     }
 
     func testOwnNotesAreInNotes() {
         open("Garden planner app (side project)")
-        tab("Notes")
+        tab("notes")
         XCTAssertTrue(any("Keep it to one screen").waitForExistence(timeout: 20), "The owner's note is not in Notes.")
     }
 

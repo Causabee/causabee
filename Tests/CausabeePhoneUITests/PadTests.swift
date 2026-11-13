@@ -26,7 +26,7 @@ final class PadTests: XCTestCase {
     /// what is ahead is in it, not in a column of its own.
     func testOnItsSideThePageIsOneColumn() {
         let window = app.windows.firstMatch.frame
-        for part in ["Digest", "Plan", "Mail", "Files", "People", "Notes"] {
+        for part in ["all", "plan", "mail", "files", "people", "notes"] {
             let filter = app.buttons["part.\(part)"]
             XCTAssertTrue(filter.waitForExistence(timeout: 10), "\(part) is not among the filters.")
             filter.tap()
