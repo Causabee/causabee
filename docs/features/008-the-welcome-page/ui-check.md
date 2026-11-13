@@ -39,3 +39,16 @@ Read and found right:
 | `Sources/Causabee/FirstStep.swift:117` | T5 | a radius by number: Theme.cardRadius, .tileRadius, or a named one | `.glassBehind(RoundedRectangle(cornerRadius: 24))` |
 
 Verdict: pass
+
+## Again, 13 November — after the owner's tries and the start credit
+
+Scope: the branch's lines since `ac16a07`, now with `ShotView.swift`, `Journal.swift`, `BeeServer.swift`, `PlanSheet.swift`, `Parts.swift`. Mechanical check: 0 ✗, 1 ? — the field's radius 24, kept on purpose as above.
+
+Read and found right:
+- **C2, C3:** the Mac's example card `.outlinedCard()` and the offers' `.offerCard()` are new parts, each named in `docs/design-system/components.md` with why none fitted: a card alone on a white page; an offer, not a matter's content. The iPhone's pictures sit in `.phoneCard(radius:)`, today's card with a radius parameter, its default unchanged.
+- **G5, H10:** the pictures are one layer under their shadow (`.compositingGroup()`), so a picture casts no grey on its own white card; tokens only.
+- **T2:** the start credit's line, its bar and its used card carry no yellow: the bolt and grey words, the top-ups' own colour, an outline.
+- **H1, H6:** Top up and Not now are `Button`s; the card reads as one, its buttons by name; the start credit's line is read as written.
+- **The chat card on the Mac:** typed words show as words — no thumbnail, no file name, nothing "would be sent".
+
+Verdict: pass
