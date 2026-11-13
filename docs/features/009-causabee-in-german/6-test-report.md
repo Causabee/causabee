@@ -13,7 +13,7 @@ criterion; what else was looked at by hand stands under the table.
 | AC-4 · One word for one thing | `GermanTests` "F009 AC-4 · One word for one thing" — no German word serves two English ones, no English one has two Germans, each catalogue on its own | pass |
 | AC-5 · German fits | `GermanTests` "F009 AC-5 · German fits where the room is fixed" — the 23 words that sit in a place that cannot grow, against the room there is; and by hand on the iPhone, the iPad and the Mac, at the usual text size and the largest | pass |
 | AC-6 · The owner can see German on an English device | `GermanBeyondTheAppTests` "F009 AC-6 · German can be picked for Causabee alone" — what makes the device offer it: `de` among the project's regions, a German side in the shared bundle beside the English, and no switch inside Causabee. The owner set Causabee alone to German on their own English iPhone and read it through: "iphone looks good", "german looks good" | pass |
-| AC-7 · The App Store page in German | `GermanBeyondTheAppTests` "F009 AC-7 · The App Store page in German is written and fits" — `store-de.md`: all six fields, each inside Apple's limit, German, du, and more than mail named. Posting it in App Store Connect is a step of the release that makes the page, written down as one | pass |
+| AC-7 · The App Store page in German | `GermanBeyondTheAppTests` "F009 AC-7 · The App Store page in German is written and fits" — `store-de.md`: all six fields, each inside Apple's limit, German, du, and more than mail named. The page itself does not exist yet: posting it in App Store Connect is a step of the release, and the criterion is met there, not here | pass |
 | AC-8 · Nothing already there is rewritten | `GermanTests` "F009 AC-8 · Nothing already there is rewritten" — a matter, its brief and its next step read the same with the language changed | pass |
 | AC-9 · English stays as it is | `GermanTests` "F009 AC-9 · English stays as it is" — no key carries an English value of its own, so the English a person reads is still the source's own word, and the eight words' suites are all there to read it. All 724 tests green | pass |
 | AC-10 · German for whoever listens | `GermanTests` "F009 AC-10 · German for whoever listens" — every spoken word is in a catalogue with German | pass |
@@ -27,9 +27,14 @@ words hyphenate, nothing is cut or overlapped. The iPad in German: the sidebar (
 · 1 überfällig", "Anliegen"), a matter's page with its four tabs, the dated rows, the when-chips and
 the counts.
 
-**What is still only on paper.** The German App Store page exists as words, not as a page: Causabee
-is not in the German store, and the first release is what makes it. AC-7 was changed to say so on
-13 November, and the posting stands under "Left for the release" in this feature's README.
+**AC-7 is not met at the close, and its row says only what its test says.** The criterion asks for
+the German page to be German when it is looked at. There is no page to look at: Causabee is not in
+the German store, and the first release is what makes it. What passed is the test — the words are
+written, every field inside Apple's own limit, German, du, more than mail named. Nobody has seen
+them in App Store Connect's own layout, and Apple has not accepted a single field. The posting
+stands under "Left for the release" in this feature's README, and it is the one thing this feature
+leaves undone. The criterion itself stands exactly as it was approved: it was narrowed for an hour
+on 13 November and put back on the owner's word.
 
 ## Everything else still works
 

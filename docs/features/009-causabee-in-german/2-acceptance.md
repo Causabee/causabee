@@ -50,7 +50,6 @@
 - Given the German App Store
 - When Causabee's page is looked at
 - Then its name, subtitle, description, keywords, screenshots and the beta's "What to test" are German, and the English page stays as it is for every other store
-- And this feature's part is the words: written in the repository, each field inside Apple's own limit, held by a test. Causabee has no page in the German store yet — pasting them into App Store Connect, with the German screenshots, is a step of the release that makes the page, and it is written down as one (13 November)
 - Holds for: the App Store · all
 
 ### AC-8 · Nothing already there is rewritten
