@@ -98,6 +98,7 @@
 - Given Causabee is started for the first time by someone whose Apple account never had a start credit, and who first got Causabee from the App Store or TestFlight after this build
 - When the first start begins
 - Then one top-up's worth of Pro is theirs — a third of a Pro month, kept until used — with nothing to sign up for, buy or type; once per Apple account, on every device it uses and after Causabee is deleted and installed again; the demo never uses it
+- And the owner can try it: as a new person would, on a device and with an Apple account he chooses for it, as often as he needs, without the credit being given to anyone twice in the App Store (the owner, 13 November: "i want somehow test it of coure")
 - Holds for: iPhone, iPad, Mac · the free plan, Plus and Pro (the owner, 13 November: "give away one top-up pro for each new user")
 
 ### AC-15 · Said once, plainly
