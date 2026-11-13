@@ -182,8 +182,10 @@ def from_build(folders: list[str]) -> list[str]:
     where = sys.argv[sys.argv.index("--build") + 1] if "--build" in sys.argv else None
     if not where:
         return []
-    names = {"Sources/Causabee": "Causabee.build", "Sources/CausabeePhone": "Causabee.build",
-             "Sources/CausabeeShare": "Causabee.build", "Sources/MatterCore": "MatterCore"}
+    # Where Xcode leaves each one's keys. The share sheet builds into a folder of its own, as its
+    # words land in a bundle of its own.
+    names = {"Sources/Causabee": "CausabeeApp.build", "Sources/CausabeePhone": "CausabeePhone.build",
+             "Sources/CausabeeShare": "CausabeeShare.build", "Sources/MatterCore": "MatterCore"}
     wanted = {names[f] for f in folders if f in names}
     found = []
     for file in sorted(pathlib.Path(where).rglob("*.stringsdata")):

@@ -1165,7 +1165,7 @@ shown on more than one screen is under the first of them.
 | Found “%@” · %lld mails | „%@“ gefunden · %lld Mails |
 | You’re all set | Alles bereit |
 | Here is how Causabee gets its first mail: | So bekommt Causabee ihre erste Mail: |
-| Causabee reads the 1 mail in “%@” now. More come the same way: | Causabee liest die 1 Mail in „%@“ jetzt. Weitere kommen genauso: |
+| Causabee reads the 1 mail in “%@” now. More come the same way: | Causabee liest jetzt die eine Mail in „%@“. Weitere kommen genauso: |
 | Causabee reads the %lld mails in “%@” now. More come the same way: | Causabee liest die %lld Mails in „%@“ jetzt. Weitere kommen genauso: |
 | In Gmail, open a mail about something you’re dealing with — a move, a claim, a parent’s care. | Öffne in Gmail eine Mail zu etwas, das dich beschäftigt — ein Umzug, ein Schadensfall, die Pflege eines Elternteils. |
 | %@ the label button, and tick “%@”. | %@ den Label-Knopf und hak „%@“ an. |
@@ -1408,7 +1408,7 @@ shown on more than one screen is under the first of them.
 | In the demo, nothing reads what comes in. | Im Beispiel liest nichts, was hereinkommt. |
 | Sorting in 1 mail on this device, with Apple's model: nothing leaves it. | Sortiere 1 Mail auf diesem Gerät ein, mit Apples Modell: nichts verlässt es. |
 | Sorting in %lld mails on this device, with Apple's model: nothing leaves it. | Sortiere %lld Mails auf diesem Gerät ein, mit Apples Modell: nichts verlässt es. |
-| Bringing in 1 mail by their threads. You place the rest. | Bringe 1 Mail über ihre Threads herein. Den Rest ordnest du ein. |
+| Bringing in 1 mail by their threads. You place the rest. | Bringe 1 Mail über ihren Thread herein. Den Rest ordnest du ein. |
 | Bringing in %lld mails by their threads. You place the rest. | Bringe %lld Mails über ihre Threads herein. Den Rest ordnest du ein. |
 | Sorting in 1 mail with Causabee Pro. Sent pseudonymised to %@. | Sortiere 1 Mail mit Causabee Pro ein. Pseudonymisiert an %@ gesendet. |
 | Sorting in %lld mails with Causabee Pro. Sent pseudonymised to %@. | Sortiere %lld Mails mit Causabee Pro ein. Pseudonymisiert an %@ gesendet. |
@@ -2062,12 +2062,12 @@ shown on more than one screen is under the first of them.
 | Causabee takes pictures and PDFs. | Causabee nimmt Bilder und PDFs. |
 | Into “%@” | In „%@“ |
 | Into a matter … | In ein Anliegen … |
-| INTO | NACH |
+| INTO | IN |
 | Causabee decides | Causabee entscheidet |
 | it sorts it in by itself | sie sortiert es selbst ein |
 | last mail %@ | letzte Mail %@ |
-| Your open matters, the latest first. | Deine offenen Anliegen, die neuesten zuerst. |
-| Causabee sorts it in when it next opens, and says where it went. | Causabee sortiert es ein, wenn es das nächste Mal öffnet, und sagt, wohin es ging. |
+| Your open matters, the latest first. | Deine offenen Anliegen, das neueste zuerst. |
+| Causabee sorts it in when it next opens, and says where it went. | Causabee sortiert es ein, wenn sie das nächste Mal öffnet, und sagt, wohin es ging. |
 | 1 picture | 1 Bild |
 | %lld pictures | %lld Bilder |
 | 1 PDF | 1 PDF |
