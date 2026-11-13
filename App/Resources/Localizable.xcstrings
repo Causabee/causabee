@@ -6,7 +6,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mache Namen unkenntlich …"
+            "value": "Namen werden unkenntlich gemacht …"
           }
         }
       }
@@ -16,7 +16,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Denke nach …"
+            "value": "Wird nachgedacht …"
           }
         }
       }
@@ -26,7 +26,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sehe im ganzen Anliegen nach …"
+            "value": "Das ganze Anliegen wird durchgesehen …"
           }
         }
       }
@@ -36,7 +36,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Setze die Namen zurück …"
+            "value": "Die Namen kommen zurück …"
           }
         }
       }
@@ -206,7 +206,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "rechtsklick eins, um es anzupinnen"
+            "value": "klick eins mit der rechten Maustaste an, um es anzuheften"
           }
         }
       }
@@ -576,7 +576,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zusammenfassung berichtigt"
+            "value": "Zusammenfassung korrigiert"
           }
         }
       }
@@ -636,7 +636,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hängt jetzt ab von %@"
+            "value": "Wartet jetzt auf %@"
           }
         }
       }
@@ -696,7 +696,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Text berichtigt"
+            "value": "Text korrigiert"
           }
         }
       }
@@ -846,7 +846,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zusammenfassung berichtigen"
+            "value": "Zusammenfassung korrigieren"
           }
         }
       }
@@ -1036,7 +1036,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zusammenfassung berichtigen?"
+            "value": "Zusammenfassung korrigieren?"
           }
         }
       }
@@ -1096,7 +1096,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hängt von einer anderen Aufgabe ab?"
+            "value": "Wartet auf eine andere Aufgabe?"
           }
         }
       }
@@ -1506,7 +1506,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verbindung lösen"
+            "value": "Trennen"
           }
         }
       }
@@ -1566,7 +1566,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Um zu sehen, welche Termine und Aufgaben es schon gibt — nichts wird hinzugefügt, außer du tippst."
+            "value": "Um zu sehen, welche Termine und Aufgaben es schon gibt — es sei denn, du tippst, kommt nichts hinzu."
           }
         }
       }
@@ -1576,7 +1576,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Um zu sehen, welche Termine und Aufgaben es schon gibt — nichts wird hinzugefügt, außer du klickst."
+            "value": "Um zu sehen, welche Termine und Aufgaben es schon gibt — es sei denn, du klickst, kommt nichts hinzu."
           }
         }
       }
@@ -1586,7 +1586,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "du tippst auf"
+            "value": "tippst"
           }
         }
       }
@@ -1596,7 +1596,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "du klickst auf"
+            "value": "klickst"
           }
         }
       }
@@ -1716,7 +1716,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nicht geändert: das lässt sich so nicht setzen, oder der Wert fehlt."
+            "value": "Nicht geändert: das lässt sich so nicht festlegen, oder der Wert fehlt."
           }
         }
       }
@@ -1896,7 +1896,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bewegen"
+            "value": "Umzug"
           }
         }
       }
@@ -2476,7 +2476,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · zuletzt genutzt von %lld"
+            "value": "%@ · die zuletzt genutzte von %lld"
           }
         }
       }
@@ -2556,7 +2556,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hole %@ aus iCloud …"
+            "value": "%@ wird aus iCloud geholt …"
           }
         }
       }
@@ -2566,7 +2566,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mache %@ für die Mail kleiner …"
+            "value": "%@ wird für die Mail kleiner gemacht …"
           }
         }
       }
@@ -2976,7 +2976,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Finden"
+            "value": "Suchen"
           }
         }
       }
@@ -3186,7 +3186,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "An — deine Anliegen, in deinem privaten iCloud"
+            "value": "An — deine Anliegen, in deiner privaten iCloud"
           }
         }
       }
@@ -3266,7 +3266,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diese Version von Causabee hat kein iCloud: deine Anliegen bleiben auf diesem Mac."
+            "value": "Diese Version von Causabee hat keine iCloud: deine Anliegen bleiben auf diesem Mac."
           }
         }
       }
@@ -3286,7 +3286,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Im Beispiel bleibt iCloud aus: die erfundenen Anliegen treffen nie auf dein iCloud. Deine Wahl gilt wieder, sobald du das Beispiel verlässt."
+            "value": "Im Beispiel bleibt iCloud aus: die erfundenen Anliegen kommen nie in deine iCloud. Deine Wahl gilt wieder, sobald du das Beispiel verlässt."
           }
         }
       }
@@ -3326,7 +3326,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine Anliegen, Aufgaben, Termine, Personen, Überblicke, der Verlauf des Assistenten und die vollen Texte von Mails und Scans — diese Ende-zu-Ende-verschlüsselt — gleichen sich über dein privates iCloud ab. Dateien kommen in die Ordner der Anliegen."
+            "value": "Deine Anliegen, Aufgaben, Termine, Personen, Überblicke, der Verlauf des Assistenten und die vollen Texte von Mails und Scans — diese Ende-zu-Ende-verschlüsselt — werden über deine private iCloud abgeglichen. Dateien kommen in die Ordner der Anliegen."
           }
         }
       }
@@ -3356,7 +3356,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mail in Mail öffnen"
+            "value": "Die Mail in Mail öffnen"
           }
         }
       }
@@ -3486,7 +3486,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur gesichert, nicht gelesen"
+            "value": "Nur abgelegt, nicht gelesen"
           }
         }
       }
@@ -3686,7 +3686,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sichere Dateien …"
+            "value": "Dateien werden gesichert …"
           }
         }
       }
@@ -3696,7 +3696,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sichere Dateien … %lld von %lld"
+            "value": "Dateien werden gesichert … %lld von %lld"
           }
         }
       }
@@ -3726,7 +3726,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diesen Ordner nehmen"
+            "value": "Diesen Ordner nutzen"
           }
         }
       }
@@ -3836,7 +3836,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hab Ordnung. Bleib privat."
+            "value": "Alles geordnet. Alles privat."
           }
         }
       }
@@ -3986,7 +3986,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag setzen"
+            "value": "Tag festlegen"
           }
         }
       }
@@ -4026,7 +4026,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Setzen"
+            "value": "Festlegen"
           }
         }
       }
@@ -4036,7 +4036,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag setzen"
+            "value": "Tag festlegen"
           }
         }
       }
@@ -4226,7 +4226,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verbergen"
+            "value": "Ausblenden"
           }
         }
       }
@@ -4236,7 +4236,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hier nicht gewollt: es geht, und kommt nicht zurück"
+            "value": "Gehört nicht hierher: es geht, und kommt nicht zurück"
           }
         }
       }
@@ -4556,7 +4556,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verborgen"
+            "value": "Ausgeblendet"
           }
         }
       }
@@ -4646,7 +4646,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hole Mail …"
+            "value": "Mail wird geholt …"
           }
         }
       }
@@ -4666,7 +4666,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lese 1 Mail …"
+            "value": "1 Mail wird gelesen …"
           }
         }
       }
@@ -4676,7 +4676,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lese %lld Mails …"
+            "value": "%lld Mails werden gelesen …"
           }
         }
       }
@@ -4716,7 +4716,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sortiere 1 Mail ein …"
+            "value": "1 Mail wird einsortiert …"
           }
         }
       }
@@ -4726,7 +4726,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sortiere %lld Mails ein …"
+            "value": "%lld Mails werden einsortiert …"
           }
         }
       }
@@ -4896,7 +4896,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "gerade jetzt"
+            "value": "gerade eben"
           }
         }
       }
@@ -5006,7 +5006,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "In ein neues Anliegen bewegen"
+            "value": "In ein neues Anliegen verschieben"
           }
         }
       }
@@ -5046,7 +5046,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "deinem Anbieter"
+            "value": "dein Anbieter"
           }
         }
       }
@@ -5066,7 +5066,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suche …"
+            "value": "Wird gesucht …"
           }
         }
       }
@@ -5096,7 +5096,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@-Einstellungen öffnen"
+            "value": "Einstellungen von %@ öffnen"
           }
         }
       }
@@ -5356,7 +5356,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auch Google Workspace in der Arbeit"
+            "value": "Auch Google Workspace von der Arbeit"
           }
         }
       }
@@ -5476,7 +5476,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Leite die Mails, die einsortiert werden sollen, an eine Gmail- oder iCloud-Adresse weiter und verbinde die."
+            "value": "Leite die Mails, die einsortiert werden sollen, an eine Gmail- oder iCloud-Adresse weiter und verbinde diese Adresse."
           }
         }
       }
@@ -5486,7 +5486,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oder zieh das PDF einer Mail oder einen Screenshot in Causabee — die sortiert sie auch ein."
+            "value": "Oder zieh das PDF einer Mail oder einen Screenshot in Causabee — die sortiert Causabee auch ein."
           }
         }
       }
@@ -5506,7 +5506,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Causabee konnte die Einstellungen für %@ nicht selbst finden. Wähl deinen Anbieter:"
+            "value": "Causabee konnte die Einstellungen von %@ nicht selbst finden. Wähl deinen Anbieter:"
           }
         }
       }
@@ -5766,7 +5766,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ will ein Passwort für Apps. Leg eines namens „Causabee“ an, kopier es und füg es hier ein."
+            "value": "Für Apps will %@ ein eigenes Passwort. Leg eines namens „Causabee“ an, kopier es und füg es hier ein."
           }
         }
       }
@@ -5786,7 +5786,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ lässt Apps erst Mail lesen, wenn du es erlaubst. Es ist ein einziger Schalter."
+            "value": "Erst wenn du es erlaubst, lässt %@ Apps Mail lesen. Es ist ein einziger Schalter."
           }
         }
       }
@@ -5796,7 +5796,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ „%@-Einstellungen öffnen“ und melde dich an."
+            "value": "%@ „Einstellungen von %@ öffnen“ und melde dich an."
           }
         }
       }
@@ -5806,7 +5806,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schalte unter POP3 & IMAP „Zugriff erlauben“ ein."
+            "value": "Schalt unter POP3 & IMAP „Zugriff erlauben“ ein."
           }
         }
       }
@@ -5826,7 +5826,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein %@-Mail-Passwort"
+            "value": "Dein Mail-Passwort bei %@"
           }
         }
       }
@@ -5836,7 +5836,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ hat ein Passwort nur für Mail, gesetzt in den Mail-Einstellungen — nicht das, mit dem du dich bei Telekom anmeldest."
+            "value": "Bei %@ gibt es ein Passwort nur für Mail, gesetzt in den Mail-Einstellungen — nicht das, mit dem du dich bei Telekom anmeldest."
           }
         }
       }
@@ -5846,7 +5846,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein %@-Passwort"
+            "value": "Dein Passwort bei %@"
           }
         }
       }
@@ -5856,7 +5856,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Causabee nutzt es nur, um die Mail zu lesen, die du ihr gibst, und bewahrt es in deinem iCloud-Schlüsselbund."
+            "value": "Causabee nutzt es nur, um die Mail zu lesen, die du ihr gibst, und bewahrt es in deinem iCloud-Schlüsselbund auf."
           }
         }
       }
@@ -5866,7 +5866,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verbinde mit %@"
+            "value": "Verbindung zu %@"
           }
         }
       }
@@ -5926,7 +5926,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dieses Label anzulegen ist die einzige Änderung, die Causabee je an deinem Postfach macht. Du kannst es dort umbenennen oder löschen."
+            "value": "Mehr ändert Causabee nie an deinem Postfach. Du kannst das Label dort umbenennen oder löschen."
           }
         }
       }
@@ -5936,7 +5936,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diesen Ordner anzulegen ist die einzige Änderung, die Causabee je an deinem Postfach macht. Du kannst ihn dort umbenennen oder löschen."
+            "value": "Mehr ändert Causabee nie an deinem Postfach. Du kannst den Ordner dort umbenennen oder löschen."
           }
         }
       }
@@ -5966,7 +5966,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Causabee hat „%@“ in deinem Postfach gefunden, mit 1 Mail darin."
+            "value": "Causabee hat „%@“ in deinem Postfach gefunden, mit einer Mail darin."
           }
         }
       }
@@ -6256,7 +6256,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Groß und klein zählt — gib es noch einmal ein"
+            "value": "Groß- und Kleinschreibung zählt — gib es noch einmal ein"
           }
         }
       }
@@ -6296,7 +6296,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ will sein eigenes Mail-Passwort"
+            "value": "Bei %@ braucht es das eigene Mail-Passwort"
           }
         }
       }
@@ -6356,7 +6356,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "In der Arbeit oder auf einer eigenen Domain muss die Bestätigung in zwei Schritten vielleicht erst erlaubt werden, von wem auch immer dein Google-Konto verwaltet."
+            "value": "Bei der Arbeit oder auf einer eigenen Domain muss das vielleicht erst erlaubt werden — von wem auch immer dein Google-Konto verwaltet wird."
           }
         }
       }
@@ -6426,7 +6426,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erreiche %@"
+            "value": "%@ wird erreicht"
           }
         }
       }
@@ -6436,7 +6436,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Melde mich als %@ an"
+            "value": "Anmeldung als %@"
           }
         }
       }
@@ -6446,7 +6446,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suche „%@“"
+            "value": "„%@“ wird gesucht"
           }
         }
       }
@@ -6516,7 +6516,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "✓ 16 Buchstaben — das ist das richtige."
+            "value": "✓ 16 Buchstaben — das ist das Richtige."
           }
         }
       }
@@ -6526,7 +6526,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "✓ Das ist ein App-spezifisches Passwort — das richtige."
+            "value": "✓ Das ist ein App-spezifisches Passwort — das Richtige."
           }
         }
       }
@@ -6666,7 +6666,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oben anpinnen"
+            "value": "Oben anheften"
           }
         }
       }
@@ -6676,7 +6676,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pin entfernen"
+            "value": "Nicht mehr anheften"
           }
         }
       }
@@ -6806,7 +6806,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hängt ab von"
+            "value": "Wartet auf"
           }
         }
       }
@@ -6816,7 +6816,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hängt ab von …"
+            "value": "Wartet auf …"
           }
         }
       }
@@ -6866,7 +6866,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dateinamen nehmen"
+            "value": "Dateinamen nutzen"
           }
         }
       }
@@ -6956,7 +6956,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alles als erledigt markieren und schließen"
+            "value": "Alles erledigen und abschließen"
           }
         }
       }
@@ -7186,7 +7186,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bringe %lld von %lld herein …"
+            "value": "%lld von %lld werden hereingeholt …"
           }
         }
       }
@@ -7226,7 +7226,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lese 0 von %lld Mails …"
+            "value": "0 von %lld Mails gelesen …"
           }
         }
       }
@@ -7236,7 +7236,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lese %lld von %lld Mails …"
+            "value": "%lld von %lld Mails gelesen …"
           }
         }
       }
@@ -7306,7 +7306,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hole die Datei aus dem Ordner des Anliegens …"
+            "value": "Die Datei wird aus dem Ordner des Anliegens geholt …"
           }
         }
       }
@@ -7336,7 +7336,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hole die Datei aus der Mail …"
+            "value": "Die Datei wird aus der Mail geholt …"
           }
         }
       }
@@ -7416,7 +7416,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein neues Anliegen mit der 1 neuen Mail"
+            "value": "Ein neues Anliegen mit der einen neuen Mail"
           }
         }
       }
@@ -7446,7 +7446,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anderes Zeichen wählen"
+            "value": "Anderes Symbol wählen"
           }
         }
       }
@@ -7476,7 +7476,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Was zu tun ist, wessen es ist, und was kommt. Aufgaben und Termine in Mails werden beim Einsortieren gefunden."
+            "value": "Was zu tun ist, wer dran ist, und was kommt. Aufgaben und Termine in Mail werden gefunden, wenn sie einsortiert wird."
           }
         }
       }
@@ -7536,7 +7536,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nimmt sie nur aus diesem Anliegen. Nichts, was später hereinkommt, legt sie zurück."
+            "value": "Nimmt sie nur aus diesem Anliegen. Nichts, was später hereinkommt, bringt sie zurück."
           }
         }
       }
@@ -7546,7 +7546,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hier ist nichts von %@ geschrieben oder nennt sie."
+            "value": "Hier hat %@ nichts geschrieben, und nichts nennt sie."
           }
         }
       }
@@ -7596,7 +7596,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur gesichert"
+            "value": "Nur abgelegt"
           }
         }
       }
@@ -7641,12 +7641,12 @@
         }
       }
     },
-    "Nothing here is %@.": {
+    "Nothing here under “%@”.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hier ist nichts %@."
+            "value": "Hier ist nichts unter „%@“."
           }
         }
       }
@@ -8036,7 +8036,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur aus diesem Anliegen. Nichts, was später hereinkommt, legt sie zurück."
+            "value": "Nur aus diesem Anliegen. Nichts, was später hereinkommt, bringt sie zurück."
           }
         }
       }
@@ -8116,7 +8116,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": ", und %@, die nur sie gebracht hat"
+            "value": ", und %@ allein daraus"
           }
         }
       }
@@ -8336,7 +8336,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sortiere 1 Mail auf diesem Gerät ein, mit Apples Modell: nichts verlässt es."
+            "value": "1 Mail wird auf diesem Gerät einsortiert, mit Apples Modell: nichts verlässt es."
           }
         }
       }
@@ -8346,7 +8346,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sortiere %lld Mails auf diesem Gerät ein, mit Apples Modell: nichts verlässt es."
+            "value": "%lld Mails werden auf diesem Gerät einsortiert, mit Apples Modell: nichts verlässt es."
           }
         }
       }
@@ -8356,7 +8356,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bringe 1 Mail über ihren Thread herein. Den Rest ordnest du ein."
+            "value": "1 Mail wird über ihren Thread hereingeholt. Den Rest ordnest du ein."
           }
         }
       }
@@ -8366,7 +8366,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bringe %lld Mails über ihre Threads herein. Den Rest ordnest du ein."
+            "value": "%lld Mails werden über ihre Threads hereingeholt. Den Rest ordnest du ein."
           }
         }
       }
@@ -8376,7 +8376,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sortiere 1 Mail mit Causabee Pro ein. Pseudonymisiert an %@ gesendet."
+            "value": "1 Mail wird mit Causabee Pro einsortiert. Pseudonymisiert an %@ gesendet."
           }
         }
       }
@@ -8386,7 +8386,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sortiere %lld Mails mit Causabee Pro ein. Pseudonymisiert an %@ gesendet."
+            "value": "%lld Mails werden mit Causabee Pro einsortiert. Pseudonymisiert an %@ gesendet."
           }
         }
       }
@@ -8396,7 +8396,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sortiere 1 Mail ein. Pseudonymisiert an %@ gesendet."
+            "value": "1 Mail wird einsortiert. Pseudonymisiert an %@ gesendet."
           }
         }
       }
@@ -8406,7 +8406,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sortiere %lld Mails ein. Pseudonymisiert an %@ gesendet."
+            "value": "%lld Mails werden einsortiert. Pseudonymisiert an %@ gesendet."
           }
         }
       }
@@ -8436,7 +8436,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pro ist nicht in Nutzung. Nutz Pro mit der Biene dafür."
+            "value": "Pro wird nicht genutzt. Nutz Pro mit der Biene dafür."
           }
         }
       }
@@ -8486,7 +8486,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Regel aus dem Test: keine Aufgabe fürs Zusagen oder Vorbereiten, außer die Mail bittet darum."
+            "value": "Die Regel aus dem Test: keine Aufgabe fürs Zusagen oder Vorbereiten, es sei denn, die Mail bittet darum."
           }
         }
       }
@@ -8716,7 +8716,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "„%@“ anpinnen statt …"
+            "value": "„%@“ anheften statt …"
           }
         }
       }
@@ -8856,7 +8856,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rolle — Versicherung, Ärztin, Amt"
+            "value": "Rolle — Versicherung, Arzt, Amt"
           }
         }
       }
@@ -8956,7 +8956,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eine Mitgliedsnummer, ein Aktenzeichen, Station und Zimmer: was du am Telefon mit ihnen brauchst."
+            "value": "Eine Mitgliedsnummer, ein Aktenzeichen, Station und Zimmer: was du brauchst, wenn du mit ihnen telefonierst."
           }
         }
       }
@@ -9016,7 +9016,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Plan"
+            "value": "Dein Paket"
           }
         }
       }
@@ -9036,7 +9036,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Causabee hält %lld offene Anliegen gratis. Schließ eines ab — oder mach Platz für alle. Was du hast, wird nie weggeschlossen."
+            "value": "Bis zu %lld offene Anliegen sind gratis. Schließ eines ab — oder mach Platz für alle. Was du hast, wird nie weggeschlossen."
           }
         }
       }
@@ -9146,7 +9146,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wechsel zwischen Plus und Pro: hoch zu Pro sofort, den Rest von Plus zahlt Apple zurück; runter zu Plus zur nächsten Verlängerung. Kündigen kannst du in deinem Apple-Account."
+            "value": "Wechsel zwischen Plus und Pro: hinauf zu Pro sofort, den Rest von Plus zahlt Apple zurück; hinunter zu Plus erst zur nächsten Verlängerung. Kündigen kannst du in deinem Apple-Account."
           }
         }
       }
@@ -9226,7 +9226,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plan und Nutzung"
+            "value": "Paket und Nutzung"
           }
         }
       }
@@ -9266,7 +9266,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple konnte deine Zahlungsart nicht belasten. Das Paket läuft bis %@; aktualisier sie in deinem Apple-Account, dann verlängert es sich wie bisher."
+            "value": "Die Zahlung ist bei Apple nicht durchgegangen. Das Paket läuft bis %@; aktualisier deine Zahlungsmethode im Apple-Account, dann verlängert es sich wie bisher."
           }
         }
       }
@@ -9276,7 +9276,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple konnte deine Zahlungsart nicht belasten. Aktualisier sie in deinem Apple-Account, dann verlängert es sich wie bisher."
+            "value": "Die Zahlung ist bei Apple nicht durchgegangen. Aktualisier deine Zahlungsmethode im Apple-Account, dann verlängert es sich wie bisher."
           }
         }
       }
@@ -9286,7 +9286,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pläne ansehen"
+            "value": "Pakete ansehen"
           }
         }
       }
@@ -9356,7 +9356,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dokument öffnen"
+            "value": "Datei öffnen"
           }
         }
       }
@@ -9436,7 +9436,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seine Worte sind noch nicht auf diesem Gerät."
+            "value": "Ihre Worte sind noch nicht auf diesem Gerät."
           }
         }
       }
@@ -9551,12 +9551,22 @@
         }
       }
     },
+    "What came from it: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was daraus kam: %@"
+          }
+        }
+      }
+    },
     "only to know": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "nur zur Kenntnis"
+            "value": "nur zur Info"
           }
         }
       }
@@ -9866,7 +9876,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Berichtigen"
+            "value": "Korrigieren"
           }
         }
       }
@@ -9876,7 +9886,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Berichtigen"
+            "value": "Korrigieren"
           }
         }
       }
@@ -9976,7 +9986,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zurücknehmen: die nächste Zusammenfassung wird ohne es geschrieben."
+            "value": "Zurücknehmen: die nächste Zusammenfassung wird ohne diesen Hinweis geschrieben."
           }
         }
       }
@@ -10196,7 +10206,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zurücknehmen: das nächste Schreiben geht ohne es"
+            "value": "Zurücknehmen: beim nächsten Mal bleibt es weg"
           }
         }
       }
@@ -10266,7 +10276,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Testbetrieb: nichts wird gesichert"
+            "value": "Testmodus: nichts wird gesichert"
           }
         }
       }
@@ -10276,7 +10286,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "freiwillig"
+            "value": "optional"
           }
         }
       }
@@ -10526,7 +10536,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Name muss „%@“ sein. Groß und klein ist einerlei."
+            "value": "Der Name muss „%@“ sein. Groß- und Kleinschreibung ist egal."
           }
         }
       }
@@ -10566,7 +10576,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anderen Account nutzen"
+            "value": "Anderes Konto nutzen"
           }
         }
       }
@@ -10756,7 +10766,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wird auf dem Mac erfasst …"
+            "value": "Der Text wird auf dem Mac erkannt …"
           }
         }
       }
@@ -10846,7 +10856,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ausgelassen: "
+            "value": "Weggelassen: "
           }
         }
       }
@@ -11076,7 +11086,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Kauf wartet auf eine Freigabe — Kauf bestätigen, oder die Bank."
+            "value": "Der Kauf wartet auf eine Freigabe — Kaufanfrage, oder die Bank."
           }
         }
       }
@@ -11326,7 +11336,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zeichen"
+            "value": "Symbol"
           }
         }
       }
@@ -11346,7 +11356,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zeichen für dieses Anliegen"
+            "value": "Symbol für dieses Anliegen"
           }
         }
       }
@@ -11366,7 +11376,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spracherkennung wird bereit …"
+            "value": "Spracherkennung wird vorbereitet …"
           }
         }
       }
@@ -11386,7 +11396,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Spracherkennung wird bereit"
+            "value": "Die Spracherkennung ist gleich bereit"
           }
         }
       }
@@ -11566,7 +11576,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Mail hereinzunehmen beginnt es, mit dem, was du angehakt gelassen hast."
+            "value": "Wenn du die Mail hereinnimmst, beginnt es — mit dem, was angehakt bleibt."
           }
         }
       }
@@ -11826,7 +11836,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dokument hinzufügen"
+            "value": "Datei hinzufügen"
           }
         }
       }
@@ -11836,7 +11846,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die ausgeblendeten verbergen"
+            "value": "Die Ausgeblendeten wieder ausblenden"
           }
         }
       }
@@ -11896,7 +11906,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hole die Datei aus iCloud Drive …"
+            "value": "Die Datei wird aus iCloud Drive geholt …"
           }
         }
       }
@@ -11916,7 +11926,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Weiteren Account hinzufügen"
+            "value": "Weiteres Konto hinzufügen"
           }
         }
       }
@@ -11926,7 +11936,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mail-Account"
+            "value": "Mail-Konto"
           }
         }
       }
@@ -11966,7 +11976,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wählt ein anderes Zeichen"
+            "value": "Wählt ein anderes Symbol"
           }
         }
       }
@@ -12176,7 +12186,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Es geht aus diesem Anliegen; Widerrufen bringt es zurück."
+            "value": "Es verschwindet aus diesem Anliegen; Widerrufen bringt es zurück."
           }
         }
       }
@@ -12186,7 +12196,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sie geht aus diesem Anliegen, und ihre Erinnerung aus Erinnerungen. Widerrufen bringt die Aufgabe zurück, nicht die Erinnerung."
+            "value": "Sie verschwindet aus diesem Anliegen, und ihre Erinnerung aus Erinnerungen. Widerrufen bringt die Aufgabe zurück, nicht die Erinnerung."
           }
         }
       }
@@ -12246,7 +12256,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Er geht aus diesem Anliegen, und sein Eintrag aus dem Kalender. Widerrufen bringt den Termin zurück, nicht den Eintrag."
+            "value": "Er verschwindet aus diesem Anliegen, und sein Eintrag aus dem Kalender. Widerrufen bringt den Termin zurück, nicht den Eintrag."
           }
         }
       }
@@ -12346,7 +12356,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Geschlossen"
+            "value": "Abgeschlossen"
           }
         }
       }
@@ -12376,7 +12386,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suche nach Mail"
+            "value": "Mail wird gesucht"
           }
         }
       }
@@ -12416,7 +12426,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pro in Nutzung"
+            "value": "Pro wird genutzt"
           }
         }
       }
@@ -12426,7 +12436,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pro nicht in Nutzung"
+            "value": "Pro wird nicht genutzt"
           }
         }
       }
@@ -12496,7 +12506,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sehe mir an, was gewählt wurde …"
+            "value": "Was gewählt wurde, wird angesehen …"
           }
         }
       }
@@ -12526,7 +12536,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "In dem gefunden, was hereinkam · 1 Vorschlag"
+            "value": "Gefunden in dem, was hereinkam · 1 Vorschlag"
           }
         }
       }
@@ -12536,7 +12546,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "In dem gefunden, was hereinkam · %lld Vorschläge"
+            "value": "Gefunden in dem, was hereinkam · %lld Vorschläge"
           }
         }
       }
@@ -12936,7 +12946,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hinzufügen oder hereinbringen"
+            "value": "Hinzufügen oder importieren"
           }
         }
       }
@@ -12996,7 +13006,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur hereinholen"
+            "value": "Nur importieren"
           }
         }
       }
@@ -13216,7 +13226,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dokument hinzufügen"
+            "value": "Datei hinzufügen"
           }
         }
       }
@@ -13286,7 +13296,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pros Server"
+            "value": "Server von Pro"
           }
         }
       }
@@ -13426,7 +13436,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Im Beispiel bleibt iCloud aus: die erfundenen Anliegen treffen nie auf dein iCloud."
+            "value": "Im Beispiel bleibt iCloud aus: die erfundenen Anliegen kommen nie in deine iCloud."
           }
         }
       }
@@ -13436,7 +13446,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine Anliegen, Aufgaben, Termine, Personen, Überblicke, wie jede Mail einsortiert wurde, der Verlauf des Assistenten und die vollen Texte von Mails und Scans — diese Ende-zu-Ende-verschlüsselt — gleichen sich über dein privates iCloud ab. Dateien kommen in die Ordner der Anliegen."
+            "value": "Deine Anliegen, Aufgaben, Termine, Personen, Überblicke, wie jede Mail einsortiert wurde, der Verlauf des Assistenten und die vollen Texte von Mails und Scans — diese Ende-zu-Ende-verschlüsselt — werden über deine private iCloud abgeglichen. Dateien kommen in die Ordner der Anliegen."
           }
         }
       }
@@ -13776,7 +13786,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Causabee liest deine Kalender und Erinnerungen, um zu zeigen, was schon da ist. Sie fügt nur hinzu, wenn %@ „Hinzufügen“. Was verbunden ist, bleibt in beide Richtungen im Takt: abgehakt, verschoben, umbenannt."
+            "value": "Causabee liest deine Kalender und Erinnerungen, um zu zeigen, was schon da ist. Sie fügt nur hinzu, wenn du auf „Hinzufügen“ %@. Was verbunden ist, bleibt in beide Richtungen synchron: abgehakt, verschoben, umbenannt."
           }
         }
       }
@@ -13816,7 +13826,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verbunden und im Takt. Klick, um es in %@ zu öffnen."
+            "value": "Verbunden und synchron. Klick, um es in %@ zu öffnen."
           }
         }
       }
@@ -13916,7 +13926,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zuletzt im Takt um %@: %lld übernommen, %lld hinausgeschrieben."
+            "value": "Zuletzt abgeglichen um %@: %lld übernommen, %lld geschrieben."
           }
         }
       }
@@ -14001,12 +14011,22 @@
         }
       }
     },
+    "Nothing here is %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier ist nichts %@."
+          }
+        }
+      }
+    },
     "Now: On — your matters, in your private iCloud · %@": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jetzt: An — deine Anliegen, in deinem privaten iCloud · %@"
+            "value": "Jetzt: An — deine Anliegen, in deiner privaten iCloud · %@"
           }
         }
       }
@@ -14116,7 +14136,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auf diesem %@ gesichert, in %@, unter diesem Namen. Dann hier erfasst und in „%@“ einsortiert, wenn du auf „Einsortieren“ tippst, wie mit der Klammer. Seine Aufgaben und Termine gehen auf alle deine Geräte; die Datei bleibt auf diesem %@."
+            "value": "Auf diesem %@ gesichert, in %@, unter diesem Namen. Dann wird der Text hier erkannt und in „%@“ einsortiert, wenn du auf „Einsortieren“ tippst, wie mit der Klammer. Seine Aufgaben und Termine gehen auf alle deine Geräte; die Datei bleibt auf diesem %@."
           }
         }
       }
@@ -14136,7 +14156,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wird auf diesem %@ erfasst …"
+            "value": "Der Text wird auf diesem %@ erkannt …"
           }
         }
       }
@@ -14146,7 +14166,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Einen Tag für %@ setzen"
+            "value": "Einen Tag für %@ festlegen"
           }
         }
       }
@@ -14427,116 +14447,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "← %@ hier"
-          }
-        }
-      }
-    },
-    "Causabee takes pictures and PDFs.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Causabee nimmt Bilder und PDFs."
-          }
-        }
-      }
-    },
-    "Into a matter …": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In ein Anliegen …"
-          }
-        }
-      }
-    },
-    "INTO": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "NACH"
-          }
-        }
-      }
-    },
-    "Causabee decides": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Causabee entscheidet"
-          }
-        }
-      }
-    },
-    "it sorts it in by itself": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "sie sortiert es selbst ein"
-          }
-        }
-      }
-    },
-    "Your open matters, the latest first.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deine offenen Anliegen, die neuesten zuerst."
-          }
-        }
-      }
-    },
-    "Causabee sorts it in when it next opens, and says where it went.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Causabee sortiert es ein, wenn es das nächste Mal öffnet, und sagt, wohin es ging."
-          }
-        }
-      }
-    },
-    "1 picture": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 Bild"
-          }
-        }
-      }
-    },
-    "1 PDF": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 PDF"
-          }
-        }
-      }
-    },
-    "In Causabee": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In Causabee"
-          }
-        }
-      }
-    },
-    "It is sorted in when Causabee opens.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Es wird einsortiert, wenn Causabee öffnet."
           }
         }
       }

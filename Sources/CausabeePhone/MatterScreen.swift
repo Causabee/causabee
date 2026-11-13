@@ -1150,7 +1150,7 @@ struct MatterScreen: View {
         let visible = showsAllHistory || sort == .byPerson || sort == .byKind ? ordered : Array(ordered.prefix(60))
         let groups = RecordBrowse.groups(visible, sort: sort) { item in NamedPeople.of(item, in: matter).map(\.name) }
         if all.isEmpty {
-            PhoneEmptyBox(text: show != .all ? String(format: String(localized: "Nothing here is %@."), show.label.lowercased())
+            PhoneEmptyBox(text: show != .all ? String(format: String(localized: "Nothing here under “%@”."), show.label)
                               : String(localized: "Mail sorted into this matter shows here, newest first."))
         }
         ForEach(groups) { group in

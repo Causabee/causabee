@@ -16,7 +16,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Causabee nimmt Bilder und PDFs."
+            "value": "Causabee nimmt Bilder und PDFs entgegen."
           }
         }
       }
@@ -126,7 +126,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Causabee sortiert es ein, wenn sie das nächste Mal öffnet, und sagt, wohin es ging."
+            "value": "Causabee sortiert es ein, wenn sie das nächste Mal geöffnet wird, und sagt, wohin es ging."
           }
         }
       }
@@ -196,7 +196,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Es wird einsortiert, wenn Causabee öffnet."
+            "value": "Es wird einsortiert, wenn Causabee geöffnet wird."
           }
         }
       }

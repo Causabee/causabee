@@ -62,7 +62,7 @@ struct GermanTests {
         "anlegen",        // "Create" and "Make it": the same button, two English words
         "weglegen",       // "Put it away" and "Dismiss"
         "foto aufnehmen", // "Take a photo" and "Take Photo"
-        "berichtigen",    // "Correct" and "Correct it"
+        "korrigieren",    // "Correct" and "Correct it"
         "anliegen",       // "matter" and "matters": German's word is the same in one and in many,
                           // which is why the owner chose it (13 November)
         "weiter",         // "Next" and "Continue": the one button that goes on
@@ -71,6 +71,9 @@ struct GermanTests {
         "termin ändern",  // "Change date" and "Change appointment": German's Termin is both
         "bis %@",         // "by" and "until": German says bis for both
         "in „%@“",        // "in" and "into"
+        "datei öffnen",   // "Open document" and "Open the file": one thing, two English words
+        "wartet auf",     // "Waits For", the menu that makes a task wait, and "Waiting for", how a
+                          // task that waits is marked: one thing in German, and the owner's word
     ]
 
     /// Two jobs for one English word, where the capital letter is what tells them apart. Each line

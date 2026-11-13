@@ -1,6 +1,6 @@
 # Causabee's words, English and German
 
-1743 words in all. The file each one is shown from stands for its screen; a word
+1745 words in all. The file each one is shown from stands for its screen; a word
 shown on more than one screen is under the first of them.
 
 
@@ -33,7 +33,7 @@ shown on more than one screen is under the first of them.
 | No time yet | Noch keine Zeit |
 | Calendar | Kalender |
 | Reminders | Erinnerungen |
-| Causabee could not make its list “%@” in %@%@. | Causabee konnte seine Liste „%@“ in %@%@ nicht anlegen. |
+| Causabee could not make its list “%@” in %@%@. | Causabee konnte ihre Liste „%@“ in %@%@ nicht anlegen. |
 | Make a list called “%@” there, or choose a list in Settings → Calendar and Reminders. | Leg dort eine Liste namens „%@“ an, oder wähl in den Einstellungen → Kalender und Erinnerungen eine Liste. |
 
 ## Sources/MatterCore/Claude.swift
@@ -68,7 +68,7 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Not set | Nicht gesetzt |
+| Not set | Keine Dauer |
 | %lld min | %lld Min. |
 | %lld h | %lld Std. |
 | %lld h %lld min | %lld Std. %lld Min. |
@@ -102,7 +102,7 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Nothing to disguise | Nichts unkenntlich zu machen |
+| Nothing to disguise | Nichts unkenntlich gemacht |
 | 1 item disguised | 1 Angabe unkenntlich gemacht |
 | %lld items disguised | %lld Angaben unkenntlich gemacht |
 | Your question had nothing to disguise. | In deiner Frage war nichts unkenntlich zu machen. |
@@ -124,7 +124,7 @@ shown on more than one screen is under the first of them.
 | New contact | Neuer Kontakt |
 | Type or say what is to do. A day or a time in it becomes its date. | Schreib oder sag, was zu tun ist. Ein Tag oder eine Zeit darin wird sein Termin. |
 | Type or say it. It is kept in the matter's notes, word for word. | Schreib oder sag es. Es wird Wort für Wort in den Notizen des Anliegens gesichert. |
-| The address, and a name for it if you like. Kept with the matter. | Die Adresse, und wenn du magst ein Name dafür. Wird beim Anliegen gesichert. |
+| The address, and a name for it if you like. Kept with the matter. | Die Adresse und, wenn du magst, ein Name dafür. Wird beim Anliegen gesichert. |
 | What it is — a number, a code, an account — and what it says. | Was es ist — eine Nummer, ein Code, ein Konto — und was darin steht. |
 | Who it is, and what they are to this matter if you like. | Wer es ist, und wenn du magst, was die Person für dieses Anliegen ist. |
 | Task | Aufgabe |
@@ -162,7 +162,7 @@ shown on more than one screen is under the first of them.
 | English | German |
 |---|---|
 | Understood on this %@. Nothing left it. | Auf diesem %@ verstanden. Nichts hat es verlassen. |
-| That reads as something to do. Open its matter and say it there, to add it as a task. | Das klingt nach etwas zu tun. Öffne das Anliegen und sag es dort, dann wird es eine Aufgabe. |
+| That reads as something to do. Open its matter and say it there, to add it as a task. | Das klingt nach einer Aufgabe. Öffne das Anliegen und sag es dort, dann wird sie hinzugefügt. |
 | Asking needs Pro. Use Pro on top, then ask again. | Fragen braucht Pro. Schalt Pro dazu, dann frag noch einmal. |
 
 ## Sources/MatterCore/Model/FolderImport.swift
@@ -248,7 +248,7 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Move | Bewegen |
+| Move | Umzug |
 | Bathroom | Bad |
 | Repair | Reparatur |
 | Car | Auto |
@@ -316,11 +316,11 @@ shown on more than one screen is under the first of them.
 | Wait | Warten |
 | %@ · from your tasks | %@ · aus deinen Aufgaben |
 | Then this can go ahead: | Dann kann das weitergehen: |
-| Then %lld more tasks can go ahead. | Dann können %lld weitere Aufgaben weitergehen. |
+| Then %lld more tasks can go ahead. | Dann können %lld weitere Aufgaben losgehen. |
 | Overdue since %@ | Überfällig seit %@ |
 | today | heute |
 | on %@ | am %@ |
-| Should have come by %@ | Sollte bis %@ da sein |
+| Should have come by %@ | Hätte bis %@ da sein sollen |
 | A short follow-up helps. | Ein kurzes Nachfassen hilft. |
 | What it waited for is done. | Worauf es gewartet hat, ist erledigt. |
 | Due on %@ | Fällig am %@ |
@@ -358,7 +358,7 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Would start the matter “%@” — Causabee holds %lld open matters for free | Würde das Anliegen „%@“ beginnen — Causabee hält %lld offene Anliegen gratis |
+| Would start the matter “%@” — Causabee holds %lld open matters for free | Würde das Anliegen „%@“ beginnen — bis zu %lld offene Anliegen sind gratis |
 
 ## Sources/MatterCore/Model/PlanWords.swift
 
@@ -378,9 +378,9 @@ shown on more than one screen is under the first of them.
 | used for this month | für diesen Monat aufgebraucht |
 | %@ left | %@ übrig |
 | %@ in top-ups | %@ als Guthaben |
-| not in use | nicht in Nutzung |
+| not in use | nicht genutzt |
 | On, waiting: Pro has ended. A top-up goes on at once. | An, wartet: Pro ist beendet. Neues Guthaben wirkt sofort. |
-| On, waiting: nothing left to use until %@. | An, wartet: nichts mehr zu nutzen bis %@. |
+| On, waiting: nothing left to use until %@. | An, wartet: bis %@ ist nichts mehr übrig. |
 | it starts anew | es beginnt neu |
 | Needs Pro or a top-up. | Braucht Pro oder Guthaben. |
 | %@ reads what comes in, as it comes, names disguised first. | %@ liest, was hereinkommt, sobald es kommt — Namen vorher unkenntlich. |
@@ -394,12 +394,12 @@ shown on more than one screen is under the first of them.
 | left | übrig |
 | of a Pro month in your start credit | von einem Pro-Monat in deinem Startguthaben |
 | of a Pro month in top-ups | von einem Pro-Monat als Guthaben |
-| · not in use | · nicht in Nutzung |
+| · not in use | · nicht genutzt |
 | This month's Pro | Pro in diesem Monat |
 | Top-ups | Guthaben |
 | percent left | Prozent übrig |
 | percent of a Pro month left | Prozent von einem Pro-Monat übrig |
-| , not in use | , nicht in Nutzung |
+| , not in use | , nicht genutzt |
 | Shown once Causabee reaches its server. | Wird angezeigt, sobald Causabee seinen Server erreicht. |
 | Kept until it is used. | Bleibt, bis es aufgebraucht ist. |
 | Top-ups carry over from month to month. | Guthaben bleibt von Monat zu Monat. |
@@ -432,7 +432,7 @@ shown on more than one screen is under the first of them.
 | All | Alle |
 | With tasks or dates | Mit Aufgaben oder Terminen |
 | Information only | Nur Information |
-| Kept only | Nur gesichert |
+| Kept only | Nur abgelegt |
 | Unread | Ungelesen |
 | Newest | Neueste |
 | Oldest | Älteste |
@@ -468,7 +468,7 @@ shown on more than one screen is under the first of them.
 | Not sure yet? | Noch unsicher? |
 | Look around in an example. | Sieh dich in einem Beispiel um. |
 | Reading … | Wird gelesen … |
-| Looking in iCloud for your matters … | Suche deine Anliegen in iCloud … |
+| Looking in iCloud for your matters … | Deine Anliegen werden in iCloud gesucht … |
 | Causabee can't read this file. | Causabee kann diese Datei nicht lesen. |
 | Not read yet — your words are kept. | Noch nicht gelesen — deine Worte sind gesichert. |
 | A new matter | Ein neues Anliegen |
@@ -515,10 +515,10 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Disguising names … | Mache Namen unkenntlich … |
-| Thinking … | Denke nach … |
-| Looking in the whole matter … | Sehe im ganzen Anliegen nach … |
-| Putting names back … | Setze die Namen zurück … |
+| Disguising names … | Namen werden unkenntlich gemacht … |
+| Thinking … | Wird nachgedacht … |
+| Looking in the whole matter … | Das ganze Anliegen wird durchgesehen … |
+| Putting names back … | Die Namen kommen zurück … |
 
 ## Sources/Causabee/AssistantView.swift
 
@@ -540,7 +540,7 @@ shown on more than one screen is under the first of them.
 | Ask about all your matters | Frag zu allen deinen Anliegen |
 | Matters | Anliegen |
 | Everything else | Alles andere |
-| right-click one to pin it | rechtsklick eins, um es anzupinnen |
+| right-click one to pin it | klick eins mit der rechten Maustaste an, um es anzuheften |
 | Overview | Übersicht |
 | Pinned | Angeheftet |
 | Reading on this Mac … | Wird auf diesem Mac gelesen … |
@@ -576,19 +576,19 @@ shown on more than one screen is under the first of them.
 | Role changed · %@ | Rolle geändert · %@ |
 | Note added | Notiz hinzugefügt |
 | Note added · %@ | Notiz hinzugefügt · %@ |
-| Brief corrected | Zusammenfassung berichtigt |
+| Brief corrected | Zusammenfassung korrigiert |
 | Looked up | Nachgeschlagen |
 | Date changed | Termin geändert |
 | Date changed · %@ | Termin geändert · %@ |
 | Changed back since · now %@ | Seitdem zurückgeändert · jetzt %@ |
 | Matter started | Anliegen begonnen |
-| Now waits for %@ | Hängt jetzt ab von %@ |
+| Now waits for %@ | Wartet jetzt auf %@ |
 | Link saved | Link gesichert |
 | Contact saved | Kontakt gesichert |
 | Appointment added | Termin hinzugefügt |
 | Deadline added | Frist hinzugefügt |
 | Detail saved | Detail gesichert |
-| Text corrected | Text berichtigt |
+| Text corrected | Text korrigiert |
 | Now %@ | Jetzt %@ |
 | Opened in Mail | In Mail geöffnet |
 | Edit | Bearbeiten |
@@ -598,7 +598,7 @@ shown on more than one screen is under the first of them.
 | Add | Hinzufügen |
 | Merge | Zusammenführen |
 | Save note | Notiz sichern |
-| Correct the brief | Zusammenfassung berichtigen |
+| Correct the brief | Zusammenfassung korrigieren |
 | Look up | Nachschlagen |
 | Open in Mail | In Mail öffnen |
 | Copy | Kopieren |
@@ -616,13 +616,13 @@ shown on more than one screen is under the first of them.
 | Change role? | Rolle ändern? |
 | Note for the matter? | Notiz zum Anliegen? |
 | Note for the task? | Notiz zur Aufgabe? |
-| Correct the brief? | Zusammenfassung berichtigen? |
+| Correct the brief? | Zusammenfassung korrigieren? |
 | Look up on the web? | Im Web nachschlagen? |
 | Draft | Entwurf |
 | Message | Nachricht |
 | Change date? | Termin ändern? |
 | New matter? | Neues Anliegen? |
-| Waits for another task? | Hängt von einer anderen Aufgabe ab? |
+| Waits for another task? | Wartet auf eine andere Aufgabe? |
 | Save link? · Name: | Link sichern? · Name: |
 | Contact? · Name: | Kontakt? · Name: |
 | New appointment? · %@ | Neuer Termin? · %@ |
@@ -676,16 +676,16 @@ shown on more than one screen is under the first of them.
 | English | German |
 |---|---|
 | in %@ | in %@ |
-| Disconnect | Verbindung lösen |
+| Disconnect | Trennen |
 | Add again | Erneut hinzufügen |
 | Connect | Verbinden |
 | It is there already: connect to it instead of adding a second one. | Es ist schon da: verbinde dich damit, statt ein zweites anzulegen. |
 | Not added: %@ | Nicht hinzugefügt: %@ |
 | Connect Calendar and Reminders | Kalender und Erinnerungen verbinden |
-| To see which appointments and tasks are there already — nothing is added unless you tap. | Um zu sehen, welche Termine und Aufgaben es schon gibt — nichts wird hinzugefügt, außer du tippst. |
-| To see which appointments and tasks are there already — nothing is added unless you click. | Um zu sehen, welche Termine und Aufgaben es schon gibt — nichts wird hinzugefügt, außer du klickst. |
-| you tap | du tippst auf |
-| you click | du klickst auf |
+| To see which appointments and tasks are there already — nothing is added unless you tap. | Um zu sehen, welche Termine und Aufgaben es schon gibt — es sei denn, du tippst, kommt nichts hinzu. |
+| To see which appointments and tasks are there already — nothing is added unless you click. | Um zu sehen, welche Termine und Aufgaben es schon gibt — es sei denn, du klickst, kommt nichts hinzu. |
+| you tap | tippst |
+| you click | klickst |
 | Add appointments to | Termine hinzufügen zu |
 | “Causabee” (made when first needed) | „Causabee“ (wird angelegt, wenn er gebraucht wird) |
 | Add tasks to | Aufgaben hinzufügen zu |
@@ -702,7 +702,7 @@ shown on more than one screen is under the first of them.
 | Nothing changed: those words are not in the tasks or dates. | Nichts geändert: diese Worte stehen nicht in den Aufgaben oder Terminen. |
 | Nothing put away: it is not there any more, or put away already. | Nichts weggelegt: es ist nicht mehr da, oder schon weggelegt. |
 | Nothing opened: it is open already. | Nichts geöffnet: es ist schon offen. |
-| Not changed: that cannot be set this way, or the value is missing. | Nicht geändert: das lässt sich so nicht setzen, oder der Wert fehlt. |
+| Not changed: that cannot be set this way, or the value is missing. | Nicht geändert: das lässt sich so nicht festlegen, oder der Wert fehlt. |
 | Not closed: it is closed already. | Nicht abgeschlossen: es ist schon abgeschlossen. |
 | Not moved: the other matter was not found, or it is there already. | Nicht verschoben: das andere Anliegen wurde nicht gefunden, oder es ist schon dort. |
 | Not changed: no day was given, or the date is not there any more. | Nicht geändert: es wurde kein Tag genannt, oder der Termin ist nicht mehr da. |
@@ -769,7 +769,7 @@ shown on more than one screen is under the first of them.
 | To %@ | An %@ |
 | no address known — add one under People | keine Adresse bekannt — füg unter Personen eine hinzu |
 | Shows it in its matter | Zeigt es in seinem Anliegen |
-| %@ · last used of %lld | %@ · zuletzt genutzt von %lld |
+| %@ · last used of %lld | %@ · die zuletzt genutzte von %lld |
 | Write mail | Mail schreiben |
 | Copy address | Adresse kopieren |
 | You dismissed this message | Du hast diese Nachricht weggelegt |
@@ -777,8 +777,8 @@ shown on more than one screen is under the first of them.
 | On your clipboard: paste it into the chat. | In deiner Zwischenablage: füg es in den Chat ein. |
 | Share | Teilen |
 | No key for the assistant's model is saved. | Für das Modell des Assistenten ist kein Key gesichert. |
-| Getting %@ from iCloud … | Hole %@ aus iCloud … |
-| Making %@ smaller for the mail … | Mache %@ für die Mail kleiner … |
+| Getting %@ from iCloud … | %@ wird aus iCloud geholt … |
+| Making %@ smaller for the mail … | %@ wird für die Mail kleiner gemacht … |
 | Deadline tomorrow: %@ | Frist morgen: %@ |
 | Tomorrow: %@ | Morgen: %@ |
 | and %lld more | und %lld weitere |
@@ -820,7 +820,7 @@ shown on more than one screen is under the first of them.
 | Next Matter | Nächstes Anliegen |
 | Previous Matter | Vorheriges Anliegen |
 | Get New Mail | Neue Mail holen |
-| Find | Finden |
+| Find | Suchen |
 | Find … | Suchen … |
 | Find Next | Weitersuchen |
 | Find Previous | Rückwärts suchen |
@@ -851,7 +851,7 @@ shown on more than one screen is under the first of them.
 |---|---|
 | Off — on this Mac only | Aus — nur auf diesem Mac |
 | Test — made-up data, its own container | Test — erfundene Daten, eigener Container |
-| On — your matters, in your private iCloud | An — deine Anliegen, in deinem privaten iCloud |
+| On — your matters, in your private iCloud | An — deine Anliegen, in deiner privaten iCloud |
 | not available in this build | in diesem Build nicht verfügbar |
 | signed in to iCloud | bei iCloud angemeldet |
 | no iCloud account on this Mac | kein iCloud-Konto auf diesem Mac |
@@ -859,13 +859,13 @@ shown on more than one screen is under the first of them.
 | iCloud is not available right now | iCloud ist gerade nicht verfügbar |
 | iCloud status unknown | iCloud-Status unbekannt |
 | Not in this version | Nicht in dieser Version |
-| This version of Causabee has no iCloud: your matters stay on this Mac. | Diese Version von Causabee hat kein iCloud: deine Anliegen bleiben auf diesem Mac. |
+| This version of Causabee has no iCloud: your matters stay on this Mac. | Diese Version von Causabee hat keine iCloud: deine Anliegen bleiben auf diesem Mac. |
 | iCloud | iCloud |
-| In the demo, iCloud stays off: the made-up matters never meet your iCloud. Your choice counts again when you leave the demo. | Im Beispiel bleibt iCloud aus: die erfundenen Anliegen treffen nie auf dein iCloud. Deine Wahl gilt wieder, sobald du das Beispiel verlässt. |
+| In the demo, iCloud stays off: the made-up matters never meet your iCloud. Your choice counts again when you leave the demo. | Im Beispiel bleibt iCloud aus: die erfundenen Anliegen kommen nie in deine iCloud. Deine Wahl gilt wieder, sobald du das Beispiel verlässt. |
 | Takes effect when Causabee starts again. | Wirkt, wenn Causabee neu startet. |
 | Quit Causabee | Causabee beenden |
 | not yet | noch nicht |
-| Your matters, tasks, dates, people, digests, the assistant's history, and the full texts of mails and scans — those end to end encrypted — sync through your private iCloud. Files go into the matters' folders. | Deine Anliegen, Aufgaben, Termine, Personen, Überblicke, der Verlauf des Assistenten und die vollen Texte von Mails und Scans — diese Ende-zu-Ende-verschlüsselt — gleichen sich über dein privates iCloud ab. Dateien kommen in die Ordner der Anliegen. |
+| Your matters, tasks, dates, people, digests, the assistant's history, and the full texts of mails and scans — those end to end encrypted — sync through your private iCloud. Files go into the matters' folders. | Deine Anliegen, Aufgaben, Termine, Personen, Überblicke, der Verlauf des Assistenten und die vollen Texte von Mails und Scans — diese Ende-zu-Ende-verschlüsselt — werden über deine private iCloud abgeglichen. Dateien kommen in die Ordner der Anliegen. |
 
 ## Sources/Causabee/Components.swift
 
@@ -873,7 +873,7 @@ shown on more than one screen is under the first of them.
 |---|---|
 | Sidebar | Seitenleiste |
 | More | Mehr |
-| Open the mail in Mail | Mail in Mail öffnen |
+| Open the mail in Mail | Die Mail in Mail öffnen |
 | Stop using Pro | Pro nicht mehr nutzen |
 | Causabee | Causabee |
 
@@ -889,7 +889,7 @@ shown on more than one screen is under the first of them.
 | Add to this matter | Zu diesem Anliegen hinzufügen |
 | Read and sorted in | Gelesen und einsortiert |
 | Screenshot, Mail or PDF … | Screenshot, Mail oder PDF … |
-| Kept only, not read | Nur gesichert, nicht gelesen |
+| Kept only, not read | Nur abgelegt, nicht gelesen |
 | Files or a Folder … | Dateien oder einen Ordner … |
 | Add to a matter: a task, a note, a link, a detail, a contact, files — or something for Causabee to read | Zu einem Anliegen hinzufügen: eine Aufgabe, eine Notiz, einen Link, ein Detail, einen Kontakt, Dateien — oder etwas, das Causabee lesen soll |
 | Attach a screenshot, a mail (.eml) or a PDF — or drag it here, or paste it (⌘V). It is scanned on the Mac. | Häng einen Screenshot, eine Mail (.eml) oder ein PDF an — oder zieh es hierher, oder füg es ein (⌘V). Es wird auf dem Mac gelesen. |
@@ -919,11 +919,11 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Saving files … | Sichere Dateien … |
-| Saving files … %lld of %lld | Sichere Dateien … %lld von %lld |
+| Saving files … | Dateien werden gesichert … |
+| Saving files … %lld of %lld | Dateien werden gesichert … %lld von %lld |
 | %lld saved, %lld there already | %lld gesichert, %lld schon dort |
 | , %lld not found in their mail | , %lld in ihrer Mail nicht gefunden |
-| Use this folder | Diesen Ordner nehmen |
+| Use this folder | Diesen Ordner nutzen |
 | The folder for Causabee's matter folders — one subfolder per matter. | Der Ordner für Causabees Anliegen-Ordner — ein Unterordner pro Anliegen. |
 | No folder chosen yet | Noch kein Ordner gewählt |
 | Choose folder … | Ordner wählen … |
@@ -939,7 +939,7 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Be organized. Be private. | Hab Ordnung. Bleib privat. |
+| Be organized. Be private. | Alles geordnet. Alles privat. |
 | Causabee. Be organized. Be private. | Causabee. Hab Ordnung. Bleib privat. |
 | Goes on to the introduction | Weiter zur Einführung |
 | Dr. Brandt | Dr. Brandt |
@@ -964,12 +964,12 @@ shown on more than one screen is under the first of them.
 | English | German |
 |---|---|
 | Filter | Filter |
-| Set day | Tag setzen |
+| Set day | Tag festlegen |
 | Changes the day | Ändert den Tag |
 | Change day | Tag ändern |
 | Day | Tag |
-| Set | Setzen |
-| Set Day | Tag setzen |
+| Set | Festlegen |
+| Set Day | Tag festlegen |
 | OUT OF DATE | VERALTET |
 | Something changed since this was written. | Seit dem Schreiben hat sich etwas geändert. |
 | When you leave | Wenn du losfährst |
@@ -984,8 +984,8 @@ shown on more than one screen is under the first of them.
 | %lld more dates | %lld weitere Termine |
 | The brief · what Causabee understands | Die Zusammenfassung · was Causabee versteht |
 | A brief helps Causabee follow this matter as more comes in. | Eine Zusammenfassung hilft Causabee, dem Anliegen zu folgen, wenn mehr hereinkommt. |
-| Hide | Verbergen |
-| Not wanted here: it goes, and is not brought back | Hier nicht gewollt: es geht, und kommt nicht zurück |
+| Hide | Ausblenden |
+| Not wanted here: it goes, and is not brought back | Gehört nicht hierher: es geht, und kommt nicht zurück |
 | you | du |
 | NEW | NEU |
 | 1 NEW ANSWER | 1 NEUE ANTWORT |
@@ -1009,7 +1009,7 @@ shown on more than one screen is under the first of them.
 | Start | Los geht's |
 | What came in goes, with what only it brought. The closed matter stays closed. | Was hereinkam, geht — mit dem, was nur es mitbrachte. Das geschlossene Anliegen bleibt geschlossen. |
 | Dates | Termine |
-| Hidden | Verborgen |
+| Hidden | Ausgeblendet |
 | Take away | Wegnehmen |
 | Read from, by Causabee | Von Causabee daraus gelesen |
 | Shown with it already. × on its chip takes one away. | Wird schon dazu gezeigt. Ein × auf dem Chip nimmt eines weg. |
@@ -1023,15 +1023,15 @@ shown on more than one screen is under the first of them.
 | English | German |
 |---|---|
 | No mail account yet. Choose Causabee → Set Up Causabee … to log in. | Noch kein Mail-Konto. Wähl Causabee → Causabee einrichten …, um dich anzumelden. |
-| Fetching mail … | Hole Mail … |
+| Fetching mail … | Mail wird geholt … |
 | No password for %@ in the Keychain. Choose Causabee → Set Up Causabee … to log in again. | Kein Passwort für %@ im Schlüsselbund. Wähl Causabee → Causabee einrichten …, um dich neu anzumelden. |
-| Reading 1 mail … | Lese 1 Mail … |
-| Reading %lld mails … | Lese %lld Mails … |
+| Reading 1 mail … | 1 Mail wird gelesen … |
+| Reading %lld mails … | %lld Mails werden gelesen … |
 | Apple's model on this device | Apples Modell auf diesem Gerät |
 | · 1 waits for room for a new matter | · 1 wartet auf Platz für ein neues Anliegen |
 | · %lld wait for room for a new matter | · %lld warten auf Platz für ein neues Anliegen |
-| Sorting 1 mail … | Sortiere 1 Mail ein … |
-| Sorting %lld mails … | Sortiere %lld Mails ein … |
+| Sorting 1 mail … | 1 Mail wird einsortiert … |
+| Sorting %lld mails … | %lld Mails werden einsortiert … |
 | Shows what is in it | Zeigt, was darin steht |
 | Add to … | Hinzufügen zu … |
 | Into that matter, with its tasks and dates. Nothing is sent: it was read already. | In dieses Anliegen, mit seinen Aufgaben und Terminen. Nichts wird gesendet: es wurde schon gelesen. |
@@ -1046,7 +1046,7 @@ shown on more than one screen is under the first of them.
 | Get new mail | Neue Mail holen |
 | None ticked: “Leave out” puts it aside, and it is not offered again. “Later” keeps it for the next time. | Nichts angehakt: „Weglassen“ legt sie beiseite, und sie wird nicht wieder angeboten. „Später“ behält sie für das nächste Mal. |
 | None ticked: “Leave out” puts them aside, and they are not offered again. “Later” keeps them for the next time. | Nichts angehakt: „Weglassen“ legt sie beiseite, und sie werden nicht wieder angeboten. „Später“ behält sie für das nächste Mal. |
-| just now | gerade jetzt |
+| just now | gerade eben |
 | a minute ago | vor einer Minute |
 | %lld min ago | vor %lld Min. |
 | at %@ | um %@ |
@@ -1057,7 +1057,7 @@ shown on more than one screen is under the first of them.
 | %lld left out as newsletters. | %lld als Newsletter weggelassen. |
 | In the demo, sorting in sends nothing. | Im Beispiel wird beim Einsortieren nichts gesendet. |
 | → | → |
-| Move to a new matter | In ein neues Anliegen bewegen |
+| Move to a new matter | In ein neues Anliegen verschieben |
 | The mail goes, with the tasks, dates and files only it brought. | Die Mail geht, mit den Aufgaben, Terminen und Dateien, die nur sie mitbrachte. |
 
 ## Sources/Causabee/MailSetup.swift
@@ -1066,12 +1066,12 @@ shown on more than one screen is under the first of them.
 |---|---|
 | Tap | Tippe auf |
 | Click | Klick auf |
-| your provider | deinem Anbieter |
+| your provider | dein Anbieter |
 | Connect my mail | Meine Mail verbinden |
-| Looking … | Suche … |
+| Looking … | Wird gesucht … |
 | Continue | Weiter |
 | Choose another mail | Andere Mail wählen |
-| Open %@ settings | %@-Einstellungen öffnen |
+| Open %@ settings | Einstellungen von %@ öffnen |
 | Open Apple Account | Apple-Account öffnen |
 | Open Google | Google öffnen |
 | Open %@ | %@ öffnen |
@@ -1097,7 +1097,7 @@ shown on more than one screen is under the first of them.
 | You make a password just for Causabee. It is kept in your iCloud Keychain and goes only to your mail provider. | Du legst ein Passwort nur für Causabee an. Es liegt in deinem iCloud-Schlüsselbund und geht nur an deinen Mail-Anbieter. |
 | Which mail do you use? | Welche Mail nutzt du? |
 | Pick the one you want Causabee to read. You can add another later. | Wähl die, die Causabee lesen soll. Eine weitere kannst du später hinzufügen. |
-| Also Google Workspace at work | Auch Google Workspace in der Arbeit |
+| Also Google Workspace at work | Auch Google Workspace von der Arbeit |
 | Another provider | Ein anderer Anbieter |
 | Outlook and Hotmail can’t be read by apps like Causabee yet — Microsoft only lets its own apps in. | Outlook und Hotmail können Apps wie Causabee noch nicht lesen — Microsoft lässt nur eigene Apps hinein. |
 | Your Gmail address | Deine Gmail-Adresse |
@@ -1109,10 +1109,10 @@ shown on more than one screen is under the first of them.
 | Outlook can’t be connected yet | Outlook lässt sich noch nicht verbinden |
 | Microsoft lets only its own apps read Outlook and Hotmail mail. That isn’t something Causabee can change. | Microsoft lässt nur eigene Apps Outlook- und Hotmail-Mail lesen. Daran kann Causabee nichts ändern. |
 | What works instead: | Was stattdessen geht: |
-| Forward the mails you want sorted to a Gmail or iCloud address, and connect that. | Leite die Mails, die einsortiert werden sollen, an eine Gmail- oder iCloud-Adresse weiter und verbinde die. |
-| Or drop a mail’s PDF or a screenshot into Causabee — it sorts those too. | Oder zieh das PDF einer Mail oder einen Screenshot in Causabee — die sortiert sie auch ein. |
+| Forward the mails you want sorted to a Gmail or iCloud address, and connect that. | Leite die Mails, die einsortiert werden sollen, an eine Gmail- oder iCloud-Adresse weiter und verbinde diese Adresse. |
+| Or drop a mail’s PDF or a screenshot into Causabee — it sorts those too. | Oder zieh das PDF einer Mail oder einen Screenshot in Causabee — die sortiert Causabee auch ein. |
 | Which provider is it? | Welcher Anbieter ist es? |
-| Causabee couldn’t find the settings for %@ by itself. Pick your provider: | Causabee konnte die Einstellungen für %@ nicht selbst finden. Wähl deinen Anbieter: |
+| Causabee couldn’t find the settings for %@ by itself. Pick your provider: | Causabee konnte die Einstellungen von %@ nicht selbst finden. Wähl deinen Anbieter: |
 | Not listed? Enter the settings yourself › | Nicht dabei? Gib die Einstellungen selbst ein › |
 | Your provider’s settings | Die Einstellungen deines Anbieters |
 | Your provider’s help pages name them — look for “IMAP”. Causabee connects securely, usually on port 993. | Die Hilfeseiten deines Anbieters nennen sie — such nach „IMAP“. Causabee verbindet sich sicher, meist über Port 993. |
@@ -1138,27 +1138,27 @@ shown on more than one screen is under the first of them.
 | Name it “Causabee”, %@ Create, and copy the code. | Nenn es „Causabee“, %@ Erstellen, und kopier den Code. |
 | App-Specific Passwords | App-spezifische Passwörter |
 | A password for Causabee | Ein Passwort für Causabee |
-| %@ wants a password made for apps. Make one named “Causabee”, copy it, and paste it here. | %@ will ein Passwort für Apps. Leg eines namens „Causabee“ an, kopier es und füg es hier ein. |
+| %@ wants a password made for apps. Make one named “Causabee”, copy it, and paste it here. | Für Apps will %@ ein eigenes Passwort. Leg eines namens „Causabee“ an, kopier es und füg es hier ein. |
 | One setting at %@ first | Zuerst eine Einstellung bei %@ |
-| %@ only lets apps read mail once you allow it. It’s a single switch. | %@ lässt Apps erst Mail lesen, wenn du es erlaubst. Es ist ein einziger Schalter. |
-| %@ “Open %@ settings” and sign in. | %@ „%@-Einstellungen öffnen“ und melde dich an. |
-| Under POP3 & IMAP, turn on “Allow access”. | Schalte unter POP3 & IMAP „Zugriff erlauben“ ein. |
+| %@ only lets apps read mail once you allow it. It’s a single switch. | Erst wenn du es erlaubst, lässt %@ Apps Mail lesen. Es ist ein einziger Schalter. |
+| %@ “Open %@ settings” and sign in. | %@ „Einstellungen von %@ öffnen“ und melde dich an. |
+| Under POP3 & IMAP, turn on “Allow access”. | Schalt unter POP3 & IMAP „Zugriff erlauben“ ein. |
 | Come back and type your %@ password here. | Komm zurück und gib hier dein %@-Passwort ein. |
-| Your %@ mail password | Dein %@-Mail-Passwort |
-| %@ has a password just for mail, set in its mail settings — not the one you sign in to Telekom with. | %@ hat ein Passwort nur für Mail, gesetzt in den Mail-Einstellungen — nicht das, mit dem du dich bei Telekom anmeldest. |
-| Your %@ password | Dein %@-Passwort |
-| Causabee uses it only to read the mail you give it, and keeps it in your iCloud Keychain. | Causabee nutzt es nur, um die Mail zu lesen, die du ihr gibst, und bewahrt es in deinem iCloud-Schlüsselbund. |
-| Connecting to %@ | Verbinde mit %@ |
+| Your %@ mail password | Dein Mail-Passwort bei %@ |
+| %@ has a password just for mail, set in its mail settings — not the one you sign in to Telekom with. | Bei %@ gibt es ein Passwort nur für Mail, gesetzt in den Mail-Einstellungen — nicht das, mit dem du dich bei Telekom anmeldest. |
+| Your %@ password | Dein Passwort bei %@ |
+| Causabee uses it only to read the mail you give it, and keeps it in your iCloud Keychain. | Causabee nutzt es nur, um die Mail zu lesen, die du ihr gibst, und bewahrt es in deinem iCloud-Schlüsselbund auf. |
+| Connecting to %@ | Verbindung zu %@ |
 | This takes a few seconds. | Das dauert ein paar Sekunden. |
 | One label for Causabee | Ein Label für Causabee |
 | One folder for Causabee | Ein Ordner für Causabee |
 | Causabee reads only mail with the label “%@”. Shall it make the label in your Gmail now? | Causabee liest nur Mail mit dem Label „%@“. Soll sie das Label jetzt in deinem Gmail anlegen? |
 | Causabee reads only mail in the folder “%@”. Shall it make the folder in your mailbox now? | Causabee liest nur Mail im Ordner „%@“. Soll sie den Ordner jetzt in deinem Postfach anlegen? |
-| Making this label is the only change Causabee ever makes to your mailbox. You can rename or delete it there. | Dieses Label anzulegen ist die einzige Änderung, die Causabee je an deinem Postfach macht. Du kannst es dort umbenennen oder löschen. |
-| Making this folder is the only change Causabee ever makes to your mailbox. You can rename or delete it there. | Diesen Ordner anzulegen ist die einzige Änderung, die Causabee je an deinem Postfach macht. Du kannst ihn dort umbenennen oder löschen. |
+| Making this label is the only change Causabee ever makes to your mailbox. You can rename or delete it there. | Mehr ändert Causabee nie an deinem Postfach. Du kannst das Label dort umbenennen oder löschen. |
+| Making this folder is the only change Causabee ever makes to your mailbox. You can rename or delete it there. | Mehr ändert Causabee nie an deinem Postfach. Du kannst den Ordner dort umbenennen oder löschen. |
 | Your label is ready | Dein Label ist bereit |
 | Your folder is ready | Dein Ordner ist bereit |
-| Causabee found “%@” in your mailbox, with 1 mail in it. | Causabee hat „%@“ in deinem Postfach gefunden, mit 1 Mail darin. |
+| Causabee found “%@” in your mailbox, with 1 mail in it. | Causabee hat „%@“ in deinem Postfach gefunden, mit einer Mail darin. |
 | Causabee found “%@” in your mailbox, with %lld mails in it. | Causabee hat „%@“ in deinem Postfach gefunden, mit %lld Mails darin. |
 | Connected to %@ | Mit %@ verbunden |
 | Found “%@” · 1 mail | „%@“ gefunden · 1 Mail |
@@ -1187,34 +1187,34 @@ shown on more than one screen is under the first of them.
 | The app password was deleted | Das App-Passwort wurde gelöscht |
 | Make a new one — it takes a minute | Leg ein neues an — das dauert eine Minute |
 | A letter was typed wrong | Ein Buchstabe war falsch |
-| Capitals count — type it again | Groß und klein zählt — gib es noch einmal ein |
+| Capitals count — type it again | Groß- und Kleinschreibung zählt — gib es noch einmal ein |
 | Access for apps is still off | Der Zugriff für Apps ist noch aus |
 | Turn on POP3 & IMAP in %@’s settings | Schalt POP3 & IMAP in den Einstellungen von %@ ein |
 | It was the login password | Es war das Anmelde-Passwort |
-| %@ wants its separate mail password | %@ will sein eigenes Mail-Passwort |
+| %@ wants its separate mail password | Bei %@ braucht es das eigene Mail-Passwort |
 | First, one check at Google | Zuerst eine Prüfung bei Google |
 | Google makes a password for apps only when 2-Step Verification is on. Many accounts have it — but not always when you sign in with a passkey. | Google legt ein Passwort für Apps nur an, wenn die Bestätigung in zwei Schritten an ist. Viele Konten haben sie — aber nicht immer, wenn du dich mit einem Passkey anmeldest. |
 | %@ “Check at Google” and sign in if asked. | %@ „Bei Google nachsehen“ und melde dich an, wenn du gefragt wirst. |
 | If Google offers to turn it on, do it and add your phone number. Your passkey stays as it is. | Wenn Google anbietet, sie einzuschalten, tu es und gib deine Telefonnummer an. Dein Passkey bleibt, wie er ist. |
 | Come back here — Causabee keeps your place. | Komm hierher zurück — Causabee behält deine Stelle. |
-| At work or on your own domain, whoever runs your Google account may have to allow 2-Step Verification first. | In der Arbeit oder auf einer eigenen Domain muss die Bestätigung in zwei Schritten vielleicht erst erlaubt werden, von wem auch immer dein Google-Konto verwaltet. |
+| At work or on your own domain, whoever runs your Google account may have to allow 2-Step Verification first. | Bei der Arbeit oder auf einer eigenen Domain muss das vielleicht erst erlaubt werden — von wem auch immer dein Google-Konto verwaltet wird. |
 | No connection right now | Gerade keine Verbindung |
 | This device is offline. Nothing was lost — try again as soon as you’re back online. | Dieses Gerät ist offline. Nichts ist verloren — versuch es, sobald du wieder online bist. |
 | Can’t reach %@ — no internet | %@ nicht erreichbar — kein Internet |
 | Connecting, once you’re online | Verbindet, sobald du online bist |
 | Couldn’t reach %@ | %@ war nicht erreichbar |
 | The mail server didn’t answer as expected. Check the address and the settings, then try again. | Der Mailserver hat nicht wie erwartet geantwortet. Prüf die Adresse und die Einstellungen und versuch es noch einmal. |
-| Reaching %@ | Erreiche %@ |
-| Signing in as %@ | Melde mich als %@ an |
-| Looking for “%@” | Suche „%@“ |
+| Reaching %@ | %@ wird erreicht |
+| Signing in as %@ | Anmeldung als %@ |
+| Looking for “%@” | „%@“ wird gesucht |
 | Signed in as %@ | Als %@ angemeldet |
 | No “%@” yet — next | Noch kein „%@“ — weiter |
 | Found “%@” | „%@“ gefunden |
 | It couldn’t be made: %@ Make it yourself in Gmail, then come back. | Es konnte nicht angelegt werden: %@ Leg es selbst in Gmail an und komm dann zurück. |
 | It couldn’t be made: %@ Make it yourself in your mailbox, then come back. | Es konnte nicht angelegt werden: %@ Leg es selbst in deinem Postfach an und komm dann zurück. |
 | The password for apps | Das Passwort für Apps |
-| ✓ 16 letters — that’s the right kind. | ✓ 16 Buchstaben — das ist das richtige. |
-| ✓ That’s an app-specific password — the right kind. | ✓ Das ist ein App-spezifisches Passwort — das richtige. |
+| ✓ 16 letters — that’s the right kind. | ✓ 16 Buchstaben — das ist das Richtige. |
+| ✓ That’s an app-specific password — the right kind. | ✓ Das ist ein App-spezifisches Passwort — das Richtige. |
 | Only part of it — Google shows 16 letters. | Nur ein Teil — Google zeigt 16 Buchstaben. |
 | Only part of it — Apple’s code has four groups of four letters. | Nur ein Teil — Apples Code hat vier Gruppen mit vier Buchstaben. |
 | That looks like your usual Google password. Causabee needs the 16-letter one made for it. | Das sieht nach deinem üblichen Google-Passwort aus. Causabee braucht das mit 16 Buchstaben, das für sie angelegt ist. |
@@ -1233,8 +1233,8 @@ shown on more than one screen is under the first of them.
 | Find a matter | Anliegen finden |
 | Add to Calendar | Zum Kalender hinzufügen |
 | Add to Reminders | Zu Erinnerungen hinzufügen |
-| Pin to Top | Oben anpinnen |
-| Unpin | Pin entfernen |
+| Pin to Top | Oben anheften |
+| Unpin | Nicht mehr anheften |
 | Rename … | Umbenennen … |
 | Merge With … | Zusammenführen mit … |
 | Icon … | Symbol … |
@@ -1247,13 +1247,13 @@ shown on more than one screen is under the first of them.
 | Edit … | Bearbeiten … |
 | Delete … | Löschen … |
 | Not Needed | Nicht nötig |
-| Waits For | Hängt ab von |
-| Waits For … | Hängt ab von … |
+| Waits For | Wartet auf |
+| Waits For … | Wartet auf … |
 | Stop Waiting | Nicht mehr warten |
 | Remove | Entfernen |
 | Remove Link | Verknüpfung entfernen |
 | Name From Content | Name aus dem Inhalt |
-| Use File Name | Dateinamen nehmen |
+| Use File Name | Dateinamen nutzen |
 | Show Again | Wieder zeigen |
 | Move to Matter … | In ein Anliegen verschieben … |
 | Connect … | Verknüpfen … |
@@ -1267,7 +1267,7 @@ shown on more than one screen is under the first of them.
 | This also counts for what comes in next. You can undo it in the rules. | Das gilt auch für das, was als Nächstes hereinkommt. In den Regeln kannst du es widerrufen. |
 | The matter could not be exported | Das Anliegen konnte nicht exportiert werden |
 | OK | OK |
-| Mark all done and close | Alles als erledigt markieren und schließen |
+| Mark all done and close | Alles erledigen und abschließen |
 | Leave them open and close | Offen lassen und schließen |
 | The matter goes away from the list and from the assistant. Nothing is deleted, and “Open again” brings it back. | Das Anliegen verschwindet aus der Liste und aus dem Assistenten. Nichts wird gelöscht, und „Wieder öffnen“ holt es zurück. |
 | Writing the brief … | Zusammenfassung wird geschrieben … |
@@ -1290,22 +1290,22 @@ shown on more than one screen is under the first of them.
 | · %lld small images | · %lld kleine Bilder |
 | A letter, a scan, a PDF, a whole folder — or drag it here from the Finder. Files in mail come by themselves. | Ein Brief, ein Scan, ein PDF, ein ganzer Ordner — oder zieh es aus dem Finder hierher. Dateien in Mails kommen von selbst. |
 | Add File | Datei hinzufügen |
-| Bringing in %lld of %lld … | Bringe %lld von %lld herein … |
+| Bringing in %lld of %lld … | %lld von %lld werden hereingeholt … |
 | A Google Doc, a sheet — or drag it here from the browser. | Ein Google Doc, eine Tabelle — oder zieh es aus dem Browser hierher. |
 | Add Link | Link hinzufügen |
 | No mail account saved. Choose Causabee → Set Up Causabee … to add one. | Kein Mail-Konto gesichert. Wähl Causabee → Causabee einrichten …, um eines hinzuzufügen. |
-| Reading 0 of %lld mails … | Lese 0 von %lld Mails … |
-| Reading %lld of %lld mails … | Lese %lld von %lld Mails … |
+| Reading 0 of %lld mails … | 0 von %lld Mails gelesen … |
+| Reading %lld of %lld mails … | %lld von %lld Mails gelesen … |
 | No new important links found. | Keine neuen wichtigen Links gefunden. |
 | 1 link suggested. | 1 Link vorgeschlagen. |
 | %lld links suggested. | %lld Links vorgeschlagen. |
 | 1 mail is no longer in the mailbox. | 1 Mail ist nicht mehr im Postfach. |
 | %lld mails are no longer in the mailbox. | %lld Mails sind nicht mehr im Postfach. |
 | No heading found in it — give it a name with ⋯ → Rename. | Keine Überschrift darin gefunden — gib ihr mit ⋯ → Umbenennen einen Namen. |
-| Getting the file from the matter's folder … | Hole die Datei aus dem Ordner des Anliegens … |
+| Getting the file from the matter's folder … | Die Datei wird aus dem Ordner des Anliegens geholt … |
 | The file is not on this Mac: %@ | Die Datei ist nicht auf diesem Mac: %@ |
 | Added on your iPhone: the file is only there. What it said is here. | Auf deinem iPhone hinzugefügt: die Datei ist nur dort. Was darin stand, ist hier. |
-| Getting the file from the mail … | Hole die Datei aus der Mail … |
+| Getting the file from the mail … | Die Datei wird aus der Mail geholt … |
 | Close “%@”? | „%@“ abschließen? |
 | Close “%@”? 1 task is still open. | „%@“ abschließen? 1 Aufgabe ist noch offen. |
 | Close “%@”? %lld tasks are still open. | „%@“ abschließen? %lld Aufgaben sind noch offen. |
@@ -1313,20 +1313,20 @@ shown on more than one screen is under the first of them.
 | %lld new mails since closing | %lld neue Mails seit dem Abschließen |
 | Start a new matter | Neues Anliegen beginnen |
 | What came in, with what it brought, becomes a matter of its own; this one stays closed | Was hereinkam, wird mit dem, was es mitbrachte, ein eigenes Anliegen; dieses bleibt geschlossen |
-| A new matter with the 1 new mail | Ein neues Anliegen mit der 1 neuen Mail |
+| A new matter with the 1 new mail | Ein neues Anliegen mit der einen neuen Mail |
 | A new matter with the %lld new mails | Ein neues Anliegen mit den %lld neuen Mails |
 | More: write the next step and summary again, pin, rename, merge, export, close | Mehr: nächsten Schritt und Zusammenfassung neu schreiben, anheften, umbenennen, zusammenführen, exportieren, schließen |
-| Choose another icon | Anderes Zeichen wählen |
+| Choose another icon | Anderes Symbol wählen |
 | Click to rename. The old name stays as an alias, so what comes in later still finds the matter. | Zum Umbenennen klicken. Der alte Name bleibt als Zweitname, damit auch Späteres zum Anliegen findet. |
 | · since %@ | · seit %@ |
-| What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in. | Was zu tun ist, wessen es ist, und was kommt. Aufgaben und Termine in Mails werden beim Einsortieren gefunden. |
+| What is to do, and whose, and what is coming. Tasks and dates in mail are found when it is sorted in. | Was zu tun ist, wer dran ist, und was kommt. Aufgaben und Termine in Mail werden gefunden, wenn sie einsortiert wird. |
 | Add Task | Aufgabe hinzufügen |
 | Is “%@” the same as “%@”? | Ist „%@“ dasselbe wie „%@“? |
 | Who writes and who is named come in with mail and screenshots — or add a contact yourself. | Wer schreibt und wer genannt wird, kommt mit Mail und Screenshots — oder füg selbst einen Kontakt hinzu. |
 | Add Contact | Kontakt hinzufügen |
 | TO MERGE, DRAG ONE NAME ONTO ANOTHER | ZUM ZUSAMMENFÜHREN EINEN NAMEN AUF EINEN ANDEREN ZIEHEN |
-| Takes them out of this matter only. Nothing that comes in later will put them back. | Nimmt sie nur aus diesem Anliegen. Nichts, was später hereinkommt, legt sie zurück. |
-| Nothing here was written by %@ or names them. | Hier ist nichts von %@ geschrieben oder nennt sie. |
+| Takes them out of this matter only. Nothing that comes in later will put them back. | Nimmt sie nur aus diesem Anliegen. Nichts, was später hereinkommt, bringt sie zurück. |
+| Nothing here was written by %@ or names them. | Hier hat %@ nichts geschrieben, und nichts nennt sie. |
 | them | sie |
 | Mail sorted into this matter, its files, links and notes show here, a day at a time. | Mail, die in dieses Anliegen einsortiert wurde, seine Dateien, Links und Notizen stehen hier, Tag für Tag. |
 | Show in Finder | Im Finder zeigen |
@@ -1335,7 +1335,7 @@ shown on more than one screen is under the first of them.
 | Choose … | Wählen … |
 | Choose several files and read them at once | Mehrere Dateien wählen und auf einmal lesen |
 | Every file of this matter has been read. Files from a folder and files in mail are kept only until you have them read. | Jede Datei dieses Anliegens ist gelesen. Dateien aus einem Ordner und Dateien in Mails werden nur gesichert, bis du sie lesen lässt. |
-| Nothing here is %@. | Hier ist nichts %@. |
+| Nothing here under “%@”. | Hier ist nichts unter „%@“. |
 | Mail sorted into this matter shows here, newest first. | Mail, die in dieses Anliegen einsortiert wurde, steht hier, die neueste zuerst. |
 | 1 entry | 1 Eintrag |
 | %lld entries | %lld Einträge |
@@ -1373,13 +1373,13 @@ shown on more than one screen is under the first of them.
 | Change person | Person ändern |
 | Phone | Telefon |
 | The old name stays as a spelling, so what comes in later still finds the person. | Der alte Name bleibt als Schreibweise, damit auch Späteres zu der Person findet. |
-| Only from this matter. Nothing that comes in later will put them back. | Nur aus diesem Anliegen. Nichts, was später hereinkommt, legt sie zurück. |
+| Only from this matter. Nothing that comes in later will put them back. | Nur aus diesem Anliegen. Nichts, was später hereinkommt, bringt sie zurück. |
 | Not the same | Nicht dieselbe |
 | Read | Lesen |
 | Reads it on this Mac and sorts it in, in the assistant. | Liest es auf diesem Mac und sortiert es ein, im Assistenten. |
 | 1 task | 1 Aufgabe |
 | %lld tasks | %lld Aufgaben |
-| , and %@ only it brought | , und %@, die nur sie gebracht hat |
+| , and %@ only it brought | , und %@ allein daraus |
 | and | und |
 | Causabee forgets what it read in it | Causabee vergisst, was sie darin gelesen hat |
 | . The file itself stays where it is. | . Die Datei selbst bleibt, wo sie ist. |
@@ -1406,21 +1406,21 @@ shown on more than one screen is under the first of them.
 | New mail comes in by its threads, and you place the rest. Nothing leaves this device. | Neue Mail kommt über ihre Threads herein, den Rest ordnest du ein. Nichts verlässt dieses Gerät. |
 | %@ reads what comes in with your own key — names disguised first. | %@ liest, was hereinkommt, mit deinem eigenen Key — Namen vorher unkenntlich. |
 | In the demo, nothing reads what comes in. | Im Beispiel liest nichts, was hereinkommt. |
-| Sorting in 1 mail on this device, with Apple's model: nothing leaves it. | Sortiere 1 Mail auf diesem Gerät ein, mit Apples Modell: nichts verlässt es. |
-| Sorting in %lld mails on this device, with Apple's model: nothing leaves it. | Sortiere %lld Mails auf diesem Gerät ein, mit Apples Modell: nichts verlässt es. |
-| Bringing in 1 mail by their threads. You place the rest. | Bringe 1 Mail über ihren Thread herein. Den Rest ordnest du ein. |
-| Bringing in %lld mails by their threads. You place the rest. | Bringe %lld Mails über ihre Threads herein. Den Rest ordnest du ein. |
-| Sorting in 1 mail with Causabee Pro. Sent pseudonymised to %@. | Sortiere 1 Mail mit Causabee Pro ein. Pseudonymisiert an %@ gesendet. |
-| Sorting in %lld mails with Causabee Pro. Sent pseudonymised to %@. | Sortiere %lld Mails mit Causabee Pro ein. Pseudonymisiert an %@ gesendet. |
-| Sorting in 1 mail. Sent pseudonymised to %@. | Sortiere 1 Mail ein. Pseudonymisiert an %@ gesendet. |
-| Sorting in %lld mails. Sent pseudonymised to %@. | Sortiere %lld Mails ein. Pseudonymisiert an %@ gesendet. |
+| Sorting in 1 mail on this device, with Apple's model: nothing leaves it. | 1 Mail wird auf diesem Gerät einsortiert, mit Apples Modell: nichts verlässt es. |
+| Sorting in %lld mails on this device, with Apple's model: nothing leaves it. | %lld Mails werden auf diesem Gerät einsortiert, mit Apples Modell: nichts verlässt es. |
+| Bringing in 1 mail by their threads. You place the rest. | 1 Mail wird über ihren Thread hereingeholt. Den Rest ordnest du ein. |
+| Bringing in %lld mails by their threads. You place the rest. | %lld Mails werden über ihre Threads hereingeholt. Den Rest ordnest du ein. |
+| Sorting in 1 mail with Causabee Pro. Sent pseudonymised to %@. | 1 Mail wird mit Causabee Pro einsortiert. Pseudonymisiert an %@ gesendet. |
+| Sorting in %lld mails with Causabee Pro. Sent pseudonymised to %@. | %lld Mails werden mit Causabee Pro einsortiert. Pseudonymisiert an %@ gesendet. |
+| Sorting in 1 mail. Sent pseudonymised to %@. | 1 Mail wird einsortiert. Pseudonymisiert an %@ gesendet. |
+| Sorting in %lld mails. Sent pseudonymised to %@. | %lld Mails werden einsortiert. Pseudonymisiert an %@ gesendet. |
 | This is the demo with your real matters: nothing is sent to an AI from it. | Das ist das Beispiel mit deinen echten Anliegen: daraus wird nichts an eine KI gesendet. |
 | This is the demo: your keys are not used in it, so nothing is sent to an AI from it. | Das ist das Beispiel: deine Keys werden darin nicht genutzt, also wird nichts an eine KI gesendet. |
-| Pro is not in use. Use Pro with the bee for this. | Pro ist nicht in Nutzung. Nutz Pro mit der Biene dafür. |
+| Pro is not in use. Use Pro with the bee for this. | Pro wird nicht genutzt. Nutz Pro mit der Biene dafür. |
 | This needs Causabee Pro for now. | Dafür braucht es vorerst Causabee Pro. |
 | General | Allgemein |
 | Fewer, real tasks | Weniger, echte Aufgaben |
-| The rule from the test: no task for saying yes or getting ready, unless the mail asks for it. | Die Regel aus dem Test: keine Aufgabe fürs Zusagen oder Vorbereiten, außer die Mail bittet darum. |
+| The rule from the test: no task for saying yes or getting ready, unless the mail asks for it. | Die Regel aus dem Test: keine Aufgabe fürs Zusagen oder Vorbereiten, es sei denn, die Mail bittet darum. |
 | A mail is sorted only once: what a model sorted in stays that way. | Eine Mail wird nur einmal einsortiert: was ein Modell einsortiert hat, bleibt so. |
 | Calendar and Reminders | Kalender und Erinnerungen |
 | Matter folders in iCloud Drive | Ordner der Anliegen in iCloud Drive |
@@ -1453,7 +1453,7 @@ shown on more than one screen is under the first of them.
 | — 1 thing | — 1 Sache |
 | — %lld things | — %lld Sachen |
 | , %lld overdue | , %lld überfällig |
-| Pin “%@” instead of … | „%@“ anpinnen statt … |
+| Pin “%@” instead of … | „%@“ anheften statt … |
 
 ## Sources/Causabee/PageFind.swift
 
@@ -1472,7 +1472,7 @@ shown on more than one screen is under the first of them.
 | Earlier | Früher |
 | Today, %@ | Heute, %@ |
 | Yesterday | Gestern |
-| Role — insurer, doctor, office | Rolle — Versicherung, Ärztin, Amt |
+| Role — insurer, doctor, office | Rolle — Versicherung, Arzt, Amt |
 | A contact you add stays in this matter. If something from them comes in later, it is the same contact. | Ein Kontakt, den du hinzufügst, bleibt in diesem Anliegen. Kommt später etwas von ihm, ist es derselbe Kontakt. |
 | Of | Von |
 | no one | niemand |
@@ -1480,7 +1480,7 @@ shown on more than one screen is under the first of them.
 | Value | Wert |
 | Kept on your devices. The assistant learns that it is here, never the value. | Bleibt auf deinen Geräten. Der Assistent erfährt, dass es hier ist, nie den Wert. |
 | Delete Detail | Detail löschen |
-| A membership number, a file number, a ward and room: what you need on the phone with them. | Eine Mitgliedsnummer, ein Aktenzeichen, Station und Zimmer: was du am Telefon mit ihnen brauchst. |
+| A membership number, a file number, a ward and room: what you need on the phone with them. | Eine Mitgliedsnummer, ein Aktenzeichen, Station und Zimmer: was du brauchst, wenn du mit ihnen telefonierst. |
 | Copies it | Kopiert es |
 | Copy with its label | Mit Bezeichnung kopieren |
 | Copy phone number | Telefonnummer kopieren |
@@ -1490,8 +1490,8 @@ shown on more than one screen is under the first of them.
 | English | German |
 |---|---|
 | Room for a fourth matter | Platz für ein viertes Anliegen |
-| Your plan | Dein Plan |
-| Causabee holds %lld open matters for free. Close one — or make room for all of them. Nothing you have is ever locked. | Causabee hält %lld offene Anliegen gratis. Schließ eines ab — oder mach Platz für alle. Was du hast, wird nie weggeschlossen. |
+| Your plan | Dein Paket |
+| Causabee holds %lld open matters for free. Close one — or make room for all of them. Nothing you have is ever locked. | Bis zu %lld offene Anliegen sind gratis. Schließ eines ab — oder mach Platz für alle. Was du hast, wird nie weggeschlossen. |
 | The bigger AI reads what comes in, as it comes, writes each matter's brief and answers about everything — names always disguised. | Die größere KI liest, was hereinkommt, sobald es kommt, schreibt die Zusammenfassung jedes Anliegens und antwortet zu allem — Namen immer unkenntlich. |
 | Free stays on your device. Plus for every matter, Pro for the bigger AI. | Gratis bleibt auf deinem Gerät. Plus für jedes Anliegen, Pro für die größere KI. |
 | A top-up lets Pro read again: %@ | Mit neuem Guthaben liest Pro wieder: %@ |
@@ -1500,7 +1500,7 @@ shown on more than one screen is under the first of them.
 | Causabee Plus yearly | Causabee Plus jährlich |
 | The bigger AI, up to a monthly limit, names always disguised | Die größere KI, bis zu einer Grenze im Monat, Namen immer unkenntlich |
 | Adds a third of a month's Pro use, kept until it is used. | Legt ein Drittel eines Pro-Monats dazu, bleibt, bis es aufgebraucht ist. |
-| Changing between Plus and Pro: up to Pro at once, the rest of Plus paid back by Apple; down to Plus at the next renewal. Cancelling is in your Apple Account. | Wechsel zwischen Plus und Pro: hoch zu Pro sofort, den Rest von Plus zahlt Apple zurück; runter zu Plus zur nächsten Verlängerung. Kündigen kannst du in deinem Apple-Account. |
+| Changing between Plus and Pro: up to Pro at once, the rest of Plus paid back by Apple; down to Plus at the next renewal. Cancelling is in your Apple Account. | Wechsel zwischen Plus und Pro: hinauf zu Pro sofort, den Rest von Plus zahlt Apple zurück; hinunter zu Plus erst zur nächsten Verlängerung. Kündigen kannst du in deinem Apple-Account. |
 | Restore Purchases | Käufe wiederherstellen |
 | Terms of Use | Nutzungsbedingungen |
 | Subscriptions renew until cancelled in your Apple Account settings. | Abos verlängern sich, bis du sie in deinen Apple-Account-Einstellungen kündigst. |
@@ -1508,13 +1508,13 @@ shown on more than one screen is under the first of them.
 | This Mac's Causabee comes from the website, where the App Store cannot sell. Choose a plan on your iPhone or iPad: this Mac follows through iCloud. | Das Causabee auf diesem Mac kommt von der Website, wo der App Store nicht verkaufen kann. Wähl ein Paket auf deinem iPhone oder iPad: dieser Mac folgt über iCloud. |
 | The App Store does not answer right now. Try again in a moment. | Der App Store antwortet gerade nicht. Versuch es gleich noch einmal. |
 | YOURS | DEINE |
-| Plan and usage | Plan und Nutzung |
+| Plan and usage | Paket und Nutzung |
 | %lld open matters. Apple's model on this device reads what comes in — nothing leaves it. | %lld offene Anliegen. Apples Modell auf diesem Gerät liest, was hereinkommt — nichts verlässt es. |
 | Every matter you need. Apple's model on this device reads what comes in — nothing leaves it. | Jedes Anliegen, das du brauchst. Apples Modell auf diesem Gerät liest, was hereinkommt — nichts verlässt es. |
 | Every matter, and the bigger AI up to a monthly limit. | Jedes Anliegen, und die größere KI bis zu einer Grenze im Monat. |
-| Apple could not charge your payment method. The plan goes on until %@; update it in your Apple Account, and it renews as before. | Apple konnte deine Zahlungsart nicht belasten. Das Paket läuft bis %@; aktualisier sie in deinem Apple-Account, dann verlängert es sich wie bisher. |
-| Apple could not charge your payment method. update it in your Apple Account, and it renews as before. | Apple konnte deine Zahlungsart nicht belasten. Aktualisier sie in deinem Apple-Account, dann verlängert es sich wie bisher. |
-| See the plans | Pläne ansehen |
+| Apple could not charge your payment method. The plan goes on until %@; update it in your Apple Account, and it renews as before. | Die Zahlung ist bei Apple nicht durchgegangen. Das Paket läuft bis %@; aktualisier deine Zahlungsmethode im Apple-Account, dann verlängert es sich wie bisher. |
+| Apple could not charge your payment method. update it in your Apple Account, and it renews as before. | Die Zahlung ist bei Apple nicht durchgegangen. Aktualisier deine Zahlungsmethode im Apple-Account, dann verlängert es sich wie bisher. |
+| See the plans | Pakete ansehen |
 | Change plan | Paket wechseln |
 | Manage subscription | Abo verwalten |
 | Change or cancel it on your iPhone or iPad: this Mac follows through iCloud. | Ändern oder kündigen auf deinem iPhone oder iPad: dieser Mac folgt über iCloud. |
@@ -1526,7 +1526,7 @@ shown on more than one screen is under the first of them.
 | · 1 person | · 1 Person |
 | · %lld people | · %lld Personen |
 | Open screenshot | Screenshot öffnen |
-| Open document | Dokument öffnen |
+| Open document | Datei öffnen |
 | Open photo | Foto öffnen |
 | Open mail | Mail öffnen |
 | unread | ungelesen |
@@ -1534,7 +1534,7 @@ shown on more than one screen is under the first of them.
 | started | begonnen |
 | more | mehr |
 | Its own words, kept on this device — without opening Mail | Die eigenen Worte der Mail, auf diesem Gerät gesichert — ohne Mail zu öffnen |
-| Its words are not on this device yet. | Seine Worte sind noch nicht auf diesem Gerät. |
+| Its words are not on this device yet. | Ihre Worte sind noch nicht auf diesem Gerät. |
 | The file is not here | Die Datei ist nicht hier |
 | It is neither on this device nor in the matter's folder in iCloud Drive yet. What it said is here. | Die Datei ist weder auf diesem Gerät noch im Ordner des Anliegens in iCloud Drive. Was darin stand, ist hier. |
 | Every mail that asked for it | Jede Mail, die danach gefragt hat |
@@ -1546,7 +1546,8 @@ shown on more than one screen is under the first of them.
 | dates | Termine |
 | deadline | Frist |
 | deadlines | Fristen |
-| only to know | nur zur Kenntnis |
+| What came from it: %@ | Was daraus kam: %@ |
+| only to know | nur zur Info |
 | open | offen |
 | Tasks from it | Aufgaben daraus |
 | Dates from it | Termine daraus |
@@ -1576,8 +1577,8 @@ shown on more than one screen is under the first of them.
 | From %lld mails | Aus %lld Mails |
 | Seen: it stays in the matter as it is, and is not new any more | Gesehen: es bleibt im Anliegen, wie es ist, und ist nicht mehr neu |
 | Seen, keep it | Gesehen, behalten |
-| Correct it | Berichtigen |
-| Correct | Berichtigen |
+| Correct it | Korrigieren |
+| Correct | Korrigieren |
 | Not wanted: it goes, and is not brought back | Nicht gewollt: es geht, und kommt nicht zurück |
 | yours | deine |
 | someone else's | von jemand anderem |
@@ -1587,7 +1588,7 @@ shown on more than one screen is under the first of them.
 | LOOK UP? | NACHSCHLAGEN? |
 | Only this question goes to the web — nothing of the matter. | Nur diese Frage geht ins Web — nichts aus dem Anliegen. |
 | You said | Du sagtest |
-| Take it back: the next brief is written without it. | Zurücknehmen: die nächste Zusammenfassung wird ohne es geschrieben. |
+| Take it back: the next brief is written without it. | Zurücknehmen: die nächste Zusammenfassung wird ohne diesen Hinweis geschrieben. |
 | Take back | Zurücknehmen |
 | What it is about | Worum es geht |
 | What you want from it | Was du davon willst |
@@ -1609,7 +1610,7 @@ shown on more than one screen is under the first of them.
 | For a big company or a brand: its name goes to the AI as it is, and may be named in a question looked up on the web. | Für eine große Firma oder Marke: ihr Name geht so, wie er ist, an die KI, und kann in einer im Web nachgeschlagenen Frage vorkommen. |
 | Add a company or brand | Firma oder Marke hinzufügen |
 | Public name — not disguised | Öffentlicher Name — nicht unkenntlich |
-| Take it back: the next writing goes without it | Zurücknehmen: das nächste Schreiben geht ohne es |
+| Take it back: the next writing goes without it | Zurücknehmen: beim nächsten Mal bleibt es weg |
 | Comment | Kommentar |
 | What Causabee missed, or how it should be | Was Causabee übersehen hat, oder wie es sein soll |
 | Causabee writes it again with your words, and keeps them — they are never written over. | Causabee schreibt es mit deinen Worten neu, und behält sie — sie werden nie überschrieben. |
@@ -1621,8 +1622,8 @@ shown on more than one screen is under the first of them.
 | About you | Über dich |
 | Ready | Bereit |
 | Set up Causabee | Causabee einrichten |
-| Test mode: nothing is saved | Testbetrieb: nichts wird gesichert |
-| optional | freiwillig |
+| Test mode: nothing is saved | Testmodus: nichts wird gesichert |
+| optional | optional |
 | Nothing here costs money. Mail is only read until you click “Sort in”. | Nichts hier kostet Geld. Mail wird nur gelesen, bis du auf „Einsortieren“ klickst. |
 | Close for now. Causabee → Set Up Causabee … opens it again. | Erst mal schließen. Causabee → Causabee einrichten … öffnet es wieder. |
 | — not connected, you can do it later | — nicht verbunden, du kannst es später machen |
@@ -1647,11 +1648,11 @@ shown on more than one screen is under the first of them.
 | Tip: a Gmail filter can put the label on mail from the school, the landlord or the insurer by itself. The label stays on the mail; you can take it off at any time. | Tipp: ein Gmail-Filter kann das Label von selbst auf Mail von der Schule, der Hausverwaltung oder der Versicherung setzen. Das Label bleibt an der Mail; du kannst es jederzeit entfernen. |
 | In your mail app or on the provider's website, make a folder called “%@”. | Leg in deiner Mail-App oder auf der Website des Anbieters einen Ordner namens „%@“ an. |
 | Move or copy the mails you want sorted into it. Start with a few from one matter. | Verschieb oder kopier die Mails, die einsortiert werden sollen, hinein. Fang mit ein paar aus einem Anliegen an. |
-| The name must be “%@”. Capitals do not matter. | Der Name muss „%@“ sein. Groß und klein ist einerlei. |
+| The name must be “%@”. Capitals do not matter. | Der Name muss „%@“ sein. Groß- und Kleinschreibung ist egal. |
 | Found “%@”, with 1 mail. | „%@“ gefunden, mit 1 Mail. |
 | Found “%@”, with %lld mails. | „%@“ gefunden, mit %lld Mails. |
 | There is no “%@” yet. Make it, put it on a few mails, then check again. | Es gibt noch kein „%@“. Leg es an, gib es ein paar Mails und sieh dann noch einmal nach. |
-| Use another account | Anderen Account nutzen |
+| Use another account | Anderes Konto nutzen |
 | Could not look: %@ | Nachsehen ging nicht: %@ |
 | Appointments and deadlines can go into Calendar, and tasks into Reminders, with one click. Causabee also sees what is already there, so nothing is added twice. It only adds what you click. | Termine und Fristen können mit einem Klick in den Kalender, Aufgaben in Erinnerungen. Causabee sieht auch, was schon dort ist, damit nichts zweimal hinzukommt. Sie fügt nur hinzu, was du anklickst. |
 | Connected to Calendar and to Reminders. | Mit dem Kalender und mit Erinnerungen verbunden. |
@@ -1674,7 +1675,7 @@ shown on more than one screen is under the first of them.
 | Copied into Causabee: it had no place of its own. | In Causabee kopiert: sie hatte keinen eigenen Platz. |
 | Stays where it is: %@. Causabee only remembers the path. | Bleibt, wo sie ist: %@. Causabee merkt sich nur den Pfad. |
 | Reading on the Mac … | Wird auf dem Mac gelesen … |
-| Scanning on the Mac … | Wird auf dem Mac erfasst … |
+| Scanning on the Mac … | Der Text wird auf dem Mac erkannt … |
 | Sorting it in … | Wird einsortiert … |
 | Dismissed — nothing was taken into a matter. | Weggelegt — nichts wurde in ein Anliegen übernommen. |
 | Bring back | Zurückholen |
@@ -1683,7 +1684,7 @@ shown on more than one screen is under the first of them.
 | Photo or scan | Foto oder Scan |
 | Picture | Bild |
 | what would be sent, pseudonymised | was gesendet würde, pseudonymisiert |
-| Left out: | Ausgelassen: |
+| Left out: | Weggelassen: |
 | Which matter? | Welches Anliegen? |
 | Name of the new matter | Name des neuen Anliegens |
 | mine | meine |
@@ -1710,7 +1711,7 @@ shown on more than one screen is under the first of them.
 | %lld %@ free, then %@ | %lld %@ gratis, dann %@ |
 | The App Store could not confirm the purchase. Nothing was charged that is not confirmed. | Der App Store konnte den Kauf nicht bestätigen. Nichts wurde belastet, was nicht bestätigt ist. |
 | The top-up is bought and kept: it is added as soon as the beeserver answers. | Das Guthaben ist gekauft und gesichert: es kommt dazu, sobald der Beeserver antwortet. |
-| The purchase waits for approval — Ask to Buy, or the bank. | Der Kauf wartet auf eine Freigabe — Kauf bestätigen, oder die Bank. |
+| The purchase waits for approval — Ask to Buy, or the bank. | Der Kauf wartet auf eine Freigabe — Kaufanfrage, oder die Bank. |
 | period | Zeitraum |
 | %@ a %@ | %@ pro %@ |
 | %@ every %lld %@ | %@ alle %lld %@ |
@@ -1740,13 +1741,13 @@ shown on more than one screen is under the first of them.
 | Photo of %@ | Foto vom %@ |
 | Phone call of %@ | Anruf vom %@ |
 | Document of %@ | Dokument vom %@ |
-| Icon | Zeichen |
+| Icon | Symbol |
 | Let Causabee choose | Causabee wählen lassen |
-| Icon for this matter | Zeichen für dieses Anliegen |
+| Icon for this matter | Symbol für dieses Anliegen |
 | Causabee chose this one from the name. | Causabee hat es aus dem Namen gewählt. |
-| Getting speech ready … | Spracherkennung wird bereit … |
+| Getting speech ready … | Spracherkennung wird vorbereitet … |
 | Writing it down … | Wird aufgeschrieben … |
-| Speech is getting ready | Die Spracherkennung wird bereit |
+| Speech is getting ready | Die Spracherkennung ist gleich bereit |
 | Speak (⌥ Space): it is written down on this device, and you send it | Sprechen (⌥ Leertaste): es wird auf diesem Gerät aufgeschrieben, und du sendest es |
 | Speak | Sprechen |
 | Throw the recording away (esc) | Aufnahme verwerfen (esc) |
@@ -1764,7 +1765,7 @@ shown on more than one screen is under the first of them.
 | No matter found | Kein Anliegen gefunden |
 | Choose | Wählen |
 | As suggested | Wie vorgeschlagen |
-| Taking the mail in starts it, with what you left ticked. | Die Mail hereinzunehmen beginnt es, mit dem, was du angehakt gelassen hast. |
+| Taking the mail in starts it, with what you left ticked. | Wenn du die Mail hereinnimmst, beginnt es — mit dem, was angehakt bleibt. |
 | Part of the matter | Teil des Anliegens |
 
 ## Sources/Causabee/UnplacedLookView.swift
@@ -1815,17 +1816,17 @@ shown on more than one screen is under the first of them.
 | No password saved for %@ on this %@. | Für %@ ist auf diesem %@ kein Passwort gesichert. |
 | %lld · not read, never sent | %lld · nicht gelesen, nie gesendet |
 | A letter, a scan, a PDF. Files in mail come by themselves. | Ein Brief, ein Scan, ein PDF. Dateien in Mail kommen von selbst. |
-| Add Document | Dokument hinzufügen |
-| Hide the hidden ones | Die ausgeblendeten verbergen |
+| Add Document | Datei hinzufügen |
+| Hide the hidden ones | Die Ausgeblendeten wieder ausblenden |
 | %lld hidden · show | %lld ausgeblendet · zeigen |
 | Hide small images | Kleine Bilder ausblenden |
 | Show small images | Kleine Bilder zeigen |
 | Causabee forgets what it read in it. The file itself stays where it is. | Causabee vergisst, was sie darin gelesen hat. Die Datei selbst bleibt, wo sie ist. |
 | Causabee forgets what it read in it, and %@ only it brought. The file itself stays where it is. | Causabee vergisst, was sie darin gelesen hat, und %@, die nur sie gebracht hat. Die Datei selbst bleibt, wo sie ist. |
-| Getting the file from iCloud Drive … | Hole die Datei aus iCloud Drive … |
+| Getting the file from iCloud Drive … | Die Datei wird aus iCloud Drive geholt … |
 | Saved — shared with your Macs through iCloud Keychain | Gesichert — über den iCloud-Schlüsselbund mit deinen Macs geteilt |
-| Add another account | Weiteren Account hinzufügen |
-| Mail account | Mail-Account |
+| Add another account | Weiteres Konto hinzufügen |
+| Mail account | Mail-Konto |
 | Remove the password for %@? | Das Passwort für %@ entfernen? |
 | Remove from all devices | Von allen Geräten entfernen |
 | It goes from iCloud Keychain, so from your Macs as well. To get mail again you connect it anew. | Er geht aus dem iCloud-Schlüsselbund, also auch von deinen Macs. Um wieder Mail zu holen, verbindest du ihn neu. |
@@ -1834,7 +1835,7 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Chooses another icon | Wählt ein anderes Zeichen |
+| Chooses another icon | Wählt ein anderes Symbol |
 | Find in this matter | In diesem Anliegen suchen |
 | none | keine |
 | %lld of %lld | %lld von %lld |
@@ -1853,13 +1854,13 @@ shown on more than one screen is under the first of them.
 | only after: %@ | erst nach: %@ |
 | Save as link | Als Link sichern |
 | Save %lld links | %lld Links sichern |
-| It goes from this matter; Undo brings it back. | Es geht aus diesem Anliegen; Widerrufen bringt es zurück. |
-| It goes from this matter, and its reminder from Reminders. Undo brings the task back, not the reminder. | Sie geht aus diesem Anliegen, und ihre Erinnerung aus Erinnerungen. Widerrufen bringt die Aufgabe zurück, nicht die Erinnerung. |
+| It goes from this matter; Undo brings it back. | Es verschwindet aus diesem Anliegen; Widerrufen bringt es zurück. |
+| It goes from this matter, and its reminder from Reminders. Undo brings the task back, not the reminder. | Sie verschwindet aus diesem Anliegen, und ihre Erinnerung aus Erinnerungen. Widerrufen bringt die Aufgabe zurück, nicht die Erinnerung. |
 | Whose | Wessen |
 | Paste a link — https://docs.google.com/… | Link einfügen — https://docs.google.com/… |
 | By a day | Nach Tag |
 | Change task | Aufgabe ändern |
-| It goes from this matter, and its entry from Calendar. Undo brings the date back, not the entry. | Er geht aus diesem Anliegen, und sein Eintrag aus dem Kalender. Widerrufen bringt den Termin zurück, nicht den Eintrag. |
+| It goes from this matter, and its entry from Calendar. Undo brings the date back, not the entry. | Er verschwindet aus diesem Anliegen, und sein Eintrag aus dem Kalender. Widerrufen bringt den Termin zurück, nicht den Eintrag. |
 | Change appointment | Termin ändern |
 | Change deadline | Frist ändern |
 
@@ -1879,10 +1880,10 @@ shown on more than one screen is under the first of them.
 | English | German |
 |---|---|
 | New Matter | Neues Anliegen |
-| Closed | Geschlossen |
+| Closed | Abgeschlossen |
 | Hides the closed matters | Blendet die abgeschlossenen Anliegen aus |
 | Shows the closed matters | Zeigt die abgeschlossenen Anliegen |
-| Looking for mail | Suche nach Mail |
+| Looking for mail | Mail wird gesucht |
 | overdue | überfällig |
 | Mail read, to take in | Mail gelesen, zum Hereinnehmen |
 
@@ -1890,15 +1891,15 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Using Pro | Pro in Nutzung |
-| Not using Pro | Pro nicht in Nutzung |
+| Using Pro | Pro wird genutzt |
+| Not using Pro | Pro wird nicht genutzt |
 | Opens the chat. Hold to stop using Pro | Öffnet den Chat. Halten, um Pro nicht mehr zu nutzen |
 | Opens the chat. Hold to use Pro | Öffnet den Chat. Halten, um Pro zu nutzen |
 | Pro | Pro |
 | On | An |
 | Off | Aus |
 | Pro: the bigger AI reads what comes in at once. Without Pro: only when you say so | Pro: die größere KI liest sofort, was hereinkommt. Ohne Pro: nur, wenn du es sagst |
-| Looking at what was picked … | Sehe mir an, was gewählt wurde … |
+| Looking at what was picked … | Was gewählt wurde, wird angesehen … |
 | A file in iCloud Drive is brought down first. | Eine Datei in iCloud Drive wird zuerst heruntergeladen. |
 
 ## Sources/CausabeePhone/PeopleAndLinks.swift
@@ -1906,8 +1907,8 @@ shown on more than one screen is under the first of them.
 | English | German |
 |---|---|
 | A Google Doc, a sheet — whatever belongs to this matter. | Ein Google Doc, eine Tabelle — was zu diesem Anliegen gehört. |
-| Found in what came in · 1 suggestion | In dem gefunden, was hereinkam · 1 Vorschlag |
-| Found in what came in · %lld suggestions | In dem gefunden, was hereinkam · %lld Vorschläge |
+| Found in what came in · 1 suggestion | Gefunden in dem, was hereinkam · 1 Vorschlag |
+| Found in what came in · %lld suggestions | Gefunden in dem, was hereinkam · %lld Vorschläge |
 | Look for links in the mails | In den Mails nach Links suchen |
 | Look in the mails again | Noch einmal in den Mails suchen |
 | No mail account saved: add it in Settings (⋯ on the overview). | Kein Mail-Konto gesichert: füg es in den Einstellungen (⋯ auf der Übersicht) hinzu. |
@@ -1966,13 +1967,13 @@ shown on more than one screen is under the first of them.
 | A new matter … | Ein neues Anliegen … |
 | Other | Anderes |
 | Make it | Anlegen |
-| Add or bring in | Hinzufügen oder hereinbringen |
+| Add or bring in | Hinzufügen oder importieren |
 | Files or a folder | Dateien oder einen Ordner |
 | Take a photo | Foto aufnehmen |
 | Photo or screenshot | Foto oder Screenshot |
 | Bring in files, a scan or a photo | Dateien, einen Scan oder ein Foto hereinholen |
 | Read and sort in | Lesen und einsortieren |
-| Only import | Nur hereinholen |
+| Only import | Nur importieren |
 | Read: Pro sorts each in, with its tasks and dates. Only import: kept with the matter, unread. | Lesen: Pro sortiert jede ein, mit ihren Aufgaben und Terminen. Nur importieren: beim Anliegen gesichert, ungelesen. |
 | Read: each is sorted in on this %@. Only import: kept with the matter, unread. | Lesen: jede wird auf diesem %@ einsortiert. Nur importieren: beim Anliegen gesichert, ungelesen. |
 | Read “%@”, or only import it? | „%@“ lesen, oder nur importieren? |
@@ -1999,7 +2000,7 @@ shown on more than one screen is under the first of them.
 | The document | Das Dokument |
 | For example: Tax assessment, rental contract, invoice | Zum Beispiel: Steuerbescheid, Mietvertrag, Rechnung |
 | What is it? | Was ist es? |
-| Add a document | Dokument hinzufügen |
+| Add a document | Datei hinzufügen |
 | The file cannot be read. | Die Datei lässt sich nicht lesen. |
 | It could not be saved on this %@. Is there space left? | Es konnte auf diesem %@ nicht gesichert werden. Ist noch Platz? |
 
@@ -2011,7 +2012,7 @@ shown on more than one screen is under the first of them.
 | Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with this key. It gets only pseudonymised text, and is kept in iCloud Keychain like the mail password. Never in a file. | Alles wird mit OpenAI GPT-6.1 Sol gelesen: mit Pro über den Beeserver, oder mit diesem Key. Es bekommt nur pseudonymisierten Text, und der Key liegt im iCloud-Schlüsselbund wie das Mail-Passwort. Nie in einer Datei. |
 | with this key | mit diesem Key |
 | The key is kept in iCloud Keychain like the mail password. Never in a file. | Der Key liegt im iCloud-Schlüsselbund wie das Mail-Passwort. Nie in einer Datei. |
-| Pro's server | Pros Server |
+| Pro's server | Server von Pro |
 | Developer | Entwickler |
 | Not set up yet | Noch nicht eingerichtet |
 | Add mail account … | Mail-Konto hinzufügen … |
@@ -2025,8 +2026,8 @@ shown on more than one screen is under the first of them.
 | No list of names here yet | Noch keine Namensliste hier |
 | Names are disguised before anything leaves the device: each device keeps a list of them, end-to-end encrypted in iCloud, and without any list the assistant sends nothing. Big companies and brands — Expedia, Lufthansa — are not disguised; mark one here, or in a person's menu. | Namen werden unkenntlich gemacht, bevor etwas das Gerät verlässt: jedes Gerät führt eine Liste davon, Ende-zu-Ende-verschlüsselt in iCloud, und ohne Liste sendet der Assistent nichts. Große Firmen und Marken — Expedia, Lufthansa — werden nicht unkenntlich gemacht; markiere eine hier, oder im Menü einer Person. |
 | Off in the demo | Im Beispiel aus |
-| In the demo, iCloud stays off: the made-up matters never meet your iCloud. | Im Beispiel bleibt iCloud aus: die erfundenen Anliegen treffen nie auf dein iCloud. |
-| Your matters, tasks, dates, people, digests, what each mail was sorted as, the assistant's history, and the full texts of mails and scans — those end to end encrypted — sync through your private iCloud. Files go into the matters' folders. | Deine Anliegen, Aufgaben, Termine, Personen, Überblicke, wie jede Mail einsortiert wurde, der Verlauf des Assistenten und die vollen Texte von Mails und Scans — diese Ende-zu-Ende-verschlüsselt — gleichen sich über dein privates iCloud ab. Dateien kommen in die Ordner der Anliegen. |
+| In the demo, iCloud stays off: the made-up matters never meet your iCloud. | Im Beispiel bleibt iCloud aus: die erfundenen Anliegen kommen nie in deine iCloud. |
+| Your matters, tasks, dates, people, digests, what each mail was sorted as, the assistant's history, and the full texts of mails and scans — those end to end encrypted — sync through your private iCloud. Files go into the matters' folders. | Deine Anliegen, Aufgaben, Termine, Personen, Überblicke, wie jede Mail einsortiert wurde, der Verlauf des Assistenten und die vollen Texte von Mails und Scans — diese Ende-zu-Ende-verschlüsselt — werden über deine private iCloud abgeglichen. Dateien kommen in die Ordner der Anliegen. |
 
 ## Sources/CausabeePhone/UnplacedSheet.swift
 
@@ -2059,7 +2060,7 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Causabee takes pictures and PDFs. | Causabee nimmt Bilder und PDFs. |
+| Causabee takes pictures and PDFs. | Causabee nimmt Bilder und PDFs entgegen. |
 | Into “%@” | In „%@“ |
 | Into a matter … | In ein Anliegen … |
 | INTO | IN |
@@ -2067,14 +2068,14 @@ shown on more than one screen is under the first of them.
 | it sorts it in by itself | sie sortiert es selbst ein |
 | last mail %@ | letzte Mail %@ |
 | Your open matters, the latest first. | Deine offenen Anliegen, das neueste zuerst. |
-| Causabee sorts it in when it next opens, and says where it went. | Causabee sortiert es ein, wenn sie das nächste Mal öffnet, und sagt, wohin es ging. |
+| Causabee sorts it in when it next opens, and says where it went. | Causabee sortiert es ein, wenn sie das nächste Mal geöffnet wird, und sagt, wohin es ging. |
 | 1 picture | 1 Bild |
 | %lld pictures | %lld Bilder |
 | 1 PDF | 1 PDF |
 | %lld PDFs | %lld PDFs |
 | In Causabee | In Causabee |
 | In “%@” | In „%@“ |
-| It is sorted in when Causabee opens. | Es wird einsortiert, wenn Causabee öffnet. |
+| It is sorted in when Causabee opens. | Es wird einsortiert, wenn Causabee geöffnet wird. |
 
 ## Words the code picks as it runs, and words with a value in them
 
@@ -2099,10 +2100,10 @@ shown on more than one screen is under the first of them.
 | %lld overdue | %lld überfällig |
 | %lld questions from Causabee | %lld Fragen von Causabee |
 | Call %@ | %@ anrufen |
-| Causabee reads your calendars and reminders to show what is there already. It adds only when %@ “Add”. What is connected is kept in step both ways: ticked off, moved, renamed. | Causabee liest deine Kalender und Erinnerungen, um zu zeigen, was schon da ist. Sie fügt nur hinzu, wenn %@ „Hinzufügen“. Was verbunden ist, bleibt in beide Richtungen im Takt: abgehakt, verschoben, umbenannt. |
+| Causabee reads your calendars and reminders to show what is there already. It adds only when %@ “Add”. What is connected is kept in step both ways: ticked off, moved, renamed. | Causabee liest deine Kalender und Erinnerungen, um zu zeigen, was schon da ist. Sie fügt nur hinzu, wenn du auf „Hinzufügen“ %@. Was verbunden ist, bleibt in beide Richtungen synchron: abgehakt, verschoben, umbenannt. |
 | Causabee reads your calendars and reminders to show what is there already. It adds only when you %@ “Add”. What is connected is kept in step both ways: ticked off, moved, renamed. | Causabee liest deine Kalender und Erinnerungen, um zu zeigen, was schon da ist. Sie fügt nur hinzu, wenn du %@ „Hinzufügen“. Was verbunden ist, bleibt in beide Richtungen im Takt: abgehakt, verschoben, umbenannt. |
 | Closed on %@ | Abgeschlossen am %@ |
-| Connected and kept in step. Click to open it in %@. | Verbunden und im Takt. Klick, um es in %@ zu öffnen. |
+| Connected and kept in step. Click to open it in %@. | Verbunden und synchron. Klick, um es in %@ zu öffnen. |
 | DECISION · %@ | ENTSCHEIDUNG · %@ |
 | Disguise “%@” again | „%@“ wieder unkenntlich machen |
 | Draft opened in Mail · To: %@ | Entwurf in Mail geöffnet · An: %@ |
@@ -2110,7 +2111,7 @@ shown on more than one screen is under the first of them.
 | From %@ · | Von %@ · |
 | From the web, %@ · general, not about this matter — check the source | Aus dem Web, %@ · allgemein, nicht zu diesem Anliegen — prüf die Quelle |
 | Held until %@ · may be outdated | Gehalten bis %@ · kann veraltet sein |
-| Last kept in step at %@: %lld taken in, %lld written out. | Zuletzt im Takt um %@: %lld übernommen, %lld hinausgeschrieben. |
+| Last kept in step at %@: %lld taken in, %lld written out. | Zuletzt abgeglichen um %@: %lld übernommen, %lld geschrieben. |
 | Last sent: %@ · last received: %@ | Zuletzt gesendet: %@ · zuletzt empfangen: %@ |
 | Merge “%@” with | „%@“ zusammenführen mit |
 | New: %@ | Neu: %@ |
@@ -2119,7 +2120,8 @@ shown on more than one screen is under the first of them.
 | No access. Allow it in %@. | Kein Zugriff. Erlaub es in %@. |
 | No matter found · %lld | Kein Anliegen gefunden · %lld |
 | Not sent: %@ | Nicht gesendet: %@ |
-| Now: On — your matters, in your private iCloud · %@ | Jetzt: An — deine Anliegen, in deinem privaten iCloud · %@ |
+| Nothing here is %@. | Hier ist nichts %@. |
+| Now: On — your matters, in your private iCloud · %@ | Jetzt: An — deine Anliegen, in deiner privaten iCloud · %@ |
 | Only what %@ wrote or is named in. Click to show everyone's again. | Nur, was %@ geschrieben hat oder worin sie genannt wird. Klick, um wieder alles zu zeigen. |
 | Open in %@ | In %@ öffnen |
 | Overdue since %@: %@ | Überfällig seit %@: %@ |
@@ -2130,10 +2132,10 @@ shown on more than one screen is under the first of them.
 | Read all %lld attachments | Alle %lld Anhänge lesen |
 | Role in %@ | Rolle in %@ |
 | Same person? · %lld | Dieselbe Person? · %lld |
-| Saved on this %@, in %@, under this name. Then scanned here and sorted into “%@” when you tap “Sort in”, as with the paperclip. Its tasks and dates go to all your devices; the file stays on this %@. | Auf diesem %@ gesichert, in %@, unter diesem Namen. Dann hier erfasst und in „%@“ einsortiert, wenn du auf „Einsortieren“ tippst, wie mit der Klammer. Seine Aufgaben und Termine gehen auf alle deine Geräte; die Datei bleibt auf diesem %@. |
+| Saved on this %@, in %@, under this name. Then scanned here and sorted into “%@” when you tap “Sort in”, as with the paperclip. Its tasks and dates go to all your devices; the file stays on this %@. | Auf diesem %@ gesichert, in %@, unter diesem Namen. Dann wird der Text hier erkannt und in „%@“ einsortiert, wenn du auf „Einsortieren“ tippst, wie mit der Klammer. Seine Aufgaben und Termine gehen auf alle deine Geräte; die Datei bleibt auf diesem %@. |
 | Saved on this %@, in %@. | Auf diesem %@ gesichert, in %@. |
-| Scanning it on this %@ … | Wird auf diesem %@ erfasst … |
-| Set a day for %@ | Einen Tag für %@ setzen |
+| Scanning it on this %@ … | Der Text wird auf diesem %@ erkannt … |
+| Set a day for %@ | Einen Tag für %@ festlegen |
 | Show %@ | %@ zeigen |
 | Show earlier · %lld more | Früheres zeigen · %lld weitere |
 | Since %@ | Seit %@ |

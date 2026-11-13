@@ -493,7 +493,7 @@ struct MadeChips: View {
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain)
-            .help("The \(count == 1 ? one : many) that came from it")
+            .help(String(format: String(localized: "What came from it: %@"), count == 1 ? one : many))
         }
     }
 }

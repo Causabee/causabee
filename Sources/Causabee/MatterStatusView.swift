@@ -1605,7 +1605,7 @@ struct MatterStatusView: View {
         let groups = RecordBrowse.groups(visible, sort: sort) { item in NamedPeople.of(item, in: matter).map(\.name) }
         let lines = RecordBrowse.lines(of: groups)
         if all.isEmpty {
-            EmptyBox(text: show != .all ? String(format: String(localized: "Nothing here is %@."), show.label.lowercased())
+            EmptyBox(text: show != .all ? String(format: String(localized: "Nothing here under “%@”."), show.label)
                          : String(localized: "Mail sorted into this matter shows here, newest first."))
         }
         // Only what is near the screen is drawn, as in the journal.

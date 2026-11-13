@@ -156,7 +156,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Causabee konnte seine Liste „%@“ in %@%@ nicht anlegen. "
+            "value": "Causabee konnte ihre Liste „%@“ in %@%@ nicht anlegen. "
           }
         }
       }
@@ -406,7 +406,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nicht gesetzt"
+            "value": "Keine Dauer"
           }
         }
       }
@@ -546,7 +546,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nichts unkenntlich zu machen"
+            "value": "Nichts unkenntlich gemacht"
           }
         }
       }
@@ -716,7 +716,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Adresse, und wenn du magst ein Name dafür. Wird beim Anliegen gesichert."
+            "value": "Die Adresse und, wenn du magst, ein Name dafür. Wird beim Anliegen gesichert."
           }
         }
       }
@@ -996,7 +996,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Das klingt nach etwas zu tun. Öffne das Anliegen und sag es dort, dann wird es eine Aufgabe."
+            "value": "Das klingt nach einer Aufgabe. Öffne das Anliegen und sag es dort, dann wird sie hinzugefügt."
           }
         }
       }
@@ -1986,7 +1986,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": " Dann können %lld weitere Aufgaben weitergehen."
+            "value": " Dann können %lld weitere Aufgaben losgehen."
           }
         }
       }
@@ -2026,7 +2026,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sollte bis %@ da sein"
+            "value": "Hätte bis %@ da sein sollen"
           }
         }
       }
@@ -2256,7 +2256,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Würde das Anliegen „%@“ beginnen — Causabee hält %lld offene Anliegen gratis"
+            "value": "Würde das Anliegen „%@“ beginnen — bis zu %lld offene Anliegen sind gratis"
           }
         }
       }
@@ -2406,7 +2406,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "nicht in Nutzung"
+            "value": "nicht genutzt"
           }
         }
       }
@@ -2426,7 +2426,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "An, wartet: nichts mehr zu nutzen bis %@."
+            "value": "An, wartet: bis %@ ist nichts mehr übrig."
           }
         }
       }
@@ -2516,7 +2516,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": " · nicht in Nutzung"
+            "value": " · nicht genutzt"
           }
         }
       }
@@ -2566,7 +2566,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": ", nicht in Nutzung"
+            "value": ", nicht genutzt"
           }
         }
       }
@@ -3056,7 +3056,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suche deine Anliegen in iCloud …"
+            "value": "Deine Anliegen werden in iCloud gesucht …"
           }
         }
       }
