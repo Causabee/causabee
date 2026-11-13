@@ -2,112 +2,364 @@
   "sourceLanguage": "en",
   "strings": {
     "not counted yet": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "noch nicht gezählt"
+          }
+        }
+      }
     },
     "left": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "übrig"
+          }
+        }
+      }
     },
     "of a Pro month in your start credit": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "von einem Pro-Monat in deinem Startguthaben"
+          }
+        }
+      }
     },
     "of a Pro month in top-ups": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "von einem Pro-Monat als Guthaben"
+          }
+        }
+      }
     },
     " · not in use": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · nicht in Nutzung"
+          }
+        }
+      }
     },
     "This month's Pro": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro in diesem Monat"
+          }
+        }
+      }
     },
     "Top-ups": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guthaben"
+          }
+        }
+      }
     },
     "percent left": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prozent übrig"
+          }
+        }
+      }
     },
     "percent of a Pro month left": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prozent von einem Pro-Monat übrig"
+          }
+        }
+      }
     },
     ", not in use": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", nicht in Nutzung"
+          }
+        }
+      }
     },
     "Shown once Causabee reaches its server.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird angezeigt, sobald Causabee seinen Server erreicht."
+          }
+        }
+      }
     },
     "Kept until it is used.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bleibt, bis es aufgebraucht ist."
+          }
+        }
+      }
     },
     "Top-ups carry over from month to month.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guthaben bleibt von Monat zu Monat."
+          }
+        }
+      }
     },
     "Used. Apple's model on this device reads what comes in — or buy a top-up.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgebraucht. Apples Modell auf diesem Gerät liest, was hereinkommt — oder lade Guthaben auf."
+          }
+        }
+      }
     },
     "Used. Apple's model on this device reads what comes in — or buy another top-up.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgebraucht. Apples Modell auf diesem Gerät liest, was hereinkommt — oder lade neues Guthaben auf."
+          }
+        }
+      }
     },
     "Every matter.\\nIn its place.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jedes Anliegen.\\nAn seinem Platz."
+          }
+        }
+      }
     },
     "Mum’s care, a claim, a move: each in its own place — with what comes next, and who does what by when.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mamas Pflege, ein Schadensfall, ein Umzug: jedes an seinem Platz — mit dem, was als Nächstes kommt, und wer was bis wann tut."
+          }
+        }
+      }
     },
     "Names are disguised before anything is sent.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Namen werden unkenntlich gemacht, bevor etwas gesendet wird."
+          }
+        }
+      }
     },
     "What’s on your mind?": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was beschäftigt dich?"
+          }
+        }
+      }
     },
     "Type it in a few words, or add what you have.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schreib es in ein paar Worten, oder füg hinzu, was du hast."
+          }
+        }
+      }
     },
     "Mum’s care, a claim, a move …": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mamas Pflege, ein Schadensfall, ein Umzug …"
+          }
+        }
+      }
     },
     "Not sure yet?": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch unsicher?"
+          }
+        }
+      }
     },
     "Look around in an example.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sieh dich in einem Beispiel um."
+          }
+        }
+      }
     },
     "Reading …": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird gelesen …"
+          }
+        }
+      }
     },
     "Looking in iCloud for your matters …": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche deine Anliegen in iCloud …"
+          }
+        }
+      }
     },
     "Causabee can't read this file.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee kann diese Datei nicht lesen."
+          }
+        }
+      }
     },
     "Not read yet — your words are kept.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch nicht gelesen — deine Worte sind gesichert."
+          }
+        }
+      }
     },
     "A start credit is yours: Pro reads your first things, names disguised.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast ein Startguthaben: Pro liest deine ersten Dinge, Namen unkenntlich."
+          }
+        }
+      }
     },
     "Start credit": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startguthaben"
+          }
+        }
+      }
     },
     "Your start credit is used.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Startguthaben ist aufgebraucht."
+          }
+        }
+      }
     },
     "Apple's model on this device reads from now on. A top-up lets Pro read again.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ab jetzt liest Apples Modell auf diesem Gerät. Mit neuem Guthaben liest Pro wieder."
+          }
+        }
+      }
     },
     "This is you:": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das bist du:"
+          }
+        }
+      }
     },
     "Your name, so your tasks show as yours.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Name, damit deine Aufgaben als deine erscheinen."
+          }
+        }
+      }
     },
     "Also what comes by mail?": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auch, was per Mail kommt?"
+          }
+        }
+      }
     },
     "Causabee reads one label or folder you choose — nothing else in your mailbox.": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee liest ein Label oder einen Ordner deiner Wahl — sonst nichts in deinem Postfach."
+          }
+        }
+      }
     },
     "you": {
-      "localizations": {}
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "du"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

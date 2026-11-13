@@ -58,6 +58,10 @@ def shown_in(text: str) -> list[str]:
                 # A key, a name or a symbol is stored or drawn, never read: "app.starts", "doc.fill".
                 if re.fullmatch(r"[a-z0-9]+(\.[a-zA-Z0-9]+)+", word):
                     continue
+                # A word with a value in it: Xcode writes its key itself, with the right placeholder
+                # for the value's type ("Next: %@"), which only the compiler knows.
+                if "\\(" in word:
+                    continue
                 seen.add(word)
                 found.append(word)
     return found
