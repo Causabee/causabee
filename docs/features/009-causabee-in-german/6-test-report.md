@@ -2,30 +2,39 @@
 
 ## Each criterion
 
+Every row ran on 13 November 2026, on this Mac (`scripts/test.sh`) or in the simulator. One row per
+criterion; what else was looked at by hand stands under the table.
+
 | Criterion | Test | Result |
 |---|---|---|
-| AC-1 · Every word of the app is German | `GermanTests` "F009 AC-1 · Every word has German" — 347 shared words, 1,443 of the apps' and 20 of the share sheet's, none without German, none left "new" or "stale" | pass |
-| AC-1 | `EveryWordTests` "F009 AC-1 · No word a person reads escapes the catalogue" — every string literal in the sources read as Swift reads it; each is a catalogue key or named in `scripts/words-machine.txt` | pass |
-| AC-1 | `EveryWordTests` "F009 AC-1 · Every word is looked up in its own catalogue" — `bundle: .module` in MatterCore, never in the apps | pass |
-| AC-1 | `GermanAtRuntimeTests` — the compiled German side of the bundle asked for every one of its keys: German comes back, not English, and a value lands where German puts it | pass |
-| AC-2 · A matter keeps its own language | `GermanTests` "F009 AC-2" — the prompts still say to write in the content's language, their versions unchanged; `GermanAtRuntimeTests` "What the bee wrote is not looked up" | pass |
-| AC-2 | By hand: the Mac in German with the English demo — every word of the app German, every word of the matters English, side by side | pass |
-| AC-3 · Days as the device writes them | `DateLocaleTests` — no forced `en_US`/`en_GB` left in a path a person reads, the 18 `en_US_POSIX` still there, German days formatted German | pass |
-| AC-3 | By hand: "5 Mails · seit 23. Okt.", "HEUTE · FR. 13. NOV.", "Überfällig seit 12. Nov." — the device's order, and one full stop, not two | pass |
-| AC-4 · One word for one thing | `GermanTests` "F009 AC-4" — no German word serves two English ones, no English one has two Germans, each catalogue on its own | pass |
-| AC-5 · German fits | By hand on the iPhone (iOS 27.2, German) and the Mac: the welcome, the overview with its week strip, a matter's Überblick, Plan and Dateien, the assistant. Nothing cut off, no button without its words | pass |
-| AC-5 | By hand: the largest text size (accessibility XXXL) on the German iPhone — the title wraps over three lines, the NEU chip grows to two, German's long words hyphenate, nothing is cut or overlapped | pass |
-| AC-5 | By hand: the iPad in German — the sidebar ("Übersicht", "0 heute · 1 überfällig", "Anliegen"), the matter page with its four tabs, the dated rows, the when-chips and the counts | pass |
-| AC-6 · Causabee alone in German | By hand on the owner's own English device: the app set to German while the device stays English | not run — the owner's device |
-| AC-7 · The App Store page in German | By hand in App Store Connect, with the release | not run — at release |
-| AC-8 · Nothing already there is rewritten | `GermanTests` "F009 AC-8" — a matter, its brief and its next step read the same with the language changed | pass |
-| AC-9 · The words' tests unchanged and green | `SaidAsItIsTests`, `PlanWordsTests`, `StoreCopyTests`, `OwnCopyTests`, `PlainWordsTests`, `WelcomeTests`, `ProMeterTests`, `ManifestoTests` — all green in the 720 | pass |
-| AC-10 · German for whoever listens | `GermanTests` "F009 AC-10" — every spoken word is in a catalogue with German | pass |
-| AC-11 · Causabee says du | `GermanTests` "F009 AC-11" — no formal address in any German word, counting a sentence's first word as the word it is | pass |
+| AC-1 · Every word of the app is German | `GermanTests` "F009 AC-1 · Every word has German" — 347 shared words, 1,443 of the apps' and 20 of the share sheet's, none without German, none left "new" or "stale"; `EveryWordTests` "· No word a person reads escapes the catalogue" and "· Every word is looked up in its own catalogue"; `GermanAtRuntimeTests` — the compiled German side asked for every one of its keys | pass |
+| AC-2 · A matter keeps its own language | `GermanTests` "F009 AC-2 · A matter keeps its own language" — the prompts still say to write in the content's language, their versions unchanged; `GermanAtRuntimeTests` "· What the bee wrote is not looked up"; and by hand on the Mac in German with the English demo | pass |
+| AC-3 · Days as the device writes them | `DateLocaleTests` "F009 AC-3" (three tests) — no forced `en_US`/`en_GB` left in a path a person reads, the 18 `en_US_POSIX` still there, a German device reads German days; and by hand: "5 Mails · seit 23. Okt.", "HEUTE · FR. 13. NOV.", "Überfällig seit 12. Nov." | pass |
+| AC-4 · One word for one thing | `GermanTests` "F009 AC-4 · One word for one thing" — no German word serves two English ones, no English one has two Germans, each catalogue on its own | pass |
+| AC-5 · German fits | `GermanTests` "F009 AC-5 · German fits where the room is fixed" — the 21 words that sit in a place that cannot grow, against the room there is; and by hand on the iPhone, the iPad and the Mac, at the usual text size and the largest | pass |
+| AC-6 · The owner can see German on an English device | `GermanBeyondTheAppTests` "F009 AC-6 · German can be picked for Causabee alone" — what makes the device offer it: `de` among the project's regions, a German side in the shared bundle beside the English, and no switch inside Causabee. The owner's own look on their English device has not happened | open |
+| AC-7 · The App Store page in German | `GermanBeyondTheAppTests` "F009 AC-7 · The App Store page in German is written and fits" — `store-de.md`: all six fields, each inside Apple's limit, German, du, and more than mail named. Posting it in App Store Connect happens with the release | open |
+| AC-8 · Nothing already there is rewritten | `GermanTests` "F009 AC-8 · Nothing already there is rewritten" — a matter, its brief and its next step read the same with the language changed | pass |
+| AC-9 · English stays as it is | `GermanTests` "F009 AC-9 · English stays as it is" — no key carries an English value of its own, so the English a person reads is still the source's own word, and the eight words' suites are all there to read it. All 724 tests green | pass |
+| AC-10 · German for whoever listens | `GermanTests` "F009 AC-10 · German for whoever listens" — every spoken word is in a catalogue with German | pass |
+| AC-11 · Causabee says du | `GermanTests` "F009 AC-11 · Causabee says du" — no formal address in any German word, counting a sentence's first word as the word it is | pass |
+
+**What was looked at by hand, beyond the tests.** The iPhone (iOS 27.2) and the Mac in German,
+through the welcome, the overview with its week strip, a matter's Überblick, Plan and Dateien, and
+the assistant: nothing cut off, no button without its words. The same iPhone at the largest text
+size (accessibility XXXL): the title wraps over three lines, the NEU chip grows to two, German's long
+words hyphenate, nothing is cut or overlapped. The iPad in German: the sidebar ("Übersicht", "0 heute
+· 1 überfällig", "Anliegen"), a matter's page with its four tabs, the dated rows, the when-chips and
+the counts.
+
+**The two that are open.** AC-6 is the owner's own device — the app set to German while the device
+stays English, and back. It needs a build in their hands. AC-7 is the page itself: its German words
+are written and held by a test here, and they are pasted into App Store Connect when the release is
+prepared, together with the German screenshots.
 
 ## Everything else still works
 
-- **The unit tests:** 720 in 149 suites, all green (`scripts/test.sh`). 19 of them are F009's. One
+- **The unit tests:** 724 in 150 suites, all green (`scripts/test.sh`). 20 of them are F009's. One
   run while three simulators were building failed `SpeedTests` "What the screens work out,
   measured"; it passes on an idle machine, as it always has — it measures the Mac, not the code.
 - **The screen tests:** `CausabeePhoneUITests` on the iPhone, 87 of them. A first run found two
@@ -57,9 +66,8 @@
 - **The net:** `python3 -I scripts/words.py --escaped` names nothing. `scripts/words-machine.txt`
   holds the 344 literals that are not words a person reads, each looked at once;
   `scripts/words-values.txt` the 409 keys only the compiler can name.
-- **Not run:** a German VoiceOver pass by ear — the words are in the catalogue, which is what AC-10
-  asks, but nobody has listened yet. And AC-6 (Causabee in German on an English device) and AC-7
-  (the German App Store page), which are the owner's and the release's.
+- **Not run:** a German VoiceOver pass by ear — the words are in the catalogue with German, which is
+  what AC-10 asks, but nobody has listened yet.
 
 ## The AI's answers
 
@@ -86,4 +94,8 @@ compared on every device — had been looked up, so a German device would have m
 
 ## The owner's own try
 
-<!-- The build, the device, the date. What the owner did and saw, in their words. -->
+Not yet. AC-6 is the owner's own look on their English device, and it needs a build in their hands:
+TestFlight for the iPhone (`scripts/testflight.sh`) or a Mac build — on their word, not before.
+What to try is written out as the beta's "What to test" in `store-de.md`: the device set to German,
+or Causabee alone; through the start and a first matter; the Überblick, the Plan, the Dateien and the
+chat; then the same at a larger text size; and an English matter staying English.

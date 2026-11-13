@@ -64,6 +64,8 @@ The reference is Apple's HIG (developer.apple.com/design/human-interface-guideli
 - **C5 · Words from `Say`.** A menu item's words come from `Say` in `MatterMenus.swift`, in Title Case, with "…" when it asks something more. *read*
 - **C6 · A word comes from the catalogue, never written twice.** Every word a person reads is looked up — SwiftUI's own parts do it themselves, ours say `String(localized: "…")` (`bundle: .module` in MatterCore). A word built out of pieces carries a placeholder instead of an interpolation, `String(format: String(localized: "Overdue since %@"), day)`, so the whole sentence can be said in another language's order. The same thing is the same key everywhere, so one thing has one word on all three devices. `scripts/words.py --escaped` names anything that escaped, and a test fails while one is left. *script, read*
 
+- **C7 · A word in a place that cannot grow has a budget.** A pill in a row of pills, a chip, a card's short button: the room is fixed, and German is the longer language, so such a word is held to the letters that were seen to fit — `GermanTests.tightPlaces` names each one with its room and its place. A new word there is added to that list; a word that outgrows it is said shorter, in both languages, rather than squeezed (principle 10). Everywhere else a line wraps, and a budget would be a guess. *read*
+
 ## G · Liquid Glass
 
 On macOS 26 and iOS 26 the controls float on the system's glass. The Mac still runs on macOS 15, so glass goes through the two helpers in `Theme.swift`, which fall back to a thin material there.

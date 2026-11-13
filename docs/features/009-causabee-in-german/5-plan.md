@@ -30,7 +30,7 @@ Three kinds of word, and how each is found:
 6. **Does it fit:** the iPhone, the iPad and the Mac in German (`-AppleLanguages (de)`), through the welcome, the first step, a matter and the plan, at the usual text size and the largest. A line that does not fit is rewritten shorter, in both languages' catalogues if it was English's fault too.
 7. **Everything:** `scripts/test.sh`, the screen tests on the three devices in English and the welcome's in German, then `/ui-check 9`.
 8. **The owner reads every German word** on their own device, before the gate.
-9. **The App Store page in German** (AC-7): in App Store Connect, by hand, with the release — written here, posted when the release is prepared.
+9. **The App Store page in German** (AC-7): its words written here, in `store-de.md`, with Apple's own limit on each field and a test that holds them; pasted into App Store Connect by hand when the release is prepared, with the screenshots taken again in German.
 
 ## A test for every criterion
 
@@ -42,11 +42,11 @@ Three kinds of word, and how each is found:
 | AC-2 | `GermanTests` "F009 AC-2 · A matter keeps its own language" — the prompts still say to write in the content's language and their versions are unchanged (source); `AssistantAsk.language` untouched | unit |
 | AC-3 | `DateLocaleTests` "F009 AC-3 · Dates as the device writes them" — no forced `en_US`/`en_GB` left in a path a person reads (source); the 18 `en_US_POSIX` places still there; `ProMeter.long` and `Dates` in German give German month names | unit |
 | AC-4 | `GermanTests` "F009 AC-4 · One word for one thing" — no German word serves two different English ones, and no English one has two German ones | unit |
-| AC-5 | The screen tests in German on the iPhone, the iPad and the Mac; the owner's own look at the largest text size | screen, by hand |
-| AC-6 | By hand: Causabee set to German alone on the owner's English iPhone and Mac | by hand |
-| AC-7 | By hand, in App Store Connect, with the release | by hand |
+| AC-5 | `GermanTests` "F009 AC-5 · German fits where the room is fixed" — the 21 words that sit in a place that cannot grow (a pill in a row of pills, a chip, a card's short button), against the room there is; plus the screen tests in German on the three devices and the owner's own look at the largest text size | unit, screen, by hand |
+| AC-6 | `GermanBeyondTheAppTests` "F009 AC-6 · German can be picked for Causabee alone" — what makes a device offer it: `de` among the project's regions, a German side in the shared bundle beside the English, and no switch inside Causabee; plus, by hand, Causabee set to German alone on the owner's English iPhone and Mac | unit, by hand |
+| AC-7 | `GermanBeyondTheAppTests` "F009 AC-7 · The App Store page in German is written and fits" — `store-de.md`, every field inside Apple's limit, German, du, more than mail named; plus, by hand, pasted into App Store Connect with the release | unit, by hand |
 | AC-8 | `GermanTests` "F009 AC-8 · Nothing already there is rewritten" — a matter, its notes and its brief read the same with the language changed (a store built in English, read in German) | unit |
-| AC-9 | The words' tests unchanged and green: `SaidAsItIsTests`, `PlanWordsTests`, `StoreCopyTests`, `OwnCopyTests`, `PlainWordsTests`, `WelcomeTests`, `ProMeterTests`, `ManifestoTests` | unit |
+| AC-9 | `GermanTests` "F009 AC-9 · English stays as it is" — no key carries an English value of its own, so the English a person reads is still the source's own word, and the eight words' suites are all there to read it; the words' tests themselves unchanged and green: `SaidAsItIsTests`, `PlanWordsTests`, `StoreCopyTests`, `OwnCopyTests`, `PlainWordsTests`, `WelcomeTests`, `ProMeterTests`, `ManifestoTests` | unit |
 | AC-10 | `GermanTests` "F009 AC-10 · German for whoever listens" — every spoken word (`spoken`, `accessibilityLabel`) is in the catalogue with a German value | unit |
 | AC-11 | `GermanTests` "F009 AC-11 · Causabee says du" — no "Sie", "Ihr", "Ihre" or "Ihnen" as an address in any German value | unit |
 

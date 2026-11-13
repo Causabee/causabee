@@ -138,6 +138,65 @@ struct GermanTests {
         #expect(spoken.allSatisfy { !$0.german.isEmpty })
     }
 
+    /// Where the room is fixed and a longer word cannot wrap into it: a pill in a row of pills, a
+    /// chip, the short button on a card. German is the longer language, so these break a layout
+    /// first. The budget is what was seen to fit on the iPhone at the usual text size, with a letter
+    /// or two in hand — not a guess (AC-5).
+    static let tightPlaces: [(word: String, letters: Int, place: String)] = [
+        ("Digest", 10, "a pill, one of the overview's six in a row"),
+        ("Mail", 10, "a pill, one of the overview's six in a row"),
+        ("Files", 10, "a pill, one of the overview's six in a row"),
+        ("People", 10, "a pill, one of the overview's six in a row"),
+        ("Notes", 10, "a pill, one of the overview's six in a row"),
+        ("Plan", 10, "a pill, one of the overview's six in a row"),
+        ("Overview", 10, "a pill, one of a matter's four in a row"),
+        ("All", 10, "a pill"),
+        ("NEW", 4, "the chip on a new card, beside the matter's name"),
+        ("This week", 14, "a when-chip under a task"),
+        ("Next week", 14, "a when-chip under a task"),
+        ("Later", 14, "a when-chip under a task"),
+        ("No day yet", 14, "a when-chip under a task"),
+        ("Comment", 12, "a card's own short button"),
+        ("Seen", 12, "a card's own short button"),
+        ("Change", 12, "a card's own short button"),
+        ("Undo", 12, "a card's own short button"),
+        ("Open", 12, "a card's own short button"),
+        ("Set day", 14, "where a task's day would stand"),
+        ("Sort in", 14, "the button on what came in"),
+        ("Take in", 14, "the button on what came in"),
+    ]
+
+    @Test("F009 AC-5 · German fits where the room is fixed")
+    func germanFitsTheTightPlaces() throws {
+        let words = try Self.all()
+        var tooLong: [String] = []
+        for place in Self.tightPlaces {
+            let said = words.filter { $0.key == place.word }
+            #expect(!said.isEmpty, "“\(place.word)” is in no catalogue any more — \(place.place) says something else now, and nothing holds its room.")
+            for word in said where word.german.count > place.letters {
+                tooLong.append("“\(word.german)” (\(word.german.count) letters, \(place.letters) fit) · \(place.place)")
+            }
+        }
+        #expect(tooLong.isEmpty, "too long for the room there is — say it shorter:\n\(tooLong.joined(separator: "\n"))")
+    }
+
+    @Test("F009 AC-9 · English stays as it is")
+    func englishStaysAsItIs() throws {
+        let words = try Self.all()
+        // In a String Catalogue the key is the English the source wrote. An English value of its own
+        // would quietly say something else, and the words' tests — which read the sources — would
+        // not see it. So no key carries an English value that differs from itself.
+        let changed = words.filter { !$0.english.isEmpty && $0.english != $0.key }
+        #expect(changed.isEmpty, "the English was rewritten in the catalogue: \(changed.prefix(8).map { "\($0.key) → \($0.english)" })")
+        // And the words' own tests are all still there to read it.
+        let theWordsTests = ["SaidAsItIsTests", "PlanWordsTests", "StoreCopyTests", "OwnCopyTests",
+                             "PlainWordsTests", "WelcomeTests", "ProMeterTests", "ManifestoTests"]
+        for suite in theWordsTests {
+            let file = Self.root.appendingPathComponent("Tests/MatterCoreTests/\(suite).swift")
+            #expect(FileManager.default.fileExists(atPath: file.path), "\(suite) is gone — the English words have no guard.")
+        }
+    }
+
     @Test("F009 AC-2 · A matter keeps its own language")
     func matterKeepsItsLanguage() throws {
         // The bee still writes about a matter in the matter's own language: the prompts are untouched.
@@ -291,5 +350,81 @@ struct GermanAtRuntimeTests {
             }
         }
         #expect(wrong.isEmpty, "the German does not carry the same values: \(wrong.prefix(8))")
+    }
+}
+
+/// F009: the two things German needs outside the catalogue — the device, where a person picks the
+/// language, and the App Store, where they read about Causabee before they have it. Neither can be
+/// seen from a unit test; what can be held here is what makes each one possible, so it cannot be
+/// lost again without a word of warning.
+@Suite("F009 · German beyond the app's own words")
+struct GermanBeyondTheAppTests {
+    static let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+
+    @Test("F009 AC-6 · German can be picked for Causabee alone")
+    func germanForCausabeeAlone() throws {
+        // iOS and macOS offer "Language" inside an app's own settings only when the app carries more
+        // than one. Three things make that true, and all three are ours to keep:
+        // the project knows the region,
+        let project = try String(contentsOf: Self.root.appendingPathComponent("App/Causabee.xcodeproj/project.pbxproj"), encoding: .utf8)
+        let regions = project.components(separatedBy: "knownRegions = (").dropFirst().first?
+            .components(separatedBy: ");").first ?? ""
+        #expect(regions.contains("de"), "the project does not know the German region: the per-app language is not offered.")
+        #expect(regions.contains("en"), "English is no longer a region of its own.")
+        // the shared words are built with a German side beside the English — which is the bundle's
+        // own region, where a key says itself and no table is written,
+        #expect(Bundle.words.url(forResource: "de", withExtension: "lproj") != nil, "no German side in the shared bundle.")
+        #expect(Bundle.words.object(forInfoDictionaryKey: "CFBundleDevelopmentRegion") as? String == "en",
+                "English is no longer the shared bundle's own region: a key would stop saying itself.")
+        // and there is no switch inside Causabee: nothing in the app picks a language for itself, so
+        // the device's own setting is the only one there is (the owner, 13 November).
+        var picks: [String] = []
+        for folder in ["Sources/MatterCore", "Sources/Causabee", "Sources/CausabeePhone", "Sources/CausabeeShare"] {
+            let base = Self.root.appendingPathComponent(folder)
+            let files = FileManager.default.enumerator(at: base, includingPropertiesForKeys: nil)?
+                .compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" } ?? []
+            for file in files {
+                let text = try String(contentsOf: file, encoding: .utf8)
+                if text.contains("AppleLanguages") || text.contains("preferredLocalizations") {
+                    picks.append(file.lastPathComponent)
+                }
+            }
+        }
+        #expect(picks.isEmpty, "these pick a language inside the app, instead of following the device: \(picks)")
+    }
+
+    @Test("F009 AC-7 · The App Store page in German is written and fits")
+    func theStorePageInGerman() throws {
+        // The page itself is posted by hand with the release. What is held here is its words: every
+        // field written, inside Apple's own limit, German, and no field that names mail as the one
+        // source Causabee has.
+        let page = try String(contentsOf: Self.root.appendingPathComponent("docs/features/009-causabee-in-german/store-de.md"), encoding: .utf8)
+        let fields = page.components(separatedBy: "\n## ").dropFirst()
+        var said: [String: String] = [:]
+        for field in fields {
+            let heading = field.components(separatedBy: "\n").first ?? ""
+            let words = field.dropFirst(heading.count).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let limit = heading.components(separatedBy: "höchstens ").dropFirst().first?
+                .components(separatedBy: " ").first.flatMap(Int.init) else { continue }
+            let name = heading.components(separatedBy: " · ").first ?? heading
+            said[name] = words
+            #expect(!words.isEmpty, "“\(name)” is empty.")
+            #expect(words.count <= limit, "“\(name)” is \(words.count) letters; Apple takes \(limit).")
+        }
+        for name in ["Name", "Untertitel", "Werbetext", "Schlüsselwörter", "Beschreibung", "Was getestet werden soll"] {
+            #expect(said[name] != nil, "the German page has no “\(name)”.")
+        }
+        // German, not English with a German heading over it.
+        let readable = (said["Beschreibung"] ?? "") + " " + (said["Was getestet werden soll"] ?? "")
+        for english in [" the ", " and ", " your ", " with ", " that ", "Mail is", "reads your mail"] {
+            #expect(!readable.contains(english), "the German page still says “\(english.trimmingCharacters(in: .whitespaces))”.")
+        }
+        #expect(readable.contains("du") || readable.contains("dein"), "the German page does not say du.")
+        // Causabee is not a mail app: where the page says what comes in, it names more than mail.
+        if let description = said["Beschreibung"], description.contains("Mails") {
+            for source in ["Screenshots", "Fotos", "Dateien", "Notizen", "Chat"] {
+                #expect(description.contains(source), "the page names mail but not \(source).")
+            }
+        }
     }
 }
