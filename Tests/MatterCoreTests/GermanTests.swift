@@ -172,6 +172,28 @@ struct GermanTests {
         ("Open Again", 14, "a button beside “Start a new matter”, under a closed matter"),
     ]
 
+    /// An English word with two senses, said in German in the sense the app never meant. Each line
+    /// here was wrong once, and the German it must not say again — a dictionary's first answer is
+    /// not the app's (13 November: "When you leave", where the bee waits for the owner to leave the
+    /// matter's page before it writes, read "Wenn du losfährst", which is leaving by car).
+    static let notThisSense: [(word: String, mustNotSay: [String], means: String)] = [
+        ("When you leave", ["fahr", "fähr"], "leaving the page, not driving off"),
+    ]
+
+    @Test("F009 AC-1 · German says the sense the app meant")
+    func germanSaysTheSense() throws {
+        let words = try Self.all()
+        var wrong: [String] = []
+        for line in Self.notThisSense {
+            let said = words.filter { $0.key == line.word }
+            #expect(!said.isEmpty, "“\(line.word)” is in no catalogue any more — the line it guarded is gone or renamed.")
+            for word in said where line.mustNotSay.contains(where: { word.german.lowercased().contains($0) }) {
+                wrong.append("“\(word.key)” → “\(word.german)” · it means \(line.means)")
+            }
+        }
+        #expect(wrong.isEmpty, "German in a sense the app never meant:\n\(wrong.joined(separator: "\n"))")
+    }
+
     @Test("F009 AC-5 · German fits where the room is fixed")
     func germanFitsTheTightPlaces() throws {
         let words = try Self.all()

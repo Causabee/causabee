@@ -972,7 +972,7 @@ shown on more than one screen is under the first of them.
 | Set Day | Tag festlegen |
 | OUT OF DATE | VERALTET |
 | Something changed since this was written. | Seit dem Schreiben hat sich etwas geändert. |
-| When you leave | Wenn du losfährst |
+| When you leave | Wenn du weg bist |
 | together | gemeinsam |
 | No day yet | Noch kein Tag |
 | No answer yet | Noch keine Antwort |
