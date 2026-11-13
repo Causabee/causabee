@@ -336,7 +336,7 @@ public enum AssistantAsk {
         /// The name a person reads: "OpenAI GPT-6.1 Sol".
         public var modelLabel: String {
             guard let servedBy else { return Claude.Model.gptSol.label }
-            if servedBy == DeviceTask.onDevice { return "On this device" }
+            if servedBy == DeviceTask.onDevice { return String(localized: "On this device", bundle: .module) }
             return Claude.Model.serving(servedBy)?.label ?? servedBy
         }
 

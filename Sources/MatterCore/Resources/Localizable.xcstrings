@@ -611,6 +611,16 @@
         }
       }
     },
+    "On this device": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf diesem Gerät"
+          }
+        }
+      }
+    },
     "Stopped": {
       "localizations": {
         "de": {
@@ -1241,6 +1251,16 @@
         }
       }
     },
+    "Later": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Später"
+          }
+        }
+      }
+    },
     "This week": {
       "localizations": {
         "de": {
@@ -1767,6 +1787,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ordner"
+          }
+        }
+      }
+    },
+    "New matter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neues Anliegen"
           }
         }
       }
@@ -3047,6 +3077,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Noch nicht gelesen — deine Worte sind gesichert."
+          }
+        }
+      }
+    },
+    "A new matter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein neues Anliegen"
           }
         }
       }

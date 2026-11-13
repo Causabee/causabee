@@ -48,7 +48,7 @@ public enum Welcome {
         if let proposed = proposed?.trimmingCharacters(in: .whitespacesAndNewlines), !proposed.isEmpty,
            grounded(proposed, in: within ?? typed) { return proposed }
         let first = typed.split(whereSeparator: \.isNewline).first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
-        guard !first.isEmpty else { return "A new matter" }
+        guard !first.isEmpty else { return String(localized: "A new matter", bundle: .module) }
         let line = beforeDate(first)
         guard line.count > 60 else { return line }
         // Cut at a word, never in one.

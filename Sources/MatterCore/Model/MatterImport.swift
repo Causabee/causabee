@@ -295,7 +295,7 @@ extension Matter {
             key = PartyNames.key(name) + "\(number)"
             number += 1
         }
-        let matter = Matter(key: key, name: name.isEmpty ? "New matter" : name)
+        let matter = Matter(key: key, name: name.isEmpty ? String(localized: "New matter", bundle: .module) : name)
         context.insert(matter)
         try context.save()
         return matter

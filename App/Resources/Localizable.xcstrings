@@ -8566,7 +8566,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Schlüssel liegt im Schlüsselbund wie das Mail-Passwort, nie in einer Datei. Er bekommt nur pseudonymisierten Text."
+            "value": "Der Key liegt im Schlüsselbund wie das Mail-Passwort, nie in einer Datei. Er bekommt nur pseudonymisierten Text."
           }
         }
       }
@@ -13246,7 +13246,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein eigener Schlüssel"
+            "value": "Dein eigener Key"
           }
         }
       }
@@ -13917,6 +13917,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ anrufen"
+          }
+        }
+      }
+    },
+    "Causabee reads your calendars and reminders to show what is there already. It adds only when %@ “Add”. What is connected is kept in step both ways: ticked off, moved, renamed.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee liest deine Kalender und Erinnerungen, um zu zeigen, was schon da ist. Sie fügt nur hinzu, wenn %@ „Hinzufügen“. Was verbunden ist, bleibt in beide Richtungen im Takt: abgehakt, verschoben, umbenannt."
           }
         }
       }

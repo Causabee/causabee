@@ -121,7 +121,10 @@ def literals(line: str) -> list[dict]:
                 cur, depth, i = None, 1, i + 2
                 while i < n and depth:              # over the hole, keeping its own literals
                     if line[i] == '"':
-                        out += literals(line[i:])
+                        # Found in a piece of the line, so each one's place is moved back to where
+                        # the piece began — a literal inside a hole is still at its own column.
+                        for inner in literals(line[i:]):
+                            out.append({"text": inner["text"], "at": inner["at"] + i})
                         i, escaped = i + 1, False
                         while i < n:
                             if escaped: escaped = False
@@ -315,9 +318,10 @@ def could_be_words(text: str) -> bool:
 # is ours. What stands right before the literal says so — and a word with a value in it is Xcode's
 # to name, which is why `--build` writes those keys down.
 LOOKS_ITSELF_UP = re.compile(
-    r"(String\(localized:|\b(Text|Button|Label|Toggle|TextField|Section|Picker|Stepper|Link|Alert)\(|"
-    r"\.(help|accessibilityLabel|accessibilityHint|navigationTitle|alert|alertWhenAsked|confirmationDialog)\(|"
-    r"\b(BeeChip|EmptyBox)\(text:|\bSectionHeader\(title:)\s*$")
+    r"(\b(String|Text|Button|Label|Toggle|TextField|Section|Picker|Stepper|Link|Alert|Menu|"
+    r"CommandMenu|ContentUnavailableView|DatePicker)\(|"
+    r"\.(help|accessibilityLabel|accessibilityHint|accessibilityValue|navigationTitle|alert|"
+    r"confirmationDialog|searchable)\()$")
 
 # Parts of ours that take a plain String and draw it as it is: SwiftUI looks nothing up for them,
 # so a bare literal here is never looked up, however much it reads like a word. The net names one
@@ -325,6 +329,23 @@ LOOKS_ITSELF_UP = re.compile(
 TAKES_A_WORD = re.compile(
     r"(\b(BeeChip|EmptyBox|PhoneEmptyBox)\(text:|\bSectionHeader\(title:|\.(alertWhenAsked|confirmationDialogWhenAsked)\(|"
     r"\bSheetConfirm\(title:|\bJournalHeading\(title:)\s*$")
+
+def inside_a_lookup(line: str, at: int) -> bool:
+    """Whether the literal beginning at `at` stands inside the brackets of a part that looks its
+    own words up. Walked back bracket by bracket, so a literal in a `?:` is seen as well:
+    `Text(a ? "one" : "other")` is looked up, `talk(text, "Task")` is not."""
+    depth, i = 0, at - 1
+    while i >= 0:
+        if line[i] == ")":
+            depth += 1
+        elif line[i] == "(":
+            if depth == 0:
+                found = LOOKS_ITSELF_UP.search(line[:i + 1])
+                # `String(` alone is not a lookup: only `String(localized:` is.
+                return found is not None and (found.group(2) != "String" or "localized:" in line[i:at])
+            depth -= 1
+        i -= 1
+    return False
 
 # A line that shows nothing: what it says goes to a log, a key, a symbol or the system.
 SHOWS_NOTHING = re.compile(
@@ -361,12 +382,15 @@ def escaped() -> int:
                     word = literal["text"]
                     if not could_be_words(word):
                         continue
-                    # A part that takes a plain String: the literal is a mistake, key or not.
-                    takes = TAKES_A_WORD.search(line[:literal["at"]]) is not None
-                    if not takes and (word in keys or (HOLE in word and word in shapes)):
-                        continue
-                    if not takes and LOOKS_ITSELF_UP.search(line[:literal["at"]]):
-                        continue
+                    # A part that looks a word up by itself — SwiftUI's own, or ours — is done.
+                    # Anywhere else the literal stands as it is, however much it reads like a word
+                    # the catalogue holds: a word that is looked up says so where it is written.
+                    if TAKES_A_WORD.search(line[:literal["at"]]) is not None:
+                        pass
+                    elif inside_a_lookup(line, literal["at"]):
+                        # Its key is the literal, or — with a value in it — the one Xcode named.
+                        if word in keys or (HOLE in word and word in shapes):
+                            continue
                     if (where, word) in allowed or (where, word) in seen:
                         continue
                     seen.add((where, word))

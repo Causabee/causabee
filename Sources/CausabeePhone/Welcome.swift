@@ -28,7 +28,7 @@ struct WelcomeSheet: View {
             // The dots and the buttons stay at the foot, whatever the page.
             .safeAreaInset(edge: .bottom) { foot }
             .background(Theme.canvas)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm("Done") { finish() } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Done")) { finish() } } }
         }
     }
 

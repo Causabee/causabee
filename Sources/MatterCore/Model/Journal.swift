@@ -180,7 +180,7 @@ public enum Journal {
 
     /// Which part of the plan a day stands in. The week begins on Monday.
     static func stretch(of day: String, today: String) -> String {
-        guard let date = MatterStatus.date(of: day), let now = MatterStatus.date(of: today) else { return "Later" }
+        guard let date = MatterStatus.date(of: day), let now = MatterStatus.date(of: today) else { return String(localized: "Later", bundle: .module) }
         let weekday = monday.component(.weekday, from: now)
         let sinceMonday = (weekday + 5) % 7
         if let start = monday.date(byAdding: .day, value: -sinceMonday, to: now),

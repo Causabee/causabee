@@ -12,9 +12,9 @@ public enum Planning {
 
         public var label: String {
             switch self {
-            case .thisWeek: "This week"
-            case .nextWeek: "Next week"
-            case .later: "Later"
+            case .thisWeek: String(localized: "This week", bundle: .module)
+            case .nextWeek: String(localized: "Next week", bundle: .module)
+            case .later: String(localized: "Later", bundle: .module)
             }
         }
     }
