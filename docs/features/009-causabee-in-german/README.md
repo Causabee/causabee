@@ -25,6 +25,8 @@
 - 2026-11-13, at Build: the same as the AC-9 change above, now for a screen test. `DigestNewUITests.testAPinnedCardSaysItsNextDayByItsCount` asked for "4 open · Nov 14" by a regular expression; this Mac's region is German, so the day reads "14. Nov." and the test failed on a day it was never about. It asks for a month and a number in either order now.
 - 2026-11-13, at Proof: AC-5, AC-6, AC-7 and AC-9 were planned as by-hand criteria with no test of their own. Each has one now, holding the part a machine can hold, so none of them can be lost without a word of warning: AC-5 the 21 words that sit in a place that cannot grow, against the room there is; AC-6 what makes a device offer German for Causabee alone (`de` among the project's regions, a German side in the bundle, no switch inside the app); AC-7 the German App Store page's own words, written into `store-de.md`, each field inside Apple's limit; AC-9 that no key carries an English value of its own, so the English a person reads is still the source's own word. The by-hand part of each is unchanged, and `5-plan.md`'s table says both now.
 
+- 2026-11-13, at Proof: AC-7 said the German App Store page is German when it is looked at. There is no page to look at — Causabee is not in the German store, and the first release is what makes it. The criterion now says what belongs to this feature: the words, written in the repository, each field inside Apple's own limit, held by a test; pasting them in, with the German screenshots, is a step of the release, written down under "Left for the release" below. Nothing about the words themselves changed.
+
 ## Left for the release
 
 - **The German App Store page**, from `store-de.md`: name, subtitle, promotional text, keywords,

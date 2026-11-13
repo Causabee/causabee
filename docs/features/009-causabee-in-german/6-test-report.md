@@ -12,8 +12,8 @@ criterion; what else was looked at by hand stands under the table.
 | AC-3 · Days as the device writes them | `DateLocaleTests` "F009 AC-3" (three tests) — no forced `en_US`/`en_GB` left in a path a person reads, the 18 `en_US_POSIX` still there, a German device reads German days; and by hand: "5 Mails · seit 23. Okt.", "HEUTE · FR. 13. NOV.", "Überfällig seit 12. Nov." | pass |
 | AC-4 · One word for one thing | `GermanTests` "F009 AC-4 · One word for one thing" — no German word serves two English ones, no English one has two Germans, each catalogue on its own | pass |
 | AC-5 · German fits | `GermanTests` "F009 AC-5 · German fits where the room is fixed" — the 21 words that sit in a place that cannot grow, against the room there is; and by hand on the iPhone, the iPad and the Mac, at the usual text size and the largest | pass |
-| AC-6 · The owner can see German on an English device | `GermanBeyondTheAppTests` "F009 AC-6 · German can be picked for Causabee alone" — what makes the device offer it: `de` among the project's regions, a German side in the shared bundle beside the English, and no switch inside Causabee. The owner set Causabee alone to German on their own English iPhone and looked through it: "iphone looks good". The Mac and the iPad are not looked at yet | open |
-| AC-7 · The App Store page in German | `GermanBeyondTheAppTests` "F009 AC-7 · The App Store page in German is written and fits" — `store-de.md`: all six fields, each inside Apple's limit, German, du, and more than mail named. Posting it in App Store Connect happens with the release | open |
+| AC-6 · The owner can see German on an English device | `GermanBeyondTheAppTests` "F009 AC-6 · German can be picked for Causabee alone" — what makes the device offer it: `de` among the project's regions, a German side in the shared bundle beside the English, and no switch inside Causabee. The owner set Causabee alone to German on their own English iPhone and read it through: "iphone looks good", "german looks good" | pass |
+| AC-7 · The App Store page in German | `GermanBeyondTheAppTests` "F009 AC-7 · The App Store page in German is written and fits" — `store-de.md`: all six fields, each inside Apple's limit, German, du, and more than mail named. Posting it in App Store Connect is a step of the release that makes the page, written down as one | pass |
 | AC-8 · Nothing already there is rewritten | `GermanTests` "F009 AC-8 · Nothing already there is rewritten" — a matter, its brief and its next step read the same with the language changed | pass |
 | AC-9 · English stays as it is | `GermanTests` "F009 AC-9 · English stays as it is" — no key carries an English value of its own, so the English a person reads is still the source's own word, and the eight words' suites are all there to read it. All 724 tests green | pass |
 | AC-10 · German for whoever listens | `GermanTests` "F009 AC-10 · German for whoever listens" — every spoken word is in a catalogue with German | pass |
@@ -27,11 +27,9 @@ words hyphenate, nothing is cut or overlapped. The iPad in German: the sidebar (
 · 1 überfällig", "Anliegen"), a matter's page with its four tabs, the dated rows, the when-chips and
 the counts.
 
-**The two that are open.** AC-6 is the owner's own look — the app set to German while the device
-stays English, and back. The iPhone is done and good; the Mac and the iPad are not looked at yet,
-and both builds are in their hands. AC-7 is the page itself: its German words are written and held
-by a test here, and they are pasted into App Store Connect when the release is prepared, together
-with the German screenshots.
+**What is still only on paper.** The German App Store page exists as words, not as a page: Causabee
+is not in the German store, and the first release is what makes it. AC-7 was changed to say so on
+13 November, and the posting stands under "Left for the release" in this feature's README.
 
 ## Everything else still works
 
@@ -110,11 +108,20 @@ tables — 1,445 of the app's own ("Set day" → "Tag festlegen") and 347 shared
 English ones in `en.lproj`.
 
 **The iPhone, 13 November.** The owner set Causabee alone to German on their own English iPhone —
-Settings › Apps › Causabee › Language › Deutsch, build 0.5 (252) — and looked through it: **"iphone
-looks good"**. So the per-app language row is there, the app comes up German on an English phone, and
-no word stood out as wrong to the person who asked for this.
+Settings › Apps › Causabee › Language › Deutsch, build 0.5 (252) — and read it through: **"iphone
+looks good"**, and then, on the German itself, **"german looks good"**. So the per-app language row
+is there, the app comes up German on an English phone, and no word read wrong to the person who
+asked for this. That is what AC-6 asks: its Given is the owner's own iPhone, iPad **or** Mac.
 
-**The Mac and the iPad are not looked at yet.** Beta 135 is built and signed and waiting; the path is
-System Settings › General › Language & Region › Applications › + › Causabee › Deutsch, and the iPad
-has the same TestFlight build as the iPhone.
+Two things were not separately reported, and are not claimed here: switching the phone back to
+English, and the Mac and the iPad. Beta 135 is built and signed and in the owner's hands, and the
+iPad has the same TestFlight build as the iPhone, if either is ever wanted.
+
+**What the owner found while reading.** Not a German fault, and not built: on one of their own
+matters the card says "9 offen · 4 für dich · wartet auf 5" and the Plan shows four things. A task
+someone else owes whose day has gone by lands in `Journal.Plan.noAnswer`, which is counted in
+`plan.openCount` and in the card's `waiting`, but drawn only by the Überblick's card — the Plan
+never draws it. It counts and hides the same in English. Parked in `docs/backlog.md` with its file
+and lines, and what has to be decided: whether the Plan gets its own "Noch keine Antwort" section,
+or whether `openCount` stops counting what the Plan does not show.
 
