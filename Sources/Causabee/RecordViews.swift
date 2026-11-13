@@ -205,7 +205,7 @@ struct ThreadMailRow: View {
                         if entry.source.kind == .mail { MailWay(sent: sent) }
                     }
                     .accessibilityElement(children: .combine)
-                    if started { BeeChip(text: "started") }
+                    if started { BeeChip(text: String(localized: "started")) }
                     #if os(macOS)
                     Text(entry.date.map(Dates.short) ?? "—").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                     Spacer(minLength: 8)
@@ -1246,7 +1246,7 @@ struct NewsCard: View {
                 if let news {
                     VStack(alignment: .leading, spacing: 8) {
                         if saysNew {
-                            BeeChip(text: "NEW · SINCE \(Dates.short(news.since).uppercased())")
+                            BeeChip(text: String(localized: "NEW · SINCE \(Dates.short(news.since).uppercased())"))
                         } else {
                             Text("Since \(Dates.short(news.since))").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         }
@@ -1257,7 +1257,7 @@ struct NewsCard: View {
                     }
                     .waitingTile(saysNew)
                 } else if saysNew {
-                    BeeChip(text: "NEW")
+                    BeeChip(text: String(localized: "NEW"))
                         .padding(.horizontal, 16).padding(.top, 14)
                 }
                 if !items.isEmpty {

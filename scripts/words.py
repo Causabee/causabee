@@ -36,6 +36,10 @@ SHOWN = [
     r'\bPicker\("((?:[^"\\]|\\.)+)"',
     r'\bStepper\("((?:[^"\\]|\\.)+)"',
     r'\bLink\("((?:[^"\\]|\\.)+)"',
+    # Ours: a part whose only job is to say a word (F009).
+    r'\bBeeChip\(text: "((?:[^"\\]|\\.)+)"',
+    r'\bEmptyBox\(text: "((?:[^"\\]|\\.)+)"',
+    r'\bSectionHeader\(title: "((?:[^"\\]|\\.)+)"',
     r'\bAlert\("((?:[^"\\]|\\.)+)"',
     r'\.help\("((?:[^"\\]|\\.)+)"',
     r'\.accessibilityLabel\("((?:[^"\\]|\\.)+)"',
@@ -53,6 +57,9 @@ def shown_in(text: str) -> list[str]:
             continue
         for pattern in SHOWN:
             for word in re.findall(pattern, line):
+                # What Swift writes as an escape is one character when the app runs, and that is
+                # what the key must be: "Every matter.\nIn its place." holds a real new line.
+                word = word.replace("\\n", "\n").replace("\\t", "\t").replace('\\"', '"').replace("\\\\", "\\")
                 if word in seen or not word.strip():
                     continue
                 # A key, a name or a symbol is stored or drawn, never read: "app.starts", "doc.fill".

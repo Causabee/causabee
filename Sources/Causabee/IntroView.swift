@@ -104,7 +104,7 @@ struct IntroView: View {
             Text(Welcome.promise).font(Theme.planNumberFont).fixedSize(horizontal: false, vertical: true)
             Text(Welcome.promiseLine).font(.title3).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 6) {
-                BeeChip(text: "1 for you · waiting for 1")
+                BeeChip(text: String(localized: "1 for you · waiting for 1"))
                 Text("Care for Mum (Helga) after her fall").font(Theme.cardTitleFont)
                 Text("Next, on Oct 6: The medical service visits").foregroundStyle(.secondary)
             }

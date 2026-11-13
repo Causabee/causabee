@@ -183,7 +183,7 @@ struct PlanSheet: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
                         Text(choice.name).fontWeight(.medium).foregroundStyle(.primary)
-                        if choice.yours { BeeChip(text: "YOURS") }
+                        if choice.yours { BeeChip(text: String(localized: "YOURS")) }
                     }
                     Text(choice.holds).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }

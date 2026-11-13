@@ -151,12 +151,12 @@
         }
       }
     },
-    "Every matter.\\nIn its place.": {
+    "Every matter.\nIn its place.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jedes Anliegen.\\nAn seinem Platz."
+            "value": "Jedes Anliegen.\nAn seinem Platz."
           }
         }
       }

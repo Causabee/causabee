@@ -315,7 +315,7 @@ struct OutOfDateStep: View {
 
     var body: some View {
         let done = matter.nextStepTodo.flatMap { origin in (matter.todos ?? []).shown.first { $0.origin == origin } }?.isDone == true
-        BeeChip(text: "OUT OF DATE", tone: .quiet)
+        BeeChip(text: String(localized: "OUT OF DATE"), tone: .quiet)
         Text(matter.nextStep ?? "").font(Theme.rowTitleFont).foregroundStyle(.secondary)
             .strikethrough(done, color: .secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -1364,7 +1364,7 @@ private struct OverviewDayCard: View {
                             // NEW says it came to the owner and is not seen yet; what the owner made is grey.
                             // With a step to lead, what happened is this small line alone.
                             HStack(spacing: 5) {
-                                if summary.tellsNew { BeeChip(text: "NEW") }
+                                if summary.tellsNew { BeeChip(text: String(localized: "NEW")) }
                                 if let symbol = summary.symbol {
                                     Image(systemName: symbol).imageScale(.small).accessibilityHidden(true)
                                         .foregroundStyle(summary.tellsNew ? AnyShapeStyle(Theme.gold) : AnyShapeStyle(.secondary))

@@ -667,7 +667,7 @@ struct MatterScreen: View {
             if outOfDate {
                 OutOfDateStep(matter: matter)
             } else if own, let step = matter.nextStep {
-                BeeChip(text: "NEXT · FROM CAUSABEE")
+                BeeChip(text: String(localized: "NEXT · FROM CAUSABEE"))
                 Text(step).font(Theme.rowTitleFont).fixedSize(horizontal: false, vertical: true)
                     .findable(.section("next"), step, matter.nextStepWhy)
                 if let why = matter.nextStepWhy { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).explanation() }
