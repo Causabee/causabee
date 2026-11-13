@@ -22,6 +22,7 @@
 
 <!-- A criterion or the spec changed after it was approved: the date, what changed, why. One line each. -->
 - 2026-11-12, at How: AC-12's name is filled in on the Mac from its user name; on the iPhone and the iPad the field starts empty — iOS has no API for one's own contact card, and Contacts would be one more thing asked at the door.
+- 2026-11-13, at Build: the start credit is asked once per install, whatever token is kept — with a token kept, a device that had it once never asked again, and the owner could not try it twice (AC-14). The owner: "yes, do 251 with the once-per-install fix".
 - 2026-11-13, at Build: back to Why — the start credit comes into F008, so a new person's first matter is read by the best model. The owner: "Strat credit into F008, and every user can top up for pro, light plus pro". What was built stays on the branch; What, How and Looks are opened again, and the first step read on the device (below) is decided anew in How.
 - 2026-11-13, at Build: the iPhone's first step stands alone, as on the Mac — no "Overview" title and no search while there are no matters. The owner: "shouldnt this page be as simple as on mac w/o overview and search bar?"
 - 2026-11-13, at Build: with no name from the reader, the first matter is named by its line before the date ("Muttis Reha started am 2.12.2026" is "Muttis Reha"), and a date given only as itself takes that name.

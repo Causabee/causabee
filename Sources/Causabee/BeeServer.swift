@@ -152,16 +152,15 @@ final class BeeServer {
 
     /// F008 AC-14: asks once, at the first start, for the start credit — with Apple's signed record
     /// of this download and the app's own id for the Apple account. Nothing to sign up for, nothing
-    /// said when none is given. Not asked in the demo, nor with a token already kept (Pro, a top-up);
-    /// asked again at a later start only when the beeserver could not be reached.
+    /// said when none is given. Asked once per install, whatever token is kept — the beeserver decides,
+    /// once per Apple account in the App Store, again in TestFlight after the owner forgets it; not in
+    /// the demo; asked again at a later start only when the beeserver could not be reached.
     func askStart() async {
         if CommandLine.arguments.contains("--fresh-start") {
             UserDefaults.standard.removeObject(forKey: Welcome.startAskedKey)
             UserDefaults.standard.removeObject(forKey: Welcome.startUsedLaterKey)
         }
-        let fresh = CommandLine.arguments.contains("--fresh-start")
-        guard !DemoData.isRequested, !UserDefaults.standard.bool(forKey: Welcome.startAskedKey),
-              token == nil || fresh, let base = Self.base,
+        guard !DemoData.isRequested, !UserDefaults.standard.bool(forKey: Welcome.startAskedKey), let base = Self.base,
               let download = try? await AppTransaction.shared else { return }
         var request = URLRequest(url: base.appendingPathComponent("v1/start"))
         request.httpMethod = "POST"

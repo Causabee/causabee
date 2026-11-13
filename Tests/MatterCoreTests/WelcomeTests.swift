@@ -231,6 +231,8 @@ struct WelcomeTests {
         }
         let bee = try Self.source("Sources/Causabee/BeeServer.swift")
         #expect(bee.contains("AppTransaction.shared") && bee.contains("v1/start") && bee.contains("!DemoData.isRequested"))
+        // Once per install, whatever token is kept: the beeserver decides (13 November, for the owner's tries).
+        #expect(!bee.contains("token == nil || fresh"))
     }
 
     @Test("F008 AC-15 · Said once, plainly, and named in Pro's use")

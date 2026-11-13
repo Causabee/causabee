@@ -14,7 +14,7 @@
   - New enough: in the App Store's environment (`Production`), only when the download's `originalPurchaseDate` is on or after `START_CREDIT_FROM`, a date set on the beeserver when this build is released. TestFlight (`Sandbox`) has no such date: testers are the owner's choice.
   - `allowance` says `startCredit: true` while the account's extra is only that grant — no top-up bought — so the app names it "Start credit" (AC-15) and knows when it is used (AC-17).
   - The beeserver's database: one new value of an existing column (`ledger.kind = 'grant'` exists); no new table.
-- **In the app:** `BeeServer.start()` (new) asks once, on the first start, when there is no beeserver token and the demo is not on; `UserDefaults` `start.asked` keeps it from asking again on this device. The card of AC-17: `UserDefaults` `start.used.later`.
+- **In the app:** `BeeServer.askStart()` (new) asks once per install, at its first start, whatever token is kept, and not in the demo — the beeserver decides who gets it; `UserDefaults` `start.asked` keeps it from asking again in this install. The card of AC-17: `UserDefaults` `start.used.later`.
 
 Schema change: none
 
