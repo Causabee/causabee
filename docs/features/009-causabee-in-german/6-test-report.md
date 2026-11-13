@@ -14,7 +14,7 @@
 | AC-3 | By hand: "5 Mails · seit 23. Okt.", "HEUTE · FR. 13. NOV.", "Überfällig seit 12. Nov." — the device's order, and one full stop, not two | pass |
 | AC-4 · One word for one thing | `GermanTests` "F009 AC-4" — no German word serves two English ones, no English one has two Germans, each catalogue on its own | pass |
 | AC-5 · German fits | By hand on the iPhone (iOS 27.2, German) and the Mac: the welcome, the overview with its week strip, a matter's Überblick, Plan and Dateien, the assistant. Nothing cut off, no button without its words | pass |
-| AC-5 | The largest text size, and the iPad | not run |
+| AC-5 | The largest text size, and German on the iPad | running |
 | AC-6 · Causabee alone in German | By hand on the owner's own English device: the app set to German while the device stays English | not run — the owner's device |
 | AC-7 · The App Store page in German | By hand in App Store Connect, with the release | not run — at release |
 | AC-8 · Nothing already there is rewritten | `GermanTests` "F009 AC-8" — a matter, its brief and its next step read the same with the language changed | pass |
@@ -43,7 +43,9 @@
   `testTheFilters` is among them.
 - **The Mac:** `CausabeeAppUITests`, **34 tests, 0 failures**, built after the two helpers were
   rewritten — the test binary holds `part.…` and no longer holds the label predicate.
-- **The iPad:** `PadTests` on an iPad Pro 13-inch, running as this is written.
+- **The iPad:** `PadTests` on an iPad Pro 13-inch, **5 tests, 0 failures**, including
+  `testOnItsSideThePageIsOneColumn`, which walks all six filters. Its binary holds the part names
+  and no `part.Digest`.
 - Nine of those test files were changed by this feature: a pill's accessibility identifier is the
   part's own name now ("part.plan", "overview.matters"), not the word on it, because the word is
   German on a German device and a test must find the same button in every language. The suites that
