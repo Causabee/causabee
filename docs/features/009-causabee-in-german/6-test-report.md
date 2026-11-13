@@ -94,8 +94,24 @@ compared on every device — had been looked up, so a German device would have m
 
 ## The owner's own try
 
-Not yet. AC-6 is the owner's own look on their English device, and it needs a build in their hands:
-TestFlight for the iPhone (`scripts/testflight.sh`) or a Mac build — on their word, not before.
-What to try is written out as the beta's "What to test" in `store-de.md`: the device set to German,
-or Causabee alone; through the start and a first matter; the Überblick, the Plan, the Dateien and the
-chat; then the same at a larger text size; and an English matter staying English.
+Both builds went out on 13 November, on the owner's word ("both"):
+
+- **TestFlight 0.5 (252)** for the iPhone and the iPad. The iPhone's regression tests, the iPad's
+  tests and the iCloud Production schema check all passed before anything was uploaded.
+- **Mac 0.5 Beta 135**, signed with the Developer ID, as a disk image in
+  `~/Library/Caches/causabee-release/v0.5.0-beta.135/` — a dry run: nothing published to GitHub or
+  the website. 724 unit tests and the Mac's 33 screen tests green first.
+
+Read out of the shipped Mac app, not out of the repository: it carries `de.lproj` beside `en.lproj`,
+which is what makes macOS offer Causabee in its per-app language list, and 1,792 German words in two
+tables — 1,445 of the app's own ("Set day" → "Tag festlegen") and 347 shared ("Overdue since %@" →
+"Überfällig seit %@", "Digest" → "Überblick"). The German welcome pictures are in `de.lproj`, the
+English ones in `en.lproj`.
+
+What is left is the look itself, which is the owner's: the app set to German while the device stays
+English, and back. On the Mac: System Settings › General › Language & Region › Applications › + ›
+Causabee › Deutsch. On the iPhone: Settings › Apps › Causabee › Language › Deutsch. What to try is
+written out as the beta's "What to test" in `store-de.md`.
+
+<!-- What the owner did and saw, in their words. -->
+
