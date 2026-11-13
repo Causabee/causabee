@@ -99,6 +99,7 @@ struct FirstStep: View {
     private var field: some View {
         HStack(alignment: .bottom, spacing: 8) {
             TextField(Welcome.placeholder, text: $text, axis: .vertical)
+                .textFieldStyle(.plain)
                 .lineLimit(3...6)
                 .focused($typing)
                 .disabled(reading)

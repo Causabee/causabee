@@ -109,7 +109,7 @@ struct IntroView: View {
                 Text("Next, on Oct 6: The medical service visits").foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .journalCard()
+            .outlinedCard()
             .accessibilityElement(children: .combine)
             .accessibilityLabel("An example: Care for Mum after her fall. Next, on October 6, the medical service visits.")
             Label(Welcome.privacy, systemImage: "lock.fill")
