@@ -56,6 +56,9 @@ struct WelcomeTests {
         // Shown as the owner's words, never by its file name.
         #expect(Welcome.isTyped(file) && Welcome.isTyped(URL(fileURLWithPath: "/x/B8EC6F27-\(file.lastPathComponent)")))
         #expect(!Welcome.isTyped(URL(fileURLWithPath: "/x/notes.txt")))
+        // The Mac's chat card shows them as words: no file block, nothing "would be sent".
+        let card = try Self.source("Sources/Causabee/ShotView.swift")
+        #expect(card.contains("if !Welcome.isTyped(shot.file) {") && card.components(separatedBy: "if !Welcome.isTyped(look.file) { sentDisclosure(look) }").count == 3)
         let look = try ScreenshotDoor(besides: folder.appendingPathComponent("store.sqlite")).look(at: file, owner: "Alex")
         let id = try #require(look.report.outcomes.first?.judgement.emailID)
         #expect(id.hasPrefix("typed:"))
