@@ -61,8 +61,10 @@ final class RegressionTests: XCTestCase {
         XCTAssertTrue(line.waitForNonExistence(timeout: 5), "Undo did not take the letter back out.")
     }
 
+    /// By the part's own name — "plan", "notes" — never by the word on the pill: that word is the
+    /// device's language (F009).
     private func tab(_ name: String) {
-        let segment = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
+        let segment = app.buttons["part." + name]
         XCTAssertTrue(segment.waitForExistence(timeout: 5), "No tab \(name).")
         segment.tap()
     }
@@ -105,7 +107,7 @@ final class RegressionTests: XCTestCase {
 
     /// No ⋯ on the iPhone: a task's and a date's menu is their long press, the same four on top.
     func testARowsMenuIsItsLongPress() {
-        tab("Plan")
+        tab("plan")
         for words in ["Physio", "Agree who is with Mum when"] {
             let row = app.staticTexts[words].firstMatch
             XCTAssertTrue(row.waitForExistence(timeout: 8), "“\(words)” is not on the plan.")
@@ -123,7 +125,7 @@ final class RegressionTests: XCTestCase {
     /// No "Comment" line under a yellow card on the iPhone: held, the news offers it, and it opens
     /// the field for the few words.
     func testAYellowCardsCommentIsItsLongPress() {
-        tab("Digest")
+        tab("all")
         let chip = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "NEW")).firstMatch
         XCTAssertTrue(chip.waitForExistence(timeout: 10), "The Digest has no news.")
         XCTAssertFalse(app.buttons["tile.comment"].exists, "“Comment” still stands under the card.")
@@ -136,7 +138,7 @@ final class RegressionTests: XCTestCase {
 
     /// "Set day" where an undated task's day would stand: a day picked, the task leaves No day yet.
     func testSetDayGivesATaskItsDay() {
-        tab("Plan")
+        tab("plan")
         let tile = app.buttons["Set a day for Find help with shopping"].firstMatch
         for _ in 0..<4 where !tile.isHittable { app.swipeUp() }
         XCTAssertTrue(tile.waitForExistence(timeout: 8), "The undated task has no “Set day”.")
@@ -157,7 +159,7 @@ final class RegressionTests: XCTestCase {
         let kept = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Contact saved")).firstMatch
         XCTAssertTrue(kept.waitForExistence(timeout: 10), "The contact was not saved from its card.")
         app.buttons["Close"].firstMatch.tap()
-        tab("People")
+        tab("people")
         shows(name, "The contact was added and is not under People.")
     }
 
@@ -171,7 +173,7 @@ final class RegressionTests: XCTestCase {
 
     func testANoteAdded() {
         let words = "Mum prefers mornings \(stamp)"
-        tab("Notes")
+        tab("notes")
         let note = field("note.field")
         XCTAssertTrue(note.waitForExistence(timeout: 5), "The notes have no field.")
         note.tap()
