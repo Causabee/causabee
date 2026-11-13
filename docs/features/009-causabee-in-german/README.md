@@ -1,6 +1,6 @@
 # F009 · Causabee in German
 
-- Stage: 6
+- Stage: done
 - Lane: feature
 - Started: 2026-11-13
 - Branch: feature/009-causabee-in-german
@@ -14,6 +14,7 @@
 | 3 · How | 2026-11-13 | Approved, go |
 | 4 · Looks | 2026-11-13 | Approved |
 | 5 · Build | 2026-11-13 | go |
+| 6 · Proof | 2026-11-13 | put ac7 back and close f009 |
 
 ## Changes after a gate
 
