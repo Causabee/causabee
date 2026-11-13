@@ -25,12 +25,15 @@
 ## Everything else still works
 
 - **The unit tests:** 720 in 149 suites, all green (`scripts/test.sh`). 14 of them are F009's.
-- **The screen tests:** `CausabeePhoneUITests` on the iPhone, 87 of them, were started and are
-  still running as this is written. Of the first 20, one failed —
-  `DigestNewUITests.testAPinnedCardSaysItsNextDayByItsCount`, which asked for "4 open · Nov 14" by
-  a regular expression; this Mac's region is German, so the day reads "14. Nov.". It asks for a
-  month and a number in either order now and has yet to be re-run. **The suite's result is not in
-  this report yet.**
+- **The screen tests:** `CausabeePhoneUITests` on the iPhone, 87 of them. A first run found two
+  things this feature broke, and both are fixed:
+  - `DigestNewUITests.testAPinnedCardSaysItsNextDayByItsCount` asked for "4 open · Nov 14" by a
+    regular expression; this Mac's region is German, so the day reads "14. Nov.". It asks for a
+    month and a number in either order now.
+  - nine `ManifestoUITests` could not find a tab: they do not write `"part.Plan"`, they build it
+    (`"part." + name`), so the rename to the part's own name missed them. `RegressionTests` and
+    `ChatAddTests` looked a tab up by the word on it, which is the thing this feature changes.
+  The suite is running again on the fixed tests. **Its result is not in this report yet.**
 - Nine of those test files were changed by this feature: a pill's accessibility identifier is the
   part's own name now ("part.plan", "overview.matters"), not the word on it, because the word is
   German on a German device and a test must find the same button in every language. The suites that
