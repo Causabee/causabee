@@ -1,6 +1,6 @@
 # Causabee's words, English and German
 
-1742 words in all. The file each one is shown from stands for its screen; a word
+1743 words in all. The file each one is shown from stands for its screen; a word
 shown on more than one screen is under the first of them.
 
 
@@ -109,6 +109,7 @@ shown on more than one screen is under the first of them.
 | 1 item in your question was disguised. | 1 Angabe in deiner Frage wurde unkenntlich gemacht. |
 | %lld items in your question were disguised. | %lld Angaben in deiner Frage wurden unkenntlich gemacht. |
 | With the matter's facts, %lld went out disguised — names, places, companies, addresses, numbers. | Mit den Fakten des Anliegens gingen %lld unkenntlich hinaus — Namen, Orte, Firmen, Adressen, Nummern. |
+| On this device | Auf diesem Gerät |
 | Stopped | Gestoppt |
 | The list of names at %@ cannot be read, so nothing was sent. | Die Namensliste unter %@ ist nicht lesbar, darum wurde nichts gesendet. |
 
@@ -202,6 +203,7 @@ shown on more than one screen is under the first of them.
 | Files | Dateien |
 | People | Personen |
 | Notes | Notizen |
+| Later | Später |
 | This week | Diese Woche |
 | Next week | Nächste Woche |
 | Without a day | Ohne Tag |
@@ -275,6 +277,7 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
+| New matter | Neues Anliegen |
 | ⏎  ⏎ From “%@”: ⏎ | ⏎  ⏎ Aus „%@“: ⏎ |
 
 ## Sources/MatterCore/Model/MatterStatus.swift
@@ -468,6 +471,7 @@ shown on more than one screen is under the first of them.
 | Looking in iCloud for your matters … | Suche deine Anliegen in iCloud … |
 | Causabee can't read this file. | Causabee kann diese Datei nicht lesen. |
 | Not read yet — your words are kept. | Noch nicht gelesen — deine Worte sind gesichert. |
+| A new matter | Ein neues Anliegen |
 | A start credit is yours: Pro reads your first things, names disguised. | Du hast ein Startguthaben: Pro liest deine ersten Dinge, Namen unkenntlich. |
 | Start credit | Startguthaben |
 | Your start credit is used. | Dein Startguthaben ist aufgebraucht. |
@@ -551,7 +555,6 @@ shown on more than one screen is under the first of them.
 | Try again: asks the same question once more, for another answer | Nochmal versuchen: stellt dieselbe Frage noch einmal, für eine andere Antwort |
 | Hide the sources | Quellen ausblenden |
 | What this rests on: mails, tasks, dates | Worauf das beruht: Mails, Aufgaben, Termine |
-| On this device | Auf diesem Gerät |
 | Hide what was sent | Ausblenden, was gesendet wurde |
 | %@ — shows what was sent, pseudonymised | %@ — zeigt, was gesendet wurde, pseudonymisiert |
 | Nothing was sent for this answer. | Für diese Antwort wurde nichts gesendet. |
@@ -802,7 +805,6 @@ shown on more than one screen is under the first of them.
 | • … and %lld more | • … und %lld weitere |
 | Merge “%@” into “%@”? | „%@“ in „%@“ zusammenführen? |
 | Everything comes along: mail, screenshots, files, notes, tasks, dates and people. The old name stays as an alias, so what comes in later still finds it. You cannot split it again later. | Alles kommt mit: Mail, Screenshots, Dateien, Notizen, Aufgaben, Termine und Personen. Der alte Name bleibt als Zweitname, damit auch Späteres hierher findet. Trennen kannst du es später nicht mehr. |
-| New matter | Neues Anliegen |
 | Mail, screenshots, photos, files, notes and tasks can be put into it afterwards. | Mail, Screenshots, Fotos, Dateien, Notizen und Aufgaben kannst du danach hineinlegen. |
 | Rename matter | Anliegen umbenennen |
 | Save | Sichern |
@@ -1034,7 +1036,6 @@ shown on more than one screen is under the first of them.
 | Add to … | Hinzufügen zu … |
 | Into that matter, with its tasks and dates. Nothing is sent: it was read already. | In dieses Anliegen, mit seinen Aufgaben und Terminen. Nichts wird gesendet: es wurde schon gelesen. |
 | Not needed | Nicht nötig |
-| A new matter | Ein neues Anliegen |
 | The mail starts it, with its tasks and dates. Nothing is sent: it was read already. | Die Mail beginnt es, mit ihren Aufgaben und Terminen. Nichts wird gesendet: sie wurde schon gelesen. |
 | Review › | Ansehen › |
 | No new mail. | Keine neue Mail. |
@@ -1045,7 +1046,6 @@ shown on more than one screen is under the first of them.
 | Get new mail | Neue Mail holen |
 | None ticked: “Leave out” puts it aside, and it is not offered again. “Later” keeps it for the next time. | Nichts angehakt: „Weglassen“ legt sie beiseite, und sie wird nicht wieder angeboten. „Später“ behält sie für das nächste Mal. |
 | None ticked: “Leave out” puts them aside, and they are not offered again. “Later” keeps them for the next time. | Nichts angehakt: „Weglassen“ legt sie beiseite, und sie werden nicht wieder angeboten. „Später“ behält sie für das nächste Mal. |
-| Later | Später |
 | just now | gerade jetzt |
 | a minute ago | vor einer Minute |
 | %lld min ago | vor %lld Min. |
@@ -1428,7 +1428,7 @@ shown on more than one screen is under the first of them.
 | Public names | Öffentliche Namen |
 | Privacy | Privatsphäre |
 | Names are disguised before anything leaves this Mac. Big companies and brands — Expedia, Lufthansa — are not: the AI reads them as they are, and a question looked up on the web may name them. Mark one here, or in a person's menu. | Namen werden unkenntlich gemacht, bevor etwas diesen Mac verlässt. Große Firmen und Marken — Expedia, Lufthansa — nicht: die KI liest sie, wie sie sind, und eine im Web nachgeschlagene Frage kann sie nennen. Markiere eine hier, oder im Menü einer Person. |
-| The key is kept in the Keychain like the mail password, never in a file. It gets only pseudonymised text. | Der Schlüssel liegt im Schlüsselbund wie das Mail-Passwort, nie in einer Datei. Er bekommt nur pseudonymisierten Text. |
+| The key is kept in the Keychain like the mail password, never in a file. It gets only pseudonymised text. | Der Key liegt im Schlüsselbund wie das Mail-Passwort, nie in einer Datei. Er bekommt nur pseudonymisierten Text. |
 | Pro · | Pro · |
 | Pro, written by %@ | Pro, geschrieben von %@ |
 | Use Pro? | Pro nutzen? |
@@ -2007,7 +2007,7 @@ shown on more than one screen is under the first of them.
 
 | English | German |
 |---|---|
-| Your own key | Dein eigener Schlüssel |
+| Your own key | Dein eigener Key |
 | Everything is read with OpenAI GPT-6.1 Sol: through the beeserver with Pro, or with this key. It gets only pseudonymised text, and is kept in iCloud Keychain like the mail password. Never in a file. | Alles wird mit OpenAI GPT-6.1 Sol gelesen: mit Pro über den Beeserver, oder mit diesem Key. Es bekommt nur pseudonymisierten Text, und der Key liegt im iCloud-Schlüsselbund wie das Mail-Passwort. Nie in einer Datei. |
 | with this key | mit diesem Key |
 | The key is kept in iCloud Keychain like the mail password. Never in a file. | Der Key liegt im iCloud-Schlüsselbund wie das Mail-Passwort. Nie in einer Datei. |
@@ -2099,6 +2099,7 @@ shown on more than one screen is under the first of them.
 | %lld overdue | %lld überfällig |
 | %lld questions from Causabee | %lld Fragen von Causabee |
 | Call %@ | %@ anrufen |
+| Causabee reads your calendars and reminders to show what is there already. It adds only when %@ “Add”. What is connected is kept in step both ways: ticked off, moved, renamed. | Causabee liest deine Kalender und Erinnerungen, um zu zeigen, was schon da ist. Sie fügt nur hinzu, wenn %@ „Hinzufügen“. Was verbunden ist, bleibt in beide Richtungen im Takt: abgehakt, verschoben, umbenannt. |
 | Causabee reads your calendars and reminders to show what is there already. It adds only when you %@ “Add”. What is connected is kept in step both ways: ticked off, moved, renamed. | Causabee liest deine Kalender und Erinnerungen, um zu zeigen, was schon da ist. Sie fügt nur hinzu, wenn du %@ „Hinzufügen“. Was verbunden ist, bleibt in beide Richtungen im Takt: abgehakt, verschoben, umbenannt. |
 | Closed on %@ | Abgeschlossen am %@ |
 | Connected and kept in step. Click to open it in %@. | Verbunden und im Takt. Klick, um es in %@ zu öffnen. |
