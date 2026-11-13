@@ -29,9 +29,9 @@ public enum Reach: Sendable, Equatable {
 
         public var title: String {
             switch self {
-            case .seePro: "See Pro"
-            case .turnOn: "Turn On"
-            case .topUp: "Top Up"
+            case .seePro: String(localized: "See Pro", bundle: .module)
+            case .turnOn: String(localized: "Turn On", bundle: .module)
+            case .topUp: String(localized: "Top Up", bundle: .module)
             }
         }
     }
@@ -39,12 +39,15 @@ public enum Reach: Sendable, Equatable {
     /// What is said, and what can be done about it. Nil when nothing is out of reach.
     /// `anew`: the day this month's Pro starts anew, as the app writes it.
     public func line(mails: Int, anew: String? = nil) -> (words: String, action: Action)? {
-        let all = mails > 1 ? "all \(mails) mails" : "every mail"
+        let all = mails > 1 ? String(format: String(localized: "all %lld mails", bundle: .module), mails)
+                            : String(localized: "every mail", bundle: .module)
         switch self {
         case .pro: return nil
-        case .device, .rules: return ("Pro reads \(all) for this.", .seePro)
-        case .proOff: return ("Pro is off. Turn it on to read \(all).", .turnOn)
-        case .proUsedUp: return (anew.map { "This month's Pro starts anew on \($0)." } ?? "This month's Pro is used up.", .topUp)
+        case .device, .rules: return (String(format: String(localized: "Pro reads %@ for this.", bundle: .module), all), .seePro)
+        case .proOff: return (String(format: String(localized: "Pro is off. Turn it on to read %@.", bundle: .module), all), .turnOn)
+        case .proUsedUp:
+            return (anew.map { String(format: String(localized: "This month's Pro starts anew on %@.", bundle: .module), $0) }
+                    ?? String(localized: "This month's Pro is used up.", bundle: .module), .topUp)
         }
     }
 }

@@ -113,8 +113,13 @@ extension Source {
         return nil
     }
 
-    /// Which device a file of the owner's was added on, told by its path: a Mac's are in /Users.
-    public var addedOn: String { pointer.hasPrefix("/Users/") || pointer.hasPrefix("file:///Users/") ? "your Mac" : "your iPhone" }
+    /// Added on a Mac, told by its path: a Mac's files are in /Users.
+    public var isFromMac: Bool { pointer.hasPrefix("/Users/") || pointer.hasPrefix("file:///Users/") }
+
+    /// Which device a file of the owner's was added on, in words.
+    public var addedOn: String {
+        isFromMac ? String(localized: "your Mac", bundle: .module) : String(localized: "your iPhone", bundle: .module)
+    }
 
     /// `message://<Message-ID>`: Mail.app opens the original, if it has the account.
     public var mailURL: URL? {

@@ -128,8 +128,8 @@ struct AssistantButton: View {
         // Held: a small knock in the hand as its menu comes, as the system's own held things give.
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.3).onEnded { _ in Haptics.held() })
         .accessibilityLabel("Causabee")
-        .accessibilityValue(pro ? "Using Pro" : "Not using Pro")
-        .accessibilityHint(pro ? "Opens the chat. Hold to stop using Pro" : "Opens the chat. Hold to use Pro")
+        .accessibilityValue(pro ? String(localized: "Using Pro") : String(localized: "Not using Pro"))
+        .accessibilityHint(pro ? String(localized: "Opens the chat. Hold to stop using Pro") : String(localized: "Opens the chat. Hold to use Pro"))
         .accessibilityIdentifier("bee")
     }
 
@@ -228,7 +228,7 @@ struct PhoneAutoButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Pro")
-        .accessibilityValue(pro ? "On" : "Off")
+        .accessibilityValue(pro ? String(localized: "On") : String(localized: "Off"))
         .accessibilityHint("Pro: the bigger AI reads what comes in at once. Without Pro: only when you say so")
         .accessibilityIdentifier("auto.toggle")
         .asksBeforeAuto($asks) {
@@ -311,15 +311,15 @@ struct PhoneMatterCard: View {
 
     /// "1 open · Nov 28", as the other matters' rows say it: all that is open, and the next day.
     static func counts(_ summary: MatterSummary) -> String {
-        ["\(summary.openCount) open", summary.next.map { Dates.short($0.day) }].compactMap { $0 }.joined(separator: " · ")
+        [String(format: String(localized: "%lld open"), summary.openCount), summary.next.map { Dates.short($0.day) }].compactMap { $0 }.joined(separator: " · ")
     }
 
     static func line(mine: Int, ours: Int, waiting: Int) -> String {
         var parts: [String] = []
-        if mine > 0 { parts.append("\(mine) for you") }
-        if ours > 0 { parts.append("\(ours) together") }
-        if waiting > 0 { parts.append("waiting for \(waiting)") }
-        return parts.isEmpty ? "Nothing open." : parts.joined(separator: " · ")
+        if mine > 0 { parts.append(String(format: String(localized: "%lld for you"), mine)) }
+        if ours > 0 { parts.append(String(format: String(localized: "%lld together"), ours)) }
+        if waiting > 0 { parts.append(String(format: String(localized: "waiting for %lld"), waiting)) }
+        return parts.isEmpty ? String(localized: "Nothing open.") : parts.joined(separator: " · ")
     }
 }
 
@@ -429,9 +429,9 @@ struct FilesComing: View {
                 Button("Done") { dismiss() }.buttonStyle(.borderedProminent).tint(Theme.ink)
             } else {
                 BeeLoader(size: 22)
-                Text(state.total == 0 ? "Looking at what was picked …" : "Bringing in \(state.done) of \(state.total) …").font(.headline)
+                Text(state.total == 0 ? String(localized: "Looking at what was picked …") : String(format: String(localized: "Bringing in %lld of %lld …"), state.done, state.total)).font(.headline)
                 // One line, whatever the name: the sheet does not change its height from file to file.
-                Text(state.total == 0 ? "A file in iCloud Drive is brought down first." : state.name)
+                Text(state.total == 0 ? String(localized: "A file in iCloud Drive is brought down first.") : state.name)
                     .font(.footnote).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 Button("Stop", role: .cancel, action: stop).buttonStyle(.bordered)
             }

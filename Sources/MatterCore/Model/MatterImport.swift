@@ -489,7 +489,7 @@ extension Matter {
         for note in other.noteBlocks ?? [] { note.matter = self }
         if let theirs = other.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !theirs.isEmpty {
             let mine = notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            notes = mine.isEmpty ? theirs : mine + "\n\nFrom “\(other.name)”:\n" + theirs
+            notes = mine.isEmpty ? theirs : mine + String(format: String(localized: "\n\nFrom “%@”:\n", bundle: .module), other.name) + theirs
         }
         for alias in [other.key, other.name] + other.aliases where !answers(to: alias) { aliases.append(alias) }
         context.delete(other)

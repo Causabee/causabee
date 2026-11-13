@@ -93,8 +93,8 @@ final class BeeServer {
                 ProWait.store(ProWait.after(why, renewsOn: BeeServer.shared.renewsOn))
                 if why == "allowance_used" { BeeServer.shared.monthUsed = 1 }
                 BeeServer.shared.problem = why == "subscription_ended"
-                    ? "Causabee Pro has ended. A top-up goes on at once; meanwhile Apple's model on this device reads what comes in."
-                    : "This month's Pro is used up. It waits until it starts anew — or a top-up. Apple's model on this device reads what comes in meanwhile."
+                    ? String(localized: "Causabee Pro has ended. A top-up goes on at once; meanwhile Apple's model on this device reads what comes in.")
+                    : String(localized: "This month's Pro is used up. It waits until it starts anew — or a top-up. Apple's model on this device reads what comes in meanwhile.")
             }
         }
     }
@@ -120,7 +120,7 @@ final class BeeServer {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard (response as? HTTPURLResponse)?.statusCode == 200,
                   let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                problem = "Causabee Pro could not be set up just now. It is tried again when Causabee next opens."
+                problem = String(localized: "Causabee Pro could not be set up just now. It is tried again when Causabee next opens.")
                 return false
             }
             if let new = object["token"] as? String, new.hasPrefix("bee_") { try APIKeys.save(new, as: Self.tokenName) }
@@ -195,7 +195,7 @@ final class BeeServer {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard (response as? HTTPURLResponse)?.statusCode == 200,
                   let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                problem = "The beeserver did not answer as it should."
+                problem = String(localized: "The beeserver did not answer as it should.")
                 return
             }
             take(object)

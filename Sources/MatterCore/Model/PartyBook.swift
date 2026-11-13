@@ -184,7 +184,7 @@ public struct PartyBook {
         for party in parties.sorted(by: { (matter.membership(of: $0)?.mentions ?? 0) > (matter.membership(of: $1)?.mentions ?? 0) }) {
             let key = PartyNames.key(party.name)
             if let first = seen[key] {
-                if !refused(party, first) { out.append(Suggestion(party: party, into: first, reason: "the same name twice")) }
+                if !refused(party, first) { out.append(Suggestion(party: party, into: first, reason: String(localized: "the same name twice", bundle: .module))) }
             } else {
                 seen[key] = party
             }
@@ -198,8 +198,8 @@ public struct PartyBook {
             }
             guard wider.count == 1, let into = wider.first, !refused(party, into) else { continue }
             let reason = words.count == 1
-                ? "“\(party.name)” is in only one other name in this matter"
-                : "“\(party.name)” is part of “\(into.name)”, and of no other name here"
+                ? String(format: String(localized: "“%@” is in only one other name in this matter", bundle: .module), party.name)
+                : String(format: String(localized: "“%@” is part of “%@”, and of no other name here", bundle: .module), party.name, into.name)
             out.append(Suggestion(party: party, into: into, reason: reason))
         }
         return out
@@ -296,12 +296,12 @@ extension Membership {
                     undo?.registerUndo(withTarget: context) { context in
                         MainActor.assumeIsolated { membership.removeByHand(in: context, origin: origin, undo: undo) }
                     }
-                    undo?.setActionName("Remove Person")
+                    undo?.setActionName(String(localized: "Remove Person", bundle: .module))
                 }
                 try? context.save()
             }
         }
-        undo?.setActionName("Remove Person")
+        undo?.setActionName(String(localized: "Remove Person", bundle: .module))
     }
 }
 

@@ -104,14 +104,14 @@ struct PhoneMatterRow: View {
             if brief {
                 let new = matter.isClosed ? summary.newMailsSinceClosed : 0
                 let late = matter.isClosed ? 0 : summary.overdue.count
-                if new > 0 { Text("\(new) new \(new == 1 ? "mail" : "mails")").font(.caption).foregroundStyle(Theme.warning) }
+                if new > 0 { Text(new == 1 ? String(localized: "1 new mail") : String(format: String(localized: "%lld new mails"), new)).font(.caption).foregroundStyle(Theme.warning) }
                 if late > 0 { Text("\(late) overdue").font(.caption).foregroundStyle(Theme.warning) }
             } else {
             HStack(spacing: 4) {
                 if matter.isClosed {
                     Text("closed \(matter.closedAt.map(Dates.short) ?? "")")
                     let new = summary.newMailsSinceClosed
-                    if new > 0 { Text("· \(new) new \(new == 1 ? "mail" : "mails")").foregroundStyle(Theme.warning) }
+                    if new > 0 { Text(new == 1 ? String(localized: "· 1 new mail") : String(format: String(localized: "· %lld new mails"), new)).foregroundStyle(Theme.warning) }
                 } else {
                     Text("\(summary.openCount) open")
                     if let next = summary.next { Text("· \(Dates.short(next.day))") }
@@ -135,7 +135,7 @@ struct MatterQuestions: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .confirmationDialogWhenAsked("Pin “\(navigation.pinning?.name ?? "")” instead of …", isPresented: Binding(get: { navigation.pinning != nil }, set: { if !$0 { navigation.pinning = nil } }),
+            .confirmationDialogWhenAsked(String(format: String(localized: "Pin “%@” instead of …"), navigation.pinning?.name ?? ""), isPresented: Binding(get: { navigation.pinning != nil }, set: { if !$0 { navigation.pinning = nil } }),
                                 titleVisibility: .visible) {
                 ForEach(Pins.pinned(matters)) { pinned in
                     Button(pinned.name) {
@@ -182,6 +182,6 @@ struct MatterQuestions: ViewModifier {
 
     private var mergeQuestion: String {
         guard let (from, into) = navigation.merging else { return "" }
-        return "Merge “\(from.name)” into “\(into.name)”?"
+        return String(format: String(localized: "Merge “%@” into “%@”?"), from.name, into.name)
     }
 }

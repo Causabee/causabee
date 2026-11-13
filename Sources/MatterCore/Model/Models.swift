@@ -391,8 +391,9 @@ public final class Membership {
         let named = min(mentions, total)
         guard named > 0 else { return nil }
         let text = named == total
-            ? (total == 1 ? "in its one mail" : "in all \(total) mails")
-            : "in \(named) of \(total) \(total == 1 ? "mail" : "mails")"
+            ? (total == 1 ? String(localized: "in its one mail", bundle: .module) : String(format: String(localized: "in all %lld mails", bundle: .module), total))
+            : String(format: total == 1 ? String(localized: "in %lld of %lld mail", bundle: .module)
+                                        : String(localized: "in %lld of %lld mails", bundle: .module), named, total)
         let others = (matter?.memberships ?? []).filter { $0 !== self && $0.party != nil }
         let isMost = !others.isEmpty && others.allSatisfy { $0.mentions < mentions }
         return (text, isMost)
@@ -573,8 +574,8 @@ public final class Document {
     public var keptWords: String? {
         switch reading {
         case .read: nil
-        case .kept: "Kept only — Causabee hasn't read this."
-        case .unreadable: "Kept only — this kind of file can't be read yet."
+        case .kept: String(localized: "Kept only — Causabee hasn't read this.", bundle: .module)
+        case .unreadable: String(localized: "Kept only — this kind of file can't be read yet.", bundle: .module)
         }
     }
 }

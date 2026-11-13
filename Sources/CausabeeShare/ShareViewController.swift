@@ -53,7 +53,7 @@ final class ShareModel {
             for provider in providers {
                 if let piece = await Self.piece(from: provider) { pieces.append(piece) }
             }
-            state = pieces.isEmpty ? .failed("Causabee takes pictures and PDFs.") : .choosing
+            state = pieces.isEmpty ? .failed(String(localized: "Causabee takes pictures and PDFs.")) : .choosing
         }
     }
 
@@ -149,7 +149,7 @@ struct ShareView: View {
                     if model.choices.isEmpty || !showsMatters {
                         if !model.choices.isEmpty {
                             Button { withAnimation(.snappy) { showsMatters = true } } label: {
-                                Label(model.chosen.flatMap { key in model.choices.first { $0.key == key }?.name }.map { "Into “\($0)”" } ?? "Into a matter …",
+                                Label(model.chosen.flatMap { key in model.choices.first { $0.key == key }?.name }.map { String(format: String(localized: "Into “%@”"), $0) } ?? String(localized: "Into a matter …"),
                                       systemImage: "folder")
                                     .font(.subheadline)
                             }
@@ -160,11 +160,11 @@ struct ShareView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("INTO").font(.caption).foregroundStyle(.secondary).kerning(0.5)
                             VStack(spacing: 0) {
-                                row(key: nil, title: "Causabee decides", sub: "it sorts it in by itself", bee: true)
+                                row(key: nil, title: String(localized: "Causabee decides"), sub: String(localized: "it sorts it in by itself"), bee: true)
                                 ForEach(model.choices) { choice in
                                     Divider().padding(.leading, 50)
                                     row(key: choice.key, title: choice.name,
-                                        sub: choice.last.map { "last mail " + $0.formatted(.dateTime.month(.abbreviated).day()) }, bee: false)
+                                        sub: choice.last.map { String(format: String(localized: "last mail %@"), $0.formatted(.dateTime.month(.abbreviated).day())) }, bee: false)
                                 }
                             }
                             .background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
@@ -180,7 +180,7 @@ struct ShareView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { SheetCancel { model.cancel() } }
-                ToolbarItem(placement: .confirmationAction) { SheetConfirm("Add") { model.add() } }
+                ToolbarItem(placement: .confirmationAction) { SheetConfirm(String(localized: "Add")) { model.add() } }
             }
         }
     }
@@ -213,8 +213,9 @@ struct ShareView: View {
 
     private var summary: String {
         let pictures = model.pieces.filter { $0.preview != nil }.count, documents = model.pieces.count - pictures
-        return [pictures == 0 ? nil : "\(pictures) \(pictures == 1 ? "picture" : "pictures")",
-                documents == 0 ? nil : "\(documents) \(documents == 1 ? "PDF" : "PDFs")"].compactMap { $0 }.joined(separator: " · ")
+        let picturesWord = pictures == 1 ? String(localized: "1 picture") : String(format: String(localized: "%lld pictures"), pictures)
+        let documentsWord = documents == 1 ? String(localized: "1 PDF") : String(format: String(localized: "%lld PDFs"), documents)
+        return [pictures == 0 ? nil : picturesWord, documents == 0 ? nil : documentsWord].compactMap { $0 }.joined(separator: " · ")
     }
 
     private func row(key: String?, title: String, sub: String?, bee: Bool) -> some View {
@@ -242,7 +243,7 @@ struct ShareView: View {
     private func added(_ name: String) -> some View {
         VStack(spacing: 10) {
             BeeMark(size: 28, livesNowAndThen: false).tight().foregroundStyle(Theme.beeMark)
-            Text(name.isEmpty ? "In Causabee" : "In “\(name)”").font(.headline).multilineTextAlignment(.center)
+            Text(name.isEmpty ? String(localized: "In Causabee") : String(format: String(localized: "In “%@”"), name)).font(.headline).multilineTextAlignment(.center)
             Text("It is sorted in when Causabee opens.").font(.subheadline).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }

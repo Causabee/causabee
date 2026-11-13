@@ -89,12 +89,12 @@ struct ShotView: View {
                     Text(line).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if lines.count > 4 { Text("and \(lines.count - 4) more").font(.callout).foregroundStyle(.secondary) }
-                Text(Welcome.isTyped(shot.file) ? "Your words" : Document.ownName(of: shot.file)).font(.caption).foregroundStyle(.tertiary).lineLimit(1)
+                Text(Welcome.isTyped(shot.file) ? String(localized: "Your words") : Document.ownName(of: shot.file)).font(.caption).foregroundStyle(.tertiary).lineLimit(1)
                 // Its tasks with no day: given one here, where it came in, they are a plan.
                 let undated = undated(in: id)
                 if !undated.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(undated.count == 1 ? "When?" : "When, for its \(undated.count) tasks?").font(.callout.weight(.medium))
+                        Text(undated.count == 1 ? String(localized: "When?") : String(format: String(localized: "When, for its %lld tasks?"), undated.count)).font(.callout.weight(.medium))
                         WhenChips { when in
                             let day = Planning.day(when, today: MatterStatus.day(Date()))
                             for todo in undated { todo.due = day }
@@ -107,7 +107,7 @@ struct ShotView: View {
                     Menu("Change") {
                         if let id { Button("Open \(name)") { open(id) } }
                         if shot.fileID != nil {
-                            Menu("Move to …") {
+                            Menu(String(localized: "Move to …")) {
                                 ForEach(matters.filter { !$0.isClosed && $0.persistentModelID != id }.sorted { $0.name < $1.name }) { other in
                                     Button(other.name) { move(other) }
                                 }
@@ -155,19 +155,19 @@ struct ShotView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(kindLabel).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                     Text(shot.file.lastPathComponent).lineLimit(1)
-                    Text(shot.document != nil ? "Taken from the mail it is attached to. It stays there; here it is only a cached copy."
-                         : shot.copied ? "Copied into Causabee: it had no place of its own."
-                                     : "Stays where it is: \(shot.file.deletingLastPathComponent().lastPathComponent). Causabee only remembers the path.")
+                    Text(shot.document != nil ? String(localized: "Taken from the mail it is attached to. It stays there; here it is only a cached copy.")
+                         : shot.copied ? String(localized: "Copied into Causabee: it had no place of its own.")
+                                     : String(format: String(localized: "Stays where it is: %@. Causabee only remembers the path."), shot.file.deletingLastPathComponent().lastPathComponent))
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
             }
             switch shot.stage {
             case .reading:
-                progress(Welcome.isTyped(shot.file) ? "Reading on the Mac …" : "Scanning on the Mac …")
+                progress(Welcome.isTyped(shot.file) ? String(localized: "Reading on the Mac …") : String(localized: "Scanning on the Mac …"))
             case .read(let look), .sending(let look):
                 read(look)
-                progress("Sorting it in …")
+                progress(String(localized: "Sorting it in …"))
             case .answered(let look, let judgement):
                 read(look)
                 answered(judgement, look.offers(own: profiles.first?.names ?? []))
@@ -207,14 +207,14 @@ struct ShotView: View {
 
     private var kindLabel: String {
         switch shot.file.pathExtension.lowercased() {
-        case "eml", "emlx": "Mail"
-        case "pdf": "Document"
-        case "txt" where Welcome.isTyped(shot.file): "Your words"
+        case "eml", "emlx": String(localized: "Mail")
+        case "pdf": String(localized: "Document")
+        case "txt" where Welcome.isTyped(shot.file): String(localized: "Your words")
         default:
             // A phone's screen is a screenshot; a photographed letter or a scan is a picture of a page.
             switch shot.stage {
-            case .read(let look), .sending(let look), .answered(let look, _): look.byline.hasPrefix("Photo") ? "Photo or scan" : "Screenshot"
-            default: "Picture"
+            case .read(let look), .sending(let look), .answered(let look, _): look.byline.hasPrefix("Photo") ? String(localized: "Photo or scan") : String(localized: "Screenshot")
+            default: String(localized: "Picture")
             }
         }
     }
@@ -278,7 +278,7 @@ struct ShotView: View {
                 Text("\(chat.messages.count) messages scanned").font(.caption.weight(.semibold))
             }
             if !chat.leftOut.isEmpty {
-                Text("Left out: " + chat.leftOut.map { "“\($0.text)” (\($0.why))" }.joined(separator: ", "))
+                Text(String(localized: "Left out: ") + chat.leftOut.map { "“\($0.text)” (\($0.why))" }.joined(separator: ", "))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             if !Welcome.isTyped(look.file) { sentDisclosure(look) }  // typed words (F008) are read on the Mac: nothing is sent
@@ -318,14 +318,15 @@ struct ShotView: View {
                 TextField("Name of the new matter", text: $newName).textFieldStyle(.roundedBorder)
             }
             if !judgement.matterReason.isEmpty {
-                Text(judgement.matterReason).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Text(RuleReason.word(judgement.matterReason)).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             let target = choice.flatMap { id in matters.first { $0.persistentModelID == id } }
             if !judgement.todos.isEmpty {
                 Text("Tasks · \(judgement.todos.count)").font(.caption.weight(.semibold))
                 ForEach(Array(judgement.todos.enumerated()), id: \.offset) { index, todo in
-                    pick("t\(index)", todo.text + (todo.due.map { " · by \(Dates.short($0))" } ?? "") + " · "
-                         + (["me": "mine", "we": "ours", "other": "waiting for"][todo.owner.rawValue] ?? "unclear"),
+                    // The owner is stored as "me", "we", "other": English, so only the word is looked up.
+                    let whose = ["me": String(localized: "mine"), "we": String(localized: "ours"), "other": String(localized: "waiting for")][todo.owner.rawValue] ?? String(localized: "unclear")
+                    pick("t\(index)", todo.text + (todo.due.map { String(format: String(localized: " · by %@"), Dates.short($0)) } ?? "") + " · " + whose,
                          already: target.flatMap { Duplicates.todo(todo.text, in: $0) }.map(\.text))
                 }
             }
@@ -339,7 +340,7 @@ struct ShotView: View {
                 ForEach(Array(judgement.deadlines.indices).map { $0 + 10_000 }, id: \.self) { shifted in
                     let index = shifted - 10_000
                     let item = judgement.deadlines[index]
-                    pick("d\(index)", "by \(Dates.short(item.date)) \(item.what)",
+                    pick("d\(index)", String(format: String(localized: "by %@ %@"), Dates.short(item.date), item.what),
                          already: target.flatMap { Duplicates.deadline(on: item.date, item.what, in: $0) }.map(\.what))
                 }
             }
@@ -361,10 +362,10 @@ struct ShotView: View {
                 }
             }
             if !judgement.parties.isEmpty {
-                Text("People: " + judgement.parties.map { $0.name + ($0.role.isEmpty ? "" : " (\($0.role))") }.joined(separator: ", "))
+                Text(String(localized: "People: ") + judgement.parties.map { $0.name + ($0.role.isEmpty ? "" : " (\($0.role))") }.joined(separator: ", "))
                     .font(.callout).fixedSize(horizontal: false, vertical: true)
             }
-            buttons(primary: "Take in") {
+            buttons(primary: String(localized: "Take in")) {
                 let all = Set(judgement.todos.indices.map { "t\($0)" } + judgement.appointments.indices.map { "a\($0)" }
                               + judgement.deadlines.indices.map { "d\($0)" } + offers.lines.map(\.id))
                 take(target, newName, all.subtracting(skipped))

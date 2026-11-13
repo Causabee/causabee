@@ -169,7 +169,7 @@ struct AssistantColumn: View {
                          }
                      },
                      // A long name does not fit the field, and a placeholder is cut off without a sign.
-                     placeholder: scope.map { $0.name.count > 22 ? "Ask about this matter" : "Ask about \($0.name)" } ?? "Ask about your matters",
+                     placeholder: scope.map { $0.name.count > 22 ? String(localized: "Ask about this matter") : String(format: String(localized: "Ask about %@"), $0.name) } ?? String(localized: "Ask about your matters"),
                      unpin: { navigation.pinned = nil },
                      attach: chooseScreenshot,
                      // Said before it is typed: the chip over the field, and the cursor in the field.
@@ -199,8 +199,8 @@ struct AssistantColumn: View {
                     VStack(alignment: .leading, spacing: 12) {
                         if shown.isEmpty {
                             Text(openMatter != nil
-                                 ? "No talk about this matter yet. Ask something — or click “talk” on a line on the right."
-                                 : "Find a matter below, or start a new one — then ask about it. Screenshots, mails and PDFs can be dropped here too.")
+                                 ? String(localized: "No talk about this matter yet. Ask something — or click “talk” on a line on the right.")
+                                 : String(localized: "Find a matter below, or start a new one — then ask about it. Screenshots, mails and PDFs can be dropped here too."))
                                 .font(.callout).foregroundStyle(.secondary)
                                 .padding(.top, 20)
                         }
@@ -344,7 +344,7 @@ struct AssistantColumn: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.png, .jpeg, .heic, .tiff, .pdf, UTType(filenameExtension: "eml") ?? .emailMessage]
         panel.allowsMultipleSelection = true
-        panel.message = "Choose a screenshot, a mail (.eml) or a PDF — it is read on the Mac and sorts itself in."
+        panel.message = String(localized: "Choose a screenshot, a mail (.eml) or a PDF — it is read on the Mac and sorts itself in.")
         guard panel.runModal() == .OK else { return }
         for url in panel.urls { conversation.bring(url) }
     }
@@ -502,7 +502,7 @@ struct OverviewView: View {
                             HStack(alignment: .firstTextBaseline) {
                                 Image(systemName: index == picked ? "return" : "folder").font(.caption).foregroundStyle(.secondary).frame(width: 18)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(hit.matter.name + (hit.matter.isClosed ? " · closed" : ""))
+                                    Text(hit.matter.name + (hit.matter.isClosed ? String(localized: " · closed") : ""))
                                     if let because = hit.because { Text(because).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
                                 }
                                 Spacer()
@@ -587,8 +587,8 @@ struct OverviewView: View {
                 if !pinned.isEmpty { pinnedCards(pinned).padding(.top, 6) }
                 let rest = ordered.filter { !$0.isPinned }
                 if !rest.isEmpty {
-                    SectionHeader(title: pinned.isEmpty ? "Matters" : "Everything else",
-                                  detail: pinned.isEmpty ? "right-click one to pin it" : nil)
+                    SectionHeader(title: pinned.isEmpty ? String(localized: "Matters") : String(localized: "Everything else"),
+                                  detail: pinned.isEmpty ? String(localized: "right-click one to pin it") : nil)
                         .padding(.top, 6)
                     OverviewRows(matters: rest, all: matters)
                 }

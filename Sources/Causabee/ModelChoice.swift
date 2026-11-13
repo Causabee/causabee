@@ -26,7 +26,7 @@ enum ModelChoice {
     static var assistant: Claude.Model { AIJob.chat.model }
 
     /// Which model does which job, for Settings: as it is said on causabee.app.
-    static var jobWords: String { AIJob.said(ownKey: "with your own key") }
+    static var jobWords: String { AIJob.said(ownKey: String(localized: "with your own key")) }
     /// With Pro the plan picks, so the month goes furthest: GPT-6.1 Sol for everything — it sorts
     /// nearly as well as Opus at two fifths of the price.
     static var proPicks: Bool { BeeServer.isSetUp && AutoMode.isOn }
@@ -77,29 +77,39 @@ enum ModelChoice {
 
     /// Who reads new mail now, in one sentence for Settings.
     static var readerWords: String {
-        if DemoData.isRequested { return "In the demo, the mail is made up and nothing is sent." }
-        if proPicks { return "Pro: \(mail.shortLabel) reads what comes in, as it comes — names disguised first." }
-        if case .device = mailReader(for: mail) { return "Apple's model on this device reads what comes in. Nothing leaves it." }
-        if case .rules = mailReader(for: mail) { return "New mail comes in by its threads, and you place the rest. Nothing leaves this device." }
+        if DemoData.isRequested { return String(localized: "In the demo, the mail is made up and nothing is sent.") }
+        if proPicks { return String(format: String(localized: "Pro: %@ reads what comes in, as it comes — names disguised first."), mail.shortLabel) }
+        if case .device = mailReader(for: mail) { return String(localized: "Apple's model on this device reads what comes in. Nothing leaves it.") }
+        if case .rules = mailReader(for: mail) { return String(localized: "New mail comes in by its threads, and you place the rest. Nothing leaves this device.") }
         if client(for: mail) != nil {
-            return String(format: "%@ reads what comes in with your own key — names disguised first.", mail.label)
+            return String(format: String(localized: "%@ reads what comes in with your own key — names disguised first."), mail.label)
         }
-        return "In the demo, nothing reads what comes in."
+        return String(localized: "In the demo, nothing reads what comes in.")
     }
 
     /// Under the mails ticked to be sorted in: who reads them.
     static func sortingWords(_ count: Int, model: Claude.Model) -> String {
-        let mails = count == 1 ? "mail" : "mails"
-        if case .device = mailReader(for: model) { return "Sorting in \(count) \(mails) on this device, with Apple's model: nothing leaves it." }
-        if case .rules = mailReader(for: model) { return "Bringing in \(count) \(mails) by their threads. You place the rest." }
-        if BeeServer.isSetUp { return "Sorting in \(count) \(mails) with Causabee Pro. Sent pseudonymised to \(model.label)." }
-        return "Sorting in \(count) \(mails). Sent pseudonymised to \(model.label)."
+        let one = count == 1
+        if case .device = mailReader(for: model) {
+            return one ? String(localized: "Sorting in 1 mail on this device, with Apple's model: nothing leaves it.")
+                : String(format: String(localized: "Sorting in %lld mails on this device, with Apple's model: nothing leaves it."), count)
+        }
+        if case .rules = mailReader(for: model) {
+            return one ? String(localized: "Bringing in 1 mail by their threads. You place the rest.")
+                : String(format: String(localized: "Bringing in %lld mails by their threads. You place the rest."), count)
+        }
+        if BeeServer.isSetUp {
+            return one ? String(format: String(localized: "Sorting in 1 mail with Causabee Pro. Sent pseudonymised to %@."), model.label)
+                : String(format: String(localized: "Sorting in %lld mails with Causabee Pro. Sent pseudonymised to %@."), count, model.label)
+        }
+        return one ? String(format: String(localized: "Sorting in 1 mail. Sent pseudonymised to %@."), model.label)
+            : String(format: String(localized: "Sorting in %lld mails. Sent pseudonymised to %@."), count, model.label)
     }
 
     static func missingKey(_ model: Claude.Model) -> String {
-        if DemoData.usesReal { return "This is the demo with your real matters: nothing is sent to an AI from it." }
-        if DemoData.isRequested { return "This is the demo: your keys are not used in it, so nothing is sent to an AI from it." }
-        return deviceOnly ? "Pro is not in use. Use Pro with the bee for this." : "This needs Causabee Pro for now."
+        if DemoData.usesReal { return String(localized: "This is the demo with your real matters: nothing is sent to an AI from it.") }
+        if DemoData.isRequested { return String(localized: "This is the demo: your keys are not used in it, so nothing is sent to an AI from it.") }
+        return deviceOnly ? String(localized: "Pro is not in use. Use Pro with the bee for this.") : String(localized: "This needs Causabee Pro for now.")
     }
 }
 
@@ -131,17 +141,17 @@ struct ModelSettingsView: View {
                     Toggle("Fewer, real tasks", isOn: $strict)
                         .help("The rule from the test: no task for saying yes or getting ready, unless the mail asks for it.")
                 }
-                Text(ModelChoice.readerWords + " A mail is sorted only once: what a model sorted in stays that way.")
+                Text(ModelChoice.readerWords + String(localized: " A mail is sorted only once: what a model sorted in stays that way."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             } header: { Text("Mail") }
             Section {
-                SettingsPart("Calendar and Reminders")
+                SettingsPart(String(localized: "Calendar and Reminders"))
                 CalendarSettings()
-                SettingsPart("Matter folders in iCloud Drive")
+                SettingsPart(String(localized: "Matter folders in iCloud Drive"))
                 FolderSettings()
                 Toggle("The bee is glad when you tick a task", isOn: $celebrates)
             } header: { Text("Matters") }
-            Section { SettingsPart("Public names"); PublicNamesSettings() } header: { Text("Privacy") } footer: {
+            Section { SettingsPart(String(localized: "Public names")); PublicNamesSettings() } header: { Text("Privacy") } footer: {
                 Text("Names are disguised before anything leaves this Mac. Big companies and brands — Expedia, Lufthansa — are not: the AI reads them as they are, and a question looked up on the web may name them. Mark one here, or in a person's menu.")
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -508,7 +518,7 @@ struct AutoLine: View {
         }
         .font(.caption).foregroundStyle(.secondary)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Pro, written by " + AIJob.brief.model.label)
+        .accessibilityLabel(String(format: String(localized: "Pro, written by %@"), AIJob.brief.model.label))
         .accessibilityIdentifier("auto.line")
     }
 }
@@ -805,14 +815,13 @@ struct AutoQuestion: ViewModifier {
 
     func body(content: Content) -> some View {
         let model = ModelChoice.mail
-        content.confirmationDialogWhenAsked("Use Pro?", isPresented: $asks, titleVisibility: .visible) {
+        content.confirmationDialogWhenAsked(String(localized: "Use Pro?"), isPresented: $asks, titleVisibility: .visible) {
             Button("Use Pro") { agreed = true; turnOn() }
             Button("Cancel", role: .cancel) { }
         } message: {
             // Short, and by name: which model reads, that names are disguised, who decides.
-            Text("Pro reads what comes in — mail, screenshots, photos, files — as it arrives, with \(model.label) — names disguised. " +
-                 "You still decide what goes into a matter. " +
-                 "Without Pro, nothing is read by the AI until you tap.")
+            Text(String(format: String(localized: "Pro reads what comes in — mail, screenshots, photos, files — as it arrives, with %@ — names disguised. You still decide what goes into a matter. Without Pro, nothing is read by the AI until you tap."),
+                        model.label))
         }
     }
 }

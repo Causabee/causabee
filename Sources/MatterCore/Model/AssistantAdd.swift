@@ -10,14 +10,26 @@ public enum AssistantAdd: String, CaseIterable, Sendable {
     case detail = "New detail"
     case contact = "New contact"
 
+    /// Its own name, as the chip over the field says it. The case's stored value stays English —
+    /// it is what a saved thread holds — so the word is looked up from it (F009).
+    public var name: String {
+        switch self {
+        case .task: String(localized: "New task", bundle: .module)
+        case .note: String(localized: "New note", bundle: .module)
+        case .link: String(localized: "New link", bundle: .module)
+        case .detail: String(localized: "New detail", bundle: .module)
+        case .contact: String(localized: "New contact", bundle: .module)
+        }
+    }
+
     /// What the chip over the field says under its name.
     public var hint: String {
         switch self {
-        case .task: "Type or say what is to do. A day or a time in it becomes its date."
-        case .note: "Type or say it. It is kept in the matter's notes, word for word."
-        case .link: "The address, and a name for it if you like. Kept with the matter."
-        case .detail: "What it is — a number, a code, an account — and what it says."
-        case .contact: "Who it is, and what they are to this matter if you like."
+        case .task: String(localized: "Type or say what is to do. A day or a time in it becomes its date.", bundle: .module)
+        case .note: String(localized: "Type or say it. It is kept in the matter's notes, word for word.", bundle: .module)
+        case .link: String(localized: "The address, and a name for it if you like. Kept with the matter.", bundle: .module)
+        case .detail: String(localized: "What it is — a number, a code, an account — and what it says.", bundle: .module)
+        case .contact: String(localized: "Who it is, and what they are to this matter if you like.", bundle: .module)
         }
     }
 
@@ -35,22 +47,23 @@ public enum AssistantAdd: String, CaseIterable, Sendable {
     /// The card's own name, small, over its fields.
     public var title: String {
         switch self {
-        case .task: "Task"
-        case .note: "Note"
-        case .link: "Link"
-        case .detail: "Detail"
-        case .contact: "Contact"
+        case .task: String(localized: "Task", bundle: .module)
+        case .note: String(localized: "Note", bundle: .module)
+        case .link: String(localized: "Link", bundle: .module)
+        case .detail: String(localized: "Detail", bundle: .module)
+        case .contact: String(localized: "Contact", bundle: .module)
         }
     }
 
     /// What its first field asks for, and its second — nil where there is none.
     public var fields: (first: String, second: String?) {
         switch self {
-        case .task: ("What needs doing?", nil)
-        case .note: ("What to keep", nil)
-        case .link: ("Address", "Name (optional)")
-        case .detail: ("What it is, like Insurance number", "What it says")
-        case .contact: ("Name", "Role (optional)")
+        case .task: (String(localized: "What needs doing?", bundle: .module), nil)
+        case .note: (String(localized: "What to keep", bundle: .module), nil)
+        case .link: (String(localized: "Address", bundle: .module), String(localized: "Name (optional)", bundle: .module))
+        case .detail: (String(localized: "What it is, like Insurance number", bundle: .module),
+                       String(localized: "What it says", bundle: .module))
+        case .contact: (String(localized: "Name", bundle: .module), String(localized: "Role (optional)", bundle: .module))
         }
     }
 
@@ -121,5 +134,26 @@ public enum AssistantAdd: String, CaseIterable, Sendable {
         var answer = answer
         answer.reply.cards.insert(card(words), at: 0)
         return (answer, 0)
+    }
+}
+
+/// What is in the assistant's hand, as a word over its chip: a mail, a task, a person, the whole
+/// matter. The kind itself is stored with a saved thread and never changes — an old one still says
+/// "Sache" — so the word a person reads is looked up from it, in the device's language (F009).
+public enum InHand {
+    public static func word(_ kind: String) -> String {
+        switch kind {
+        case "Matter", "Sache": String(localized: "Matter", bundle: .module)
+        case "Mail": String(localized: "Mail", bundle: .module)
+        case "File": String(localized: "File", bundle: .module)
+        case "Task": String(localized: "Task", bundle: .module)
+        case "Step": String(localized: "Step", bundle: .module)
+        case "Info": String(localized: "Info", bundle: .module)
+        case "Person": String(localized: "Person", bundle: .module)
+        case "Appointment": String(localized: "Appointment", bundle: .module)
+        case "Deadline": String(localized: "Deadline", bundle: .module)
+        case "Note": String(localized: "Note", bundle: .module)
+        default: AssistantAdd(rawValue: kind)?.name ?? kind
+        }
     }
 }

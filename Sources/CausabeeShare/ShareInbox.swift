@@ -45,7 +45,7 @@ enum ShareInbox {
 
     enum Failure: LocalizedError {
         case noGroup
-        var errorDescription: String? { "Causabee's shared folder on this \(ThisDevice.name) cannot be reached." }
+        var errorDescription: String? { String(format: String(localized: "Causabee's shared folder on this %@ cannot be reached."), ThisDevice.name) }
     }
 
     static func put(_ data: Data, named name: String, into matterKey: String?) throws {

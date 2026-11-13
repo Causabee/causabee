@@ -88,11 +88,11 @@ public enum WebLookup {
     }
 
     public struct Refused: LocalizedError {
-        public var errorDescription: String? { "This question has something personal in it and is not sent." }
+        public var errorDescription: String? { String(localized: "This question has something personal in it and is not sent.", bundle: .module) }
     }
 
     public struct NotOffered: LocalizedError {
-        public var errorDescription: String? { "Looking things up works with Claude or OpenAI. Choose one for the assistant in Settings." }
+        public var errorDescription: String? { String(localized: "Looking things up works with Claude or OpenAI. Choose one for the assistant in Settings.", bundle: .module) }
     }
 
     /// One web search costs about a cent with either service, on top of the words.

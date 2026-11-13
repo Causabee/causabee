@@ -87,13 +87,13 @@ public enum DeviceTask {
         var cards: [AssistantPrompt.Reply.Card] = []
         if let filled, inMatter {
             var card = AssistantPrompt.Reply.Card(kind: .newTodo, todo: nil, text: filled.text, owner: filled.owner, due: filled.due,
-                                                  reason: "Understood on this \(device). Nothing left it.", cites: [])
+                                                  reason: String(format: String(localized: "Understood on this %@. Nothing left it.", bundle: .module), device), cites: [])
             card.time = filled.time
             cards.append(card)
         } else if filled != nil {
-            lines.append(.init(text: "That reads as something to do. Open its matter and say it there, to add it as a task.", cites: []))
+            lines.append(.init(text: String(localized: "That reads as something to do. Open its matter and say it there, to add it as a task.", bundle: .module), cites: []))
         } else {
-            lines.append(.init(text: "Asking needs Pro. Use Pro on top, then ask again.", cites: []))
+            lines.append(.init(text: String(localized: "Asking needs Pro. Use Pro on top, then ask again.", bundle: .module), cites: []))
         }
         var answer = AssistantAsk.Answer(reply: AssistantPrompt.Reply(lines: lines, cards: cards, notInFacts: nil),
                                          sent: "", cost: 0, seconds: 0, newNames: 0)

@@ -319,14 +319,18 @@ public enum AssistantAsk {
         /// What the line under an answer says of it: that the question was looked at, and what was found.
         public var disguiseLine: String? {
             guard let count = disguisedInQuestion else { return nil }
-            return count == 0 ? "Nothing to disguise" : count == 1 ? "1 item disguised" : "\(count) items disguised"
+            return count == 0 ? String(localized: "Nothing to disguise", bundle: .module)
+                : count == 1 ? String(localized: "1 item disguised", bundle: .module)
+                : String(format: String(localized: "%lld items disguised", bundle: .module), count)
         }
 
         /// The same in a sentence, with what went out besides the question.
         public var disguiseSentence: String? {
             guard let count = disguisedInQuestion, let all = disguised else { return nil }
-            let asked = count == 0 ? "Your question had nothing to disguise." : count == 1 ? "1 item in your question was disguised." : "\(count) items in your question were disguised."
-            return asked + " With the matter's facts, \(all) went out disguised — names, places, companies, addresses, numbers."
+            let asked = count == 0 ? String(localized: "Your question had nothing to disguise.", bundle: .module)
+                : count == 1 ? String(localized: "1 item in your question was disguised.", bundle: .module)
+                : String(format: String(localized: "%lld items in your question were disguised.", bundle: .module), count)
+            return asked + String(format: String(localized: " With the matter's facts, %lld went out disguised — names, places, companies, addresses, numbers.", bundle: .module), all)
         }
 
         /// The name a person reads: "OpenAI GPT-6.1 Sol".
@@ -359,8 +363,13 @@ public enum AssistantAsk {
 
     /// What a turn says when the owner stopped it before the answer came. A turn the app was
     /// closed on says "Stopped: …" too: both are quiet, not a failure.
-    public static let stopped = "Stopped."
-    public static func wasStopped(_ message: String) -> Bool { message.hasPrefix("Stopped") }
+    public static var stopped: String { String(localized: "Stopped.", bundle: .module) }
+    /// The word alone, to know a stopped turn by. A thread saved on an English day still holds the
+    /// English word, so both are known (F009).
+    public static var stoppedWord: String { String(localized: "Stopped", bundle: .module) }
+    public static func wasStopped(_ message: String) -> Bool {
+        message.hasPrefix("Stopped") || message.hasPrefix(stoppedWord)
+    }
 
     /// The request, disguised, and the disguise that made it — everything but the sending.
     public struct Prepared: Sendable {
@@ -638,7 +647,9 @@ public enum AssistantAsk {
 /// damaged. Nothing is sent then.
 public struct MappingUnreadable: Error, LocalizedError {
     public let url: URL
-    public var errorDescription: String? { "The list of names at \(url.path) cannot be read, so nothing was sent." }
+    public var errorDescription: String? {
+        String(format: String(localized: "The list of names at %@ cannot be read, so nothing was sent.", bundle: .module), url.path)
+    }
 }
 
 public struct LinkStandIns: Sendable {

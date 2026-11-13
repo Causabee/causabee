@@ -82,7 +82,7 @@ public enum IntakeSummary {
         judgements.filter { !$0.isBulk }.map { judgement in
             let known = judgement.matter.flatMap(name)
             let made = judgement.matter.map { judgement.matterTitle ?? ($0.prefix(1).uppercased() + $0.dropFirst()) }
-            return Offer(id: judgement.emailID, subject: judgement.subject.isEmpty ? "(no subject)" : judgement.subject,
+            return Offer(id: judgement.emailID, subject: judgement.subject.isEmpty ? String(localized: "(no subject)", bundle: .module) : judgement.subject,
                          matter: known ?? made, isNew: known == nil && made != nil, items: found(in: judgement))
         }
     }
@@ -109,7 +109,7 @@ public enum IntakeSummary {
     public static func mails(_ judgements: [Judgement], name: (String) -> String?, limit: Int = 6) -> [Mail] {
         Array(judgements.compactMap { judgement -> Mail? in
             guard !judgement.isBulk, let key = judgement.matter, let matter = name(key) else { return nil }
-            return Mail(messageID: judgement.emailID, subject: judgement.subject.isEmpty ? "(no subject)" : judgement.subject, matter: matter)
+            return Mail(messageID: judgement.emailID, subject: judgement.subject.isEmpty ? String(localized: "(no subject)", bundle: .module) : judgement.subject, matter: matter)
         }.prefix(limit))
     }
 
@@ -119,15 +119,30 @@ public enum IntakeSummary {
     public static func line(mails: Int, matters: [String], tasks: Int, dates: Int, unplaced: Int = 0, failed: Int = 0) -> String {
         var parts: [String] = []
         if mails > 0 {
-            var sorted = "\(mails) \(mails == 1 ? "mail" : "mails") sorted"
-            if matters.count == 1 { sorted += " into \(matters[0])" } else if matters.count > 1 { sorted += " into \(matters.count) matters" }
-            parts.append(sorted)
+            // Whole sentences, not pieces put together: German says "3 Mails in Lissabon
+            // einsortiert", with the matter before the verb (F009).
+            switch (mails, matters.count) {
+            case (1, 1): parts.append(String(format: String(localized: "1 mail sorted into %@", bundle: .module), matters[0]))
+            case (_, 1): parts.append(String(format: String(localized: "%lld mails sorted into %@", bundle: .module), mails, matters[0]))
+            case (1, let many) where many > 1:
+                parts.append(String(format: String(localized: "1 mail sorted into %lld matters", bundle: .module), many))
+            case (_, let many) where many > 1:
+                parts.append(String(format: String(localized: "%lld mails sorted into %lld matters", bundle: .module), mails, many))
+            case (1, _): parts.append(String(localized: "1 mail sorted", bundle: .module))
+            default: parts.append(String(format: String(localized: "%lld mails sorted", bundle: .module), mails))
+            }
         }
-        if tasks > 0 { parts.append("\(tasks) new \(tasks == 1 ? "task" : "tasks")") }
-        if dates > 0 { parts.append("\(dates) \(dates == 1 ? "date" : "dates")") }
-        if unplaced > 0 { parts.append("\(unplaced) without a matter, below") }
-        if failed > 0 { parts.append("\(failed) could not be read, tried again next time") }
-        return parts.isEmpty ? "Nothing new" : parts.joined(separator: " · ")
+        if tasks > 0 {
+            parts.append(tasks == 1 ? String(localized: "1 new task", bundle: .module)
+                         : String(format: String(localized: "%lld new tasks", bundle: .module), tasks))
+        }
+        if dates > 0 {
+            parts.append(dates == 1 ? String(localized: "1 date", bundle: .module)
+                         : String(format: String(localized: "%lld dates", bundle: .module), dates))
+        }
+        if unplaced > 0 { parts.append(String(format: String(localized: "%lld without a matter, below", bundle: .module), unplaced)) }
+        if failed > 0 { parts.append(String(format: String(localized: "%lld could not be read, tried again next time", bundle: .module), failed)) }
+        return parts.isEmpty ? String(localized: "Nothing new", bundle: .module) : parts.joined(separator: " · ")
     }
 
     /// The new tasks and dates, the first few.

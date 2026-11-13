@@ -79,10 +79,12 @@ public struct ProMeter: Equatable, Sendable {
             if extra > 0 { bars.append(Bar(kind: .topUps, left: extra, low: false)) }
             using = month > 0 || extra <= 0 ? .month : .topUps
             runsLow = month + extra <= Self.lowShare
-            let anew = renewsOn.flatMap(MatterStatus.date(of:)).map { "Starts anew on " + Self.long($0) }
-            let carries = extra > 0 ? "top-ups carry over" : nil
+            let anew = renewsOn.flatMap(MatterStatus.date(of:))
+                .map { String(format: String(localized: "Starts anew on %@", bundle: .module), Self.long($0)) }
+            let carries = extra > 0 ? String(localized: "top-ups carry over", bundle: .module) : nil
             line = anew.map { [$0, carries].compactMap { $0 }.joined(separator: " · ") } ?? carries.map { $0.prefix(1).uppercased() + $0.dropFirst() }
-            note = month + extra > 0 ? nil : "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up."
+            note = month + extra > 0 ? nil
+                : String(localized: "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.", bundle: .module)
         }
         if runsLow { for index in bars.indices where bars[index].kind == using { bars[index].low = true } }
         for index in bars.indices { bars[index].inUse = inUse }

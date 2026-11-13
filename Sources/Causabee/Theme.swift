@@ -117,14 +117,17 @@ struct BeeChip: View {
 }
 
 enum Dates {
-    private static let english: DateFormatter = {
+    /// A day in the device's own order: `Oct 23` in English, `23. Okt.` in German. The template
+    /// says which parts are wanted — the month's name and the day — and the language says how
+    /// they are put together (F009 AC-3).
+    private static let dayAndMonth: DateFormatter = {
         let formatter = DateFormatter()
-                formatter.dateFormat = "MMM d"
+        formatter.setLocalizedDateFormatFromTemplate("MMMd")
         return formatter
     }()
     private static let withYear: DateFormatter = {
         let formatter = DateFormatter()
-                formatter.dateFormat = "MMM d, yyyy"
+        formatter.setLocalizedDateFormatFromTemplate("MMMdyyyy")
         return formatter
     }()
     private static let parser: DateFormatter = {
@@ -134,13 +137,13 @@ enum Dates {
         return formatter
     }()
 
-    /// `31 October`, in those words on every Mac: a German region made it "31. October".
+    /// `31 October`, `31. Oktober`: the day and the month's name, as the device writes them.
     static func long(_ date: Date) -> String { date.formatted(.dateTime.day().month(.wide)) }
 
-    /// `2026-10-13` → `Oct 13`
+    /// `2026-10-13` → `Oct 13`, `13. Okt.`
     static func short(_ day: String) -> String { parser.date(from: day).map(short) ?? day }
     static func short(_ date: Date) -> String {
-        Calendar.current.isDate(date, equalTo: Date(), toGranularity: .year) ? english.string(from: date) : withYear.string(from: date)
+        Calendar.current.isDate(date, equalTo: Date(), toGranularity: .year) ? dayAndMonth.string(from: date) : withYear.string(from: date)
     }
 }
 
@@ -183,22 +186,23 @@ struct SectionHeader: View {
 /// Where a fact came from, in words: a mail, a screenshot, or the owner in the assistant.
 enum Sources {
     static func origin(_ source: Source?) -> String {
-        guard let source else { return "Source unknown" }
+        guard let source else { return String(localized: "Source unknown") }
         let day = source.date.map(Dates.short) ?? "?"
         switch source.kind {
-        case .mail: return "from the mail of \(day)"
-        case .screenshot: return "from the screenshot of \(day)"
+        case .mail: return String(format: String(localized: "from the mail of %@"), day)
+        case .screenshot: return String(format: String(localized: "from the screenshot of %@"), day)
         case .conversation:
+            // The pointer is stored with the fact, so it stays English; only the word is looked up.
             switch source.pointer {
-            case "matter-closed": return "marked done when closing, \(day)"
-            case "you": return "added by you, \(day)"
-            case "brief": return "proposed in the brief, \(day)"
-            default: return "from you in the assistant, \(day)"
+            case "matter-closed": return String(format: String(localized: "marked done when closing, %@"), day)
+            case "you": return String(format: String(localized: "added by you, %@"), day)
+            case "brief": return String(format: String(localized: "proposed in the brief, %@"), day)
+            default: return String(format: String(localized: "from you in the assistant, %@"), day)
             }
-        case .spokenNote: return "spoken on \(day)"
-        case .photo: return "from the photo of \(day)"
-        case .phoneCall: return "from the phone call of \(day)"
-        case .document: return "from the document of \(day)"
+        case .spokenNote: return String(format: String(localized: "spoken on %@"), day)
+        case .photo: return String(format: String(localized: "from the photo of %@"), day)
+        case .phoneCall: return String(format: String(localized: "from the phone call of %@"), day)
+        case .document: return String(format: String(localized: "from the document of %@"), day)
         }
     }
 }
@@ -443,7 +447,7 @@ final class VoiceInput {
 
     /// What the field says while the words are written down — or while they wait for the speech
     /// model to come into memory first.
-    var writingWords: String { Transcriber.shared.state == .warming ? "Getting speech ready …" : "Writing it down …" }
+    var writingWords: String { Transcriber.shared.state == .warming ? String(localized: "Getting speech ready …") : String(localized: "Writing it down …") }
 
     /// Starts listening; `deliver` gets the words. Without the model, the card to load it comes first.
     func start(deliver: @escaping (String) -> Void) {
@@ -621,7 +625,7 @@ struct MicButton: View {
                         if warming { ProgressView().controlSize(.mini).scaleEffect(0.7).offset(x: 7, y: -6).transition(.opacity) }
                     }
                     .animation(.easeInOut(duration: 0.2), value: warming)
-                    .accessibilityHint(warming ? "Speech is getting ready" : "")
+                    .accessibilityHint(warming ? String(localized: "Speech is getting ready") : "")
                 }
             }
             .frame(width: 34, height: 34).contentShape(Rectangle())
@@ -976,7 +980,7 @@ enum SortsIn {
     static func lines(of judgement: Judgement, offers: VaultOffers) -> [String] {
         judgement.todos.map(\.text)
             + judgement.appointments.map { "\(Dates.short($0.date))\($0.time.map { " \($0)" } ?? "") \($0.what)" }
-            + judgement.deadlines.map { "by \(Dates.short($0.date)) \($0.what)" }
+            + judgement.deadlines.map { String(format: String(localized: "by %@ %@"), Dates.short($0.date), $0.what) }
             + offers.lines.map(\.text)
     }
 
@@ -994,7 +998,7 @@ enum SortsIn {
 
     /// The line's first words: "Kita · Pay €120 by 20 Nov", or "Kita · filed".
     static func headline(_ name: String, _ made: [String]?) -> String {
-        "\(name) · \(made == nil ? "taken in" : made?.first ?? "filed")"
+        "\(name) · \(made == nil ? String(localized: "taken in") : made?.first ?? String(localized: "filed"))"
     }
 }
 
@@ -1044,7 +1048,7 @@ struct MailOffers: View {
                             .foregroundStyle(on ? Theme.gold : .secondary)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(on ? "Take in" : "Leave out")
+                    .accessibilityLabel(on ? String(localized: "Take in") : String(localized: "Leave out"))
                     .accessibilityAddTraits(on ? .isSelected : [])
                     VStack(alignment: .leading, spacing: 2) {
                         Text(offer.subject).font(small ? .caption : .subheadline)
@@ -1052,11 +1056,12 @@ struct MailOffers: View {
                             .lineLimit(2).multilineTextAlignment(.leading)
                         if on {
                             HStack(spacing: 6) {
-                                Text("→ " + (named[offer.id].map { "New matter: \($0)" } ?? target?.name ?? offer.matter.map { offer.isNew ? "New matter: \($0)" : $0 } ?? "No matter found"))
+                                let newMatter = String(localized: "New matter: %@")
+                                Text("→ " + (named[offer.id].map { String(format: newMatter, $0) } ?? target?.name ?? offer.matter.map { offer.isNew ? String(format: newMatter, $0) : $0 } ?? String(localized: "No matter found")))
                                     .foregroundStyle(.secondary).lineLimit(1)
                                 Spacer(minLength: 4)
                                 // Nothing to change where none was found: there it is chosen.
-                                Menu(target == nil && named[offer.id] == nil && offer.matter == nil ? "Choose" : "Change") {
+                                Menu(target == nil && named[offer.id] == nil && offer.matter == nil ? String(localized: "Choose") : String(localized: "Change")) {
                                     // First: with many matters the end of the list is out of sight.
                                     #if os(macOS)
                                     Button("New Matter …") { newName = named[offer.id] ?? Matter.cleanSubject(offer.subject); naming = offer.id }
@@ -1318,7 +1323,7 @@ struct SheetConfirm: View {
 /// What leaves a sheet without keeping anything: the system's cross on glass on the iPhone and
 /// iPad, "Cancel" on Esc on the Mac.
 struct SheetCancel: View {
-    var title = "Cancel"
+    var title = String(localized: "Cancel")
     let action: () -> Void
 
     var body: some View {

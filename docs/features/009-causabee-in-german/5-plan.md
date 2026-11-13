@@ -1,5 +1,23 @@
 # F009 · Causabee in German — Build
 
+## How a word gets into the catalogue
+
+`scripts/words.py` reads the sources and keeps the two catalogues:
+
+| | |
+|---|---|
+| `python3 -I scripts/words.py` | takes in what is new, keeps the German there is, drops a word no line shows any more |
+| `--missing` | says which words have no German yet |
+| `--only core` / `--only app` | one catalogue alone, while the other's files are in hand |
+| `--build <derived data>` | the words that carry a value in a SwiftUI part, whose placeholder only the compiler knows; they are written into `scripts/words-values.txt` so a run without a build keeps them |
+| `--escaped` | every literal in the sources that reads like words a person is shown and is in no catalogue. `--write` accepts what is found into `scripts/words-machine.txt`, the list of what was looked at and is not a word |
+
+Three kinds of word, and how each is found:
+
+- **SwiftUI's own** — `Text("Save")` looks itself up; the script reads the key out of the source.
+- **Ours** — `String(localized: "Save", bundle: .module)` in MatterCore, `String(localized: "Save")` in the apps, where `Bundle.main` is right.
+- **Built out of pieces** — `String(format: String(localized: "Overdue since %@", bundle: .module), day)`. The key stays a plain literal, so the script sees it without a build, and the whole sentence can be said in German's own order. Never an interpolation inside a looked-up literal: the key would differ from what the app asks for, and the word would stay English without a word of warning.
+
 ## Steps
 
 1. **Tests first:** `GermanTests` and `DateLocaleTests` (MatterCore), seen failing — there is no catalogue and the forced locales are still there.
@@ -17,6 +35,8 @@
 | Criterion | Test | Kind |
 |---|---|---|
 | AC-1 | `GermanTests` "F009 AC-1 · Every word has German" — both catalogues read: every key has a German value, none empty, none left "new" or "stale" | unit |
+| AC-1 | `EveryWordTests` "F009 AC-1 · No word a person reads escapes the catalogue" — the sources read whole by `scripts/words.py --escaped`: every literal that reads like words a person is shown is a catalogue key, or named in `scripts/words-machine.txt` as something else | unit |
+| AC-1 | `EveryWordTests` "F009 AC-1 · Every word is looked up in its own catalogue" — `bundle: .module` in MatterCore, never in the apps: the wrong bundle shows English and says nothing | unit |
 | AC-2 | `GermanTests` "F009 AC-2 · A matter keeps its own language" — the prompts still say to write in the content's language and their versions are unchanged (source); `AssistantAsk.language` untouched | unit |
 | AC-3 | `DateLocaleTests` "F009 AC-3 · Dates as the device writes them" — no forced `en_US`/`en_GB` left in a path a person reads (source); the 18 `en_US_POSIX` places still there; `ProMeter.long` and `Dates` in German give German month names | unit |
 | AC-4 | `GermanTests` "F009 AC-4 · One word for one thing" — no German word serves two different English ones, and no English one has two German ones | unit |

@@ -28,7 +28,7 @@ public struct UnplacedLook: Sendable {
     public let why: String?
 
     public init(_ judgement: Judgement) {
-        title = judgement.subject.isEmpty ? "(no subject)" : judgement.subject
+        title = judgement.subject.isEmpty ? String(localized: "(no subject)", bundle: .module) : judgement.subject
         from = Self.name(judgement.from)
         date = judgement.date
         about = judgement.digest.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }

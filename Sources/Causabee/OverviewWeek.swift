@@ -30,6 +30,8 @@ struct OverviewWeek: View {
         let day = chosen.flatMap { days.contains($0) ? $0 : nil } ?? today
         // On a full day what is done with leaves the tiles: it stayed as crowded at night as in the morning.
         let (things, over) = Week.asTheDayGoes(StoredChanges.shared.things(on: day, in: matters), on: day, now: now)
+        let howMany = things.isEmpty ? (over.isEmpty ? String(localized: "nothing") : String(localized: "nothing left"))
+            : things.count == 1 ? String(localized: "1 thing") : String(format: String(localized: "%lld things"), things.count)
         return VStack(alignment: .leading, spacing: 10) {
             // As Figma's "Mac · Overview" has them: at most 72 wide each, and from the left.
             HStack(spacing: 6) {
@@ -40,8 +42,8 @@ struct OverviewWeek: View {
                 }
                 Spacer(minLength: 0)
             }
-            SectionHeader(title: day == today ? "Today · " + Self.heading(day) : Self.heading(day),
-                          detail: things.isEmpty ? (over.isEmpty ? "nothing" : "nothing left") : things.count == 1 ? "1 thing" : "\(things.count) things")
+            SectionHeader(title: day == today ? String(format: String(localized: "Today · %@"), Self.heading(day)) : Self.heading(day),
+                          detail: howMany)
             // As high as the chosen day needs: an empty today leaves no hole over the matters. Going
             // to a fuller day, what is under it moves down, and up again, gently.
             dayGrid(day, today: today, isShown: true, now: now)
@@ -133,7 +135,9 @@ struct OverviewWeek: View {
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
-        .help(Self.spoken.string(from: date) + (count == 0 ? "" : count == 1 ? " — 1 thing" : " — \(count) things") + (late > 0 ? ", \(late) overdue" : ""))
+        .help(Self.spoken.string(from: date)
+              + (count == 0 ? "" : count == 1 ? String(localized: " — 1 thing") : String(format: String(localized: " — %lld things"), count))
+              + (late > 0 ? String(format: String(localized: ", %lld overdue"), late) : ""))
     }
 
     private func tile(_ thing: DayThing) -> some View {

@@ -28,10 +28,10 @@ struct UnplacedSheet: View {
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
                     if let about = look.about {
-                        section("What it says") { Text(about).font(.body).fixedSize(horizontal: false, vertical: true) }
+                        section(String(localized: "What it says")) { Text(about).font(.body).fixedSize(horizontal: false, vertical: true) }
                     }
                     if !look.found.isEmpty {
-                        section("Found in it") {
+                        section(String(localized: "Found in it")) {
                             VStack(alignment: .leading, spacing: 8) {
                                 ForEach(look.found) { line in
                                     Label(line.text, systemImage: line.symbol).font(.subheadline)
@@ -41,7 +41,7 @@ struct UnplacedSheet: View {
                         }
                     }
                     if let why = look.why {
-                        section("Why no matter") { Text(why).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
+                        section(String(localized: "Why no matter")) { Text(RuleReason.word(why)).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
                     }
                     wholeText
                 }
@@ -69,7 +69,7 @@ struct UnplacedSheet: View {
     @ViewBuilder
     private var wholeText: some View {
         if let whole {
-            section("The whole text") { Text(whole).font(.callout).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
+            section(String(localized: "The whole text")) { Text(whole).font(.callout).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
         } else if judgement.source.hasPrefix("imap://") {
             VStack(alignment: .leading, spacing: 6) {
                 Button {
@@ -82,7 +82,7 @@ struct UnplacedSheet: View {
                 } label: {
                     HStack(spacing: 8) {
                         if loading { ProgressView() }
-                        Text(loading ? "Reading …" : "Show the whole text")
+                        Text(loading ? String(localized: "Reading …") : String(localized: "Show the whole text"))
                     }
                 }
                 .buttonStyle(.gold).disabled(loading)

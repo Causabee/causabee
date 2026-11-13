@@ -108,13 +108,13 @@ final class Store {
         guard trialOpen, let intro = product.subscription?.introductoryOffer, intro.paymentMode == .freeTrial else { return Self.price(of: product) }
         let period = intro.period
         let unit = switch period.unit {
-        case .day: period.value == 1 ? "day" : "days"
-        case .week: period.value == 1 ? "week" : "weeks"
-        case .month: period.value == 1 ? "month" : "months"
-        case .year: period.value == 1 ? "year" : "years"
-        @unknown default: "periods"
+        case .day: period.value == 1 ? String(localized: "day") : String(localized: "days")
+        case .week: period.value == 1 ? String(localized: "week") : String(localized: "weeks")
+        case .month: period.value == 1 ? String(localized: "month") : String(localized: "months")
+        case .year: period.value == 1 ? String(localized: "year") : String(localized: "years")
+        @unknown default: String(localized: "periods")
         }
-        return "\(period.value) \(unit) free, then " + Self.price(of: product)
+        return String(format: String(localized: "%lld %@ free, then %@"), period.value, unit, Self.price(of: product))
     }
 
     /// A transaction done with: a top-up only once the beeserver has added it — until then the
@@ -191,7 +191,7 @@ final class Store {
             switch try await product.purchase(options: [.appAccountToken(Self.accountID)]) {
             case .success(let result):
                 guard case .verified(let transaction) = result else {
-                    problem = "The App Store could not confirm the purchase. Nothing was charged that is not confirmed."
+                    problem = String(localized: "The App Store could not confirm the purchase. Nothing was charged that is not confirmed.")
                     return
                 }
                 if Self.topUpIDs.contains(transaction.productID) {
@@ -203,7 +203,7 @@ final class Store {
                         ProWait.clear()
                         asks = nil
                     } else {
-                        problem = "The top-up is bought and kept: it is added as soon as the beeserver answers."
+                        problem = String(localized: "The top-up is bought and kept: it is added as soon as the beeserver answers.")
                     }
                     return
                 }
@@ -211,7 +211,7 @@ final class Store {
                 await refresh()
                 if plan >= .matters { asks = nil }
             case .pending:
-                problem = "The purchase waits for approval — Ask to Buy, or the bank."
+                problem = String(localized: "The purchase waits for approval — Ask to Buy, or the bank.")
             case .userCancelled:
                 break
             @unknown default:
@@ -274,12 +274,13 @@ final class Store {
     static func price(of product: Product) -> String {
         guard let period = product.subscription?.subscriptionPeriod else { return product.displayPrice }
         let unit = switch period.unit {
-        case .day: "day"
-        case .week: "week"
-        case .month: "month"
-        case .year: "year"
-        @unknown default: "period"
+        case .day: period.value == 1 ? String(localized: "day") : String(localized: "days")
+        case .week: period.value == 1 ? String(localized: "week") : String(localized: "weeks")
+        case .month: period.value == 1 ? String(localized: "month") : String(localized: "months")
+        case .year: period.value == 1 ? String(localized: "year") : String(localized: "years")
+        @unknown default: period.value == 1 ? String(localized: "period") : String(localized: "periods")
         }
-        return period.value == 1 ? "\(product.displayPrice) a \(unit)" : "\(product.displayPrice) every \(period.value) \(unit)s"
+        return period.value == 1 ? String(format: String(localized: "%@ a %@"), product.displayPrice, unit)
+                                 : String(format: String(localized: "%@ every %lld %@"), product.displayPrice, period.value, unit)
     }
 }

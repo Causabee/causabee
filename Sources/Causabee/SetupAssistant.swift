@@ -79,11 +79,11 @@ struct SetupAssistant: View {
         var id: Int { rawValue }
         var title: String {
             switch self {
-            case .you: "About you"
-            case .ai: "Your plan"
-            case .mail: "Mail"
-            case .calendar: "Calendar"
-            case .ready: "Ready"
+            case .you: String(localized: "About you")
+            case .ai: String(localized: "Your plan")
+            case .mail: String(localized: "Mail")
+            case .calendar: String(localized: "Calendar")
+            case .ready: String(localized: "Ready")
             }
         }
         var icon: String {
@@ -227,7 +227,7 @@ struct SetupAssistant: View {
             ForEach(Step.allCases.filter { $0 != .ready }) { item in
                 Button { step = item } label: {
                     Label {
-                        Text(item.title + (isDone(item) ? "" : item == .calendar ? " — not connected, you can do it later" : " — still missing"))
+                        Text(item.title + (isDone(item) ? "" : item == .calendar ? String(localized: " — not connected, you can do it later") : String(localized: " — still missing")))
                     } icon: {
                         Image(systemName: isDone(item) ? "checkmark.circle.fill" : item == .calendar ? "circle" : "exclamationmark.circle")
                             .foregroundStyle(isDone(item) ? Theme.done : item == .calendar ? .secondary : Theme.warning)
@@ -238,10 +238,10 @@ struct SetupAssistant: View {
             Divider().padding(.vertical, 4)
             Text("How it goes from here")
                 .font(.headline)
-            Hint(number: 1, text: "Put the label “Causabee” on the mails you want sorted. Start with a few from one matter.")
-            Hint(number: 2, text: "Click “Get new mail”. Causabee fetches them; nothing is read by an AI yet.")
-            Hint(number: 3, text: "Click “Sort in”. Each mail is sorted once — by Apple's model on this Mac, or with Pro by the bigger AI — into a matter with its tasks, dates and people.")
-            Hint(number: 4, text: "Drop a screenshot, a photo, a PDF or a note onto the window any time. It is sorted the same way.")
+            Hint(number: 1, text: String(localized: "Put the label “Causabee” on the mails you want sorted. Start with a few from one matter."))
+            Hint(number: 2, text: String(localized: "Click “Get new mail”. Causabee fetches them; nothing is read by an AI yet."))
+            Hint(number: 3, text: String(localized: "Click “Sort in”. Each mail is sorted once — by Apple's model on this Mac, or with Pro by the bigger AI — into a matter with its tasks, dates and people."))
+            Hint(number: 4, text: String(localized: "Drop a screenshot, a photo, a PDF or a note onto the window any time. It is sorted the same way."))
         }
     }
 }
@@ -287,13 +287,13 @@ private struct YouStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Explain("Your name and the email addresses you use, one per line. Causabee needs them to tell you apart from everyone else: you are never listed as a person in your own matters, and tasks for you are marked “Mine”.")
+            Explain(String(localized: "Your name and the email addresses you use, one per line. Causabee needs them to tell you apart from everyone else: you are never listed as a person in your own matters, and tasks for you are marked “Mine”."))
             TextEditor(text: $text)
                 .font(.body)
                 .frame(height: 110)
                 .padding(6)
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.strongLine))
-            Explain("Add a nickname if people write to you by it.")
+            Explain(String(localized: "Add a nickname if people write to you by it."))
         }
         .onAppear {
             text = (names.isEmpty ? [NSFullUserName()] : names).joined(separator: "\n")
@@ -313,8 +313,8 @@ private struct YouStep: View {
 private struct PlanStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Explain("Causabee is free for three open matters: Apple's model on this Mac reads your mail, and nothing leaves it. Causabee Plus holds every matter; Causabee Pro has the bigger AI read and answer, names disguised first.")
-            Explain("Plans are bought in the App Store on your iPhone or iPad. This Mac follows through iCloud — nothing to do here.")
+            Explain(String(localized: "Causabee is free for three open matters: Apple's model on this Mac reads your mail, and nothing leaves it. Causabee Plus holds every matter; Causabee Pro has the bigger AI read and answer, names disguised first."))
+            Explain(String(localized: "Plans are bought in the App Store on your iPhone or iPad. This Mac follows through iCloud — nothing to do here."))
             Form { PlanSettings() }.formStyle(.grouped).frame(minHeight: 200)
         }
     }
@@ -338,8 +338,9 @@ private struct MailStep: View {
         let saved = SetupState.mailAccount
         VStack(alignment: .leading, spacing: 14) {
             if let saved {
-                Explain("Causabee reads your mail the way a mail app does. It only reads: it never sends, deletes, moves or marks mail as read.")
-                Outcome(text: "Connected: \(saved.user)" + (saved.usesGoogle ? ", signed in with Google" : " on \(saved.host)"), good: true)
+                Explain(String(localized: "Causabee reads your mail the way a mail app does. It only reads: it never sends, deletes, moves or marks mail as read."))
+                Outcome(text: saved.usesGoogle ? String(format: String(localized: "Connected: %@, signed in with Google"), saved.user)
+                                               : String(format: String(localized: "Connected: %@ on %@"), saved.user, saved.host), good: true)
                 labelSection(saved)
             } else {
                 // The same setup as on the iPhone and the iPad: the address first, then its way in.
@@ -358,17 +359,17 @@ private struct MailStep: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(gmail ? "The label “\(labelName)” in Gmail" : "The folder “\(labelName)”").font(.headline).padding(.top, 6)
             Explain(gmail
-                    ? "Causabee reads only the mail that has the label “\(labelName)”. Nothing else in your mailbox is read. You decide what it sees by putting the label on a mail."
-                    : "Causabee reads only the mail in the folder “\(labelName)”. Nothing else in your mailbox is read. You decide what it sees by moving a mail there.")
+                    ? String(format: String(localized: "Causabee reads only the mail that has the label “%@”. Nothing else in your mailbox is read. You decide what it sees by putting the label on a mail."), labelName)
+                    : String(format: String(localized: "Causabee reads only the mail in the folder “%@”. Nothing else in your mailbox is read. You decide what it sees by moving a mail there."), labelName))
             if gmail {
-                Hint(number: 1, text: "In Gmail, on the left, click “+” next to Labels and make a label called “\(labelName)”.")
-                Hint(number: 2, text: "Open a mail, click the label icon, and tick “\(labelName)”. Start with a few mails from one matter.")
-                Hint(number: 3, text: "Replies in the same thread are found by themselves: label a thread once.")
-                Explain("Tip: a Gmail filter can put the label on mail from the school, the landlord or the insurer by itself. The label stays on the mail; you can take it off at any time.")
+                Hint(number: 1, text: String(format: String(localized: "In Gmail, on the left, click “+” next to Labels and make a label called “%@”."), labelName))
+                Hint(number: 2, text: String(format: String(localized: "Open a mail, click the label icon, and tick “%@”. Start with a few mails from one matter."), labelName))
+                Hint(number: 3, text: String(localized: "Replies in the same thread are found by themselves: label a thread once."))
+                Explain(String(localized: "Tip: a Gmail filter can put the label on mail from the school, the landlord or the insurer by itself. The label stays on the mail; you can take it off at any time."))
             } else {
-                Hint(number: 1, text: "In your mail app or on the provider's website, make a folder called “\(labelName)”.")
-                Hint(number: 2, text: "Move or copy the mails you want sorted into it. Start with a few from one matter.")
-                Hint(number: 3, text: "The name must be “\(labelName)”. Capitals do not matter.")
+                Hint(number: 1, text: String(format: String(localized: "In your mail app or on the provider's website, make a folder called “%@”."), labelName))
+                Hint(number: 2, text: String(localized: "Move or copy the mails you want sorted into it. Start with a few from one matter."))
+                Hint(number: 3, text: String(format: String(localized: "The name must be “%@”. Capitals do not matter."), labelName))
             }
         }
     }
@@ -378,9 +379,10 @@ private struct MailStep: View {
         labelHowTo(gmail: account.host.contains("gmail"))
         if let label {
             if label.found {
-                Outcome(text: "Found “\(labelName)”, with \(label.mails) \(label.mails == 1 ? "mail" : "mails").", good: true)
+                Outcome(text: label.mails == 1 ? String(format: String(localized: "Found “%@”, with 1 mail."), labelName)
+                                               : String(format: String(localized: "Found “%@”, with %lld mails."), labelName, label.mails), good: true)
             } else {
-                Outcome(text: "There is no “\(labelName)” yet. Make it, put it on a few mails, then check again.", good: false)
+                Outcome(text: String(format: String(localized: "There is no “%@” yet. Make it, put it on a few mails, then check again."), labelName), good: false)
             }
         }
         HStack {
@@ -409,7 +411,7 @@ private struct MailStep: View {
                 label = await count(in: try await client.folders(), client: client)
                 await client.logout()
             } catch {
-                result = ("Could not look: \(plainWords(error))", false)
+                result = (String(format: String(localized: "Could not look: %@"), plainWords(error)), false)
             }
             working = false
         }
@@ -434,17 +436,20 @@ private struct CalendarStep: View {
         let _ = tick
         let calendars = Calendars.shared
         VStack(alignment: .leading, spacing: 14) {
-            Explain("Appointments and deadlines can go into Calendar, and tasks into Reminders, with one click. Causabee also sees what is already there, so nothing is added twice. It only adds what you click.")
+            Explain(String(localized: "Appointments and deadlines can go into Calendar, and tasks into Reminders, with one click. Causabee also sees what is already there, so nothing is added twice. It only adds what you click."))
             if SetupState.isCalendarConnected {
-                Outcome(text: "Connected\(calendars.canReadEvents ? " to Calendar" : "")\(calendars.canReadEvents && calendars.canReadReminders ? " and" : "")\(calendars.canReadReminders ? " to Reminders" : "").", good: true)
+                Outcome(text: calendars.canReadEvents && calendars.canReadReminders ? String(localized: "Connected to Calendar and to Reminders.")
+                        : calendars.canReadEvents ? String(localized: "Connected to Calendar.")
+                        : calendars.canReadReminders ? String(localized: "Connected to Reminders.")
+                        : String(localized: "Connected."), good: true)
             } else if calendars.asked, !SetupState.isFresh {
-                Outcome(text: "No access. Allow it in System Settings → Privacy & Security → Calendars and Reminders.", good: false)
+                Outcome(text: String(localized: "No access. Allow it in System Settings → Privacy & Security → Calendars and Reminders."), good: false)
             } else {
                 Button("Connect Calendar and Reminders") {
                     Task { await SetupState.connectCalendar(); tick += 1; changed() }
                 }
             }
-            Explain("You can skip this and connect later in Settings (⌘,).")
+            Explain(String(localized: "You can skip this and connect later in Settings (⌘,)."))
         }
     }
 }

@@ -214,10 +214,12 @@ struct FirstStep: View {
     // MARK: iCloud
 
     private static var signedIn: Bool {
+        // The account says itself in the device's language, so the word is looked up on both sides.
+        let word = String(localized: "signed in to iCloud")
         #if os(iOS)
-        PhoneCloud.container != nil && PhoneCloudStatus.shared.account == "signed in to iCloud"
+        return PhoneCloud.container != nil && PhoneCloudStatus.shared.account == word
         #else
-        CloudSync.mode == .on && CloudSync.shared.account == "signed in to iCloud"
+        return CloudSync.mode == .on && CloudSync.shared.account == word
         #endif
     }
 

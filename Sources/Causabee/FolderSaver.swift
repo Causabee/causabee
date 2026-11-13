@@ -22,16 +22,16 @@ final class FolderSaver {
         guard MatterFolders.root != nil, !matters.isEmpty else { return }
         guard busy == nil else { waiting += matters.filter { new in !waiting.contains { $0 === new } }; return }
         let account = Keychain.accounts().first
-        busy = "Saving files …"
+        busy = String(localized: "Saving files …")
         Task {
             var password: String?
             if let account { password = try? await MailSecret.secret(for: account) }
             let result = await MatterFolders.save(matters, account: account, password: password) { done, total in
-                MainActor.assumeIsolated { FolderSaver.shared.busy = "Saving files … \(done) of \(total)" }
+                MainActor.assumeIsolated { FolderSaver.shared.busy = String(format: String(localized: "Saving files … %lld of %lld"), done, total) }
             }
             busy = nil
-            last = "\(result.saved) saved, \(result.already) there already"
-                + (result.failed.isEmpty ? "" : ", \(result.failed.count) not found in their mail")
+            last = String(format: String(localized: "%lld saved, %lld there already"), result.saved, result.already)
+                + (result.failed.isEmpty ? "" : String(format: String(localized: ", %lld not found in their mail"), result.failed.count))
             let next = waiting
             waiting = []
             save(next)
@@ -52,14 +52,14 @@ struct FolderSettings: View {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
-        panel.prompt = "Use this folder"
-        panel.message = "The folder for Causabee's matter folders — one subfolder per matter."
+        panel.prompt = String(localized: "Use this folder")
+        panel.message = String(localized: "The folder for Causabee's matter folders — one subfolder per matter.")
         if panel.runModal() == .OK, let url = panel.url { chosen = url.path }
     }
 
     var body: some View {
         HStack {
-            Text(chosen.isEmpty ? (MatterFolders.drive != nil ? "iCloud Drive → Causabee" : "No folder chosen yet")
+            Text(chosen.isEmpty ? (MatterFolders.drive != nil ? "iCloud Drive → Causabee" : String(localized: "No folder chosen yet"))
                                 : (chosen as NSString).abbreviatingWithTildeInPath)
                 .font(.caption).lineLimit(1).truncationMode(.middle)
             Spacer()

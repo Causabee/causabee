@@ -27,7 +27,7 @@ public enum ScreenText {
     public enum Failure: Error, CustomStringConvertible {
         case unreadable(URL)
         public var description: String {
-            switch self { case .unreadable(let url): "\(url.lastPathComponent) is not an image this Mac can read" }
+            switch self { case .unreadable(let url): String(format: String(localized: "%@ is not an image this Mac can read", bundle: .module), url.lastPathComponent) }
         }
     }
 

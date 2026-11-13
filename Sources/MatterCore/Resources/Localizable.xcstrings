@@ -1,6 +1,1196 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    ", quick questions to %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", kurze Fragen an %@"
+          }
+        }
+      }
+    },
+    ", quick questions with %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", kurze Fragen mit %@"
+          }
+        }
+      }
+    },
+    "Everything is read with %@: through the beeserver with Pro, or %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles wird mit %@ gelesen: mit Pro über den Beeserver, oder %@."
+          }
+        }
+      }
+    },
+    "Read, sorted and digested with %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gelesen, einsortiert und zusammengefasst mit %@."
+          }
+        }
+      }
+    },
+    "Read and sorted with %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gelesen und einsortiert mit %@."
+          }
+        }
+      }
+    },
+    "Each item's digest, and each matter's brief and next step, with %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Überblick zu jedem Stück, und Zusammenfassung und nächster Schritt jedes Anliegens, mit %@."
+          }
+        }
+      }
+    },
+    "Each matter's brief and next step with %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenfassung und nächster Schritt jedes Anliegens mit %@."
+          }
+        }
+      }
+    },
+    "The chat with %@%@. ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Chat mit %@%@. "
+          }
+        }
+      }
+    },
+    "Each model was chosen only after it did its job as well as GPT-6.1 Sol. All of them get only pseudonymised text.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jedes Modell wurde erst gewählt, nachdem es seine Aufgabe so gut erledigt hat wie GPT-6.1 Sol. Alle bekommen nur pseudonymisierten Text."
+          }
+        }
+      }
+    },
+    "all day": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ganztägig"
+          }
+        }
+      }
+    },
+    " · there ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · dort "
+          }
+        }
+      }
+    },
+    " · done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · erledigt"
+          }
+        }
+      }
+    },
+    "No time yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Zeit"
+          }
+        }
+      }
+    },
+    "Calendar": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalender"
+          }
+        }
+      }
+    },
+    "Reminders": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erinnerungen"
+          }
+        }
+      }
+    },
+    "Causabee could not make its list “%@” in %@%@. ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee konnte seine Liste „%@“ in %@%@ nicht anlegen. "
+          }
+        }
+      }
+    },
+    "Make a list called “%@” there, or choose a list in Settings → Calendar and Reminders.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leg dort eine Liste namens „%@“ an, oder wähl in den Einstellungen → Kalender und Erinnerungen eine Liste."
+          }
+        }
+      }
+    },
+    "No API key for this AI model yet. Add one in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch kein API-Key für dieses KI-Modell. Füg einen in den Einstellungen hinzu."
+          }
+        }
+      }
+    },
+    "The AI service did not accept the API key. Check it in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der KI-Dienst hat den API-Key nicht angenommen. Prüf ihn in den Einstellungen."
+          }
+        }
+      }
+    },
+    "Causabee Pro has ended. Apple's model on this device reads what comes in; Pro comes back with the subscription.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee Pro ist beendet. Apples Modell auf diesem Gerät liest, was hereinkommt; mit dem Abo kommt Pro zurück."
+          }
+        }
+      }
+    },
+    "This month's Pro is used up. Apple's model on this device reads what comes in until it starts anew.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro ist für diesen Monat aufgebraucht. Bis es neu beginnt, liest Apples Modell auf diesem Gerät, was hereinkommt."
+          }
+        }
+      }
+    },
+    "Today's share of Pro is used. It goes on tomorrow; Apple's model on this device reads what comes in meanwhile.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der heutige Anteil von Pro ist aufgebraucht. Morgen geht es weiter; bis dahin liest Apples Modell auf diesem Gerät, was hereinkommt."
+          }
+        }
+      }
+    },
+    "The AI service says the account has no credit left. Top it up with the provider, then try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der KI-Dienst sagt, das Konto hat kein Guthaben mehr. Lad es beim Anbieter auf und versuch es dann noch einmal."
+          }
+        }
+      }
+    },
+    "The AI service does not know this model. Choose another in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der KI-Dienst kennt dieses Modell nicht. Wähl in den Einstellungen ein anderes."
+          }
+        }
+      }
+    },
+    "The AI service took too long to answer. Try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der KI-Dienst hat zu lange gebraucht. Versuch es noch einmal."
+          }
+        }
+      }
+    },
+    "This is too much text for the AI model at once. Try with less, or choose another model in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das ist auf einmal zu viel Text für das KI-Modell. Versuch es mit weniger, oder wähl in den Einstellungen ein anderes Modell."
+          }
+        }
+      }
+    },
+    "Too many requests to the AI service just now. Wait a minute, then try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gerade zu viele Anfragen an den KI-Dienst. Warte eine Minute und versuch es dann noch einmal."
+          }
+        }
+      }
+    },
+    "The AI service is busy right now. Try again in a minute.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der KI-Dienst ist gerade beschäftigt. Versuch es in einer Minute noch einmal."
+          }
+        }
+      }
+    },
+    "The AI service had a problem of its own. Try again in a minute.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beim KI-Dienst selbst ist etwas schiefgegangen. Versuch es in einer Minute noch einmal."
+          }
+        }
+      }
+    },
+    "The AI service could not take the request. Try again; if it stays, choose another model in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der KI-Dienst konnte die Anfrage nicht annehmen. Versuch es noch einmal; bleibt es dabei, wähl in den Einstellungen ein anderes Modell."
+          }
+        }
+      }
+    },
+    "The AI's answer could not be read. Try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Antwort der KI war nicht lesbar. Versuch es noch einmal."
+          }
+        }
+      }
+    },
+    "The AI model declined to answer this. Try other words, or choose another model in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das KI-Modell hat die Antwort abgelehnt. Versuch es mit anderen Worten, oder wähl in den Einstellungen ein anderes Modell."
+          }
+        }
+      }
+    },
+    "The AI's answer was too long and was cut off. Try again, or ask about less at once.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Antwort der KI war zu lang und wurde abgeschnitten. Versuch es noch einmal, oder frag nach weniger auf einmal."
+          }
+        }
+      }
+    },
+    "No connection to the internet. Nothing was sent.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Verbindung zum Internet. Es wurde nichts gesendet."
+          }
+        }
+      }
+    },
+    "The connection was lost on the way. Try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Verbindung ist unterwegs abgebrochen. Versuch es noch einmal."
+          }
+        }
+      }
+    },
+    "No answer came in time. Try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es kam keine Antwort in der Zeit. Versuch es noch einmal."
+          }
+        }
+      }
+    },
+    "The service could not be reached. Try again in a moment.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Dienst war nicht erreichbar. Versuch es gleich noch einmal."
+          }
+        }
+      }
+    },
+    "No secure connection could be made. Try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es kam keine sichere Verbindung zustande. Versuch es noch einmal."
+          }
+        }
+      }
+    },
+    "Stopped.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestoppt."
+          }
+        }
+      }
+    },
+    "The connection to the mail server dropped on the way — the network may have changed.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Verbindung zum Mailserver ist unterwegs abgebrochen — das Netz hat sich vielleicht geändert."
+          }
+        }
+      }
+    },
+    "Not set": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht gesetzt"
+          }
+        }
+      }
+    },
+    "%lld min": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Min."
+          }
+        }
+      }
+    },
+    "%lld h": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Std."
+          }
+        }
+      }
+    },
+    "%lld h %lld min": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Std. %lld Min."
+          }
+        }
+      }
+    },
+    "A closed matter takes no new subject": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein abgeschlossenes Anliegen nimmt kein neues Thema auf"
+          }
+        }
+      }
+    },
+    "Written from this matter in Causabee": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus diesem Anliegen in Causabee geschrieben"
+          }
+        }
+      }
+    },
+    "Follows its thread": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folgt seinem Thread"
+          }
+        }
+      }
+    },
+    "Yours to place": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Von dir einzuordnen"
+          }
+        }
+      }
+    },
+    "Read on this device": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf diesem Gerät gelesen"
+          }
+        }
+      }
+    },
+    "not sent: ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nicht gesendet: "
+          }
+        }
+      }
+    },
+    " · written from Causabee": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · aus Causabee geschrieben"
+          }
+        }
+      }
+    },
+    " · sent by you, no label": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · von dir gesendet, kein Label"
+          }
+        }
+      }
+    },
+    " · no label": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · kein Label"
+          }
+        }
+      }
+    },
+    "The mail %@ is no longer in the mailbox.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Mail %@ ist nicht mehr im Postfach."
+          }
+        }
+      }
+    },
+    "Nothing to disguise": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nichts unkenntlich zu machen"
+          }
+        }
+      }
+    },
+    "1 item disguised": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Angabe unkenntlich gemacht"
+          }
+        }
+      }
+    },
+    "%lld items disguised": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Angaben unkenntlich gemacht"
+          }
+        }
+      }
+    },
+    "Your question had nothing to disguise.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In deiner Frage war nichts unkenntlich zu machen."
+          }
+        }
+      }
+    },
+    "1 item in your question was disguised.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Angabe in deiner Frage wurde unkenntlich gemacht."
+          }
+        }
+      }
+    },
+    "%lld items in your question were disguised.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Angaben in deiner Frage wurden unkenntlich gemacht."
+          }
+        }
+      }
+    },
+    " With the matter's facts, %lld went out disguised — names, places, companies, addresses, numbers.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Mit den Fakten des Anliegens gingen %lld unkenntlich hinaus — Namen, Orte, Firmen, Adressen, Nummern."
+          }
+        }
+      }
+    },
+    "Stopped": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestoppt"
+          }
+        }
+      }
+    },
+    "The list of names at %@ cannot be read, so nothing was sent.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Namensliste unter %@ ist nicht lesbar, darum wurde nichts gesendet."
+          }
+        }
+      }
+    },
+    "New task": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Aufgabe"
+          }
+        }
+      }
+    },
+    "New note": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Notiz"
+          }
+        }
+      }
+    },
+    "New link": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neuer Link"
+          }
+        }
+      }
+    },
+    "New detail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neues Detail"
+          }
+        }
+      }
+    },
+    "New contact": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neuer Kontakt"
+          }
+        }
+      }
+    },
+    "Type or say what is to do. A day or a time in it becomes its date.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schreib oder sag, was zu tun ist. Ein Tag oder eine Zeit darin wird sein Termin."
+          }
+        }
+      }
+    },
+    "Type or say it. It is kept in the matter's notes, word for word.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schreib oder sag es. Es wird Wort für Wort in den Notizen des Anliegens gesichert."
+          }
+        }
+      }
+    },
+    "The address, and a name for it if you like. Kept with the matter.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Adresse, und wenn du magst ein Name dafür. Wird beim Anliegen gesichert."
+          }
+        }
+      }
+    },
+    "What it is — a number, a code, an account — and what it says.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was es ist — eine Nummer, ein Code, ein Konto — und was darin steht."
+          }
+        }
+      }
+    },
+    "Who it is, and what they are to this matter if you like.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wer es ist, und wenn du magst, was die Person für dieses Anliegen ist."
+          }
+        }
+      }
+    },
+    "Task": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgabe"
+          }
+        }
+      }
+    },
+    "Note": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notiz"
+          }
+        }
+      }
+    },
+    "Link": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link"
+          }
+        }
+      }
+    },
+    "Detail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detail"
+          }
+        }
+      }
+    },
+    "Contact": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontakt"
+          }
+        }
+      }
+    },
+    "What needs doing?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was ist zu tun?"
+          }
+        }
+      }
+    },
+    "What to keep": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was behalten wird"
+          }
+        }
+      }
+    },
+    "Address": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse"
+          }
+        }
+      }
+    },
+    "Name (optional)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name (optional)"
+          }
+        }
+      }
+    },
+    "What it is, like Insurance number": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was es ist, z. B. Versicherungsnummer"
+          }
+        }
+      }
+    },
+    "What it says": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was darin steht"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "Role (optional)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rolle (optional)"
+          }
+        }
+      }
+    },
+    "Matter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anliegen"
+          }
+        }
+      }
+    },
+    "Mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail"
+          }
+        }
+      }
+    },
+    "File": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datei"
+          }
+        }
+      }
+    },
+    "Step": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schritt"
+          }
+        }
+      }
+    },
+    "Info": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info"
+          }
+        }
+      }
+    },
+    "Person": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Person"
+          }
+        }
+      }
+    },
+    "Appointment": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termin"
+          }
+        }
+      }
+    },
+    "Deadline": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frist"
+          }
+        }
+      }
+    },
+    "New info": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Infos"
+          }
+        }
+      }
+    },
+    "1 new mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 neue Mail"
+          }
+        }
+      }
+    },
+    "%lld new mails": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld neue Mails"
+          }
+        }
+      }
+    },
+    "Understood on this %@. Nothing left it.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf diesem %@ verstanden. Nichts hat es verlassen."
+          }
+        }
+      }
+    },
+    "That reads as something to do. Open its matter and say it there, to add it as a task.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das klingt nach etwas zu tun. Öffne das Anliegen und sag es dort, dann wird es eine Aufgabe."
+          }
+        }
+      }
+    },
+    "Asking needs Pro. Use Pro on top, then ask again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fragen braucht Pro. Schalt Pro dazu, dann frag noch einmal."
+          }
+        }
+      }
+    },
+    "Stopped · ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestoppt · "
+          }
+        }
+      }
+    },
+    "1 file added": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Datei hinzugefügt"
+          }
+        }
+      }
+    },
+    "Nothing new": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nichts Neues"
+          }
+        }
+      }
+    },
+    "%lld files added": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Dateien hinzugefügt"
+          }
+        }
+      }
+    },
+    "%lld already here": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld schon hier"
+          }
+        }
+      }
+    },
+    "%lld could not be read": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld nicht lesbar"
+          }
+        }
+      }
+    },
+    "(no subject)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(kein Betreff)"
+          }
+        }
+      }
+    },
+    "1 mail sorted into %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Mail in %@ einsortiert"
+          }
+        }
+      }
+    },
+    "%lld mails sorted into %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Mails in %@ einsortiert"
+          }
+        }
+      }
+    },
+    "1 mail sorted into %lld matters": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Mail in %lld Anliegen einsortiert"
+          }
+        }
+      }
+    },
+    "%lld mails sorted into %lld matters": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Mails in %lld Anliegen einsortiert"
+          }
+        }
+      }
+    },
+    "1 mail sorted": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Mail einsortiert"
+          }
+        }
+      }
+    },
+    "%lld mails sorted": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Mails einsortiert"
+          }
+        }
+      }
+    },
+    "1 new task": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 neue Aufgabe"
+          }
+        }
+      }
+    },
+    "%lld new tasks": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld neue Aufgaben"
+          }
+        }
+      }
+    },
+    "1 date": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Termin"
+          }
+        }
+      }
+    },
+    "%lld dates": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Termine"
+          }
+        }
+      }
+    },
+    "%lld without a matter, below": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ohne Anliegen, unten"
+          }
+        }
+      }
+    },
+    "%lld could not be read, tried again next time": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld nicht lesbar, beim nächsten Mal wieder versucht"
+          }
+        }
+      }
+    },
     "Digest": {
       "localizations": {
         "de": {
@@ -17,16 +1207,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plan"
-          }
-        }
-      }
-    },
-    "Mail": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mail"
           }
         }
       }
@@ -61,12 +1241,1182 @@
         }
       }
     },
+    "This week": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Woche"
+          }
+        }
+      }
+    },
+    "Next week": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nächste Woche"
+          }
+        }
+      }
+    },
+    "Without a day": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Tag"
+          }
+        }
+      }
+    },
+    "Earlier in %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Früher im %@"
+          }
+        }
+      }
+    },
+    "TODAY · %@, %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HEUTE · %@, %@"
+          }
+        }
+      }
+    },
+    "YESTERDAY · %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GESTERN · %@"
+          }
+        }
+      }
+    },
     "Nothing yet": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Noch nichts"
+          }
+        }
+      }
+    },
+    " at %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " um %@"
+          }
+        }
+      }
+    },
+    "Mine": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine"
+          }
+        }
+      }
+    },
+    "Ours": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsere"
+          }
+        }
+      }
+    },
+    "Waiting for": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartet auf"
+          }
+        }
+      }
+    },
+    "Unclear": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unklar"
+          }
+        }
+      }
+    },
+    "Next: ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nächster Schritt: "
+          }
+        }
+      }
+    },
+    "Summary": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenfassung"
+          }
+        }
+      }
+    },
+    "Tasks": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgaben"
+          }
+        }
+      }
+    },
+    "by ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bis "
+          }
+        }
+      }
+    },
+    "only after: ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "erst nach: "
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigt"
+          }
+        }
+      }
+    },
+    "done ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "erledigt "
+          }
+        }
+      }
+    },
+    "Good to know": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gut zu wissen"
+          }
+        }
+      }
+    },
+    "Appointments": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termine"
+          }
+        }
+      }
+    },
+    "Deadlines": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fristen"
+          }
+        }
+      }
+    },
+    "Decisions": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entscheidungen"
+          }
+        }
+      }
+    },
+    "Details": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        }
+      }
+    },
+    "Links": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Links"
+          }
+        }
+      }
+    },
+    "History": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlauf"
+          }
+        }
+      }
+    },
+    "From Causabee, %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus Causabee, %@"
+          }
+        }
+      }
+    },
+    "closed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "abgeschlossen"
+          }
+        }
+      }
+    },
+    "since %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "seit %@"
+          }
+        }
+      }
+    },
+    "Move": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Umzug"
+          }
+        }
+      }
+    },
+    "Bathroom": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bad"
+          }
+        }
+      }
+    },
+    "Repair": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reparatur"
+          }
+        }
+      }
+    },
+    "Car": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto"
+          }
+        }
+      }
+    },
+    "Trip": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reise"
+          }
+        }
+      }
+    },
+    "Travel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Urlaub"
+          }
+        }
+      }
+    },
+    "Health": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesundheit"
+          }
+        }
+      }
+    },
+    "Care": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pflege"
+          }
+        }
+      }
+    },
+    "Doctor": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arzt"
+          }
+        }
+      }
+    },
+    "Pet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haustier"
+          }
+        }
+      }
+    },
+    "School": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schule"
+          }
+        }
+      }
+    },
+    "Study": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Studium"
+          }
+        }
+      }
+    },
+    "Celebration": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feier"
+          }
+        }
+      }
+    },
+    "Insurance": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versicherung"
+          }
+        }
+      }
+    },
+    "Legal": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recht"
+          }
+        }
+      }
+    },
+    "Tax and bills": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steuer und Rechnungen"
+          }
+        }
+      }
+    },
+    "Money": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geld"
+          }
+        }
+      }
+    },
+    "Bank and office": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank und Amt"
+          }
+        }
+      }
+    },
+    "Work": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arbeit"
+          }
+        }
+      }
+    },
+    "Home": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wohnen"
+          }
+        }
+      }
+    },
+    "Keys": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlüssel"
+          }
+        }
+      }
+    },
+    "Garden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garten"
+          }
+        }
+      }
+    },
+    "Papers": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unterlagen"
+          }
+        }
+      }
+    },
+    "Folder": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordner"
+          }
+        }
+      }
+    },
+    "\n\nFrom “%@”:\n": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\n\nAus „%@“:\n"
+          }
+        }
+      }
+    },
+    "your Mac": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "deinem Mac"
+          }
+        }
+      }
+    },
+    "your iPhone": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "deinem iPhone"
+          }
+        }
+      }
+    },
+    "in its one mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in seiner einen Mail"
+          }
+        }
+      }
+    },
+    "in all %lld mails": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in allen %lld Mails"
+          }
+        }
+      }
+    },
+    "in %lld of %lld mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %lld von %lld Mail"
+          }
+        }
+      }
+    },
+    "in %lld of %lld mails": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %lld von %lld Mails"
+          }
+        }
+      }
+    },
+    "Kept only — Causabee hasn't read this.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur abgelegt — Causabee hat das nicht gelesen."
+          }
+        }
+      }
+    },
+    "Kept only — this kind of file can't be read yet.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur abgelegt — diese Art Datei kann noch nicht gelesen werden."
+          }
+        }
+      }
+    },
+    "No list of names yet, so nothing can be sent: get new mail on this iPhone once, or open Causabee on your Mac and wait until it has synced. Settings (⋯ on the overview) shows when it is here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Namensliste, darum kann nichts gesendet werden: hol einmal neue Mail auf diesem iPhone, oder öffne Causabee auf deinem Mac und warte, bis es synchronisiert hat. Die Einstellungen (⋯ auf der Übersicht) zeigen, wann sie hier ist."
+          }
+        }
+      }
+    },
+    "The list of names from your Mac cannot be read, so nothing was sent.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Namensliste von deinem Mac ist nicht lesbar, darum wurde nichts gesendet."
+          }
+        }
+      }
+    },
+    "Overdue": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überfällig"
+          }
+        }
+      }
+    },
+    "Soon": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bald"
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Nächstes"
+          }
+        }
+      }
+    },
+    "Follow up": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nachfassen"
+          }
+        }
+      }
+    },
+    "Wait": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warten"
+          }
+        }
+      }
+    },
+    "%@ · from your tasks": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · aus deinen Aufgaben"
+          }
+        }
+      }
+    },
+    " Then this can go ahead: ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Dann kann das weitergehen: "
+          }
+        }
+      }
+    },
+    " Then %lld more tasks can go ahead.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Dann können %lld weitere Aufgaben weitergehen."
+          }
+        }
+      }
+    },
+    "Overdue since %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überfällig seit %@."
+          }
+        }
+      }
+    },
+    "today": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "heute"
+          }
+        }
+      }
+    },
+    "on %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "am %@"
+          }
+        }
+      }
+    },
+    "Should have come by %@. A short follow-up helps.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sollte bis %@ da sein. Ein kurzes Nachfassen hilft."
+          }
+        }
+      }
+    },
+    "What it waited for is done.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worauf es gewartet hat, ist erledigt."
+          }
+        }
+      }
+    },
+    "Due on %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fällig am %@"
+          }
+        }
+      }
+    },
+    "The oldest open task, since %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die älteste offene Aufgabe, seit %@"
+          }
+        }
+      }
+    },
+    "Wait until %@. If nothing comes, follow up.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warte bis %@. Kommt nichts, fass nach."
+          }
+        }
+      }
+    },
+    "Nothing for you to do until it comes.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für dich nichts zu tun, bis es kommt."
+          }
+        }
+      }
+    },
+    "New task: ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Aufgabe: "
+          }
+        }
+      }
+    },
+    "Good to know: ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gut zu wissen: "
+          }
+        }
+      }
+    },
+    "Date %@: ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termin %@: "
+          }
+        }
+      }
+    },
+    "Deadline %@: ": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frist %@: "
+          }
+        }
+      }
+    },
+    "Your note": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Notiz"
+          }
+        }
+      }
+    },
+    "Saved from chat": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus dem Chat gesichert"
+          }
+        }
+      }
+    },
+    "Task added": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgabe hinzugefügt"
+          }
+        }
+      }
+    },
+    "Chat": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chat"
+          }
+        }
+      }
+    },
+    "Call": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anruf"
+          }
+        }
+      }
+    },
+    "Due %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fällig %@"
+          }
+        }
+      }
+    },
+    "Next: %@ · %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Nächstes: %@ · %@"
+          }
+        }
+      }
+    },
+    "the same name twice": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "derselbe Name zweimal"
+          }
+        }
+      }
+    },
+    "“%@” is in only one other name in this matter": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ steckt nur in einem anderen Namen in diesem Anliegen"
+          }
+        }
+      }
+    },
+    "“%@” is part of “%@”, and of no other name here": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ ist Teil von „%@“, und von keinem anderen Namen hier"
+          }
+        }
+      }
+    },
+    "Remove Person": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Person entfernen"
+          }
+        }
+      }
+    },
+    "Would start the matter “%@” — Causabee holds %lld open matters for free": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Würde das Anliegen „%@“ beginnen — Causabee hält %lld offene Anliegen gratis"
+          }
+        }
+      }
+    },
+    "renews %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "verlängert sich am %@"
+          }
+        }
+      }
+    },
+    "ends %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "endet am %@"
+          }
+        }
+      }
+    },
+    "%@ from %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ab %@"
+          }
+        }
+      }
+    },
+    "payment problem": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zahlungsproblem"
+          }
+        }
+      }
+    },
+    "Pro ended %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro endete am %@"
+          }
+        }
+      }
+    },
+    "Free": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gratis"
+          }
+        }
+      }
+    },
+    "until %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bis %@"
+          }
+        }
+      }
+    },
+    "Add a top-up": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guthaben aufladen"
+          }
+        }
+      }
+    },
+    "Pro, now and then": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro, ab und zu"
+          }
+        }
+      }
+    },
+    "Causabee · Free": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee · Gratis"
+          }
+        }
+      }
+    },
+    " · not counted yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · noch nicht gezählt"
+          }
+        }
+      }
+    },
+    "used for this month": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "für diesen Monat aufgebraucht"
+          }
+        }
+      }
+    },
+    "%@ left": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ übrig"
+          }
+        }
+      }
+    },
+    "%@ in top-ups": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ als Guthaben"
+          }
+        }
+      }
+    },
+    "not in use": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nicht in Nutzung"
+          }
+        }
+      }
+    },
+    "On, waiting: Pro has ended. A top-up goes on at once.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An, wartet: Pro ist beendet. Neues Guthaben wirkt sofort."
+          }
+        }
+      }
+    },
+    "On, waiting: nothing left to use until %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An, wartet: nichts mehr zu nutzen bis %@."
+          }
+        }
+      }
+    },
+    "it starts anew": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "es beginnt neu"
+          }
+        }
+      }
+    },
+    "Needs Pro or a top-up.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Braucht Pro oder Guthaben."
+          }
+        }
+      }
+    },
+    "%@ reads what comes in, as it comes, names disguised first.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ liest, was hereinkommt, sobald es kommt — Namen vorher unkenntlich."
+          }
+        }
+      }
+    },
+    "Off: Apple's model on this device reads what comes in. Nothing leaves it.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus: Apples Modell auf diesem Gerät liest, was hereinkommt. Nichts verlässt es."
           }
         }
       }
@@ -217,6 +2567,286 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aufgebraucht. Apples Modell auf diesem Gerät liest, was hereinkommt — oder lade neues Guthaben auf."
+          }
+        }
+      }
+    },
+    "Starts anew on %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beginnt neu am %@"
+          }
+        }
+      }
+    },
+    "top-ups carry over": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guthaben bleibt"
+          }
+        }
+      }
+    },
+    "Used for this month. Causabee goes on with Apple's model on this device until it starts anew — or with a top-up.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für diesen Monat aufgebraucht. Causabee macht mit Apples Modell auf diesem Gerät weiter, bis es neu beginnt — oder mit neuem Guthaben."
+          }
+        }
+      }
+    },
+    "See Pro": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro ansehen"
+          }
+        }
+      }
+    },
+    "Turn On": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einschalten"
+          }
+        }
+      }
+    },
+    "Top Up": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufladen"
+          }
+        }
+      }
+    },
+    "all %lld mails": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "alle %lld Mails"
+          }
+        }
+      }
+    },
+    "every mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jede Mail"
+          }
+        }
+      }
+    },
+    "Pro reads %@ for this.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro liest dafür %@."
+          }
+        }
+      }
+    },
+    "Pro is off. Turn it on to read %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro ist aus. Schalt es ein, um %@ zu lesen."
+          }
+        }
+      }
+    },
+    "This month's Pro starts anew on %@.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro beginnt am %@ neu."
+          }
+        }
+      }
+    },
+    "This month's Pro is used up.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro ist für diesen Monat aufgebraucht."
+          }
+        }
+      }
+    },
+    "Everything": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles"
+          }
+        }
+      }
+    },
+    "Scans": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scans"
+          }
+        }
+      }
+    },
+    "All": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle"
+          }
+        }
+      }
+    },
+    "With tasks or dates": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit Aufgaben oder Terminen"
+          }
+        }
+      }
+    },
+    "Information only": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Information"
+          }
+        }
+      }
+    },
+    "Kept only": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur abgelegt"
+          }
+        }
+      }
+    },
+    "Unread": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ungelesen"
+          }
+        }
+      }
+    },
+    "Newest": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neueste"
+          }
+        }
+      }
+    },
+    "Oldest": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Älteste"
+          }
+        }
+      }
+    },
+    "By person": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach Person"
+          }
+        }
+      }
+    },
+    "By kind": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach Art"
+          }
+        }
+      }
+    },
+    "Scans and files of your own": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scans und eigene Dateien"
+          }
+        }
+      }
+    },
+    "Files from mail": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dateien aus Mail"
+          }
+        }
+      }
+    },
+    "Nobody named": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niemand genannt"
+          }
+        }
+      }
+    },
+    "This question has something personal in it and is not sent.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In dieser Frage steckt etwas Persönliches, sie wird nicht gesendet."
+          }
+        }
+      }
+    },
+    "Looking things up works with Claude or OpenAI. Choose one for the assistant in Settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nachschlagen geht mit Claude oder OpenAI. Wähl in den Einstellungen eins für den Assistenten."
           }
         }
       }
@@ -487,6 +3117,156 @@
           "stringUnit": {
             "state": "translated",
             "value": "du"
+          }
+        }
+      }
+    },
+    "%@ is not an image this Mac can read": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ist kein Bild, das dieser Mac lesen kann"
+          }
+        }
+      }
+    },
+    "nothing readable": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nichts lesbar"
+          }
+        }
+      }
+    },
+    "Screenshot · text": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot · Text"
+          }
+        }
+      }
+    },
+    "Photo · text read on this device": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto · Text auf diesem Gerät gelesen"
+          }
+        }
+      }
+    },
+    "Your words": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Worte"
+          }
+        }
+      }
+    },
+    "PDF · 1 page": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF · 1 Seite"
+          }
+        }
+      }
+    },
+    "PDF · %lld pages": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF · %lld Seiten"
+          }
+        }
+      }
+    },
+    "Chat without a name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chat ohne Namen"
+          }
+        }
+      }
+    },
+    "Page %lld: %@ — not even with text recognition": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seite %lld: %@ — auch nicht mit Texterkennung"
+          }
+        }
+      }
+    },
+    "Page %lld: scanned, no text layer — read with text recognition on this device": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seite %lld: gescannt, keine Textebene — mit Texterkennung auf diesem Gerät gelesen"
+          }
+        }
+      }
+    },
+    "The speech model could not be loaded: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Sprachmodell konnte nicht geladen werden: %@"
+          }
+        }
+      }
+    },
+    "The speech model could not be started: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Sprachmodell konnte nicht gestartet werden: %@"
+          }
+        }
+      }
+    },
+    "Causabee may not use the microphone. Allow it in the system's privacy settings.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Causabee darf das Mikrofon nicht nutzen. Erlaub es in den Datenschutz-Einstellungen des Systems."
+          }
+        }
+      }
+    },
+    "The speech model is not ready.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Sprachmodell ist nicht bereit."
+          }
+        }
+      }
+    },
+    "Nothing was heard.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es war nichts zu hören."
           }
         }
       }

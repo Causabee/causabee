@@ -2051,6 +2051,26 @@
         }
       }
     },
+    "The file is not on this Mac: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Datei ist nicht auf diesem Mac: %@"
+          }
+        }
+      }
+    },
+    "Added on your iPhone: the file is only there. What it said is here.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf deinem iPhone hinzugefügt: die Datei ist nur dort. Was darin stand, ist hier."
+          }
+        }
+      }
+    },
     "Start a new matter": {
       "localizations": {
         "de": {

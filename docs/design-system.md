@@ -62,6 +62,7 @@ The reference is Apple's HIG (developer.apple.com/design/human-interface-guideli
 - **C3 · A part that exists is used.** `SectionHeader`, `BeeChip`, `MoreMenu`, `RowDivider`, `SourceLink`, `NextCard`, `ProLine`, `UpdateNowButton`, `DayTile`, `JournalPills`, `WhenChips`, `CardFace`, `MatterIconTile`. A view that looks like one of these is one of these. A new part that more than one screen needs goes into the files above. *read*
 - **C4 · Both apps, one name.** A view the Mac and the iPhone share uses the names that are right on both (`.filledButton()`, not `InkButtonStyle()`); a device's own look stays behind that name. *read*
 - **C5 · Words from `Say`.** A menu item's words come from `Say` in `MatterMenus.swift`, in Title Case, with "…" when it asks something more. *read*
+- **C6 · A word comes from the catalogue, never written twice.** Every word a person reads is looked up — SwiftUI's own parts do it themselves, ours say `String(localized: "…")` (`bundle: .module` in MatterCore). A word built out of pieces carries a placeholder instead of an interpolation, `String(format: String(localized: "Overdue since %@"), day)`, so the whole sentence can be said in another language's order. The same thing is the same key everywhere, so one thing has one word on all three devices. `scripts/words.py --escaped` names anything that escaped, and a test fails while one is left. *script, read*
 
 ## G · Liquid Glass
 

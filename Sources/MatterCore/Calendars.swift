@@ -87,14 +87,13 @@ public final class Calendars {
     public nonisolated static func hoursLine(what: String, day: String, time: String?, endDay: String? = nil, endTime: String? = nil) -> String? {
         guard clock(time) != nil, let span = span(what: what, day: day, time: time, endDay: endDay, endTime: endTime), !span.allDay else {
             if let endDay, endDay > day { return nil }
-            return "No time yet"
+            return String(localized: "No time yet", bundle: .module)
         }
         let format = DateFormatter()
         format.locale = Locale(identifier: "de_DE")
         format.dateFormat = "HH:mm"
         let minutes = Int(span.end.timeIntervalSince(span.start) / 60)
-        let length = minutes < 60 ? "\(minutes) min"
-            : minutes % 60 == 0 ? "\(minutes / 60) h" : "\(minutes / 60) h \(minutes % 60) min"
+        let length = Durations.label(minutes)
         // How long only when it is known — given, or in its words; Calendar's hour is no knowing.
         let known = Durations.minutes(from: time, to: endTime) > 0 || (endDay.map { $0 > day } ?? false) || end(in: what, from: span.start) != nil
         // Over midnight or over days, the length alone says it; the days are said beside it.
@@ -280,7 +279,7 @@ public final class Calendars {
                 failure = failure ?? error
             }
         }
-        throw Failure.noOwnList(type == .event ? "Calendar" : "Reminders", reason: failure?.localizedDescription)
+        throw Failure.noOwnList(type == .event ? String(localized: "Calendar", bundle: .module) : String(localized: "Reminders", bundle: .module), reason: failure?.localizedDescription)
     }
 
     public enum Failure: LocalizedError {
@@ -288,8 +287,8 @@ public final class Calendars {
         public var errorDescription: String? {
             switch self {
             case .noOwnList(let app, let reason):
-                "Causabee could not make its list “\(Self.ownName)” in \(app)\(reason.map { " (\($0))" } ?? ""). "
-                    + "Make a list called “\(Self.ownName)” there, or choose a list in Settings → Calendar and Reminders."
+                String(format: String(localized: "Causabee could not make its list “%@” in %@%@. ", bundle: .module), Self.ownName, app, reason.map { " (\($0))" } ?? "")
+                    + String(format: String(localized: "Make a list called “%@” there, or choose a list in Settings → Calendar and Reminders.", bundle: .module), Self.ownName)
             }
         }
         static let ownName = "Causabee"

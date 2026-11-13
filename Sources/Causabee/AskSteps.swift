@@ -28,10 +28,10 @@ struct AskSteps: View {
 
     private var words: String {
         switch step {
-        case .disguising: "Disguising names …"
-        case .waiting: "Thinking …"
-        case .lookingDeeper: "Looking in the whole matter …"
-        case .restoring: "Putting names back …"
+        case .disguising: String(localized: "Disguising names …")
+        case .waiting: String(localized: "Thinking …")
+        case .lookingDeeper: String(localized: "Looking in the whole matter …")
+        case .restoring: String(localized: "Putting names back …")
         }
     }
 }

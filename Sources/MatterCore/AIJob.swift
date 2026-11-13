@@ -51,22 +51,29 @@ public enum AIJob: String, CaseIterable, Sendable {
 public extension AIJob {
     /// F005: ", quick questions with OpenAI GPT-6.1 Terra" — only while quick questions go to
     /// another model than the rest of the chat.
-    static func quickQuestions(with word: String) -> String {
-        chatLight.model == chat.model ? "" : ", quick questions \(word) \(chatLight.model.label)"
+    static func quickQuestions(sentTo: Bool = false) -> String {
+        guard chatLight.model != chat.model else { return "" }
+        return String(format: sentTo ? String(localized: ", quick questions to %@", bundle: .module)
+                                     : String(localized: ", quick questions with %@", bundle: .module), chatLight.model.label)
     }
 
     /// Where the chat's questions go, as its footer says it: "OpenAI GPT-6.1 Sol", or with the model of quick questions.
-    static var chatSentTo: String { chat.model.label + quickQuestions(with: "to") }
+    static var chatSentTo: String { chat.model.label + quickQuestions(sentTo: true) }
 
     /// Which model does which job, as Settings says it on every device — and causabee.app too.
     /// While every job is on one model, the one sentence of before.
     static func said(ownKey: String) -> String {
         let read = AIJob.read.model, digest = AIJob.digest.model, brief = AIJob.brief.model, chat = AIJob.chat.model
-        if Set(allCases.map(\.model)).count == 1 { return "Everything is read with \(chat.label): through the beeserver with Pro, or \(ownKey)." }
-        let reading = digest == read ? "Read, sorted and digested with \(read.label)." : "Read and sorted with \(read.label)."
-        let writing = digest == brief && digest != read ? "Each item's digest, and each matter's brief and next step, with \(brief.label)."
-            : "Each matter's brief and next step with \(brief.label)."
-        return reading + " " + writing + " The chat with \(chat.label)\(quickQuestions(with: "with")). "
-            + "Each model was chosen only after it did its job as well as GPT-6.1 Sol. All of them get only pseudonymised text."
+        if Set(allCases.map(\.model)).count == 1 {
+            return String(format: String(localized: "Everything is read with %@: through the beeserver with Pro, or %@.", bundle: .module), chat.label, ownKey)
+        }
+        let reading = digest == read ? String(format: String(localized: "Read, sorted and digested with %@.", bundle: .module), read.label)
+                                     : String(format: String(localized: "Read and sorted with %@.", bundle: .module), read.label)
+        let writing = digest == brief && digest != read
+            ? String(format: String(localized: "Each item's digest, and each matter's brief and next step, with %@.", bundle: .module), brief.label)
+            : String(format: String(localized: "Each matter's brief and next step with %@.", bundle: .module), brief.label)
+        return reading + " " + writing + " "
+            + String(format: String(localized: "The chat with %@%@. ", bundle: .module), chat.label, quickQuestions())
+            + String(localized: "Each model was chosen only after it did its job as well as GPT-6.1 Sol. All of them get only pseudonymised text.", bundle: .module)
     }
 }

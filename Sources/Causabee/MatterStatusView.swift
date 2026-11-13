@@ -838,9 +838,9 @@ struct MatterStatusView: View {
                     do { let url = try await MatterFolders.fetched(kept); fetching[id] = nil; use(url) } catch { fetching[id] = plainWords(error) }
                 }
             } else {
-                fetching[document.persistentModelID] = document.source.addedOn == "your Mac"
-                    ? "The file is not on this Mac: \(document.source.pointer)"
-                    : "Added on your iPhone: the file is only there. What it said is here."
+                fetching[document.persistentModelID] = document.source.isFromMac
+                    ? String(format: String(localized: "The file is not on this Mac: %@"), document.source.pointer)
+                    : String(localized: "Added on your iPhone: the file is only there. What it said is here.")
             }
             return
         }

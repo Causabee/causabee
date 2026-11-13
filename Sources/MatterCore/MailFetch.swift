@@ -8,7 +8,7 @@ public enum MailFetch {
     public enum Failure: Error, CustomStringConvertible {
         case gone(String)
         public var description: String {
-            switch self { case .gone(let id): "The mail \(id) is no longer in the mailbox." }
+            switch self { case .gone(let id): String(format: String(localized: "The mail %@ is no longer in the mailbox.", bundle: .module), id) }
         }
     }
 

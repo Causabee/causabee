@@ -58,7 +58,7 @@ struct SidebarButton: View {
                 .frame(width: 26, height: 26).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .quickLabel(navigation.sidebarHidden ? "Show Sidebar" : "Hide Sidebar")
+        .quickLabel(navigation.sidebarHidden ? String(localized: "Show Sidebar") : String(localized: "Hide Sidebar"))
         .accessibilityLabel("Sidebar").accessibilityIdentifier("window.sidebar")
     }
 }
@@ -129,7 +129,7 @@ struct ReadingButton: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .quickLabel(navigation.reading ? "Deactivate Reading Mode" : "Activate Reading Mode")
+        .quickLabel(navigation.reading ? String(localized: "Deactivate Reading Mode") : String(localized: "Activate Reading Mode"))
     }
 }
 

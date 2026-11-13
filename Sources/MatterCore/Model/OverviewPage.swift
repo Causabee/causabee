@@ -193,10 +193,12 @@ extension MatterSummary {
     /// One new thing in a line of its own: "New task: Book a parking permit".
     static func line(_ item: NewItem) -> String {
         switch item {
-        case .task(let todo): "New task: " + todo.text
-        case .fact(let todo): "Good to know: " + todo.text
-        case .appointment(let date): "Date \(MatterStatus.short(date.day)): " + date.what
-        case .deadline(let date): "Deadline \(MatterStatus.short(date.day)): " + date.what
+        case .task(let todo): String(localized: "New task: ", bundle: .module) + todo.text
+        case .fact(let todo): String(localized: "Good to know: ", bundle: .module) + todo.text
+        case .appointment(let date):
+            String(format: String(localized: "Date %@: ", bundle: .module), MatterStatus.short(date.day)) + date.what
+        case .deadline(let date):
+            String(format: String(localized: "Deadline %@: ", bundle: .module), MatterStatus.short(date.day)) + date.what
         }
     }
 
@@ -207,18 +209,18 @@ extension MatterSummary {
         // Something new not yet seen is what the card says, under its "NEW": not the owner's own step.
         if isNew, latest.made != nil { return nil }
         switch latest.made {
-        case .note: return "Your note"
-        case .savedAnswer: return "Saved from chat"
-        case .taskAdded: return "Task added"
-        case .taskDone: return "Done"
+        case .note: return String(localized: "Your note", bundle: .module)
+        case .savedAnswer: return String(localized: "Saved from chat", bundle: .module)
+        case .taskAdded: return String(localized: "Task added", bundle: .module)
+        case .taskDone: return String(localized: "Done", bundle: .module)
         case nil: break
         }
         switch latest.kind {
         case .mail: return latest.from
-        case .document, .photo, .screenshot: return "File"
-        case .conversation: return "Chat"
-        case .spokenNote: return "Note"
-        case .phoneCall: return "Call"
+        case .document, .photo, .screenshot: return String(localized: "File", bundle: .module)
+        case .conversation: return String(localized: "Chat", bundle: .module)
+        case .spokenNote: return String(localized: "Note", bundle: .module)
+        case .phoneCall: return String(localized: "Call", bundle: .module)
         }
     }
 
@@ -272,7 +274,8 @@ extension MatterSummary {
         // The step over it says the same thing: then only its day.
         next.map { next in
             let same = step.map { Self.plain($0) == Self.plain(next.what) } ?? false
-            return same ? "Due \(MatterStatus.short(next.day))" : "Next: \(MatterStatus.short(next.day)) · \(next.what)"
+            return same ? String(format: String(localized: "Due %@", bundle: .module), MatterStatus.short(next.day))
+                        : String(format: String(localized: "Next: %@ · %@", bundle: .module), MatterStatus.short(next.day), next.what)
         }
     }
 

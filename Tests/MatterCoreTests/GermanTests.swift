@@ -129,3 +129,59 @@ struct GermanTests {
         #expect(matter.nextStep == "Umzugsfirma anrufen")
     }
 }
+
+/// F009: the net. Every word the app says of its own must be in a catalogue — and a word built in
+/// code, out of pieces, is invisible to SwiftUI and to the extractor alike. So the sources are read
+/// whole: every string literal that reads like words a person could be shown must be a catalogue
+/// key, or be named in `scripts/words-machine.txt` as something else — a key, a symbol, a mark in a
+/// mail, what a model is told. `scripts/words.py --escaped` is the one net, used here and by hand.
+@Suite("F009 · No English slips through")
+struct EveryWordTests {
+    static let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+
+    /// Runs the script and gives back what it said and how it ended.
+    static func sweep(_ arguments: [String]) throws -> (said: String, ok: Bool) {
+        let python = Process()
+        python.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        python.arguments = ["python3", "-I", "scripts/words.py"] + arguments
+        python.currentDirectoryURL = root
+        let pipe = Pipe()
+        python.standardOutput = pipe
+        python.standardError = pipe
+        try python.run()
+        let said = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        python.waitUntilExit()
+        return (said, python.terminationStatus == 0)
+    }
+
+    @Test("F009 AC-1 · No word a person reads escapes the catalogue")
+    func nothingEscapes() throws {
+        let run = try Self.sweep(["--escaped"])
+        // The script names each one with its file and line; its last line counts them.
+        #expect(run.ok, "words a person reads are in no catalogue:\n\(run.said)")
+    }
+
+    @Test("F009 AC-1 · Every word is looked up in its own catalogue")
+    func ownCatalogue() throws {
+        // MatterCore's words are in its own bundle, the apps' in theirs. A lookup with the wrong
+        // bundle finds nothing and shows the English, quietly — so each folder is checked.
+        var wrong: [String] = []
+        for (folder, needsModule) in [("Sources/MatterCore", true), ("Sources/Causabee", false),
+                                      ("Sources/CausabeePhone", false), ("Sources/CausabeeShare", false)] {
+            let base = Self.root.appendingPathComponent(folder)
+            let files = FileManager.default.enumerator(at: base, includingPropertiesForKeys: nil)?
+                .compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" } ?? []
+            for file in files {
+                let text = try String(contentsOf: file, encoding: .utf8)
+                for (number, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+                    guard line.contains("String(localized:") else { continue }
+                    let says = line.contains("bundle: .module")
+                    guard says != needsModule else { continue }
+                    let place = "\(file.lastPathComponent):\(number + 1)"
+                    wrong.append(needsModule ? "\(place) · needs bundle: .module" : "\(place) · must not say bundle: .module")
+                }
+            }
+        }
+        #expect(wrong.isEmpty, "these look a word up in the wrong catalogue: \(wrong)")
+    }
+}

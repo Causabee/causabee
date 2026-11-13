@@ -370,7 +370,7 @@ struct AssistantSheet: View {
                 HStack(spacing: 8) {
                     Image(systemName: AssistantAdd(rawValue: pinned.kind) == nil ? "pin.fill" : "plus").font(.caption).foregroundStyle(Theme.gold)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(pinned.kind.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(Theme.gold)
+                        Text(InHand.word(pinned.kind).uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(Theme.gold)
                         Text(pinned.text).lineLimit(2).foregroundStyle(.primary)
                     }
                     Spacer()

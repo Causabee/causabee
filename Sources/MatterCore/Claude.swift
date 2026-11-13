@@ -473,33 +473,33 @@ public extension Claude.Failure {
     var forPeople: String {
         switch self {
         case .noKey:
-            return "No API key for this AI model yet. Add one in Settings."
+            return String(localized: "No API key for this AI model yet. Add one in Settings.", bundle: .module)
         case .http(let status, let body):
             switch status {
-            case 401, 403: return "The AI service did not accept the API key. Check it in Settings."
+            case 401, 403: return String(localized: "The AI service did not accept the API key. Check it in Settings.", bundle: .module)
             case 402 where body.contains("subscription_ended"):
-                return "Causabee Pro has ended. Apple's model on this device reads what comes in; Pro comes back with the subscription."
+                return String(localized: "Causabee Pro has ended. Apple's model on this device reads what comes in; Pro comes back with the subscription.", bundle: .module)
             case 402 where body.contains("allowance_used"):
-                return "This month's Pro is used up. Apple's model on this device reads what comes in until it starts anew."
+                return String(localized: "This month's Pro is used up. Apple's model on this device reads what comes in until it starts anew.", bundle: .module)
             case 429 where body.contains("daily_limit"):
-                return "Today's share of Pro is used. It goes on tomorrow; Apple's model on this device reads what comes in meanwhile."
-            case 402: return "The AI service says the account has no credit left. Top it up with the provider, then try again."
-            case 404: return "The AI service does not know this model. Choose another in Settings."
-            case 408, 504: return "The AI service took too long to answer. Try again."
-            case 413: return "This is too much text for the AI model at once. Try with less, or choose another model in Settings."
+                return String(localized: "Today's share of Pro is used. It goes on tomorrow; Apple's model on this device reads what comes in meanwhile.", bundle: .module)
+            case 402: return String(localized: "The AI service says the account has no credit left. Top it up with the provider, then try again.", bundle: .module)
+            case 404: return String(localized: "The AI service does not know this model. Choose another in Settings.", bundle: .module)
+            case 408, 504: return String(localized: "The AI service took too long to answer. Try again.", bundle: .module)
+            case 413: return String(localized: "This is too much text for the AI model at once. Try with less, or choose another model in Settings.", bundle: .module)
             case 429 where Claude.isOutOfCredit(Data(body.utf8)):
-                return "The AI service says the account has no credit left. Top it up with the provider, then try again."
-            case 429: return "Too many requests to the AI service just now. Wait a minute, then try again."
-            case 529, 503, 502: return "The AI service is busy right now. Try again in a minute."
-            case 500...599: return "The AI service had a problem of its own. Try again in a minute."
-            default: return "The AI service could not take the request. Try again; if it stays, choose another model in Settings."
+                return String(localized: "The AI service says the account has no credit left. Top it up with the provider, then try again.", bundle: .module)
+            case 429: return String(localized: "Too many requests to the AI service just now. Wait a minute, then try again.", bundle: .module)
+            case 529, 503, 502: return String(localized: "The AI service is busy right now. Try again in a minute.", bundle: .module)
+            case 500...599: return String(localized: "The AI service had a problem of its own. Try again in a minute.", bundle: .module)
+            default: return String(localized: "The AI service could not take the request. Try again; if it stays, choose another model in Settings.", bundle: .module)
             }
         case .unreadable:
-            return "The AI's answer could not be read. Try again."
+            return String(localized: "The AI's answer could not be read. Try again.", bundle: .module)
         case .refused:
-            return "The AI model declined to answer this. Try other words, or choose another model in Settings."
+            return String(localized: "The AI model declined to answer this. Try other words, or choose another model in Settings.", bundle: .module)
         case .truncated:
-            return "The AI's answer was too long and was cut off. Try again, or ask about less at once."
+            return String(localized: "The AI's answer was too long and was cut off. Try again, or ask about less at once.", bundle: .module)
         }
     }
 }
@@ -517,17 +517,17 @@ extension Claude {
 public func plainWords(_ error: Error) -> String {
     if let error = error as? URLError {
         switch error.code {
-        case .notConnectedToInternet, .dataNotAllowed: return "No connection to the internet. Nothing was sent."
-        case .networkConnectionLost: return "The connection was lost on the way. Try again."
-        case .timedOut: return "No answer came in time. Try again."
-        case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed: return "The service could not be reached. Try again in a moment."
-        case .secureConnectionFailed: return "No secure connection could be made. Try again."
-        case .cancelled: return "Stopped."
+        case .notConnectedToInternet, .dataNotAllowed: return String(localized: "No connection to the internet. Nothing was sent.", bundle: .module)
+        case .networkConnectionLost: return String(localized: "The connection was lost on the way. Try again.", bundle: .module)
+        case .timedOut: return String(localized: "No answer came in time. Try again.", bundle: .module)
+        case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed: return String(localized: "The service could not be reached. Try again in a moment.", bundle: .module)
+        case .secureConnectionFailed: return String(localized: "No secure connection could be made. Try again.", bundle: .module)
+        case .cancelled: return String(localized: "Stopped.", bundle: .module)
         default: return error.localizedDescription
         }
     }
-    if error is CancellationError { return "Stopped." }
-    if isDroppedConnection(error) { return "The connection to the mail server dropped on the way — the network may have changed." }
+    if error is CancellationError { return String(localized: "Stopped.", bundle: .module) }
+    if isDroppedConnection(error) { return String(localized: "The connection to the mail server dropped on the way — the network may have changed.", bundle: .module) }
     // What the AI service answered, in words with what to do — not "HTTP 529" and its raw answer.
     if let failure = error as? Claude.Failure { return failure.forPeople }
     let words = "\(error)"

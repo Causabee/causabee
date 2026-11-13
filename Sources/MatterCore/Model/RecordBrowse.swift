@@ -9,12 +9,12 @@ public enum RecordBrowse {
 
         public var label: String {
             switch self {
-            case .everything: "Everything"
-            case .mail: "Mail"
-            case .files: "Files"
-            case .scans: "Scans"
-            case .links: "Links"
-            case .details: "Details"
+            case .everything: String(localized: "Everything", bundle: .module)
+            case .mail: String(localized: "Mail", bundle: .module)
+            case .files: String(localized: "Files", bundle: .module)
+            case .scans: String(localized: "Scans", bundle: .module)
+            case .links: String(localized: "Links", bundle: .module)
+            case .details: String(localized: "Details", bundle: .module)
             }
         }
     }
@@ -24,11 +24,11 @@ public enum RecordBrowse {
 
         public var label: String {
             switch self {
-            case .all: "All"
-            case .withFacts: "With tasks or dates"
-            case .info: "Information only"
-            case .kept: "Kept only"
-            case .unread: "Unread"
+            case .all: String(localized: "All", bundle: .module)
+            case .withFacts: String(localized: "With tasks or dates", bundle: .module)
+            case .info: String(localized: "Information only", bundle: .module)
+            case .kept: String(localized: "Kept only", bundle: .module)
+            case .unread: String(localized: "Unread", bundle: .module)
             }
         }
     }
@@ -38,10 +38,10 @@ public enum RecordBrowse {
 
         public var label: String {
             switch self {
-            case .newest: "Newest"
-            case .oldest: "Oldest"
-            case .byPerson: "By person"
-            case .byKind: "By kind"
+            case .newest: String(localized: "Newest", bundle: .module)
+            case .oldest: String(localized: "Oldest", bundle: .module)
+            case .byPerson: String(localized: "By person", bundle: .module)
+            case .byKind: String(localized: "By kind", bundle: .module)
             }
         }
     }
@@ -68,11 +68,21 @@ public enum RecordBrowse {
             }
         }
 
+        /// The heading a kind stands under.
         var kindName: String {
             switch self {
-            case .thread: "Mail"
-            case .document(let document): document.isOwnFile ? "Scans and files of your own" : "Files from mail"
-            case .link: "Links"
+            case .thread: String(localized: "Mail", bundle: .module)
+            case .document(let document): document.isOwnFile ? String(localized: "Scans and files of your own", bundle: .module) : String(localized: "Files from mail", bundle: .module)
+            case .link: String(localized: "Links", bundle: .module)
+            }
+        }
+
+        /// The order the kinds stand in, which the words must not change (F009).
+        var kindOrder: Int {
+            switch self {
+            case .thread: 0
+            case .document(let document): document.isOwnFile ? 2 : 1
+            case .link: 3
             }
         }
     }
@@ -179,35 +189,40 @@ public enum RecordBrowse {
         }?.id
     }
 
+    /// `October 2026`, `Oktober 2026`: the month's name and the year, in the device's own order.
     private static let month: DateFormatter = {
         let formatter = DateFormatter()
-                formatter.dateFormat = "LLLL yyyy"
+        formatter.setLocalizedDateFormatFromTemplate("LLLLyyyy")
         return formatter
     }()
 
     /// The groups, in order. `people` names who is named in a thing — for "By person".
+    /// The heading for what names nobody. One word, used for the heading and for keeping it last.
+    static var nobodyNamed: String { String(localized: "Nobody named", bundle: .module) }
+
     public static func groups(_ items: [Item], sort: Sort, people: (Item) -> [String] = { _ in [] }) -> [Group] {
         switch sort {
         case .newest, .oldest:
             let ordered = items.sorted { sort == .newest ? $0.date > $1.date : $0.date < $1.date }
             var groups: [Group] = []
             for item in ordered {
-                let title = item.date == .distantPast ? "Without a day" : month.string(from: item.date)
+                let title = item.date == .distantPast ? String(localized: "Without a day", bundle: .module) : month.string(from: item.date)
                 if groups.last?.title == title { groups[groups.count - 1].items.append(item) } else { groups.append(Group(title: title, items: [item])) }
             }
             return groups
         case .byKind:
-            let order = ["Mail", "Files from mail", "Scans and files of your own", "Links"]
+            var order: [String: Int] = [:]
+            for item in items { order[item.kindName] = item.kindOrder }
             return Dictionary(grouping: items, by: \.kindName)
                 .map { Group(title: $0.key, items: $0.value.sorted { $0.date > $1.date }) }
-                .sorted { (order.firstIndex(of: $0.title) ?? 9) < (order.firstIndex(of: $1.title) ?? 9) }
+                .sorted { (order[$0.title] ?? 9) < (order[$1.title] ?? 9) }
         case .byPerson:
             var under: [String: [Item]] = [:]
             var named: [String: [String]] = [:]
             for item in items {
                 let names = people(item)
                 named[item.id] = names
-                for name in names.isEmpty ? ["Nobody named"] : names { under[name, default: []].append(item) }
+                for name in names.isEmpty ? [Self.nobodyNamed] : names { under[name, default: []].append(item) }
             }
             return under
                 .map { name, items in
@@ -216,7 +231,7 @@ public enum RecordBrowse {
                     return group
                 }
                 .sorted { a, b in
-                    if (a.title == "Nobody named") != (b.title == "Nobody named") { return b.title == "Nobody named" }
+                    if (a.title == Self.nobodyNamed) != (b.title == Self.nobodyNamed) { return b.title == Self.nobodyNamed }
                     return a.items.count != b.items.count ? a.items.count > b.items.count : a.title < b.title
                 }
         }
