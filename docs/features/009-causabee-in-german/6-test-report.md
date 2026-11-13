@@ -11,7 +11,7 @@ criterion; what else was looked at by hand stands under the table.
 | AC-2 · A matter keeps its own language | `GermanTests` "F009 AC-2 · A matter keeps its own language" — the prompts still say to write in the content's language, their versions unchanged; `GermanAtRuntimeTests` "· What the bee wrote is not looked up"; and by hand on the Mac in German with the English demo | pass |
 | AC-3 · Days as the device writes them | `DateLocaleTests` "F009 AC-3" (three tests) — no forced `en_US`/`en_GB` left in a path a person reads, the 18 `en_US_POSIX` still there, a German device reads German days; and by hand: "5 Mails · seit 23. Okt.", "HEUTE · FR. 13. NOV.", "Überfällig seit 12. Nov." | pass |
 | AC-4 · One word for one thing | `GermanTests` "F009 AC-4 · One word for one thing" — no German word serves two English ones, no English one has two Germans, each catalogue on its own | pass |
-| AC-5 · German fits | `GermanTests` "F009 AC-5 · German fits where the room is fixed" — the 21 words that sit in a place that cannot grow, against the room there is; and by hand on the iPhone, the iPad and the Mac, at the usual text size and the largest | pass |
+| AC-5 · German fits | `GermanTests` "F009 AC-5 · German fits where the room is fixed" — the 23 words that sit in a place that cannot grow, against the room there is; and by hand on the iPhone, the iPad and the Mac, at the usual text size and the largest | pass |
 | AC-6 · The owner can see German on an English device | `GermanBeyondTheAppTests` "F009 AC-6 · German can be picked for Causabee alone" — what makes the device offer it: `de` among the project's regions, a German side in the shared bundle beside the English, and no switch inside Causabee. The owner set Causabee alone to German on their own English iPhone and read it through: "iphone looks good", "german looks good" | pass |
 | AC-7 · The App Store page in German | `GermanBeyondTheAppTests` "F009 AC-7 · The App Store page in German is written and fits" — `store-de.md`: all six fields, each inside Apple's limit, German, du, and more than mail named. Posting it in App Store Connect is a step of the release that makes the page, written down as one | pass |
 | AC-8 · Nothing already there is rewritten | `GermanTests` "F009 AC-8 · Nothing already there is rewritten" — a matter, its brief and its next step read the same with the language changed | pass |
@@ -116,6 +116,19 @@ asked for this. That is what AC-6 asks: its Given is the owner's own iPhone, iPa
 Two things were not separately reported, and are not claimed here: switching the phone back to
 English, and the Mac and the iPad. Beta 135 is built and signed and in the owner's hands, and the
 iPad has the same TestFlight build as the iPhone, if either is ever wanted.
+
+**One German word was too long, and is said shorter now.** Under a closed matter whose mail kept
+coming, two buttons stand side by side: "Start a new matter" and "Open Again". The German read
+"Neues Anliegen beginnen", which wrapped over two lines on the iPhone and pushed "Wieder öffnen" off
+the edge. It says **"Neues Anliegen"** now — the owner's own word for it: "Only Neues Anliegen". The
+Mac's "Start a New Matter" says the same, so one thing keeps one word, and both are in `tightPlaces`
+with the room they have, so they cannot grow back. The by-hand look missed this one because the
+banner only comes up on a closed matter that has had new mail since.
+
+A sweep of all 110 button labels for the German that grew most found nothing else at risk: the rest
+are menu lines and wide buttons with room. It did show the two catalogues doing their job — MatterCore's
+"Next" is "Als Nächstes", the heading over a matter's next step, and the apps' "Next" is "Weiter",
+the button in the welcome. Each is looked up in its own bundle, so neither ever sees the other's word.
 
 **What the owner found while reading.** Not a German fault, and not built: on one of their own
 matters the card says "9 offen · 4 für dich · wartet auf 5" and the Plan shows four things. A task

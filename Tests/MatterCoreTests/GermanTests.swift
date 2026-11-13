@@ -74,6 +74,9 @@ struct GermanTests {
         "datei öffnen",   // "Open document" and "Open the file": one thing, two English words
         "wartet auf",     // "Waits For", the menu that makes a task wait, and "Waiting for", how a
                           // task that waits is marked: one thing in German, and the owner's word
+        "neues anliegen", // "New matter" and "Start a new matter": the same thing, and German says
+                          // it in two words where English takes four (the owner, 13 November:
+                          // "Only Neues Anliegen")
     ]
 
     /// Two jobs for one English word, where the capital letter is what tells them apart. Each line
@@ -164,6 +167,9 @@ struct GermanTests {
         ("Set day", 14, "where a task's day would stand"),
         ("Sort in", 14, "the button on what came in"),
         ("Take in", 14, "the button on what came in"),
+        // Two buttons side by side under a closed matter's banner, on the iPhone's width.
+        ("Start a new matter", 14, "a button beside “Open Again”, under a closed matter"),
+        ("Open Again", 14, "a button beside “Start a new matter”, under a closed matter"),
     ]
 
     @Test("F009 AC-5 · German fits where the room is fixed")

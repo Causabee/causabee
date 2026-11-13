@@ -6746,7 +6746,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Neues Anliegen beginnen"
+            "value": "Neues Anliegen"
           }
         }
       }
@@ -7396,7 +7396,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Neues Anliegen beginnen"
+            "value": "Neues Anliegen"
           }
         }
       }

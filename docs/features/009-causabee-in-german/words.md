@@ -1241,7 +1241,7 @@ shown on more than one screen is under the first of them.
 | Open Again | Wieder öffnen |
 | Ignore New Mail | Neue Mail ignorieren |
 | Update now | Jetzt aktualisieren |
-| Start a New Matter | Neues Anliegen beginnen |
+| Start a New Matter | Neues Anliegen |
 | Close Matter … | Anliegen abschließen … |
 | Export as RTF | Als RTF exportieren |
 | Edit … | Bearbeiten … |
@@ -1311,7 +1311,7 @@ shown on more than one screen is under the first of them.
 | Close “%@”? %lld tasks are still open. | „%@“ abschließen? %lld Aufgaben sind noch offen. |
 | 1 new mail since closing | 1 neue Mail seit dem Abschließen |
 | %lld new mails since closing | %lld neue Mails seit dem Abschließen |
-| Start a new matter | Neues Anliegen beginnen |
+| Start a new matter | Neues Anliegen |
 | What came in, with what it brought, becomes a matter of its own; this one stays closed | Was hereinkam, wird mit dem, was es mitbrachte, ein eigenes Anliegen; dieses bleibt geschlossen |
 | A new matter with the 1 new mail | Ein neues Anliegen mit der einen neuen Mail |
 | A new matter with the %lld new mails | Ein neues Anliegen mit den %lld neuen Mails |
