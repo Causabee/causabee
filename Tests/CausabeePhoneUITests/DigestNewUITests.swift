@@ -161,7 +161,11 @@ final class DigestNewUITests: XCTestCase {
         if let shots = ProcessInfo.processInfo.environment["PANEL_SHOTS"] {
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: shots + "/pinned-date.png"))
         }
-        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label MATCHES '.*[0-9]+ open · [A-Z][a-z]+ [0-9]+.*'")).firstMatch.exists,
+        // A day is written as the device writes it — "Nov 14", or "14. Nov." where the region says
+        // so — so the test asks for a month and a number beside the count, in either order (F009).
+        let day = "(?:[A-Za-zÄÖÜäöü]{3,}\\.? [0-9]+|[0-9]+\\.? [A-Za-zÄÖÜäöü]{3,}\\.?)"
+        XCTAssertTrue(app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label MATCHES '.*[0-9]+ open · \(day).*'")).firstMatch.exists,
                       "The card's count has no day beside it.")
     }
 

@@ -23,7 +23,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 # Where the words of each catalogue come from, and the short name its kept words carry.
 PLACES = [
     ("Sources/MatterCore/Resources/Localizable.xcstrings", ["Sources/MatterCore"], "core"),
-    ("App/Resources/Localizable.xcstrings", ["Sources/Causabee", "Sources/CausabeePhone", "Sources/CausabeeShare"], "app"),
+    ("App/Resources/Localizable.xcstrings", ["Sources/Causabee", "Sources/CausabeePhone"], "app"),
+    # The share sheet runs in a bundle of its own, so `Bundle.main` there is the extension, not the
+    # app: its words need a catalogue beside it, or they come back English (F009).
+    ("Sources/CausabeeShare/Localizable.xcstrings", ["Sources/CausabeeShare"], "share"),
 ]
 
 # The words that carry a value ("Overdue since %@"). Only the compiler knows the right placeholder

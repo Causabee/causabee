@@ -8,7 +8,11 @@ import Testing
 @Suite("F009 · Causabee in German")
 struct GermanTests {
     static let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-    static let catalogues = ["Sources/MatterCore/Resources/Localizable.xcstrings", "App/Resources/Localizable.xcstrings"]
+    /// Three: the words all three devices share, the apps' own, and the share sheet's — which runs
+    /// in a bundle of its own, so it carries its own words (F009).
+    static let catalogues = ["Sources/MatterCore/Resources/Localizable.xcstrings",
+                             "App/Resources/Localizable.xcstrings",
+                             "Sources/CausabeeShare/Localizable.xcstrings"]
 
     /// One word of a catalogue: its key, what it says in a language, and how far that is done.
     struct Word {
