@@ -70,16 +70,20 @@ struct GermanTests {
         var germanFor: [String: Set<String>] = [:]
         for word in words where !word.german.isEmpty {
             // Case alone is not two words: "WHOSE" over a column and "Whose" in a line are one.
-            germanFor[word.englishWords.lowercased(), default: []].insert(word.german.lowercased())
+            // Each catalogue on its own: the apps' "Call" is the button, MatterCore's "call" the
+            // kind of source — two meanings of one English word, in two bundles.
+            germanFor[word.catalogue + "|" + word.englishWords.lowercased(), default: []].insert(word.german.lowercased())
         }
         let twice = germanFor.filter { $0.value.count > 1 }
         #expect(twice.isEmpty, "one English word, two German: \(twice.prefix(4).map { "\($0.key) → \($0.value)" })")
         // Two different English things sharing one German word: a menu would read the same twice.
         var englishFor: [String: Set<String>] = [:]
         for word in words where !word.german.isEmpty && word.german.count > 3 {
-            englishFor[word.german.lowercased(), default: []].insert(word.englishWords.lowercased())
+            englishFor[word.catalogue + "|" + word.german.lowercased(), default: []].insert(word.englishWords.lowercased())
         }
-        let shared = englishFor.filter { $0.value.count > 1 && !Self.sameThing.contains($0.key) }
+        let shared = englishFor.filter { pair in
+            pair.value.count > 1 && !Self.sameThing.contains(pair.key.split(separator: "|").last.map(String.init) ?? "")
+        }
         #expect(shared.isEmpty, "one German word, two English: \(shared.prefix(4).map { "\($0.key) ← \($0.value)" })")
     }
 
